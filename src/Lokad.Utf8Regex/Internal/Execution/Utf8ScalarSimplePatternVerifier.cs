@@ -1,5 +1,7 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -11,7 +13,10 @@ internal static class Utf8ScalarSimplePatternVerifier
     // width-sensitive tokens consume whole scalars with unit predicates (literals
     // byte-compare, singleline dots match any scalar, ASCII-closed classes apply the
     // byte predicate on ASCII scalars and their negation bit beyond). BCL parity holds
-    // on BMP input where units equal scalars. Astral inputs, IgnoreCase plans, runs,
+    // on BMP input where units equal scalars. IgnoreCase plans fold through the
+    // owned invariant table (ASCII bytes fold inline, other BMP scalars meet the
+    // folded ASCII mask through their fold pair, Kelvin included); shorthands,
+    // dots, and singleline dots are fold-neutral. Astral inputs, runs,
     // non-Digit, non-word shorthand and Unicode-dependent classes, anchored plans,
     // and the ASCII fast path decline to the existing routes. Hooks sit past
     // validation, so inputs are well-formed; malformed scalars fail the walk closed.
@@ -80,7 +85,6 @@ internal static class Utf8ScalarSimplePatternVerifier
     {
         if (kind != NativeExecutionKind.AsciiSimplePattern ||
             plan.IsUtf8ByteSafe ||
-            plan.IgnoreCase ||
             plan.IsStartAnchored ||
             plan.IsEndAnchored ||
             plan.Branches.Length == 0)
@@ -173,6 +177,14 @@ internal static class Utf8ScalarSimplePatternVerifier
              predicateKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore);
     }
 
+    // Raw membership in the positive mask definition, ignoring Negated.
+    private static bool PositiveMaskContains(AsciiCharClass charClass, byte value)
+    {
+        return value < 64
+            ? (charClass.PositiveLowMask & (1UL << value)) != 0
+            : (charClass.PositiveHighMask & (1UL << (value - 64))) != 0;
+    }
+
     public static int FindNextScalar(
         ReadOnlySpan<byte> input,
         in AsciiSimplePatternPlan plan,
@@ -212,6 +224,7 @@ internal static class Utf8ScalarSimplePatternVerifier
     {
         matchedByteLength = 0;
         budget.Step();
+        var ignoreCase = plan.IgnoreCase;
         foreach (var branch in plan.Branches)
         {
             var cursor = startByte;
@@ -228,13 +241,57 @@ internal static class Utf8ScalarSimplePatternVerifier
                 var lead = input[cursor];
                 if (token.Kind == AsciiSimplePatternTokenKind.Literal)
                 {
-                    if (lead != token.Literal)
+                    if (lead < 0x80)
+                    {
+                        // Lowered literals are already folded, so the input byte
+                        // folds too under IgnoreCase; the case-sensitive check is
+                        // byte-identical to the old direct comparison.
+                        var candidate = ignoreCase ? AsciiSearch.FoldCase(lead) : lead;
+                        if (candidate != token.Literal)
+                        {
+                            ok = false;
+                            break;
+                        }
+
+                        cursor += 1;
+                        continue;
+                    }
+
+                    if (!ignoreCase)
                     {
                         ok = false;
                         break;
                     }
 
-                    cursor += 1;
+                    // A non-ASCII scalar meets a folded ASCII literal only through
+                    // its invariant fold pair (Kelvin meets k); anything else,
+                    // including fold-less scalars like long-s and U+0130, misses.
+                    // Astral leads decline up front, so fail those closed too.
+                    var literalWidth = lead < 0xE0 ? 2 : 3;
+                    if (lead < 0xC0 || lead >= 0xF0 || cursor + literalWidth > input.Length ||
+                        (input[cursor + 1] & 0xC0) != 0x80 ||
+                        (literalWidth == 3 && (input[cursor + 2] & 0xC0) != 0x80))
+                    {
+                        ok = false;
+                        break;
+                    }
+
+                    uint literalScalar = (uint)(lead & (literalWidth == 2 ? 0x1F : 0x0F));
+                    literalScalar = (literalScalar << 6) | (uint)(input[cursor + 1] & 0x3F);
+                    if (literalWidth == 3)
+                    {
+                        literalScalar = (literalScalar << 6) | (uint)(input[cursor + 2] & 0x3F);
+                    }
+
+                    if (!Utf8OwnedCaseFold.TryGetFold((char)literalScalar, out var foldLower, out var foldUpper) ||
+                        !(((uint)foldLower < 0x80 && (byte)foldLower == token.Literal) ||
+                        ((uint)foldUpper < 0x80 && (byte)foldUpper == token.Literal)))
+                    {
+                        ok = false;
+                        break;
+                    }
+
+                    cursor += literalWidth;
                     continue;
                 }
 
@@ -316,6 +373,22 @@ internal static class Utf8ScalarSimplePatternVerifier
                     wordKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore)
                 {
                     matches = Utf8WordRanges.IsWordChar(scalar);
+                }
+                else if (ignoreCase)
+                {
+                    // Mask-based classes only (the shorthand and dot arms above are
+                    // fold-neutral): a non-ASCII scalar meets the folded ASCII mask
+                    // through its invariant fold pair, so Kelvin meets [k] and is
+                    // excluded by [^k], while fold-less scalars keep the
+                    // case-sensitive outcome. Complements apply below.
+                    var foldedHit = false;
+                    if (Utf8OwnedCaseFold.TryGetFold((char)scalar, out var classLower, out var classUpper))
+                    {
+                        foldedHit = ((uint)classLower < 0x80 && PositiveMaskContains(token.CharClass, (byte)classLower)) ||
+                            ((uint)classUpper < 0x80 && PositiveMaskContains(token.CharClass, (byte)classUpper));
+                    }
+
+                    matches = token.CharClass.Negated ? !foldedHit : foldedHit;
                 }
                 else
                 {

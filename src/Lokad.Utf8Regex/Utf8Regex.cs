@@ -1024,7 +1024,7 @@ public sealed partial class Utf8Regex
         if (CanValidateKelvinSignDuringNativeCount())
         {
             var kelvinValidation = Utf8InputAnalyzer.ValidateOnly(input, out var containsKelvinSign);
-            if (containsKelvinSign)
+            if (containsKelvinSign && !ScalarVerifierServesInput(input))
             {
                 return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
                     Utf8Validation.DecodeStrict(input));

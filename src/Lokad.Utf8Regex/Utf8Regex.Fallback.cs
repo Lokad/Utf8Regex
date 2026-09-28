@@ -592,7 +592,14 @@ public sealed partial class Utf8Regex
         ShouldUseFallbackForNonAsciiSimplePattern(validation, false);
 
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
-        => _requiresKelvinSignFallback && ContainsKelvinSign(input);
+        => _requiresKelvinSignFallback && ContainsKelvinSign(input) && !ScalarVerifierServesInput(input);
+
+    // Scalar-verifiable simple patterns fold Kelvin owned through the scalar
+    // walk, so they bypass Kelvin fencing everywhere; every other fenced route
+    // (anchored validators, literal families, byte-safe plans) keeps the fence.
+    private bool ScalarVerifierServesInput(ReadOnlySpan<byte> input)
+        => _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input);
 
     private bool CanValidateKelvinSignDuringNativeCount()
         => _requiresKelvinSignFallback &&

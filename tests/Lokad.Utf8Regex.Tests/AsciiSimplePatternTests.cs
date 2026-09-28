@@ -1113,11 +1113,61 @@ public sealed class AsciiSimplePatternTests
         Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ScalarDiscoveryDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedScalarDiscoveryOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
             ("(?i)a.c", "éABCé"),
+            ("(?i)a.c", "éabcé"),
+            ("(?i)a.c", "éxyzé"),
+            ("(?i)a.c", ""),
+            ("(?i)a[^x]d", "éaQdé"),
+            ("(?i)a[^x]d", "éAXDé"),
+            ("(?i)a[^k]b", "axbb"),
+            ("(?i)a[^k]b", "aKb"),
+            ("(?i)a[^k]b", "a\u212Ab"),
+            ("(?i)k.c", "\u212Abc"),
+            ("(?i)k.c", "xKbc"),
+            ("(?i)k.c", "xabc"),
+            ("(?i)i.i", "x\u0130x"),
+            ("(?i)s.s", "x\u017Fs"),
+            ("(?i)a\\db", "éa1bé"),
+            ("(?i)a\\db", "xa\u0663bx"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+    }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedScalarDiscoveryOwnedCases))]
+    public void ScalarDiscoveryOwnsFoldedNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: IgnoreCase scalar verification folds through the owned invariant
+        // table (ASCII bytes fold inline, other BMP scalars meet the folded ASCII
+        // mask through their fold pair, Kelvin included; shorthands and dots are
+        // fold-neutral), so folded IsMatch and Count never construct the fallback
+        // engine on astral-free non-ASCII input. Astral inputs keep BCL routing.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> ScalarDiscoveryDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
             ("a.c", "a\U0001F600c"),
         ];
         foreach (var row in rows)
@@ -1131,10 +1181,9 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarDiscoveryDeclineCases))]
     public void ScalarDiscoveryDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: IgnoreCase plans, non-Digit shorthand classes,
-        // singleline dots over non-ASCII, negated Unicode categories, and astral
-        // inputs decline scalar verification, so discovery stays BCL-backed.
-        // Parity holds; construction is pinned.
+        // Declared R05 debt: astral inputs decline scalar verification (BCL unit
+        // semantics split astral scalars while the walk consumes whole scalars),
+        // so discovery stays BCL-backed there. Parity holds; construction is pinned.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1337,6 +1386,80 @@ public sealed class AsciiSimplePatternTests
         Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedScalarEnumerationOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(?i)a.c", "éABCé"),
+            ("(?i)a.c", "éxyzé"),
+            ("(?i)a[^x]d", "éaQdé"),
+            ("(?i)a[^k]b", "a\u212Ab"),
+            ("(?i)k.c", "\u212Abc"),
+            ("(?i)a\\db", "éa1bé"),
+            ("(?i)a.c", ""),
+            ("(?i)a[^x]d", "éAXDé"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedScalarEnumerationOwnedCases))]
+    public void ScalarEnumerationOwnsFoldedNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: folded enumeration projects every scalar-verified hit through the
+        // boundary map exactly like the case-sensitive battery above, so folded
+        // coordinates and splits never construct the fallback engine either.
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in regex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var splitRegex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expectedSplits.Add((text[start..end], start, end - start));
+        }
+
+        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in splitRegex.EnumerateSplits(input, count))
+        {
+            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expectedSplits, actualSplits);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarGrouplessTemplateOwnedCases()
     {
         string[] patterns = ["a.c", "a[^x]d", ".[0-9]"];
@@ -1372,6 +1495,42 @@ public sealed class AsciiSimplePatternTests
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedScalarTemplateOwnedCases()
+    {
+        string[] patterns = ["(?i)a.c", "(?i)a[^x]d"];
+        string[] templates = ["x", "$&"];
+        string[] texts = ["éABCé", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedScalarTemplateOwnedCases))]
+    public void FoldedScalarTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: folded groupless templates expand from the owned enumeration above
+        // through the shared groupless worker; expansion copies matched text and
+        // is fold-neutral.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = regex.ReplaceToString(input, template);
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarGrouplessEvaluatorOwnedCases()
     {
         string[] patterns = ["a.c", "a[^x]d", ".[0-9]"];
@@ -1392,6 +1551,48 @@ public sealed class AsciiSimplePatternTests
     {
         // R05: groupless evaluator callbacks observe the same owned enumeration
         // through the shared groupless arm on both cores.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(0).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(byteRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedScalarEvaluatorOwnedCases()
+    {
+        string[] patterns = ["(?i)a.c", "(?i)a[^x]d"];
+        string[] texts = ["éABCé", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedScalarEvaluatorOwnedCases))]
+    public void FoldedScalarEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: folded groupless evaluator callbacks observe the same owned
+        // enumeration through the shared groupless arm on both cores.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
