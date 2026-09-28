@@ -271,4 +271,54 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
+    [Theory]
+    [InlineData("(?m:^ab)", "ab\nab\nab")]
+    [InlineData("(?m:^ab)", "xxab")]
+    [InlineData("(?m:^ab)", "ab")]
+    [InlineData("(?m:ab$)", "ab\nab\nab")]
+    [InlineData("(?m:ab$)", "xxab")]
+    [InlineData("(?m:ab$)", "ab")]
+    public void MultilineAnchoredCountEnumReplaceKeepsBclShaping(string pattern, string text)
+    {
+        // Declared R05 debt: single-sided line anchors keep BCL-backed Count,
+        // enumeration, and replacement (scan-driver resume gates stay absolute-only).
+        // Parity holds; construction is pinned.
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var enumRegex = new Utf8Regex(pattern, options);
+            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (Match expectedMatch in oracle.Matches(text))
+            {
+                expected.Add((expectedMatch.Index, expectedMatch.Length));
+            }
+
+            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+            {
+                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            }
+
+            Assert.Equal(expected.Count, actual.Count);
+            for (var i = 0; i < expected.Count; i++)
+            {
+                Assert.Equal(expected[i].Index, actual[i].Index);
+                Assert.Equal(expected[i].Length, actual[i].Length);
+            }
+
+            Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var replaceRegex = new Utf8Regex(pattern, options);
+            var expectedReplaced = oracle.Replace(text, "x");
+            var actualReplaced = replaceRegex.ReplaceToString(input, "x");
+            Assert.Equal(expectedReplaced, actualReplaced);
+            Assert.True(replaceRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
 }
