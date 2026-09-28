@@ -1051,6 +1051,68 @@ public sealed class AsciiSimplePatternTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> ScopedFoldingCases()
+    {
+        (string Pattern, string[] Texts)[] shapes =
+        [
+            ("a(?i:b)c", ["xxabcxx", "xxaBcxx", "xxabCxx"]),
+            ("(?i:ab)cd", ["xxabcdxx", "xxABcdxx", "xxabcDxx"]),
+            ("(?i:[ab])x", ["xxaxxx", "xxBxx", "xxcxx"]),
+            ("x(?i:[ab]+)y", ["xxAByxx", "xxayxx", "xxcyxx"]),
+            ("(?i:ab)|cd", ["xxABxx", "xxcdxx", "xxefxx"]),
+            ("(?i:[ab]){2}x", ["xxBBxx", "xxabxx", "xxccxx"]),
+        ];
+        foreach (var shape in shapes)
+        {
+            foreach (var text in shape.Texts)
+            {
+                yield return new object?[] { shape.Pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { shape.Pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScopedFoldingCases))]
+    public void ScopedFoldingMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var enumRegex = new Utf8Regex(pattern, options);
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     [Theory]
     [InlineData("^$")]
     [InlineData("^")]
