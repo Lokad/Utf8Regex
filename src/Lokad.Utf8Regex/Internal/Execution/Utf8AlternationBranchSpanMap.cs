@@ -9,9 +9,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // the winning pattern by ordinal text comparison against the owned discovery hit and
 // projects its spans without executing the fallback engine. Stored order is the BCL
 // choice order (source order for branches; per-loop preference with rightmost unwinding
-// for loops, as probed on .NET 10), so the first ordinal match wins. Nested alternations,
-// loops inside alternations, alternations inside loop construction, other quantifiers,
-// sets, anchors, lookarounds, backreferences, and empty nodes decline; a null map means
+// for loops, as probed on .NET 10), so the first ordinal match wins. Nested divergent
+// alternations and (0,1) loops inside alternation branches expand the same way. Nested
+// loops, other quantifiers, empty entries, more than 64 entries, sets, anchors,
+// lookarounds, backreferences, and empty nodes decline; a null map means
 // the shape keeps the existing BCL routes. Construction is eager and pure over the owned
 // tree: no fallback engine is built here.
 internal sealed class Utf8AlternationBranchSpanMap
@@ -80,11 +81,24 @@ internal sealed class Utf8AlternationBranchSpanMap
             return TryCreateLoopPatterns(root.Children[0], node, wholeMatchGroups);
         }
 
-        if (alternateCount != 1 || alternate is null || alternate.Children.Count == 0)
+        if (alternateCount == 1 && alternate is not null && alternate.Children.Count > 0)
         {
-            return null;
+            var single = TryCreateSingleAlternate(root.Children[0], node, alternate, wholeMatchGroups);
+            if (single is not null)
+            {
+                return single;
+            }
         }
 
+        return TryCreateNestedPatterns(root.Children[0], node, wholeMatchGroups, alternateCount);
+    }
+
+    private static Utf8AlternationBranchSpanMap? TryCreateSingleAlternate(
+        Utf8ExecutionNode body,
+        Utf8ExecutionNode node,
+        Utf8ExecutionNode alternate,
+        List<int> wholeMatchGroups)
+    {
         var branchExpansions = new string[alternate.Children.Count];
         var branchGroups = new int[alternate.Children.Count][];
         var branchStarts = new int[alternate.Children.Count][];
@@ -118,7 +132,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         // Owned-tree capture numbers diverge from BCL group numbers for nested named
         // captures; translate every recorded group (branch spans and whole-match
         // wrappers) up front so shaping projects BCL slots, declining on surprise.
-        var slots = Utf8BclSlotTranslator.TryCreateMap(root.Children[0]);
+        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
         if (slots is null)
         {
             return null;
@@ -154,6 +168,267 @@ internal sealed class Utf8AlternationBranchSpanMap
             branchGroups,
             branchStarts,
             branchLengths);
+    }
+
+    private static Utf8AlternationBranchSpanMap? TryCreateNestedPatterns(
+        Utf8ExecutionNode body,
+        Utf8ExecutionNode node,
+        List<int> wholeMatchGroups,
+        int alternateCount)
+    {
+        // Nested divergent alternations and loops inside alternation branches expand
+        // recursively into one flat BCL-ordered entry list: sequential children combine
+        // leftmost-major with each child's preference-ordered options in turn, alternate
+        // branches concatenate in source order, and (0,1) loops list present options
+        // before absent when greedy and absent before present when lazy, mirroring the
+        // probed backtracking order. Nested loops, other bounds, empty entries, and more
+        // than 64 entries decline; shapes without any alternate already ran the single
+        // and loop paths, so a null map keeps the existing BCL routes.
+        if (alternateCount < 1)
+        {
+            return null;
+        }
+
+        var entries = TryExpandNested(node, false);
+        if (entries is null || entries.Count == 0 || entries.Count > 64)
+        {
+            return null;
+        }
+
+        var branchExpansions = new string[entries.Count];
+        var branchGroups = new int[entries.Count][];
+        var branchStarts = new int[entries.Count][];
+        var branchLengths = new int[entries.Count][];
+        var anyGroups = wholeMatchGroups.Count > 0;
+        for (var entry = 0; entry < entries.Count; entry++)
+        {
+            if (entries[entry].Text.Length == 0)
+            {
+                return null;
+            }
+
+            branchExpansions[entry] = entries[entry].Text;
+            branchGroups[entry] = entries[entry].Groups.ToArray();
+            branchStarts[entry] = entries[entry].Starts.ToArray();
+            branchLengths[entry] = entries[entry].Lengths.ToArray();
+            anyGroups |= entries[entry].Groups.Count > 0;
+        }
+
+        if (!anyGroups)
+        {
+            return null;
+        }
+
+        // Same BCL slot translation as the single-alternation path: owned-tree capture
+        // numbers diverge from BCL group numbers for nested named captures.
+        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
+        if (slots is null)
+        {
+            return null;
+        }
+
+        var translatedWhole = new int[wholeMatchGroups.Count];
+        for (var i = 0; i < wholeMatchGroups.Count; i++)
+        {
+            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
+            {
+                return null;
+            }
+
+            translatedWhole[i] = wholeSlot;
+        }
+
+        for (var branch = 0; branch < branchGroups.Length; branch++)
+        {
+            for (var i = 0; i < branchGroups[branch].Length; i++)
+            {
+                if (!slots.TryGetValue(branchGroups[branch][i], out var branchSlot))
+                {
+                    return null;
+                }
+
+                branchGroups[branch][i] = branchSlot;
+            }
+        }
+
+        return new Utf8AlternationBranchSpanMap(
+            translatedWhole,
+            branchExpansions,
+            branchGroups,
+            branchStarts,
+            branchLengths);
+    }
+
+    private sealed class NestedEntry
+    {
+        internal string Text = string.Empty;
+        internal readonly List<int> Groups = new();
+        internal readonly List<int> Starts = new();
+        internal readonly List<int> Lengths = new();
+    }
+
+    private static List<NestedEntry>? TryExpandNested(Utf8ExecutionNode node, bool inLoop)
+    {
+        switch (node.Kind)
+        {
+            case Utf8ExecutionNodeKind.One:
+            {
+                return new List<NestedEntry> { new NestedEntry { Text = new string(node.Ch, 1) } };
+            }
+            case Utf8ExecutionNodeKind.Multi:
+            {
+                if (node.Text is null)
+                {
+                    return null;
+                }
+
+                return new List<NestedEntry> { new NestedEntry { Text = node.Text } };
+            }
+            case Utf8ExecutionNodeKind.Concatenate:
+            {
+                if (node.Children.Count == 0)
+                {
+                    return null;
+                }
+
+                var combined = new List<NestedEntry> { new NestedEntry() };
+                for (var child = 0; child < node.Children.Count; child++)
+                {
+                    var part = TryExpandNested(node.Children[child], inLoop);
+                    if (part is null || part.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    var next = new List<NestedEntry>(combined.Count * part.Count);
+                    for (var left = 0; left < combined.Count; left++)
+                    {
+                        for (var right = 0; right < part.Count; right++)
+                        {
+                            var entry = new NestedEntry
+                            {
+                                Text = combined[left].Text + part[right].Text,
+                            };
+                            entry.Groups.AddRange(combined[left].Groups);
+                            entry.Starts.AddRange(combined[left].Starts);
+                            entry.Lengths.AddRange(combined[left].Lengths);
+                            for (var span = 0; span < part[right].Groups.Count; span++)
+                            {
+                                if (combined[left].Groups.Contains(part[right].Groups[span]))
+                                {
+                                    return null;
+                                }
+
+                                entry.Groups.Add(part[right].Groups[span]);
+                                entry.Starts.Add(combined[left].Text.Length + part[right].Starts[span]);
+                                entry.Lengths.Add(part[right].Lengths[span]);
+                            }
+
+                            next.Add(entry);
+                            if (next.Count > 64)
+                            {
+                                return null;
+                            }
+                        }
+                    }
+
+                    combined = next;
+                }
+
+                return combined;
+            }
+            case Utf8ExecutionNodeKind.Group:
+            {
+                if (node.Children.Count != 1)
+                {
+                    return null;
+                }
+
+                return TryExpandNested(node.Children[0], inLoop);
+            }
+            case Utf8ExecutionNodeKind.Capture:
+            {
+                if (node.CaptureNumber <= 0 || node.Children.Count != 1)
+                {
+                    return null;
+                }
+
+                var expanded = TryExpandNested(node.Children[0], inLoop);
+                if (expanded is null)
+                {
+                    return null;
+                }
+
+                foreach (var entry in expanded)
+                {
+                    if (entry.Groups.Contains(node.CaptureNumber))
+                    {
+                        return null;
+                    }
+
+                    entry.Groups.Add(node.CaptureNumber);
+                    entry.Starts.Add(0);
+                    entry.Lengths.Add(entry.Text.Length);
+                }
+
+                return expanded;
+            }
+            case Utf8ExecutionNodeKind.Alternate:
+            {
+                if (node.Children.Count == 0)
+                {
+                    return null;
+                }
+
+                var branches = new List<NestedEntry>();
+                for (var branch = 0; branch < node.Children.Count; branch++)
+                {
+                    var expanded = TryExpandNested(node.Children[branch], inLoop);
+                    if (expanded is null || expanded.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    branches.AddRange(expanded);
+                    if (branches.Count > 64)
+                    {
+                        return null;
+                    }
+                }
+
+                return branches;
+            }
+            case Utf8ExecutionNodeKind.Loop:
+            case Utf8ExecutionNodeKind.LazyLoop:
+            {
+                if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
+                {
+                    return null;
+                }
+
+                var expanded = TryExpandNested(node.Children[0], true);
+                if (expanded is null || expanded.Count == 0)
+                {
+                    return null;
+                }
+
+                var options = new List<NestedEntry>(expanded.Count + 1);
+                if (node.Kind == Utf8ExecutionNodeKind.Loop)
+                {
+                    options.AddRange(expanded);
+                    options.Add(new NestedEntry());
+                }
+                else
+                {
+                    options.Add(new NestedEntry());
+                    options.AddRange(expanded);
+                }
+
+                return options;
+            }
+            default:
+                return null;
+        }
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateLoopPatterns(

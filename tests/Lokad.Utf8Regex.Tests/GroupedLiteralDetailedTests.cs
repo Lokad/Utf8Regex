@@ -8,8 +8,9 @@ namespace Lokad.Utf8Regex.Tests;
 /// shape detailed matches from the owned discovery hit without constructing the fallback
 /// engine. Single-optional shapes project present or absent spans by hit length.
 /// Divergent single alternations project the winning branch identified by ordinal
-/// text comparison. Ambiguous duplicate-text branches and multi-loop optionals
-/// keep BCL shaping.
+/// text comparison. Nested divergent alternations and loops inside alternation
+/// branches expand to one flat BCL-ordered entry list and shape the same way.
+/// Nested loops, loop-plus-alternation combos, and seven-loop shapes keep BCL shaping.
 /// </summary>
 public sealed class GroupedLiteralDetailedTests
 {
@@ -1041,10 +1042,17 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentAlternationCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentOwnedCases()
     {
-        string[] patterns = ["((a|b)|(c|d))", "((a)?b|c)"];
-        string[] texts = ["xacx", "xbcx", "xabdx", "xyz"];
+        string[] patterns =
+        [
+            "((a|b)|(c|d))",
+            "((a)?b|c)",
+            "(((a|b)|c)|d)",
+            "((a)|(a))",
+            "((a|ab)|(c))",
+        ];
+        string[] texts = ["xacx", "xbcx", "xabx", "xbx", "xcx", "xdx", "xyz", "éacé", "xabdx"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -1056,12 +1064,13 @@ public sealed class GroupedLiteralDetailedTests
     }
 
     [Theory]
-    [MemberData(nameof(NestedDivergentAlternationCases))]
-    public void NestedDivergentAlternationDetailedKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(NestedDivergentOwnedCases))]
+    public void NestedDivergentDetailedOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: nested divergent alternations and loops inside
-        // alternations decline the span maps, so detailed shaping stays BCL-backed.
-        // Parity holds; construction is pinned.
+        // R05: nested divergent alternations and loops inside alternation branches
+        // expand to one flat BCL-ordered entry list, so detailed shaping projects
+        // the winning entry identified by ordinal text comparison without the
+        // fallback engine.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1080,6 +1089,145 @@ public sealed class GroupedLiteralDetailedTests
             }
         }
 
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentFromOffsetCases()
+    {
+        (string pattern, string text, int offset)[] rows =
+        [
+            ("((a|b)|(c|d))", "xacx", 0),
+            ("((a|b)|(c|d))", "xacx", 2),
+            ("((a|b)|(c|d))", "xyz", 1),
+            ("((a)?b|c)", "xabx", 0),
+            ("((a)?b|c)", "xabx", 2),
+            ("((a)?b|c)", "xcx", 1),
+            ("(((a|b)|c)|d)", "xadx", 0),
+            ("(((a|b)|c)|d)", "xadx", 2),
+            ("((a)|(a))", "xaa", 0),
+            ("((a)|(a))", "xaa", 2),
+            ("((a|ab)|(c))", "xabx", 0),
+            ("((a|ab)|(c))", "xabx", 1),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NestedDivergentFromOffsetCases))]
+    public void NestedDivergentFromOffsetDetailedOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    {
+        // FromOffset keeps absolute-origin semantics through the shared
+        // first-of-enumeration arm and projects the winning nested entry.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text, offset);
+        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentTemplateCases()
+    {
+        string[] patterns =
+        [
+            "((a|b)|(c|d))",
+            "((a)?b|c)",
+            "(((a|b)|c)|d)",
+            "((a)|(a))",
+            "((a|ab)|(c))",
+        ];
+        string[] templates = ["x", "<$1>", "$&", "$+"];
+        string[] texts = ["xacx", "xabx", "xyz", "éabé"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NestedDivergentTemplateCases))]
+    public void NestedDivergentTemplateOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // Group-reference templates expand through the same nested entry spans
+        // via the shared owned template worker.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = regex.ReplaceToString(input, template);
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentEvaluatorCases()
+    {
+        string[] patterns =
+        [
+            "((a|b)|(c|d))",
+            "((a)?b|c)",
+            "(((a|b)|c)|d)",
+        ];
+        string[] texts = ["xacx", "xabx", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NestedDivergentEvaluatorCases))]
+    public void NestedDivergentEvaluatorMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        // Evaluator callbacks observe the same nested entry spans.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(1).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 }
