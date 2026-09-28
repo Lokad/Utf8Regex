@@ -377,6 +377,52 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
+        // Folded anchored prefixes enumerate the same single anchored hit with per-byte
+        // invariant folding; nonzero starts miss definitively. Kelvin and Turkic
+        // divergences fall through to the fenced BCL paths below.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedAdapterEnumerateLiteral)
+        {
+            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+                if (start.Value != 0)
+                {
+                    return new Utf8ValueMatchEnumerator(
+                        new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
+                        .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                }
+
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input.Bytes, foldedAdapterEnumerateLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+            }
+        }
+
+        // Folded anchored suffixes enumerate the same single tail hit with per-byte
+        // invariant folding under the same fence contract; the shared twin projects
+        // coordinates.
+        if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+                if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var foldedSuffixAdapterEnumerate) &&
+                    foldedSuffixAdapterEnumerate.Success &&
+                    input.Project(start).Value <= foldedSuffixAdapterEnumerate.IndexInUtf16)
+                {
+                    return new Utf8ValueMatchEnumerator(
+                        new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                        .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                }
+
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
+                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+            }
+        }
+
         // Zero-start adapter enumeration rides the owned slice; nonzero
         // starts keep the origin-semantics fallback below (suffix slicing
         // loses absolute-origin anchors and left context).

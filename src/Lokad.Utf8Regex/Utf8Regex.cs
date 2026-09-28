@@ -2197,6 +2197,35 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
+        // Folded anchored prefixes enumerate the same single anchored hit with
+        // per-byte invariant folding. Kelvin and Turkic divergences fall through to
+        // the BCL-backed routes below; all other inputs stay direct.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedPrefixLiteral)
+        {
+            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input, foldedPrefixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+        }
+
+        // Folded anchored suffixes enumerate the same single tail hit with per-byte
+        // invariant folding, under the same fence contract as prefixes.
+        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedSuffixLiteral)
+        {
+            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+        }
+
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);

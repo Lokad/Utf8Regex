@@ -428,6 +428,9 @@ internal ref struct Utf8OperationMatchCursor
         {
             Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
             Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
+            Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix => EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix,
+            Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix,
+            Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd,
             _ => EnumeratorMode.Exhausted,
         };
     }
@@ -455,6 +458,33 @@ internal ref struct Utf8OperationMatchCursor
             }
 
             _current = new Utf8ValueMatch(true, true, 0, literal.Length, 0, literal.Length);
+            return true;
+        }
+
+        // Folded anchored prefixes match the same single anchored hit with per-byte
+        // invariant folding; Kelvin and Turkic divergences stay fenced upstream of
+        // every cursor construction site.
+        if (_mode == EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix)
+        {
+            if (_consumed != 0)
+            {
+                return false;
+            }
+
+            _consumed = 1;
+            _budget.Step();
+            var foldedPrefixLiteral = _literal;
+            if (foldedPrefixLiteral is null || foldedPrefixLiteral.Length == 0 || foldedPrefixLiteral.Length > _input.Length)
+            {
+                return false;
+            }
+
+            if (!Utf8AsciiAnchoredPrefixFamilyExecutor.FoldedSequenceEquals(_input[..foldedPrefixLiteral.Length], foldedPrefixLiteral))
+            {
+                return false;
+            }
+
+            _current = new Utf8ValueMatch(true, true, 0, foldedPrefixLiteral.Length, 0, foldedPrefixLiteral.Length);
             return true;
         }
 
@@ -498,6 +528,48 @@ internal ref struct Utf8OperationMatchCursor
             }
 
             _current = new Utf8ValueMatch(true, true, suffixStartUtf16, suffixLiteral.Length, suffixStart, suffixLiteral.Length);
+            return true;
+        }
+
+        // Folded anchored suffixes mirror the exact block with per-byte invariant
+        // folding; the mode carries lax versus strict end handling, and only the
+        // start index needs UTF-16 mapping on non-ASCII input.
+        if (_mode is EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix or EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
+        {
+            if (_consumed != 0)
+            {
+                return false;
+            }
+
+            _consumed = 1;
+            _budget.Step();
+            var foldedSuffixLiteral = _literal;
+            if (foldedSuffixLiteral is null || foldedSuffixLiteral.Length == 0 || foldedSuffixLiteral.Length > _input.Length)
+            {
+                return false;
+            }
+
+            var foldedSuffixEnd = _input.Length;
+            if (_mode == EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix &&
+                foldedSuffixEnd > foldedSuffixLiteral.Length &&
+                _input[foldedSuffixEnd - 1] == (byte)'\n')
+            {
+                foldedSuffixEnd--;
+            }
+
+            var foldedSuffixStart = foldedSuffixEnd - foldedSuffixLiteral.Length;
+            if (foldedSuffixStart < 0 || !Utf8AsciiAnchoredPrefixFamilyExecutor.FoldedSequenceEquals(_input.Slice(foldedSuffixStart, foldedSuffixLiteral.Length), foldedSuffixLiteral))
+            {
+                return false;
+            }
+
+            var foldedSuffixStartUtf16 = foldedSuffixStart;
+            if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            {
+                foldedSuffixStartUtf16 = Utf8Validation.Validate(_input[..foldedSuffixStart]).Utf16Length;
+            }
+
+            _current = new Utf8ValueMatch(true, true, foldedSuffixStartUtf16, foldedSuffixLiteral.Length, foldedSuffixStart, foldedSuffixLiteral.Length);
             return true;
         }
 
@@ -1187,5 +1259,8 @@ internal ref struct Utf8OperationMatchCursor
         AnchoredAsciiLiteralPrefix = 15,
         AnchoredAsciiLiteralSuffix = 16,
         AnchoredAsciiLiteralSuffixStrictEnd = 17,
+        AnchoredFoldedAsciiLiteralPrefix = 18,
+        AnchoredFoldedAsciiLiteralSuffix = 19,
+        AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20,
     }
 }

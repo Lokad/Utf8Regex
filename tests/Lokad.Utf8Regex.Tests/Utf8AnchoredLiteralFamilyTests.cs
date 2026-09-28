@@ -254,6 +254,28 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var enumRegex = new Utf8Regex(pattern, options);
+        var expectedEnum = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedEnumMatch in oracle.Matches(text))
+        {
+            expectedEnum.Add((expectedEnumMatch.Index, expectedEnumMatch.Length));
+        }
+
+        var actualEnum = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var actualEnumMatch in enumRegex.EnumerateMatches(input))
+        {
+            actualEnum.Add((actualEnumMatch.IndexInUtf16, actualEnumMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expectedEnum.Count, actualEnum.Count);
+        for (var i = 0; i < expectedEnum.Count; i++)
+        {
+            Assert.Equal(expectedEnum[i].Index, actualEnum[i].Index);
+            Assert.Equal(expectedEnum[i].Length, actualEnum[i].Length);
+        }
+
+        Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -278,6 +300,27 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        var enumRegex = new Utf8Regex(pattern, options);
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedSuffixCases()
@@ -323,11 +366,10 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
     [Theory]
     [MemberData(nameof(FoldedSuffixCases))]
-    public void FoldedSuffixEnumerationKeepsBclShaping(string pattern, RegexOptions options, string text)
+    public void FoldedSuffixEnumerationOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: folded suffix enumeration has no anchor-enforcing folded
-        // cursor, so it stays BCL-backed on both lanes. Parity holds; construction
-        // is pinned.
+        // Folded suffixes enumerate the single tail hit through the folded anchor
+        // cursor with per-byte invariant folding and owned UTF-16 start mapping.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -351,7 +393,8 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -376,5 +419,26 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        var enumRegex = new Utf8Regex(pattern, options);
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 }
