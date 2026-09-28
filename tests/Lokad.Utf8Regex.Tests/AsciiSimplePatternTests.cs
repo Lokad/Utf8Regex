@@ -848,7 +848,7 @@ public sealed class AsciiSimplePatternTests
 
     public static System.Collections.Generic.IEnumerable<object?[]> NonAsciiSplitCases()
     {
-        string[] patterns = ["ab[0-9]d", "[0-9]{3}"];
+        string[] patterns = ["ab[0-9]d", "[0-9]{3}", "[0-9]{2,4}"];
         string[] texts = ["xxab1dxx123", "ééab1dé123é", "123ééab1d", "nomatchhere", ""];
         foreach (var pattern in patterns)
         {
@@ -974,7 +974,7 @@ public sealed class AsciiSimplePatternTests
 
     public static System.Collections.Generic.IEnumerable<object?[]> NonAsciiReplaceCases()
     {
-        string[] patterns = ["ab[0-9]d", "[0-9]{3}"];
+        string[] patterns = ["ab[0-9]d", "[0-9]{3}", "[0-9]{2,4}"];
         string[] templates = ["x", "<$1>", "$&", "$`", "$\u0027", "$_", "$+", "$$"];
         string[] texts = ["xxab1dxx123", "ééab1dé123é", "123ééab1d", "nomatchhere"];
         foreach (var pattern in patterns)
@@ -1013,7 +1013,7 @@ public sealed class AsciiSimplePatternTests
 
     public static System.Collections.Generic.IEnumerable<object?[]> NonAsciiEvaluatorCases()
     {
-        string[] patterns = ["ab[0-9]d", "[0-9]{3}"];
+        string[] patterns = ["ab[0-9]d", "[0-9]{3}", "[0-9]{2,4}"];
         string[] texts = ["xxab1dxx123", "ééab1dé123é", "123ééab1d", "nomatchhere", ""];
         foreach (var pattern in patterns)
         {
