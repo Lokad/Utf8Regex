@@ -158,5 +158,117 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> ScopedFoldedAnchoredCases()
+    {
+        string[] patterns = ["(?i:^ab)", "(?i:ab$)"];
+        string[] texts = ["ABxx", "xxAB", "abxx", "xxab"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
 
+    [Theory]
+    [MemberData(nameof(ScopedFoldedAnchoredCases))]
+    public void ScopedFoldedAnchoredDiscoveryOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // Scoped folds route through the owned folded-literal machinery (never the
+        // absolute direct families), so discovery needs no fallback engine.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var enumRegex = new Utf8Regex(pattern, options);
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> TopLevelFoldedAnchoredCases()
+    {
+        string[] patterns = ["^ab", "ab$"];
+        string[] texts = ["ABxx", "xxAB", "abxx", "xxab"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TopLevelFoldedAnchoredCases))]
+    public void TopLevelFoldedAnchoredDiscoveryKeepsBclShaping(string pattern, string text)
+    {
+        // Declared R05 debt: top-level IgnoreCase declines the absolute direct
+        // families at extraction, so discovery stays BCL-backed on both lanes.
+        // Parity holds; construction is pinned.
+        foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var enumRegex = new Utf8Regex(pattern, options);
+            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (Match expectedMatch in oracle.Matches(text))
+            {
+                expected.Add((expectedMatch.Index, expectedMatch.Length));
+            }
+
+            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+            {
+                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            }
+
+            Assert.Equal(expected.Count, actual.Count);
+            for (var i = 0; i < expected.Count; i++)
+            {
+                Assert.Equal(expected[i].Index, actual[i].Index);
+                Assert.Equal(expected[i].Length, actual[i].Length);
+            }
+
+            Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
 }
