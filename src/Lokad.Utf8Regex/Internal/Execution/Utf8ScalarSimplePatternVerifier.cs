@@ -127,13 +127,7 @@ internal static class Utf8ScalarSimplePatternVerifier
                     case AsciiSimplePatternTokenKind.Dot:
                         break;
                     case AsciiSimplePatternTokenKind.CharClass:
-                        if (token.CharClass.IsEmpty ||
-                            (token.RequiresAsciiInput &&
-                             token.ScalarClassKind != Utf8SimplePatternScalarClassKind.AsciiClosedNegation &&
-                             token.ScalarClassKind != Utf8SimplePatternScalarClassKind.UnicodeWhitespace &&
-                             !(token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
-                               (predicateKind == AsciiCharClassPredicateKind.Digit ||
-                                predicateKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore))))
+                        if (token.CharClass.IsEmpty || !IsScalarVerifiableClass(token))
                         {
                             return false;
                         }
@@ -151,6 +145,31 @@ internal static class Utf8ScalarSimplePatternVerifier
         }
 
         return input.IndexOfAnyInRange((byte)0xF0, byte.MaxValue) < 0;
+    }
+
+    // A class verifies on scalars exactly when the walk below can evaluate it:
+    // plain ASCII classes, ASCII-closed negations, whitespace, decimal digits,
+    // word chars, and negated known categories (each complemented through its
+    // table). Anything else keeps BCL routing.
+    private static bool IsScalarVerifiableClass(AsciiSimplePatternToken token)
+    {
+        if (!token.RequiresAsciiInput)
+        {
+            return true;
+        }
+
+        if (token.ScalarClassKind is Utf8SimplePatternScalarClassKind.AsciiClosedNegation or
+            Utf8SimplePatternScalarClassKind.UnicodeWhitespace or
+            Utf8SimplePatternScalarClassKind.NegatedDigit or
+            Utf8SimplePatternScalarClassKind.NegatedWord or
+            Utf8SimplePatternScalarClassKind.NegatedWhitespace)
+        {
+            return true;
+        }
+
+        return token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
+            (predicateKind == AsciiCharClassPredicateKind.Digit ||
+             predicateKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore);
     }
 
     public static int FindNextScalar(
@@ -268,6 +287,18 @@ internal static class Utf8ScalarSimplePatternVerifier
                 else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace)
                 {
                     matches = Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
+                }
+                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedDigit)
+                {
+                    matches = !Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
+                }
+                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedWord)
+                {
+                    matches = !Utf8WordRanges.IsWordChar(scalar);
+                }
+                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedWhitespace)
+                {
+                    matches = !Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
                 }
                 else if (token.RequiresAsciiInput &&
                     token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&

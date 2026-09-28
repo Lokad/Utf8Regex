@@ -89,16 +89,68 @@ internal static class DotNetAsciiCharClassProjector
     }
 
     // R05: scalar verification accepts negations whose positive definition is
-    // ASCII-only (matching every non-ASCII scalar) but declines negated Unicode
-    // categories (whose complement excludes non-ASCII members). Canonical
-    // descriptors carry the category payload, so a well-formed negated set without
-    // a known-category payload is ASCII-closed; anything else keeps BCL routing.
+    // ASCII-only (matching every non-ASCII scalar). Canonical descriptors carry
+    // an empty category payload exactly then, so anything payload-carrying keeps
+    // BCL routing unless the negated-category mapping below names its table.
     internal static bool IsAsciiClosedNegation(string? runtimeSet)
     {
         return runtimeSet is not null &&
             Utf8OwnedCharClass.IsNegated(runtimeSet) &&
             TryGetCategoryPayload(runtimeSet, out var categoryPayload) &&
-            !IsKnownProjectedCategory(categoryPayload);
+            categoryPayload.Length == 0;
+    }
+
+    // R05: negated shorthands complement exactly through their table on non-ASCII
+    // scalars, so the token records which table. Bare complements carry the
+    // negated canonical payload without the set flag; plain negations carry the
+    // positive payload under it. ASCII exclusions mixed into the set are
+    // irrelevant beyond ASCII. Doubly-negated and mixed payloads keep BCL routing.
+    internal static Utf8SimplePatternScalarClassKind NegatedCategoryScalarKind(string? runtimeSet)
+    {
+        if (runtimeSet is null ||
+            !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
+        {
+            return Utf8SimplePatternScalarClassKind.None;
+        }
+
+        if (!Utf8OwnedCharClass.IsNegated(runtimeSet))
+        {
+            if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotDigitClass))
+            {
+                return Utf8SimplePatternScalarClassKind.NegatedDigit;
+            }
+
+            if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotWordClass))
+            {
+                return Utf8SimplePatternScalarClassKind.NegatedWord;
+            }
+
+            if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotSpaceClass))
+            {
+                return Utf8SimplePatternScalarClassKind.NegatedWhitespace;
+            }
+
+            return Utf8SimplePatternScalarClassKind.None;
+        }
+
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.DigitClass))
+        {
+            return Utf8SimplePatternScalarClassKind.NegatedDigit;
+        }
+
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.WordClass))
+        {
+            return Utf8SimplePatternScalarClassKind.NegatedWord;
+        }
+
+        // The whitespace shorthand code is probe-observed verbatim (see the parser
+        // constants); the SpaceClass descriptor carries it in set ranges instead.
+        if (categoryPayload == "d")
+        {
+            return Utf8SimplePatternScalarClassKind.NegatedWhitespace;
+        }
+
+        return Utf8SimplePatternScalarClassKind.None;
     }
 
     public static bool RequiresAsciiInput(string? runtimeSet)

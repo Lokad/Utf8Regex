@@ -1119,7 +1119,6 @@ public sealed class AsciiSimplePatternTests
         [
             ("(?i)a.c", "éABCé"),
             ("(?s:a.c)", "éa\\ncé"),
-            ("[^\\d]", "éabé"),
             ("a.c", "a\U0001F600c"),
         ];
         foreach (var row in rows)
@@ -1705,8 +1704,6 @@ public sealed class AsciiSimplePatternTests
     {
         (string pattern, string text)[] rows =
         [
-            ("[^\\d]", "éabé"),
-            ("[^\\d]", "١٢٣"),
             ("\\d{2,4}", "12\U0001F60034"),
         ];
         foreach (var row in rows)
@@ -1991,15 +1988,28 @@ public sealed class AsciiSimplePatternTests
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordSpaceDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
         [
+            ("[^\\d]", "éabé"),
+            ("[^\\d]", "١٢٣"),
+            ("[^\\d]", "xyz"),
+            ("[^\\s]", "éabé"),
+            ("[^\\s]", "  "),
+            ("[^\\s]", "xyz"),
+            ("[^\\w]", "é.é"),
+            ("[^\\w]", "éab"),
+            ("[^\\w]", "xyz"),
+            ("\\D", "éabé"),
+            ("\\D", "١٢٣"),
+            ("\\D", "xyz"),
             ("\\S", "é a"),
             ("\\S", "  "),
+            ("\\S", "xyz"),
             ("\\W", "é.é"),
             ("\\W", "éab"),
+            ("\\W", "xyz"),
         ];
         foreach (var row in rows)
         {
@@ -2009,11 +2019,253 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(WordSpaceDeclineCases))]
-    public void WordSpaceDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
+    public void NegatedShorthandDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: negated shorthands decline scalar verification, so
-        // discovery stays BCL-backed. Parity holds; construction is pinned.
+        // R05: negated shorthands complement exactly through their table on
+        // astral-free non-ASCII input, so IsMatch, Count, light Match, and
+        // groupless Detailed never construct the fallback engine.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups[0].Index, actualDetailed.GetGroup(0).IndexInUtf16);
+            Assert.Equal(expectedDetailed.Groups[0].Length, actualDetailed.GetGroup(0).LengthInUtf16);
+        }
+
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
+    public void NegatedShorthandEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: the scalar cursor projects every complemented hit, driving
+        // enumeration and splits owned with exact coordinates.
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in regex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var splitRegex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expectedSplits.Add((text[start..end], start, end - start));
+        }
+
+        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in splitRegex.EnumerateSplits(input, count))
+        {
+            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expectedSplits, actualSplits);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandTemplateCases()
+    {
+        string[] patterns = ["[^\\d]", "\\D"];
+        string[] templates = ["x", "$&"];
+        (string pattern, string text)[] texts =
+        [
+            ("[^\\d]", "éabé"),
+            ("[^\\d]", "١٢٣"),
+            ("[^\\d]", "xyz"),
+            ("\\D", "éabé"),
+            ("\\D", "١٢٣"),
+            ("\\D", "xyz"),
+        ];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var row in texts)
+                {
+                    if (row.pattern != pattern)
+                    {
+                        continue;
+                    }
+
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, row.text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, row.text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NegatedShorthandTemplateCases))]
+    public void NegatedShorthandTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: groupless complemented templates expand owned on the string core.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = regex.ReplaceToString(input, template);
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(NegatedShorthandTemplateCases))]
+    public void NegatedShorthandTemplateByteCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // Control: the byte core rides the same groupless worker.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(NegatedShorthandTemplateCases))]
+    public void NegatedShorthandTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: the destination core serves the same complemented templates owned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var destination = new byte[4096];
+        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandEvaluatorCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("[^\\d]", "éabé"),
+            ("[^\\d]", "١٢٣"),
+            ("\\D", "éabé"),
+            ("\\D", "١٢٣"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NegatedShorthandEvaluatorCases))]
+    public void NegatedShorthandEvaluatorOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: groupless evaluator callbacks observe the complemented enumeration
+        // on both cores without fallback construction.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(0).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(byteRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("[^\\D]", "éabé"),
+            ("[^\\W]", "é.é"),
+            ("[^\\S]", "é a"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NegatedShorthandDeclineCases))]
+    public void NegatedShorthandDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: doubly-negated shorthands read as positive categories
+        // that the scalar routes do not serve, so discovery stays BCL-backed.
+        // Parity holds; construction is pinned.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 

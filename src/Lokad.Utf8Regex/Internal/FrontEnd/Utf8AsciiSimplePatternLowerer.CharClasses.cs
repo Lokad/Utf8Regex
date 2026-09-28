@@ -29,7 +29,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     ? Utf8SimplePatternScalarClassKind.UnicodeWhitespace
                     : DotNetAsciiCharClassProjector.IsAsciiClosedNegation(set)
                         ? Utf8SimplePatternScalarClassKind.AsciiClosedNegation
-                        : Utf8SimplePatternScalarClassKind.None);
+                        : DotNetAsciiCharClassProjector.NegatedCategoryScalarKind(set));
             return true;
         }
 
@@ -39,7 +39,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        token = new AsciiSimplePatternToken(charClass, requiresAsciiInput: true);
+        token = new AsciiSimplePatternToken(
+            charClass,
+            requiresAsciiInput: true,
+            DotNetAsciiCharClassProjector.NegatedCategoryScalarKind(set));
         return true;
     }
 
