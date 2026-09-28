@@ -780,4 +780,82 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredDiscoveryOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(?m:^ab$)", "ab\ncd"),
+            ("(?m:^ab$)", "ab\nab"),
+            ("(?m:^ab$)", "xxab"),
+            ("(?m:^ab$)", "ab"),
+            ("(?m:^ab$)", ""),
+            ("(?m:^ab$)", "ab\nab\nab"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(LineAnchoredDiscoveryOwnedCases))]
+    public void LineAnchoredDiscoveryOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredDiscoverySingleSidedDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(?m:^ab)", "ab\ncd"),
+            ("(?m:^ab)", "xxab"),
+            ("(?m:ab$)", "ab\ncd"),
+            ("(?m:ab$)", "xxab"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(LineAnchoredDiscoverySingleSidedDeclineCases))]
+    public void LineAnchoredDiscoverySingleSidedKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
