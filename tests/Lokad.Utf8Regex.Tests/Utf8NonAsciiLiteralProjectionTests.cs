@@ -247,6 +247,30 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
             Assert.True(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            const int count = int.MaxValue;
+            var replaceRegex = new Utf8Regex(pattern, options);
+            var expectedReplaced = oracle.Replace(text, "x");
+            var actualReplaced = replaceRegex.ReplaceToString(input, "x");
+            Assert.Equal(expectedReplaced, actualReplaced);
+            Assert.True(replaceRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var splitRegex = new Utf8Regex(pattern, options);
+            var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+            foreach (var range in oracle.EnumerateSplits(text, count))
+            {
+                var start = range.Start.Value;
+                var end = range.End.Value;
+                expectedSplits.Add((text[start..end], start, end - start));
+            }
+
+            var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+            foreach (var split in splitRegex.EnumerateSplits(input, count))
+            {
+                actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            }
+
+            Assert.Equal(expectedSplits, actualSplits);
+            Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 
