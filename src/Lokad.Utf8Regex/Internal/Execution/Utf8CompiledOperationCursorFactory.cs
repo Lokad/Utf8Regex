@@ -24,6 +24,21 @@ internal static class Utf8CompiledOperationCursorFactory
             CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget));
     }
 
+    // R05: offset enumeration floors the owned cursor scan at the start unit; arm
+    // selection mirrors CreateMatchCursor.
+    public static Utf8OperationMatchCursor CreateMatchCursorFromOffset(
+        Utf8PreparedRegex regexPlan,
+        Utf8VerifierRuntime? verifierRuntime,
+        ReadOnlySpan<byte> input,
+        Utf8ValidationResult validation,
+        Utf8ExecutionDeadline budget,
+        int startByteOffset,
+        int startUtf16Offset)
+    {
+        return CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget)
+            .WithStartFloor(startByteOffset, startUtf16Offset);
+    }
+
     public static Utf8OperationMatchCursor CreateMatchCursor(
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime? verifierRuntime,

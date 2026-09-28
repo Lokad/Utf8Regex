@@ -870,6 +870,17 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.EmittedKernelPattern;
     }
 
+    // R05: offset enumeration starts the scan at the floor unit over the full input so
+    // line anchors keep their true left context; at floor zero this is the default state.
+    public Utf8OperationMatchCursor WithStartFloor(int startByteOffset, int startUtf16Offset)
+    {
+        _remaining = _input[startByteOffset..];
+        _consumed = startByteOffset;
+        _consumedUtf16 = startUtf16Offset;
+        _deterministicScanState = new Utf8AsciiDeterministicScanState(startByteOffset, startByteOffset);
+        return this;
+    }
+
     public Utf8OperationMatchCursor WithBaseOffsets(int byteOffset, int utf16Offset)
     {
         _baseByteOffset = byteOffset;
@@ -1308,19 +1319,23 @@ internal ref struct Utf8OperationMatchCursor
     {
         ref readonly var searchPlan = ref _plans.SearchPlan;
         ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
-        var relative = Utf8ExecutionInterpreter.FindNextSimplePattern(
-            _remaining,
+        // R05: offset enumeration floors the consumed start while anchors still see the full
+        // input; the absolute hit is rebased to the remaining span below (identical at floor zero).
+        var absolute = Utf8ExecutionInterpreter.FindNextSimplePattern(
+            _input,
             _plans.ExecutionProgram,
             in searchPlan,
             in simplePatternPlan,
-            0,
+            _consumed,
             captures: null,
             _budget,
             out var matchLength);
-        if (relative < 0)
+        if (absolute < 0)
         {
             return false;
         }
+
+        var relative = absolute - _consumed;
 
         if (!_asciiInput)
         {

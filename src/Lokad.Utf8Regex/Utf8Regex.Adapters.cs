@@ -544,6 +544,23 @@ public sealed partial class Utf8Regex
             }
         }
 
+        // R05: line-anchored ASCII enumeration from a nonzero start scans the full input
+        // from the start byte through the floored owned cursor; anchors keep their true left
+        // context, unlike suffix slicing which diverts below.
+        if (start.Value != 0 && CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
+        {
+            var floorBudget = CreateExecutionBudget();
+            var floorCursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
+                _preparedRegex,
+                _verifierRuntime,
+                input.Bytes,
+                input.Validation,
+                floorBudget,
+                start.Value,
+                input.Project(start).Value);
+            return new Utf8ValueMatchEnumerator(floorCursor).WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+        }
+
         // Zero-start adapter enumeration rides the owned slice; nonzero
         // starts keep the origin-semantics fallback below (suffix slicing
         // loses absolute-origin anchors and left context).
