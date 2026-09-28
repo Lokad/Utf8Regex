@@ -263,6 +263,15 @@ public sealed partial class Utf8Regex
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
+            // R05: scalar-verifiable simple patterns enumerate owned through the
+            // scalar cursor; anything else keeps the BCL enumerator below.
+            if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+            {
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+
             return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.Utf16ProjectionMap);
         }
 

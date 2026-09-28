@@ -23,12 +23,12 @@ internal static class Utf8ScalarSimplePatternVerifier
         out bool isMatch)
     {
         isMatch = false;
-        if (!Qualifies(kind, plan, input))
+        if (!CanServeScalar(kind, plan, input))
         {
             return false;
         }
 
-        isMatch = FindNext(input, plan, budget, 0, out _) >= 0;
+        isMatch = FindNextScalar(input, plan, budget, 0, out _) >= 0;
         return true;
     }
 
@@ -40,7 +40,7 @@ internal static class Utf8ScalarSimplePatternVerifier
         out int count)
     {
         count = 0;
-        if (!Qualifies(kind, plan, input))
+        if (!CanServeScalar(kind, plan, input))
         {
             return false;
         }
@@ -48,7 +48,7 @@ internal static class Utf8ScalarSimplePatternVerifier
         var startByte = 0;
         while (startByte <= input.Length)
         {
-            var matchByte = FindNext(input, plan, budget, startByte, out var matchedByteLength);
+            var matchByte = FindNextScalar(input, plan, budget, startByte, out var matchedByteLength);
             if (matchByte < 0)
             {
                 return true;
@@ -72,7 +72,11 @@ internal static class Utf8ScalarSimplePatternVerifier
         return true;
     }
 
-    private static bool Qualifies(NativeExecutionKind kind, in AsciiSimplePatternPlan plan, ReadOnlySpan<byte> input)
+    // Construction sites qualify once up front; stepping trusts the verdict.
+    // Empty branches match empty, which needs end-of-input advancement rules the
+    // scalar stepping does not model, so they keep BCL routing like everything
+    // else declined here.
+    internal static bool CanServeScalar(NativeExecutionKind kind, in AsciiSimplePatternPlan plan, ReadOnlySpan<byte> input)
     {
         if (kind != NativeExecutionKind.AsciiSimplePattern ||
             plan.IsUtf8ByteSafe ||
@@ -87,6 +91,11 @@ internal static class Utf8ScalarSimplePatternVerifier
 
         foreach (var branch in plan.Branches)
         {
+            if (branch.Length == 0)
+            {
+                return false;
+            }
+
             foreach (var token in branch)
             {
                 switch (token.Kind)
@@ -116,7 +125,7 @@ internal static class Utf8ScalarSimplePatternVerifier
         return input.IndexOfAnyInRange((byte)0xF0, byte.MaxValue) < 0;
     }
 
-    private static int FindNext(
+    public static int FindNextScalar(
         ReadOnlySpan<byte> input,
         in AsciiSimplePatternPlan plan,
         Utf8ExecutionDeadline budget,
@@ -254,14 +263,14 @@ internal static class Utf8ScalarSimplePatternVerifier
     {
         startByte = -1;
         matchedByteLength = 0;
-        if (!Qualifies(kind, plan, input))
+        if (!CanServeScalar(kind, plan, input))
         {
             return false;
         }
 
         // A qualified scan is definitive either way: hits project owned while
         // misses never touch BCL verification.
-        startByte = FindNext(input, plan, budget, 0, out matchedByteLength);
+        startByte = FindNextScalar(input, plan, budget, 0, out matchedByteLength);
         return true;
     }
 

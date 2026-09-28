@@ -2488,6 +2488,22 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
+        // R05: scalar-verifiable simple patterns split owned through the scalar
+        // cursor; anything else keeps the BCL split below.
+        if (count > 1 && Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var analysis = Utf8InputAnalyzer.Analyze(input);
+            var decoded = analysis.GetDecodedString();
+            return new Utf8ValueSplitEnumerator(
+                input,
+                decoded,
+                new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget),
+                analysis.BoundaryMap,
+                count,
+                decoded.Length)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
+
         var fallbackSubject = Utf8InputAnalyzer.Analyze(input);
         return new Utf8ValueSplitEnumerator(input, fallbackSubject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, fallbackSubject.BoundaryMap)
             .WithTimeoutMapping(Pattern, MatchTimeout);

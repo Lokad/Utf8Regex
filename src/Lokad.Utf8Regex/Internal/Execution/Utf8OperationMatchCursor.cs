@@ -412,6 +412,47 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
 
+    public Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input,
+        Utf8PreparedRegex regexPlan,
+        Utf8BoundaryMap boundaryMap,
+        Utf8ExecutionDeadline budget)
+    {
+        _plans = regexPlan.OperationMatchCursorPlans;
+        _smallAsciiLiteralFamilySearch = default;
+        _literalSearch = null;
+        _alternateLiteralUtf16Lengths = null;
+        _hasBoundaryRequirements = false;
+        _hasTrailingLiteralRequirement = false;
+        _asciiInput = false;
+        _literal = null;
+        _input = input;
+        _boundaryMap = boundaryMap;
+        _budget = budget;
+        _literalUtf16Length = 0;
+        _totalUtf16Length = input.Length;
+        _projectionPlan = default;
+        _program = default;
+        _fallbackEnumerator = default;
+        _remaining = input;
+        _consumed = 0;
+        _consumedUtf16 = 0;
+        _multiLiteralScanState = default;
+        _deterministicScanState = default;
+        _current = Utf8ValueMatch.NoMatch;
+        _lastLiteralFamilyBranchId = 0;
+        _asciiFixedTokenCurrentIndex = -1;
+        _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
+        _sliceProgram = null;
+        _sliceInvocation = default;
+        _sliceUnit = 0;
+        _sliceOriginUnit = 0;
+        _emittedKernelMatcher = null;
+        _mode = EnumeratorMode.AsciiSimplePatternScalar;
+    }
+
     // Anchored ASCII literal suffix enumeration: at most one match at the input
     // end (or right before a single trailing line feed for the lax kind). The
     // kind-based constructor below is public (not a counted private helper) and
@@ -581,6 +622,7 @@ internal ref struct Utf8OperationMatchCursor
             EnumeratorMode.AsciiLiteralIgnoreCase => MoveNextIgnoreCaseLiteral(),
             EnumeratorMode.AsciiLiteralIgnoreCaseLiterals => MoveNextAsciiIgnoreCaseLiterals(),
             EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
+            EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
             EnumeratorMode.AsciiFixedTokenPattern => MoveNextAsciiFixedTokenPattern(),
             EnumeratorMode.AsciiDeterministicPattern => MoveNextAsciiDeterministicPattern(),
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
@@ -1113,6 +1155,42 @@ internal ref struct Utf8OperationMatchCursor
         return true;
     }
 
+    // Scalar simple-pattern enumeration: every scalar start steps through the shared
+    // scalar verifier and projects through the boundary map. Construction sites qualify
+    // up front (astral-free non-ASCII with scalar-verifiable tokens), so matches here
+    // are always scalar-aligned; a projection miss throws instead of hiding later
+    // matches. The move-next logic stays inline here to hold the single-caller debt
+    // ceiling.
+    private bool MoveNextScalarSimplePattern()
+    {
+        ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
+        if (_boundaryMap is null)
+        {
+            return false;
+        }
+
+        var map = _boundaryMap.Value;
+        _budget.Step();
+        var relative = Utf8ScalarSimplePatternVerifier.FindNextScalar(_remaining, in simplePatternPlan, _budget, 0, out var matchByteLength);
+        if (relative < 0)
+        {
+            return false;
+        }
+
+        var matchByte = _consumed + relative;
+        if (!map.TryGetUtf16OffsetForByteOffset(matchByte, out var startUnit) ||
+            !map.TryGetUtf16OffsetForByteOffset(matchByte + matchByteLength, out var endUnit))
+        {
+            throw new InvalidOperationException("The scalar match is not aligned to UTF-8 scalar boundaries.");
+        }
+
+        _current = new Utf8ValueMatch(true, true, startUnit, endUnit - startUnit, matchByte, matchByteLength);
+        _consumed = matchByte + matchByteLength;
+        _consumedUtf16 = endUnit;
+        _remaining = _input[_consumed..];
+        return true;
+    }
+
     private bool MoveNextAsciiFixedTokenPattern()
     {
         ref readonly var structuralLinearProgram = ref _plans.StructuralLinearProgram;
@@ -1262,5 +1340,6 @@ internal ref struct Utf8OperationMatchCursor
         AnchoredFoldedAsciiLiteralPrefix = 18,
         AnchoredFoldedAsciiLiteralSuffix = 19,
         AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20,
+        AsciiSimplePatternScalar = 21,
     }
 }

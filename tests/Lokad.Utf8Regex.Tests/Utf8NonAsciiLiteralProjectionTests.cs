@@ -210,11 +210,12 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     [InlineData("a.c", "x\U0001F600abc", false)]
     public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery)
     {
-        // IsMatch, Count, and groupless detailed matches verify scalar-aware on
-        // astral-free non-ASCII input, so only astral inputs keep BCL discovery
-        // and anchored shaping. Enumeration, replacement, and splits stay
-        // main-lazy BCL-backed (declared R05 debt). Parity holds; construction
-        // is pinned per op.
+        // IsMatch, Count, enumeration, groupless detailed matches, groupless
+        // literal replacement, and splits verify scalar-aware on astral-free
+        // non-ASCII input, so only astral inputs keep BCL routing anywhere.
+        // Group-reference templates and evaluators over grouped shapes stay
+        // BCL-backed (declared R05 debt). Parity holds; construction is pinned
+        // per op.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
@@ -241,7 +242,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expected.Count, actual.Count);
-            Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedDiscovery, enumRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedFirst = oracle.Match(text);
@@ -254,7 +255,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var expectedReplaced = oracle.Replace(text, "x");
             var actualReplaced = replaceRegex.ReplaceToString(input, "x");
             Assert.Equal(expectedReplaced, actualReplaced);
-            Assert.True(replaceRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedDiscovery, replaceRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var splitRegex = new Utf8Regex(pattern, options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
@@ -272,7 +273,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expectedSplits, actualSplits);
-            Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedDiscovery, splitRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 

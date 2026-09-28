@@ -786,13 +786,11 @@ public sealed class GroupedLiteralDetailedTests
 
     [Theory]
     [InlineData("a.c")]
-    public void SingleLiteralNonAsciiTemplateKeepsBclShaping(string pattern)
+    public void SingleNonLiteralTemplateOwnsNonAsciiInput(string pattern)
     {
-        // Declared R05 debt: non-literal single shapes (a.c here) still divert
-        // to BCL verification on non-ASCII input (established R03 projection
-        // rule), so templates there construct. Exact ASCII literals (abc)
-        // graduated to owned enumeration with incremental projection; their
-        // templates are covered owned below. Parity holds; construction is pinned.
+        // R05: groupless non-literal single shapes expand every template form
+        // owned through the scalar enumeration above, including group references
+        // that project empty on groupless shapes exactly like the oracle.
         const string text = "ééabcé";
         foreach (var template in new[] { "x", "<$1>", "$&", "$`", "$'", "$_", "$+", "$$" })
         {
@@ -805,7 +803,8 @@ public sealed class GroupedLiteralDetailedTests
                 var actual = regex.ReplaceToString(input, template);
 
                 Assert.Equal(expected, actual);
-                Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated, "pattern=" + pattern);
             }
         }
     }
