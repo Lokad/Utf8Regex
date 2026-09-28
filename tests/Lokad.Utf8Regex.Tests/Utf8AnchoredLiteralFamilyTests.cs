@@ -441,4 +441,79 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
         Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedSplitCases()
+    {
+        string[] patterns = ["^ab", "\\Aab", "ab$", "ab\\z"];
+        string[] texts = ["ABxx", "xxAB", "ab", "AB\n", "éAB", "ABé"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedSplitCases))]
+    public void FoldedSplitOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+
+        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData("^kil", "Kilo")]
+    [InlineData("kil$", "xKil")]
+    public void FoldedSplitKeepsBclShapingForKelvin(string pattern, string text)
+    {
+        // Declared R05 debt: the split-router Kelvin fence diverts folded anchored
+        // splits to BCL verification when the pattern holds k/K and the input holds
+        // U+212A. Parity holds; construction is pinned.
+        const int count = int.MaxValue;
+        foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+
+            var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+            foreach (var range in oracle.EnumerateSplits(text, count))
+            {
+                var start = range.Start.Value;
+                var end = range.End.Value;
+                expected.Add((text[start..end], start, end - start));
+            }
+
+            var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+            foreach (var split in regex.EnumerateSplits(input, count))
+            {
+                actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            }
+
+            Assert.Equal(expected, actual);
+            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
 }

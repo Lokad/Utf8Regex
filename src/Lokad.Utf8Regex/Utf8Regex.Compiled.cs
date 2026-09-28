@@ -264,7 +264,23 @@ public sealed partial class Utf8Regex
                 totalUtf16Length);
         }
 
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+        // Folded anchored prefixes split the same single anchored hit with per-byte
+        // invariant folding; Kelvin and Turkic divergences stay fenced in the split
+        // router upstream.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedSplitLiteral)
+        {
+            return new Utf8ValueSplitEnumerator(
+                input,
+                new Utf8OperationMatchCursor(input, foldedSplitLiteral, budget, _fallbackDirectFamily.Kind),
+                count,
+                totalUtf16Length);
+        }
+
+        // Folded anchored suffixes split the same single tail hit with per-byte invariant
+        // folding under the same router fence contract as prefixes.
+        if ((Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredSplitSuffix)
         {
             return new Utf8ValueSplitEnumerator(
