@@ -95,6 +95,48 @@ internal ref struct Utf8OperationMatchCursor
         };
     }
 
+    // Right-to-left twin of the literal cursor above: the same literal, search
+    // plan, and budget iterate matches from right to left instead. Only exact
+    // ASCII literals (plain or folded) qualify; the divert guarantees a nonempty
+    // literal, no boundary or trailing requirements, and no culture or Kelvin
+    // fences, so the arms below stay branch-free.
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool asciiInput, bool rightToLeft)
+    {
+        ref readonly var searchPlan = ref regexPlan.SearchPlan;
+        _plans = regexPlan.OperationMatchCursorPlans;
+        _smallAsciiLiteralFamilySearch = default;
+        _literalSearch = searchPlan.LiteralSearch;
+        _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
+        _hasBoundaryRequirements = searchPlan.HasBoundaryRequirements;
+        _hasTrailingLiteralRequirement = searchPlan.HasTrailingLiteralRequirement;
+        _asciiInput = asciiInput;
+        _literal = literal;
+        _input = input;
+        _boundaryMap = null;
+        _budget = budget;
+        _literalUtf16Length = literal.Length;
+        _totalUtf16Length = 0;
+        _projectionPlan = default;
+        _program = default;
+        _fallbackEnumerator = default;
+        _remaining = input;
+        _consumed = 0;
+        _consumedUtf16 = 0;
+        _multiLiteralScanState = default;
+        _deterministicScanState = default;
+        _current = Utf8ValueMatch.NoMatch;
+        _asciiFixedTokenCurrentIndex = -1;
+        _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
+        _mode = (executionKind, rightToLeft) switch
+        {
+            (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
+            (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
+            _ => EnumeratorMode.Exhausted,
+        };
+    }
+
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap? boundaryMap)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
@@ -225,7 +267,7 @@ internal ref struct Utf8OperationMatchCursor
     /// <summary>Gets the alternate index of the last literal match, or -1 when the last
     /// successful move did not come from a literal search. Singular literals always report 0.</summary>
     internal int LastLiteralFamilyBranchId =>
-        _mode is EnumeratorMode.ExactAsciiLiteral or EnumeratorMode.ExactUtf8Literal or EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCase or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
+        _mode is EnumeratorMode.ExactAsciiLiteral or EnumeratorMode.ExactUtf8Literal or EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCase or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals or EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlAsciiLiteralIgnoreCase
             ? _lastLiteralFamilyBranchId
             : -1;
 
@@ -621,6 +663,8 @@ internal ref struct Utf8OperationMatchCursor
             EnumeratorMode.ExactUtf8Literals => MoveNextExactUtf8Literals(),
             EnumeratorMode.AsciiLiteralIgnoreCase => MoveNextIgnoreCaseLiteral(),
             EnumeratorMode.AsciiLiteralIgnoreCaseLiterals => MoveNextAsciiIgnoreCaseLiterals(),
+            EnumeratorMode.RtlExactAsciiLiteral => MoveNextRtlExactAsciiLiteral(),
+            EnumeratorMode.RtlAsciiLiteralIgnoreCase => MoveNextRtlAsciiLiteralIgnoreCase(),
             EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
             EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
             EnumeratorMode.AsciiFixedTokenPattern => MoveNextAsciiFixedTokenPattern(),
@@ -928,6 +972,107 @@ internal ref struct Utf8OperationMatchCursor
         var advance = index + literal.Length;
         _remaining = _remaining[advance..];
         _consumed += advance;
+        _lastLiteralFamilyBranchId = 0;
+        return true;
+    }
+
+    // Right-to-left literal enumeration finds the last occurrence in the
+    // shrinking prefix on every move and truncates the bound to its start, so
+    // each consumed region is scanned once overall. BCL advances runtextstart
+    // to the match start with the same exclusive-end rule, so overlapping and
+    // adjacent hits agree exactly. Reverse byte search never meets multibyte
+    // scalars (ASCII bytes sit on scalar boundaries), and ASCII lengths equal
+    // UTF-16 lengths, so only the gap needs decoding on non-ASCII input.
+    private bool MoveNextRtlExactAsciiLiteral()
+    {
+        var literal = _literal;
+        if (literal is null || literal.Length == 0)
+        {
+            return false;
+        }
+
+        _budget.Step();
+        ref readonly var searchPlan = ref _plans.SearchPlan;
+        var index = Utf8SearchExecutor.FindLast(in searchPlan, _remaining);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (!_asciiInput)
+        {
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                0,
+                0,
+                index,
+                literal.Length,
+                literal.Length,
+                out _,
+                out _);
+            _remaining = _remaining[..index];
+            _lastLiteralFamilyBranchId = 0;
+            return true;
+        }
+
+        _current = new Utf8ValueMatch(
+            success: true,
+            isByteAligned: true,
+            indexInUtf16: index,
+            lengthInUtf16: literal.Length,
+            indexInBytes: index,
+            lengthInBytes: literal.Length);
+        _remaining = _remaining[..index];
+        _lastLiteralFamilyBranchId = 0;
+        return true;
+    }
+
+    // Folded twin of the reverse arm above: the search plan folds variants at
+    // the byte level (ASCII patterns never meet non-ASCII fold partners except
+    // Kelvin, which stays fenced upstream of the cursor), so discovery and
+    // projection mirror the exact arm with the folded search kind.
+    private bool MoveNextRtlAsciiLiteralIgnoreCase()
+    {
+        var literal = _literal;
+        if (literal is null || literal.Length == 0)
+        {
+            return false;
+        }
+
+        _budget.Step();
+        ref readonly var searchPlan = ref _plans.SearchPlan;
+        var index = Utf8SearchExecutor.FindLast(in searchPlan, _remaining);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (!_asciiInput)
+        {
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                0,
+                0,
+                index,
+                literal.Length,
+                literal.Length,
+                out _,
+                out _);
+            _remaining = _remaining[..index];
+            _lastLiteralFamilyBranchId = 0;
+            return true;
+        }
+
+        _current = new Utf8ValueMatch(
+            success: true,
+            isByteAligned: true,
+            indexInUtf16: index,
+            lengthInUtf16: literal.Length,
+            indexInBytes: index,
+            lengthInBytes: literal.Length);
+        _remaining = _remaining[..index];
         _lastLiteralFamilyBranchId = 0;
         return true;
     }
@@ -1341,5 +1486,7 @@ internal ref struct Utf8OperationMatchCursor
         AnchoredFoldedAsciiLiteralSuffix = 19,
         AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20,
         AsciiSimplePatternScalar = 21,
+        RtlExactAsciiLiteral = 22,
+        RtlAsciiLiteralIgnoreCase = 23,
     }
 }

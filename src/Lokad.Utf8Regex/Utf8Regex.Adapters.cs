@@ -473,6 +473,24 @@ public sealed partial class Utf8Regex
         var remaining = input.Bytes[start.Value..];
         var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
+        // R05: exact literals enumerate right-to-left through the reverse-search
+        // cursor above; anchored shapes never reach literal kinds, boundary and
+        // trailing requirements stay on the BCL enumerator below, empty literals
+        // cannot match, and folded shapes stay Kelvin-fenced like the forward cursor.
+        // FromOffset right-to-left starts keep legacy routing.
+        if (UsesRightToLeft() &&
+            start.Value == input.Bytes.Length &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+            literal is { Length: > 0 } &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
+            !RequiresCultureSensitiveFallback &&
+            (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input.Bytes)))
+        {
+            var rtlCursor = new Utf8OperationMatchCursor(input.Bytes, _preparedRegex, literal, _preparedRegex.ExecutionKind, budget, Utf8InputAnalyzer.IsAscii(input.Bytes), rightToLeft: true);
+            return new Utf8ValueMatchEnumerator(rtlCursor).WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+        }
+
         if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {
