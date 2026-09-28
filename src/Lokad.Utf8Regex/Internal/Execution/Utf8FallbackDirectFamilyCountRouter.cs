@@ -18,14 +18,15 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         out int count)
     {
         // Anchored literal prefixes match at most once (at offset 0), so the count is the
-        // prefix hit itself. Byte-exact on every input: astral scalars never start with ASCII
-        // bytes, and the extractor admits sensitive ASCII literals only.
-        if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            directFamily.LiteralUtf8 is { Length: > 0 } anchoredLiteral)
+        // prefix hit itself. Byte-exact on every input for the sensitive kind: astral
+        // scalars never start with ASCII bytes. The folded kind compares per byte under
+        // invariant folding (Kelvin stays fenced in CountCore upstream); both ride the
+        // shared prefix executor, which switches on the kind.
+        if (directFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            directFamily.LiteralUtf8 is { Length: > 0 })
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
-            count = anchoredLiteral.Length <= input.Length &&
-                input[..anchoredLiteral.Length].SequenceEqual(anchoredLiteral)
+            count = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, directFamily, out _)
                 ? 1
                 : 0;
 

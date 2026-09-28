@@ -162,7 +162,8 @@ public sealed partial class Utf8Regex
     {
         // Anchored literal prefixes count directly through the router below: at most one
         // anchored match, byte-exact on every input, so neither BCL fallback applies.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        // Folded prefixes ride the same router arm, which switches on the kind.
+        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix)
         {
             return _compiledEngineRuntime.Count(input, validation, budget);
         }

@@ -32,6 +32,23 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
     }
 
+    public static IEnumerable<object?[]> FoldedAcceptCases()
+    {
+        yield return new object?[] { "^ab" };
+        yield return new object?[] { "\\Aab" };
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedAcceptCases))]
+    public void FoldedAnchoredLiteralShapesClassifyToFoldedPrefixFamily(string pattern)
+    {
+        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
+            pattern, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null);
+
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, plan.Kind);
+        Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
+    }
+
     public static IEnumerable<object?[]> DeclineCases()
     {
         yield return new object?[] { "^ab|cd", RegexOptions.CultureInvariant };
@@ -42,7 +59,6 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         yield return new object?[] { "^ab", RegexOptions.Multiline | RegexOptions.CultureInvariant };
         yield return new object?[] { "(?m:^ab)", RegexOptions.CultureInvariant };
         yield return new object?[] { "(?i:^ab)", RegexOptions.CultureInvariant };
-        yield return new object?[] { "^ab", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
         yield return new object?[] { "^\\d+", RegexOptions.CultureInvariant };
         yield return new object?[] { "^[ab]", RegexOptions.CultureInvariant };
         yield return new object?[] { "^a{2}", RegexOptions.CultureInvariant };

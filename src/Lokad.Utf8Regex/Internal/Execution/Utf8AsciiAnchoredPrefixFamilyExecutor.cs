@@ -42,8 +42,47 @@ internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
                 matchedLength = anchoredLiteral.Length;
                 return true;
 
+            case Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix:
+                if (plan.LiteralUtf8 is not { Length: > 0 } foldedLiteral ||
+                    foldedLiteral.Length > input.Length ||
+                    !FoldedPrefixEquals(input, foldedLiteral))
+                {
+                    return false;
+                }
+
+                matchedLength = foldedLiteral.Length;
+                return true;
+
             default:
                 return false;
         }
+    }
+
+    // Invariant ASCII fold equality for one anchored literal: Kelvin (U+212A) and
+    // Turkic dotted/dotless-I divergences cannot collide at the byte level, and both
+    // stay fenced upstream of every direct-family consumer.
+    private static bool FoldedPrefixEquals(ReadOnlySpan<byte> input, byte[] literal)
+    {
+        for (var i = 0; i < literal.Length; i++)
+        {
+            var candidate = input[i];
+            var expected = literal[i];
+            if (candidate == expected)
+            {
+                continue;
+            }
+
+            if (ToUpperInvariantAscii(candidate) != ToUpperInvariantAscii(expected))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static byte ToUpperInvariantAscii(byte value)
+    {
+        return value is >= (byte)'a' and <= (byte)'z' ? (byte)(value - 32) : value;
     }
 }

@@ -253,7 +253,9 @@ public sealed partial class Utf8Regex
         // Anchored ASCII literal prefixes are byte-exact on every input: astral scalars
         // never start with ASCII bytes, so non-ASCII input stays direct instead of
         // declining to the BCL fallback like the other ASCII direct families below.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+        // Folded prefixes compare per byte under invariant folding (Kelvin and Turkic
+        // divergences stay fenced upstream); the executor switches on the kind.
+        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
             if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredPrefixLength))
@@ -352,8 +354,9 @@ public sealed partial class Utf8Regex
     {
         isMatch = false;
         // Same byte-exact contract as the Match arm above: anchored ASCII prefixes
-        // never need the BCL fallback, even on non-ASCII input.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        // never need the BCL fallback, even on non-ASCII input. Folded prefixes ride
+        // the same arm; the executor switches on the kind.
+        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix)
         {
             isMatch = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out _);
             return true;

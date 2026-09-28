@@ -321,8 +321,13 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         if (TryParseAnchoredAsciiLiteralPrefix(executionPattern, options, out var anchoredLiteralUtf8) ||
             TryParseAnchoredAsciiLiteralPrefix(semanticPattern, options, out anchoredLiteralUtf8))
         {
+            // Top-level IgnoreCase files under the folded kind, whose executors fold
+            // per byte; every consumer fences Kelvin/Turkic divergence upstream.
+            var prefixKind = (options & RegexOptions.IgnoreCase) != 0
+                ? Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix
+                : Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix;
             return Utf8FallbackDirectFamilyPlan.ForLiteral(
-                Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix,
+                prefixKind,
                 Utf8FallbackFindModeKind.MatchAtStart,
                 literalUtf8: RequireBytes(anchoredLiteralUtf8));
         }
