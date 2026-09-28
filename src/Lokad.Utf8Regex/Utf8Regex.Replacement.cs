@@ -364,6 +364,15 @@ public sealed partial class Utf8Regex
         out int replacementCount)
     {
         var budget = CreateExecutionBudget();
+        // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
+        // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
+        if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var scalarAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
+            return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
+        }
+
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
             _verifierRuntime,
@@ -431,6 +440,22 @@ public sealed partial class Utf8Regex
         out int bytesWritten)
     {
         var budget = CreateExecutionBudget();
+        // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
+        // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
+        if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var scalarAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
+            var scalarSuccess = Utf8CursorReplaceEngine.TryReplace(
+                input,
+                replacementBytes,
+                destination,
+                ref scalarCursor,
+                out bytesWritten);
+
+            return scalarSuccess ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
+        }
+
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
             _verifierRuntime,
