@@ -939,29 +939,142 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    [Theory]
-    [InlineData("((a)?b)?", "ab", "<$1>")]
-    [InlineData("((a)?b)?", "éabé", "<$1>")]
-    [InlineData("(a|b)?(c)?(d)?(e)?(f)?", "ace", "<$1$2>")]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "abcdefghijklm", "<$1$7>")]
-    public void NestedComboTemplateKeepsBclShaping(string pattern, string text, string template)
+    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboTemplateOwnedCases()
     {
-        // Declared R05 debt: nested loops, loop-plus-alternation combos, and
-        // seven-loop shapes expand group-reference templates through the fallback
-        // engine (the span maps decline nesting/combos; the loop cap stops at six).
-        // Parity holds; construction is pinned.
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        (string pattern, string template, string text)[] rows =
+        [
+            ("((a)?b)?", "x", "ab"),
+            ("((a)?b)?", "x", "xyz"),
+            ("((a)?b)?", "x", "éabé"),
+            ("((a)?b)?", "<$1>", "ab"),
+            ("((a)?b)?", "<$1>", "xyz"),
+            ("((a)?b)?", "<$1>", "éabé"),
+            ("((a)?b)?", "$&", "ab"),
+            ("((a)?b)?", "$+", "ab"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "x", "ace"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "x", "xyz"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "x", "éaé"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "<$1$2>", "ace"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "<$1$2>", "xyz"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "<$1$2>", "éaé"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "$&", "ace"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "$+", "ace"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "x", "abcdefghijklm"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "x", "xyz"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "<$1$7>", "abcdefghijklm"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "<$1$7>", "xyz"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "$&", "abcdefghijklm"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "$+", "abcdefghijklm"),
+            ("(a|b)?(c)?", "x", "ac"),
+            ("(a|b)?(c)?", "x", "xyz"),
+            ("(a|b)?(c)?", "<$1>", "ac"),
+            ("(a|b)?(c)?", "$&", "ac"),
+            ("(a)?b(c)?", "x", "abc"),
+            ("(a)?b(c)?", "x", "xyz"),
+            ("(a)?b(c)?", "<$1>", "abc"),
+            ("(a)?b(c)?", "$&", "abc"),
+        ];
+        foreach (var row in rows)
         {
-            var input = Encoding.UTF8.GetBytes(text);
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var regex = new Utf8Regex(pattern, options);
-            var expected = oracle.Replace(text, template);
-            var actual = regex.ReplaceToString(input, template);
-
-            Assert.Equal(expected, actual);
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.template, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.template, row.text };
         }
     }
+
+    [Theory]
+    [MemberData(nameof(SliceComboTemplateOwnedCases))]
+    public void SliceComboTemplateStringCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: slice shapes expand group-reference templates through the owned
+        // slice replacement on the string core, mirroring the byte core.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = regex.ReplaceToString(input, template);
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceComboTemplateOwnedCases))]
+    public void SliceComboTemplateByteCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // Control: the byte core already serves slice shapes owned; these rows
+        // pin the shared behavior while the string and destination cores graduate.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceComboTemplateOwnedCases))]
+    public void SliceComboTemplateDestinationCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: the destination core serves slice shapes owned through the same
+        // slice replacement instead of the BCL-backed shared plan.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var destination = new byte[4096];
+        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboEvaluatorDebtCases()
+    {
+        string[] patterns = ["((a)?b)?", "(a|b)?(c)?"];
+        string[] texts = ["ab", "ac", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceComboEvaluatorDebtCases))]
+    public void SliceComboEvaluatorKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: evaluator callbacks over slice shapes still expand
+        // through the fallback engine (the evaluator arms shape only through the
+        // span maps). Parity holds; construction is pinned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(1).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.True(byteRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> FiniteTimeoutTemplateCases()
     {
         string[] patterns = ["(a)(b)", "(a)?b(c)?"];

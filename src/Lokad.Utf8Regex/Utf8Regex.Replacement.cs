@@ -192,6 +192,16 @@ public sealed partial class Utf8Regex
                 replacement.OriginalText);
         }
 
+        // R05: slice shapes expand templates through the owned slice replacement,
+        // mirroring the byte core. Finite timeouts keep the legacy routing so BCL
+        // timeout enforcement is preserved exactly; astral-marked programs keep it
+        // on non-serving inputs.
+        if (MatchTimeout == Regex.InfiniteMatchTimeout &&
+            _sliceProgram is not null &&
+            _sliceProgram.ServesInput(input))
+        {
+            return Encoding.UTF8.GetString(OwnedSliceReplace(input, _sliceProgram, replacement, CancellationToken.None));
+        }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
         {
@@ -250,6 +260,23 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
+        // R05: same owned slice replacement as the string core, copied into the
+        // caller destination under the same size contract as the encoder helper.
+        if (MatchTimeout == Regex.InfiniteMatchTimeout &&
+            _sliceProgram is not null &&
+            _sliceProgram.ServesInput(input))
+        {
+            var sliced = OwnedSliceReplace(input, _sliceProgram, replacement, CancellationToken.None);
+            if (sliced.Length > destination.Length)
+            {
+                bytesWritten = 0;
+                return OperationStatus.DestinationTooSmall;
+            }
+
+            sliced.CopyTo(destination);
+            bytesWritten = sliced.Length;
+            return OperationStatus.Done;
+        }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
         {
