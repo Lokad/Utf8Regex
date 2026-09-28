@@ -192,6 +192,16 @@ public sealed partial class Utf8Regex
                 replacement.OriginalText);
         }
 
+        // R05: owned replacement advances scalar-wise, so astral inputs need shapes
+        // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
+        // everything else replaces through the BCL fallback exactly.
+        if (!OwnedMatchStartsAreScalarAligned(input))
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Utf8Validation.DecodeStrict(input),
+                replacement.OriginalText);
+        }
+
         // R05: slice shapes expand templates through the owned slice replacement,
         // mirroring the byte core. Finite timeouts keep the legacy routing so BCL
         // timeout enforcement is preserved exactly; astral-marked programs keep it
@@ -256,6 +266,16 @@ public sealed partial class Utf8Regex
                 Utf8Validation.DecodeStrict(input),
                 replacementText);
             return TryEncodeUtf8ToDestination(replaced, destination, out bytesWritten)
+                ? OperationStatus.Done
+                : OperationStatus.DestinationTooSmall;
+        }
+
+        if (!OwnedMatchStartsAreScalarAligned(input))
+        {
+            var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Utf8Validation.DecodeStrict(input),
+                replacementText);
+            return TryEncodeUtf8ToDestination(astralReplaced, destination, out bytesWritten)
                 ? OperationStatus.Done
                 : OperationStatus.DestinationTooSmall;
         }

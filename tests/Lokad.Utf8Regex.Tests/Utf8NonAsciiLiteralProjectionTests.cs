@@ -249,7 +249,11 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var actualFirst = detailedRegex.MatchDetailed(input);
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
-            Assert.Equal(!expectOwnedDiscovery, detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            // Neither row constructs the anchored engine: BMP discovery serves the
+            // owned slice, while astral discovery verifies through the full BCL decode
+            // (guided verification is unsound where matches start mid-scalar, so the
+            // anchored bounded-slice path stays out).
+            Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
             const int count = int.MaxValue;
             var replaceRegex = new Utf8Regex(pattern, options);
             var expectedReplaced = oracle.Replace(text, "x");

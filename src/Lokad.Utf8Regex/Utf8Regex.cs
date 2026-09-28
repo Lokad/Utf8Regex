@@ -2914,6 +2914,13 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
+        if (!OwnedMatchStartsAreScalarAligned(input))
+        {
+            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Encoding.UTF8.GetString(input),
+                Encoding.UTF8.GetString(replacementPatternUtf8)));
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceReplace(
