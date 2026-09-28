@@ -214,25 +214,26 @@ public sealed class LazyFallbackConstructionTests
     [Theory]
     [InlineData("(a)??b", "xxabxx")]
     [InlineData("(a)??b(c)??", "xxabcxx")]
-    public void LazyOptionalCompiledDiscoveryKeepsBclShaping(string pattern, string text)
+    [InlineData("(a){0,1}?b", "xxabxx")]
+    public void LazyOptionalCompiledDiscoveryStaysOwned(string pattern, string text)
     {
-        // Declared R05 debt: lazy-optional (??) shapes stay BCL-backed for discovery
-        // on the compiled lane (the compiled emitter cannot execute lazy loops), while
-        // the ordinary lane serves them owned through the slice. Parity holds on both;
-        // construction follows the lane.
+        // Single-maximum lazies (??, {0,1}?) agree on both oracle lanes with
+        // full group detail (probe-mapped, including inner captures), so the
+        // slice serves discovery owned on both lanes with parity and no
+        // fallback construction. Finite maxima above one stay BCL-backed on
+        // the compiled lane (see FiniteRangeLazyCompiledDiscoveryKeepsBclShaping).
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
-            var expectConstruction = (options & RegexOptions.Compiled) != 0;
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
             var isMatchRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.Equal(expectConstruction, isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var countRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.Equal(expectConstruction, countRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var enumRegex = new Utf8Regex(pattern, options);
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
@@ -254,7 +255,29 @@ public sealed class LazyFallbackConstructionTests
                 Assert.Equal(expected[i].Length, actual[i].Length);
             }
 
-            Assert.Equal(expectConstruction, enumRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
+    [Theory]
+    [InlineData("(([0-9]){1,2}?x)?", "123")]
+    [InlineData("(([0-9]){1,2}?x)?", "12x")]
+    public void FiniteRangeLazyCompiledDiscoveryKeepsBclShaping(string pattern, string text)
+    {
+        // Finite lazy maxima above one stay BCL-backed for discovery on the
+        // compiled lane: the compiler keeps abandonment progress there while
+        // the interpreter abandons fully, and captured ranges even oscillate
+        // compiled enumeration forever (probed: 0+0,0+1,...). IsMatch
+        // terminates on both lanes so parity is asserted; full enumeration is
+        // deliberately not compared because the BCL-compiled lane never finishes.
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var expectConstruction = (options & RegexOptions.Compiled) != 0;
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+            Assert.Equal(expectConstruction, regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 
@@ -263,7 +286,8 @@ public sealed class LazyFallbackConstructionTests
     public void LazyPlusCompiledDiscoveryStaysOwned(string pattern, string text)
     {
         // Control: lazy-plus shapes execute owned discovery on both lanes, so the
-        // compiled debt above is specific to lazy-optional (??) loops.
+        // remaining compiled debt is specific to finite lazy ranges above one
+        // (see FiniteRangeLazyCompiledDiscoveryKeepsBclShaping).
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
@@ -281,15 +305,22 @@ public sealed class LazyFallbackConstructionTests
 
     [Theory]
     [InlineData("(a)??b(c)??d(e)??f(g)??h(i)??", "abcdefghi")]
-    public void FallbackOperationsConstructFallbackEngine(string pattern, string inputText)
+    public void LazyOptionalDetailedStaysOwned(string pattern, string inputText)
     {
-        // Lazy-compiled discovery stays BCL-backed (declared R05 debt); greedy six-loop
-        // shapes and below graduate to owned shaping in GroupedLiteralDetailedTests,
-        // and lazy shapes stay owned on the ordinary lane through the slice.
+        // Single-maximum lazies (??) serve Detailed owned on the compiled lane too
+        // (probe-mapped lane agreement); finite lazy maxima above one stay BCL-backed
+        // there. Greedy six-loop shapes and below graduate to owned shaping in
+        // GroupedLiteralDetailedTests, and lazy shapes stay owned on the ordinary
+        // lane through the slice.
         var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Touch(regex.MatchDetailed(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        var oracle = new Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Match(inputText);
+        var actual = regex.MatchDetailed(input);
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]

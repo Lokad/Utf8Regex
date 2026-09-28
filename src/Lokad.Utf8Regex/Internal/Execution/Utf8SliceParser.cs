@@ -87,11 +87,15 @@ internal static class Utf8SliceParser
         // .NET 10 per-lane contract: the BCL compiler keeps one iteration of
         // progress when a finite-maximum lazy loop abandons at its maximum
         // while the interpreter abandons fully (pinned by
-        // LazyLoopAbandonmentPinsDotNet10OracleDisagreement). The shared
+        // LazyLoopAbandonmentPinsDotNet10OracleDisagreement), and captured
+        // lazy ranges even oscillate compiled enumeration forever (probed:
+        // (([0-9]){0,2}?x)? on "123" yields 0+0,0+1,...). The shared
         // runner follows interpreter abandonment, so compiled-lane shapes
-        // with finite-maximum lazy repeats decline to their BCL-compiled
-        // fallback; infinite-maximum lazy loops agree on both lanes.
-        if ((options & RegexOptions.Compiled) != 0 && parser.SawFiniteMaximumLazyRepeat)
+        // with a finite lazy maximum above one decline to their BCL-compiled
+        // fallback. Single-maximum lazies (??, {0,1}?, {1}?) agree on both
+        // lanes with full group detail (probe-mapped, including inner
+        // captures), as do infinite-maximum lazy loops.
+        if ((options & RegexOptions.Compiled) != 0 && parser.SawFiniteMaxAboveOneLazyRepeat)
         {
             return null;
         }
@@ -787,7 +791,7 @@ internal static class Utf8SliceParser
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
         private readonly Dictionary<string, int> _groupSlots = new(StringComparer.Ordinal);
         private bool _sawBalancing;
-        private bool _sawFiniteMaximumLazyRepeat;
+        private bool _sawFiniteMaxAboveOneLazyRepeat;
         private int _lookbehindDepth;
         private bool _sawLookbehindGroupWrite;
 
@@ -808,7 +812,7 @@ internal static class Utf8SliceParser
         internal bool MatchIgnoreCase => _matchIgnoreCase;
         internal bool SawFold => _sawFold;
         internal bool SawLookbehindGroupWrite => _sawLookbehindGroupWrite;
-        internal bool SawFiniteMaximumLazyRepeat => _sawFiniteMaximumLazyRepeat;
+        internal bool SawFiniteMaxAboveOneLazyRepeat => _sawFiniteMaxAboveOneLazyRepeat;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
         {
@@ -911,9 +915,12 @@ internal static class Utf8SliceParser
                 _position++;
             }
 
-            if (lazy && maximum != int.MaxValue)
+            // Only maxima above one can exhibit the per-lane abandonment
+            // divergence (or the captured-range enumeration oscillation);
+            // single-maximum lazies are probe-proven lane-identical.
+            if (lazy && maximum != int.MaxValue && maximum > 1)
             {
-                _sawFiniteMaximumLazyRepeat = true;
+                _sawFiniteMaxAboveOneLazyRepeat = true;
             }
 
             node = new Utf8SliceNode.RepeatNode(atom, minimum, maximum, lazy);

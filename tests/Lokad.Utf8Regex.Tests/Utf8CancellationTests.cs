@@ -276,12 +276,12 @@ public sealed class Utf8CancellationTests
     [Fact]
     public void CancelInsideBclFallbackEvaluatorAbortsReplace()
     {
-        // Lazy-optional shapes stay BCL-backed on the compiled lane (the compiled
-        // emitter cannot execute lazy loops: declared R05 debt), so cancellation
+        // Finite lazy ranges above one stay BCL-backed on the compiled lane
+        // (probe-mapped per-lane abandonment divergence), so cancellation
         // inside the BCL fallback evaluator still aborts the replace there.
-        var regex = new Utf8Regex("(a)??b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(([0-9]){1,2}?x)?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("xxabxx xxabxx");
+        var input = Encoding.UTF8.GetBytes("12x 12x");
         var calls = 0;
         var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
             input,

@@ -175,12 +175,23 @@ public sealed class Utf8SliceParserTests
     [Theory]
     [InlineData("a{2,4}?a")]
     [InlineData("([0-9]){1,3}?x")]
-    [InlineData("a??")]
-    [InlineData(@"(\p{L}??)x")]
-    public void FiniteMaximumLazyRepeatDeclinesCompiledLane(string pattern)
+    [InlineData("([0-9]){1,2}?x")]
+    public void FiniteRangeLazyRepeatDeclinesCompiledLane(string pattern)
     {
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
+    }
+
+    [Theory]
+    [InlineData("a??")]
+    [InlineData(@"(\p{L}??)x")]
+    public void SingleMaximumLazyRepeatStaysCompiled(string pattern)
+    {
+        // Single-maximum lazies (??, {0,1}?) agree on both oracle lanes
+        // (probe-mapped, including inner captures), so the compiled lane
+        // keeps the slice program; finite maxima above one decline above.
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
     }
 
     [Theory]

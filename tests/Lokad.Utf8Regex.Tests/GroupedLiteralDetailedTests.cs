@@ -582,10 +582,10 @@ public sealed class GroupedLiteralDetailedTests
 
     public static IEnumerable<object?[]> LazyLoopOrdinaryCases()
     {
-        // Lazy loops serve the ordinary lane through the slice program but construct
-        // the fallback engine on the compiled lane (compiled discovery stays BCL for
-        // lazy shapes); the loop-pattern map covers the compiled lane only where its
-        // discovery is owned, so these rows pin ordinary-lane zero construction.
+        // Single-maximum lazies (??) serve both lanes through the slice program
+        // (probe-mapped lane agreement), so these rows pin ordinary-lane zero
+        // construction while LazyOptionalCompiledDiscoveryStaysOwned covers
+        // the compiled lane.
         string[] patterns = ["(a)??(b)??", "(a)?(a)??"];
         string[] texts = ["xabcy", "ab", "b", "xyz"];
         foreach (var pattern in patterns)
@@ -877,16 +877,15 @@ public sealed class GroupedLiteralDetailedTests
         ];
         foreach (var shape in shapes)
         {
-            // Mixed greedy/lazy shapes stay BCL-backed on the compiled lane
-            // (lazy-compiled discovery debt); greedy shapes cover both lanes.
-            var compiledLaneIsOwned = shape.Pattern.IndexOf(")??", System.StringComparison.Ordinal) < 0;
+            // Mixed greedy/lazy shapes serve owned on both lanes: single-maximum
+            // lazies agree on both oracle lanes (probe-mapped), so the compiled
+            // lane runs the same slice program as the ordinary lane. Finite lazy
+            // maxima above one stay BCL-backed on the compiled lane and are pinned
+            // in LazyFallbackConstructionTests.
             foreach (var text in shape.Texts)
             {
                 yield return new object?[] { shape.Pattern, shape.Template, RegexOptions.CultureInvariant, text };
-                if (compiledLaneIsOwned)
-                {
-                    yield return new object?[] { shape.Pattern, shape.Template, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-                }
+                yield return new object?[] { shape.Pattern, shape.Template, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
             }
         }
     }
