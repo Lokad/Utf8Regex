@@ -372,6 +372,21 @@ public sealed partial class Utf8Regex
                 totalUtf16Length);
         }
 
+        // R05: astral inputs split unit-aware through the unit match cursor with
+        // unit-space shaping; anything else keeps BCL verification below.
+        if (Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var unitSplitAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var unitSplitDecoded = unitSplitAnalysis.GetDecodedString();
+            return new Utf8ValueSplitEnumerator(
+                input,
+                unitSplitDecoded,
+                new Utf8OperationMatchCursor(input, _preparedRegex, unitSplitAnalysis.BoundaryMap, unitSplitDecoded, budget),
+                unitSplitAnalysis.BoundaryMap,
+                count,
+                totalUtf16Length);
+        }
+
         // Line-anchored shapes fall through to the owned cursors below; absolute
         // anchors and non-ASCII input keep BCL verification here.
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))

@@ -206,13 +206,13 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     }
 
     [Theory]
-    [InlineData("a.c", "ééabcé", true, true, true)]
-    [InlineData("a.c", "x\U0001F600abc", true, true, false)]
-    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedEnumeration, bool expectOwnedShaping)
+    [InlineData("a.c", "ééabcé", true, true, true, true)]
+    [InlineData("a.c", "x\U0001F600abc", true, true, true, false)]
+    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedEnumeration, bool expectOwnedSplits, bool expectOwnedReplacement)
     {
-        // IsMatch, Count, and enumeration are owned everywhere (scalar-aware on astral-free
-        // input, unit-aware on astral input); groupless literal replacement and splits
-        // stay BCL-backed on astral input.
+        // IsMatch, Count, enumeration, and splits are owned everywhere (scalar-aware on
+        // astral-free input, unit-aware on astral input); groupless literal replacement
+        // stays BCL-backed on astral input.
         // Group-reference templates and evaluators over grouped shapes stay
         // BCL-backed (declared R05 debt). Parity holds; construction is pinned
         // per op.
@@ -260,7 +260,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var expectedReplaced = oracle.Replace(text, "x");
             var actualReplaced = replaceRegex.ReplaceToString(input, "x");
             Assert.Equal(expectedReplaced, actualReplaced);
-            Assert.Equal(!expectOwnedShaping, replaceRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedReplacement, replaceRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var splitRegex = new Utf8Regex(pattern, options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
@@ -278,7 +278,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expectedSplits, actualSplits);
-            Assert.Equal(!expectOwnedShaping, splitRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedSplits, splitRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 

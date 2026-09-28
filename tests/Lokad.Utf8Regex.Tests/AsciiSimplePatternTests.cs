@@ -2985,4 +2985,50 @@ public sealed class AsciiSimplePatternTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitSplitOwnedCases()
+    {
+        (string pattern, string text, int count)[] rows =
+        [
+            ("a.c", "a\U0001F600c", int.MaxValue),
+            ("a.c", "abc", int.MaxValue),
+            (".", "\U0001F600", int.MaxValue),
+            ("..", "\U0001F600", int.MaxValue),
+            ("a.", "a\U0001F600", int.MaxValue),
+            ("a[^x]d", "a\U0001F600d", int.MaxValue),
+            ("[^x]", "\U0001F600", int.MaxValue),
+            (@"\d\d", "a12\U0001F600", int.MaxValue),
+            (@"(\d\d)", "a12\U0001F600", int.MaxValue),
+            (".", "a\U0001F600c", 2),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.count };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.count };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitSplitOwnedCases))]
+    public void AstralUnitSplitOwnsInput(string pattern, RegexOptions options, string text, int count)
+    {
+        // R05: astral splits shape unit-space through the unit match cursor, so full
+        // split sequences match BCL with zero fallback construction on both lanes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
 }
