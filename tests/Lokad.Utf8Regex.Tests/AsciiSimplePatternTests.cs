@@ -1113,6 +1113,96 @@ public sealed class AsciiSimplePatternTests
         Assert.False(enumRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> ScalarDiscoveryOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a.c", "éabcé"),
+            ("a.c", "xyz"),
+            ("a.c", "éxyzé"),
+            ("a.c", "abcaéc"),
+            ("a.c", ""),
+            ("a[^x]d", "éabde"),
+            ("a[^x]d", "xyz"),
+            ("a[^x]d", "éaxdé"),
+            ("a[^x]d", "abdabd"),
+            ("a[^x]d", ""),
+            ("(a.c)", "éabcé"),
+            ("(a.c)", "xyz"),
+            (".[0-9]", "é1a2"),
+            (".[0-9]", "xyz"),
+            ("[^x][^y]", "éabé"),
+            ("[^x][^y]", "xy"),
+            (".{2,4}", "éabcdé"),
+            (".{2,4}", "xyz"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScalarDiscoveryOwnedCases))]
+    public void ScalarDiscoveryOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: fixed-token non-byte-safe simple patterns verify scalar-aware on
+        // astral-free non-ASCII input: ASCII search literals stay sound candidates
+        // through UTF-8 self-synchronization while dots and ASCII-closed classes
+        // consume whole scalars, so IsMatch and Count never construct the fallback
+        // engine. Enumeration and shaping keep their existing BCL routes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> ScalarDiscoveryDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(?i)a.c", "éABCé"),
+            ("a\\db", "éa1bé"),
+            ("(?s:a.c)", "éa\\ncé"),
+            ("[^\\d]", "éabé"),
+            ("a.c", "a\U0001F600c"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScalarDiscoveryDeclineCases))]
+    public void ScalarDiscoveryDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: IgnoreCase plans, shorthand classes, singleline dots
+        // over non-ASCII, negated Unicode categories, and astral inputs decline
+        // scalar verification, so discovery stays BCL-backed. Parity holds;
+        // construction is pinned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
     [Theory]
     [InlineData("^$")]
     [InlineData("^")]

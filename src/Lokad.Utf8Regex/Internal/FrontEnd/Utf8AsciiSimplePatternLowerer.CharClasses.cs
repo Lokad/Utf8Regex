@@ -27,7 +27,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 DotNetAsciiCharClassProjector.RequiresAsciiInput(set),
                 set == Utf8OwnedCharClass.SpaceClass
                     ? Utf8SimplePatternScalarClassKind.UnicodeWhitespace
-                    : Utf8SimplePatternScalarClassKind.None);
+                    : DotNetAsciiCharClassProjector.IsAsciiClosedNegation(set)
+                        ? Utf8SimplePatternScalarClassKind.AsciiClosedNegation
+                        : Utf8SimplePatternScalarClassKind.None);
             return true;
         }
 

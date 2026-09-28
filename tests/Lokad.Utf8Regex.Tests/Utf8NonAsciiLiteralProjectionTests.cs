@@ -206,24 +206,25 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     }
 
     [Theory]
-    [InlineData("a.c", "ééabcé")]
-    [InlineData("a.c", "x\U0001F600abc")]
-    public void NonByteSafeSimpleKeepsBclShaping(string pattern, string text)
+    [InlineData("a.c", "ééabcé", true)]
+    [InlineData("a.c", "x\U0001F600abc", false)]
+    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery)
     {
-        // Declared R05 debt: non-byte-safe simple shapes verify candidates through
-        // BCL engines on non-ASCII input (main lazy for discovery, anchored lazy for
-        // bounded-slice detailed shaping). Parity holds; construction is pinned per op.
+        // IsMatch and Count verify scalar-aware on astral-free non-ASCII input, so
+        // only astral inputs keep BCL discovery. Enumeration, replacement, and
+        // splits stay main-lazy BCL-backed while detailed shaping stays anchored
+        // lazy (declared R05 debt). Parity holds; construction is pinned per op.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var isMatchRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedDiscovery, isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var countRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedDiscovery, countRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var enumRegex = new Utf8Regex(pattern, options);
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();

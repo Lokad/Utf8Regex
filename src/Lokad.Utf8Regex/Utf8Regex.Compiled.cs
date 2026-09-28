@@ -124,6 +124,13 @@ public sealed partial class Utf8Regex
     {
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
+            // R05: scalar-verifiable simple patterns answer owned on astral-free
+            // non-ASCII input; anything else keeps the BCL verification below.
+            if (Utf8ScalarSimplePatternVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarIsMatch))
+            {
+                return scalarIsMatch;
+            }
+
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
         }
 
@@ -188,6 +195,12 @@ public sealed partial class Utf8Regex
         if (ShouldUseFallbackForAnchoredSimplePattern() ||
             ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
+            // R05: same scalar-verified route as IsMatch above.
+            if (Utf8ScalarSimplePatternVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarCount))
+            {
+                return scalarCount;
+            }
+
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
         }
 

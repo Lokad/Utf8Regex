@@ -88,6 +88,19 @@ internal static class DotNetAsciiCharClassProjector
         return true;
     }
 
+    // R05: scalar verification accepts negations whose positive definition is
+    // ASCII-only (matching every non-ASCII scalar) but declines negated Unicode
+    // categories (whose complement excludes non-ASCII members). Canonical
+    // descriptors carry the category payload, so a well-formed negated set without
+    // a known-category payload is ASCII-closed; anything else keeps BCL routing.
+    internal static bool IsAsciiClosedNegation(string? runtimeSet)
+    {
+        return runtimeSet is not null &&
+            Utf8OwnedCharClass.IsNegated(runtimeSet) &&
+            TryGetCategoryPayload(runtimeSet, out var categoryPayload) &&
+            !IsKnownProjectedCategory(categoryPayload);
+    }
+
     public static bool RequiresAsciiInput(string? runtimeSet)
     {
         if (runtimeSet == Utf8OwnedCharClass.AnyClass ||
