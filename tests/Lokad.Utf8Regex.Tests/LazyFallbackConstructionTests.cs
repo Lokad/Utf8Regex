@@ -260,6 +260,102 @@ public sealed class LazyFallbackConstructionTests
     }
 
     [Theory]
+    [InlineData("(a{2}?b)", "xxaabxx")]
+    [InlineData("(a{2}?b)", "xxabxx")]
+    [InlineData("([0-9]){2}?x", "ab12xcd")]
+    [InlineData("(a{2,2}?b)", "xxaabxx")]
+    public void ExactCountLazyCompiledDiscoveryStaysOwned(string pattern, string text)
+    {
+        // Exact-count lazies agree on both oracle lanes with full group detail
+        // (probe-mapped, including inner captures, nesting, and backreferences),
+        // so the slice serves discovery owned on both lanes with parity and no
+        // fallback construction.
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var enumRegex = new Utf8Regex(pattern, options);
+            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (Match expectedMatch in oracle.Matches(text))
+            {
+                expected.Add((expectedMatch.Index, expectedMatch.Length));
+            }
+
+            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+            {
+                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            }
+
+            Assert.Equal(expected.Count, actual.Count);
+            for (var i = 0; i < expected.Count; i++)
+            {
+                Assert.Equal(expected[i].Index, actual[i].Index);
+                Assert.Equal(expected[i].Length, actual[i].Length);
+            }
+
+            Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
+    [Theory]
+    [InlineData("(a{1,3}?b)?c", "aabc")]
+    [InlineData("(a{1,3}?b)?c", "xyz")]
+    [InlineData("([0-9]{1,3}?x)?", "12x")]
+    [InlineData("([0-9]{1,3}?x)?", "123")]
+    public void CaptureFreeLazyRangeCompiledDiscoveryStaysOwned(string pattern, string text)
+    {
+        // Capture-free lazy ranges agree on both oracle lanes with full group
+        // detail (probe-mapped, including the abandonment-trigger input "123" that
+        // diverges its captured counterpart), so the slice serves discovery owned on
+        // both lanes with parity and no fallback construction.
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var enumRegex = new Utf8Regex(pattern, options);
+            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (Match expectedMatch in oracle.Matches(text))
+            {
+                expected.Add((expectedMatch.Index, expectedMatch.Length));
+            }
+
+            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+            {
+                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            }
+
+            Assert.Equal(expected.Count, actual.Count);
+            for (var i = 0; i < expected.Count; i++)
+            {
+                Assert.Equal(expected[i].Index, actual[i].Index);
+                Assert.Equal(expected[i].Length, actual[i].Length);
+            }
+
+            Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
+    [Theory]
     [InlineData("(([0-9]){1,2}?x)?", "123")]
     [InlineData("(([0-9]){1,2}?x)?", "12x")]
     public void FiniteRangeLazyCompiledDiscoveryKeepsBclShaping(string pattern, string text)
@@ -286,7 +382,7 @@ public sealed class LazyFallbackConstructionTests
     public void LazyPlusCompiledDiscoveryStaysOwned(string pattern, string text)
     {
         // Control: lazy-plus shapes execute owned discovery on both lanes, so the
-        // remaining compiled debt is specific to finite lazy ranges above one
+        // remaining compiled debt is specific to capture-writing finite lazy ranges
         // (see FiniteRangeLazyCompiledDiscoveryKeepsBclShaping).
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })

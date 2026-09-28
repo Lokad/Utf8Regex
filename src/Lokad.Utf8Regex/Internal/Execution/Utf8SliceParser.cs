@@ -91,11 +91,11 @@ internal static class Utf8SliceParser
         // lazy ranges even oscillate compiled enumeration forever (probed:
         // (([0-9]){0,2}?x)? on "123" yields 0+0,0+1,...). The shared
         // runner follows interpreter abandonment, so compiled-lane shapes
-        // with a finite lazy maximum above one decline to their BCL-compiled
-        // fallback. Single-maximum lazies (??, {0,1}?, {1}?) agree on both
-        // lanes with full group detail (probe-mapped, including inner
-        // captures), as do infinite-maximum lazy loops.
-        if ((options & RegexOptions.Compiled) != 0 && parser.SawFiniteMaxAboveOneLazyRepeat)
+        // with a capture-writing finite lazy range decline to their BCL-compiled
+        // fallback. Exact counts, single maxima, and capture-free ranges agree
+        // on both lanes with full group detail (probe-mapped across nesting,
+        // backreferences, lookarounds, and atomics), as do infinite maxima.
+        if ((options & RegexOptions.Compiled) != 0 && parser.SawCaptureWritingLazyRange)
         {
             return null;
         }
@@ -791,7 +791,7 @@ internal static class Utf8SliceParser
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
         private readonly Dictionary<string, int> _groupSlots = new(StringComparer.Ordinal);
         private bool _sawBalancing;
-        private bool _sawFiniteMaxAboveOneLazyRepeat;
+        private bool _sawCaptureWritingLazyRange;
         private int _lookbehindDepth;
         private bool _sawLookbehindGroupWrite;
 
@@ -812,7 +812,7 @@ internal static class Utf8SliceParser
         internal bool MatchIgnoreCase => _matchIgnoreCase;
         internal bool SawFold => _sawFold;
         internal bool SawLookbehindGroupWrite => _sawLookbehindGroupWrite;
-        internal bool SawFiniteMaxAboveOneLazyRepeat => _sawFiniteMaxAboveOneLazyRepeat;
+        internal bool SawCaptureWritingLazyRange => _sawCaptureWritingLazyRange;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
         {
@@ -853,6 +853,59 @@ internal static class Utf8SliceParser
             }
 
             return true;
+        }
+
+        // True when the lazy-range body can leak abandonment progress on the
+        // BCL-compiled lane: only capture-writing subtrees (captures and
+        // balancing groups, anywhere inside including nested loops) exhibit the
+        // divergence or the enumeration oscillation. Reads (backreferences),
+        // lookarounds, atomics, and conditionals pass through transparently;
+        // nested captures inside them still decline via the recursion.
+        private static bool RepeatBodyWritesCaptures(Utf8SliceNode node)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.CaptureNode:
+                case Utf8SliceNode.BalanceNode:
+                    return true;
+                case Utf8SliceNode.ConcatNode concat:
+                    foreach (var child in concat.Children)
+                    {
+                        if (RepeatBodyWritesCaptures(child))
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                case Utf8SliceNode.AlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                    {
+                        foreach (var member in branch)
+                        {
+                            if (RepeatBodyWritesCaptures(member))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                case Utf8SliceNode.RepeatNode repeat:
+                    return RepeatBodyWritesCaptures(repeat.Body);
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    return RepeatBodyWritesCaptures(lookahead.Body);
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    return RepeatBodyWritesCaptures(lookbehind.Body);
+                case Utf8SliceNode.AtomicNode atomic:
+                    return RepeatBodyWritesCaptures(atomic.Body);
+                case Utf8SliceNode.ConditionalNode conditional:
+                    return RepeatBodyWritesCaptures(conditional.YesBody) ||
+                        RepeatBodyWritesCaptures(conditional.NoBody) ||
+                        (conditional.TestBody is not null && RepeatBodyWritesCaptures(conditional.TestBody));
+                default:
+                    return false;
+            }
         }
 
         private bool TryParseRepeat(int depth, out Utf8SliceNode? node)
@@ -915,12 +968,13 @@ internal static class Utf8SliceParser
                 _position++;
             }
 
-            // Only maxima above one can exhibit the per-lane abandonment
-            // divergence (or the captured-range enumeration oscillation);
-            // single-maximum lazies are probe-proven lane-identical.
-            if (lazy && maximum != int.MaxValue && maximum > 1)
+            // Only true ranges (maximum above both one and the minimum) whose
+            // body writes captures can exhibit the per-lane abandonment
+            // divergence or the enumeration oscillation; exact counts, single
+            // maxima, and capture-free ranges are probe-proven lane-identical.
+            if (lazy && maximum != int.MaxValue && maximum > 1 && maximum > minimum && RepeatBodyWritesCaptures(atom))
             {
-                _sawFiniteMaxAboveOneLazyRepeat = true;
+                _sawCaptureWritingLazyRange = true;
             }
 
             node = new Utf8SliceNode.RepeatNode(atom, minimum, maximum, lazy);

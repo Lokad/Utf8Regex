@@ -173,11 +173,15 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData("a{2,4}?a")]
     [InlineData("([0-9]){1,3}?x")]
     [InlineData("([0-9]){1,2}?x")]
-    public void FiniteRangeLazyRepeatDeclinesCompiledLane(string pattern)
+    [InlineData("((a){1,3}?b)?c")]
+    public void CapturedLazyRangeDeclinesCompiledLane(string pattern)
     {
+        // Only ranges whose body writes captures decline: the per-lane
+        // abandonment divergence and the enumeration oscillation need
+        // capture-writing subtrees (probe-mapped). The nested-capture row
+        // stays declined conservatively though no probed input diverges it.
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
     }
@@ -185,11 +189,17 @@ public sealed class Utf8SliceParserTests
     [Theory]
     [InlineData("a??")]
     [InlineData(@"(\p{L}??)x")]
-    public void SingleMaximumLazyRepeatStaysCompiled(string pattern)
+    [InlineData("a{2}?")]
+    [InlineData("([0-9]){2}?x")]
+    [InlineData("a{2,4}?a")]
+    [InlineData("a{1,3}?b")]
+    [InlineData("(?:[0-9]){0,2}?x")]
+    public void DivergenceFreeLazyRepeatsStayCompiled(string pattern)
     {
-        // Single-maximum lazies (??, {0,1}?) agree on both oracle lanes
-        // (probe-mapped, including inner captures), so the compiled lane
-        // keeps the slice program; finite maxima above one decline above.
+        // Single maxima, exact counts, and capture-free ranges agree on both
+        // oracle lanes (probe-mapped across nesting, backreferences,
+        // lookarounds, and atomics), so the compiled lane keeps the slice
+        // program; only capture-writing ranges decline above.
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
     }
