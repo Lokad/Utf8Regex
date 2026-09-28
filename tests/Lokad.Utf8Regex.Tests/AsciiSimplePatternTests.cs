@@ -1164,37 +1164,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ScalarDiscoveryDeclineCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("a.c", "a\U0001F600c"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
 
-    [Theory]
-    [MemberData(nameof(ScalarDiscoveryDeclineCases))]
-    public void ScalarDiscoveryDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
-    {
-        // Declared R05 debt: astral inputs decline scalar verification (BCL unit
-        // semantics split astral scalars while the walk consumes whole scalars),
-        // so discovery stays BCL-backed there. Parity holds; construction is pinned.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-
-        var countRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-    }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarMatchOwnedCases()
     {
@@ -1900,37 +1870,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> DigitDeclineCases()
-    {
-        (string pattern, string text)[] rows =
-        [
-            ("\\d{2,4}", "12\U0001F60034"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
-        }
-    }
 
-    [Theory]
-    [MemberData(nameof(DigitDeclineCases))]
-    public void DigitDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
-    {
-        // Declared R05 debt: negated Unicode categories and astral inputs decline
-        // scalar verification, so discovery stays BCL-backed. Parity holds;
-        // construction is pinned.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-
-        var countRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-    }
     public static System.Collections.Generic.IEnumerable<object?[]> WordSpaceDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -2473,7 +2413,7 @@ public sealed class AsciiSimplePatternTests
         // R05: pure doubly-negated shorthands lower as their positive category, so
         // IsMatch and Count never construct the fallback engine on astral-free
         // non-ASCII input; the existing digit/word/whitespace arms serve them.
-        // Mixed payloads and astral inputs keep BCL routing.
+        // Mixed payloads keep BCL routing; astral discovery is unit-owned.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -2879,5 +2819,74 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(oracle.Replace(text, static match => "<" + match.Value + ">"), evaluatorActual);
         Assert.False(evaluatorRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(evaluatorRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitDiscoveryOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a.c", "a\U0001F600c"),
+            ("a.c", "abc"),
+            (".", "\U0001F600"),
+            ("..", "\U0001F600"),
+            ("a.", "a\U0001F600"),
+            ("a[^x]d", "a\U0001F600d"),
+            ("[^x]", "\U0001F600"),
+            (@"\d\d", "a12\U0001F600"),
+            (@"\d{2,4}", "12\U0001F60034"),
+            (@"(\d\d)", "a12\U0001F600"),
+            (@"(a.c)", "xa\U0001F600cy"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitDiscoveryOwnedCases))]
+    public void AstralUnitDiscoveryOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: astral inputs verify unit-aware over decoded units (dots and negations
+        // consume halves exactly like BCL), so IsMatch and Count never construct the
+        // fallback engine. Match projection, IgnoreCase plans, and anchored plans keep
+        // their existing routes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitDiscoveryDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(?i)a.c", "éA\U0001F600C"),
+            ("(?m:^a.c$)", "ab\nac\U0001F600"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitDiscoveryDeclineCases))]
+    public void AstralUnitDiscoveryDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: IgnoreCase plans and anchored plans keep BCL routing on
+        // astral input; parity holds and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

@@ -206,13 +206,13 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     }
 
     [Theory]
-    [InlineData("a.c", "ééabcé", true)]
-    [InlineData("a.c", "x\U0001F600abc", false)]
-    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery)
+    [InlineData("a.c", "ééabcé", true, true)]
+    [InlineData("a.c", "x\U0001F600abc", true, false)]
+    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedShaping)
     {
-        // IsMatch, Count, enumeration, groupless detailed matches, groupless
-        // literal replacement, and splits verify scalar-aware on astral-free
-        // non-ASCII input, so only astral inputs keep BCL routing anywhere.
+        // IsMatch and Count are owned everywhere (scalar-aware on astral-free input,
+        // unit-aware on astral input); enumeration, groupless literal replacement,
+        // and splits stay BCL-backed on astral input.
         // Group-reference templates and evaluators over grouped shapes stay
         // BCL-backed (declared R05 debt). Parity holds; construction is pinned
         // per op.
@@ -242,7 +242,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expected.Count, actual.Count);
-            Assert.Equal(!expectOwnedDiscovery, enumRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedShaping, enumRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedFirst = oracle.Match(text);
@@ -250,8 +250,9 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
             // Neither row constructs the anchored engine: BMP discovery serves the
-            // owned slice, while astral discovery verifies through the full BCL decode
-            // (guided verification is unsound where matches start mid-scalar, so the
+            // owned slice, while astral shaping verifies through the full BCL decode
+            // (unit-aware discovery is owned, but projection still needs full decode;
+            // guided verification is unsound where matches start mid-scalar, so the
             // anchored bounded-slice path stays out).
             Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
             const int count = int.MaxValue;
@@ -259,7 +260,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var expectedReplaced = oracle.Replace(text, "x");
             var actualReplaced = replaceRegex.ReplaceToString(input, "x");
             Assert.Equal(expectedReplaced, actualReplaced);
-            Assert.Equal(!expectOwnedDiscovery, replaceRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedShaping, replaceRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var splitRegex = new Utf8Regex(pattern, options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
@@ -277,7 +278,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expectedSplits, actualSplits);
-            Assert.Equal(!expectOwnedDiscovery, splitRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedShaping, splitRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 
