@@ -177,6 +177,25 @@ public sealed partial class Utf8Regex
 
             return Utf8ValueMatch.NoMatch;
         }
+        // Folded anchored suffixes match the same single tail hit with per-byte invariant
+        // folding; the shared twin projects coordinates. Kelvin and Turkic divergences
+        // fall through to the fenced BCL paths below.
+        if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+                if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var foldedSuffixAdapterMatch) &&
+                    foldedSuffixAdapterMatch.Success &&
+                    input.Project(start).Value <= foldedSuffixAdapterMatch.IndexInUtf16)
+                {
+                    return foldedSuffixAdapterMatch;
+                }
+
+                return Utf8ValueMatch.NoMatch;
+            }
+        }
 
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
         {
@@ -188,6 +207,25 @@ public sealed partial class Utf8Regex
             }
 
             return Utf8ValueMatch.NoMatch;
+        }
+
+        // Folded anchored prefixes match the same single anchored hit with per-byte
+        // invariant folding; nonzero starts miss definitively. Kelvin and Turkic
+        // divergences fall through to the fenced BCL paths below.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+                if (start.Value == 0 &&
+                    Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out var foldedAdapterMatchLength))
+                {
+                    return new Utf8ValueMatch(true, true, 0, foldedAdapterMatchLength, 0, foldedAdapterMatchLength);
+                }
+
+                return Utf8ValueMatch.NoMatch;
+            }
         }
 
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))

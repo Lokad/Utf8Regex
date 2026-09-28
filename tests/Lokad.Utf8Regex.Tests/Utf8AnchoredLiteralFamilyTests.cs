@@ -636,4 +636,61 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedFromOffsetCases()
+    {
+        string[] patterns = ["^ab", "\\Aab", "ab$", "ab\\z"];
+        string[] texts = ["ABxx", "xxAB", "ab"];
+        int[] offsets = [0, 1, 2];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                foreach (var offset in offsets)
+                {
+                    yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, text, offset };
+                    yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, text, offset };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedFromOffsetCases))]
+    public void FoldedFromOffsetMatchOwnsInput(string pattern, RegexOptions options, string text, int utf16Offset)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text, utf16Offset);
+        var actual = regex.MatchFromUtf16Offset(input, utf16Offset);
+
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Length, actual.LengthInUtf16);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    [Theory]
+    [InlineData("^kil", "Kilo", 1)]
+    [InlineData("kil$", "xKil", 1)]
+    public void FoldedFromOffsetKeepsBclShapingForKelvin(string pattern, string text, int utf16Offset)
+    {
+        // Declared R05 debt: the offset-adapter Kelvin fence diverts folded anchored
+        // matches to BCL verification when the pattern holds k/K and the input holds
+        // U+212A. Parity holds; construction is pinned.
+        foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            var expected = oracle.Match(text, utf16Offset);
+            var actual = regex.MatchFromUtf16Offset(input, utf16Offset);
+            Assert.Equal(expected.Success, actual.Success);
+            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
 }
