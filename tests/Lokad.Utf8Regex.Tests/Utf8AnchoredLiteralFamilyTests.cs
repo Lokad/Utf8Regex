@@ -675,6 +675,28 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
     [Theory]
+    [MemberData(nameof(FoldedFromOffsetCases))]
+    public void FoldedFromOffsetDetailedOwnsInput(string pattern, RegexOptions options, string text, int utf16Offset)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text, utf16Offset);
+        var actual = regex.MatchDetailedFromUtf16Offset(input, utf16Offset);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Value, actual.GetValueString());
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
     [InlineData("^kil", "Kilo", 1)]
     [InlineData("kil$", "xKil", 1)]
     public void FoldedFromOffsetKeepsBclShapingForKelvin(string pattern, string text, int utf16Offset)
