@@ -2889,4 +2889,56 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitMatchOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a.c", "a\U0001F600c"),
+            ("a.c", "abc"),
+            (".", "\U0001F600"),
+            ("..", "\U0001F600"),
+            ("a.", "a\U0001F600"),
+            ("a[^x]d", "a\U0001F600d"),
+            ("[^x]", "\U0001F600"),
+            ("[^x]a", "\U0001F600a"),
+            (@"\d\d", "a12\U0001F600"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitMatchOwnedCases))]
+    public void AstralUnitMatchOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: astral first-matches project owned from unit coordinates through the
+        // boundary map (half-involving hits shape without byte ranges, exactly like BCL),
+        // and groupless detailed matches shape from the owned value. Match-form projection beyond light
+        // matches stays on existing routes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
 }

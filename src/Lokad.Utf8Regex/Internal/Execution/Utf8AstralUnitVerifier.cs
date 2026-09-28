@@ -297,4 +297,25 @@ internal static class Utf8AstralUnitVerifier
         matchedLength = 0;
         return false;
     }
+    // First-hit discovery reports qualification separately from hit presence so misses
+    // answer definitively without BCL verification while half-involving hits shape
+    // without byte ranges exactly like the BCL projector.
+    public static bool TryFindFirst(
+        ReadOnlySpan<byte> input,
+        NativeExecutionKind kind,
+        in AsciiSimplePatternPlan plan,
+        Utf8ExecutionDeadline budget,
+        out int startUnit,
+        out int matchedLength)
+    {
+        startUnit = -1;
+        matchedLength = 0;
+        if (!CanServeUnit(kind, plan, input))
+        {
+            return false;
+        }
+
+        startUnit = FindNextUnit(Encoding.UTF8.GetString(input), plan, budget, 0, out matchedLength);
+        return true;
+    }
 }

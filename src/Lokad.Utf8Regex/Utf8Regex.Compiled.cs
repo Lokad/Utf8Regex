@@ -257,6 +257,26 @@ public sealed partial class Utf8Regex
                 }
             }
 
+            // R05: astral first-matches project owned from unit coordinates through the
+            // boundary map; misses answer definitively, and half-involving hits shape
+            if (Utf8AstralUnitVerifier.TryFindFirst(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var unitStart, out var unitLength))
+            {
+                if (unitStart < 0)
+                {
+                    return Utf8ValueMatch.NoMatch;
+                }
+
+                // Half-involving hits carry unit coordinates without byte ranges,
+                // exactly like the BCL projector below.
+                var unitAnalysis = Utf8InputAnalyzer.Analyze(input);
+                if (unitAnalysis.BoundaryMap.TryGetByteRange(unitStart, unitLength, out var unitByteIndex, out var unitByteLength))
+                {
+                    return new Utf8ValueMatch(true, true, unitStart, unitLength, unitByteIndex, unitByteLength);
+                }
+
+                return new Utf8ValueMatch(true, false, unitStart, unitLength);
+            }
+
             return MatchFallback(input);
         }
 
