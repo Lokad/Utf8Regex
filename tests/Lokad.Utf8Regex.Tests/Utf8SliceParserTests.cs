@@ -180,8 +180,9 @@ public sealed class Utf8SliceParserTests
     {
         // Only ranges whose body writes captures decline: the per-lane
         // abandonment divergence and the enumeration oscillation need
-        // capture-writing subtrees (probe-mapped). The nested-capture row
-        // stays declined conservatively though no probed input diverges it.
+        // capture-writing subtrees (probe-mapped, including literal bodies
+        // once the kept progress is observable, plus phantom trailing
+        // empties under masking continuations).
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
     }

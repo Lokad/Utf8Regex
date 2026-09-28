@@ -119,6 +119,48 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.Equal(expectedCompiled.Groups.Count, actualCompiled.GroupCount);
     }
 
+    [Fact]
+    public void LazyLoopLiteralBodyAbandonmentPinsOracleDisagreement()
+    {
+        // The abandonment divergence is not specific to set/shorthand loop
+        // bodies: "((a){1,3}?x)?" on "aaa" also abandons fully interpreted
+        // (empty match) while compiled keeps one iteration of progress
+        // (length 1, outer group unmatched while the inner capture keeps "a").
+        // A {a,b,c,x} brute force to length 5 further shows masking
+        // continuations still leak: "((a){1,3}?b)?c" on "acaaa" agrees on the
+        // match but compiled enumeration yields a phantom trailing empty, so
+        // the compiled-lane decline stands for every capture-writing range.
+        // The ordinary lane serves the slice owned (interpreter abandonment)
+        // while the compiled lane rides BCL fallback, so only per-lane
+        // fidelity is asserted here.
+        const string pattern = @"((a){1,3}?x)?";
+        const string input = "aaa";
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var context = RegexParityContext.Create(pattern, input, options);
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        var expected = context.DotNet.Match(input);
+        var expectedCompiled = context.DotNetCompiled.Match(input);
+        Assert.True(expected.Success);
+        Assert.Equal(0, expected.Length);
+        Assert.True(expectedCompiled.Success);
+        Assert.Equal(1, expectedCompiled.Length);
+        Assert.False(expectedCompiled.Groups[1].Success);
+        Assert.True(expectedCompiled.Groups[2].Success);
+        Assert.Equal("a", expectedCompiled.Groups[2].Value);
+
+        var actual = context.Utf8.MatchDetailed(bytes);
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+
+        var actualCompiled = context.Utf8Compiled.MatchDetailed(bytes);
+        Assert.Equal(expectedCompiled.Success, actualCompiled.Success);
+        Assert.Equal(expectedCompiled.Index, actualCompiled.IndexInUtf16);
+        Assert.Equal(expectedCompiled.Length, actualCompiled.LengthInUtf16);
+        Assert.Equal(expectedCompiled.Groups.Count, actualCompiled.GroupCount);
+    }
     [Theory]
     [InlineData(@"^b", "a\nb\nc", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
     [InlineData(@"^b", "abc", RegexOptions.Multiline | RegexOptions.CultureInvariant)]

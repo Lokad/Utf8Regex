@@ -358,14 +358,18 @@ public sealed class LazyFallbackConstructionTests
     [Theory]
     [InlineData("(([0-9]){1,2}?x)?", "123")]
     [InlineData("(([0-9]){1,2}?x)?", "12x")]
+    [InlineData("((a){1,3}?x)?", "aaa")]
+    [InlineData("((a){0,2}?x)?", "aaa")]
     public void FiniteRangeLazyCompiledDiscoveryKeepsBclShaping(string pattern, string text)
     {
-        // Finite lazy maxima above one stay BCL-backed for discovery on the
+        // Capture-writing lazy ranges stay BCL-backed for discovery on the
         // compiled lane: the compiler keeps abandonment progress there while
         // the interpreter abandons fully, and captured ranges even oscillate
-        // compiled enumeration forever (probed: 0+0,0+1,...). IsMatch
-        // terminates on both lanes so parity is asserted; full enumeration is
-        // deliberately not compared because the BCL-compiled lane never finishes.
+        // compiled enumeration forever (probed: 0+0,0+1,...). The divergence is
+        // not specific to set/shorthand bodies: literal-body ranges diverge too
+        // once the kept progress is observable. IsMatch terminates on both lanes
+        // so parity is asserted; full enumeration is deliberately not compared
+        // because the BCL-compiled lane never finishes.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
