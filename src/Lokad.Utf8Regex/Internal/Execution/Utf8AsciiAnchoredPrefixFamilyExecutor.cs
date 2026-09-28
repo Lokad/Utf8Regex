@@ -63,6 +63,17 @@ internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
     // stay fenced upstream of every direct-family consumer.
     private static bool FoldedPrefixEquals(ReadOnlySpan<byte> input, byte[] literal)
     {
+        return FoldedSequenceEquals(input[..literal.Length], literal);
+    }
+
+    // Shared with the suffix executor: both families fold the same anchored bytes.
+    internal static bool FoldedSequenceEquals(ReadOnlySpan<byte> input, byte[] literal)
+    {
+        if (input.Length < literal.Length)
+        {
+            return false;
+        }
+
         for (var i = 0; i < literal.Length; i++)
         {
             var candidate = input[i];

@@ -6,8 +6,9 @@ internal static class Utf8AsciiAnchoredSuffixFamilyExecutor
     // plus the strict `literal\z` twin): the match, if any, is exactly the literal
     // at the input end, or right before a single trailing line feed for the lax
     // forms. A miss is definitive, so every operation stays clear of the fallback
-    // engine. Byte-exact on every input: astral scalars never end with ASCII
-    // bytes, and the extractor admits sensitive ASCII literals only. Coordinates
+    // engine. Byte-exact on every input for the sensitive kinds: astral scalars
+    // never end with ASCII bytes. Folded kinds compare per byte under invariant
+    // folding (Kelvin stays fenced upstream). Coordinates
     // come back in bytes; UTF-16 projection belongs to the caller, which owns
     // input validation there.
     public static bool TryMatchSuffix(
@@ -18,7 +19,9 @@ internal static class Utf8AsciiAnchoredSuffixFamilyExecutor
     {
         matchIndex = -1;
         matchedLength = 0;
-        if (plan.Kind != Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix &&
+        var folded = plan.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd;
+        if (!folded &&
+            plan.Kind != Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix &&
             plan.Kind != Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd ||
             plan.LiteralUtf8 is not { Length: > 0 } anchoredLiteral)
         {
@@ -26,7 +29,8 @@ internal static class Utf8AsciiAnchoredSuffixFamilyExecutor
         }
 
         var end = input.Length;
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix &&
+        var lax = plan.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix;
+        if (lax &&
             end > anchoredLiteral.Length &&
             input[end - 1] == (byte)'\n')
         {
@@ -34,7 +38,10 @@ internal static class Utf8AsciiAnchoredSuffixFamilyExecutor
         }
 
         var start = end - anchoredLiteral.Length;
-        if (start < 0 || !input.Slice(start, anchoredLiteral.Length).SequenceEqual(anchoredLiteral))
+        var sliceMatches = start >= 0 && (folded
+            ? Utf8AsciiAnchoredPrefixFamilyExecutor.FoldedSequenceEquals(input.Slice(start, anchoredLiteral.Length), anchoredLiteral)
+            : input.Slice(start, anchoredLiteral.Length).SequenceEqual(anchoredLiteral));
+        if (!sliceMatches)
         {
             return false;
         }

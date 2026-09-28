@@ -557,8 +557,12 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         suffixUtf8 = null;
         allowTrailingNewline = false;
         options = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
+        // Top-level IgnoreCase is admitted: the caller files folded literals under
+        // separate kinds whose executors fold per byte (Kelvin and Turkic divergences
+        // stay fenced upstream of every consumer). RightToLeft, NonBacktracking,
+        // whitespace, ECMAScript, and multiline-$ still decline.
         if ((options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking |
-                            RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace |
+                            RegexOptions.IgnorePatternWhitespace |
                             RegexOptions.ECMAScript)) != 0)
         {
             return false;

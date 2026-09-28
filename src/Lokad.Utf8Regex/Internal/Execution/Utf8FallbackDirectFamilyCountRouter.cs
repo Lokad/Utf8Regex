@@ -34,8 +34,11 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         }
 
         // Anchored literal suffixes match at most once (at the input end), so the
-        // count is the tail hit itself. Byte-exact on every input, like prefixes.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(directFamily.Kind) &&
+        // count is the tail hit itself. Byte-exact on every input for the sensitive
+        // kinds, like prefixes. Folded kinds compare per byte under invariant folding
+        // (Kelvin stays fenced in CountCore upstream).
+        if ((Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(directFamily.Kind) ||
+            directFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             directFamily.LiteralUtf8 is { Length: > 0 })
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);

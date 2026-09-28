@@ -41,6 +41,8 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     AnchoredAsciiLiteralSuffix = 34,
     AnchoredAsciiLiteralSuffixStrictEnd = 35,
     AnchoredFoldedAsciiLiteralPrefix = 36,
+    AnchoredFoldedAsciiLiteralSuffix = 37,
+    AnchoredFoldedAsciiLiteralSuffixStrictEnd = 38,
 }
 
 internal enum Utf8FallbackFindModeKind : byte

@@ -169,8 +169,10 @@ public sealed partial class Utf8Regex
         }
 
         // Anchored literal suffixes count the same way: at most one match at the
-        // input end, byte-exact on every input.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind))
+        // input end, byte-exact on every input. Folded suffixes ride the same router
+        // arm, which switches on the kind.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
         {
             return _compiledEngineRuntime.Count(input, validation, budget);
         }

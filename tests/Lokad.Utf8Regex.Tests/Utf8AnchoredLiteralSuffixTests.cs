@@ -34,6 +34,23 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         Assert.Equal(Utf8FallbackFindModeKind.MatchAtEnd, plan.FindMode);
     }
 
+    public static IEnumerable<object?[]> FoldedAcceptCases()
+    {
+        yield return new object?[] { "ab$", "AnchoredFoldedAsciiLiteralSuffix" };
+        yield return new object?[] { "ab\\z", "AnchoredFoldedAsciiLiteralSuffixStrictEnd" };
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedAcceptCases))]
+    public void FoldedAnchoredLiteralShapesClassifyToFoldedSuffixFamily(string pattern, string expectedKind)
+    {
+        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
+            pattern, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null);
+
+        Assert.Equal(expectedKind, plan.Kind.ToString());
+        Assert.Equal(Utf8FallbackFindModeKind.MatchAtEnd, plan.FindMode);
+    }
+
     public static IEnumerable<object?[]> DeclineCases()
     {
         yield return new object?[] { "ab$|cd", RegexOptions.CultureInvariant };
@@ -48,7 +65,6 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         yield return new object?[] { "ab$", RegexOptions.Multiline | RegexOptions.CultureInvariant };
         yield return new object?[] { "(?m:ab$)", RegexOptions.CultureInvariant };
         yield return new object?[] { "(?i:ab$)", RegexOptions.CultureInvariant };
-        yield return new object?[] { "ab$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
         yield return new object?[] { "ab\\$", RegexOptions.CultureInvariant };
         yield return new object?[] { "\\d+$", RegexOptions.CultureInvariant };
         yield return new object?[] { "[ab]$", RegexOptions.CultureInvariant };

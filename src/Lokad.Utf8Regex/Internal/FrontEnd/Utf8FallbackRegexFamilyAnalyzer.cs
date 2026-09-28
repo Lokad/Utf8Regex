@@ -335,10 +335,18 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         if (TryParseAnchoredAsciiLiteralSuffix(executionPattern, options, out var anchoredSuffixUtf8, out var suffixTrailingNewline) ||
             TryParseAnchoredAsciiLiteralSuffix(semanticPattern, options, out anchoredSuffixUtf8, out suffixTrailingNewline))
         {
-            return Utf8FallbackDirectFamilyPlan.ForLiteral(
-                suffixTrailingNewline
+            // Top-level IgnoreCase files under the folded kinds, preserving the lax
+            // versus strict trailing-newline distinction; every consumer fences
+            // Kelvin/Turkic divergence upstream.
+            var suffixKind = (options & RegexOptions.IgnoreCase) != 0
+                ? suffixTrailingNewline
+                    ? Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix
+                    : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd
+                : suffixTrailingNewline
                     ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix
-                    : Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd,
+                    : Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd;
+            return Utf8FallbackDirectFamilyPlan.ForLiteral(
+                suffixKind,
                 Utf8FallbackFindModeKind.MatchAtEnd,
                 literalUtf8: RequireBytes(anchoredSuffixUtf8));
         }

@@ -280,10 +280,10 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> TopLevelFoldedSuffixCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedSuffixCases()
     {
         string[] patterns = ["ab$", "ab\\z"];
-        string[] texts = ["ABxx", "xxAB", "abxx", "xxab"];
+        string[] texts = ["xxAB", "ABxx", "ab", "AB\n", "éAB", "ABé"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -295,24 +295,43 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     }
 
     [Theory]
-    [MemberData(nameof(TopLevelFoldedSuffixCases))]
-    public void TopLevelFoldedSuffixDiscoveryKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(FoldedSuffixCases))]
+    public void FoldedSuffixDiscoveryOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: top-level IgnoreCase declines the absolute suffix
-        // families at extraction, so discovery stays BCL-backed on both lanes.
-        // Parity holds; construction is pinned.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
 
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
 
-        var enumRegex = new Utf8Regex(pattern, options);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedSuffixCases))]
+    public void FoldedSuffixEnumerationKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: folded suffix enumeration has no anchor-enforcing folded
+        // cursor, so it stays BCL-backed on both lanes. Parity holds; construction
+        // is pinned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
         {
@@ -320,7 +339,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         var actual = new System.Collections.Generic.List<(int Index, int Length)>();
-        foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+        foreach (var valueMatch in regex.EnumerateMatches(input))
         {
             actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
         }
@@ -332,6 +351,30 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FoldedSuffixKeepsBclShapingForKelvin(bool compiled)
+    {
+        // Declared R05 debt: the Kelvin fence diverts folded-suffix matching to BCL
+        // verification when the pattern holds k/K and the input holds U+212A, since
+        // byte folding cannot reproduce the invariant fold. Parity holds;
+        // construction is pinned.
+        const string pattern = "k$";
+        const string text = "xK";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        if (compiled)
+        {
+            options |= RegexOptions.Compiled;
+        }
+
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

@@ -270,7 +270,8 @@ public sealed partial class Utf8Regex
         // prefixes: astral scalars never end with ASCII bytes. Unlike prefixes,
         // the match index needs UTF-16 mapping past non-ASCII content (which also
         // validates the prefix, matching the invalid-input contract on hits).
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+        if ((Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
             if (Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, _fallbackDirectFamily, out var suffixByteIndex, out var suffixLength))
@@ -364,7 +365,8 @@ public sealed partial class Utf8Regex
 
         // Same byte-exact contract for suffixes: a tail miss is definitive on
         // every input, and IsMatch needs no coordinates.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind))
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
         {
             isMatch = Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, _fallbackDirectFamily, out _, out _);
             return true;
