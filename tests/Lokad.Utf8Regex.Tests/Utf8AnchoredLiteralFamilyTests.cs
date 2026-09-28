@@ -516,4 +516,124 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedReplaceCases()
+    {
+        string[] patterns = ["^ab", "\\Aab", "ab$", "ab\\z"];
+        string[] templates = ["x", "<$1>", "$&", "$`", "$\u0027", "$_", "$+", "$$"];
+        string[] texts = ["ABxx", "xxAB", "ab", "AB\n", "éAB", "ABé"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedReplaceCases))]
+    public void FoldedReplaceOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedDetailedEvaluatorCases()
+    {
+        string[] patterns = ["^ab", "\\Aab", "ab$", "ab\\z"];
+        string[] texts = ["ABxx", "xxAB", "ab", "AB\n", "éAB", "ABé"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedDetailedEvaluatorCases))]
+    public void FoldedDetailedOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Value, actual.GetValueString());
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedDetailedEvaluatorCases))]
+    public void FoldedEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "<" + match.Value + ">");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("<"u8);
+            writer.Append(context.GetGroup(0).GetValueBytes());
+            writer.Append(">"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(byteRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData("^kil", "Kilo")]
+    [InlineData("kil$", "xKil")]
+    public void FoldedReplaceKeepsBclShapingForKelvin(string pattern, string text)
+    {
+        // Declared R05 debt: the replacement Kelvin fence diverts folded anchored
+        // templates to BCL expansion when the pattern holds k/K and the input holds
+        // U+212A. Parity holds; construction is pinned.
+        foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            var expected = oracle.Replace(text, "q$&q");
+            var actual = regex.ReplaceToString(input, "q$&q");
+            Assert.Equal(expected, actual);
+            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
 }
