@@ -157,6 +157,21 @@ public sealed partial class Utf8Regex
             }
         }
 
+        // R05: line-anchored ASCII discovery from the start byte runs owned through the
+        // shared interpreter; misses are definitive without BCL verification.
+        if (CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
+        {
+            try
+            {
+                var offsetBudget = CreateExecutionBudget();
+                return FindNextSimplePatternViaInterpreter(input.Bytes, start.Value, offsetBudget, out _) >= 0;
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
             input.GetDecodedString().AsSpan(),
             input.Project(start).Value);
@@ -240,6 +255,27 @@ public sealed partial class Utf8Regex
             }
         }
 
+                // R05: line-anchored ASCII first-match from the start byte projects owned through
+        // the shared interpreter with whole-input anchor checks.
+        if (CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
+        {
+            try
+            {
+                var offsetBudget = CreateExecutionBudget();
+                var offsetFound = FindNextSimplePatternViaInterpreter(input.Bytes, start.Value, offsetBudget, out var offsetLength);
+                if (offsetFound < 0)
+                {
+                    return Utf8ValueMatch.NoMatch;
+                }
+
+                return new Utf8ValueMatch(true, true, offsetFound, offsetLength, offsetFound, offsetLength);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
             input.GetDecodedString(),
             input.Project(start).Value);
@@ -292,6 +328,32 @@ public sealed partial class Utf8Regex
         }
 
         var decoded = input.GetDecodedString();
+        if (TryGetOwnedDetailedGroupCount(out var ownedAdapterOffsetGroupCount) &&
+            CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
+        {
+            // R05: line-anchored ASCII detailed matches from the start byte discover
+            // through the shared value path (mirroring the zero-offset arm); shaping
+            // projects owned spans without BCL verification.
+            Utf8ValueMatch adapterOffsetFirst;
+            try
+            {
+                adapterOffsetFirst = MatchAtByteOffset(input, start);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+
+            if (!adapterOffsetFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input.Bytes, decoded, input.BoundaryMap, _groupNames);
+            }
+
+            return ownedAdapterOffsetGroupCount > 1
+                ? new Utf8MatchContext(input.Bytes, decoded, input.BoundaryMap, _groupNames, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16, ownedAdapterOffsetGroupCount)
+                : new Utf8MatchContext(input.Bytes, decoded, input.BoundaryMap, _groupNames, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16);
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
             decoded,
             input.Project(start).Value);
@@ -331,6 +393,27 @@ public sealed partial class Utf8Regex
             try
             {
                 return OwnedSliceCountFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
+        // R05: line-anchored ASCII counting from the start byte runs the shared
+        // interpreter loop; anchors still see the whole input.
+        if (CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
+        {
+            try
+            {
+                var offsetBudget = CreateExecutionBudget();
+                return Utf8ExecutionInterpreter.CountSimplePatternFrom(
+                    input.Bytes,
+                    _preparedRegex.ExecutionProgram,
+                    _preparedRegex.SearchPlan,
+                    _preparedRegex.SimplePatternPlan,
+                    start.Value,
+                    offsetBudget);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {

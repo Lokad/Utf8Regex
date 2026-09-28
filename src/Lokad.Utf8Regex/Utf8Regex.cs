@@ -880,6 +880,14 @@ public sealed partial class Utf8Regex
             return OwnedSliceIsMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
 
+                // R05: line-anchored ASCII discovery from the start unit runs owned through the
+        // shared interpreter; misses are definitive without BCL verification.
+        if (CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
+        {
+            var offsetBudget = CreateExecutionBudget();
+            return FindNextSimplePatternViaInterpreter(input, start.Value, offsetBudget, out _) >= 0;
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
             subject.GetDecodedString().AsSpan(),
             start.Value);
@@ -1238,6 +1246,20 @@ public sealed partial class Utf8Regex
             return OwnedSliceCountFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
 
+                // R05: line-anchored ASCII counting from the start unit runs the shared
+        // interpreter loop; anchors still see the whole input.
+        if (CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
+        {
+            var offsetBudget = CreateExecutionBudget();
+            return Utf8ExecutionInterpreter.CountSimplePatternFrom(
+                input,
+                _preparedRegex.ExecutionProgram,
+                _preparedRegex.SearchPlan,
+                _preparedRegex.SimplePatternPlan,
+                start.Value,
+                offsetBudget);
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
             subject.GetDecodedString().AsSpan(),
             start.Value);
@@ -1509,6 +1531,20 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
 
+                // R05: line-anchored ASCII first-match from the start unit projects owned through
+        // the shared interpreter with whole-input anchor checks.
+        if (CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
+        {
+            var offsetBudget = CreateExecutionBudget();
+            var offsetFound = FindNextSimplePatternViaInterpreter(input, start.Value, offsetBudget, out var offsetLength);
+            if (offsetFound < 0)
+            {
+                return Utf8ValueMatch.NoMatch;
+            }
+
+            return new Utf8ValueMatch(true, true, offsetFound, offsetLength, offsetFound, offsetLength);
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
             subject.GetDecodedString(),
             start.Value);
@@ -1775,6 +1811,32 @@ public sealed partial class Utf8Regex
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchDetailedFromUnit(input, _sliceProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
+        }
+
+        if (TryGetOwnedDetailedGroupCount(out var ownedOffsetGroupCount) &&
+            CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
+        {
+            // R05: line-anchored ASCII detailed matches from the start unit discover
+            // through the shared value path (mirroring the zero-offset arm); shaping
+            // projects owned spans without BCL verification.
+            Utf8ValueMatch offsetFirst;
+            try
+            {
+                offsetFirst = MatchFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!offsetFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            return ownedOffsetGroupCount > 1
+                ? new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, offsetFirst.IndexInUtf16, offsetFirst.LengthInUtf16, ownedOffsetGroupCount)
+                : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, offsetFirst.IndexInUtf16, offsetFirst.LengthInUtf16);
         }
         if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
         {

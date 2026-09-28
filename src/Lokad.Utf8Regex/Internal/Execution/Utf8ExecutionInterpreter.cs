@@ -24,9 +24,22 @@ internal static class Utf8ExecutionInterpreter
         in AsciiSimplePatternPlan plan,
         Utf8ExecutionDeadline budget)
     {
+        return CountSimplePatternFrom(input, program, searchPlan, plan, 0, budget);
+    }
+
+    // FromOffset counting starts the shared loop at the start unit; anchors still see
+    // the whole input, so line edges stay exact.
+    internal static int CountSimplePatternFrom(
+        ReadOnlySpan<byte> input,
+        Utf8ExecutionProgram? program,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
+        int startIndex,
+        Utf8ExecutionDeadline budget)
+    {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
         var count = 0;
-        var index = 0;
+        var index = startIndex;
         while (index <= input.Length)
         {
             var found = FindNextSimplePattern(

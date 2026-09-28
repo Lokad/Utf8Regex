@@ -891,4 +891,101 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredFromOffsetOwnedCases()
+    {
+        (string pattern, string text, int utf16Offset)[] rows =
+        [
+            ("(?m:^ab)", "ab\nab", 0),
+            ("(?m:^ab)", "ab\nab", 1),
+            ("(?m:^ab)", "ab\nab", 3),
+            ("(?m:^ab)", "ab\nab", 5),
+            ("(?m:^ab)", "xxab\nab", 0),
+            ("(?m:^ab)", "xxab\nab", 1),
+            ("(?m:^ab)", "xxab\nab", 3),
+            ("(?m:^ab)", "xxab\nab", 5),
+            ("(?m:ab$)", "ab\nab", 0),
+            ("(?m:ab$)", "ab\nab", 1),
+            ("(?m:ab$)", "ab\nab", 3),
+            ("(?m:ab$)", "ab\nab", 5),
+            ("(?m:ab$)", "xxab\nab", 0),
+            ("(?m:ab$)", "xxab\nab", 1),
+            ("(?m:ab$)", "xxab\nab", 3),
+            ("(?m:ab$)", "xxab\nab", 5),
+            ("(?m:^ab$)", "ab\nab", 0),
+            ("(?m:^ab$)", "ab\nab", 3),
+            ("(?m:^ab$)", "xxab\nab", 0),
+            ("(?m:^ab$)", "xxab\nab", 5),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.utf16Offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.utf16Offset };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(LineAnchoredFromOffsetOwnedCases))]
+    public void LineAnchoredFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int utf16Offset)
+    {
+        // R05: line-anchored FromOffset discovery serves owned through the shared
+        // interpreter from the start unit with whole-input anchor checks.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text, utf16Offset);
+        var actualMatch = matchRegex.MatchFromUtf16Offset(input, utf16Offset);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text, utf16Offset);
+        var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, utf16Offset);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredFromOffsetNonAsciiDeclineCases()
+    {
+        (string pattern, string text, int utf16Offset)[] rows =
+        [
+            ("(?m:^ab)", "éab\nab", 4),
+            ("(?m:ab$)", "ab\néab", 0),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.utf16Offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.utf16Offset };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(LineAnchoredFromOffsetNonAsciiDeclineCases))]
+    public void LineAnchoredFromOffsetNonAsciiKeepsBclShaping(string pattern, RegexOptions options, string text, int utf16Offset)
+    {
+        // Declared R05 debt: non-ASCII FromOffset discovery stays BCL-backed (byte-start
+        // resolution needs scalar-boundary handling); parity holds and construction is pinned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
+        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
+        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
