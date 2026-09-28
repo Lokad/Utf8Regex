@@ -938,4 +938,28 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    [Theory]
+    [InlineData("((a)?b)?", "ab", "<$1>")]
+    [InlineData("((a)?b)?", "éabé", "<$1>")]
+    [InlineData("(a|b)?(c)?(d)?(e)?(f)?", "ace", "<$1$2>")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "abcdefghijklm", "<$1$7>")]
+    public void NestedComboTemplateKeepsBclShaping(string pattern, string text, string template)
+    {
+        // Declared R05 debt: nested loops, loop-plus-alternation combos, and
+        // seven-loop shapes expand group-reference templates through the fallback
+        // engine (the span maps decline nesting/combos; the loop cap stops at six).
+        // Parity holds; construction is pinned.
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            var expected = oracle.Replace(text, template);
+            var actual = regex.ReplaceToString(input, template);
+
+            Assert.Equal(expected, actual);
+            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        }
+    }
+
 }
