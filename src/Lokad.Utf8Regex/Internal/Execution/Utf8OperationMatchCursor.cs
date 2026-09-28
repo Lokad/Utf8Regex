@@ -114,7 +114,9 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
-        _literalUtf16Length = literal.Length;
+        _literalUtf16Length = executionKind == NativeExecutionKind.ExactUtf8Literal
+            ? Utf8Validation.Validate(literal).Utf16Length
+            : literal.Length;
         _totalUtf16Length = 0;
         _projectionPlan = default;
         _program = default;
@@ -132,6 +134,7 @@ internal ref struct Utf8OperationMatchCursor
         _mode = (executionKind, rightToLeft) switch
         {
             (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
+            (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
             (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
             _ => EnumeratorMode.Exhausted,
         };
@@ -267,7 +270,7 @@ internal ref struct Utf8OperationMatchCursor
     /// <summary>Gets the alternate index of the last literal match, or -1 when the last
     /// successful move did not come from a literal search. Singular literals always report 0.</summary>
     internal int LastLiteralFamilyBranchId =>
-        _mode is EnumeratorMode.ExactAsciiLiteral or EnumeratorMode.ExactUtf8Literal or EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCase or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals or EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlAsciiLiteralIgnoreCase
+        _mode is EnumeratorMode.ExactAsciiLiteral or EnumeratorMode.ExactUtf8Literal or EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCase or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals or EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlAsciiLiteralIgnoreCase or EnumeratorMode.RtlExactUtf8Literal
             ? _lastLiteralFamilyBranchId
             : -1;
 
@@ -665,6 +668,7 @@ internal ref struct Utf8OperationMatchCursor
             EnumeratorMode.AsciiLiteralIgnoreCaseLiterals => MoveNextAsciiIgnoreCaseLiterals(),
             EnumeratorMode.RtlExactAsciiLiteral => MoveNextRtlExactAsciiLiteral(),
             EnumeratorMode.RtlAsciiLiteralIgnoreCase => MoveNextRtlAsciiLiteralIgnoreCase(),
+            EnumeratorMode.RtlExactUtf8Literal => MoveNextRtlExactUtf8Literal(),
             EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
             EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
             EnumeratorMode.AsciiFixedTokenPattern => MoveNextAsciiFixedTokenPattern(),
@@ -1070,6 +1074,56 @@ internal ref struct Utf8OperationMatchCursor
             isByteAligned: true,
             indexInUtf16: index,
             lengthInUtf16: literal.Length,
+            indexInBytes: index,
+            lengthInBytes: literal.Length);
+        _remaining = _remaining[..index];
+        _lastLiteralFamilyBranchId = 0;
+        return true;
+    }
+
+    // UTF-8 twin of the reverse arms above: reverse byte search cannot meet a
+    // non-ASCII literal mid-scalar (well-formed occurrences always start their
+    // first byte on a scalar boundary), and the match length rides the literal
+    // field computed at construction, so discovery and projection mirror the
+    // ASCII arms with the literal UTF-16 length.
+    private bool MoveNextRtlExactUtf8Literal()
+    {
+        var literal = _literal;
+        if (literal is null || literal.Length == 0)
+        {
+            return false;
+        }
+
+        _budget.Step();
+        ref readonly var searchPlan = ref _plans.SearchPlan;
+        var index = Utf8SearchExecutor.FindLast(in searchPlan, _remaining);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (!_asciiInput)
+        {
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                0,
+                0,
+                index,
+                literal.Length,
+                _literalUtf16Length,
+                out _,
+                out _);
+            _remaining = _remaining[..index];
+            _lastLiteralFamilyBranchId = 0;
+            return true;
+        }
+
+        _current = new Utf8ValueMatch(
+            success: true,
+            isByteAligned: true,
+            indexInUtf16: index,
+            lengthInUtf16: _literalUtf16Length,
             indexInBytes: index,
             lengthInBytes: literal.Length);
         _remaining = _remaining[..index];
@@ -1488,5 +1542,6 @@ internal ref struct Utf8OperationMatchCursor
         AsciiSimplePatternScalar = 21,
         RtlExactAsciiLiteral = 22,
         RtlAsciiLiteralIgnoreCase = 23,
+        RtlExactUtf8Literal = 24,
     }
 }

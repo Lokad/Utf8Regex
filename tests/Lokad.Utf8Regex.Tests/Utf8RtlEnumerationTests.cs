@@ -33,6 +33,10 @@ public sealed class Utf8RtlEnumerationTests
             ("(?i)a", "xAxAx"),
             ("(?i)abc", "éABCé"),
             ("(ab|cd)", "xxabcdyy"),
+            ("caf\u00e9", "xcaf\u00e9ycaf\u00e9"),
+            ("caf\u00e9", "cafe"),
+            ("caf\u00e9", ""),
+            ("\u00e9", "x\u00e9x\u00e9"),
         ];
         foreach (var row in rows)
         {

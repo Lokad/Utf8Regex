@@ -476,11 +476,12 @@ public sealed partial class Utf8Regex
         // R05: exact literals enumerate right-to-left through the reverse-search
         // cursor above; anchored shapes never reach literal kinds, boundary and
         // trailing requirements stay on the BCL enumerator below, empty literals
-        // cannot match, and folded shapes stay Kelvin-fenced like the forward cursor.
+        // cannot match, non-ASCII literals project through the literal UTF-16 length,
+        // and folded shapes stay Kelvin-fenced like the forward cursor.
         // FromOffset right-to-left starts keep legacy routing.
         if (UsesRightToLeft() &&
             start.Value == input.Bytes.Length &&
-            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
             literal is { Length: > 0 } &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
