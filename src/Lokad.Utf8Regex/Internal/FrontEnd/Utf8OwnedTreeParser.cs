@@ -27,7 +27,7 @@ internal static class Utf8OwnedTreeParser
 
     // Provider dot payloads probed per Singleline shape; set nodes never carry IgnoreCase.
     private const string DotText = "\u0001\u0002\u0000\u000a\u000b";
-    private const string SinglelineDotText = "\u0000\u0001\u0000\u0000";
+    internal const string SinglelineDotText = "\u0000\u0001\u0000\u0000";
 
     // Probe-observed predefined shorthand payloads, verbatim: the six ASCII
     // shorthands land as category payloads, including the complement and

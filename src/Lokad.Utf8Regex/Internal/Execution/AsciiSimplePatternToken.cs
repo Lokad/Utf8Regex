@@ -63,6 +63,7 @@ internal enum Utf8SimplePatternScalarClassKind : byte
     NegatedDigit = 3,
     NegatedWord = 4,
     NegatedWhitespace = 5,
+    SinglelineDot = 6,
 }
 
 internal enum AsciiSimplePatternTokenKind : byte

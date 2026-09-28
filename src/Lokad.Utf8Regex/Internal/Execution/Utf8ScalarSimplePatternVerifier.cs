@@ -162,7 +162,8 @@ internal static class Utf8ScalarSimplePatternVerifier
             Utf8SimplePatternScalarClassKind.UnicodeWhitespace or
             Utf8SimplePatternScalarClassKind.NegatedDigit or
             Utf8SimplePatternScalarClassKind.NegatedWord or
-            Utf8SimplePatternScalarClassKind.NegatedWhitespace)
+            Utf8SimplePatternScalarClassKind.NegatedWhitespace or
+            Utf8SimplePatternScalarClassKind.SinglelineDot)
         {
             return true;
         }
@@ -283,6 +284,10 @@ internal static class Utf8ScalarSimplePatternVerifier
                 if (scalar < 0x80)
                 {
                     matches = token.CharClass.Contains((byte)scalar);
+                }
+                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.SinglelineDot)
+                {
+                    matches = true;
                 }
                 else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace)
                 {
