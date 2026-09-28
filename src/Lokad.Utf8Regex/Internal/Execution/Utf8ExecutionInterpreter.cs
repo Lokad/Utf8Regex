@@ -687,7 +687,7 @@ internal static class Utf8ExecutionInterpreter
         var branchEnd = startIndex + branch.Length;
         if (branchEnd > input.Length ||
             (plan.IsEndAnchored && branchEnd != input.Length &&
-                !(!plan.IsAbsoluteEndAnchored && (uint)branchEnd < (uint)input.Length && input[branchEnd] == (byte)'\n')));
+                !(!plan.IsAbsoluteEndAnchored && (uint)branchEnd < (uint)input.Length && input[branchEnd] == (byte)'\n')))
         {
             return false;
         }

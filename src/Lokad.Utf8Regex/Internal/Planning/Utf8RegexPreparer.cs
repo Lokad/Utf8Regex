@@ -63,7 +63,18 @@ internal static class Utf8RegexPreparer
             analyzedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
         {
             compiledPatternCategory = analyzedRegex.SimplePatternPlan.CompiledPatternCategory;
-            if (compiledPatternCategory == Utf8CompiledPatternCategory.None && structuralLinearProgram.HasValue)
+            // A linear program alone does not prove the linear search route: that route
+            // declines every anchored shape, while the interpreter enforces line edges
+            // per candidate. Pure line-anchored shapes without backreferences therefore
+            // keep the interpreter category; absolute anchors and backreference programs
+            // keep the linear category and their current routing.
+            var simplePlan = analyzedRegex.SimplePatternPlan;
+            var hasLineAnchor = (simplePlan.IsStartAnchored && !simplePlan.IsAbsoluteStartAnchored) ||
+                (simplePlan.IsEndAnchored && !simplePlan.IsAbsoluteEndAnchored);
+            var hasAbsoluteAnchor = (simplePlan.IsStartAnchored && simplePlan.IsAbsoluteStartAnchored) ||
+                (simplePlan.IsEndAnchored && simplePlan.IsAbsoluteEndAnchored);
+            if (compiledPatternCategory == Utf8CompiledPatternCategory.None && structuralLinearProgram.HasValue &&
+                !(hasLineAnchor && !hasAbsoluteAnchor && !Utf8CompiledSearchAnalysisPolicy.HasBackreferenceInstructions(program)))
             {
                 compiledPatternCategory = Utf8CompiledPatternCategory.DeterministicLinear;
             }

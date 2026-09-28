@@ -790,6 +790,20 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             ("(?m:^ab$)", "ab"),
             ("(?m:^ab$)", ""),
             ("(?m:^ab$)", "ab\nab\nab"),
+            ("(?m:^ab)", "ab\ncd"),
+            ("(?m:^ab)", "xxab\nab"),
+            ("(?m:^ab)", "xxab"),
+            ("(?m:^ab)", "ab"),
+            ("(?m:^ab)", ""),
+            ("(?m:^ab)", "ab\nab\nab"),
+            ("(?m:^ab)", "ab\nab"),
+            ("(?m:ab$)", "ab\ncd"),
+            ("(?m:ab$)", "xxab"),
+            ("(?m:ab$)", "ab\nab"),
+            ("(?m:ab$)", "ab"),
+            ("(?m:ab$)", ""),
+            ("(?m:ab$)", "ab\ncd\nab"),
+            ("(?m:ab$)", "xxab\nab"),
         ];
         foreach (var row in rows)
         {
@@ -833,14 +847,14 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredDiscoverySingleSidedDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredEnumerationSingleSidedDeclineCases()
     {
         (string pattern, string text)[] rows =
         [
-            ("(?m:^ab)", "ab\ncd"),
-            ("(?m:^ab)", "xxab"),
-            ("(?m:ab$)", "ab\ncd"),
-            ("(?m:ab$)", "xxab"),
+            ("(?m:^ab)", "ab\nab"),
+            ("(?m:^ab)", "xxab\nab"),
+            ("(?m:ab$)", "ab\nab"),
+            ("(?m:ab$)", "xxab\nab"),
         ];
         foreach (var row in rows)
         {
@@ -849,13 +863,26 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
     }
     [Theory]
-    [MemberData(nameof(LineAnchoredDiscoverySingleSidedDeclineCases))]
-    public void LineAnchoredDiscoverySingleSidedKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(LineAnchoredEnumerationSingleSidedDeclineCases))]
+    public void LineAnchoredEnumerationSingleSidedKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
+        // Declared R05 debt: single-sided enumeration still rides the BCL enumerator
+        // (owned cursors do not enforce start anchors); discovery (IsMatch, Count, Match,
+        // Detailed) is owned above. Parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+        var expected = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text))
+        {
+            expected.Add(m.Index + ":" + m.Length);
+        }
+        var actual = new System.Collections.Generic.List<string>();
+        foreach (var m in regex.EnumerateMatches(input))
+        {
+            actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

@@ -597,11 +597,11 @@ public sealed partial class Utf8Regex
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input) && !ScalarVerifierServesInput(input);
 
-    // R05: line-anchored splits iterate line-edge matches through the owned split
-    // cursors exactly like enumeration; absolute-anchored shapes keep their
-    // dedicated arms and fallbacks. Culture, Kelvin, and right-to-left keep
-    // their existing fences at the call sites.
-    private bool CanSplitLineAnchoredOwned(ReadOnlySpan<byte> input)
+    // R05: line-anchored shapes serve owned through the interpreter/linear
+    // verifiers and the owned split cursors, which enforce line edges per
+    // candidate; absolute-anchored shapes keep their dedicated arms and
+    // fallbacks. Culture, Kelvin, and right-to-left keep their fences.
+    private bool CanServeLineAnchoredOwned(ReadOnlySpan<byte> input)
         => _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
         !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored &&
         !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored &&

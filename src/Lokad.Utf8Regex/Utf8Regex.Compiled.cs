@@ -122,7 +122,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
+        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
             // R05: scalar-verifiable simple patterns answer owned on astral-free
             // non-ASCII input; anything else keeps the BCL verification below.
@@ -192,7 +192,7 @@ public sealed partial class Utf8Regex
             return Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, budget);
         }
 
-        if (ShouldUseFallbackForAnchoredSimplePattern() ||
+        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) ||
             ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
             // R05: same scalar-verified route as IsMatch above.
@@ -224,7 +224,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
+        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             // R05: scalar-verifiable simple patterns answer owned: the full
             // scalar scan makes misses definitive without BCL verification, while
@@ -332,7 +332,7 @@ public sealed partial class Utf8Regex
 
         // Line-anchored shapes fall through to the owned cursors below; absolute
         // anchors and non-ASCII input keep BCL verification here.
-        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanSplitLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
+        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);

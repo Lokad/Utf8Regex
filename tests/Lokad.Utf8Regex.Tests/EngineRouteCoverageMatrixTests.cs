@@ -43,7 +43,10 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "start-anchor", "^abc", RegexOptions.CultureInvariant, "abcdef", "AsciiSimplePattern", null, true, true };
         yield return new object?[] { "end-anchor", "abc$", RegexOptions.CultureInvariant, "xxabc", "AsciiSimplePattern", null, true, true };
         yield return new object?[] { "word-boundary", "\\bword\\b", RegexOptions.CultureInvariant, "a word here", "ExactAsciiLiteral", null, true, true };
-        yield return new object?[] { "multiline-anchor", "^abc", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabc", "AsciiSimplePattern", null, true, true };
+        // R05: single-sided line anchors ride the owned interpreter, whose search
+        // candidates and verifier invocations are counted with no BCL construction
+        // (see the line-anchored discovery battery in Utf8AnchoredLiteralFamilyTests).
+        yield return new object?[] { "multiline-anchor", "^abc", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabc", "AsciiSimplePattern", null, false, false };
         // Assertions and backreferences: BCL fallback construction with specific reasons, except single lookahead-pos which rides the literal family; slice-served assertions run IsMatch/Count verifier-free (owner R03).
         yield return new object?[] { "lookahead-pos", "a(?=b)", RegexOptions.CultureInvariant, "ab", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "lookahead-neg", "a(?!b)", RegexOptions.CultureInvariant, "ac", "FallbackRegex", "unsupported_lookaround", true, true };

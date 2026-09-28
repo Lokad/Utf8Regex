@@ -48,7 +48,7 @@ internal static class Utf8CompiledSearchAnalysisPolicy
     {
         if (regexPlan.SimplePatternPlan.IsStartAnchored ||
             regexPlan.SimplePatternPlan.IsEndAnchored ||
-            HasBackreferenceInstructions(regexPlan))
+            HasBackreferenceInstructions(regexPlan.ExecutionProgram))
         {
             return false;
         }
@@ -65,12 +65,11 @@ internal static class Utf8CompiledSearchAnalysisPolicy
             !regexPlan.FallbackVerifier.RequiresCandidateEndCoverage &&
             !regexPlan.FallbackVerifier.RequiresTrailingAnchorCoverage &&
             string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal) &&
-            !HasBackreferenceInstructions(regexPlan);
+            !HasBackreferenceInstructions(regexPlan.ExecutionProgram);
     }
 
-    private static bool HasBackreferenceInstructions(Utf8PreparedRegex regexPlan)
+    internal static bool HasBackreferenceInstructions(Utf8ExecutionProgram? executionProgram)
     {
-        var executionProgram = regexPlan.ExecutionProgram;
         if (executionProgram is null)
         {
             return false;
