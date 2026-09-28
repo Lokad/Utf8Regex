@@ -12,6 +12,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
+        // Pure doubly-negated shorthands lower as their positive category, so
+        // every downstream consumer (masks, predicates, scalar kinds) serves them
+        // exactly like the bare shorthand.
+        set = DotNetAsciiCharClassProjector.CollapseDoubleNegatedShorthand(set) ?? set;
+
         // A dot token matches any byte including newlines, so only singleline dots lower
         // to it; other dots become exact newline-excluding classes through the projector.
         if (singleline && set == Utf8OwnedCharClass.NotNewLineClass)

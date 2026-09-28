@@ -100,6 +100,36 @@ internal static class DotNetAsciiCharClassProjector
             categoryPayload.Length == 0;
     }
 
+    // R05: pure doubly-negated shorthands ([^\D], [^\W], [^\S]) denote their
+    // positive category, so rewrite to the positive descriptor and let the
+    // existing predicate arms serve them. Mixed payloads keep BCL routing.
+    internal static string? CollapseDoubleNegatedShorthand(string? runtimeSet)
+    {
+        if (runtimeSet is null ||
+            !Utf8OwnedCharClass.IsNegated(runtimeSet) ||
+            !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
+        {
+            return null;
+        }
+
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotDigitClass))
+        {
+            return Utf8OwnedCharClass.DigitClass;
+        }
+
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotWordClass))
+        {
+            return Utf8OwnedCharClass.WordClass;
+        }
+
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotSpaceClass))
+        {
+            return Utf8OwnedCharClass.SpaceClass;
+        }
+
+        return null;
+    }
+
     // R05: negated shorthands complement exactly through their table on non-ASCII
     // scalars, so the token records which table. Bare complements carry the
     // negated canonical payload without the set flag; plain negations carry the

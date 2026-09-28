@@ -2444,13 +2444,20 @@ public sealed class AsciiSimplePatternTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> DoublyNegatedShorthandOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
             ("[^\\D]", "éabé"),
             ("[^\\W]", "é.é"),
             ("[^\\S]", "é a"),
+            ("[^\\D]", "é3é"),
+            ("[^\\W]", "12"),
+            ("[^\\W]", " ."),
+            ("[^\\S]", "éab"),
+            ("a[^\\D]b", "xa3b"),
+            ("a[^\\D]b", "xyz"),
+            ("(?i)[^\\D]", "é3É"),
         ];
         foreach (var row in rows)
         {
@@ -2460,22 +2467,25 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(NegatedShorthandDeclineCases))]
-    public void NegatedShorthandDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(DoublyNegatedShorthandOwnedCases))]
+    public void DoublyNegatedShorthandOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: doubly-negated shorthands read as positive categories
-        // that the scalar routes do not serve, so discovery stays BCL-backed.
-        // Parity holds; construction is pinned.
+        // R05: pure doubly-negated shorthands lower as their positive category, so
+        // IsMatch and Count never construct the fallback engine on astral-free
+        // non-ASCII input; the existing digit/word/whitespace arms serve them.
+        // Mixed payloads and astral inputs keep BCL routing.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
 
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineDotDiscoveryMatchDetailedCases()
     {
