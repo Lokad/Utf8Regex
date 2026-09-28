@@ -244,4 +244,50 @@ internal static class Utf8ScalarSimplePatternVerifier
         matchedByteLength = 0;
         return false;
     }
+    public static bool TryFindFirst(
+        ReadOnlySpan<byte> input,
+        NativeExecutionKind kind,
+        in AsciiSimplePatternPlan plan,
+        Utf8ExecutionDeadline budget,
+        out int startByte,
+        out int matchedByteLength)
+    {
+        startByte = -1;
+        matchedByteLength = 0;
+        if (!Qualifies(kind, plan, input))
+        {
+            return false;
+        }
+
+        // A qualified scan is definitive either way: hits project owned while
+        // misses never touch BCL verification.
+        startByte = FindNext(input, plan, budget, 0, out matchedByteLength);
+        return true;
+    }
+
+    public static bool TryProjectMatch(
+        ReadOnlySpan<byte> input,
+        int startByte,
+        int matchedByteLength,
+        out Utf8ValueMatch match)
+    {
+        // Both boundaries are scalar-aligned by construction (boundary-filtered
+        // starts plus whole-scalar consumption), so the boundary map projects
+        // them exactly; anything else fails closed to BCL routing.
+        match = Utf8ValueMatch.NoMatch;
+        if (startByte < 0 || matchedByteLength < 0 || startByte + matchedByteLength > input.Length)
+        {
+            return false;
+        }
+
+        var map = Utf8BoundaryMap.Create(input);
+        if (!map.TryGetUtf16OffsetForByteOffset(startByte, out var startUnit) ||
+            !map.TryGetUtf16OffsetForByteOffset(startByte + matchedByteLength, out var endUnit))
+        {
+            return false;
+        }
+
+        match = new Utf8ValueMatch(true, true, startUnit, endUnit - startUnit, startByte, matchedByteLength);
+        return true;
+    }
 }

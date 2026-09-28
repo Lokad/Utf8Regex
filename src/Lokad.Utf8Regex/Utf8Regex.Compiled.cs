@@ -226,6 +226,24 @@ public sealed partial class Utf8Regex
     {
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
+            // R05: scalar-verifiable simple patterns answer owned: the full
+            // scalar scan makes misses definitive without BCL verification, while
+            // projection failures still fall back closed. Anything else keeps the
+            // BCL verification below.
+            if (Utf8ScalarSimplePatternVerifier.TryFindFirst(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarStart, out var scalarLength))
+            {
+                if (scalarStart >= 0 &&
+                    Utf8ScalarSimplePatternVerifier.TryProjectMatch(input, scalarStart, scalarLength, out var scalarMatch))
+                {
+                    return scalarMatch;
+                }
+
+                if (scalarStart < 0)
+                {
+                    return Utf8ValueMatch.NoMatch;
+                }
+            }
+
             return MatchFallback(input);
         }
 

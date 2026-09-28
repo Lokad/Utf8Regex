@@ -1203,6 +1203,109 @@ public sealed class AsciiSimplePatternTests
         Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> ScalarMatchOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a.c", "éabcé"),
+            ("a.c", "xyz"),
+            ("a.c", "éxyzé"),
+            ("a.c", "abcaéc"),
+            ("a.c", ""),
+            ("a[^x]d", "éabde"),
+            ("a[^x]d", "xyz"),
+            ("a[^x]d", "éaxdé"),
+            ("a[^x]d", "abdabd"),
+            ("a[^x]d", ""),
+            ("(a.c)", "éabcé"),
+            ("(a.c)", "xyz"),
+            (".[0-9]", "é1a2"),
+            (".[0-9]", "xyz"),
+            ("[^x][^y]", "éabé"),
+            ("[^x][^y]", "xy"),
+            (".{2,4}", "éabcdé"),
+            (".{2,4}", "xyz"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScalarMatchOwnedCases))]
+    public void ScalarMatchLightOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: light Match projects the scalar-verified first hit through the
+        // boundary map, so group-0 coordinates never construct the fallback engine.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.Match(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Length, actual.LengthInUtf16);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> ScalarDetailedOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a.c", "éabcé"),
+            ("a.c", "xyz"),
+            ("a.c", "éxyzé"),
+            ("a.c", "abcaéc"),
+            ("a.c", ""),
+            ("a[^x]d", "éabde"),
+            ("a[^x]d", "xyz"),
+            ("a[^x]d", "éaxdé"),
+            ("a[^x]d", "abdabd"),
+            ("a[^x]d", ""),
+            (".[0-9]", "é1a2"),
+            (".[0-9]", "xyz"),
+            ("[^x][^y]", "éabé"),
+            ("[^x][^y]", "xy"),
+            (".{2,4}", "éabcdé"),
+            (".{2,4}", "xyz"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScalarDetailedOwnedCases))]
+    public void ScalarDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: groupless detailed matches shape group 0 from the owned MatchCore
+        // hit, so the anchored verification route is bypassed entirely.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Groups[0].Index, actual.GetGroup(0).IndexInUtf16);
+            Assert.Equal(expected.Groups[0].Length, actual.GetGroup(0).LengthInUtf16);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
     [Theory]
     [InlineData("^$")]
     [InlineData("^")]

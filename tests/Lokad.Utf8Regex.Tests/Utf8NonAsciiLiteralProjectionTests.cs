@@ -210,10 +210,11 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     [InlineData("a.c", "x\U0001F600abc", false)]
     public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery)
     {
-        // IsMatch and Count verify scalar-aware on astral-free non-ASCII input, so
-        // only astral inputs keep BCL discovery. Enumeration, replacement, and
-        // splits stay main-lazy BCL-backed while detailed shaping stays anchored
-        // lazy (declared R05 debt). Parity holds; construction is pinned per op.
+        // IsMatch, Count, and groupless detailed matches verify scalar-aware on
+        // astral-free non-ASCII input, so only astral inputs keep BCL discovery
+        // and anchored shaping. Enumeration, replacement, and splits stay
+        // main-lazy BCL-backed (declared R05 debt). Parity holds; construction
+        // is pinned per op.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
@@ -247,7 +248,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             var actualFirst = detailedRegex.MatchDetailed(input);
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
-            Assert.True(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedDiscovery, detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
             const int count = int.MaxValue;
             var replaceRegex = new Utf8Regex(pattern, options);
             var expectedReplaced = oracle.Replace(text, "x");
