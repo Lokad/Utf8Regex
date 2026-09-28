@@ -305,6 +305,15 @@ public sealed partial class Utf8Regex
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
 
+            // R05: astral inputs enumerate unit-aware through the unit cursor (dots and
+            // negations consume halves exactly like BCL); anything else keeps BCL below.
+            if (Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+            {
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, analysis.GetDecodedString(), budget))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+
             return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.Utf16ProjectionMap);
         }
 

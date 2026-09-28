@@ -2941,4 +2941,48 @@ public sealed class AsciiSimplePatternTests
         Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitEnumerationOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a.c", "a\U0001F600c"),
+            ("a.c", "abc"),
+            (".", "\U0001F600"),
+            ("..", "\U0001F600"),
+            ("a.", "a\U0001F600"),
+            ("a[^x]d", "a\U0001F600d"),
+            ("[^x]", "\U0001F600"),
+            (@"\d\d", "a12\U0001F600"),
+            (@"(\d\d)", "a12\U0001F600"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitEnumerationOwnedCases))]
+    public void AstralUnitEnumerationOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: astral enumeration steps every unit through the shared unit verifier and
+        // projects through the boundary map, so full sequences match BCL with zero fallback
+        // construction on both lanes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in regex.EnumerateMatches(input))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
 }

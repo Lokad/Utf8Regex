@@ -157,7 +157,7 @@ internal static class Utf8AstralUnitVerifier
             predicateKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore);
     }
 
-    private static int FindNextUnit(
+    internal static int FindNextUnit(
         string decoded,
         in AsciiSimplePatternPlan plan,
         Utf8ExecutionDeadline budget,

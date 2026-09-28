@@ -206,13 +206,13 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     }
 
     [Theory]
-    [InlineData("a.c", "ééabcé", true, true)]
-    [InlineData("a.c", "x\U0001F600abc", true, false)]
-    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedShaping)
+    [InlineData("a.c", "ééabcé", true, true, true)]
+    [InlineData("a.c", "x\U0001F600abc", true, true, false)]
+    public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedEnumeration, bool expectOwnedShaping)
     {
-        // IsMatch and Count are owned everywhere (scalar-aware on astral-free input,
-        // unit-aware on astral input); enumeration, groupless literal replacement,
-        // and splits stay BCL-backed on astral input.
+        // IsMatch, Count, and enumeration are owned everywhere (scalar-aware on astral-free
+        // input, unit-aware on astral input); groupless literal replacement and splits
+        // stay BCL-backed on astral input.
         // Group-reference templates and evaluators over grouped shapes stay
         // BCL-backed (declared R05 debt). Parity holds; construction is pinned
         // per op.
@@ -242,7 +242,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expected.Count, actual.Count);
-            Assert.Equal(!expectOwnedShaping, enumRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!expectOwnedEnumeration, enumRegex.Inspection.DebugFallbackRegexIsCreated);
 
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedFirst = oracle.Match(text);
