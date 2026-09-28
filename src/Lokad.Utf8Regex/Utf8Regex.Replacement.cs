@@ -699,6 +699,76 @@ public sealed partial class Utf8Regex
         return false;
     }
 
+    // R05: a lone capture wrapping the whole tree spans the hit exactly, no matter
+    // what it encloses, as long as every enclosed node is span-transparent: plain
+    // content, alternation branches, loops, atomics, and zero-width anchors.
+    // Captures (including ones hidden in lookarounds), lookarounds themselves,
+    // backreferences, and anything unrecognized decline so shaping never
+    // misattributes a partial span.
+    private int GetSingleWrapCaptureNumber()
+    {
+        if (_groupNumbers.Length != 2)
+        {
+            return 0;
+        }
+
+        if (_preparedRegex.ExecutionTree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
+            root.Children.Count != 1 ||
+            root.Children[0] is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 1 } wrap)
+        {
+            return 0;
+        }
+
+        for (var i = 0; i < wrap.Children.Count; i++)
+        {
+            if (!ContainsOnlySpanTransparentNodes(wrap.Children[i]))
+            {
+                return 0;
+            }
+        }
+
+        return 1;
+    }
+
+    private static bool ContainsOnlySpanTransparentNodes(Utf8ExecutionNode node)
+    {
+        switch (node.Kind)
+        {
+            case Utf8ExecutionNodeKind.Concatenate:
+            case Utf8ExecutionNodeKind.Group:
+            case Utf8ExecutionNodeKind.Alternate:
+            case Utf8ExecutionNodeKind.Loop:
+            case Utf8ExecutionNodeKind.LazyLoop:
+            case Utf8ExecutionNodeKind.Atomic:
+                for (var i = 0; i < node.Children.Count; i++)
+                {
+                    if (!ContainsOnlySpanTransparentNodes(node.Children[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            case Utf8ExecutionNodeKind.One:
+            case Utf8ExecutionNodeKind.Multi:
+            case Utf8ExecutionNodeKind.Set:
+            case Utf8ExecutionNodeKind.Empty:
+            case Utf8ExecutionNodeKind.Bol:
+            case Utf8ExecutionNodeKind.Eol:
+            case Utf8ExecutionNodeKind.Boundary:
+            case Utf8ExecutionNodeKind.NonBoundary:
+            case Utf8ExecutionNodeKind.ECMABoundary:
+            case Utf8ExecutionNodeKind.NonECMABoundary:
+            case Utf8ExecutionNodeKind.Beginning:
+            case Utf8ExecutionNodeKind.Start:
+            case Utf8ExecutionNodeKind.EndZ:
+            case Utf8ExecutionNodeKind.End:
+                return node.Children.Count == 0;
+            default:
+                return false;
+        }
+    }
+
     private static bool IsZeroWidthBoundaryNode(Utf8ExecutionNodeKind kind)
     {
         return kind is Utf8ExecutionNodeKind.Boundary or

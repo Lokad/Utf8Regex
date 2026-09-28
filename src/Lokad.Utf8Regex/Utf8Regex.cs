@@ -1890,6 +1890,15 @@ public sealed partial class Utf8Regex
             return true;
         }
 
+        // R05: single captures wrapping the whole tree project group 1 from the
+        // whole span regardless of enclosed content (see the span-transparency
+        // boundary in the predicate); literal shapes keep their existing arm above.
+        if (_groupNumbers.Length == 2 && GetSingleWrapCaptureNumber() == 1)
+        {
+            groupCount = 2;
+            return true;
+        }
+
         return false;
     }
 

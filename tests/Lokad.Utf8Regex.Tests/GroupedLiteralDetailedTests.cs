@@ -10,6 +10,7 @@ namespace Lokad.Utf8Regex.Tests;
 /// Divergent single alternations project the winning branch identified by ordinal
 /// text comparison. Nested divergent alternations and loops inside alternation
 /// branches expand to one flat BCL-ordered entry list and shape the same way.
+/// A lone capture wrapping the whole tree projects group 1 from the whole span.
 /// Nested loops, loop-plus-alternation combos, and seven-loop shapes keep BCL shaping.
 /// </summary>
 public sealed class GroupedLiteralDetailedTests
@@ -1394,5 +1395,191 @@ public sealed class GroupedLiteralDetailedTests
         var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
         Assert.Equal(expected, stringActual);
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapDetailedCases()
+    {
+        string[] patterns =
+        [
+            "(a.c)",
+            "(ab|cd)",
+            "([0-9]+)",
+            "(\\d{2,4})",
+            "(?<x>a.c)",
+            "((?>a.c))",
+            "(|)",
+        ];
+        string[] texts = ["xacx", "xxabxx", "éabcé", "éab12é", "xyz", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleWrapDetailedCases))]
+    public void SingleWrapDetailedOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: a lone capture wrapping the whole tree spans the hit exactly, so
+        // detailed shaping projects group 1 from the whole span without the
+        // fallback engine, no matter what the wrap encloses.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapFromOffsetCases()
+    {
+        (string pattern, string text, int offset)[] rows =
+        [
+            ("(a.c)", "xacx", 0),
+            ("(a.c)", "xacx", 2),
+            ("(a.c)", "éabcé", 2),
+            ("(ab|cd)", "xxcdxx", 2),
+            ("([0-9]+)", "ab123cd", 2),
+            ("(\\d{2,4})", "é12é34", 2),
+            ("(?<x>a.c)", "éabcé", 0),
+            ("((?>a.c))", "xacx", 1),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleWrapFromOffsetCases))]
+    public void SingleWrapFromOffsetDetailedOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    {
+        // FromOffset keeps absolute-origin semantics through the shared
+        // first-of-enumeration arm and projects the single wrap the same way.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text, offset);
+        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapEvaluatorCases()
+    {
+        string[] patterns =
+        [
+            "(a.c)",
+            "(ab|cd)",
+            "([0-9]+)",
+            "(?<x>a.c)",
+        ];
+        string[] texts = ["xacx", "xxabxx", "éabcé", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleWrapEvaluatorCases))]
+    public void SingleWrapEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // Evaluator callbacks observe the same single-wrap spans on both cores.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(1).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(byteRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapTemplateDeclineCases()
+    {
+        // Only dot-bearing single wraps without any family route keep BCL
+        // template construction; sibling shapes already ride owned routes.
+        string[] patterns =
+        [
+            "(a.c)",
+        ];
+        string[] templates = ["<$1>", "$1-$&"];
+        string[] texts = ["xacx", "éabcé"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleWrapTemplateDeclineCases))]
+    public void SingleWrapTemplateKeepsBclShaping(string pattern, RegexOptions options, string template, string text)
+    {
+        // Declared R05 debt: group-reference templates over single-wrap shapes
+        // expand through the fallback engine (the template worker shapes only
+        // through the span maps). Parity holds; construction is pinned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = regex.ReplaceToString(input, template);
+
+        Assert.Equal(expected, actual);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 }
