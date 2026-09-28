@@ -212,6 +212,74 @@ public sealed class LazyFallbackConstructionTests
     }
 
     [Theory]
+    [InlineData("(a)??b", "xxabxx")]
+    [InlineData("(a)??b(c)??", "xxabcxx")]
+    public void LazyOptionalCompiledDiscoveryKeepsBclShaping(string pattern, string text)
+    {
+        // Declared R05 debt: lazy-optional (??) shapes stay BCL-backed for discovery
+        // on the compiled lane (the compiled emitter cannot execute lazy loops), while
+        // the ordinary lane serves them owned through the slice. Parity holds on both;
+        // construction follows the lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var expectConstruction = (options & RegexOptions.Compiled) != 0;
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.Equal(expectConstruction, isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.Equal(expectConstruction, countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var enumRegex = new Utf8Regex(pattern, options);
+            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (Match expectedMatch in oracle.Matches(text))
+            {
+                expected.Add((expectedMatch.Index, expectedMatch.Length));
+            }
+
+            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+            {
+                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            }
+
+            Assert.Equal(expected.Count, actual.Count);
+            for (var i = 0; i < expected.Count; i++)
+            {
+                Assert.Equal(expected[i].Index, actual[i].Index);
+                Assert.Equal(expected[i].Length, actual[i].Length);
+            }
+
+            Assert.Equal(expectConstruction, enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
+    [Theory]
+    [InlineData("a+?b", "xxaaabxx")]
+    public void LazyPlusCompiledDiscoveryStaysOwned(string pattern, string text)
+    {
+        // Control: lazy-plus shapes execute owned discovery on both lanes, so the
+        // compiled debt above is specific to lazy-optional (??) loops.
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
+    [Theory]
     [InlineData("(a)??b(c)??d(e)??f(g)??h(i)??", "abcdefghi")]
     public void FallbackOperationsConstructFallbackEngine(string pattern, string inputText)
     {
