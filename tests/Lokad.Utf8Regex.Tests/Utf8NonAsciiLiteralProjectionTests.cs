@@ -205,6 +205,51 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    [Theory]
+    [InlineData("a.c", "ééabcé")]
+    [InlineData("a.c", "x\U0001F600abc")]
+    public void NonByteSafeSimpleKeepsBclShaping(string pattern, string text)
+    {
+        // Declared R05 debt: non-byte-safe simple shapes verify candidates through
+        // BCL engines on non-ASCII input (main lazy for discovery, anchored lazy for
+        // bounded-slice detailed shaping). Parity holds; construction is pinned per op.
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var enumRegex = new Utf8Regex(pattern, options);
+            var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (Match expectedMatch in oracle.Matches(text))
+            {
+                expected.Add((expectedMatch.Index, expectedMatch.Length));
+            }
+
+            var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+            foreach (var valueMatch in enumRegex.EnumerateMatches(input))
+            {
+                actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+            }
+
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var detailedRegex = new Utf8Regex(pattern, options);
+            var expectedFirst = oracle.Match(text);
+            var actualFirst = detailedRegex.MatchDetailed(input);
+            Assert.Equal(expectedFirst.Success, actualFirst.Success);
+            Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
+            Assert.True(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        }
+    }
+
     private static bool IsScalarBoundary(string text, int utf16Offset)
     {
         if ((uint)utf16Offset > (uint)text.Length)
