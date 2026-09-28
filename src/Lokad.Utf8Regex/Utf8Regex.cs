@@ -3512,13 +3512,16 @@ public sealed partial class Utf8Regex
     {
         // R03: split segments are match-delimited gaps (BCL EnumerateSplits never splices
         // group captures, unlike array Split), so grouped literal shapes split natively on the
-        // same group-agnostic cursors; only the compiled engine kind gates the route.
+        // same group-agnostic cursors. Structural shapes additionally require the same
+        // byte-safe program conditions the split cursor factory serves (R05).
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
             Utf8CompiledEngineKind.LiteralFamily => true,
             Utf8CompiledEngineKind.StructuralLinearAutomaton
-                => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii,
+                => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue &&
+                   (validation.IsAscii || _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe) ||
+                   (!validation.IsAscii && _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe),
             _ => false,
         };
     }

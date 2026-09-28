@@ -63,13 +63,14 @@ internal static class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
-                => new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget),
+                => new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, validation.IsAscii),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => new Utf8OperationMatchCursor(
                     input,
                     regexPlan,
                     useStructuralLinearProgram: false,
-                    budget),
+                    budget,
+                    validation.IsAscii),
             _ => CreateFallbackMatchEnumerator(
                 verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
                 input),
@@ -121,15 +122,15 @@ internal static class Utf8CompiledOperationCursorFactory
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget),
+                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, validation.IsAscii),
                     count,
-                    input.Length),
+                    totalUtf16Length),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget),
+                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget, validation.IsAscii),
                     count,
-                    input.Length),
+                    totalUtf16Length),
             _ => CreateFallbackSplitEnumerator(verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."), input, count),
         };
     }

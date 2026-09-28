@@ -8308,7 +8308,8 @@ internal static partial class BenchmarkInspectReporter
                 input,
                 regexPlan,
                 useStructuralLinearProgram: true,
-                budget: Utf8ExecutionDeadline.Infinite));
+                budget: Utf8ExecutionDeadline.Infinite,
+                asciiInput: true));
         while (enumerator.MoveNext())
         {
             count++;
@@ -8325,7 +8326,8 @@ internal static partial class BenchmarkInspectReporter
                 input,
                 regexPlan,
                 useStructuralLinearProgram: true,
-                budget: Utf8ExecutionDeadline.Infinite));
+                budget: Utf8ExecutionDeadline.Infinite,
+                asciiInput: true));
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;

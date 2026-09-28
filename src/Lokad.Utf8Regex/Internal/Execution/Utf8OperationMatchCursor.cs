@@ -167,7 +167,8 @@ internal ref struct Utf8OperationMatchCursor
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         bool useStructuralLinearProgram,
-        Utf8ExecutionDeadline budget)
+        Utf8ExecutionDeadline budget,
+        bool asciiInput)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         ref readonly var structuralLinearProgram = ref regexPlan.StructuralLinearProgram;
@@ -182,6 +183,7 @@ internal ref struct Utf8OperationMatchCursor
         _boundaryMap = null;
         _budget = budget;
         _literalUtf16Length = 0;
+        _asciiInput = asciiInput;
         _totalUtf16Length = input.Length;
         _projectionPlan = useStructuralLinearProgram ? default : searchPlan.ProjectionPlan;
         _program = useStructuralLinearProgram ? default : searchPlan.EnumerationOperation;
@@ -207,7 +209,7 @@ internal ref struct Utf8OperationMatchCursor
     }
 
     public Utf8ValueMatch CurrentValueMatch
-        => _mode == EnumeratorMode.AsciiFixedTokenPattern && _asciiFixedTokenCurrentIndex >= 0
+        => _mode == EnumeratorMode.AsciiFixedTokenPattern && _asciiInput && _asciiFixedTokenCurrentIndex >= 0
             ? new Utf8ValueMatch(
                 success: true,
                 isByteAligned: true,
@@ -1007,6 +1009,24 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
+        if (!_asciiInput)
+        {
+            // R05: byte-safe programs match ASCII-only spans, so the match UTF-16
+            // length equals the byte length; only the gap needs decoding.
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                _consumed,
+                _consumedUtf16,
+                _consumed + relative,
+                matchLength,
+                matchLength,
+                out _consumed,
+                out _consumedUtf16);
+            _remaining = _input[_consumed..];
+            return true;
+        }
+
         _current = new Utf8ValueMatch(
             success: true,
             isByteAligned: true,
@@ -1035,6 +1055,24 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
+        if (!_asciiInput)
+        {
+            // R05: fixed-width byte-safe matches are ASCII-only; decode only the gap
+            // and project the hit, keeping byte/UTF-16 cursors for the next gap.
+            var utf16Index = _consumedUtf16 + System.Text.Encoding.UTF8.GetCharCount(_input[_consumed..matchIndex]);
+            _consumed = matchIndex + _asciiFixedTokenMatchLength;
+            _consumedUtf16 = utf16Index + _asciiFixedTokenMatchLength;
+            _current = new Utf8ValueMatch(
+                success: true,
+                isByteAligned: true,
+                indexInUtf16: utf16Index,
+                lengthInUtf16: _asciiFixedTokenMatchLength,
+                indexInBytes: matchIndex,
+                lengthInBytes: _asciiFixedTokenMatchLength);
+            _asciiFixedTokenCurrentIndex = matchIndex;
+            return true;
+        }
+
         _asciiFixedTokenCurrentIndex = matchIndex;
         return true;
     }
@@ -1050,6 +1088,23 @@ internal ref struct Utf8OperationMatchCursor
                 out var match))
         {
             return false;
+        }
+
+        if (!_asciiInput)
+        {
+            // R05: deterministic byte-safe matches are ASCII-only (see the simple
+            // mode above); project incrementally off the scan position.
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                _consumed,
+                _consumedUtf16,
+                match.Index,
+                match.Length,
+                match.Length,
+                out _consumed,
+                out _consumedUtf16);
+            return true;
         }
 
         _current = new Utf8ValueMatch(
