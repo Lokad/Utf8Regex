@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -275,9 +276,31 @@ public sealed class Utf8CancellationTests
     [Fact]
     public void CancelInsideBclFallbackEvaluatorAbortsReplace()
     {
-        // Seven-loop shapes stay past the six-loop map cap and keep the BCL evaluator
-        // route (declared R05 debt).
-        var regex = new Utf8Regex("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?");
+        // Lazy-optional shapes stay BCL-backed on the compiled lane (the compiled
+        // emitter cannot execute lazy loops: declared R05 debt), so cancellation
+        // inside the BCL fallback evaluator still aborts the replace there.
+        var regex = new Utf8Regex("(a)??b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("xxabxx xxabxx");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
+            input,
+            0,
+            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.CultureInvariant)]
+    [InlineData(RegexOptions.Compiled | RegexOptions.CultureInvariant)]
+    public void CancelInsideSliceEvaluatorAbortsReplace(RegexOptions options)
+    {
+        // Seven-loop shapes evaluate owned through the slice arm, which polls the
+        // caller token between matches exactly like the map arms above.
+        var regex = new Utf8Regex("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", options);
         using var canceled = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes("abcdefghijklm abcdefghijklm");
         var calls = 0;
@@ -288,7 +311,8 @@ public sealed class Utf8CancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Fact]

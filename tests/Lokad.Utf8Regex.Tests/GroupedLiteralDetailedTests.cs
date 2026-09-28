@@ -1034,27 +1034,37 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboEvaluatorDebtCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboEvaluatorOwnedCases()
     {
-        string[] patterns = ["((a)?b)?", "(a|b)?(c)?"];
-        string[] texts = ["ab", "ac", "xyz"];
-        foreach (var pattern in patterns)
+        (string pattern, string text)[] rows =
+        [
+            ("((a)?b)?", "ab"),
+            ("((a)?b)?", "xyz"),
+            ("((a)?b)?", "éabé"),
+            ("(a|b)?(c)?", "ac"),
+            ("(a|b)?(c)?", "xyz"),
+            ("(a|b)?(c)?", "éaé"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "ace"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "xyz"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "éaé"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "abcdefghijklm"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "xyz"),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?", "éabcdefghijklmé"),
+        ];
+        foreach (var row in rows)
         {
-            foreach (var text in texts)
-            {
-                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
-                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
-            }
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
         }
     }
 
     [Theory]
-    [MemberData(nameof(SliceComboEvaluatorDebtCases))]
-    public void SliceComboEvaluatorKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SliceComboEvaluatorOwnedCases))]
+    public void SliceComboEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: evaluator callbacks over slice shapes still expand
-        // through the fallback engine (the evaluator arms shape only through the
-        // span maps). Parity holds; construction is pinned.
+        // R05: evaluator callbacks over slice shapes project every callback
+        // argument from a deterministic detailed re-query at the enumerated hit,
+        // without constructing the fallback engine.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
@@ -1067,14 +1077,57 @@ public sealed class GroupedLiteralDetailedTests
             writer.Append("]"u8);
         });
         Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
-        Assert.True(byteRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(byteRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> SliceComboEvaluatorTimeoutCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("((a)?b)?", "ab"),
+            ("(a|b)?(c)?(d)?(e)?(f)?", "ace"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceComboEvaluatorTimeoutCases))]
+    public void SliceComboEvaluatorFiniteTimeoutOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // Finite timeouts keep the owned slice routing with deadline mapping;
+        // the evaluator worker carries the invocation deadline, unlike the
+        // group-reference template worker which diverts to BCL.
+        var timeout = System.TimeSpan.FromSeconds(5);
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options, timeout);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(1).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options, timeout);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
     public static System.Collections.Generic.IEnumerable<object?[]> FiniteTimeoutTemplateCases()
     {
         string[] patterns = ["(a)(b)", "(a)?b(c)?"];
@@ -1165,7 +1218,7 @@ public sealed class GroupedLiteralDetailedTests
             "((a)|(a))",
             "((a|ab)|(c))",
         ];
-        string[] texts = ["xacx", "xbcx", "xabx", "xbx", "xcx", "xdx", "xyz", "éacé", "xabdx"];
+        string[] texts = ["xacx", "xbcx", "xabx", "xbx", "xcx", "xdx", "xyz", "Ã©acÃ©", "xabdx"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -1269,7 +1322,7 @@ public sealed class GroupedLiteralDetailedTests
             "((a|ab)|(c))",
         ];
         string[] templates = ["x", "<$1>", "$&", "$+"];
-        string[] texts = ["xacx", "xabx", "xyz", "éabé"];
+        string[] texts = ["xacx", "xabx", "xyz", "Ã©abÃ©"];
         foreach (var pattern in patterns)
         {
             foreach (var template in templates)
