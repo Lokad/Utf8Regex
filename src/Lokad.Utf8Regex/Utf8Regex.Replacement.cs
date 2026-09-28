@@ -194,8 +194,10 @@ public sealed partial class Utf8Regex
 
         // R05: owned replacement advances scalar-wise, so astral inputs need shapes
         // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
-        // everything else replaces through the BCL fallback exactly.
-        if (!OwnedMatchStartsAreScalarAligned(input))
+        // unit-servable literal templates replace unit-aware past this gate below.
+        // Everything else replaces through the BCL fallback exactly.
+        if (!OwnedMatchStartsAreScalarAligned(input) &&
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && replacement.IsLiteral))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -235,6 +237,14 @@ public sealed partial class Utf8Regex
             return ownedTemplate;
         }
 
+        // R05: astral literal templates splice unit-aware in string space (lone surrogates
+        // survive here; the byte cores below would substitute them through encoding).
+        if (replacement.IsLiteral &&
+            Utf8AstralUnitVerifier.TryReplaceLiteral(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, replacement.LiteralUtf8, budget, out var unitTemplateString, out _))
+        {
+            return unitTemplateString;
+        }
+
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
             return Encoding.UTF8.GetString(nativeResult);
@@ -270,7 +280,10 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if (!OwnedMatchStartsAreScalarAligned(input))
+        // R05: unit-servable literal templates replace unit-aware past scalar-start
+        // alignment (unit matches cover halves); everything else keeps BCL routing below.
+        if (!OwnedMatchStartsAreScalarAligned(input) &&
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && replacement.IsLiteral))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -373,6 +386,14 @@ public sealed partial class Utf8Regex
             return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
         }
 
+        // R05: astral inputs replace literal templates unit-aware through the unit splice,
+        // since half-involving matches have no byte ranges for the cursor engine above.
+        if (Utf8AstralUnitVerifier.TryReplaceLiteral(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, replacementBytes, budget, out var unitReplacedString, out var unitReplacementCount))
+        {
+            replacementCount = unitReplacementCount;
+            return Encoding.UTF8.GetBytes(unitReplacedString);
+        }
+
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
             _verifierRuntime,
@@ -454,6 +475,21 @@ public sealed partial class Utf8Regex
                 out bytesWritten);
 
             return scalarSuccess ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
+        }
+
+        // R05: same unit-aware route as the byte core above.
+        if (Utf8AstralUnitVerifier.TryReplaceLiteral(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, replacementBytes, budget, out var unitDestinationString, out _))
+        {
+            var unitDestinationBytes = Encoding.UTF8.GetBytes(unitDestinationString);
+            if (unitDestinationBytes.Length > destination.Length)
+            {
+                bytesWritten = 0;
+                return OperationStatus.DestinationTooSmall;
+            }
+
+            unitDestinationBytes.CopyTo(destination);
+            bytesWritten = unitDestinationBytes.Length;
+            return OperationStatus.Done;
         }
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(

@@ -2976,7 +2976,11 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
-        if (!OwnedMatchStartsAreScalarAligned(input))
+        // R05: unit-servable literal templates replace unit-aware past scalar-start
+        // alignment (unit matches cover halves); parsed here once, cached after.
+        if (!OwnedMatchStartsAreScalarAligned(input) &&
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) &&
+              GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),

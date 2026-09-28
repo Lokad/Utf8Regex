@@ -207,12 +207,11 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
     [Theory]
     [InlineData("a.c", "ééabcé", true, true, true, true)]
-    [InlineData("a.c", "x\U0001F600abc", true, true, true, false)]
+    [InlineData("a.c", "x\U0001F600abc", true, true, true, true)]
     public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedEnumeration, bool expectOwnedSplits, bool expectOwnedReplacement)
     {
-        // IsMatch, Count, enumeration, and splits are owned everywhere (scalar-aware on
-        // astral-free input, unit-aware on astral input); groupless literal replacement
-        // stays BCL-backed on astral input.
+        // IsMatch, Count, enumeration, splits, and groupless literal replacement are owned
+        // everywhere (scalar-aware on astral-free input, unit-aware on astral input).
         // Group-reference templates and evaluators over grouped shapes stay
         // BCL-backed (declared R05 debt). Parity holds; construction is pinned
         // per op.

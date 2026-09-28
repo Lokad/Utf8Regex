@@ -318,4 +318,57 @@ internal static class Utf8AstralUnitVerifier
         startUnit = FindNextUnit(Encoding.UTF8.GetString(input), plan, budget, 0, out matchedLength);
         return true;
     }
+
+    // Unit-space literal replacement for the byte splicer, which cannot represent
+    // half-involving matches as byte ranges: ranges collect in units over the decoded
+    // string, splice with the replacement text, and encode once. Matches the BCL
+    // replacement tiling exactly (leftmost-first, non-overlapping, branch order).
+    public static bool TryReplaceLiteral(
+        ReadOnlySpan<byte> input,
+        NativeExecutionKind kind,
+        in AsciiSimplePatternPlan plan,
+        ReadOnlySpan<byte> replacementBytes,
+        Utf8ExecutionDeadline budget,
+        out string replaced,
+        out int replacementCount)
+    {
+        replaced = string.Empty;
+        replacementCount = 0;
+        if (!CanServeUnit(kind, plan, input))
+        {
+            return false;
+        }
+
+        var decoded = Encoding.UTF8.GetString(input);
+        var replacementText = Encoding.UTF8.GetString(replacementBytes);
+        var ranges = new List<(int Start, int End)>();
+        var matchedUnits = 0;
+        var startUnit = 0;
+        while (startUnit <= decoded.Length)
+        {
+            var matchUnit = FindNextUnit(decoded, plan, budget, startUnit, out var matchedLength);
+            if (matchUnit < 0)
+            {
+                break;
+            }
+
+            ranges.Add((matchUnit, matchUnit + matchedLength));
+            matchedUnits += matchedLength;
+            startUnit = matchUnit + Math.Max(matchedLength, 1);
+        }
+
+        var result = new StringBuilder(decoded.Length - matchedUnits + ranges.Count * replacementText.Length);
+        var previousEnd = 0;
+        foreach (var range in ranges)
+        {
+            result.Append(decoded, previousEnd, range.Start - previousEnd);
+            result.Append(replacementText);
+            previousEnd = range.End;
+        }
+
+        result.Append(decoded, previousEnd, decoded.Length - previousEnd);
+        replaced = result.ToString();
+        replacementCount = ranges.Count;
+        return true;
+    }
 }

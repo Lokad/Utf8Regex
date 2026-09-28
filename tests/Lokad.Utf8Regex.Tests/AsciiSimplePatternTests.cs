@@ -1585,36 +1585,6 @@ public sealed class AsciiSimplePatternTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ScalarFollowupDeclineCases()
-    {
-        // Single-wrap group references graduated owned (see the single-wrap
-        // template battery); only astral-input templates keep BCL routing.
-        (string pattern, string template, string text)[] rows =
-        [
-            ("a.c", "x", "a😀c"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.template, row.text };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.template, row.text };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScalarFollowupDeclineCases))]
-    public void ScalarFollowupDeclineKeepsBclShaping(string pattern, RegexOptions options, string template, string text)
-    {
-        // Declared R05 debt: astral-input templates keep BCL routing (scalar
-        // verification declines astral inputs). Parity holds; construction is pinned.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-        var expected = oracle.Replace(text, template);
-        var actual = regex.ReplaceToString(input, template);
-
-        Assert.Equal(expected, actual);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-    }
     public static System.Collections.Generic.IEnumerable<object?[]> DigitDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -3030,5 +3000,80 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected, actual);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitLiteralTemplateOwnedCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("a.c", "a\U0001F600c", "Q"),
+            ("a.c", "a\U0001F600c", "$$"),
+            (".", "\U0001F600", "Q"),
+            ("..", "\U0001F600", "Q"),
+            ("a[^x]d", "a\U0001F600d", "Q"),
+            ("[^x]", "\U0001F600", "Q"),
+            (@"\d\d", "a12\U0001F600", "Q"),
+            (@"\d{2,4}", "12\U0001F60034", "Q"),
+            (@"(\d\d)", "a12\U0001F600", "Q"),
+            ("ab|a.c", "a\U0001F600zz", "Q"),
+            ("a.c", "abc", "Q"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitLiteralTemplateOwnedCases))]
+    public void AstralUnitLiteralTemplateOwnsInput(string pattern, RegexOptions options, string text, string template)
+    {
+        // R05: astral literal templates splice unit-aware over decoded units, so byte,
+        // string, and destination cores never construct the fallback engine here.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var destinationRegex = new Utf8Regex(pattern, options);
+        Span<byte> destination = stackalloc byte[input.Length];
+        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expected, Encoding.UTF8.GetString(destination[..bytesWritten]));
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitLiteralTemplateDeclineCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("(?i)a.c", "éA\U0001F600C", "Q"),
+            ("(?m:^a.c$)", "ab\nac\U0001F600", "Q"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+    [Theory]
+    [MemberData(nameof(AstralUnitLiteralTemplateDeclineCases))]
+    public void AstralUnitLiteralTemplateDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    {
+        // Declared R05 debt: IgnoreCase plans and anchored plans keep BCL routing for
+        // astral literal templates; parity holds and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
+        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 }
