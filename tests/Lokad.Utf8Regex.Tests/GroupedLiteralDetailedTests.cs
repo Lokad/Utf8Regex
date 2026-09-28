@@ -1001,5 +1001,85 @@ public sealed class GroupedLiteralDetailedTests
             template == "$+";
         Assert.Equal(expectConstruction, regex.Inspection.DebugFallbackRegexIsCreated);
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedInvariantAlternationCases()
+    {
+        string[] patterns = ["((a|b)c)", "(a(b|c)d)"];
+        string[] texts = ["xacx", "xbcx", "xabdx", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
 
+    [Theory]
+    [MemberData(nameof(NestedInvariantAlternationCases))]
+    public void NestedInvariantAlternationDetailedOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentAlternationCases()
+    {
+        string[] patterns = ["((a|b)|(c|d))", "((a)?b|c)"];
+        string[] texts = ["xacx", "xbcx", "xabdx", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NestedDivergentAlternationCases))]
+    public void NestedDivergentAlternationDetailedKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: nested divergent alternations and loops inside
+        // alternations decline the span maps, so detailed shaping stays BCL-backed.
+        // Parity holds; construction is pinned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
