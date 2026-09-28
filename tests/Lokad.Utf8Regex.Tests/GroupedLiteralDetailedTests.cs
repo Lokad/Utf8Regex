@@ -1543,36 +1543,39 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapTemplateDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapTemplateAllCoresCases()
     {
-        // Only dot-bearing single wraps without any family route keep BCL
-        // template construction; sibling shapes already ride owned routes.
-        string[] patterns =
+        (string pattern, string text)[] rows =
         [
-            "(a.c)",
+            ("(a.c)", "xacx"),
+            ("(a.c)", "éabcé"),
+            ("(a.c)", "xyz"),
+            ("(?<x>a.c)", "xacx"),
+            ("(?<x>a.c)", "éabcé"),
+            ("(?<x>a.c)", "xyz"),
+            ("(\\d{2,4})", "xx12"),
+            ("(\\d{2,4})", "é12é"),
+            ("(\\d{2,4})", "xyz"),
+            ("(ab|cd)", "xabx"),
+            ("(ab|cd)", "xyz"),
         ];
-        string[] templates = ["<$1>", "$1-$&"];
-        string[] texts = ["xacx", "éabcé"];
-        foreach (var pattern in patterns)
+        string[] templates = ["<$1>", "x"];
+        foreach (var row in rows)
         {
             foreach (var template in templates)
             {
-                foreach (var text in texts)
-                {
-                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
-                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
-                }
+                yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, template, row.text };
+                yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, row.text };
             }
         }
     }
 
     [Theory]
-    [MemberData(nameof(SingleWrapTemplateDeclineCases))]
-    public void SingleWrapTemplateKeepsBclShaping(string pattern, RegexOptions options, string template, string text)
+    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
+    public void SingleWrapTemplateStringCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
     {
-        // Declared R05 debt: group-reference templates over single-wrap shapes
-        // expand through the fallback engine (the template worker shapes only
-        // through the span maps). Parity holds; construction is pinned.
+        // R05: single-wrap group references expand owned on the string core
+        // through the shared single-wrap shaping.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1580,6 +1583,41 @@ public sealed class GroupedLiteralDetailedTests
         var actual = regex.ReplaceToString(input, template);
 
         Assert.Equal(expected, actual);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
+    public void SingleWrapTemplateByteCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: the byte core rides the same single-wrap shaping.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
+    public void SingleWrapTemplateDestinationCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    {
+        // R05: the destination core serves the same single-wrap templates owned.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Replace(text, template);
+        var destination = new byte[4096];
+        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 }

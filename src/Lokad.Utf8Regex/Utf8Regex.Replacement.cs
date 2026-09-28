@@ -469,17 +469,18 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         out string replaced)
     {
-        // The decode below runs only for map-covered or groupless shapes, so other
-        // routes keep their allocation profile (see the destination allocation
-        // bound test). Finite timeouts keep the legacy routing so BCL timeout
-        // enforcement is preserved exactly.
+        // The decode below runs only for map-covered, groupless, or single-wrap
+        // shapes, so other routes keep their allocation profile (see the
+        // destination allocation bound test). Finite timeouts keep the legacy
+        // routing so BCL timeout enforcement is preserved exactly.
         replaced = string.Empty;
         if (MatchTimeout != Regex.InfiniteMatchTimeout)
         {
             return false;
         }
         var hasMaps = _groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null;
-        if (!hasMaps && _hasCaptures)
+        if (!hasMaps && _hasCaptures &&
+            !(_groupNumbers.Length == 2 && GetSingleWrapCaptureNumber() == 1))
         {
             return false;
         }
@@ -510,6 +511,12 @@ public sealed partial class Utf8Regex
             else if (!hasMaps && !_hasCaptures)
             {
                 context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
+            }
+            else if (!hasMaps && _hasCaptures &&
+                TryGetOwnedDetailedGroupCount(out var wrapGroups) &&
+                wrapGroups > 1)
+            {
+                context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
             }
             else if (!first)
             {

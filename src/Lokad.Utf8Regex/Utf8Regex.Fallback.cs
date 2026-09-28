@@ -717,7 +717,17 @@ public sealed partial class Utf8Regex
             return true;
         }
 
-        return (_groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null) &&
+        if ((_groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null) &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            return true;
+        }
+
+        // R05: single-wrap shapes project group 1 from the whole span through the
+        // worker arm, under the same culture and Kelvin fences as the maps.
+        return _groupNumbers.Length == 2 &&
+            GetSingleWrapCaptureNumber() == 1 &&
             !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input);
     }

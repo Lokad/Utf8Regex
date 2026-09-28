@@ -1419,10 +1419,10 @@ public sealed class AsciiSimplePatternTests
 
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarFollowupDeclineCases()
     {
+        // Single-wrap group references graduated owned (see the single-wrap
+        // template battery); only astral-input templates keep BCL routing.
         (string pattern, string template, string text)[] rows =
         [
-            ("(a.c)", "<$1>", "éabcé"),
-            ("(a.c)", "<$1>", "xyz"),
             ("a.c", "x", "a😀c"),
         ];
         foreach (var row in rows)
@@ -1436,9 +1436,8 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScalarFollowupDeclineCases))]
     public void ScalarFollowupDeclineKeepsBclShaping(string pattern, RegexOptions options, string template, string text)
     {
-        // Declared R05 debt: group-reference templates over grouped scalar shapes
-        // and astral-input enumeration keep BCL routing. Parity holds; construction
-        // is pinned.
+        // Declared R05 debt: astral-input templates keep BCL routing (scalar
+        // verification declines astral inputs). Parity holds; construction is pinned.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
