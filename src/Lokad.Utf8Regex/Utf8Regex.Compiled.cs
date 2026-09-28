@@ -257,10 +257,10 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[]? literal, Utf8ExecutionDeadline budget)
     {
-        // The owned cursors do not enforce start anchors, so anchored shapes keep the BCL
-        // enumerator until cursor anchor handling lands. The anchored literal-prefix family
-        // bypasses this path through its anchor-enforcing owned cursor in EnumerateMatches.
-        if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
+        // Line-anchored shapes enumerate through the owned cursors (line edges enforced
+        // per candidate); absolute-anchored shapes keep the BCL enumerator until cursor
+        // anchor handling lands. The anchored literal-prefix family bypasses in EnumerateMatches.
+        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             // R05: scalar-verifiable simple patterns enumerate owned through the

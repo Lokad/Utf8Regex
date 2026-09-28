@@ -847,14 +847,20 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredEnumerationSingleSidedDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredEnumerationOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
+            ("(?m:^ab$)", "ab\nab"),
+            ("(?m:^ab$)", "ab\nab\nab"),
             ("(?m:^ab)", "ab\nab"),
             ("(?m:^ab)", "xxab\nab"),
             ("(?m:ab$)", "ab\nab"),
             ("(?m:ab$)", "xxab\nab"),
+            ("(?m:^ab)", "éab\nab\nab"),
+            ("(?m:ab$)", "ab\néab"),
+            ("(?m:^ab)", "a\U0001F600\nab"),
+            ("(?m:ab$)", "ab\n\U0001F600ab"),
         ];
         foreach (var row in rows)
         {
@@ -863,12 +869,11 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
     }
     [Theory]
-    [MemberData(nameof(LineAnchoredEnumerationSingleSidedDeclineCases))]
-    public void LineAnchoredEnumerationSingleSidedKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(LineAnchoredEnumerationOwnedCases))]
+    public void LineAnchoredEnumerationOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: single-sided enumeration still rides the BCL enumerator
-        // (owned cursors do not enforce start anchors); discovery (IsMatch, Count, Match,
-        // Detailed) is owned above. Parity holds and construction is pinned per lane.
+        // R05: line-anchored enumeration serves owned through the interpreter and
+        // linear cursors, which enforce line edges per candidate on every input.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -883,6 +888,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expected, actual);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 }
