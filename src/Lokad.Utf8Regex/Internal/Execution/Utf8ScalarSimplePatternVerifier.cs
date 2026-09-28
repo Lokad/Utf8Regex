@@ -12,10 +12,9 @@ internal static class Utf8ScalarSimplePatternVerifier
     // byte-compare, singleline dots match any scalar, ASCII-closed classes apply the
     // byte predicate on ASCII scalars and their negation bit beyond). BCL parity holds
     // on BMP input where units equal scalars. Astral inputs, IgnoreCase plans, runs,
-    // non-Digit shorthand and Unicode-dependent classes, anchored plans, and the
-    // ASCII fast path decline to the existing routes. Hooks sit past validation,
-    // so inputs are
-    // well-formed; malformed scalars fail the walk closed.
+    // non-Digit, non-word shorthand and Unicode-dependent classes, anchored plans,
+    // and the ASCII fast path decline to the existing routes. Hooks sit past
+    // validation, so inputs are well-formed; malformed scalars fail the walk closed.
     public static bool TryIsMatch(
         ReadOnlySpan<byte> input,
         NativeExecutionKind kind,
@@ -131,8 +130,10 @@ internal static class Utf8ScalarSimplePatternVerifier
                         if (token.CharClass.IsEmpty ||
                             (token.RequiresAsciiInput &&
                              token.ScalarClassKind != Utf8SimplePatternScalarClassKind.AsciiClosedNegation &&
+                             token.ScalarClassKind != Utf8SimplePatternScalarClassKind.UnicodeWhitespace &&
                              !(token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
-                               predicateKind == AsciiCharClassPredicateKind.Digit)))
+                               (predicateKind == AsciiCharClassPredicateKind.Digit ||
+                                predicateKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore))))
                         {
                             return false;
                         }
@@ -264,11 +265,21 @@ internal static class Utf8ScalarSimplePatternVerifier
                 {
                     matches = token.CharClass.Contains((byte)scalar);
                 }
+                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace)
+                {
+                    matches = Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
+                }
                 else if (token.RequiresAsciiInput &&
                     token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
                     predicateKind == AsciiCharClassPredicateKind.Digit)
                 {
                     matches = Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
+                }
+                else if (token.RequiresAsciiInput &&
+                    token.CharClass.TryGetKnownPredicateKind(out var wordKind) &&
+                    wordKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore)
+                {
+                    matches = Utf8WordRanges.IsWordChar(scalar);
                 }
                 else
                 {
