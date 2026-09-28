@@ -248,6 +248,29 @@ public sealed partial class Utf8Regex
         int count,
         Utf8ExecutionDeadline budget)
     {
+        // R05: anchored ASCII literal families split through the anchor-enforcing owned
+        // cursors (at most one match at a fixed position), mirroring enumeration; the
+        // split router admits these families past the simple-pattern gate below.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredSplitLiteral)
+        {
+            return new Utf8ValueSplitEnumerator(
+                input,
+                new Utf8OperationMatchCursor(input, anchoredSplitLiteral, budget),
+                count,
+                totalUtf16Length);
+        }
+
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredSplitSuffix)
+        {
+            return new Utf8ValueSplitEnumerator(
+                input,
+                new Utf8OperationMatchCursor(input, anchoredSplitSuffix, budget, _fallbackDirectFamily.Kind),
+                count,
+                totalUtf16Length);
+        }
+
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);

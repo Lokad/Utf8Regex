@@ -2359,7 +2359,14 @@ public sealed partial class Utf8Regex
         var totalUtf16Length = usesAsciiValidationShortcut
             ? input.Length
             : validation.Utf16Length;
-        if (count > 0 && CanUseNativeSplit(validation))
+        // R05: anchored ASCII literal families split through the anchor-enforcing
+        // owned cursors (at most one match at a fixed position), like enumeration.
+        // Inlined to hold the single-caller helper ceiling.
+        var isAnchoredDirectSplitFamily = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } ||
+            Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 };
+        if (count > 0 && (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily))
         {
             return CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count, budget)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
