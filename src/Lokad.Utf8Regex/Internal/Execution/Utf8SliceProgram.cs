@@ -708,14 +708,19 @@ internal static class Utf8SliceLowerer
             // scalar-boundary start/stop argument and the runs stay aligned
             // throughout (origins are scan starts and prior match ends, hence
             // boundaries for indifferent shapes on every lane including
-            // FromOffset). Word-boundary anchors stay out: halves are never
-            // word chars while astral scalars can be.
+            // FromOffset). Word boundaries join as head/tail atoms: BCL meets
+            // them only at scalar boundaries (a hold needs a full-scalar word
+            // neighbor, never a half), where the runner evaluates the same
+            // transition, so the loop keeps its argument and lazy tails stay
+            // pinned. Negated edges stay out: both halves are non-word, so BCL
+            // meets them mid-scalar where scalar stepping cannot follow.
             // Anything but one checked loop left standing fails closed.
             var members = alternation.Branches[0];
             var head = 0;
             while (head < members.Length &&
                 (members[head] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[head]) ||
-                members[head] is Utf8SliceNode.AnchorNode))
+                members[head] is Utf8SliceNode.AnchorNode ||
+                (members[head] is Utf8SliceNode.BoundaryNode headEdge && headEdge.IsWordBoundary)))
             {
                 head++;
             }
@@ -723,7 +728,8 @@ internal static class Utf8SliceLowerer
             var tail = members.Length - 1;
             while (tail >= head &&
                 (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail]) ||
-                members[tail] is Utf8SliceNode.AnchorNode))
+                members[tail] is Utf8SliceNode.AnchorNode ||
+                (members[tail] is Utf8SliceNode.BoundaryNode tailEdge && tailEdge.IsWordBoundary)))
             {
                 if (members[tail] is not Utf8SliceNode.EmptyNode)
                 {
