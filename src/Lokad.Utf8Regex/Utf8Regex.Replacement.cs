@@ -197,7 +197,7 @@ public sealed partial class Utf8Regex
         // unit-servable literal templates replace unit-aware past this gate below.
         // Everything else replaces through the BCL fallback exactly.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && replacement.IsLiteral))
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _))))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -283,7 +283,7 @@ public sealed partial class Utf8Regex
         // R05: unit-servable literal templates replace unit-aware past scalar-start
         // alignment (unit matches cover halves); everything else keeps BCL routing below.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && replacement.IsLiteral))
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _))))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),

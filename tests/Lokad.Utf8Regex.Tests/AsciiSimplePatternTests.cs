@@ -3076,4 +3076,94 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected, Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
     }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitGroupTemplateOwnedCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(a.c)", "xa\U0001F600cy"),
+            ("(a.)", "xa\U0001F600"),
+            (@"(a|.)", "\U0001F600"),
+            ("a.c", "a\U0001F600c"),
+            (@"(a.c)", "xabcy"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralUnitGroupTemplateOwnedCases))]
+    public void AstralUnitGroupTemplateOwnsInput(string pattern, RegexOptions options, string text)
+    {
+        // R05: astral group templates shape single-wrap and groupless groups from owned
+        // unit discovery, so byte, string, destination, and detailed paths never construct
+        // the fallback engine here.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, "<$1>");
+        var bytesRegex = new Utf8Regex(pattern, options);
+        // Byte-level oracle: lone surrogates cannot exist in well-formed UTF-8 bytes,
+        // so both sides encode (BCL substitutes identically through the same encoder).
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes("<$1>"));
+        Assert.Equal(expectedBytes, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, "<$1>");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var destinationRegex = new Utf8Regex(pattern, options);
+        // Group templates can expand output past the input length on multi-hit rows.
+        Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
+        var status = destinationRegex.TryReplace(input, "<$1>", destination, out var bytesWritten);
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups[1].Value, actualDetailed.GetGroup(1).GetValueString());
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitGroupTemplateDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("((a|.)c)", "a\U0001F600c"),
+            (@"(\d+)-(\d+)", "12-34\U0001F600"),
+            (@"(\d+)", "a12\U0001F600"),
+            (@"([^x]+)", "\U0001F600"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralUnitGroupTemplateDeclineCases))]
+    public void AstralUnitGroupTemplateDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: nested-divergent and multi-group captures need unit capture
+        // tracking on astral input, and unbounded loops stay FallbackRegex; parity holds
+        // and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var stringRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Replace(text, "<$1>"), stringRegex.ReplaceToString(input, "<$1>"));
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }

@@ -2980,7 +2980,7 @@ public sealed partial class Utf8Regex
         // alignment (unit matches cover halves); parsed here once, cached after.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) &&
-              GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral))
+              (GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral || TryGetOwnedDetailedGroupCount(out _))))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
