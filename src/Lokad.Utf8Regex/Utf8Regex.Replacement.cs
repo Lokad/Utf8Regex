@@ -198,7 +198,7 @@ public sealed partial class Utf8Regex
         // slice-served shapes through the slice arm; everything else replaces through
         // the BCL fallback exactly.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _)) ||
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
               (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -286,7 +286,7 @@ public sealed partial class Utf8Regex
         // alignment (unit matches cover halves), as do slice-served shapes through the
         // slice arm; everything else keeps BCL routing below.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _)) ||
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
               (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -564,7 +564,7 @@ public sealed partial class Utf8Regex
             return false;
         }
         var hasMaps = _groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null;
-        if (!hasMaps && _hasCaptures &&
+        if (!hasMaps && _unitBranchSpanMap is null && _hasCaptures &&
             !(_groupNumbers.Length == 2 && GetSingleWrapCaptureNumber() == 1))
         {
             return false;
@@ -602,6 +602,11 @@ public sealed partial class Utf8Regex
                 wrapGroups > 1)
             {
                 context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
+            }
+            else if (_unitBranchSpanMap is not null &&
+                TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var unitShaped))
+            {
+                context = unitShaped;
             }
             else if (!first)
             {

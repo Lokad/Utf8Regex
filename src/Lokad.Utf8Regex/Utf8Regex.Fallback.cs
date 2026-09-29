@@ -784,8 +784,17 @@ public sealed partial class Utf8Regex
 
         // R05: single-wrap shapes project group 1 from the whole span through the
         // worker arm, under the same culture and Kelvin fences as the maps.
-        return _groupNumbers.Length == 2 &&
+        if (_groupNumbers.Length == 2 &&
             GetSingleWrapCaptureNumber() == 1 &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            return true;
+        }
+
+        // R05: unit branch-span shapes project static branch-invariant unit spans
+        // through the worker arm, under the same culture and Kelvin fences.
+        return _unitBranchSpanMap is not null &&
             !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input);
     }

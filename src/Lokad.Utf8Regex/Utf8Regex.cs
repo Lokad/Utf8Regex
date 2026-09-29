@@ -47,6 +47,7 @@ public sealed partial class Utf8Regex
     private readonly bool _hasCaptures;
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
+    private readonly Utf8UnitBranchSpanMap? _unitBranchSpanMap;
     private readonly Utf8SliceProgram? _sliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -138,6 +139,7 @@ public sealed partial class Utf8Regex
         _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
+        _unitBranchSpanMap = UsesRightToLeft() ? null : Utf8UnitBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, preparedRegex.SimplePatternPlan);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). R02b construction admission caps the pattern length and lowered
         // instruction count; over-cap shapes decline here to legacy routing.
@@ -1721,6 +1723,34 @@ public sealed partial class Utf8Regex
             }
         }
 
+        if (_unitBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            // R05: nested divergent simple patterns discover through the shared value
+            // path and project static unit-space group spans valid for every expanded
+            // branch. A hit-width disagreement declines to the routes below.
+            Utf8ValueMatch unitFirst;
+            try
+            {
+                unitFirst = MatchCore(input, cancellationToken);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!unitFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            if (TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, unitFirst, out var unitDetailed))
+            {
+                return unitDetailed;
+            }
+        }
+
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
             TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, 0, out var branched))
         {
@@ -2030,6 +2060,59 @@ public sealed partial class Utf8Regex
 
             starts[number] = hit.IndexInUtf16 + projectionStarts[i];
             lengths[number] = projectionLengths[i];
+        }
+
+        detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
+        return true;
+    }
+
+    private bool TryShapeUnitBranchDetailedMatch(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        Utf8ValueMatch hit,
+        out Utf8MatchContext detailed)
+    {
+        // R05: projects the static branch-invariant unit spans recorded at
+        // construction onto the owned discovery hit. Whole-match wrappers take the
+        // hit span; every other group takes its recorded unit offset. A width
+        // disagreement or group-number surprise declines instead of shaping blindly.
+        // Half-involving spans project in string space exactly like BCL: values
+        // survive as lone halves while byte ranges stay unavailable.
+        detailed = default;
+        var map = _unitBranchSpanMap;
+        if (map is null || hit.LengthInUtf16 != map.Width)
+        {
+            return false;
+        }
+
+        var groupCount = _groupNumbers.Length;
+        var starts = new int[groupCount];
+        var lengths = new int[groupCount];
+        Array.Fill(starts, -1);
+        starts[0] = hit.IndexInUtf16;
+        lengths[0] = hit.LengthInUtf16;
+        foreach (var whole in map.WholeMatchGroups)
+        {
+            if ((uint)whole >= (uint)groupCount)
+            {
+                return false;
+            }
+
+            starts[whole] = hit.IndexInUtf16;
+            lengths[whole] = hit.LengthInUtf16;
+        }
+
+        for (var i = 0; i < map.Groups.Length; i++)
+        {
+            var number = map.Groups[i];
+            if ((uint)number >= (uint)groupCount)
+            {
+                return false;
+            }
+
+            starts[number] = hit.IndexInUtf16 + map.Starts[i];
+            lengths[number] = map.Lengths[i];
         }
 
         detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
@@ -2981,7 +3064,7 @@ public sealed partial class Utf8Regex
         // slice arm; parsed here once, cached after.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) &&
-              (GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral || TryGetOwnedDetailedGroupCount(out _)) ||
+              (GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
               (_sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
