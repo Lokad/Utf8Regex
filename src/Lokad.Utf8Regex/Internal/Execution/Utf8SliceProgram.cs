@@ -665,20 +665,26 @@ internal static class Utf8SliceLowerer
             // Head/tail runs around one loop: leading and trailing indifferent
             // atoms (ASCII literals or empty positive sets, folded or not)
             // only ever meet ASCII bytes in both semantics while halves miss
-            // them exactly like BCL, so the loop keeps its scalar-boundary
-            // start/stop argument and the runs stay byte-aligned throughout.
+            // them exactly like BCL, and line/absolute anchors only ever meet
+            // ASCII-determined positions (starts, ends, newline edges) in both
+            // semantics, so the loop keeps its scalar-boundary start/stop
+            // argument and the runs stay aligned throughout. Word-boundary and
+            // contiguous anchors stay out: halves are never word chars while
+            // astral scalars can be, and contiguous resumes from prior ends.
             // Anything but one checked loop left standing fails closed.
             var members = alternation.Branches[0];
             var head = 0;
             while (head < members.Length &&
-                (members[head] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[head])))
+                (members[head] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[head]) ||
+                (members[head] is Utf8SliceNode.AnchorNode headAnchor && headAnchor.Anchor != Utf8SliceAnchorKind.Contiguous)))
             {
                 head++;
             }
 
             var tail = members.Length - 1;
             while (tail >= head &&
-                (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail])))
+                (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail]) ||
+                (members[tail] is Utf8SliceNode.AnchorNode tailAnchor && tailAnchor.Anchor != Utf8SliceAnchorKind.Contiguous)))
             {
                 tail--;
             }
@@ -688,14 +694,17 @@ internal static class Utf8SliceLowerer
                 return true;
             }
 
-            if (tail != head ||
-                members[head] is not Utf8SliceNode.RepeatNode tailRepeat ||
-                tailRepeat.Lazy || tailRepeat.Minimum < 1 || tailRepeat.Maximum != int.MaxValue)
+            if (tail != head)
             {
                 return false;
             }
 
-            return WholeLoopBodyIsSafe(tailRepeat.Body);
+            // One node left standing (a loop, or a capture around the
+            // remaining sequence like ^(a[^x]+b)$): descend and let the loop
+            // above unwrap it; anything else fails closed at the Repeat gate
+            // below exactly like the bare shape.
+            node = members[head];
+            continue;
         }
 
         if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum < 1 || repeat.Maximum != int.MaxValue)

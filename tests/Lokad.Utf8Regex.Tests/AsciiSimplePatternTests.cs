@@ -4030,7 +4030,6 @@ public sealed class AsciiSimplePatternTests
         (string pattern, RegexOptions options, string text)[] rows =
         [
             ("([^x]b)+c", RegexOptions.CultureInvariant, "\U0001F600bc"),
-            ("^a[^x]+b", RegexOptions.CultureInvariant, "xa\U0001F600b"),
             ("a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
             (".a[^x]+b", RegexOptions.CultureInvariant, "xca\U0001F600b"),
             ("(a[^x]+b|c)+", RegexOptions.CultureInvariant, "xa\U0001F600bc"),
@@ -4051,6 +4050,174 @@ public sealed class AsciiSimplePatternTests
         // loops, anchored or directed (dot-headed, dot-tailed) runs, nested
         // tails inside alternation branches, and right-to-left tailed loops
         // keep BCL routing on astral input; parity holds and construction is
+        // pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLoopOwnedCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("^a[^x]+b", "a\U0001F600b", "Q"),
+            ("^[^x]+b", "\U0001F600b", "Q"),
+            ("^.+b", "\U0001F600b", "Q"),
+            ("a[^x]+b$", "xa\U0001F600b", "Q"),
+            ("^a[^x]+b$", "a\U0001F600b", "Q"),
+            ("^[^x]+$", "\U0001F600", "Q"),
+            ("^.+$", "\U0001F600yy", "Q"),
+            ("(?m)^a[^x]+b", "q\na\U0001F600b", "Q"),
+            ("(?m)a[^x]+b$", "xa\U0001F600b\nzz", "Q"),
+            ("^(a[^x]+b)$", "a\U0001F600b", "<$1>"),
+            ("(?i)^A[^x]+B$", "a\U0001F600b", "Q"),
+            ("^\\D+b$", "a\U0001F600b", "Q"),
+            ("^[a-z]+$", "abc\U0001F600", "Q"),
+            ("^a[^x]+b$", "axxb", "Q"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AnchoredLoopOwnedCases))]
+    public void AnchoredLoopOwnsInput(string pattern, RegexOptions options, string text, string template)
+    {
+        // R05: whole-pattern greedy unbounded loops with line/absolute
+        // anchors keep scalarwise stepping exactly like BCL units on astral
+        // input (anchors only ever meet ASCII-determined positions in both
+        // semantics while the loop keeps its scalar-boundary argument), so
+        // discovery, shaping, splits, and all three replacement cores never
+        // construct the fallback engine here. Byte-level lanes compare
+        // encoded bytes because lone halves substitute identically through
+        // the encoder on both sides.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var sliceRegex = new Utf8Regex(pattern, options);
+        Assert.True(sliceRegex.Inspection.DebugUsesOwnedSliceProgram);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
+            {
+                var expectedGroup = expectedDetailed.Groups[number];
+                var actualGroup = actualDetailed.GetGroup(number);
+                Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                if (expectedGroup.Success)
+                {
+                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+                }
+            }
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var enumerateRegex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in enumerateRegex.EnumerateMatches(input))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var splitRegex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expectedSplits.Add((text[start..end], start, end - start));
+        }
+        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
+        {
+            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+        Assert.Equal(expectedSplits, actualSplits);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var expected = oracle.Replace(text, template);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
+        Assert.Equal(expectedBytes, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var destinationRegex = new Utf8Regex(pattern, options);
+        Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
+        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLoopDeclineCases()
+    {
+        (string pattern, RegexOptions options, string text)[] rows =
+        [
+            ("\\Ga[^x]+b", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("^a[^x]+?b$", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("^a[^x]*b$", RegexOptions.CultureInvariant, "a\U0001F600b"),
+            ("^a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600b"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, row.options, row.text };
+            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AnchoredLoopDeclineCases))]
+    public void AnchoredLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: word-boundary and contiguous anchors, lazy and
+        // empty-capable anchored loops, and right-to-left anchored loops keep
+        // BCL routing on astral input; parity holds and construction is
         // pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
