@@ -167,6 +167,7 @@ public sealed class Utf8SliceConditionalTests
         yield return new object?[] { "((\\p{L}+))\\1", "abab", true };
         yield return new object?[] { "(?i:(\\p{Ll})(?(1)a|b))", "xA", true };
         yield return new object?[] { "(?i:(\\p{Ll})(?(1)a|b))", "xb", false };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", true };
     }
 
     [Theory]
@@ -200,6 +201,7 @@ public sealed class Utf8SliceConditionalOperationTests
         yield return new object?[] { "(a)?(?(1)b)", "ab", 2 };
         yield return new object?[] { "(?(?=a)b|c)", "abc", 1 };
         yield return new object?[] { "(a)(?(1)b|c)(d)", "abdabd", 2 };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", 1 };
     }
 
     [Theory]
@@ -228,6 +230,7 @@ public sealed class Utf8SliceConditionalOperationTests
         yield return new object?[] { "(a)(?(1)b|c)(d)", "abd", 0, 3 };
         yield return new object?[] { "(?(?=a)b|c)", "xc", 1, 1 };
         yield return new object?[] { "(?<n>a)?(?(n)b|c)", "ab", 0, 2 };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", 1, 3 };
     }
 
     [Theory]
@@ -254,6 +257,7 @@ public sealed class Utf8SliceConditionalOperationTests
         yield return new object?[] { "(a)(?(1)b|c)(d)", "abd", 0, 3, new int[] { 0, 2 }, new int[] { 1, 1 } };
         yield return new object?[] { "(a)?(?(1)(b)|(c))", "ab", 0, 2, new int[] { 0, 1, -1 }, new int[] { 1, 1, 0 } };
         yield return new object?[] { "(a)?(?(1)(b)|(c))", "c", 0, 1, new int[] { -1, -1, 0 }, new int[] { 0, 0, 1 } };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", 1, 3, new int[] { }, new int[] { } };
     }
 
     [Theory]
@@ -292,6 +296,7 @@ public sealed class Utf8SliceConditionalOperationTests
     {
         yield return new object?[] { "(a)?(?(1)b)", "ab", new int[] { 0, 2, 2, 0 } };
         yield return new object?[] { "(?(?=a)b|c)", "acac", new int[] { 1, 1, 3, 1 } };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", new int[] { 1, 3 } };
     }
 
     [Theory]
@@ -330,6 +335,7 @@ public sealed class Utf8SliceConditionalOperationTests
     {
         yield return new object?[] { "(a)?(?(1)b|c)", "ac", "a<c>" };
         yield return new object?[] { "(?(?=a)b|c)", "ac", "a<c>" };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", "x<aab>\U0001F600" };
     }
 
     [Theory]
@@ -343,6 +349,27 @@ public sealed class Utf8SliceConditionalOperationTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> AstralConditionalStringDeclineCases()
+    {
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", "Q" };
+        yield return new object?[] { "(?(a)a|b)+", "xaab\U0001F600", "Q" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralConditionalStringDeclineCases))]
+    public void AstralConditionalStringDeclineKeepsBclShaping(string pattern, string inputText, string template)
+    {
+        // Declared R05 debt: string-template replacement keeps BCL routing for
+        // conditional shapes on astral input while bytes-Replace, splits, and
+        // every discovery lane serve owned; parity holds and construction
+        // is pinned.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal(oracle.Replace(inputText, template), stringRegex.ReplaceToString(input, template));
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]
