@@ -723,7 +723,15 @@ internal static class Utf8SliceLowerer
             continue;
         }
 
-        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum < 1 || repeat.Maximum != int.MaxValue)
+        // Minimum one stays exact under the boundary argument above (a
+        // single unit and a single scalar coincide at scalar boundaries
+        // with indifferent head/tail runs); minimums above one stay out
+        // because BCL counts UTF-16 units while the runner counts scalars,
+        // so a minimum of two or more over a unit-divergent atom can force
+        // a pair split the runner cannot reproduce (probed: `a[^x]{2,}b`
+        // misses `xa<astral>b` owned with no fallback while BCL matches the
+        // pair as two units).
+        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum != 1 || repeat.Maximum != int.MaxValue)
         {
             return false;
         }
