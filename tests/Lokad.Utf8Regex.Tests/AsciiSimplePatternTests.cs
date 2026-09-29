@@ -5398,6 +5398,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)[^\\p{L}_]+", "A_B\U0001F600c", "Q"),
             ("[^\\p{L}_]+?b", "x_\U0001F600xb", "Q"),
             ("([^\\p{L}_]+)", "a_b\U0001F600c", "<$1>"),
+            ("[\\P{L}]+", "1\U0001F6002", "Q"),
+            ("[^\\P{L}]+", "a\U0001F600b", "Q"),
             ("[\\p{L}_]+?b", "\U0001F600aab", "Q"),
         ];
         foreach (var row in rows)
@@ -5520,6 +5522,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         [
             ("([\\p{L}])+", RegexOptions.CultureInvariant, "\U0001F600"),
             ("[\\p{IsHighSurrogates}a]+", RegexOptions.CultureInvariant, "a\U0001F600b"),
+            ("[^\\P{Cs}]+", RegexOptions.CultureInvariant, "a\U0001F600b"),
             ("[\\p{L}_]+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a_b\U0001F600c"),
             ("[\\p{L}_]+?", RegexOptions.CultureInvariant, "a_b\U0001F600c"),
         ];
@@ -5535,10 +5538,12 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     public void PositiveCategorySetDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
         // Declared R05 debt: split-half members (tables covering only lead or
-        // only trail surrogates, e.g. surrogate blocks), inner captures,
-        // right-to-left, and tailless lazy category-set loops keep BCL routing
-        // on astral input; parity holds and construction is pinned per lane.
-        // Uniform sets serve owned through the loop battery below.
+        // only trail surrogates, e.g. surrogate blocks), double-negated
+        // surrogate sets (the parser XOR-collapses them to surrogate-covering
+        // positives), inner captures, right-to-left, and tailless lazy
+        // category-set loops keep BCL routing on astral input; parity holds
+        // and construction is pinned per lane. Uniform sets serve owned
+        // through the loop battery below.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
