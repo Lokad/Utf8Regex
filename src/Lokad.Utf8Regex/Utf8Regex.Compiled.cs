@@ -133,7 +133,7 @@ public sealed partial class Utf8Regex
 
             // R05: astral inputs verify unit-aware over decoded units (dots and negated
             // classes consume halves exactly like BCL); anything else keeps BCL below.
-            if (Utf8AstralUnitVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var unitIsMatch))
+            if (Utf8AstralUnitVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, 0, budget, out var unitIsMatch))
             {
                 return unitIsMatch;
             }
@@ -209,7 +209,7 @@ public sealed partial class Utf8Regex
             }
 
             // R05: same unit-aware route as IsMatch above.
-            if (Utf8AstralUnitVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var unitCount))
+            if (Utf8AstralUnitVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, 0, budget, out var unitCount))
             {
                 return unitCount;
             }

@@ -3305,7 +3305,7 @@ public sealed class AsciiSimplePatternTests
         Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchFollowUpDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchEvaluatorDeclineCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -3320,27 +3320,198 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitBranchFollowUpDeclineCases))]
-    public void AstralUnitBranchFollowUpDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(AstralUnitBranchEvaluatorDeclineCases))]
+    public void AstralUnitBranchEvaluatorDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: evaluator callbacks and FromOffset detailed matches keep
-        // BCL shaping for nested divergent shapes while discovery, first-match Detailed,
-        // enumeration, and template replacement serve owned; parity holds and construction
-        // is pinned per lane.
+        // Declared R05 debt: evaluator callbacks keep BCL shaping for nested
+        // divergent shapes (half-involving hits would throw under the byte-splicing
+        // evaluator contract instead of shaping like BCL); parity holds and
+        // construction is pinned per lane. FromOffset detailed matches graduate to
+        // the owned battery below.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var evaluatorRegex = new Utf8Regex(pattern, options);
         var evaluatorActual = evaluatorRegex.ReplaceToString(input, 0, (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(1).GetValueString() + ">");
         Assert.Equal(oracle.Replace(text, static match => "<" + match.Groups[1].Value + ">"), evaluatorActual);
         Assert.True(evaluatorRegex.Inspection.DebugFallbackRegexIsCreated);
-        var offsetRegex = new Utf8Regex(pattern, options);
-        var expectedOffset = oracle.Match(text, 0);
-        var actualOffset = offsetRegex.MatchDetailedFromUtf16Offset(input, 0);
-        Assert.Equal(expectedOffset.Success, actualOffset.Success);
-        if (expectedOffset.Success)
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetOwnedCases()
+    {
+        (string pattern, string text, int offset)[] rows =
+        [
+            ("((a|.)c)", "a\U0001F600c", 0),
+            ("((a|.)c)", "a\U0001F600c", 2),
+            ("((a|.)c)", "a\U0001F600c", 3),
+            ("((a|.)c)", "a\U0001F600c", 4),
+            ("(a|(.)c)", "x\U0001F600c", 0),
+            ("(a|(.)c)", "x\U0001F600c", 2),
+            ("(a.c)", "xa\U0001F600cy", 0),
+            ("(a.c)", "xa\U0001F600cy", 2),
+            ("a.c", "xa\U0001F600cy", 0),
+            ("a.c", "xa\U0001F600cy", 2),
+            ("[^x]", "a\U0001F600b", 0),
+            ("[^x]", "a\U0001F600b", 1),
+            ("[^x]", "a\U0001F600b", 2),
+            ("((.|b)c)", "a\U0001F600c", 2),
+        ];
+        foreach (var row in rows)
         {
-            Assert.Equal(expectedOffset.Groups[1].Value, actualOffset.GetGroup(1).GetValueString());
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
         }
-        Assert.True(offsetRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralUnitFromOffsetOwnedCases))]
+    public void AstralUnitFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    {
+        // R05: unit-served discovery and shaping run unit-aware from the start unit
+        // on astral input, so IsMatch, Count, Match, and Detailed from a UTF-16 offset
+        // never construct the fallback engine here. Counts compare against BCL
+        // start-at semantics, and Detailed checks every group including halves.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text, offset), isMatchRegex.IsMatchFromUtf16Offset(input, offset));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        var expectedCount = 0;
+        foreach (Match m in oracle.Matches(text, offset))
+        {
+            expectedCount++;
+        }
+        Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text, offset);
+        var actualMatch = matchRegex.MatchFromUtf16Offset(input, offset);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text, offset);
+        var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
+            {
+                var expectedGroup = expectedDetailed.Groups[number];
+                var actualGroup = actualDetailed.GetGroup(number);
+                Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                if (expectedGroup.Success)
+                {
+                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+                }
+            }
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetDeclineCases()
+    {
+        (string pattern, RegexOptions options, string text, int offset)[] rows =
+        [
+            ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600c", 0),
+            ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, "a\U0001F600c", 0),
+            ("((a|.)c)", RegexOptions.CultureInvariant, "xabcxabc", 1),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, row.options, row.text, row.offset };
+            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.offset };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralUnitFromOffsetDeclineCases))]
+    public void AstralUnitFromOffsetDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, int offset)
+    {
+        // Declared R05 debt: right-to-left and IgnoreCase unit shapes keep their
+        // existing BCL routes (right-to-left search finds different winners), and
+        // astral-free inputs stay on existing routing since unit serving needs
+        // astral leads; parity holds and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text, offset), isMatchRegex.IsMatchFromUtf16Offset(input, offset));
+        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        var expectedCount = 0;
+        foreach (Match m in oracle.Matches(text, offset))
+        {
+            expectedCount++;
+        }
+        Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
+        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text, offset);
+        var actualMatch = matchRegex.MatchFromUtf16Offset(input, offset);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.True(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text, offset);
+        var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups[1].Value, actualDetailed.GetGroup(1).GetValueString());
+        }
+        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetEnumDeclineCases()
+    {
+        (string pattern, string text, int offset)[] rows =
+        [
+            ("((a|.)c)", "a\U0001F600c", 2),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralUnitFromOffsetEnumDeclineCases))]
+    public void AstralUnitFromOffsetEnumDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, int offset)
+    {
+        // Declared R05 debt: nonzero-start enumeration keeps the shared cursor
+        // routing, which stays BCL-backed for non-ASCII inputs (offset zero already
+        // rides the owned full enumeration); parity holds and construction is pinned
+        // per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text, offset))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

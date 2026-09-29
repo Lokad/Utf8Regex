@@ -16,6 +16,7 @@ internal static class Utf8AstralUnitVerifier
         ReadOnlySpan<byte> input,
         NativeExecutionKind kind,
         in AsciiSimplePatternPlan plan,
+        int startUnit,
         Utf8ExecutionDeadline budget,
         out bool isMatch)
     {
@@ -25,7 +26,7 @@ internal static class Utf8AstralUnitVerifier
             return false;
         }
 
-        isMatch = FindNextUnit(Encoding.UTF8.GetString(input), plan, budget, 0, out _) >= 0;
+        isMatch = FindNextUnit(Encoding.UTF8.GetString(input), plan, budget, startUnit, out _) >= 0;
         return true;
     }
 
@@ -33,6 +34,7 @@ internal static class Utf8AstralUnitVerifier
         ReadOnlySpan<byte> input,
         NativeExecutionKind kind,
         in AsciiSimplePatternPlan plan,
+        int startUnit,
         Utf8ExecutionDeadline budget,
         out int count)
     {
@@ -43,17 +45,17 @@ internal static class Utf8AstralUnitVerifier
         }
 
         var decoded = Encoding.UTF8.GetString(input);
-        var startUnit = 0;
-        while (startUnit <= decoded.Length)
+        var position = startUnit;
+        while (position <= decoded.Length)
         {
-            var matchUnit = FindNextUnit(decoded, plan, budget, startUnit, out var matchedLength);
+            var matchUnit = FindNextUnit(decoded, plan, budget, position, out var matchedLength);
             if (matchUnit < 0)
             {
                 return true;
             }
 
             count++;
-            startUnit = matchUnit + Math.Max(matchedLength, 1);
+            position = matchUnit + Math.Max(matchedLength, 1);
         }
 
         return true;

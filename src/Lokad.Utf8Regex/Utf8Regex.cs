@@ -882,6 +882,19 @@ public sealed partial class Utf8Regex
             return OwnedSliceIsMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
 
+        // R05: unit-served shapes verify unit-aware from the start unit on astral
+        // input; misses are definitive without BCL verification, and anything else
+        // keeps the BCL verification below.
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
+            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var unitOffsetBudget = CreateExecutionBudget();
+            if (Utf8AstralUnitVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, start.Value, unitOffsetBudget, out var unitOffsetIsMatch))
+            {
+                return unitOffsetIsMatch;
+            }
+        }
+
                 // R05: line-anchored ASCII discovery from the start unit runs owned through the
         // shared interpreter; misses are definitive without BCL verification.
         if (CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
@@ -1248,6 +1261,18 @@ public sealed partial class Utf8Regex
             return OwnedSliceCountFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
 
+        // R05: unit-served shapes count unit-aware from the start unit on astral
+        // input with BCL start-at tiling; anything else keeps the BCL count below.
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
+            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var unitOffsetCountBudget = CreateExecutionBudget();
+            if (Utf8AstralUnitVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, start.Value, unitOffsetCountBudget, out var unitOffsetCount))
+            {
+                return unitOffsetCount;
+            }
+        }
+
                 // R05: line-anchored ASCII counting from the start unit runs the shared
         // interpreter loop; anchors still see the whole input.
         if (CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
@@ -1460,6 +1485,19 @@ public sealed partial class Utf8Regex
         }
     }
 
+    // R05: projects a unit-space first-match hit like the zero-offset unit route:
+    // scalar-aligned hits carry byte ranges while half-involving hits shape without
+    // them, exactly like the BCL projector.
+    private static Utf8ValueMatch ProjectUnitFirstMatch(Utf8BoundaryMap boundaryMap, int startUnit, int matchedLength)
+    {
+        if (boundaryMap.TryGetByteRange(startUnit, matchedLength, out var byteIndex, out var byteLength))
+        {
+            return new Utf8ValueMatch(true, true, startUnit, matchedLength, byteIndex, byteLength);
+        }
+
+        return new Utf8ValueMatch(true, false, startUnit, matchedLength);
+    }
+
     private Utf8ValueMatch MatchFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
@@ -1531,6 +1569,22 @@ public sealed partial class Utf8Regex
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
+        }
+
+        // R05: unit-served first-matches project owned from unit coordinates through
+        // the boundary map; misses answer definitively, and anything else keeps the
+        // BCL verification below.
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
+            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var unitOffsetMatchBudget = CreateExecutionBudget();
+            var unitOffsetStart = Utf8AstralUnitVerifier.FindNextUnit(subject.GetDecodedString(), _preparedRegex.SimplePatternPlan, unitOffsetMatchBudget, start.Value, out var unitOffsetLength);
+            if (unitOffsetStart < 0)
+            {
+                return Utf8ValueMatch.NoMatch;
+            }
+
+            return ProjectUnitFirstMatch(subject.BoundaryMap, unitOffsetStart, unitOffsetLength);
         }
 
                 // R05: line-anchored ASCII first-match from the start unit projects owned through
@@ -1842,6 +1896,35 @@ public sealed partial class Utf8Regex
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchDetailedFromUnit(input, _sliceProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
+        }
+
+        // R05: unit-served detailed matches shape owned from the start-unit hit:
+        // misses are definitive, groupless and single-wrap shapes project from the
+        // owned value, and unit branch-span shapes project static spans; anything
+        // else falls through to the routes below.
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
+            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var unitOffsetDetailBudget = CreateExecutionBudget();
+            var unitOffsetDetailStart = Utf8AstralUnitVerifier.FindNextUnit(decoded, _preparedRegex.SimplePatternPlan, unitOffsetDetailBudget, start.Value, out var unitOffsetDetailLength);
+            if (unitOffsetDetailStart < 0)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            var unitOffsetHit = ProjectUnitFirstMatch(analysis.BoundaryMap, unitOffsetDetailStart, unitOffsetDetailLength);
+            if (_unitBranchSpanMap is not null &&
+                TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, unitOffsetHit, unitOffsetDetailBudget, out var unitOffsetDetailed))
+            {
+                return unitOffsetDetailed;
+            }
+
+            if (TryGetOwnedDetailedGroupCount(out var unitOffsetGroupCount))
+            {
+                return unitOffsetGroupCount > 1
+                    ? new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, unitOffsetHit.IndexInUtf16, unitOffsetHit.LengthInUtf16, unitOffsetGroupCount)
+                    : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, unitOffsetHit.IndexInUtf16, unitOffsetHit.LengthInUtf16);
+            }
         }
 
         if (TryGetOwnedDetailedGroupCount(out var ownedOffsetGroupCount) &&
