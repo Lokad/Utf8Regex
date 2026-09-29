@@ -4398,6 +4398,8 @@ public sealed class AsciiSimplePatternTests
             ("x*", "ax\U0001F600b", 3),
             ("a*", "a\U0001F600a", 0),
             ("a*", "a\U0001F600a", 1),
+            ("a*", "xa\U0001F600", 0),
+            ("a*", "xa\U0001F600", 2),
             ("x{0,3}", "ax\U0001F600b", 0),
             ("x{0,3}", "ax\U0001F600b", 2),
             ("x{0,3}", "ax\U0001F600b", 3),
@@ -4547,6 +4549,9 @@ public sealed class AsciiSimplePatternTests
             ("x*", "ax\U0001F600b", "<$`|$&|$'>"),
             ("x*", "abc", "Q"),
             ("a*", "aa", "<$&>"),
+            ("a*", "xa\U0001F600", "Q"),
+            ("x*", "x\U0001F600", "Q"),
+            ("a*", "\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -4748,6 +4753,9 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)X{0,2}", "ax\U0001F600b", "Q"),
             ("\\d{0,2}", "a1\U0001F600b", "Q"),
             ("(x{0,3})", "ax\U0001F600b", "<$1>"),
+            ("a*", "xa\U0001F600", "Q"),
+            ("x*", "x\U0001F600", "Q"),
+            ("a*", "\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -4777,6 +4785,9 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         [
             ("x*", "ax\U0001F600b"),
             ("a*", "a\U0001F600a"),
+            ("a*", "xa\U0001F600"),
+            ("x*", "x\U0001F600"),
+            ("a*", "\U0001F600"),
         ];
         foreach (var row in rows)
         {
