@@ -2589,6 +2589,11 @@ public sealed partial class Utf8Regex
         return new Utf8ValueMatchEnumerator(program, input, map, MatchTimeout, token);
     }
 
+    private Utf8ValueMatchEnumerator OwnedSliceEnumerateMatchesFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map, int startUnit, CancellationToken token)
+    {
+        return new Utf8ValueMatchEnumerator(program, input, map, MatchTimeout, token, startUnit);
+    }
+
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input, observing cancellation when enumeration begins.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
@@ -2658,6 +2663,17 @@ public sealed partial class Utf8Regex
             var unitEnumDecoded = analysis.GetDecodedString();
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, unitEnumDecoded, unitEnumBudget, startInUtf16.Value))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
+        // R05: slice shapes enumerate from the start unit on full input through
+        // the owned cursor above (anchors keep true left context and \\G pins to
+        // the scan start exactly like BCL startat, unlike suffix slicing); the
+        // half-start scan mirrors BCL units, and anything unserved keeps the
+        // routing below.
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
+        {
+            return OwnedSliceEnumerateMatchesFromUnit(input, _sliceProgram, analysis.BoundaryMap, startInUtf16.Value, CancellationToken.None)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 

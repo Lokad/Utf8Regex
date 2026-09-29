@@ -316,6 +316,22 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.OwnedSlice;
     }
 
+    // From-unit slice enumeration starts the scan at the caller's start unit
+    // on full input (anchors keep true left context, \G pins to the scan
+    // start like BCL startat); the origin pin still initializes from the scan
+    // start on first move exactly like the zero-start cursor above.
+    internal Utf8OperationMatchCursor(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map,
+        TimeSpan timeout,
+        CancellationToken token,
+        int startUnit)
+        : this(program, input, map, timeout, token)
+    {
+        _sliceUnit = startUnit;
+    }
+
     private bool MoveNextOwnedSlice()
     {
         if (_sliceProgram is null || _boundaryMap is null)

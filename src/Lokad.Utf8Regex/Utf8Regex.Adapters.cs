@@ -561,12 +561,13 @@ public sealed partial class Utf8Regex
             return new Utf8ValueMatchEnumerator(floorCursor).WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
-        // Zero-start adapter enumeration rides the owned slice; nonzero
-        // starts keep the origin-semantics fallback below (suffix slicing
-        // loses absolute-origin anchors and left context).
-        if (start.Value == 0 && _sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        // Adapter enumeration rides the owned slice from the start unit on
+        // full input (anchors keep true left context and \\G pins to the scan
+        // start exactly like BCL startat, unlike suffix slicing); anything
+        // unserved keeps the routing below.
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
         {
-            return OwnedSliceEnumerateMatches(input.Bytes, _sliceProgram, CancellationToken.None)
+            return OwnedSliceEnumerateMatchesFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
