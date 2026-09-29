@@ -567,9 +567,9 @@ internal static class Utf8SliceLowerer
             }
         }
 
-        // Whole-pattern greedy unbounded loops over unit-closed atoms run
-        // scalarwise exactly like BCL units on astral input, so they clear the
-        // astral-free requirement the instruction scan above may have set.
+        // Whole-pattern greedy or lazy unbounded loops over unit-closed atoms
+        // run scalarwise exactly like BCL units on astral input, so they clear
+        // the astral-free requirement the instruction scan above may have set.
         requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, rightToLeft);
 
         return new Utf8SliceProgram(
@@ -587,9 +587,9 @@ internal static class Utf8SliceLowerer
             hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty);
     }
 
-    // R05: recognizes whole-pattern greedy unbounded loops whose scalar stepping
-    // matches BCL unit stepping on every input, making astral-free routing
-    // unnecessary. BCL can only start such a loop at a scalar boundary (a
+    // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar
+    // stepping matches BCL unit stepping on every input, making astral-free
+    // routing unnecessary. BCL can only start such a loop at a scalar boundary (a
     // mid-scalar start needs the lead half to fail every branch while the trail
     // half matches one, impossible when every branch is a single atom: positive
     // atoms fail both halves while dots and negations match both), and the loop
@@ -598,8 +598,19 @@ internal static class Utf8SliceLowerer
     // atom desynchronize mid-iteration (probed: ([^x]b)+ splits astral scalars in
     // BCL but not in the runner), so only single atoms or fully indifferent
     // branches qualify; nested captures would record different last-iteration spans
-    // and stay out, as do lazy loops, empty-capable bounds, and
-    // right-to-left. Folding needs no fence: it only refines which BMP scalars
+    // and stay out, as do empty-capable bounds and right-to-left. Lazy loops
+    // transfer the same argument through first stops: minimum one is fenced
+    // above, so the first expansion leaves an indifferent head by one unit
+    // (BCL) or one scalar (runner), and both stop at the first scalar
+    // boundary where the indifferent tail meets, since tails only ever meet
+    // ASCII bytes while halves miss them exactly like BCL; wider expansions
+    // stay boundary-locked for the same reason, so every reachable success
+    // span is boundary-to-boundary on both sides and enumeration order
+    // agrees. Tailless lazy loops stay out: with no tail forcing a boundary
+    // stop, BCL succeeds minimally after one half (probed: `(.+?)` on astral
+    // input replaces four times for BCL against three whole-scalar runner
+    // matches), which scalar stepping cannot reproduce. Folding needs no
+    // fence: it only refines which BMP scalars
     // meet ASCII atoms through the invariant pair (Kelvin included, still one
     // scalar per BCL unit), while admitted atoms stay byte/mask-based or
     // fold-neutral, the runner fold arms fail astral leads closed, and BCL
@@ -616,8 +627,18 @@ internal static class Utf8SliceLowerer
         }
 
         var node = root;
+        var lazySawTailAtom = false;
         while (true)
         {
+            // Lazy loops additionally need a real tail atom after the loop:
+            // literals, empty positive sets, and non-contiguous anchors force
+            // boundary stops, while a bare loop or a head-only loop lets BCL
+            // stop after one half. The flag is never reset: levels without a
+            // tail scan only unwrap transparent captures, atomics, or
+            // single-survivor sequences, so a scanned tail stays after the
+            // loop; a level with its own scan overwrites it. Greedy loops
+            // never need it (maximal swallowing stays boundary-safe) and the
+            // all-indifferent early return below has no loop at all.
             // Captures and atomics are transparent to the stepping argument:
             // captures only record spans while atomicity only prunes
             // backtracking, which whole-pattern greedy loops never need on
@@ -702,6 +723,11 @@ internal static class Utf8SliceLowerer
                 (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail]) ||
                 (members[tail] is Utf8SliceNode.AnchorNode tailAnchor && tailAnchor.Anchor != Utf8SliceAnchorKind.Contiguous)))
             {
+                if (members[tail] is not Utf8SliceNode.EmptyNode)
+                {
+                    lazySawTailAtom = true;
+                }
+
                 tail--;
             }
 
@@ -731,7 +757,8 @@ internal static class Utf8SliceLowerer
         // a pair split the runner cannot reproduce (probed: `a[^x]{2,}b`
         // misses `xa<astral>b` owned with no fallback while BCL matches the
         // pair as two units).
-        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum != 1 || repeat.Maximum != int.MaxValue)
+        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Minimum != 1 || repeat.Maximum != int.MaxValue ||
+            (repeat.Lazy && !lazySawTailAtom))
         {
             return false;
         }
