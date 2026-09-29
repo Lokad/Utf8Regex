@@ -4340,6 +4340,8 @@ public sealed class AsciiSimplePatternTests
             ("((.)+)", RegexOptions.CultureInvariant, "\U0001F600", 0),
             ("((.)+)", RegexOptions.CultureInvariant, "\U0001F600", 1),
             ("[^x]+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "x\U0001F600y", 1),
+            ("[^x]*", RegexOptions.CultureInvariant, "ax\U0001F600b", 0),
+            ("[^x]*", RegexOptions.CultureInvariant, "ax\U0001F600b", 2),
         ];
         foreach (var row in rows)
         {
@@ -4352,8 +4354,9 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WholeLoopFromOffsetDeclineCases))]
     public void WholeLoopFromOffsetDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, int offset)
     {
-        // Declared R05 debt: lazy, inner-capture, and right-to-left loops keep
-        // BCL routing on astral input from boundary and half starts alike;
+        // Declared R05 debt: lazy, inner-capture, right-to-left, and astral-flagged
+        // empty loops keep BCL routing on astral input from boundary and half
+        // starts alike;
         // parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -4368,6 +4371,98 @@ public sealed class AsciiSimplePatternTests
         }
         Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
         Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableFromOffsetOwnedCases()
+    {
+        (string pattern, string text, int offset)[] rows =
+        [
+            ("x*", "ax\U0001F600b", 0),
+            ("x*", "ax\U0001F600b", 2),
+            ("x*", "ax\U0001F600b", 3),
+            ("a*", "a\U0001F600a", 0),
+            ("a*", "a\U0001F600a", 1),
+            ("x{0,3}", "ax\U0001F600b", 0),
+            ("x{0,3}", "ax\U0001F600b", 2),
+            ("x{0,3}", "ax\U0001F600b", 3),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(EmptyCapableFromOffsetOwnedCases))]
+    public void EmptyCapableFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    {
+        // R05: empty-capable loops serve every FromOffset lane owned from
+        // boundary and half starts on astral input (empty matches advance one
+        // unit exactly like BCL, halves included); full start-at sequences
+        // match BCL with zero fallback construction on both lanes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text, offset), isMatchRegex.IsMatchFromUtf16Offset(input, offset));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        var expectedCount = 0;
+        foreach (Match m in oracle.Matches(text, offset))
+        {
+            expectedCount++;
+        }
+        Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text, offset);
+        var actualMatch = matchRegex.MatchFromUtf16Offset(input, offset);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text, offset);
+        var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
+            {
+                var expectedGroup = expectedDetailed.Groups[number];
+                var actualGroup = actualDetailed.GetGroup(number);
+                Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                if (expectedGroup.Success)
+                {
+                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+                }
+            }
+        }
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var enumerateRegex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text, offset))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in enumerateRegex.EnumerateMatchesFromUtf16Offset(input, offset))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> WholeLoopEvaluatorOwnedCases()
