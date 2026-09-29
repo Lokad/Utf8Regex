@@ -174,6 +174,7 @@ public sealed class Utf8SliceBackrefTests
     [Theory]
     [InlineData("(([a-z]+))\\2", "xxabcabcyy", "<$2>")]
     [InlineData("(a+)\\1", "xaaxaa", "<$1>")]
+    [InlineData("(ab)+\\1", "xabab\U0001F600", "Q")]
     public void OwnedReplaceMatchesOracle(
         string pattern, string inputText, string replacement)
     {

@@ -273,6 +273,7 @@ public sealed class Utf8SliceLookaroundTests
     [Theory]
     [InlineData("(?<=a)b", "aab ab", "X")]
     [InlineData("(?=a)a", "aaa", "X")]
+    [InlineData("(?<=(a))b", "xa\U0001F600b", "Q")]
     public void OwnedReplaceMatchesOracle(
         string pattern, string inputText, string replacement)
     {

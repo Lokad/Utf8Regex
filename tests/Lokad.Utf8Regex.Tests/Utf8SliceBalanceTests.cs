@@ -179,6 +179,7 @@ public sealed class Utf8SliceBalanceTests
 
     [Theory]
     [InlineData("(?<o>a)(?<-o>b)", "ab", "<$1>")]
+    [InlineData("(?<x>a)+(?<-x>b)+", "xaabb\U0001F600", "Q")]
     public void OwnedReplaceMatchesOracle(
         string pattern, string inputText, string replacement)
     {

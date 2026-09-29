@@ -5409,6 +5409,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("[\\p{L}_]+?b", "\U0001F600aab", "Q"),
             ("[\\P{L}a]+", "a1\U0001F600b", "Q"),
             ("[^\\P{L}a]+", "a1\U0001F600b", "Q"),
+            ("[\\p{Cs}a]+", "a\U0001F600b", "Q"),
+            ("[^\\p{Cs}a]+", "1\U0001F6002", "Q"),
             ("[\\D_]+", "a_\U0001F60012", "Q"),
             ("[^\\D_]+", "12a\U0001F600", "Q"),
         ];
