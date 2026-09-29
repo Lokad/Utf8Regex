@@ -29,7 +29,11 @@ public sealed partial class Utf8Regex
                 replacementText));
         }
 
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (OwnedMatchStartsAreScalarAligned(input) || !_sliceProgram.CanMatchEmpty))
+        // R05: empty-capable slice loops tile astral input unit-wise exactly
+        // like BCL (half-gap empties included, U+FFFD-substituted through the
+        // encoder on both sides), so the owned splicer below reproduces BCL
+        // replacement byte-for-byte; right-to-left empty loops keep BCL routing.
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (OwnedMatchStartsAreScalarAligned(input) || !_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))
         {
             return OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
         }
@@ -287,7 +291,7 @@ public sealed partial class Utf8Regex
         // slice arm; everything else keeps BCL routing below.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
+              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
