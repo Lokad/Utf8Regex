@@ -380,8 +380,10 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.LookbehindNode:
                 case Utf8SliceNode.BackrefNode:
                 case Utf8SliceNode.BalanceNode:
-                case Utf8SliceNode.ConditionalNode:
                     return true;
+                case Utf8SliceNode.ConditionalNode conditionalEmpty:
+                    return NodeCanMatchEmpty(conditionalEmpty.YesBody) ||
+                        NodeCanMatchEmpty(conditionalEmpty.NoBody);
                 case Utf8SliceNode.LiteralNode:
                 case Utf8SliceNode.SetNode:
                 case Utf8SliceNode.DotNode:

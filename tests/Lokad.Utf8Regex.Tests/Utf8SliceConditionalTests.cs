@@ -351,25 +351,27 @@ public sealed class Utf8SliceConditionalOperationTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> AstralConditionalStringDeclineCases()
+    public static IEnumerable<object?[]> AstralConditionalStringReplaceCases()
     {
         yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", "Q" };
+        yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", "<$&>" };
         yield return new object?[] { "(?(a)a|b)+", "xaab\U0001F600", "Q" };
+        yield return new object?[] { "(?(a)a|b)+", "xaab\U0001F600", "<$&>" };
     }
 
     [Theory]
-    [MemberData(nameof(AstralConditionalStringDeclineCases))]
-    public void AstralConditionalStringDeclineKeepsBclShaping(string pattern, string inputText, string template)
+    [MemberData(nameof(AstralConditionalStringReplaceCases))]
+    public void OwnedConditionalStringReplaceMatchesOracle(string pattern, string inputText, string template)
     {
-        // Declared R05 debt: string-template replacement keeps BCL routing for
-        // conditional shapes on astral input while bytes-Replace, splits, and
-        // every discovery lane serve owned; parity holds and construction
-        // is pinned.
+        // R05: the string core admits LTR slice shapes past scalar-start alignment
+        // exactly like the byte cores, so conditional shapes replace owned here with
+        // oracle parity and zero fallback construction on both templates.
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.Replace(inputText, template), stringRegex.ReplaceToString(input, template));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]
