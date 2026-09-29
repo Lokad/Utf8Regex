@@ -618,9 +618,25 @@ internal static class Utf8SliceLowerer
         var node = root;
         while (true)
         {
-            while (node is Utf8SliceNode.CaptureNode capture)
+            // Captures and atomics are transparent to the stepping argument:
+            // captures only record spans while atomicity only prunes
+            // backtracking, which whole-pattern greedy loops never need on
+            // either side, so both unwrap exactly like the bare shape.
+            while (true)
             {
-                node = capture.Body;
+                if (node is Utf8SliceNode.CaptureNode capture)
+                {
+                    node = capture.Body;
+                    continue;
+                }
+
+                if (node is Utf8SliceNode.AtomicNode atomic)
+                {
+                    node = atomic.Body;
+                    continue;
+                }
+
+                break;
             }
 
             // A bare flag prefix like (?i) parses to a leading EmptyNode, so
