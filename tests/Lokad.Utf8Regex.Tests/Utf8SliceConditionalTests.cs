@@ -375,6 +375,87 @@ public sealed class Utf8SliceConditionalOperationTests
     }
 
     [Theory]
+    [InlineData("(?(?=a)a|b)+", "xaab")]
+    [InlineData("(?(?=a)a|b)+", "xaab\U0001F600")]
+    [InlineData("(?(a)a|b)+", "xaab")]
+    [InlineData("(?(a)a|b)+", "xaab\U0001F600")]
+    public void OwnedConditionalEvaluatorMatchesOracle(string pattern, string inputText)
+    {
+        // R05: conditional shapes project every callback argument from the
+        // deterministic owned re-query at each enumerated hit start, so both
+        // evaluator cores serve owned with zero fallback construction.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(inputText, static match => "[" + match.Value + "]");
+        var byteRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(0).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.True(byteRegex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]"));
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?(?=a)a|b)+", "xaab\U0001F600", 0)]
+    [InlineData("(?(?=a)a|b)+", "xaab\U0001F600", 2)]
+    [InlineData("(a)?(?(1)b|c)", "aab", 1)]
+    public void OwnedConditionalFromOffsetDetailedMatchesOracle(string pattern, string inputText, int startAt)
+    {
+        // R05: FromOffset Detailed keeps absolute-origin semantics through the
+        // shared first-of-enumeration arm and projects group 0 the same way.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var expected = oracle.Match(inputText, startAt);
+        var actual = regex.MatchDetailedFromUtf16Offset(input, startAt);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Groups[0].Index, actual.GetGroup(0).IndexInUtf16);
+            Assert.Equal(expected.Groups[0].Length, actual.GetGroup(0).LengthInUtf16);
+        }
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?(?=a)a|b)+", "xaab")]
+    [InlineData("(?(?=a)a|b)+", "xaab\U0001F600")]
+    [InlineData("(a)?(?(1)b|c)", "acab")]
+    public void OwnedConditionalSplitsMatchOracle(string pattern, string inputText)
+    {
+        // R05: conditional enumeration already serves owned, so the shared split
+        // creation projects the same coordinates with zero fallback construction.
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(inputText, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((inputText[start..end], start, end - start));
+        }
+        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
     [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(?(11)x|y)", "abcdefghijkx", true)]
     [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(?(11)x|y)", "abcdefghijky", false)]
     [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(?(10)x|y)", "abcdefghijkx", true)]
