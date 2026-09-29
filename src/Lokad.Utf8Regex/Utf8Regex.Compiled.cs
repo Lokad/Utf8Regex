@@ -384,7 +384,8 @@ public sealed partial class Utf8Regex
                 new Utf8OperationMatchCursor(input, _preparedRegex, unitSplitAnalysis.BoundaryMap, unitSplitDecoded, budget, 0),
                 unitSplitAnalysis.BoundaryMap,
                 count,
-                totalUtf16Length);
+                totalUtf16Length,
+                rightToLeft: false);
         }
 
         // Line-anchored shapes fall through to the owned cursors below; absolute

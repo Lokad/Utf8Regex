@@ -2731,6 +2731,27 @@ public sealed partial class Utf8Regex
             return twin.EnumerateSplits(input, count).WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
+        // R05: right-to-left slice shapes split owned through the same cursor
+        // the ascending arm uses, projecting segments descending from the input end
+        // with UTF-16 indexes exactly like the BCL oracle (encounter order, tail
+        // piece first). Culture, Kelvin, and unserved shapes keep the legacy routing
+        // below; count 1 keeps the BCL tail while count 0 means unlimited here.
+        if ((count == 0 || count > 1) &&
+            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
+            _sliceProgram is not null && _sliceProgram.RightToLeft && _sliceProgram.ServesInput(input))
+        {
+            var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var rtlDecoded = rtlAnalysis.GetDecodedString();
+            return new Utf8ValueSplitEnumerator(
+                input,
+                rtlDecoded,
+                new Utf8OperationMatchCursor(_sliceProgram, input, rtlAnalysis.BoundaryMap, MatchTimeout, CancellationToken.None),
+                rtlAnalysis.BoundaryMap,
+                count == 0 ? int.MaxValue : count,
+                rtlDecoded.Length,
+                rightToLeft: true)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
         if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
             var subject = Utf8InputAnalyzer.Analyze(input);
@@ -2785,7 +2806,8 @@ public sealed partial class Utf8Regex
                 new Utf8OperationMatchCursor(_sliceProgram, input, analysis.BoundaryMap, MatchTimeout, CancellationToken.None),
                 analysis.BoundaryMap,
                 count,
-                decoded.Length)
+                decoded.Length,
+                rightToLeft: false)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
@@ -2801,7 +2823,8 @@ public sealed partial class Utf8Regex
                 new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget),
                 analysis.BoundaryMap,
                 count,
-                decoded.Length)
+                decoded.Length,
+                rightToLeft: false)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 

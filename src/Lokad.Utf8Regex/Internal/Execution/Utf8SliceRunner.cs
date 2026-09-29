@@ -548,8 +548,24 @@ internal static class Utf8SliceRunner
             return new Utf8SliceUnitOutcome(true, endUnit, endUnit, edgeByte, edgeByte, Utf8ExecutionLimitKind.None);
         }
 
+        // Trail-half closing edges cannot host a non-empty hit for served programs
+        // (mirrored atoms never consume halves): the greedy hit below belongs to the
+        // lead edge, where the scan reports it with mapped coordinates. Empty-capable
+        // shapes report the exact edge empty the oracle finds here instead; word-boundary
+        // shapes keep the mapped span because unit and byte evaluations of the boundary
+        // disagree at collapsed edges.
+        if (!edgeClean && program.CanMatchEmpty && !program.RequiresUnicodeWordBoundary)
+        {
+            return new Utf8SliceUnitOutcome(true, endUnit, endUnit, edgeByte, edgeByte, Utf8ExecutionLimitKind.None);
+        }
+
+        // The closing edge may sit mid-scalar (the scan tries every unit, halves
+        // included): report the unit of the edge byte actually attempted, which the
+        // mirrored consumption always leaves on a scalar boundary for served programs,
+        // exactly like the ascending attempt maps both edges through bytes.
         var startUnit = map.GetUtf16OffsetForByteOffset(outcome.EndIndex);
-        return new Utf8SliceUnitOutcome(true, startUnit, endUnit, outcome.EndIndex, edgeByte, Utf8ExecutionLimitKind.None);
+        var closeUnit = map.GetUtf16OffsetForByteOffset(edgeByte);
+        return new Utf8SliceUnitOutcome(true, startUnit, closeUnit, outcome.EndIndex, edgeByte, Utf8ExecutionLimitKind.None);
     }
 
     internal static Utf8SliceUnitOutcome TryFindFirst(

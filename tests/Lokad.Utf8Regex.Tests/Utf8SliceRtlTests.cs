@@ -178,6 +178,9 @@ public sealed class Utf8SliceRtlTests
         yield return new object?[] { "$", "ab", true };
         yield return new object?[] { "^", "ab", true };
         yield return new object?[] { "a|ab", "aab", true };
+        yield return new object?[] { "a|ab", "xaab\U0001F600x", true };
+        yield return new object?[] { "a+", "xaay\U0001F600", true };
+        yield return new object?[] { "x*", "ax\U0001F600b", true };
         yield return new object?[] { "ab|a", "aab", true };
         yield return new object?[] { "(a)(b)", "ab", true };
         yield return new object?[] { "(a+)(b+)", "aab", true };
@@ -321,6 +324,9 @@ public sealed class Utf8SliceRtlOperationTests
     public static IEnumerable<object?[]> CountCases()
     {
         yield return new object?[] { "a|ab", "aab", 2 };
+        yield return new object?[] { "a|ab", "xaab\U0001F600x", 2 };
+        yield return new object?[] { "a+", "xaay\U0001F600", 1 };
+        yield return new object?[] { "x*", "ax\U0001F600b", 6 };
         yield return new object?[] { "a*", "aaa", 2 };
         yield return new object?[] { "a*", "b", 2 };
         yield return new object?[] { "x*", "abx", 4 };
@@ -471,6 +477,9 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "a*", "b", new int[] { 1, 0, 0, 0 } };
         yield return new object?[] { "x*", "abx", new int[] { 2, 1, 2, 0, 1, 0, 0, 0 } };
         yield return new object?[] { "a|ab", "aab", new int[] { 1, 2, 0, 1 } };
+        yield return new object?[] { "a|ab", "xaab\U0001F600x", new int[] { 2, 2, 1, 1 } };
+        yield return new object?[] { "a+", "xaay\U0001F600", new int[] { 1, 2 } };
+        yield return new object?[] { "x*", "ax\U0001F600b", new int[] { 5, 0, 4, 0, 3, 0, 1, 1, 1, 0, 0, 0 } };
         yield return new object?[] { "\\G", "aa", new int[] { 2, 0 } };
         yield return new object?[] { "a+?", "aaa", new int[] { 2, 1, 1, 1, 0, 1 } };
         yield return new object?[] { "a\\G", "aa", new int[] { 1, 1, 0, 1 } };
@@ -531,28 +540,55 @@ public sealed class Utf8SliceRtlOperationTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> SplitCases()
+    public static IEnumerable<object?[]> OwnedRtlSplitCases()
     {
-        yield return new object?[] { "a|ab", "xaabx", 0, new string[] { "x", "", "x" } };
+        (string pattern, string text, int count)[] rows =
+        [
+            ("a|ab", "xaabx", 0),
+            ("a|ab", "xaabx", 2),
+            ("a|ab", "xaabx", 3),
+            ("a|ab", "xaab\U0001F600x", 0),
+            ("a+", "xaa", 0),
+            ("a+", "xaay\U0001F600", 0),
+            ("(a+)(b+)", "xaaby", 0),
+            ("a*", "ba", 0),
+            ("a*", "ba", 2),
+            ("a*", "ba", 3),
+            ("x*", "ax\U0001F600b", 0),
+            ("x*", "\U0001F600", 0),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, row.text, row.count };
+            yield return new object?[] { row.pattern, RegexOptions.RightToLeft | RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.count };
+        }
     }
 
     [Theory]
-    [MemberData(nameof(SplitCases))]
-    public void RtlSplitStaysLegacyWithParity(string pattern, string inputText, int count, string[] expected)
+    [MemberData(nameof(OwnedRtlSplitCases))]
+    public void OwnedRtlSplitsMatchOracle(string pattern, RegexOptions options, string text, int count)
     {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Split(inputText, count));
-        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
+        // R05: right-to-left slice shapes split owned through the descending
+        // cursor with UTF-16 indexes exactly like the BCL oracle (encounter
+        // order, tail piece first), including half-scalar empty matches.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var actual = new List<string>();
+        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add(split.GetValueString());
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
-
-        Assert.Equal(expected, actual.ToArray());
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "split stays legacy");
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> FromOffsetCases()

@@ -78,9 +78,10 @@ public ref struct Utf8ValueSplitEnumerator
         Utf8OperationMatchCursor matchCursor,
         Utf8BoundaryMap map,
         int count,
-        int totalUtf16Length)
+        int totalUtf16Length,
+        bool rightToLeft)
     {
-        _sourceKind = SplitSourceKind.OwnedSlice;
+        _sourceKind = rightToLeft ? SplitSourceKind.OwnedSliceRtl : SplitSourceKind.OwnedSlice;
         _input = input;
         _decoded = decoded;
         _boundaryMap = map;
@@ -88,7 +89,7 @@ public ref struct Utf8ValueSplitEnumerator
         _fallbackEnumerator = default;
         _matchCursor = matchCursor;
         _segmentStartBytes = 0;
-        _segmentStartUtf16 = 0;
+        _segmentStartUtf16 = rightToLeft ? totalUtf16Length : 0;
         _remainingCount = count;
         _completed = false;
         _timeoutPattern = null;
@@ -135,6 +136,7 @@ public ref struct Utf8ValueSplitEnumerator
             {
                 SplitSourceKind.NativeMatchCursor => MoveNextNative(),
                 SplitSourceKind.OwnedSlice => MoveNextNative(),
+                SplitSourceKind.OwnedSliceRtl => MoveNextNative(),
                 SplitSourceKind.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
                 _ => MoveNextFallback(),
             };
@@ -223,6 +225,40 @@ public ref struct Utf8ValueSplitEnumerator
                 ownedMatch.IndexInUtf16 - _segmentStartUtf16,
                 ownedMap);
             _segmentStartUtf16 = ownedMatch.IndexInUtf16 + ownedMatch.LengthInUtf16;
+            _remainingCount--;
+            return true;
+        }
+
+        if (_sourceKind == SplitSourceKind.OwnedSliceRtl)
+        {
+            // Right-to-left discovery runs from the tail: segments project
+            // descending from the input end with UTF-16 indexes exactly like
+            // the BCL oracle (encounter order, tail piece first).
+            if (_boundaryMap is not { } rtlMap)
+            {
+                throw new InvalidOperationException("Owned slice split enumeration requires prepared UTF-16 projection.");
+            }
+
+            if (_remainingCount == 1 || !_matchCursor.MoveNext())
+            {
+                Current = new Utf8ValueSplit(
+                    _input,
+                    _decoded,
+                    0,
+                    _segmentStartUtf16,
+                    rtlMap);
+                _completed = true;
+                return true;
+            }
+
+            var rtlMatch = _matchCursor.Current;
+            Current = new Utf8ValueSplit(
+                _input,
+                _decoded,
+                rtlMatch.IndexInUtf16 + rtlMatch.LengthInUtf16,
+                _segmentStartUtf16 - (rtlMatch.IndexInUtf16 + rtlMatch.LengthInUtf16),
+                rtlMap);
+            _segmentStartUtf16 = rtlMatch.IndexInUtf16;
             _remainingCount--;
             return true;
         }
@@ -330,5 +366,6 @@ public ref struct Utf8ValueSplitEnumerator
         NativeMatchCursor = 1,
         SmallAsciiLiteralFamily = 2,
         OwnedSlice = 3,
+        OwnedSliceRtl = 4,
     }
 }

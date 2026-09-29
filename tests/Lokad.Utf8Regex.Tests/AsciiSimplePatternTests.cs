@@ -4759,7 +4759,6 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         [
             ("[^x]*", RegexOptions.CultureInvariant, "a\U0001F600b", "Q"),
             ("(.*)", RegexOptions.CultureInvariant, "\U0001F600", "<$1>"),
-            ("x*", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -4772,8 +4771,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(EmptyCapableReplaceDeclineCases))]
     public void EmptyCapableReplaceDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: negated-dotted empty loops keep the astral flag,
-        // and right-to-left empty loops keep the directional gates, so all
+        // Declared R05 debt: negated-dotted empty loops keep the astral flag, so all
         // four replacement cores keep BCL routing on astral input; parity
         // holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
