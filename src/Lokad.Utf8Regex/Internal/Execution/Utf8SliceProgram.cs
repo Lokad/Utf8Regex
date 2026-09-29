@@ -790,6 +790,33 @@ internal static class Utf8SliceLowerer
                 return true;
             case Utf8SliceNode.ShorthandNode shorthand:
                 return (int)shorthand.Shorthand % 2 == 1;
+            // Positive categories miss astral scalars exactly like BCL halves
+            // miss every positive table (the runner fails astral leads closed
+            // while BMP matching already agrees); negated categories stay out
+            // because BCL halves match negations the runner misses, and so do
+            // surrogate-covering positives (Cs, high/low surrogate blocks):
+            // BCL halves are members there while the runner still misses.
+            case Utf8SliceNode.CategoryNode category:
+                if (category.Negated)
+                {
+                    return false;
+                }
+
+                if ((category.Mask & (1u << (int)System.Globalization.UnicodeCategory.Surrogate)) != 0)
+                {
+                    return false;
+                }
+
+                var ranges = category.Ranges;
+                for (var range = 0; range + 1 < ranges.Length; range += 2)
+                {
+                    if (ranges[range] < 0xE000 && ranges[range + 1] > 0xD800)
+                    {
+                        return false;
+                    }
+                }
+
+                return (ranges.Length & 1) == 0 || ranges[ranges.Length - 1] > 0xDFFF;
             default:
                 return false;
         }

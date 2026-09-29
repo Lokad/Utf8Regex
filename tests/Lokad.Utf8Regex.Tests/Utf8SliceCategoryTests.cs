@@ -536,10 +536,9 @@ public sealed class Utf8SliceCategoryTests
 
     public static IEnumerable<object?[]> AstralDeclineCases()
     {
-        yield return new object?[] { "\\p{L}+", "a\U00010400b" };
         yield return new object?[] { "\\P{L}+", "\U00010400" };
-        yield return new object?[] { "\\p{IsGreek}+", "\u03B1\U00010400" };
         yield return new object?[] { "\\p{IsHighSurrogates}+", "\U00010400" };
+        yield return new object?[] { "\\p{Cs}+", "\U00010400" };
     }
 
     [Theory]
@@ -547,8 +546,11 @@ public sealed class Utf8SliceCategoryTests
     public void AstralInputsDeclineToLegacy(string pattern, string inputText)
     {
         // The oracle tests astral halves while the shared runner consumes
-        // whole scalars, so category programs decline astral inputs and the
-        // fallback answers with unit-exact behavior.
+        // whole scalars, so negated categories (halves match negations the
+        // runner misses) and surrogate-covering positives (halves are members
+        // the runner misses) decline astral inputs and the fallback answers
+        // with unit-exact behavior. Other positive categories serve owned, as
+        // pinned by the positive-category loop battery.
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
