@@ -3549,6 +3549,12 @@ public sealed class AsciiSimplePatternTests
             ("(?:a|[^x])+", "xa\U0001F600y", "Q"),
             ("(?:.|a)+", "\U0001F600b", "Q"),
             ("(?:ab|[^x])+", "xab\U0001F600", "Q"),
+            ("(a|b)+", "xaba\U0001F600bab", "Q"),
+            ("((a|b)+)", "xaba\U0001F600bab", "<$1>"),
+            ("(a|ab)+", "xaab\U0001F600ab", "Q"),
+            ("((a|ab)+)", "xaab\U0001F600ab", "<$1>"),
+            ("(ab|a)+", "xaab\U0001F600ab", "Q"),
+            ("(a|b)+?", "xaba\U0001F600bab", "Q"),
             ("(([^x]+))", "\U0001F600yy", "<$1>"),
             ("((a)+)", "xaa\U0001F600aa", "Q"),
             ("((a)+?)", "xaa\U0001F600aa", "Q"),
@@ -5401,6 +5407,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("[\\P{L}]+", "1\U0001F6002", "Q"),
             ("[^\\P{L}]+", "a\U0001F600b", "Q"),
             ("[\\p{L}_]+?b", "\U0001F600aab", "Q"),
+            ("[\\P{L}a]+", "a1\U0001F600b", "Q"),
+            ("[^\\P{L}a]+", "a1\U0001F600b", "Q"),
+            ("[\\D_]+", "a_\U0001F60012", "Q"),
+            ("[^\\D_]+", "12a\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
