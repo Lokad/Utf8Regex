@@ -1864,12 +1864,15 @@ internal static class Utf8SliceRunner
                             }
                             else
                             {
-                                inClass = false;
+                                // Astral leads mirror halves exactly like the whole-loop fence
+                                // admits them (match both halves to consume, split halves stay
+                                // routing-declined and fail here); admitted shapes never split.
+                                inClass = Utf8SliceHalvesMirror.CategorySetHalvesVerdict(instruction.C, program.CategorySetMembers[instruction.D]) == ((instruction.B & 1) != 0 ? 0 : 1);
                             }
 
                             if (inClass)
                             {
-                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : 3;
+                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : candidate < 0xF0 ? 3 : 4;
                                 programIndex++;
                             }
                             else

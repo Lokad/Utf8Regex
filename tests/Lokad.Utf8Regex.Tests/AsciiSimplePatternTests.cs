@@ -5392,6 +5392,12 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)[\\p{L}_]+", "A_B\U0001F600c", "Q"),
             ("[\\p{L}_]+", "a\U0001F600b", "Q"),
             ("[\\p{L}_]+", "abc", "Q"),
+            ("[^\\p{L}_]+", "a_b\U0001F600c", "Q"),
+            ("[\\P{Nd}_]+", "a1\U0001F600b", "Q"),
+            ("[\\p{Cs}_]+", "a\U0001F600b", "Q"),
+            ("(?i)[^\\p{L}_]+", "A_B\U0001F600c", "Q"),
+            ("[^\\p{L}_]+?b", "x_\U0001F600xb", "Q"),
+            ("([^\\p{L}_]+)", "a_b\U0001F600c", "<$1>"),
             ("[\\p{L}_]+?b", "\U0001F600aab", "Q"),
         ];
         foreach (var row in rows)
@@ -5405,13 +5411,13 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(PositiveCategorySetOwnedCases))]
     public void PositiveCategorySetOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: whole-pattern greedy unbounded loops over positive category sets
-        // whose members are all positive and surrogate-free run scalarwise
-        // exactly like BCL units on astral input (halves miss every positive
-        // member exactly like the runner misses astral), so discovery, shaping,
-        // splits, and all three replacement cores never construct the fallback
-        // engine here. Byte-level lanes compare encoded bytes because lone
-        // halves substitute identically through the encoder on both sides.
+        // R05: whole-pattern greedy or lazy unbounded loops over uniform
+        // category sets run scalarwise exactly like BCL units on astral input
+        // (the runner consumes exactly where halves match, either parity, and
+        // misses where they miss), so discovery, shaping, splits, and all
+        // three replacement cores never construct the fallback engine here.
+        // Byte-level lanes compare encoded bytes because lone halves
+        // substitute identically through the encoder on both sides.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var sliceRegex = new Utf8Regex(pattern, options);
@@ -5512,10 +5518,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     {
         (string pattern, RegexOptions options, string text)[] rows =
         [
-            ("[^\\p{L}_]+", RegexOptions.CultureInvariant, "a_b\U0001F600c"),
-            ("[\\P{Nd}_]+", RegexOptions.CultureInvariant, "a1\U0001F600b"),
-            ("[\\p{Cs}_]+", RegexOptions.CultureInvariant, "a\U0001F600b"),
             ("([\\p{L}])+", RegexOptions.CultureInvariant, "\U0001F600"),
+            ("[\\p{IsHighSurrogates}a]+", RegexOptions.CultureInvariant, "a\U0001F600b"),
             ("[\\p{L}_]+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a_b\U0001F600c"),
             ("[\\p{L}_]+?", RegexOptions.CultureInvariant, "a_b\U0001F600c"),
         ];
@@ -5530,10 +5534,11 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(PositiveCategorySetDeclineCases))]
     public void PositiveCategorySetDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: negated category sets, negated category members,
-        // surrogate-covering members, inner captures, right-to-left, and tailless lazy
-        // category-set loops keep BCL routing on astral input; parity holds
-        // and construction is pinned per lane.
+        // Declared R05 debt: split-half members (tables covering only lead or
+        // only trail surrogates, e.g. surrogate blocks), inner captures,
+        // right-to-left, and tailless lazy category-set loops keep BCL routing
+        // on astral input; parity holds and construction is pinned per lane.
+        // Uniform sets serve owned through the loop battery below.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);

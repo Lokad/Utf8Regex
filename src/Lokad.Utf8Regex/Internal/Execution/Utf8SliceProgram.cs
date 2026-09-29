@@ -841,34 +841,24 @@ internal static class Utf8SliceLowerer
                 return true;
             case Utf8SliceNode.ShorthandNode shorthand:
                 return (int)shorthand.Shorthand % 2 == 1;
-            // Positive category sets agree exactly like single categories when
-            // every member is positive and surrogate-free: halves miss positive
-            // shorthand members while matching negated ones the runner misses,
-            // and surrogate-covering member tables hit halves the runner
-            // misses. Anything else fails closed.
+            // Category sets mirror halves through the shared verdict: the runner
+            // consumes exactly when halves match, so the first-stop argument
+            // transfers for every uniform set (miss-both or match-both members
+            // alike, either parity). Split members stay out since lead and trail
+            // halves would desynchronize iteration like divergent branches.
             case Utf8SliceNode.CategorySetNode categorySet:
-                if (categorySet.Negated || categorySet.Members is null || categorySet.Categories is null)
+                if (categorySet.Members is null || categorySet.Categories is null)
                 {
                     return false;
                 }
 
-                foreach (var member in categorySet.Members)
+                var categorySetMemberBits = 0;
+                foreach (var shorthandMember in categorySet.Members)
                 {
-                    if ((int)member % 2 == 1)
-                    {
-                        return false;
-                    }
+                    categorySetMemberBits |= 1 << (int)shorthandMember;
                 }
 
-                foreach (var member in categorySet.Categories)
-                {
-                    if (member.Negated || !PositiveTableMissesHalves(member.Table.Mask, member.Table.Ranges))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+                return Utf8SliceHalvesMirror.CategorySetHalvesVerdict(categorySetMemberBits, categorySet.Categories) != 2;
             // Positive categories miss astral scalars exactly like BCL halves
             // miss every positive table (the runner fails astral leads closed
             // while BMP matching already agrees). Negated categories consume
