@@ -58,6 +58,8 @@ public sealed class Utf8SliceAnchorTests
         yield return new object?[] { "^\\p{L}", "\ra", true, false };
         yield return new object?[] { "\\p{L}\\Z", "ab\n", false, true };
         yield return new object?[] { "\\p{L}\\z", "ab\n", false, false };
+        yield return new object?[] { "^a+", "xa\nya\U0001F600", true, false };
+        yield return new object?[] { "a+$", "xa\nya\U0001F600", true, true };
     }
 
     [Theory]
@@ -129,6 +131,8 @@ public sealed class Utf8SliceAnchorTests
         yield return new object?[] { "^(a.c)+$", "abcayc", false, 1 };
         yield return new object?[] { "^\\p{L}+$", "a\nb", true, 2 };
         yield return new object?[] { "^\\p{L}+$", "a\r\nb", true, 1 };
+        yield return new object?[] { "^a+", "xa\nya\U0001F600", true, 0 };
+        yield return new object?[] { "a+$", "xa\nya\U0001F600", true, 1 };
     }
 
     [Theory]
