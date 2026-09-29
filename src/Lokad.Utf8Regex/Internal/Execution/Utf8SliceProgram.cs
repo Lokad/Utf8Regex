@@ -604,8 +604,10 @@ internal static class Utf8SliceLowerer
     // scalar per BCL unit), while admitted atoms stay byte/mask-based or
     // fold-neutral, the runner fold arms fail astral leads closed, and BCL
     // halves miss positives while meeting negations, so the boundary argument
-    // holds folded exactly as unfolded. Anything unmodeled fails closed to
-    // existing routing.
+    // holds folded exactly as unfolded. ASCII head/tail runs around the loop
+    // stay byte-aligned in both semantics for the same reason, so one checked
+    // loop with indifferent runs keeps the argument. Anything unmodeled fails
+    // closed to existing routing.
     private static bool IsAstralIndifferentWholeLoop(Utf8SliceNode root, bool rightToLeft)
     {
         if (rightToLeft)
@@ -622,40 +624,78 @@ internal static class Utf8SliceLowerer
             }
 
             // A bare flag prefix like (?i) parses to a leading EmptyNode, so
-            // flag-prefixed loops root at a single-branch alternation. Empties
-            // are zero-width, so one surviving node keeps the scalar-boundary
-            // start/stop argument exactly like the bare shape; empty-only or
-            // multi-node branches fail closed to existing routing.
+            // flag-prefixed shapes root at a single-branch alternation whose
+            // members form the real sequence (the parser keeps concatenations
+            // as flat branch arrays). One surviving node continues descent
+            // below; several survivors take the head/tail rule instead.
             if (node is not Utf8SliceNode.AlternationNode alternation ||
                 alternation.Branches.Length != 1)
             {
                 break;
             }
 
-            Utf8SliceNode? survivor = null;
-            var multiple = false;
+            var survivors = 0;
             foreach (var member in alternation.Branches[0])
             {
-                if (member is Utf8SliceNode.EmptyNode)
+                if (member is not Utf8SliceNode.EmptyNode)
                 {
-                    continue;
+                    survivors++;
                 }
-
-                if (survivor is not null)
-                {
-                    multiple = true;
-                    break;
-                }
-
-                survivor = member;
             }
 
-            if (multiple || survivor is null)
+            if (survivors == 0)
             {
                 return false;
             }
 
-            node = survivor;
+            if (survivors == 1)
+            {
+                foreach (var member in alternation.Branches[0])
+                {
+                    if (member is not Utf8SliceNode.EmptyNode)
+                    {
+                        node = member;
+                        break;
+                    }
+                }
+
+                continue;
+            }
+
+            // Head/tail runs around one loop: leading and trailing indifferent
+            // atoms (ASCII literals or empty positive sets, folded or not)
+            // only ever meet ASCII bytes in both semantics while halves miss
+            // them exactly like BCL, so the loop keeps its scalar-boundary
+            // start/stop argument and the runs stay byte-aligned throughout.
+            // Anything but one checked loop left standing fails closed.
+            var members = alternation.Branches[0];
+            var head = 0;
+            while (head < members.Length &&
+                (members[head] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[head])))
+            {
+                head++;
+            }
+
+            var tail = members.Length - 1;
+            while (tail >= head &&
+                (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail])))
+            {
+                tail--;
+            }
+
+            if (tail < head)
+            {
+                return true;
+            }
+
+            if (tail != head ||
+                members[head] is not Utf8SliceNode.RepeatNode tailRepeat ||
+                tailRepeat.Lazy || tailRepeat.Minimum < 1 || tailRepeat.Maximum != int.MaxValue)
+            {
+                return false;
+            }
+
+            return WholeLoopBodyIsSafe(tailRepeat.Body);
         }
 
         if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum < 1 || repeat.Maximum != int.MaxValue)
