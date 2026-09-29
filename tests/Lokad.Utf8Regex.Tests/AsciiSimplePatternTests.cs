@@ -3580,6 +3580,7 @@ public sealed class AsciiSimplePatternTests
             ("([0-9]{2}|ab)+", "x12ab\U0001F600", "Q"),
             ("(ab|cd)+", "xabcd\U0001F600", "Q"),
             ("(ab|a)+", "xaab\U0001F600", "Q"),
+            ("\\ba+\\b", "xaay\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -5720,6 +5721,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?>.+?b)", "x\U0001F600b", "Q"),
             ("(?>a.+?b)bc", "xa\U0001F600bbc", "Q"),
             ("(?>a.+?b)c", "xa\U0001F600abc", "Q"),
+            ("(?>a+?)", "xaay\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
