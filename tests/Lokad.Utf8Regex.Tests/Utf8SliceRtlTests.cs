@@ -628,6 +628,51 @@ public sealed class Utf8SliceRtlOperationTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
+    public static IEnumerable<object?[]> RtlFromOffsetEnumerateCases()
+    {
+        yield return new object?[] { "a+", "xaayaaa", 7, new int[] { 4, 3, 1, 2 } };
+        yield return new object?[] { "a+", "xaayaaa", 4, new int[] { 1, 2 } };
+        yield return new object?[] { "a+", "aabaa", 2, new int[] { 0, 2 } };
+        yield return new object?[] { "a+", "xaay\U0001F600aa", 0, new int[] { } };
+        yield return new object?[] { "a|ab", "xaab\U0001F600x", 0, new int[] { } };
+        yield return new object?[] { "a*", "baa", 3, new int[] { 1, 2, 1, 0, 0, 0 } };
+        yield return new object?[] { "a*", "baa", 1, new int[] { 1, 0, 0, 0 } };
+        yield return new object?[] { "a+", "xaay\U0001F600aa", 5, new int[] { 1, 2 } };
+    }
+
+    [Theory]
+    [MemberData(nameof(RtlFromOffsetEnumerateCases))]
+    public void OwnedRtlFromOffsetEnumerateMatchesOracle(string pattern, string inputText, int startAt, int[] expectedFlat)
+    {
+        // R05: right-to-left FromOffset enumeration descends closing edges from
+        // the caller bound (matches ending at or below it, rightmost first),
+        // exactly like the BCL oracle.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
+        var wanted = new List<string>();
+        foreach (Match match in oracle.Matches(inputText, startAt))
+        {
+            wanted.Add(match.Index + ":" + match.Length);
+        }
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var actual = new List<string>();
+        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, startAt))
+        {
+            actual.Add(match.IndexInUtf16 + ":" + match.LengthInUtf16);
+        }
+        Assert.Equal(wanted, actual);
+        var flat = new List<int>();
+        foreach (var item in actual)
+        {
+            var parts = item.Split(':');
+            flat.Add(int.Parse(parts[0]));
+            flat.Add(int.Parse(parts[1]));
+        }
+        Assert.Equal(expectedFlat, flat.ToArray());
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
     [Fact]
     public void OwnedRtlCatastrophicInputTimesOut()
     {

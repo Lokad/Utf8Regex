@@ -318,8 +318,9 @@ internal ref struct Utf8OperationMatchCursor
 
     // From-unit slice enumeration starts the scan at the caller's start unit
     // on full input (anchors keep true left context, \G pins to the scan
-    // start like BCL startat); the origin pin still initializes from the scan
-    // start on first move exactly like the zero-start cursor above.
+    // start like BCL startat); the origin pin takes the scan start up front so
+    // right-to-left scans descend from the caller bound (matches ending at or
+    // below it, rightmost first) instead of resetting to the input end.
     internal Utf8OperationMatchCursor(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
@@ -330,6 +331,7 @@ internal ref struct Utf8OperationMatchCursor
         : this(program, input, map, timeout, token)
     {
         _sliceUnit = startUnit;
+        _sliceOriginUnit = startUnit;
     }
 
     private bool MoveNextOwnedSlice()
