@@ -790,6 +790,34 @@ internal static class Utf8SliceLowerer
                 return true;
             case Utf8SliceNode.ShorthandNode shorthand:
                 return (int)shorthand.Shorthand % 2 == 1;
+            // Positive category sets agree exactly like single categories when
+            // every member is positive and surrogate-free: halves miss positive
+            // shorthand members while matching negated ones the runner misses,
+            // and surrogate-covering member tables hit halves the runner
+            // misses. Anything else fails closed.
+            case Utf8SliceNode.CategorySetNode categorySet:
+                if (categorySet.Negated || categorySet.Members is null || categorySet.Categories is null)
+                {
+                    return false;
+                }
+
+                foreach (var member in categorySet.Members)
+                {
+                    if ((int)member % 2 == 1)
+                    {
+                        return false;
+                    }
+                }
+
+                foreach (var member in categorySet.Categories)
+                {
+                    if (member.Negated || !PositiveTableMissesHalves(member.Table.Mask, member.Table.Ranges))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             // Positive categories miss astral scalars exactly like BCL halves
             // miss every positive table (the runner fails astral leads closed
             // while BMP matching already agrees); negated categories stay out
@@ -797,29 +825,32 @@ internal static class Utf8SliceLowerer
             // surrogate-covering positives (Cs, high/low surrogate blocks):
             // BCL halves are members there while the runner still misses.
             case Utf8SliceNode.CategoryNode category:
-                if (category.Negated)
-                {
-                    return false;
-                }
-
-                if ((category.Mask & (1u << (int)System.Globalization.UnicodeCategory.Surrogate)) != 0)
-                {
-                    return false;
-                }
-
-                var ranges = category.Ranges;
-                for (var range = 0; range + 1 < ranges.Length; range += 2)
-                {
-                    if (ranges[range] < 0xE000 && ranges[range + 1] > 0xD800)
-                    {
-                        return false;
-                    }
-                }
-
-                return (ranges.Length & 1) == 0 || ranges[ranges.Length - 1] > 0xDFFF;
+                return !category.Negated && PositiveTableMissesHalves(category.Mask, category.Ranges);
             default:
                 return false;
         }
+    }
+
+    // Positive tables miss halves unless they cover surrogates (the Cs mask
+    // bit, or a block range overlapping U+D800-U+DFFF where BCL halves are
+    // members the runner misses); shared by the category and category-set
+    // atoms above, whose runner arms both fail astral leads closed.
+    private static bool PositiveTableMissesHalves(uint mask, ushort[] ranges)
+    {
+        if ((mask & (1u << (int)System.Globalization.UnicodeCategory.Surrogate)) != 0)
+        {
+            return false;
+        }
+
+        for (var range = 0; range + 1 < ranges.Length; range += 2)
+        {
+            if (ranges[range] < 0xE000 && ranges[range + 1] > 0xD800)
+            {
+                return false;
+            }
+        }
+
+        return (ranges.Length & 1) == 0 || ranges[ranges.Length - 1] > 0xDFFF;
     }
 
     private static bool WholeLoopAtomIsIndifferent(Utf8SliceNode node)
