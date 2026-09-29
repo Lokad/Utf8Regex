@@ -206,6 +206,7 @@ public sealed class Utf8SliceBalanceTests
         var astral = char.ConvertFromUtf32(0x1F600);
         yield return new object?[] { "(?<o>a)+(?<-o>b)+", astral + "aab", true };
         yield return new object?[] { "(?<o>a)+(?<-o>b)+", astral + "bbb", false };
+        yield return new object?[] { "(?<x>a)+(?<-x>b)+", "xaabb\U0001F600", true };
     }
 
     [Theory]

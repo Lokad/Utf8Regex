@@ -217,6 +217,7 @@ public sealed class Utf8SliceBackrefTests
         var astral = char.ConvertFromUtf32(0x1F600);
         yield return new object?[] { "(a)\\1", astral + "aa", true };
         yield return new object?[] { "(a)\\1", astral + "ab", false };
+        yield return new object?[] { "(ab)+\\1", "xabab" + astral, true };
     }
 
     [Theory]
@@ -251,6 +252,7 @@ public sealed class Utf8SliceBackrefTests
     {
         var astral = char.ConvertFromUtf32(0x1F600);
         yield return new object?[] { "(a)\\1", "aa" + astral + "aa", 2 };
+        yield return new object?[] { "(ab)+\\1", "xabab" + astral, 1 };
     }
 
     [Theory]
@@ -263,6 +265,29 @@ public sealed class Utf8SliceBackrefTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(input));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> AstralDotBackrefDeclineCases()
+    {
+        var astral = char.ConvertFromUtf32(0x1F600);
+        yield return new object?[] { "(.+)\\1", "xab" + astral + "ab" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralDotBackrefDeclineCases))]
+    public void AstralDotBackrefDeclineKeepsBclShaping(string pattern, string inputText)
+    {
+        // Declared R05 debt: dot-led backreferences can capture half-split
+        // spans on astral input, so shaping keeps BCL routing; parity holds
+        // and construction is pinned.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal(oracle.Replace(inputText, "Q"), stringRegex.ReplaceToString(input, "Q"));
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> MultiDigitDigitEscapeCases()

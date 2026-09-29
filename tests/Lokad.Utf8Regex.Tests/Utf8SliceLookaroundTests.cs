@@ -128,6 +128,8 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?!)a", "a", false };
         yield return new object?[] { "(?<=a)b", "ab", true };
         yield return new object?[] { "(?<=a)b", "cb", false };
+        yield return new object?[] { "(?<=(a))b", "xa\U0001F600b", false };
+        yield return new object?[] { "(?<=(a))b", "xaab\U0001F600", true };
         yield return new object?[] { "(?<!a)b", "cb", true };
         yield return new object?[] { "(?<!a)b", "ab", false };
         yield return new object?[] { "((?=a)a)\\1", "aaa", true };
@@ -184,6 +186,8 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?!b)a", "ba ba", 2 };
         yield return new object?[] { "(?<=\\p{L}{2})x", "abxabx", 2 };
         yield return new object?[] { "(?<=a{2})x", "aaxaa", 1 };
+        yield return new object?[] { "(?<=(a))b", "xa\U0001F600b", 0 };
+        yield return new object?[] { "(?<=(a))b", "xaab\U0001F600", 1 };
     }
 
     [Theory]
@@ -201,6 +205,7 @@ public sealed class Utf8SliceLookaroundTests
 
     [Theory]
     [InlineData("(?<=(a))b", "xxab", 3, 1, "a")]
+    [InlineData("(?<=(a))b", "xaab\U0001F600", 3, 1, "a")]
     [InlineData("((?=a)a)\\1", "xaaayy", 1, 2, "a")]
     public void OwnedMatchProjectsCoordinates(
         string pattern, string inputText, int expectedIndex, int expectedLength, string expectedGroup)
@@ -272,8 +277,8 @@ public sealed class Utf8SliceLookaroundTests
 
     [Theory]
     [InlineData("(?<=a)b", "aab ab", "X")]
-    [InlineData("(?=a)a", "aaa", "X")]
     [InlineData("(?<=(a))b", "xa\U0001F600b", "Q")]
+    [InlineData("(?=a)a", "aaa", "X")]
     public void OwnedReplaceMatchesOracle(
         string pattern, string inputText, string replacement)
     {
