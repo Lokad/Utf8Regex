@@ -570,7 +570,7 @@ internal static class Utf8SliceLowerer
         // Whole-pattern greedy unbounded loops over unit-closed atoms run
         // scalarwise exactly like BCL units on astral input, so they clear the
         // astral-free requirement the instruction scan above may have set.
-        requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, matchCaseInsensitive, rightToLeft);
+        requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, rightToLeft);
 
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
@@ -598,19 +598,64 @@ internal static class Utf8SliceLowerer
     // atom desynchronize mid-iteration (probed: ([^x]b)+ splits astral scalars in
     // BCL but not in the runner), so only single atoms or fully indifferent
     // branches qualify; nested captures would record different last-iteration spans
-    // and stay out, as do lazy loops, empty-capable bounds, right-to-left, and
-    // folded shapes. Anything unmodeled fails closed to existing routing.
-    private static bool IsAstralIndifferentWholeLoop(Utf8SliceNode root, bool matchCaseInsensitive, bool rightToLeft)
+    // and stay out, as do lazy loops, empty-capable bounds, and
+    // right-to-left. Folding needs no fence: it only refines which BMP scalars
+    // meet ASCII atoms through the invariant pair (Kelvin included, still one
+    // scalar per BCL unit), while admitted atoms stay byte/mask-based or
+    // fold-neutral, the runner fold arms fail astral leads closed, and BCL
+    // halves miss positives while meeting negations, so the boundary argument
+    // holds folded exactly as unfolded. Anything unmodeled fails closed to
+    // existing routing.
+    private static bool IsAstralIndifferentWholeLoop(Utf8SliceNode root, bool rightToLeft)
     {
-        if (rightToLeft || matchCaseInsensitive)
+        if (rightToLeft)
         {
             return false;
         }
 
         var node = root;
-        while (node is Utf8SliceNode.CaptureNode capture)
+        while (true)
         {
-            node = capture.Body;
+            while (node is Utf8SliceNode.CaptureNode capture)
+            {
+                node = capture.Body;
+            }
+
+            // A bare flag prefix like (?i) parses to a leading EmptyNode, so
+            // flag-prefixed loops root at a single-branch alternation. Empties
+            // are zero-width, so one surviving node keeps the scalar-boundary
+            // start/stop argument exactly like the bare shape; empty-only or
+            // multi-node branches fail closed to existing routing.
+            if (node is not Utf8SliceNode.AlternationNode alternation ||
+                alternation.Branches.Length != 1)
+            {
+                break;
+            }
+
+            Utf8SliceNode? survivor = null;
+            var multiple = false;
+            foreach (var member in alternation.Branches[0])
+            {
+                if (member is Utf8SliceNode.EmptyNode)
+                {
+                    continue;
+                }
+
+                if (survivor is not null)
+                {
+                    multiple = true;
+                    break;
+                }
+
+                survivor = member;
+            }
+
+            if (multiple || survivor is null)
+            {
+                return false;
+            }
+
+            node = survivor;
         }
 
         if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum < 1 || repeat.Maximum != int.MaxValue)
