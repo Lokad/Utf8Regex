@@ -3583,6 +3583,8 @@ public sealed class AsciiSimplePatternTests
             ("\\ba+\\b", "xaay\U0001F600", "Q"),
             ("(ab|ac)+", "xabac\U0001F600", "Q"),
             ("(a[bc])+", "xab\U0001F600", "Q"),
+            ("(ba|ca)+", "xbaca\U0001F600", "Q"),
+            ("(ab|cb)+", "xabcb\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
