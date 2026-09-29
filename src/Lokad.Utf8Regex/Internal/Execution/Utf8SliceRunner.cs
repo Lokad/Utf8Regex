@@ -827,9 +827,30 @@ internal static class Utf8SliceRunner
                             rtlOutcome.CaptureStarts, rtlOutcome.CaptureLengths, Utf8ExecutionLimitKind.None);
                     }
 
+                    // Trail-half closing edges mirror the unit-scan rule: only an
+                    // empty hit can close here for served programs, so empty-capable
+                    // shapes report the exact edge empty with unmatched histories
+                    // (word-boundary shapes keep the mapped span); the closing edge maps
+                    // through bytes exactly like the ascending attempt.
+                    if (!rtlEdgeClean && rtlProgram.CanMatchEmpty && !rtlProgram.RequiresUnicodeWordBoundary)
+                    {
+                        var rtlEmptyStarts = new int[rtlProgram.GroupCount][];
+                        var rtlEmptyLengths = new int[rtlProgram.GroupCount][];
+                        for (var rtlGroup = 0; rtlGroup < rtlEmptyStarts.Length; rtlGroup++)
+                        {
+                            rtlEmptyStarts[rtlGroup] = Array.Empty<int>();
+                            rtlEmptyLengths[rtlGroup] = Array.Empty<int>();
+                        }
+
+                        return new Utf8SliceDetailedOutcome(
+                            true, rtlUnit, rtlUnit, rtlEdgeByte, rtlEdgeByte,
+                            rtlEmptyStarts, rtlEmptyLengths, Utf8ExecutionLimitKind.None);
+                    }
+
                     var rtlStartUnit = rtlMap.GetUtf16OffsetForByteOffset(rtlOutcome.EndIndex);
+                    var rtlCloseUnit = rtlMap.GetUtf16OffsetForByteOffset(rtlEdgeByte);
                     return new Utf8SliceDetailedOutcome(
-                        true, rtlStartUnit, rtlUnit, rtlOutcome.EndIndex, rtlEdgeByte,
+                        true, rtlStartUnit, rtlCloseUnit, rtlOutcome.EndIndex, rtlEdgeByte,
                         rtlOutcome.CaptureStarts, rtlOutcome.CaptureLengths, Utf8ExecutionLimitKind.None);
                 }
 

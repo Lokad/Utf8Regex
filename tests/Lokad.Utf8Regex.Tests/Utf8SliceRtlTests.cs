@@ -423,6 +423,9 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "(?=(a)b)ab", "ab", 0, 2, new int[] { 0 }, new int[] { 1 } };
         yield return new object?[] { "(?<n>a)(?<m>b)", "ab", 0, 2, new int[] { 0, 1 }, new int[] { 1, 1 } };
         yield return new object?[] { "(a+)(b+)", "aab", 0, 3, new int[] { 0, 2 }, new int[] { 2, 1 } };
+        yield return new object?[] { "a|ab", "xaab\U0001F600x", 2, 2, new int[] { }, new int[] { } };
+        yield return new object?[] { "(a)(b)", "xaby", 1, 2, new int[] { 1, 2 }, new int[] { 1, 1 } };
+        yield return new object?[] { "x*", "ax\U0001F600b", 5, 0, new int[] { }, new int[] { } };
     }
 
     [Theory]
