@@ -3573,6 +3573,7 @@ public sealed class AsciiSimplePatternTests
             ("\\ba[^x]+b\\b", "x a\U0001F600b!", "Q"),
             ("\\b.+b\\b", "x a\U0001F600b ", "Q"),
             ("\\ba.+?b\\b", "a\U0001F600b", "Q"),
+            ("(?i)\\bA+B\\b", " AAB\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -4213,6 +4214,7 @@ public sealed class AsciiSimplePatternTests
             ("(?m)a[^x]+b$", "xa\U0001F600b\nzz", "Q"),
             ("^(a[^x]+b)$", "a\U0001F600b", "<$1>"),
             ("(?i)^A[^x]+B$", "a\U0001F600b", "Q"),
+            ("(?i)\\Ga+b", "AAb\U0001F600", "Q"),
             ("^\\D+b$", "a\U0001F600b", "Q"),
             ("^[a-z]+$", "abc\U0001F600", "Q"),
             ("^a[^x]+b$", "axxb", "Q"),
@@ -4396,6 +4398,10 @@ public sealed class AsciiSimplePatternTests
             ("a.+b", "xa\U0001F600b", 2),
             ("a.+?b", "xa\U0001F600b", 0),
             ("a.+?b", "xa\U0001F600b", 2),
+            ("\\ba[^x]+b\\b", "x a\U0001F600b!", 0),
+            ("\\ba[^x]+b\\b", "x a\U0001F600b!", 2),
+            ("[\\p{Cs}a]+", "a\U0001F600b", 0),
+            ("[\\p{Cs}a]+", "a\U0001F600b", 1),
             ("\\Ga[^x]+b", "xa\U0001F600b", 0),
             ("\\Ga[^x]+b", "xa\U0001F600b", 1),
             ("\\Ga[^x]+b", "a\U0001F600b", 0),
@@ -4630,6 +4636,7 @@ public sealed class AsciiSimplePatternTests
             ("(?>[^x]+)", "a\U0001F600b"),
             ("a.+b", "xa\U0001F600b"),
             ("a.+?b", "xa\U0001F600b"),
+            ("\\ba[^x]+b\\b", "x a\U0001F600b!"),
             ("\\Ga[^x]+b", "a\U0001F600b"),
         ];
         foreach (var row in rows)
@@ -5539,6 +5546,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("[^\\P{L}a]+", "a1\U0001F600b", "Q"),
             ("[\\p{Cs}a]+", "a\U0001F600b", "Q"),
             ("[^\\p{Cs}a]+", "1\U0001F6002", "Q"),
+            ("(?i)[\\p{Cs}a]+", "A\U0001F600b", "Q"),
             ("[\\D_]+", "a_\U0001F60012", "Q"),
             ("[^\\D_]+", "12a\U0001F600", "Q"),
         ];
