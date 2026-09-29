@@ -70,7 +70,7 @@ public sealed class Pcre2LimitEnforcementTests
                 }
             }
         }
-        Assert.Equal(new[] { "Pcre2AsciiLiteralAlternationRepeat", "Pcre2AsciiOrderedLiteralWindow", "Pcre2Backtracking", "Pcre2Character", "Pcre2Literal", "Pcre2LiteralFamily", "Pcre2LiteralPrefixRepeat", "Pcre2MultilinePrefix", "Pcre2SameStartLiteral", "Pcre2SingleTokenRepeat", "Utf8Regex" }, kinds.OrderBy(static k => k, System.StringComparer.Ordinal));
+        Assert.Equal(new[] { "Pcre2AsciiLiteralAlternationRepeat", "Pcre2AsciiOrderedLiteralWindow", "Pcre2Character", "Pcre2Literal", "Pcre2LiteralFamily", "Pcre2LiteralPrefixRepeat", "Pcre2MultilinePrefix", "Pcre2SameStartLiteral", "Pcre2SingleTokenRepeat", "Pcre2Slice", "Utf8Regex" }, kinds.OrderBy(static k => k, System.StringComparer.Ordinal));
     }
 
     [Theory]

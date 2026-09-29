@@ -2347,12 +2347,16 @@ internal static class Utf8NativeExecutionAnalyzer
         return false;
     }
 
+    // Membership must honor negation: the raw test matches the exclusion
+    // range of a negated set (dot and negated-newline loops passed as
+    // whitespace-only because their lone excluded newline is whitespace),
+    // misrouting dot gaps into separator-window plans.
     private static bool IsAsciiWhitespaceOnlySet(string runtimeSet)
     {
         var sawMatch = false;
         for (var value = 0; value < 128; value++)
         {
-            if (!Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet))
+            if (!Utf8OwnedCharClass.CharInClass((char)value, runtimeSet))
             {
                 continue;
             }
