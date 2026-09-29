@@ -3178,6 +3178,15 @@ public sealed class AsciiSimplePatternTests
             ("((.|b)c)", "a\U0001F600c", "<$2>"),
             ("((?<x>a|.)c)", "a\U0001F600c", "<${x}>"),
             ("((a|.)c)", "xyz", "<$1>"),
+            ("(a|(.)c)", "x\U0001F600c", "<$1>"),
+            ("(a|(.)c)", "x\U0001F600c", "<$2>"),
+            ("(a|(.)c)", "xabc", "<$1>"),
+            ("(a|(.)c)", "xabc", "<$2>"),
+            ("(a|(.)c)", "xabcxabc", "<$2>"),
+            ("((a)|(.)c)", "x\U0001F600c", "<$2>"),
+            ("((a)|(.)c)", "x\U0001F600c", "<$3>"),
+            ("((a)|(.)c)", "xabcx\U0001F600c", "<$1>"),
+            ("((x)|(.))", "y", "<$2>"),
         ];
         foreach (var row in rows)
         {
@@ -3269,10 +3278,9 @@ public sealed class AsciiSimplePatternTests
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
-            ("(a|(.)c)", RegexOptions.CultureInvariant, "x\U0001F600c", "<$2>"),
-            ("(a|(.)c)", RegexOptions.CultureInvariant, "xabc", "<$2>"),
             ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600c", "<$1>"),
             ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, "a\U0001F600c", "<$1>"),
+            ("((x)|(.))", RegexOptions.CultureInvariant, "x", "<$2>"),
         ];
         foreach (var row in rows)
         {
@@ -3285,9 +3293,11 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AstralUnitBranchDeclineCases))]
     public void AstralUnitBranchDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: branch-dependent group spans need winning-branch
-        // attribution, while right-to-left and IgnoreCase unit shapes keep their
-        // existing BCL routes; parity holds and construction is pinned per lane.
+        // Declared R05 debt: ambiguous branch attribution (several branches verify
+        // the hit) keeps BCL routing, while right-to-left and IgnoreCase unit shapes
+        // keep their existing BCL routes; parity holds and construction is pinned
+        // per lane. Single-present-branch shapes such as (a|(.)c) graduate to the
+        // owned battery above: exactly one branch verifies their hits.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options);

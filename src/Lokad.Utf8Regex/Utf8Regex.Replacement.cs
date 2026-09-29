@@ -580,6 +580,7 @@ public sealed partial class Utf8Regex
         var builder = new StringBuilder(decoded.Length);
         var sourcePosition = 0;
         var first = true;
+        var unitBudget = CreateExecutionBudget();
         foreach (var valueMatch in EnumerateMatches(input))
         {
             Utf8MatchContext context;
@@ -604,7 +605,7 @@ public sealed partial class Utf8Regex
                 context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
             }
             else if (_unitBranchSpanMap is not null &&
-                TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var unitShaped))
+                TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, unitBudget, out var unitShaped))
             {
                 context = unitShaped;
             }

@@ -182,6 +182,26 @@ internal static class Utf8AstralUnitVerifier
         return -1;
     }
 
+    // R05: matches one expanded branch token sequence at a unit position, shared by
+    // first-win discovery above and winning-branch attribution for unit span maps.
+    internal static bool TryVerifyBranchUnits(
+        string decoded,
+        AsciiSimplePatternToken[] branch,
+        int startUnit,
+        Utf8ExecutionDeadline budget,
+        out int matchedLength)
+    {
+        matchedLength = 0;
+        budget.Step();
+        if (!TryMatchTokensUnits(decoded, branch, startUnit, out var endUnit))
+        {
+            return false;
+        }
+
+        matchedLength = endUnit - startUnit;
+        return true;
+    }
+
     private static bool TryMatchBranchUnits(
         string decoded,
         in AsciiSimplePatternPlan plan,
@@ -193,108 +213,124 @@ internal static class Utf8AstralUnitVerifier
         budget.Step();
         foreach (var branch in plan.Branches)
         {
-            var cursor = startUnit;
-            var ok = true;
-            for (var i = 0; i < branch.Length && ok; i++)
+            if (TryMatchTokensUnits(decoded, branch, startUnit, out var endUnit))
             {
-                if ((uint)cursor >= (uint)decoded.Length)
-                {
-                    ok = false;
-                    break;
-                }
+                matchedLength = endUnit - startUnit;
+                return true;
+            }
+        }
 
-                var token = branch[i];
-                var unit = decoded[cursor];
-                if (token.Kind == AsciiSimplePatternTokenKind.Literal)
-                {
-                    // Lowered literals are ASCII, so halves and non-ASCII units miss here.
-                    if (unit != token.Literal)
-                    {
-                        ok = false;
-                        break;
-                    }
+        matchedLength = 0;
+        return false;
+    }
 
-                    cursor += 1;
-                    continue;
-                }
+    private static bool TryMatchTokensUnits(
+        string decoded,
+        AsciiSimplePatternToken[] branch,
+        int startUnit,
+        out int endUnit)
+    {
+        var cursor = startUnit;
+        var ok = true;
+        for (var i = 0; i < branch.Length && ok; i++)
+        {
+            if ((uint)cursor >= (uint)decoded.Length)
+            {
+                ok = false;
+                break;
+            }
 
-                // Dots consume any single unit, halves included, exactly like BCL.
-                if (token.Kind == AsciiSimplePatternTokenKind.Dot)
-                {
-                    cursor += 1;
-                    continue;
-                }
-
-                if (token.Kind != AsciiSimplePatternTokenKind.CharClass || token.CharClass.IsEmpty)
-                {
-                    ok = false;
-                    break;
-                }
-
-                uint scalar = unit;
-                // Positive ASCII sets never match non-ASCII units while ASCII-closed
-                // negations match every one of them (halves included); decimal digits,
-                // word chars, and whitespace consult the owned tables over unit values,
-                // where halves miss every positive table.
-                bool matches;
-                if (scalar < 0x80)
-                {
-                    matches = token.CharClass.Contains((byte)scalar);
-                }
-                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.SinglelineDot)
-                {
-                    matches = true;
-                }
-                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace)
-                {
-                    matches = Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
-                }
-                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedDigit)
-                {
-                    matches = !Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
-                }
-                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedWord)
-                {
-                    matches = !Utf8WordRanges.IsWordChar(scalar);
-                }
-                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedWhitespace)
-                {
-                    matches = !Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
-                }
-                else if (token.RequiresAsciiInput &&
-                    token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
-                    predicateKind == AsciiCharClassPredicateKind.Digit)
-                {
-                    matches = Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
-                }
-                else if (token.RequiresAsciiInput &&
-                    token.CharClass.TryGetKnownPredicateKind(out var wordKind) &&
-                    wordKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore)
-                {
-                    matches = Utf8WordRanges.IsWordChar(scalar);
-                }
-                else
-                {
-                    matches = token.CharClass.Negated;
-                }
-
-                if (!matches)
+            var token = branch[i];
+            var unit = decoded[cursor];
+            if (token.Kind == AsciiSimplePatternTokenKind.Literal)
+            {
+                // Lowered literals are ASCII, so halves and non-ASCII units miss here.
+                if (unit != token.Literal)
                 {
                     ok = false;
                     break;
                 }
 
                 cursor += 1;
+                continue;
             }
 
-            if (ok)
+            // Dots consume any single unit, halves included, exactly like BCL.
+            if (token.Kind == AsciiSimplePatternTokenKind.Dot)
             {
-                matchedLength = cursor - startUnit;
-                return true;
+                cursor += 1;
+                continue;
             }
+
+            if (token.Kind != AsciiSimplePatternTokenKind.CharClass || token.CharClass.IsEmpty)
+            {
+                ok = false;
+                break;
+            }
+
+            uint scalar = unit;
+            // Positive ASCII sets never match non-ASCII units while ASCII-closed
+            // negations match every one of them (halves included); decimal digits,
+            // word chars, and whitespace consult the owned tables over unit values,
+            // where halves miss every positive table.
+            bool matches;
+            if (scalar < 0x80)
+            {
+                matches = token.CharClass.Contains((byte)scalar);
+            }
+            else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.SinglelineDot)
+            {
+                matches = true;
+            }
+            else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace)
+            {
+                matches = Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
+            }
+            else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedDigit)
+            {
+                matches = !Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
+            }
+            else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedWord)
+            {
+                matches = !Utf8WordRanges.IsWordChar(scalar);
+            }
+            else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.NegatedWhitespace)
+            {
+                matches = !Utf8WhiteSpaceRanges.IsWhiteSpace(scalar);
+            }
+            else if (token.RequiresAsciiInput &&
+                token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
+                predicateKind == AsciiCharClassPredicateKind.Digit)
+            {
+                matches = Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
+            }
+            else if (token.RequiresAsciiInput &&
+                token.CharClass.TryGetKnownPredicateKind(out var wordKind) &&
+                wordKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore)
+            {
+                matches = Utf8WordRanges.IsWordChar(scalar);
+            }
+            else
+            {
+                matches = token.CharClass.Negated;
+            }
+
+            if (!matches)
+            {
+                ok = false;
+                break;
+            }
+
+            cursor += 1;
         }
 
-        matchedLength = 0;
+        if (ok)
+        {
+            endUnit = cursor;
+            return true;
+        }
+
+        endUnit = 0;
         return false;
     }
     // First-hit discovery reports qualification separately from hit presence so misses

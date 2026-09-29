@@ -1745,7 +1745,8 @@ public sealed partial class Utf8Regex
                 return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
             }
 
-            if (TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, unitFirst, out var unitDetailed))
+            var unitBudget = CreateExecutionBudget();
+            if (TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, unitFirst, unitBudget, out var unitDetailed))
             {
                 return unitDetailed;
             }
@@ -2071,17 +2072,48 @@ public sealed partial class Utf8Regex
         string decoded,
         Utf8BoundaryMap boundaryMap,
         Utf8ValueMatch hit,
+        Utf8ExecutionDeadline budget,
         out Utf8MatchContext detailed)
     {
-        // R05: projects the static branch-invariant unit spans recorded at
-        // construction onto the owned discovery hit. Whole-match wrappers take the
-        // hit span; every other group takes its recorded unit offset. A width
-        // disagreement or group-number surprise declines instead of shaping blindly.
-        // Half-involving spans project in string space exactly like BCL: values
-        // survive as lone halves while byte ranges stay unavailable.
+        // R05: re-verifies every lowered branch at the owned discovery hit start and
+        // requires exactly one full-span verifier, then projects that branch's
+        // recorded unit spans. The BCL winner necessarily verifies, so uniqueness
+        // identifies it without trusting branch order; ambiguity or disagreement
+        // declines to the BCL routes instead of shaping blindly. Whole-match
+        // wrappers take the hit span; every other group takes its recorded unit
+        // offset. Half-involving spans project in string space exactly like BCL:
+        // values survive as lone halves while byte ranges stay unavailable.
         detailed = default;
         var map = _unitBranchSpanMap;
-        if (map is null || hit.LengthInUtf16 != map.Width)
+        var plan = _preparedRegex.SimplePatternPlan;
+        if (map is null || plan.Branches is null || plan.Branches.Length != map.BranchWidths.Length)
+        {
+            return false;
+        }
+
+        var selected = -1;
+        for (var branch = 0; branch < plan.Branches.Length; branch++)
+        {
+            if (plan.Branches[branch].Length != hit.LengthInUtf16)
+            {
+                continue;
+            }
+
+            if (!Utf8AstralUnitVerifier.TryVerifyBranchUnits(decoded, plan.Branches[branch], hit.IndexInUtf16, budget, out var matchedLength) ||
+                matchedLength != hit.LengthInUtf16)
+            {
+                continue;
+            }
+
+            if (selected >= 0)
+            {
+                return false;
+            }
+
+            selected = branch;
+        }
+
+        if (selected < 0 || map.BranchWidths[selected] != hit.LengthInUtf16)
         {
             return false;
         }
@@ -2103,16 +2135,19 @@ public sealed partial class Utf8Regex
             lengths[whole] = hit.LengthInUtf16;
         }
 
-        for (var i = 0; i < map.Groups.Length; i++)
+        var selectedGroups = map.BranchGroups[selected];
+        var selectedStarts = map.BranchStarts[selected];
+        var selectedLengths = map.BranchLengths[selected];
+        for (var i = 0; i < selectedGroups.Length; i++)
         {
-            var number = map.Groups[i];
+            var number = selectedGroups[i];
             if ((uint)number >= (uint)groupCount)
             {
                 return false;
             }
 
-            starts[number] = hit.IndexInUtf16 + map.Starts[i];
-            lengths[number] = map.Lengths[i];
+            starts[number] = hit.IndexInUtf16 + selectedStarts[i];
+            lengths[number] = selectedLengths[i];
         }
 
         detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);

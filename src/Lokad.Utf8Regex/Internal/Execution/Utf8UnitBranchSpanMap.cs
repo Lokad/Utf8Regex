@@ -6,46 +6,49 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // R05: unit-space branch span maps for nested divergent simple patterns whose atoms
 // are not literal-only (dots, sets, and shorthand classes consume exactly one UTF-16
 // unit, halves included, exactly like BCL). Each pattern records whole-match wrapper
-// groups plus every enclosed capture as fixed unit offsets, so detailed shaping
-// projects group spans onto the owned unit-space discovery hit without executing the
-// fallback engine. Only uniform shapes are admitted: every expanded branch must have
-// the same token length and identical group spans, so no winning-branch identification
-// is needed (first-ordinal-match-wins still selects the hit itself). The expanded
-// branch multiset is checked against the lowered plan branches, so any construct the
-// walker does not model (finite repeats, anchors, lookarounds, backreferences, empty
-// nodes, and anything else) fails closed to the existing BCL routes. Non-uniform
-// spans, branch-count or length disagreement, and more than 64 expansions decline;
-// a null map means the shape keeps the existing BCL routes. Construction is eager and
-// pure over the owned tree plus the lowered plan: no fallback engine is built here.
+// groups plus every enclosed capture per expanded branch as fixed unit offsets, so
+// detailed shaping projects group spans onto the owned unit-space discovery hit
+// without executing the fallback engine. Shaping re-verifies every lowered branch at
+// the hit start in plan order and requires exactly one full-span verifier, so branch
+// order never silently misattributes spans: the BCL winner necessarily verifies, and
+// ambiguity or disagreement declines to the existing BCL routes. The expansion order
+// replicates the lowerer (source-order alternation, left-major concatenation) and
+// per-index widths pin it to the lowered branches, so any construct the walker does
+// not model (finite repeats, anchors, lookarounds, backreferences, empty nodes, and
+// anything else) fails closed. Branch-count or length disagreement and more than 64
+// expansions decline; a null map means the shape keeps the existing BCL routes.
+// Construction is eager and pure over the owned tree plus the lowered plan: no
+// fallback engine is built here.
 internal sealed class Utf8UnitBranchSpanMap
 {
     private Utf8UnitBranchSpanMap(
         int[] wholeMatchGroups,
-        int[] groups,
-        int[] starts,
-        int[] lengths,
-        int width)
+        int[] branchWidths,
+        int[][] branchGroups,
+        int[][] branchStarts,
+        int[][] branchLengths)
     {
         WholeMatchGroups = wholeMatchGroups;
-        Groups = groups;
-        Starts = starts;
-        Lengths = lengths;
-        Width = width;
+        BranchWidths = branchWidths;
+        BranchGroups = branchGroups;
+        BranchStarts = branchStarts;
+        BranchLengths = branchLengths;
     }
 
     // Groups spanning the entire match (captures wrapping the whole pattern).
     public int[] WholeMatchGroups { get; }
 
-    // Static branch-invariant spans: Groups[i] spans (Starts[i], Lengths[i])
-    // in UTF-16 units relative to the hit start, valid for every branch.
-    public int[] Groups { get; }
+    // Per-branch parallel arrays: BranchGroups[i][j] spans
+    // (BranchStarts[i][j], BranchLengths[i][j]) in UTF-16 units relative to the
+    // hit start, with total width BranchWidths[i]. Branch order replicates the
+    // lowered plan branch order, pinned per index at construction.
+    public int[] BranchWidths { get; }
 
-    public int[] Starts { get; }
+    public int[][] BranchGroups { get; }
 
-    public int[] Lengths { get; }
+    public int[][] BranchStarts { get; }
 
-    // Total hit width in UTF-16 units shared by every branch.
-    public int Width { get; }
+    public int[][] BranchLengths { get; }
 
     public static Utf8UnitBranchSpanMap? TryCreate(Utf8ExecutionTree? tree, AsciiSimplePatternPlan plan)
     {
@@ -81,15 +84,9 @@ internal sealed class Utf8UnitBranchSpanMap
             return null;
         }
 
-        var width = expansions[0].Width;
-        if (width <= 0)
-        {
-            return null;
-        }
-
         foreach (var expansion in expansions)
         {
-            if (expansion.Width != width || !SpansEqual(expansions[0], expansion))
+            if (expansion.Width <= 0)
             {
                 return null;
             }
@@ -97,20 +94,28 @@ internal sealed class Utf8UnitBranchSpanMap
 
         // Shapes without a lowered simple plan (exact literals, slice shapes, and
         // everything else) carry a default plan with no branches and decline here.
+        // Per-index widths pin the replicated expansion order to the lowered branch
+        // order, so winning-branch selection below cannot silently misattribute spans.
         if (plan.Branches is null || plan.Branches.Length != expansions.Count)
         {
             return null;
         }
 
-        foreach (var branch in plan.Branches)
+        for (var branch = 0; branch < expansions.Count; branch++)
         {
-            if (branch.Length != width)
+            if (plan.Branches[branch].Length != expansions[branch].Width)
             {
                 return null;
             }
         }
 
-        if (wholeMatchGroups.Count == 0 && expansions[0].Groups.Count == 0)
+        var anyGroups = wholeMatchGroups.Count > 0;
+        foreach (var expansion in expansions)
+        {
+            anyGroups |= expansion.Groups.Count > 0;
+        }
+
+        if (!anyGroups)
         {
             return null;
         }
@@ -135,40 +140,32 @@ internal sealed class Utf8UnitBranchSpanMap
             translatedWhole[i] = wholeSlot;
         }
 
-        var groups = expansions[0].Groups.ToArray();
-        var starts = expansions[0].Starts.ToArray();
-        var lengths = expansions[0].Lengths.ToArray();
-        for (var i = 0; i < groups.Length; i++)
+        var branchWidths = new int[expansions.Count];
+        var branchGroups = new int[expansions.Count][];
+        var branchStarts = new int[expansions.Count][];
+        var branchLengths = new int[expansions.Count][];
+        for (var branch = 0; branch < expansions.Count; branch++)
         {
-            if (!slots.TryGetValue(groups[i], out var slot))
+            branchWidths[branch] = expansions[branch].Width;
+            var groups = expansions[branch].Groups.ToArray();
+            var starts = expansions[branch].Starts.ToArray();
+            var lengths = expansions[branch].Lengths.ToArray();
+            for (var i = 0; i < groups.Length; i++)
             {
-                return null;
+                if (!slots.TryGetValue(groups[i], out var slot))
+                {
+                    return null;
+                }
+
+                groups[i] = slot;
             }
 
-            groups[i] = slot;
+            branchGroups[branch] = groups;
+            branchStarts[branch] = starts;
+            branchLengths[branch] = lengths;
         }
 
-        return new Utf8UnitBranchSpanMap(translatedWhole, groups, starts, lengths, width);
-    }
-
-    private static bool SpansEqual(UnitExpansion first, UnitExpansion second)
-    {
-        if (first.Groups.Count != second.Groups.Count)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < first.Groups.Count; i++)
-        {
-            if (first.Groups[i] != second.Groups[i] ||
-                first.Starts[i] != second.Starts[i] ||
-                first.Lengths[i] != second.Lengths[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return new Utf8UnitBranchSpanMap(translatedWhole, branchWidths, branchGroups, branchStarts, branchLengths);
     }
 
     private sealed class UnitExpansion
