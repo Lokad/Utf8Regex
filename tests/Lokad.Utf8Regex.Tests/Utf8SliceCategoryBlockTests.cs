@@ -357,7 +357,6 @@ public sealed class Utf8SliceCategoryBlockTests
     {
         yield return new object?[] { "\\p{IsBasicLatin}+", "a\U0001F600" };
         yield return new object?[] { "[\\p{IsBasicLatin}a]+", "a\U0001F600" };
-        yield return new object?[] { "\\P{IsBasicLatin}+", "\U0001F600" };
     }
 
     [Theory]

@@ -1553,10 +1553,15 @@ internal static class Utf8SliceRunner
                         // ranges through invariant case equivalents (BCL
                         // AddCaseEquivalenceRange, candidate-side lookup, so
                         // the negated test keeps the BCL overlap instead of
-                        // a plain complement). Astral leads fail closed:
-                        // routing declines astral inputs for category
-                        // programs, so any astral attempt is unreachable and
-                        // failing keeps byte-stepping drivers aligned.
+                        // a plain complement). Astral leads fail closed for
+                        // positive tables and consume whole for negated ones
+                        // (BCL halves miss positives the runner misses while
+                        // matching negations like the runner consumes, so
+                        // the whole-loop indifference fence admits exactly
+                        // the tables whose positive side misses halves).
+                        // Anything else keeps routing-declined astral inputs
+                        // away, so failing there keeps byte-stepping drivers
+                        // aligned.
                         // Continuation bytes fail like every consuming arm.
                         // Inputs are validated before execution, hence lead
                         // widths stay in bounds without revalidation here.
@@ -1657,12 +1662,12 @@ internal static class Utf8SliceRunner
                             }
                             else
                             {
-                                inClass = false;
+                                inClass = categoryNegated;
                             }
 
                             if (inClass)
                             {
-                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : 3;
+                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : candidate < 0xF0 ? 3 : 4;
                                 programIndex++;
                             }
                             else

@@ -5095,6 +5095,15 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)\\p{Lu}+", "a\u212Ab\U0001F600", "Q"),
             ("\\p{L}+", "abc", "Q"),
             ("\\p{IsGreek}+", "a\u03B1\U00010400b", "Q"),
+            ("\\P{L}+", "a\U0001F600b", "Q"),
+            ("\\P{Lu}+", "a\U00010400b", "Q"),
+            ("\\P{L}+", "\U00010400", "Q"),
+            ("a\\P{L}+b", "xa\U0001F600b", "Q"),
+            ("a\\P{L}+?b", "xa\U0001F600b", "Q"),
+            ("(\\P{L}+)", "a\U0001F600b", "<$1>"),
+            ("(?i)\\P{Lu}+", "aA\U0001F600B", "Q"),
+            ("(?i)\\P{IsBasicLatin}+", "\U0001F600", "Q"),
+            ("\\P{Nd}+", "x\U0001F600yz", "Q"),
             ("\\p{L}+?b", "\U0001F600aab", "Q"),
         ];
         foreach (var row in rows)
@@ -5108,9 +5117,11 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(PositiveCategoryLoopOwnedCases))]
     public void PositiveCategoryLoopOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: whole-pattern greedy unbounded loops over positive categories run
+        // R05: whole-pattern greedy or lazy unbounded loops over positive
+        // categories (and negations whose positive side misses halves) run
         // scalarwise exactly like BCL units on astral input (the runner fails
         // astral leads closed while BCL halves miss every positive table, and
+        // consumes whole scalars where BCL halves match the negation, while
         // BMP matching already agrees exactly), so discovery, shaping, splits,
         // and all three replacement cores never construct the fallback engine
         // here. Byte-level lanes compare encoded bytes because lone halves
@@ -5215,11 +5226,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     {
         (string pattern, RegexOptions options, string text)[] rows =
         [
-            ("\\P{L}+", RegexOptions.CultureInvariant, "a\U0001F600b"),
-            ("\\P{Lu}+", RegexOptions.CultureInvariant, "a\U00010400b"),
             ("(\\p{L})+", RegexOptions.CultureInvariant, "\U0001F600"),
             ("\\p{L}+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600b"),
             ("\\p{L}+?", RegexOptions.CultureInvariant, "\U0001F600ab"),
+            ("\\P{Cs}+", RegexOptions.CultureInvariant, "a\U0001F600b"),
         ];
         foreach (var row in rows)
         {
@@ -5232,10 +5242,12 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(PositiveCategoryLoopDeclineCases))]
     public void PositiveCategoryLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: negated categories (the runner fails astral leads
-        // closed while BCL halves match negations), mixed category sets, inner
-        // captures, right-to-left, and tailless lazy category loops keep BCL routing on
-        // astral input; parity holds and construction is pinned per lane.
+        // Declared R05 debt: surrogate-covering negations (BCL halves miss
+        // them while the runner would consume whole scalars), mixed category
+        // sets, inner captures, right-to-left, and tailless lazy category
+        // loops keep BCL routing on astral input; parity holds and
+        // construction is pinned per lane. Half-missing negations serve
+        // owned through the loop battery below.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);

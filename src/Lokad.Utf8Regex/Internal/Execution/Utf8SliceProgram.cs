@@ -871,12 +871,16 @@ internal static class Utf8SliceLowerer
                 return true;
             // Positive categories miss astral scalars exactly like BCL halves
             // miss every positive table (the runner fails astral leads closed
-            // while BMP matching already agrees); negated categories stay out
-            // because BCL halves match negations the runner misses, and so do
-            // surrogate-covering positives (Cs, high/low surrogate blocks):
-            // BCL halves are members there while the runner still misses.
+            // while BMP matching already agrees). Negated categories consume
+            // whole astral scalars in the runner exactly like negated sets,
+            // so the first-stop argument transfers when the positive table
+            // misses halves (BCL halves then match the negation). Surrogate-
+            // covering positives (Cs, high/low surrogate blocks) stay out
+            // because BCL halves are members there while the runner still
+            // misses, and so do their negations (BCL halves miss those
+            // negations while the runner would consume whole scalars).
             case Utf8SliceNode.CategoryNode category:
-                return !category.Negated && PositiveTableMissesHalves(category.Mask, category.Ranges);
+                return PositiveTableMissesHalves(category.Mask, category.Ranges);
             default:
                 return false;
         }
