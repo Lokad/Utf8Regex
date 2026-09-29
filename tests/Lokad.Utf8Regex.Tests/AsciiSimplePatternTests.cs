@@ -3550,6 +3550,8 @@ public sealed class AsciiSimplePatternTests
             ("(?:.|a)+", "\U0001F600b", "Q"),
             ("(?:ab|[^x])+", "xab\U0001F600", "Q"),
             ("(([^x]+))", "\U0001F600yy", "<$1>"),
+            ("((a)+)", "xaa\U0001F600aa", "Q"),
+            ("((a)+?)", "xaa\U0001F600aa", "Q"),
             ("(?<w>[^x]+)", "\U0001F600yy", "<${w}>"),
             ("(.+)", "abc", "Q"),
             ("([^x]+)", "abc", "Q"),
@@ -3721,6 +3723,7 @@ public sealed class AsciiSimplePatternTests
             ("(?i)(?:a|[^x])+", "xA\U0001F600y", "Q"),
             ("(?i)(?:.|a)+", "\U0001F600B", "Q"),
             ("(?i)(?:ab|[^x])+", "xAB\U0001F600", "Q"),
+            ("(?i)[^x]+?B", "x\U0001F600B", "Q"),
             ("(?i)([\\Da]+)", "A\U0001F600", "Q"),
             ("(?i)([^\\da]+)", "A\U0001F600B", "Q"),
             ("(?i)(\\D+)", "A\U000104A0B", "Q"),
@@ -3901,6 +3904,8 @@ public sealed class AsciiSimplePatternTests
             ("(a[^x]+b)", "xa\U0001F600b", "<$1>"),
             ("(?<w>a[^x]+b)", "xa\U0001F600b", "<${w}>"),
             ("(?:ab|[^x])+c", "xab\U0001F600c", "Q"),
+            ("[^x]+?b", "x\U0001F600b", "Q"),
+            ("a\\D+?b", "xa\U0001F600b", "Q"),
             ("(?i)A[^x]+B", "xa\U0001F600b", "Q"),
             ("(?i)[^x]+B", "x\U0001F600B", "Q"),
             ("(?i)A.+B", "xA\U0001F600b", "Q"),
@@ -4069,6 +4074,8 @@ public sealed class AsciiSimplePatternTests
             ("^a[^x]+b$", "a\U0001F600b", "Q"),
             ("^a[^x]+?b$", "xa\U0001F600b", "Q"),
             ("^a[^x]+?b$", "a\U0001F600b", "Q"),
+            ("^.+?b$", "\U0001F600b", "Q"),
+            ("^a.+?b$", "a\U0001F600b", "Q"),
             ("^[^x]+$", "\U0001F600", "Q"),
             ("^.+$", "\U0001F600yy", "Q"),
             ("(?m)^a[^x]+b", "q\na\U0001F600b", "Q"),
@@ -5077,6 +5084,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)\\p{Lu}+", "a\u212Ab\U0001F600", "Q"),
             ("\\p{L}+", "abc", "Q"),
             ("\\p{IsGreek}+", "a\u03B1\U00010400b", "Q"),
+            ("\\p{L}+?b", "\U0001F600aab", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -5361,6 +5369,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)[\\p{L}_]+", "A_B\U0001F600c", "Q"),
             ("[\\p{L}_]+", "a\U0001F600b", "Q"),
             ("[\\p{L}_]+", "abc", "Q"),
+            ("[\\p{L}_]+?b", "\U0001F600aab", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -5523,6 +5532,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)(?>a[^x]+b)", "xA\U0001F600b", "Q"),
             ("(?>a+)", "aA", "Q"),
             ("(?>a+)", "aA\U0001F600", "Q"),
+            ("(?>.+?b)", "x\U0001F600b", "Q"),
             ("(?>a.+?b)bc", "xa\U0001F600bbc", "Q"),
             ("(?>a.+?b)c", "xa\U0001F600abc", "Q"),
         ];
@@ -5685,6 +5695,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a[^x]+?b", "xa\U0001F600b", "Q"),
             ("(?i)a.+?b", "xa\U0001F600b", "Q"),
             ("(a.+?b)", "xa\U0001F600b", "Q"),
+            ("(.+?b)", "x\U0001F600b", "Q"),
             ("a[^\n]+b", "xaab", "Q"),
             ("a[^\n]+b", "xa\nb", "Q"),
             ("a.+b", "xa\U0001F600b", "Q"),
