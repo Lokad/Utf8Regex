@@ -1,5 +1,7 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -7,11 +9,13 @@ internal static class Utf8AstralUnitVerifier
 {
     // R05: unit-aware discovery for fixed-token non-byte-safe simple patterns on astral
     // input. Decoded UTF-16 units are the BCL match domain: dots and negations consume
-    // halves exactly like BCL, ASCII literals compare unit values, and owned tables answer
-    // categories over unit values (halves miss every positive table). Anchored plans,
-    // IgnoreCase plans, empty branches, and runs without full branch coverage keep BCL
-    // routing; astral-free inputs stay on the scalar verifier. Hooks sit past validation,
-    // so inputs are well-formed; anything unservable fails closed to BCL.
+    // halves exactly like BCL, ASCII literals compare unit values (folded under
+    // IgnoreCase exactly like the scalar walk, with halves and fold-less scalars
+    // missing), and owned tables answer categories over unit values (halves miss
+    // every positive table). Anchored plans, empty branches, and runs without full
+    // branch coverage keep BCL routing; astral-free inputs stay on the scalar
+    // verifier. Hooks sit past validation, so inputs are well-formed; anything
+    // unservable fails closed to BCL.
     public static bool TryIsMatch(
         ReadOnlySpan<byte> input,
         NativeExecutionKind kind,
@@ -70,7 +74,6 @@ internal static class Utf8AstralUnitVerifier
             plan.IsUtf8ByteSafe ||
             plan.IsStartAnchored ||
             plan.IsEndAnchored ||
-            plan.IgnoreCase ||
             plan.Branches.Length == 0)
         {
             return false;
@@ -190,12 +193,13 @@ internal static class Utf8AstralUnitVerifier
         string decoded,
         AsciiSimplePatternToken[] branch,
         int startUnit,
+        bool ignoreCase,
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
         budget.Step();
-        if (!TryMatchTokensUnits(decoded, branch, startUnit, out var endUnit))
+        if (!TryMatchTokensUnits(decoded, branch, startUnit, ignoreCase, out var endUnit))
         {
             return false;
         }
@@ -213,9 +217,10 @@ internal static class Utf8AstralUnitVerifier
     {
         matchedLength = 0;
         budget.Step();
+        var ignoreCase = plan.IgnoreCase;
         foreach (var branch in plan.Branches)
         {
-            if (TryMatchTokensUnits(decoded, branch, startUnit, out var endUnit))
+            if (TryMatchTokensUnits(decoded, branch, startUnit, ignoreCase, out var endUnit))
             {
                 matchedLength = endUnit - startUnit;
                 return true;
@@ -226,10 +231,20 @@ internal static class Utf8AstralUnitVerifier
         return false;
     }
 
+    // Raw membership in the positive mask definition, ignoring Negated (mirrors
+    // the scalar verifier helper for the fold path).
+    private static bool PositiveMaskContains(AsciiCharClass charClass, byte value)
+    {
+        return value < 64
+            ? (charClass.PositiveLowMask & (1UL << value)) != 0
+            : (charClass.PositiveHighMask & (1UL << (value - 64))) != 0;
+    }
+
     private static bool TryMatchTokensUnits(
         string decoded,
         AsciiSimplePatternToken[] branch,
         int startUnit,
+        bool ignoreCase,
         out int endUnit)
     {
         var cursor = startUnit;
@@ -246,8 +261,31 @@ internal static class Utf8AstralUnitVerifier
             var unit = decoded[cursor];
             if (token.Kind == AsciiSimplePatternTokenKind.Literal)
             {
-                // Lowered literals are ASCII, so halves and non-ASCII units miss here.
-                if (unit != token.Literal)
+                // Lowered literals are already folded, so the input unit folds too
+                // under IgnoreCase; halves and fold-less scalars behave exactly
+                // like BCL (Kelvin meets k through its pair).
+                if (unit < 0x80)
+                {
+                    var candidate = ignoreCase ? AsciiSearch.FoldCase((byte)unit) : (byte)unit;
+                    if (candidate != token.Literal)
+                    {
+                        ok = false;
+                        break;
+                    }
+
+                    cursor += 1;
+                    continue;
+                }
+
+                if (!ignoreCase)
+                {
+                    ok = false;
+                    break;
+                }
+
+                if (!Utf8OwnedCaseFold.TryGetFold(unit, out var foldLower, out var foldUpper) ||
+                    !(((uint)foldLower < 0x80 && (byte)foldLower == token.Literal) ||
+                    ((uint)foldUpper < 0x80 && (byte)foldUpper == token.Literal)))
                 {
                     ok = false;
                     break;
@@ -311,6 +349,20 @@ internal static class Utf8AstralUnitVerifier
                 wordKind == AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore)
             {
                 matches = Utf8WordRanges.IsWordChar(scalar);
+            }
+            else if (ignoreCase)
+            {
+                // Mask-based classes only (the shorthand and dot arms above are
+                // fold-neutral): a non-ASCII unit meets the folded ASCII mask
+                // through its invariant fold pair, mirroring the scalar walk.
+                var foldedHit = false;
+                if (Utf8OwnedCaseFold.TryGetFold(unit, out var classLower, out var classUpper))
+                {
+                    foldedHit = ((uint)classLower < 0x80 && PositiveMaskContains(token.CharClass, (byte)classLower)) ||
+                        ((uint)classUpper < 0x80 && PositiveMaskContains(token.CharClass, (byte)classUpper));
+                }
+
+                matches = token.CharClass.Negated ? !foldedHit : foldedHit;
             }
             else
             {

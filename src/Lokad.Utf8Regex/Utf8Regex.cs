@@ -2182,7 +2182,7 @@ public sealed partial class Utf8Regex
                 continue;
             }
 
-            if (!Utf8AstralUnitVerifier.TryVerifyBranchUnits(decoded, plan.Branches[branch], hit.IndexInUtf16, budget, out var matchedLength) ||
+            if (!Utf8AstralUnitVerifier.TryVerifyBranchUnits(decoded, plan.Branches[branch], hit.IndexInUtf16, plan.IgnoreCase, budget, out var matchedLength) ||
                 matchedLength != hit.LengthInUtf16)
             {
                 continue;
