@@ -310,7 +310,7 @@ public sealed partial class Utf8Regex
             if (Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
             {
                 return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, analysis.GetDecodedString(), budget))
+                    new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, analysis.GetDecodedString(), budget, 0))
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
 
@@ -381,7 +381,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueSplitEnumerator(
                 input,
                 unitSplitDecoded,
-                new Utf8OperationMatchCursor(input, _preparedRegex, unitSplitAnalysis.BoundaryMap, unitSplitDecoded, budget),
+                new Utf8OperationMatchCursor(input, _preparedRegex, unitSplitAnalysis.BoundaryMap, unitSplitDecoded, budget, 0),
                 unitSplitAnalysis.BoundaryMap,
                 count,
                 totalUtf16Length);

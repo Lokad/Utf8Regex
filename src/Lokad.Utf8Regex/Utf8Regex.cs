@@ -2648,6 +2648,19 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
+        // R05: unit-served shapes enumerate unit-aware from the start unit on astral
+        // input, bypassing the byte-offset routing whose base-offset projection
+        // throws on half-involving hits; anything else keeps existing routing below.
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
+            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
+        {
+            var unitEnumBudget = CreateExecutionBudget();
+            var unitEnumDecoded = analysis.GetDecodedString();
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, unitEnumDecoded, unitEnumBudget, startInUtf16.Value))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
         if (!UsesRightToLeft())
         {
             var startBoundary = analysis.BoundaryMap.Resolve(startInUtf16.Value);

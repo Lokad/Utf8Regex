@@ -3477,11 +3477,24 @@ public sealed class AsciiSimplePatternTests
         Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetEnumDeclineCases()
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetEnumOwnedCases()
     {
         (string pattern, string text, int offset)[] rows =
         [
+            ("((a|.)c)", "a\U0001F600c", 0),
+            ("((a|.)c)", "a\U0001F600c", 1),
             ("((a|.)c)", "a\U0001F600c", 2),
+            ("((a|.)c)", "a\U0001F600c", 3),
+            ("((a|.)c)", "a\U0001F600c", 4),
+            ("(a|(.)c)", "x\U0001F600c", 0),
+            ("(a|(.)c)", "x\U0001F600c", 2),
+            ("(a.c)", "xa\U0001F600cy", 0),
+            ("(a.c)", "xa\U0001F600cy", 1),
+            ("(a.c)", "xa\U0001F600cy", 2),
+            ("[^x]", "a\U0001F600b", 1),
+            ("[^x]", "a\U0001F600b", 2),
+            ("((a|.)c)", "xabcxabc", 1),
         ];
         foreach (var row in rows)
         {
@@ -3491,13 +3504,52 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
+    [MemberData(nameof(AstralUnitFromOffsetEnumOwnedCases))]
+    public void AstralUnitFromOffsetEnumOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    {
+        // R05: unit-served shapes enumerate unit-aware from the start unit on
+        // astral input, bypassing the byte-offset routing whose base-offset
+        // projection throws on half-involving hits; full start-at sequences match
+        // BCL with zero fallback construction on both lanes.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text, offset))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetEnumDeclineCases()
+    {
+        (string pattern, RegexOptions options, string text, int offset)[] rows =
+        [
+            ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600c", 2),
+            ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, "a\U0001F600c", 2),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, row.options, row.text, row.offset };
+            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.offset };
+        }
+    }
+
+    [Theory]
     [MemberData(nameof(AstralUnitFromOffsetEnumDeclineCases))]
     public void AstralUnitFromOffsetEnumDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, int offset)
     {
-        // Declared R05 debt: nonzero-start enumeration keeps the shared cursor
-        // routing, which stays BCL-backed for non-ASCII inputs (offset zero already
-        // rides the owned full enumeration); parity holds and construction is pinned
-        // per lane.
+        // Declared R05 debt: right-to-left and IgnoreCase unit shapes keep their
+        // existing BCL routes from nonzero starts; parity holds and construction
+        // is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);

@@ -501,17 +501,21 @@ internal ref struct Utf8OperationMatchCursor
     }
 
     // R05: astral unit enumeration walks decoded units (halves included) with unit
-    // positions; construction sites qualify up front via the unit verifier.
+    // positions from the start unit; construction sites qualify up front via the
+    // unit verifier. A nonzero floor keeps origin semantics for FromOffset calls:
+    // unit shapes carry no left context, so matches at or after the floor are
+    // identical to a scan from zero.
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         Utf8BoundaryMap boundaryMap,
         string decodedUnits,
-        Utf8ExecutionDeadline budget)
+        Utf8ExecutionDeadline budget,
+        int startUnit)
         : this(input, regexPlan, boundaryMap, budget)
     {
         _decodedUnits = decodedUnits;
-        _unitPosition = 0;
+        _unitPosition = startUnit;
         _mode = EnumeratorMode.AsciiSimplePatternUnit;
     }
 
