@@ -29,7 +29,7 @@ public sealed partial class Utf8Regex
                 replacementText));
         }
 
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (OwnedMatchStartsAreScalarAligned(input) || !_sliceProgram.CanMatchEmpty))
         {
             return OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
         }
@@ -194,10 +194,12 @@ public sealed partial class Utf8Regex
 
         // R05: owned replacement advances scalar-wise, so astral inputs need shapes
         // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
-        // unit-servable literal templates replace unit-aware past this gate below.
-        // Everything else replaces through the BCL fallback exactly.
+        // unit-servable literal templates replace unit-aware past this gate below, as do
+        // slice-served shapes through the slice arm; everything else replaces through
+        // the BCL fallback exactly.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _))))
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _)) ||
+              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -281,9 +283,11 @@ public sealed partial class Utf8Regex
         }
 
         // R05: unit-servable literal templates replace unit-aware past scalar-start
-        // alignment (unit matches cover halves); everything else keeps BCL routing below.
+        // alignment (unit matches cover halves), as do slice-served shapes through the
+        // slice arm; everything else keeps BCL routing below.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _))))
+            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _)) ||
+              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),

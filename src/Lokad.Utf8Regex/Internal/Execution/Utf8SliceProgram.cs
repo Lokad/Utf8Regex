@@ -187,7 +187,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -210,6 +210,7 @@ internal sealed class Utf8SliceProgram
         RightToLeft = rightToLeft;
         SawLookaround = sawLookaround;
         SawCapturingLookbehind = sawCapturingLookbehind;
+        CanMatchEmpty = canMatchEmpty;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -236,6 +237,7 @@ internal sealed class Utf8SliceProgram
     internal bool SawLookaround { get; }
     internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
+    internal bool CanMatchEmpty { get; }
 
     // Legacy fallback taxonomy, probed: backreference outranks conditional,
     // conditional outranks lookaround, lookaround outranks atomic, atomic outranks
@@ -367,6 +369,68 @@ internal static class Utf8SliceLowerer
         {
             lowerer.GroupCount = groupNames.Length - 1;
         }
+        static bool NodeCanMatchEmpty(Utf8SliceNode node)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.EmptyNode:
+                case Utf8SliceNode.AnchorNode:
+                case Utf8SliceNode.BoundaryNode:
+                case Utf8SliceNode.LookaheadNode:
+                case Utf8SliceNode.LookbehindNode:
+                case Utf8SliceNode.BackrefNode:
+                case Utf8SliceNode.BalanceNode:
+                case Utf8SliceNode.ConditionalNode:
+                    return true;
+                case Utf8SliceNode.LiteralNode:
+                case Utf8SliceNode.SetNode:
+                case Utf8SliceNode.DotNode:
+                case Utf8SliceNode.ShorthandNode:
+                case Utf8SliceNode.CategoryNode:
+                case Utf8SliceNode.CategorySetNode:
+                    return false;
+                case Utf8SliceNode.CaptureNode capture:
+                    return NodeCanMatchEmpty(capture.Body);
+                case Utf8SliceNode.AtomicNode atomic:
+                    return NodeCanMatchEmpty(atomic.Body);
+                case Utf8SliceNode.ConcatNode concat:
+                    foreach (var child in concat.Children)
+                    {
+                        if (!NodeCanMatchEmpty(child))
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                case Utf8SliceNode.AlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                    {
+                        var branchEmpty = true;
+                        foreach (var child in branch)
+                        {
+                            if (!NodeCanMatchEmpty(child))
+                            {
+                                branchEmpty = false;
+                                break;
+                            }
+                        }
+                        if (branchEmpty)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                case Utf8SliceNode.RepeatNode repeat:
+                    if (repeat.Minimum == 0)
+                    {
+                        return true;
+                    }
+                    return NodeCanMatchEmpty(repeat.Body);
+                default:
+                    return true;
+            }
+        }
+        var canMatchEmpty = NodeCanMatchEmpty(root);
         if (!lowerer.EmitNode(root))
         {
             return null;
@@ -515,7 +579,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty);
     }
 
     private sealed class Lowering

@@ -3142,8 +3142,6 @@ public sealed class AsciiSimplePatternTests
         (string pattern, string text)[] rows =
         [
             ("((a|.)c)", "a\U0001F600c"),
-            (@"(\d+)-(\d+)", "12-34\U0001F600"),
-            (@"(\d+)", "a12\U0001F600"),
             (@"([^x]+)", "\U0001F600"),
         ];
         foreach (var row in rows)
@@ -3157,9 +3155,10 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AstralUnitGroupTemplateDeclineCases))]
     public void AstralUnitGroupTemplateDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: nested-divergent and multi-group captures need unit capture
-        // tracking on astral input, and unbounded loops stay FallbackRegex; parity holds
-        // and construction is pinned per lane.
+        // Declared R05 debt: nested-divergent captures need unit capture tracking on
+        // astral input, and astral-divergent (dot/negated) shapes keep BCL routing;
+        // non-empty encoding-indifferent slice shapes (including unbounded repeats) serve
+        // owned through the slice arm; parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options);

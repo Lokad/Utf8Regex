@@ -77,4 +77,77 @@ public sealed class Utf8SliceReplaceTests
         Assert.Throws<OperationCanceledException>(
             () => regex.Replace(Encoding.UTF8.GetBytes("xxaaabbyy"), "Z", canceled.Token));
     }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralSliceReplaceOwnedCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("(a+)(b+)", "xxaaa\U0001F600bbyy", "[$1|$2]"),
+            ("(a+)(b+)", "xxaaa\U0001F600bbyy", "Z"),
+            ("(a+)(b+)", "xxaaa\U0001F600bbyy", "$&"),
+            ("(a+)|(b+)", "xxaaa\U0001F600yy", "<$1|$2>"),
+            ("(ab|cd)+", "xxab\U0001F600cdyy", "[$1]"),
+            ("a*?b", "xxaaa\U0001F600byy", "Z"),
+            ("(\\d+)-(\\d+)", "12-34\U0001F600", "[$1|$2]"),
+            ("(\\d+)", "a12\U0001F600", "<$1>"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralSliceReplaceOwnedCases))]
+    public void AstralSliceReplaceOwnsInput(string pattern, RegexOptions options, string text, string template)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout).Replace(text, template);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        Assert.True(bytesRegex.Inspection.DebugUsesOwnedSliceProgram);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(oracle, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(oracle, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var destinationRegex = new Utf8Regex(pattern, options);
+        Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
+        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(oracle, Encoding.UTF8.GetString(destination[..bytesWritten]));
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralSliceReplaceDeclineCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("(a.*b)", "xxaa\U0001F600bbyy", "<$1>"),
+            ("(a.c)+", "xxabc\U0001F600ayc", "[$1]"),
+            (".*", "a\U0001F600c", "<$&>"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralSliceReplaceDeclineCases))]
+    public void AstralSliceReplaceDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout).Replace(text, template);
+        var stringRegex = new Utf8Regex(pattern, options);
+        Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram);
+        Assert.Equal(oracle, stringRegex.ReplaceToString(input, template));
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
