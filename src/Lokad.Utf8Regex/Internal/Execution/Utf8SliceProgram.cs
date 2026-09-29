@@ -567,6 +567,11 @@ internal static class Utf8SliceLowerer
             }
         }
 
+        // Whole-pattern greedy unbounded loops over unit-closed atoms run
+        // scalarwise exactly like BCL units on astral input, so they clear the
+        // astral-free requirement the instruction scan above may have set.
+        requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, matchCaseInsensitive, rightToLeft);
+
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
             lowerer.SetMasks.ToArray(),
@@ -580,6 +585,133 @@ internal static class Utf8SliceLowerer
             requiresUnicodeCategory,
             assertions,
             hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty);
+    }
+
+    // R05: recognizes whole-pattern greedy unbounded loops whose scalar stepping
+    // matches BCL unit stepping on every input, making astral-free routing
+    // unnecessary. BCL can only start such a loop at a scalar boundary (a
+    // mid-scalar start needs the lead half to fail every branch while the trail
+    // half matches one, impossible when every branch is a single atom: positive
+    // atoms fail both halves while dots and negations match both), and the loop
+    // only stops at scalar boundaries (dots never fail; negations fail ASCII-only;
+    // ASCII atoms fail identically in both). Multi-atom branches with a divergent
+    // atom desynchronize mid-iteration (probed: ([^x]b)+ splits astral scalars in
+    // BCL but not in the runner), so only single atoms or fully indifferent
+    // branches qualify; nested captures would record different last-iteration spans
+    // and stay out, as do lazy loops, empty-capable bounds, right-to-left, and
+    // folded shapes. Anything unmodeled fails closed to existing routing.
+    private static bool IsAstralIndifferentWholeLoop(Utf8SliceNode root, bool matchCaseInsensitive, bool rightToLeft)
+    {
+        if (rightToLeft || matchCaseInsensitive)
+        {
+            return false;
+        }
+
+        var node = root;
+        while (node is Utf8SliceNode.CaptureNode capture)
+        {
+            node = capture.Body;
+        }
+
+        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Lazy || repeat.Minimum < 1 || repeat.Maximum != int.MaxValue)
+        {
+            return false;
+        }
+
+        return WholeLoopBodyIsSafe(repeat.Body);
+    }
+
+    private static bool WholeLoopBodyIsSafe(Utf8SliceNode node)
+    {
+        if (node is Utf8SliceNode.AlternationNode alternation)
+        {
+            if (alternation.Branches.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var branch in alternation.Branches)
+            {
+                if (!WholeLoopBranchIsSafe(branch))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return WholeLoopBranchIsSafe([node]);
+    }
+
+    private static bool WholeLoopBranchIsSafe(Utf8SliceNode[] branch)
+    {
+        if (branch.Length == 0)
+        {
+            return false;
+        }
+
+        if (branch.Length == 1)
+        {
+            return WholeLoopAtomIsSafe(branch[0]);
+        }
+
+        foreach (var atom in branch)
+        {
+            if (!WholeLoopAtomIsIndifferent(atom))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool WholeLoopAtomIsSafe(Utf8SliceNode node)
+    {
+        switch (node)
+        {
+            case Utf8SliceNode.LiteralNode:
+            case Utf8SliceNode.DotNode:
+                return true;
+            case Utf8SliceNode.SetNode set:
+                if (set.Negated)
+                {
+                    return true;
+                }
+
+                if (set.Members is null)
+                {
+                    return false;
+                }
+
+                foreach (var member in set.Members)
+                {
+                    if ((int)member % 2 == 0)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            case Utf8SliceNode.ShorthandNode shorthand:
+                return (int)shorthand.Shorthand % 2 == 1;
+            default:
+                return false;
+        }
+    }
+
+    private static bool WholeLoopAtomIsIndifferent(Utf8SliceNode node)
+    {
+        switch (node)
+        {
+            case Utf8SliceNode.LiteralNode:
+                return true;
+            case Utf8SliceNode.SetNode set:
+                return !set.Negated && (set.Members is null || set.Members.Length == 0);
+            default:
+                return false;
+        }
     }
 
     private sealed class Lowering

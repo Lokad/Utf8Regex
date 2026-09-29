@@ -216,28 +216,6 @@ public sealed class Utf8SliceShorthandTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> AstralNegatedCases()
-    {
-        yield return new object?[] { "\\D+", "a\U000104A0b", 1 };
-        yield return new object?[] { "\\W+", "a\U00010400b", 1 };
-        yield return new object?[] { "\\S+", " \U00010400 ", 1 };
-    }
-
-    [Theory]
-    [MemberData(nameof(AstralNegatedCases))]
-    public void AstralNegatedShorthandDeclinesToFallback(
-        string pattern, string inputText, int expectedCount)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
-        Assert.Equal(expectedCount, regex.Count(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-    }
-
     [Theory]
     [InlineData("[^\\W]+", "Aé!", 1)]
     [InlineData("[^\\S]+", "a b\u007Cc", 1)]

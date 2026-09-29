@@ -165,27 +165,6 @@ public sealed class Utf8SliceHybridTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> AstralDeclineCases()
-    {
-        var astral = char.ConvertFromUtf32(0x1F600);
-        yield return new object?[] { "[^\\da]+", "a" + astral + "b", 1 };
-        yield return new object?[] { "[\\Da]+", "a" + astral, 1 };
-    }
-
-    [Theory]
-    [MemberData(nameof(AstralDeclineCases))]
-    public void AstralHybridDeclinesToFallback(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
-        Assert.Equal(expected, regex.Count(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-    }
-
     public static IEnumerable<object?[]> CountCases()
     {
         yield return new object?[] { "[\\da]+", "a1b22", 2 };

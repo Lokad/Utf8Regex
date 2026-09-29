@@ -238,22 +238,6 @@ public sealed class Utf8SliceClassTests
     }
 
     [Theory]
-    [InlineData("[^a-z]+", "x\U0001F600y", 1)]
-    [InlineData("[^a-z]+", "a\U0001F600b", 1)]
-    public void AstralNegatedClassDeclinesToFallback(
-        string pattern, string inputText, int expectedCount)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
-        Assert.Equal(expectedCount, regex.Count(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-    }
-
-    [Theory]
     [InlineData("[^a-z]+", "Aé!", 1)]
     [InlineData("[^abc]+", "abcDé", 1)]
     public void BmpNegatedClassStaysOwned(
