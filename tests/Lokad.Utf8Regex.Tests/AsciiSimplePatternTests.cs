@@ -4080,6 +4080,10 @@ public sealed class AsciiSimplePatternTests
             ("^a[^x]+b$", "a\U0001F600b", "Q"),
             ("^a[^x]+?b$", "xa\U0001F600b", "Q"),
             ("^a[^x]+?b$", "a\U0001F600b", "Q"),
+            ("\\Ga[^x]+b", "xa\U0001F600b", "Q"),
+            ("\\Ga[^x]+b", "a\U0001F600b", "Q"),
+            ("\\Ga.+?b", "a\U0001F600b", "Q"),
+            ("\\G(?:ab)+", "ab\U0001F600ab", "Q"),
             ("^.+?b$", "\U0001F600b", "Q"),
             ("^a.+?b$", "a\U0001F600b", "Q"),
             ("^[^x]+$", "\U0001F600", "Q"),
@@ -4103,8 +4107,9 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AnchoredLoopOwnedCases))]
     public void AnchoredLoopOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: whole-pattern greedy unbounded loops with line/absolute
-        // anchors keep scalarwise stepping exactly like BCL units on astral
+        // R05: whole-pattern greedy or lazy unbounded loops with line, absolute,
+        // or contiguous anchors keep scalarwise stepping exactly like BCL units
+        // on astral
         // input (anchors only ever meet ASCII-determined positions in both
         // semantics while the loop keeps its scalar-boundary argument), so
         // discovery, shaping, splits, and all three replacement cores never
@@ -4211,7 +4216,6 @@ public sealed class AsciiSimplePatternTests
     {
         (string pattern, RegexOptions options, string text)[] rows =
         [
-            ("\\Ga[^x]+b", RegexOptions.CultureInvariant, "xa\U0001F600b"),
             ("^a[^x]*b$", RegexOptions.CultureInvariant, "a\U0001F600b"),
             ("^a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600b"),
         ];
@@ -4226,10 +4230,9 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AnchoredLoopDeclineCases))]
     public void AnchoredLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: word-boundary and contiguous anchors, empty-capable
-        // anchored loops, and right-to-left anchored loops keep
-        // BCL routing on astral input; parity holds and construction is
-        // pinned per lane.
+        // Declared R05 debt: word-boundary anchors, empty-capable anchored
+        // loops, and right-to-left anchored loops keep BCL routing on
+        // astral input; parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -4272,6 +4275,9 @@ public sealed class AsciiSimplePatternTests
             ("a.+b", "xa\U0001F600b", 2),
             ("a.+?b", "xa\U0001F600b", 0),
             ("a.+?b", "xa\U0001F600b", 2),
+            ("\\Ga[^x]+b", "xa\U0001F600b", 0),
+            ("\\Ga[^x]+b", "xa\U0001F600b", 1),
+            ("\\Ga[^x]+b", "a\U0001F600b", 0),
         ];
         foreach (var row in rows)
         {
@@ -4503,6 +4509,7 @@ public sealed class AsciiSimplePatternTests
             ("(?>[^x]+)", "a\U0001F600b"),
             ("a.+b", "xa\U0001F600b"),
             ("a.+?b", "xa\U0001F600b"),
+            ("\\Ga[^x]+b", "a\U0001F600b"),
         ];
         foreach (var row in rows)
         {

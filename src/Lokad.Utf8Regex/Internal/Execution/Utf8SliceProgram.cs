@@ -702,18 +702,20 @@ internal static class Utf8SliceLowerer
             // Head/tail runs around one loop: leading and trailing indifferent
             // atoms (ASCII literals or empty positive sets, folded or not)
             // only ever meet ASCII bytes in both semantics while halves miss
-            // them exactly like BCL, and line/absolute anchors only ever meet
-            // ASCII-determined positions (starts, ends, newline edges) in both
-            // semantics, so the loop keeps its scalar-boundary start/stop
-            // argument and the runs stay aligned throughout. Word-boundary and
-            // contiguous anchors stay out: halves are never word chars while
-            // astral scalars can be, and contiguous resumes from prior ends.
+            // them exactly like BCL, and line/absolute/contiguous anchors only
+            // ever meet ASCII-determined positions (starts, ends, newline edges,
+            // chained origins) in both semantics, so the loop keeps its
+            // scalar-boundary start/stop argument and the runs stay aligned
+            // throughout (origins are scan starts and prior match ends, hence
+            // boundaries for indifferent shapes on every lane including
+            // FromOffset). Word-boundary anchors stay out: halves are never
+            // word chars while astral scalars can be.
             // Anything but one checked loop left standing fails closed.
             var members = alternation.Branches[0];
             var head = 0;
             while (head < members.Length &&
                 (members[head] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[head]) ||
-                (members[head] is Utf8SliceNode.AnchorNode headAnchor && headAnchor.Anchor != Utf8SliceAnchorKind.Contiguous)))
+                members[head] is Utf8SliceNode.AnchorNode))
             {
                 head++;
             }
@@ -721,7 +723,7 @@ internal static class Utf8SliceLowerer
             var tail = members.Length - 1;
             while (tail >= head &&
                 (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail]) ||
-                (members[tail] is Utf8SliceNode.AnchorNode tailAnchor && tailAnchor.Anchor != Utf8SliceAnchorKind.Contiguous)))
+                members[tail] is Utf8SliceNode.AnchorNode))
             {
                 if (members[tail] is not Utf8SliceNode.EmptyNode)
                 {
