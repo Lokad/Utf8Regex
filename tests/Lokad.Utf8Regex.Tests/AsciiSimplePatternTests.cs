@@ -4216,6 +4216,10 @@ public sealed class AsciiSimplePatternTests
             ("((ab)+c)", "xababc\U0001F600", "<$1>"),
             ("x(ab|cd)+", "xxabcdab\U0001F600", "Q"),
             ("a(ab)+b", "xaabb\U0001F600", "Q"),
+            ("(?<=x)a+", "xaay\U0001F600", "Q"),
+            ("a+(?=y)", "xaay\U0001F600", "Q"),
+            ("(?<=x)[0-9]+", "x12y\U0001F600", "Q"),
+            ("(?<=x)a+b", "xaab\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -4230,7 +4234,8 @@ public sealed class AsciiSimplePatternTests
     {
         // R05: whole-pattern greedy unbounded loops with ASCII head/tail runs
         // keep scalarwise stepping exactly like BCL units on astral input
-        // (heads and tails only ever meet ASCII bytes in both semantics while
+        // (heads and tails, including lookbehind and lookahead heads and tails, only
+        // ever meet ASCII bytes in both semantics while
         // the loop keeps its scalar-boundary start/stop argument), so
         // discovery, shaping, splits, and all three replacement cores never
         // construct the fallback engine here. Byte-level lanes compare
@@ -4341,6 +4346,9 @@ public sealed class AsciiSimplePatternTests
             (".a[^x]+b", RegexOptions.CultureInvariant, "xca\U0001F600b"),
             ("(a[^x]+b|c)+", RegexOptions.CultureInvariant, "xa\U0001F600bc"),
             (".a[0-9]+b", RegexOptions.CultureInvariant, "xa12b\U0001F600"),
+            ("(?<=x)[^x]+", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("(?<=\U0001F600)a+", RegexOptions.CultureInvariant, "\U0001F600aay"),
+            ("a+(?=\U0001F600)", RegexOptions.CultureInvariant, "xaay\U0001F600"),
             ("\\D{2,}b", RegexOptions.CultureInvariant, "x\U0001F600b"),
         ];
         foreach (var row in rows)
@@ -4356,7 +4364,8 @@ public sealed class AsciiSimplePatternTests
     {
         // Declared R05 debt: divergent loop bodies with tails, empty-capable
         // and lazy tailed loops, positive-shorthand, negated-shorthand
-        // min-bound, and inner-capture tailed loops, anchored or directed
+        // min-bound, inner-capture, and lookaround-anchored tailed loops (astral-meeting
+        // bodies or bounds keep scalar stepping from following BCL), anchored or directed
         // (dot-headed, dot-tailed) runs, nested
         // tails inside alternation branches, and right-to-left tailed loops
         // keep BCL routing on astral input; parity holds and construction is
