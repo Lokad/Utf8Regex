@@ -4350,6 +4350,10 @@ public sealed class AsciiSimplePatternTests
             ("(?<=\U0001F600)a+", RegexOptions.CultureInvariant, "\U0001F600aay"),
             ("a+(?=\U0001F600)", RegexOptions.CultureInvariant, "xaay\U0001F600"),
             ("\\D{2,}b", RegexOptions.CultureInvariant, "x\U0001F600b"),
+            ("[^x]{2,}?b", RegexOptions.CultureInvariant, "x\U0001F600b"),
+            ("\\D{2,}?b", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            (".{2,}?b", RegexOptions.CultureInvariant, "x\U0001F600b"),
+            ("(?i)A[^x]{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b"),
         ];
         foreach (var row in rows)
         {
@@ -4363,7 +4367,8 @@ public sealed class AsciiSimplePatternTests
     public void TailedWholeLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
         // Declared R05 debt: divergent loop bodies with tails, empty-capable
-        // and lazy tailed loops, positive-shorthand, negated-shorthand
+        // and lazy tailed loops (including lazy ranges with no head to anchor verifier
+        // search), positive-shorthand, negated-shorthand
         // min-bound, inner-capture, and lookaround-anchored tailed loops (astral-meeting
         // bodies or bounds keep scalar stepping from following BCL), anchored or directed
         // (dot-headed, dot-tailed) runs, nested
@@ -6390,6 +6395,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a\\D{2,}?b", "xa\U0001F600b", "Q"),
             ("a.{2,5}?b", "xa\U0001F600b", "Q"),
             ("a[^x]{2,5}?b", "xa\U0001F600b", "Q"),
+            ("a\\D{2,5}?b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
