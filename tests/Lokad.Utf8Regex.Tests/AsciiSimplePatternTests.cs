@@ -4378,6 +4378,7 @@ public sealed class AsciiSimplePatternTests
             ("a\\D{2,}?b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
             ("a\\W{2,}?b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
             ("a[^x]{2,}?b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
+            ("a\\s{2,}b", RegexOptions.CultureInvariant, "xa\U0001F600b"),
             (".a[^x]+b", RegexOptions.CultureInvariant, "xca\U0001F600b"),
             ("(a[^x]+b|c)+", RegexOptions.CultureInvariant, "xa\U0001F600bc"),
             (".a[0-9]+b", RegexOptions.CultureInvariant, "xa12b\U0001F600"),
@@ -6671,6 +6672,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a\\P{Nd}{2,}?b", "xa\U0001F600b", "Q"),
             ("a\\P{Nd}{2,}b", "xa\U0001F600b", "Q"),
             ("a\\P{Lu}{2,}?b", "xa\U0001F600b", "Q"),
+            ("a[\\s\\S]{2,}b", "xa\U0001F600b", "Q"),
+            ("a[^\n]{2,}b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
