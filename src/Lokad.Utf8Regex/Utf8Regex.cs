@@ -1646,7 +1646,14 @@ public sealed partial class Utf8Regex
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
     public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input)
     {
-        return MatchDetailedCore(input, CancellationToken.None);
+        try
+        {
+            return MatchDetailedCore(input, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     private Utf8MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)

@@ -220,4 +220,33 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(expectedMiss, regex.IsMatch(input));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SliceCatastrophicTimeoutRemainingLanes(bool astralTail)
+    {
+        // R05: catastrophic slice backtracking maps the invocation deadline to
+        // the oracle timeout identity on the remaining lanes (light and detailed
+        // matches, splits, and FromOffset operations), on ASCII and astral-tailed
+        // inputs alike, without constructing fallback engines.
+        var timeout = TimeSpan.FromMilliseconds(500);
+        var text = new string('a', 20000) + (astralTail ? "\U0001F600!" : "!");
+        var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
+        var detailed = Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailed(input));
+        Assert.Equal(text, detailed.Input);
+        var light = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
+        Assert.Equal(text, light.Input);
+        Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            foreach (var item in regex.EnumerateSplits(input, int.MaxValue))
+            {
+            }
+        });
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchFromUtf16Offset(input, 0));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
