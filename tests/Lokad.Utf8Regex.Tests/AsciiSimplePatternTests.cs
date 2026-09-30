@@ -3738,6 +3738,45 @@ public sealed class AsciiSimplePatternTests
         Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> TaillessLazyAstralEnumerateDeclineCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(.+?)", "a\U0001F600b"),
+            ("([^x]+?)", "a\U0001F600b"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TaillessLazyAstralEnumerateDeclineCases))]
+    public void TaillessLazyAstralEnumerateDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        // Declared R05 debt: tailless lazy loops over astral-consuming atoms
+        // stay BCL-routed on astral input because the oracle matches lone halves
+        // ([0:1,1:1,2:1,3:1] on a 4-unit input), which scalar stepping cannot
+        // reproduce; parity holds and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in regex.EnumerateMatches(input))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
             public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryLoopDeclineCases()
             {
                 (string pattern, string text, bool verifierDiscovery)[] rows =
