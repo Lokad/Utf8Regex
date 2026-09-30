@@ -151,6 +151,42 @@ public sealed class Utf8SliceAnchorTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
+    public static IEnumerable<object?[]> MultilineAstralEnumerateReplaceCases()
+    {
+        yield return new object?[] { "^a+", "xa\nya\U0001F600", new int[] { }, "xa\nya\U0001F600" };
+        yield return new object?[] { "a+$", "xa\nya\U0001F600", new int[] { 1, 1 }, "xQ\nya\U0001F600" };
+    }
+
+    [Theory]
+    [MemberData(nameof(MultilineAstralEnumerateReplaceCases))]
+    public void OwnedMultilineAstralEnumerateReplaceMatchesOracle(string pattern, string inputText, int[] expectedFlat, string expectedReplaced)
+    {
+        // R05: multiline line anchors resume correctly past newline edges on
+        // astral input: enumeration yields every line-anchored hit in order and
+        // replacement splices them with zero fallback construction on both lanes.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var options = RegexOptions.Multiline | RegexOptions.CultureInvariant;
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        foreach (var candidate in new[]
+        {
+            options,
+            options | RegexOptions.Compiled,
+        })
+        {
+            var regex = new Utf8Regex(pattern, candidate);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, candidate.ToString());
+            var actual = new List<int>();
+            foreach (var match in regex.EnumerateMatches(input))
+            {
+                actual.Add(match.IndexInUtf16);
+                actual.Add(match.LengthInUtf16);
+            }
+            Assert.Equal(expectedFlat, actual.ToArray());
+            Assert.Equal(expectedReplaced, regex.ReplaceToString(input, "Q"));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, candidate.ToString());
+        }
+    }
+
     [Theory]
     [InlineData("^a.*b$", "a1b", 0, 3)]
     [InlineData("^(a.c)+$", "abcayc", 0, 6)]
