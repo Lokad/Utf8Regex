@@ -175,4 +175,49 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(2, splits);
         Assert.True(regex.MatchDetailed(input).Success);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SliceCatastrophicTimeoutAbortsAllLanes(bool astralTail)
+    {
+        // R05: slice catastrophic backtracking checks the invocation deadline
+        // on every lane with the same timeout identity as the oracle, on ASCII
+        // and astral-tailed inputs alike, without constructing fallback engines.
+        var timeout = TimeSpan.FromMilliseconds(500);
+        var text = new string('a', 20000) + (astralTail ? "\U0001F600!" : "!");
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));
+        var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
+        var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
+        Assert.Equal(text, exception.Input);
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input));
+        Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            var enumerator = regex.EnumerateMatches(input);
+            _ = enumerator.MoveNext();
+        });
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SliceFastMissNeverTimesOut(bool astralTail)
+    {
+        // Fast misses complete well inside generous budgets without throwing.
+        var timeout = TimeSpan.FromSeconds(30);
+        var text = new string('a', 50) + (astralTail ? "\U0001F600!" : "!");
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        var expectedMiss = oracle.IsMatch(text);
+        Assert.False(expectedMiss);
+        var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
+        Assert.Equal(expectedMiss, regex.IsMatch(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
