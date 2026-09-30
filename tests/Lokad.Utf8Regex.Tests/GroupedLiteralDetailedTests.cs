@@ -1131,8 +1131,8 @@ public sealed class GroupedLiteralDetailedTests
     }
     public static System.Collections.Generic.IEnumerable<object?[]> FiniteTimeoutTemplateCases()
     {
-        string[] patterns = ["(a)(b)", "(a)?b(c)?"];
-        string[] templates = ["x", "q$&q", "q$1q", "<$1$2>", "$$", "$+"];
+        string[] patterns = ["(a)(b)", "(a)?b(c)?", "(?<w>a)(b)", "((a)(b))", "(a)(b)(c)"];
+        string[] templates = ["x", "q$&q", "q$1q", "<$1$2>", "$$", "$+", "$`", "$'", "$_", "${w}", "$2$1", "x$1y$2z"];
         string[] texts = ["xxabxx"];
         foreach (var pattern in patterns)
         {
@@ -1163,10 +1163,11 @@ public sealed class GroupedLiteralDetailedTests
         var actual = regex.ReplaceToString(input, template);
         Assert.Equal(expected, actual);
 
-        // LastGroup needs the same group machinery as numbered references; whole-match
-        // and literal forms stay owned. The rule covers only the template forms used in this battery.
+        // LastGroup and named references need the same group machinery as numbered
+        // references; whole-match, before/after/input, escaped-dollar, and literal
+        // forms stay owned. The rule covers only the template forms used in this battery.
         var expectConstruction = template.Contains("$1") || template.Contains("$2") ||
-            template == "$+";
+            template == "$+" || template.Contains("${");
         Assert.Equal(expectConstruction, regex.Inspection.DebugFallbackRegexIsCreated);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> NestedInvariantAlternationCases()
