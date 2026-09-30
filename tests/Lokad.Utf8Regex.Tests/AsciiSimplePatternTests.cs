@@ -4375,6 +4375,9 @@ public sealed class AsciiSimplePatternTests
         [
             ("([^x]b)+c", RegexOptions.CultureInvariant, "\U0001F600bc"),
             ("a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
+            ("a\\D{2,}?b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
+            ("a\\W{2,}?b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
+            ("a[^x]{2,}?b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xa\U0001F600b"),
             (".a[^x]+b", RegexOptions.CultureInvariant, "xca\U0001F600b"),
             ("(a[^x]+b|c)+", RegexOptions.CultureInvariant, "xa\U0001F600bc"),
             (".a[0-9]+b", RegexOptions.CultureInvariant, "xa12b\U0001F600"),
@@ -4459,6 +4462,52 @@ public sealed class AsciiSimplePatternTests
         Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var matchRegex = new Utf8Regex(pattern, options);
         Assert.False(matchRegex.Match(input).Success);
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> RtlCategoryRangeAsciiCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a\\D{2,}?b", "xayzb"),
+            ("a\\W{2,}?b", "xa12b"),
+            ("a[^x]{2,}?b", "xaxb"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.RightToLeft | RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RtlCategoryRangeAsciiCases))]
+    public void RtlCategoryRangeAsciiOwnsDiscovery(string pattern, RegexOptions options, string text)
+    {
+        // Right-to-left category ranges serve ASCII input fully owned on
+        // both lanes: right-to-left candidate search needs no verification
+        // and constructs no fallback on IsMatch, Count, or Match. Parity
+        // holds and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
         Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
