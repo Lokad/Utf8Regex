@@ -3581,6 +3581,10 @@ public sealed class AsciiSimplePatternTests
             ("(ab|cd)+", "xabcd\U0001F600", "Q"),
             ("(ab|a)+", "xaab\U0001F600", "Q"),
             ("\\ba+\\b", "xaay\U0001F600", "Q"),
+            ("\\ba[0-9]+\\b", "xa12\U0001F600y", "Q"),
+            ("\\Ba+b\\B", "xaab\U0001F600y", "Q"),
+            ("\\Ba+", "xa\U0001F600", "Q"),
+            ("a+\\B", "xaa\U0001F600", "Q"),
             ("(ab|ac)+", "xabac\U0001F600", "Q"),
             ("(a[bc])+", "xab\U0001F600", "Q"),
             ("(ba|ca)+", "xbaca\U0001F600", "Q"),
@@ -3605,7 +3609,8 @@ public sealed class AsciiSimplePatternTests
     public void AstralWholeLoopOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
         // R05: whole-pattern greedy or lazy unbounded loops over unit-closed atoms
-        // and word-boundary runs run scalarwise exactly like BCL units, so discovery,
+        // and word-boundary runs (positive edges, plus negated edges positioned
+        // away from scalar halves) run scalarwise exactly like BCL units, so discovery,
         // shaping, splits, and
         // all three replacement cores never construct the fallback engine here.
         // Byte-level lanes compare encoded bytes because lone halves substitute
@@ -4387,6 +4392,7 @@ public sealed class AsciiSimplePatternTests
             ("^\\D+b$", "a\U0001F600b", "Q"),
             ("^[a-z]+$", "abc\U0001F600", "Q"),
             ("^a[^x]+b$", "axxb", "Q"),
+            ("^[0-9]+$", "12\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
