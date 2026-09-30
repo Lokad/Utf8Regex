@@ -4458,6 +4458,48 @@ public sealed class AsciiSimplePatternTests
         Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> HeadedRangeAstralMissCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("a\\d{2,}?b", "xa\U0001F600b"),
+            ("a\\d{2,5}b", "xa\U0001F600b"),
+            ("a\\w{2,}?b", "xa\U0001F600b"),
+            ("a\\s{2,}?b", "xa12b"),
+            ("a\\p{Nd}{2,}?b", "xayzb"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(HeadedRangeAstralMissCases))]
+    public void HeadedRangeAstralMissOwnsDiscovery(string pattern, RegexOptions options, string text)
+    {
+        // Sensitive headed ranges miss astral-adjacent input with zero fallback
+        // construction: the positive bodies (digit, word, space, Nd) reject the
+        // gap content on every lane, and no candidate survives to verification.
+        // Parity holds and construction is pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        Assert.False(oracle.IsMatch(text));
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.False(isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(0, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        Assert.False(matchRegex.Match(input).Success);
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> DotTailedLoopDeclineCases()
     {
         (string pattern, RegexOptions options, string text)[] rows =
