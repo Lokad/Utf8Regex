@@ -44,6 +44,10 @@ public sealed class Utf8SliceContiguousTests
         yield return new object?[] { "\\Gx*", "abc", true };
         yield return new object?[] { "\\G(?:a|b)+", "abxab", true };
         yield return new object?[] { "\\Gb", "ab", false };
+        yield return new object?[] { "\\Ga+", "aay\U0001F600", true };
+        yield return new object?[] { "\\G(a|ab)+", "aab\U0001F600", true };
+        yield return new object?[] { "\\Ga+\\b", "aay\U0001F600", false };
+        yield return new object?[] { "a+\\G", "aya\U0001F600", false };
     }
 
     [Theory]
@@ -79,6 +83,10 @@ public sealed class Utf8SliceContiguousTests
         yield return new object?[] { "\\Ga", "a", 1 };
         yield return new object?[] { "\\G(?:a|b)+", "abxab", 1 };
         yield return new object?[] { "\\Ga+", "baa", 0 };
+        yield return new object?[] { "\\Ga+", "aay\U0001F600", 1 };
+        yield return new object?[] { "\\G(a|ab)+", "aab\U0001F600", 1 };
+        yield return new object?[] { "\\Ga+\\b", "aay\U0001F600", 0 };
+        yield return new object?[] { "a+\\G", "aya\U0001F600", 0 };
     }
 
     [Theory]
@@ -102,6 +110,10 @@ public sealed class Utf8SliceContiguousTests
         yield return new object?[] { "\\Ga*", "aaa" };
         yield return new object?[] { "\\Gx*", "abc" };
         yield return new object?[] { "\\G(?:a|b)+", "abxab" };
+        yield return new object?[] { "\\Ga+", "aay\U0001F600" };
+        yield return new object?[] { "\\G(a|ab)+", "aab\U0001F600" };
+        yield return new object?[] { "\\Ga+\\b", "aay\U0001F600" };
+        yield return new object?[] { "a+\\G", "aya\U0001F600" };
     }
 
     [Theory]
@@ -162,6 +174,8 @@ public sealed class Utf8SliceContiguousTests
 
     [Theory]
     [InlineData("\\Ga+", "aabaa", "Xbaa")]
+    [InlineData("\\Ga+", "aay\U0001F600", "Xy\U0001F600")]
+    [InlineData("\\G(a|ab)+", "aab\U0001F600", "Xb\U0001F600")]
     public void OwnedReplaceMatchesOracle(
         string pattern, string inputText, string expected)
     {
