@@ -665,6 +665,62 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.False(regex.IsMatch(phantomBytes));
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void OrderedLiteralWindowNegatedCategoryGapAgreesWithOracle(RegexOptions options)
+    {
+        // Negated-category bounded gaps (shorthand complements such as \D and
+        // negated space sets) must never ride the ordered-literal window: the window
+        // executor spans the gap without consulting the class, so admission
+        // over-accepts on excluded gap content (digits, whitespace).
+        var rows = new (string Pattern, string Input)[]
+        {
+            (@"a\D{2,5}b", "xa12b"),
+            (@"a\D{2,5}b", "xayzb"),
+            (@"a\D{2}b", "xa12b"),
+            (@"a[\D]{2,5}b", "xa12b"),
+            (@"a[^\s]{2,5}b", "xa  b"),
+            (@"a[^\s]{2,5}b", "xayzb"),
+        };
+
+        foreach (var row in rows)
+        {
+            var regex = new Utf8Regex(row.Pattern, options);
+            var oracle = new Regex(row.Pattern, options, Regex.InfiniteMatchTimeout);
+            var inputBytes = System.Text.Encoding.UTF8.GetBytes(row.Input);
+
+            Assert.Equal(oracle.IsMatch(row.Input), regex.IsMatch(inputBytes));
+            Assert.Equal(oracle.Matches(row.Input).Count, regex.Count(inputBytes));
+
+            var want = oracle.Match(row.Input);
+            var got = regex.Match(inputBytes);
+            Assert.Equal(want.Success, got.Success);
+            if (want.Success)
+            {
+                Assert.Equal(want.Index, got.IndexInUtf16);
+                Assert.Equal(want.Length, got.LengthInUtf16);
+            }
+        }
+
+        // Controls that must keep serving the window route: the negated-newline
+        // gap is exactly dot semantics, and the any-text idiom stays admitted.
+        foreach (var control in new (string Pattern, string Input)[]
+        {
+            (@"a[^\n]{2,5}b", "xa  b"),
+            (@"a[\s\S]{2,5}b", "xa12b"),
+        })
+        {
+            var regex = new Utf8Regex(control.Pattern, options);
+            var oracle = new Regex(control.Pattern, options, Regex.InfiniteMatchTimeout);
+            var inputBytes = System.Text.Encoding.UTF8.GetBytes(control.Input);
+
+            Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
+            Assert.Equal(oracle.IsMatch(control.Input), regex.IsMatch(inputBytes));
+            Assert.Equal(oracle.Matches(control.Input).Count, regex.Count(inputBytes));
+        }
+    }
+
     [Fact]
     public void LeipzigSymbolCountUsesUnicodeCategoryDirectFamily()
     {

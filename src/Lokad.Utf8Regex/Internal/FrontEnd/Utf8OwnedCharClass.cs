@@ -244,6 +244,26 @@ internal static class Utf8OwnedCharClass
             }
         }
 
+        // [^\s] and [^\S] carry the set-negation flag over the space bodies,
+        // which the base decoder only special-cases unflagged. Honor the flag
+        // here with the product's six-ASCII-whitespace definition, matching
+        // SpaceClass; non-ASCII whitespace stays at that recorded boundary.
+        if (IsNegated(set) &&
+            set.Length == SetStartIndex + 1 &&
+            set[SetLengthIndex] == 0 &&
+            set[CategoryLengthIndex] == 1)
+        {
+            if (set[SetStartIndex] == (char)100)
+            {
+                return ch is not ((char)32 or (char)9 or (char)13 or (char)10 or (char)12 or (char)11);
+            }
+
+            if (set[SetStartIndex] == (char)0xFF9C)
+            {
+                return ch is ((char)32 or (char)9 or (char)13 or (char)10 or (char)12 or (char)11);
+            }
+        }
+
         if (IsSubtraction(set))
         {
             return MatchSubtracted(ch, set);
@@ -290,29 +310,77 @@ internal static class Utf8OwnedCharClass
 
     private static bool CategorySetContainsChar(char ch, ReadOnlySpan<char> categories)
     {
+        // Negated codes are the unary minus of the positive 1-based codes,
+        // not the bitwise complement (which lands one off): the shorthand wire
+        // bytes pair 0xFFF7 with digit 9, 0xFF9C with space 100, and 0xFFFE
+        // with Ll 2, so decode with two's-complement negation.
         static ushort DecodeCategoryCode(char category)
         {
-            return category > 0x7FFF ? (ushort)~category : category;
+            return category > 0x7FFF ? (ushort)(~category + 1) : category;
         }
 
         var unicodeCategory = (ushort)((int)char.GetUnicodeCategory(ch) + 1);
         for (var i = 0; i < categories.Length; i++)
         {
             var current = categories[i];
-            if (current == 0 || current == char.MaxValue)
+            // A trailing 0xFFFF is a lone complemented code (such as exclude-Lu),
+            // not an inverted group: only a non-final 0xFFFF opens one.
+            if (current == 0 || (current == char.MaxValue && i + 1 < categories.Length))
             {
                 var invertedGroup = current == char.MaxValue;
                 var terminator = invertedGroup ? char.MaxValue : (char)0;
+                if (invertedGroup)
+                {
+                    // The close is the final 0xFFFF: complemented members may
+                    // themselves be 0xFFFF (exclude-Lu is -1), so stopping at the
+                    // first one would truncate the group and wrongly admit.
+                    var close = categories.Length - 1;
+                    while (close > i && categories[close] != char.MaxValue)
+                    {
+                        close--;
+                    }
+
+                    var end = close > i ? close : categories.Length;
+                    var excludedAny = false;
+                    while (++i < end)
+                    {
+                        if (unicodeCategory == DecodeCategoryCode(categories[i]))
+                        {
+                            excludedAny = true;
+                        }
+                    }
+
+                    if (!excludedAny)
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                // A 0-framed group unions positive members and intersects
+                // negated members: all-positive lists include on any hit (\w),
+                // all-negated lists exclude on any hit (\W).
                 var matchedAny = false;
+                var sawPositive = false;
+                var negatedMiss = true;
+                var memberCount = 0;
                 while (++i < categories.Length && categories[i] != terminator)
                 {
-                    if (unicodeCategory == DecodeCategoryCode(categories[i]))
+                    memberCount++;
+                    var member = categories[i];
+                    if (member > 0x7FFF)
                     {
-                        matchedAny = true;
+                        negatedMiss = negatedMiss && unicodeCategory != DecodeCategoryCode(member);
+                    }
+                    else
+                    {
+                        sawPositive = true;
+                        matchedAny = matchedAny || unicodeCategory == DecodeCategoryCode(member);
                     }
                 }
 
-                if (invertedGroup ? !matchedAny : matchedAny)
+                if (memberCount > 0 && (matchedAny || !sawPositive) && negatedMiss)
                 {
                     return true;
                 }

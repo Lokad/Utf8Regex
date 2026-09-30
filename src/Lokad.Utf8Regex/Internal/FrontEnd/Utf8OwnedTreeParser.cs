@@ -1200,7 +1200,10 @@ internal static class Utf8OwnedTreeParser
 
         static char ComplementCategory(char encoded)
         {
-            return (char)~encoded;
+            // Two's-complement negation, matching the shorthand wire bytes the
+            // differential battery pins (\D pairs 0xFFF7 with digit code 9): the
+            // complement of positive code p is -p, not ~p (which is -p - 1).
+            return (char)(~encoded + 1);
         }
 
         static bool TryResolveSingleCategory(string name, out int category)
