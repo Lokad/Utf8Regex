@@ -6524,6 +6524,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a.*b", "xa\U0001F600b", "Q"),
             ("a[^x]*b", "xa\U0001F600b", "Q"),
             ("a\\D*b", "xa\U0001F600b", "Q"),
+            ("a\\S{2,}?b", "xa\U0001F600b", "Q"),
+            ("a\\S{2,}b", "xa\U0001F600b", "Q"),
+            ("a\\P{Nd}{2,}?b", "xa\U0001F600b", "Q"),
+            ("a\\P{Nd}{2,}b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -6624,6 +6628,44 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void HeadedWordRangeAstralKeepsVerifierDiscovery(RegexOptions options)
+    {
+        // Word-group headed ranges keep verifier-owned discovery on astral
+        // input like the other negated-category ranges, but construction
+        // differs: every lane builds the anchored verifier on IsMatch
+        // where single-category ranges do not on the compiled lane
+        // (stable across repeats; whether discovery executes it stays open).
+        // Parity holds per lane.
+        var compiled = (options & RegexOptions.Compiled) != 0;
+        foreach (var pattern in new string[] { "a\\W{2,}?b", "a\\W{2,}b" })
+        {
+            const string text = "xa\U0001F600b";
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            var matchRegex = new Utf8Regex(pattern, options);
+            var expectedMatch = oracle.Match(text);
+            var actualMatch = matchRegex.Match(input);
+            Assert.Equal(expectedMatch.Success, actualMatch.Success);
+            if (expectedMatch.Success)
+            {
+                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            }
+            Assert.Equal(compiled, matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        }
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> BoundedExactDivergentCases()
