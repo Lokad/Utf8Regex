@@ -153,6 +153,8 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
     }
 
     [Theory]
+    [InlineData("(?:a|ab){2,3}", "xaabab")]
+    [InlineData("(?:a|ab){2,3}", "xaabab\U0001F600")]
     [InlineData("(?:a|ab){2}", "xaab")]
     [InlineData("(?:a|ab){2,3}c", "xaababc")]
     public void RangedDivergentRepeatMatchesOrderedSpans(string pattern, string inputText)

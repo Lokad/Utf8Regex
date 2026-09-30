@@ -1388,6 +1388,10 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                         {
                             new() { input },
                         };
+                        HashSet<int>? bodyRelativeLengths = repeat.Preference == Pcre2RepeatPreference.Greedy &&
+                            repeat.Minimum != repeat.Maximum
+                            ? new HashSet<int>()
+                            : null;
                         for (var count = 1; count <= repeat.Maximum; count++)
                         {
                             var repeatedStates = new List<Pcre2FiniteLiteralState>();
@@ -1400,6 +1404,13 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                                 }
 
                                 repeatedStates.AddRange(bodyOutputs);
+                                if (count == 1 && bodyRelativeLengths is not null)
+                                {
+                                    foreach (var bodyOutput in bodyOutputs)
+                                    {
+                                        bodyRelativeLengths.Add(bodyOutput.Value.Length - state.Value.Length);
+                                    }
+                                }
                                 if (repeatedStates.Count > MaximumAlternatives)
                                 {
                                     return false;
@@ -1407,6 +1418,17 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                             }
 
                             statesByCount.Add(repeatedStates);
+                        }
+
+                        // R05: greedy ranged repeats over mixed-length derivations would
+                        // project longest spans where PCRE2 stops ordered repetition at first
+                        // success (probed: (?:a|ab){2,3} enum aaba vs oracle aa). Decline those
+                        // shapes to the backtracking program (the slice overlay converts where
+                        // it serves); exact counts resolve it1-major like backtracking, uniform
+                        // derivations cannot diverge, and lazy starts at minimum like the oracle.
+                        if (bodyRelativeLengths is { Count: > 1 })
+                        {
+                            return false;
                         }
 
                         var firstCount = repeat.Preference == Pcre2RepeatPreference.Greedy
