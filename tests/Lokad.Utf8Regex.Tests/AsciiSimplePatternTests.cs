@@ -6528,6 +6528,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a\\S{2,}b", "xa\U0001F600b", "Q"),
             ("a\\P{Nd}{2,}?b", "xa\U0001F600b", "Q"),
             ("a\\P{Nd}{2,}b", "xa\U0001F600b", "Q"),
+            ("a\\P{Lu}{2,}?b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -6633,16 +6634,16 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
-    public void HeadedWordRangeAstralKeepsVerifierDiscovery(RegexOptions options)
+    public void HeadedGroupCategoryRangeAstralKeepsVerifierDiscovery(RegexOptions options)
     {
-        // Word-group headed ranges keep verifier-owned discovery on astral
-        // input like the other negated-category ranges, but construction
-        // differs: every lane builds the anchored verifier on IsMatch
-        // where single-category ranges do not on the compiled lane
-        // (stable across repeats; whether discovery executes it stays open).
-        // Parity holds per lane.
+        // Group-shaped headed ranges (word-group and inverted property
+        // groups) keep verifier-owned discovery on astral input like the
+        // other negated-category ranges, but construction differs: every
+        // lane builds the anchored verifier on IsMatch where single codes
+        // do not on the compiled lane (stable across repeats; whether
+        // discovery executes it stays open). Parity holds per lane.
         var compiled = (options & RegexOptions.Compiled) != 0;
-        foreach (var pattern in new string[] { "a\\W{2,}?b", "a\\W{2,}b" })
+        foreach (var pattern in new string[] { "a\\W{2,}?b", "a\\W{2,}b", "a\\P{L}{2,}?b", "a\\P{L}{2,}b" })
         {
             const string text = "xa\U0001F600b";
             var input = Encoding.UTF8.GetBytes(text);
