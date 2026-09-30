@@ -3599,6 +3599,10 @@ public sealed class AsciiSimplePatternTests
             ("(a(b|c)d)+", "xabd\U0001F600", "Q"),
             ("((ab|cd)e)+", "xabe\U0001F600", "Q"),
             ("(a+|b+)+", "xaabb\U0001F600", "Q"),
+            ("(?>a|ab)+", "xaab\U0001F600", "Q"),
+            ("(?>a+)b", "xaa\U0001F600b", "Q"),
+            ("(?>ab|a)+z", "xabab\U0001F600z", "Q"),
+            ("(?>a|ab)c", "xaab\U0001F600c", "Q"),
             ("(a+)+b", "xaab", "Q"),
             ("(a+)+b", "xaa\U0001F600bb", "Q"),
             ("(a+)+", "xaa\U0001F600aa", "Q"),
@@ -3619,6 +3623,7 @@ public sealed class AsciiSimplePatternTests
         // away from scalar halves) run scalarwise exactly like BCL units, so discovery,
         // Alternation-of-loops joins this routing (iterations project without the fallback engine).
         // Unbounded divergent loops project ordered first-success spans here (greedy and lazy, including the longest-divergent text).
+        // Atomic divergent bodies join this routing (per-iteration commit steps exactly like BCL units, hits and misses).
         // Nested-plus loops join this routing (inner groups project last-iteration wins without the fallback engine).
         // shaping, splits, and
         // all three replacement cores never construct the fallback engine here.
