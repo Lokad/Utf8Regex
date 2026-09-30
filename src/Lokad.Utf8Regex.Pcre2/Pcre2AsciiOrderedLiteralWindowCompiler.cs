@@ -94,4 +94,90 @@ internal static class Pcre2AsciiOrderedLiteralWindowAnalyzer
 
         return repeatIndex > 0 && repeatIndex < sequence.Children.Length - 1;
     }
+
+    // A two-branch literal window alternation with a lazy bounded dot gap keeps
+    // backtracking: the core no longer builds a window plan for lazy ranges, and the
+    // shared slice runner plus the greedy window executor cannot reproduce lazy
+    // tail selection. Greedy branches ride IsSupportedBranch above; fixed and
+    // unbounded gaps are direction-free and keep their existing routes.
+    internal static bool IsLazyGapWindow(IPcre2BacktrackingNode node)
+    {
+        if (node is not Pcre2AlternationBacktrackingNode { Alternatives.Length: 2 } alternation)
+        {
+            return false;
+        }
+
+        var sawLazy = false;
+        foreach (var branch in alternation.Alternatives)
+        {
+            if (IsLazyGapWindowBranch(branch))
+            {
+                sawLazy = true;
+                continue;
+            }
+
+            if (!IsSupportedBranch(branch))
+            {
+                return false;
+            }
+        }
+
+        return sawLazy;
+    }
+
+    private static bool IsLazyGapWindowBranch(IPcre2BacktrackingNode node)
+    {
+        if (node is not Pcre2SequenceBacktrackingNode { Children.Length: >= 3 } sequence)
+        {
+            return false;
+        }
+
+        var repeatIndex = -1;
+        for (var i = 0; i < sequence.Children.Length; i++)
+        {
+            if (sequence.Children[i] is Pcre2TokenBacktrackingNode
+                {
+                    Token:
+                    {
+                        Kind: Pcre2CharacterTokenKind.Literal,
+                        Options: Pcre2CharacterOptions.None,
+                        Literal: var literal,
+                    },
+                } &&
+                literal.IsAscii &&
+                literal.Value != '\n')
+            {
+                continue;
+            }
+
+            if (repeatIndex < 0 &&
+                i > 0 &&
+                i < sequence.Children.Length - 1 &&
+                sequence.Children[i] is Pcre2RepeatBacktrackingNode
+                {
+                    Minimum: var minimum,
+                    Maximum: var maximum,
+                    Preference: Pcre2RepeatPreference.Lazy,
+                    Body: Pcre2TokenBacktrackingNode
+                    {
+                        Token:
+                        {
+                            Kind: Pcre2CharacterTokenKind.Any,
+                            Options: Pcre2CharacterOptions.None,
+                        },
+                    },
+                } &&
+                minimum >= 0 &&
+                maximum != int.MaxValue &&
+                maximum > minimum)
+            {
+                repeatIndex = i;
+                continue;
+            }
+
+            return false;
+        }
+
+        return repeatIndex > 0 && repeatIndex < sequence.Children.Length - 1;
+    }
 }

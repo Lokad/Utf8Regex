@@ -864,6 +864,14 @@ internal static class Pcre2CompiledProgramOverlay
             return program;
         }
 
+        // Lazy-gap windows keep the faithful backtracking engine: the shared slice
+        // runner plus the greedy window executor cannot reproduce lazy tail selection.
+        if (program.SyntaxTree is Pcre2BacktrackingSyntaxTree backtrackingSyntax &&
+            Pcre2AsciiOrderedLiteralWindowAnalyzer.IsLazyGapWindow(backtrackingSyntax.Root))
+        {
+            return program;
+        }
+
         var operations = program.Operations;
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram isMatchBacktracking)
         {
