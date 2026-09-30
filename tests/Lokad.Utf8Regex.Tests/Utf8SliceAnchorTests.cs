@@ -154,6 +154,13 @@ public sealed class Utf8SliceAnchorTests
     public static IEnumerable<object?[]> MultilineAstralEnumerateReplaceCases()
     {
         yield return new object?[] { "^a+", "xa\nya\U0001F600", new int[] { }, "xa\nya\U0001F600" };
+        yield return new object?[] { "^a+", "xa\r\nya\U0001F600", new int[] { }, "xa\r\nya\U0001F600" };
+        yield return new object?[] { "a+$", "xa\r\nya\U0001F600", new int[] { }, "xa\r\nya\U0001F600" };
+        yield return new object?[] { "^$", "", new int[] { 0, 0 }, "Q" };
+        yield return new object?[] { "^$", "\n", new int[] { 0, 0, 1, 0 }, "Q\nQ" };
+        yield return new object?[] { "^a+$", "a\na", new int[] { 0, 1, 2, 1 }, "Q\nQ" };
+        yield return new object?[] { "^.+$", "a\r\nb", new int[] { 0, 2, 3, 1 }, "Q\nQ" };
+        yield return new object?[] { "^\\w+", "\U0001F600\nzz", new int[] { 3, 2 }, "\U0001F600\nQ" };
         yield return new object?[] { "a+$", "xa\nya\U0001F600", new int[] { 1, 1 }, "xQ\nya\U0001F600" };
     }
 

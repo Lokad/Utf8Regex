@@ -803,6 +803,10 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             ("(?m:ab$)", "ab"),
             ("(?m:ab$)", ""),
             ("(?m:ab$)", "ab\ncd\nab"),
+            ("(?m:^b)", "\nb"),
+            ("(?m:^b)", "\r\nb"),
+            ("(?m:a$)", "a\n"),
+            ("(?m:a$)", "a\r\n"),
             ("(?m:ab$)", "xxab\nab"),
         ];
         foreach (var row in rows)
