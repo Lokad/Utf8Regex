@@ -4219,6 +4219,10 @@ public sealed class AsciiSimplePatternTests
             ("(?:ab|[^x])+c", "xab\U0001F600c", "Q"),
             ("[^x]+?b", "x\U0001F600b", "Q"),
             ("a\\D+?b", "xa\U0001F600b", "Q"),
+            ("a\\S+?b", "xa\U0001F600b", "Q"),
+            ("a\\P{Nd}+?b", "xa\U0001F600b", "Q"),
+            ("a\\p{L}+?b", "xa\U00010400b", "Q"),
+            ("a\\w+?b", "xa12\U0001F600b", "Q"),
             ("(?i)A[^x]+B", "xa\U0001F600b", "Q"),
             ("(?i)[^x]+B", "x\U0001F600B", "Q"),
             ("(?i)A.+B", "xA\U0001F600b", "Q"),
@@ -4247,6 +4251,7 @@ public sealed class AsciiSimplePatternTests
     public void TailedWholeLoopOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
         // R05: whole-pattern greedy unbounded loops with ASCII head/tail runs
+        // Headed lazy-plus category loops join this routing (min-one has no units-vs-scalars tension, hits and misses).
         // keep scalarwise stepping exactly like BCL units on astral input
         // (heads and tails, including lookbehind and lookahead heads and tails, only
         // ever meet ASCII bytes in both semantics while
