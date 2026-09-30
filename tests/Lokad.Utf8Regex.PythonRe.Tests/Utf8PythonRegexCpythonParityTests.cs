@@ -753,4 +753,20 @@ public sealed class Utf8PythonRegexCpythonParityTests
         var ex = Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString(System.Text.Encoding.UTF8.GetBytes(input), replacement));
         Assert.Contains(messageContains, ex.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void RangedDivergentRepeatFollowsOrderedSpans()
+    {
+        // R05: ranged divergent counts resolve ordered first-success spans,
+        // unlike the longest-match defect class on the other engines; the
+        // oracle values below match CPython backtracking order.
+        Assert.Equal((1, 3), GetSpan(new Utf8PythonRegex("(?:a|ab){2,3}").Search("xaabab"u8)));
+        Assert.Equal((1, 3), GetSpan(new Utf8PythonRegex("(?:a|ab){2,3}").Search(System.Text.Encoding.UTF8.GetBytes("xaabab\U0001F600"))));
+        Assert.Equal((1, 7), GetSpan(new Utf8PythonRegex("(?:a|ab){2,3}c").Search("xaababc"u8)));
+        Assert.Equal((1, 3), GetSpan(new Utf8PythonRegex("(?:a|ab){2}").Search("xaab"u8)));
+        Assert.Equal(new[] { "aa" }, new Utf8PythonRegex("(?:a|ab){2,3}").FindAll(System.Text.Encoding.UTF8.GetBytes("xaabab"), 0).Select(static match => match.ValueText).ToArray());
+        Assert.Equal(new[] { "aa" }, new Utf8PythonRegex("(?:a|ab){2,3}").FindAll(System.Text.Encoding.UTF8.GetBytes("xaabab\U0001F600"), 0).Select(static match => match.ValueText).ToArray());
+        Assert.Equal(new[] { "aababc" }, new Utf8PythonRegex("(?:a|ab){2,3}c").FindAll(System.Text.Encoding.UTF8.GetBytes("xaababc"), 0).Select(static match => match.ValueText).ToArray());
+        Assert.Equal(new[] { "aa" }, new Utf8PythonRegex("(?:a|ab){2}").FindAll(System.Text.Encoding.UTF8.GetBytes("xaab"), 0).Select(static match => match.ValueText).ToArray());
+    }
 }
