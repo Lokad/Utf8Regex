@@ -531,4 +531,41 @@ public sealed class Utf8OwnedCharClassTests
         corpus.AddRange(new[] { 256, 304, 305, 913, 945, 233, 2028, 8204, 8205, 8232, 65279, 19968 });
         return corpus.ToArray();
     }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> DecoderSweepCases()
+    {
+        string[] patterns = [@"\d{2,5}", @"\D{2,5}", @"\s{2,5}", @"\S{2,5}", @"\w{2,5}", @"\W{2,5}", @"[^\s]{2,5}", @"[^\S]{2,5}", @"[^\d]{2,5}", @"[^\W]{2,5}", @"[\D]{2,5}", @"[\s\S]{2,5}", @"\p{Nd}{2,5}", @"\P{Nd}{2,5}", @"\p{L}{2,5}", @"\P{L}{2,5}", @"a\D{2,5}b", @"a\W{2,5}b", @"a[^\s]{2,5}b", @"a\D+b", @"a\D+?b", @"a\W+b", @"a\D*b", @"a\D*?b", @"a\D{2,}?b", @"(?i)a\D{2,}?b", @"(?i)a\W{2,}?b"];
+        string[] texts = ["xa12b", "xayzb", "xa  b", "xa\U0001F600b", "12", "x"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DecoderSweepCases))]
+    public void DecoderEndToEndSweepMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        // R05: end-to-end parity guard for the negated-category wire-decode fix:
+        // shorthands, properties, brackets, and repetitions crossed with ASCII
+        // and astral-adjacent hit/miss texts on IsMatch, Count, and Match of both
+        // lanes. Probe-verified clean with zero divergence.
+        var input = System.Text.Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+        Assert.Equal(oracle.Matches(text).Count, regex.Count(input));
+        var want = oracle.Match(text);
+        var got = regex.Match(input);
+        Assert.Equal(want.Success, got.Success);
+        if (want.Success)
+        {
+            Assert.Equal(want.Index, got.IndexInUtf16);
+            Assert.Equal(want.Length, got.LengthInUtf16);
+        }
+    }
 }
