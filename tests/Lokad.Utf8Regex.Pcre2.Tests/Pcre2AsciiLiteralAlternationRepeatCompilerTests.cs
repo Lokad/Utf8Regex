@@ -155,14 +155,16 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
     [Theory]
     [InlineData("(?:a|ab){2,3}", "xaabab")]
     [InlineData("(?:a|ab){2,3}", "xaabab\U0001F600")]
+    [InlineData("(?:a|ab){2,3}", "aaba")]
+    [InlineData("(?:ab|a){2,3}", "xaabab")]
     [InlineData("(?:a|ab){2}", "xaab")]
     [InlineData("(?:a|ab){2,3}c", "xaababc")]
     public void RangedDivergentRepeatMatchesOrderedSpans(string pattern, string inputText)
     {
-        // R05: exact counts and trailing-context ranged counts enumerate
-        // ordered first-success spans identical to the oracle. Bare ranged
-        // counts at end-of-pattern stay diagnosed debt: the literal-family
-        // enumerator returns longest spans there while Match rides the slice.
+        // R05: greedy ranged counts over mixed-derivation bodies decline the
+        // finite-literal program, so bare ranged rows enumerate ordered
+        // first-success spans identical to the oracle, like exact counts and
+        // trailing-context ranged counts.
         var direct = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var input = Encoding.UTF8.GetBytes(inputText);
