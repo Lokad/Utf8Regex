@@ -6735,7 +6735,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         // The anchored Lazy is only ever evaluated inside verifier TryVerify
         // paths, which then execute it, so a created anchored regex witnesses
         // BCL verification on that operation; the plain Lazy is not such a
-        // witness (construction paths pre-touch it). Parity holds per lane.
+        // witness (construction paths pre-touch it). Replacement diverts to BCL
+        // shaping with parity. Parity holds per lane.
         var compiled = (options & RegexOptions.Compiled) != 0;
         foreach (var pattern in new string[] { "a\\W{2,}?b", "a\\W{2,}b", "a\\P{L}{2,}?b", "a\\P{L}{2,}b" })
         {
@@ -6760,6 +6761,12 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
                 Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
             }
             Assert.Equal(compiled, matchRegex.Inspection.DebugFallbackRegexIsCreated);
+            var stringRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
+            Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+            var bytesRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(text, "Q")), bytesRegex.Replace(input, Encoding.UTF8.GetBytes("Q")));
+            Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 
