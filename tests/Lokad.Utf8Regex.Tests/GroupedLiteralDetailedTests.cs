@@ -1217,7 +1217,7 @@ public sealed class GroupedLiteralDetailedTests
             "((a)|(a))",
             "((a|ab)|(c))",
         ];
-        string[] texts = ["xacx", "xbcx", "xabx", "xbx", "xcx", "xdx", "xyz", "Ã©acÃ©", "xabdx"];
+        string[] texts = ["xacx", "xbcx", "xabx", "xbx", "xcx", "xdx", "xyz", "Ã©acÃ©", "xabdx", "xac\U0001F600", "\U0001F600acx", "x\U0001F600cx"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -1236,6 +1236,7 @@ public sealed class GroupedLiteralDetailedTests
         // expand to one flat BCL-ordered entry list, so detailed shaping projects
         // the winning entry identified by ordinal text comparison without the
         // fallback engine.
+        // Astral-adjacent texts join this routing (candidate search crossing or abutting a scalar still resolves the winning entry without the fallback engine).
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
