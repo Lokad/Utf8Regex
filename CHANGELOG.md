@@ -20,6 +20,16 @@
   `unsupported_pattern`: the owned tree parser declines expression conditionals,
   so no tree features refine the taxonomy.
 
+### Character-class conformance
+
+- Conformance bug fix: negated shorthands and properties (`\D`, `\W`,
+  `[^\s]`, `\P{...}`) could match characters their .NET meaning excludes.
+  Most visibly, ordered-literal windows admitted `\D` and `[^\s]` gaps as
+  any-text and reported hits where .NET misses (`a\D{2,5}b` on `xa12b`).
+  Decoding now matches the observed shorthand wire bytes with oracle parity
+  across the category inventory on both lanes (`\P{Nd}` shares `\D` bytes),
+  with regression batteries pinning the window decline and the decoder.
+
 ## 0.3.0 - 2026-08-28
 
 This release completes and qualifies the selected managed PCRE2 profile while
