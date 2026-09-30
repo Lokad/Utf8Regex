@@ -3552,6 +3552,8 @@ public sealed class AsciiSimplePatternTests
             ("(a|b)+", "xaba\U0001F600bab", "Q"),
             ("((a|b)+)", "xaba\U0001F600bab", "<$1>"),
             ("(a|ab)+", "xaab\U0001F600ab", "Q"),
+            ("(a|ab)+", "xaabab", "Q"),
+            ("(a|ab)+?", "xaabab", "Q"),
             ("((a|ab)+)", "xaab\U0001F600ab", "<$1>"),
             ("(ab|a)+", "xaab\U0001F600ab", "Q"),
             ("(a|b)+?", "xaba\U0001F600bab", "Q"),
@@ -3616,6 +3618,7 @@ public sealed class AsciiSimplePatternTests
         // and word-boundary runs (positive edges, plus negated edges positioned
         // away from scalar halves) run scalarwise exactly like BCL units, so discovery,
         // Alternation-of-loops joins this routing (iterations project without the fallback engine).
+        // Unbounded divergent loops project ordered first-success spans here (greedy and lazy, including the longest-divergent text).
         // Nested-plus loops join this routing (inner groups project last-iteration wins without the fallback engine).
         // shaping, splits, and
         // all three replacement cores never construct the fallback engine here.
