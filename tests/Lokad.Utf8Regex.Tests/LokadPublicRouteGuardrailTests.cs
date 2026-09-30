@@ -690,6 +690,10 @@ public sealed class LokadPublicRouteGuardrailTests
             (@"a[^\D]{2,5}b", "xayzb"),
             (@"a[^\W]{2,5}b", "xayzb"),
             (@"a[^\W]{2,5}b", "xa b"),
+            (@"a[^α-ω]{2,5}b", "xaαβb"),
+            (@"a[^α-ω]{2,5}b", "xayzb"),
+            ("a[^\U0001F600]{2,5}b", "xa\U0001F600\U0001F600b"),
+            ("a[^\U0001F600]{2,5}b", "xayzb"),
         };
 
         foreach (var row in rows)
