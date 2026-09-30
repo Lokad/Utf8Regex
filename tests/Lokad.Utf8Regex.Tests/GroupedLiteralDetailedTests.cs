@@ -1687,4 +1687,52 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> GroupedCategorySplitEnumerateCases()
+    {
+        string[] patterns = [@"(a\D+b)", @"(a\W+?b)", @"(a|ab){2,3}", @"(a[^x]+b)", @"(\D+)", @"(a)(\D+)"];
+        string[] texts = ["xa12b", "xayzb", "xa\U0001F600b", "12ab", "xa12\U0001F600b"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupedCategorySplitEnumerateCases))]
+    public void GroupedCategorySplitEnumerateMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        // R05: splits and enumeration over grouped category loops agree with the
+        // oracle on ASCII and astral-adjacent input of both lanes. Probe-verified
+        // clean with zero divergence across the sweep.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<string>();
+        foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
+        {
+            expectedSplits.Add(text[range.Start.Value..range.End.Value] + "@" + range.Start.Value + ":" + (range.End.Value - range.Start.Value));
+        }
+        var actualSplits = new System.Collections.Generic.List<string>();
+        foreach (var split in regex.EnumerateSplits(input, int.MaxValue))
+        {
+            actualSplits.Add(split.GetValueString() + "@" + split.IndexInUtf16 + ":" + split.LengthInUtf16);
+        }
+        Assert.Equal(expectedSplits, actualSplits);
+        var expected = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text))
+        {
+            expected.Add(m.Index + ":" + m.Length);
+        }
+        var actual = new System.Collections.Generic.List<string>();
+        foreach (var m in regex.EnumerateMatches(input))
+        {
+            actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expected, actual);
+    }
 }
