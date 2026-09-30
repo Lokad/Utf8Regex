@@ -4232,6 +4232,7 @@ public sealed class AsciiSimplePatternTests
             (".a[^x]+b", RegexOptions.CultureInvariant, "xca\U0001F600b"),
             ("(a[^x]+b|c)+", RegexOptions.CultureInvariant, "xa\U0001F600bc"),
             (".a[0-9]+b", RegexOptions.CultureInvariant, "xa12b\U0001F600"),
+            ("\\D{2,}b", RegexOptions.CultureInvariant, "x\U0001F600b"),
         ];
         foreach (var row in rows)
         {
@@ -4245,8 +4246,9 @@ public sealed class AsciiSimplePatternTests
     public void TailedWholeLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
         // Declared R05 debt: divergent loop bodies with tails, empty-capable
-        // and lazy tailed loops, positive-shorthand and inner-capture tailed
-        // loops, anchored or directed (dot-headed, dot-tailed) runs, nested
+        // and lazy tailed loops, positive-shorthand, negated-shorthand
+        // min-bound, and inner-capture tailed loops, anchored or directed
+        // (dot-headed, dot-tailed) runs, nested
         // tails inside alternation branches, and right-to-left tailed loops
         // keep BCL routing on astral input; parity holds and construction is
         // pinned per lane. Dot-tailed ASCII-closed runs keep verifier-owned or
