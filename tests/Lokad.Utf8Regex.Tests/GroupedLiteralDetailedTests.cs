@@ -1275,6 +1275,21 @@ public sealed class GroupedLiteralDetailedTests
             ("((a)|(a))", "xaa", 2),
             ("((a|ab)|(c))", "xabx", 0),
             ("((a|ab)|(c))", "xabx", 1),
+            ("((a|b)|(c|d))", "xac\U0001F600", 0),
+            ("((a|b)|(c|d))", "\U0001F600acx", 0),
+            ("((a|b)|(c|d))", "x\U0001F600cx", 0),
+            ("((a)?b|c)", "xac\U0001F600", 0),
+            ("((a)?b|c)", "\U0001F600acx", 0),
+            ("((a)?b|c)", "x\U0001F600cx", 0),
+            ("(((a|b)|c)|d)", "xac\U0001F600", 0),
+            ("(((a|b)|c)|d)", "\U0001F600acx", 0),
+            ("(((a|b)|c)|d)", "x\U0001F600cx", 0),
+            ("((a)|(a))", "xac\U0001F600", 0),
+            ("((a)|(a))", "\U0001F600acx", 0),
+            ("((a)|(a))", "x\U0001F600cx", 0),
+            ("((a|ab)|(c))", "xac\U0001F600", 0),
+            ("((a|ab)|(c))", "\U0001F600acx", 0),
+            ("((a|ab)|(c))", "x\U0001F600cx", 0),
         ];
         foreach (var row in rows)
         {
@@ -1289,6 +1304,7 @@ public sealed class GroupedLiteralDetailedTests
     {
         // FromOffset keeps absolute-origin semantics through the shared
         // first-of-enumeration arm and projects the winning nested entry.
+        // Boundary starts on astral-adjacent input serve owned; half-scalar starts keep BCL routing, see NestedDivergentHalfOffsetDeclineCases.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1322,7 +1338,7 @@ public sealed class GroupedLiteralDetailedTests
             "((a|ab)|(c))",
         ];
         string[] templates = ["x", "<$1>", "$&", "$+"];
-        string[] texts = ["xacx", "xabx", "xyz", "Ã©abÃ©"];
+        string[] texts = ["xacx", "xabx", "xyz", "Ã©abÃ©", "xac\U0001F600", "\U0001F600acx", "x\U0001F600cx"];
         foreach (var pattern in patterns)
         {
             foreach (var template in templates)
@@ -1342,6 +1358,7 @@ public sealed class GroupedLiteralDetailedTests
     {
         // Group-reference templates expand through the same nested entry spans
         // via the shared owned template worker.
+        // Astral-adjacent texts expand through the same spans with zero fallback construction.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1361,7 +1378,7 @@ public sealed class GroupedLiteralDetailedTests
             "((a)?b|c)",
             "(((a|b)|c)|d)",
         ];
-        string[] texts = ["xacx", "xabx", "xyz"];
+        string[] texts = ["xacx", "xabx", "xyz", "xac\U0001F600", "\U0001F600acx", "x\U0001F600cx"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -1377,6 +1394,7 @@ public sealed class GroupedLiteralDetailedTests
     public void NestedDivergentEvaluatorMatchesOracle(string pattern, RegexOptions options, string text)
     {
         // Evaluator callbacks observe the same nested entry spans.
+        // Astral-adjacent texts project the same spans on both evaluator cores.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
@@ -1396,6 +1414,52 @@ public sealed class GroupedLiteralDetailedTests
         Assert.Equal(expected, stringActual);
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentHalfOffsetDeclineCases()
+    {
+        (string pattern, string text, int offset)[] rows =
+        [
+            ("((a|b)|(c|d))", "x\U0001F600cx", 2),
+            ("((a)?b|c)", "x\U0001F600cx", 2),
+            ("(((a|b)|c)|d)", "x\U0001F600cx", 2),
+            ("((a)|(a))", "x\U0001F600cx", 2),
+            ("((a|ab)|(c))", "x\U0001F600cx", 2),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NestedDivergentHalfOffsetDeclineCases))]
+    public void NestedDivergentHalfOffsetDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, int offset)
+    {
+        // R05: a Detailed FromOffset query starting mid-scalar keeps BCL routing
+        // with oracle parity on both lanes (the shared shaper only resolves
+        // entries from scalar starts); boundary starts serve owned, see
+        // NestedDivergentFromOffsetCases.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text, offset);
+        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapDetailedCases()
     {
         string[] patterns =
