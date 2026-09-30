@@ -6491,6 +6491,9 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a.*?b", "xa\U0001F600b", "Q"),
             ("a[^x]*?b", "xa\U0001F600b", "Q"),
             ("a\\D*?b", "xa\U0001F600b", "Q"),
+            ("a.*b", "xa\U0001F600b", "Q"),
+            ("a[^x]*b", "xa\U0001F600b", "Q"),
+            ("a\\D*b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -6511,6 +6514,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         // input (the ordinary lane builds the anchored verifier; compiled
         // Match diverts) while shaping and materialization keep BCL routing;
         // Min-zero lazy stars over the same atoms join this routing (probed parity-clean with a stable repeat: ordinary discovery keeps the anchored verifier, shaping keeps BCL routing).
+        // Greedy min-zero stars probe identically on the same lanes with a stable repeat.
         // parity holds and construction is pinned per lane.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
