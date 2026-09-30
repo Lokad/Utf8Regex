@@ -226,6 +226,8 @@ public sealed class Utf8SliceRtlTests
         yield return new object?[] { "\\cA+", "\u0001x\u0001", true };
         yield return new object?[] { "(?<=\\n)x", "a\nx", true };
         yield return new object?[] { "(?<=\\n)x", "ax", false };
+        yield return new object?[] { "x*", "\U0001F600", true };
+        yield return new object?[] { "a*", "a\U0001F600a", true };
     }
 
     [Theory]
@@ -337,6 +339,8 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "(?<=a)b", "aab", 1 };
         yield return new object?[] { "(a+)(b+)", "aab", 1 };
         yield return new object?[] { "(a)\\1", "aa", 0 };
+        yield return new object?[] { "x*", "\U0001F600", 3 };
+        yield return new object?[] { "a*", "a\U0001F600a", 5 };
     }
 
     [Theory]
@@ -486,6 +490,8 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "\\G", "aa", new int[] { 2, 0 } };
         yield return new object?[] { "a+?", "aaa", new int[] { 2, 1, 1, 1, 0, 1 } };
         yield return new object?[] { "a\\G", "aa", new int[] { 1, 1, 0, 1 } };
+        yield return new object?[] { "x*", "\U0001F600", new int[] { 2, 0, 1, 0, 0, 0 } };
+        yield return new object?[] { "a*", "a\U0001F600a", new int[] { 3, 1, 3, 0, 2, 0, 0, 1, 0, 0 } };
     }
 
     [Theory]
