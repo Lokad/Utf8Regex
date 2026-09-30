@@ -258,4 +258,70 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CatastrophicTimeoutAbortsStrictLanesWithIdentity(bool compiled)
+    {
+        // R05: timeout-path branch strictness: every catastrophic lane aborts with
+        // the full oracle timeout identity (decoded input content, pattern, and
+        // match timeout) on both lanes, without constructing fallback engines.
+        // This closes the strictness tail over the native interpreter lanes the
+        // earlier pins left at length-only identity (IsMatch), op-only coverage
+        // (Count/Match without Detailed), first-MoveNext-only enumeration (without
+        // FromOffset enumeration), and ordinary-only lanes (without compiled).
+        var options = (compiled ? RegexOptions.Compiled : RegexOptions.None) | RegexOptions.CultureInvariant;
+        var timeout = TimeSpan.FromMilliseconds(1);
+        var text = new string('a', 49999) + "!";
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex("(a+)+$", options, timeout);
+        Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));
+        var regex = new Utf8Regex("(a+)+$", options, timeout);
+        var isMatchException = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
+        Assert.Equal(text, isMatchException.Input);
+        Assert.Equal("(a+)+$", isMatchException.Pattern);
+        Assert.Equal(timeout, isMatchException.MatchTimeout);
+        var countException = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input));
+        Assert.Equal(text, countException.Input);
+        Assert.Equal("(a+)+$", countException.Pattern);
+        Assert.Equal(timeout, countException.MatchTimeout);
+        var matchException = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
+        Assert.Equal(text, matchException.Input);
+        Assert.Equal("(a+)+$", matchException.Pattern);
+        Assert.Equal(timeout, matchException.MatchTimeout);
+        var detailedException = Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailed(input));
+        Assert.Equal(text, detailedException.Input);
+        Assert.Equal("(a+)+$", detailedException.Pattern);
+        Assert.Equal(timeout, detailedException.MatchTimeout);
+        var enumerateException = Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            var enumerator = regex.EnumerateMatches(input);
+            _ = enumerator.MoveNext();
+        });
+        Assert.Equal(text, enumerateException.Input);
+        Assert.Equal("(a+)+$", enumerateException.Pattern);
+        Assert.Equal(timeout, enumerateException.MatchTimeout);
+        var fromOffsetException = Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            var enumerator = regex.EnumerateMatchesFromUtf16Offset(input, 0);
+            _ = enumerator.MoveNext();
+        });
+        Assert.Equal(text, fromOffsetException.Input);
+        Assert.Equal("(a+)+$", fromOffsetException.Pattern);
+        Assert.Equal(timeout, fromOffsetException.MatchTimeout);
+        var splitException = Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            var enumerator = regex.EnumerateSplits(input, int.MaxValue);
+            _ = enumerator.MoveNext();
+        });
+        Assert.Equal(text, splitException.Input);
+        Assert.Equal("(a+)+$", splitException.Pattern);
+        Assert.Equal(timeout, splitException.MatchTimeout);
+        var replaceException = Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"));
+        Assert.Equal(text, replaceException.Input);
+        Assert.Equal("(a+)+$", replaceException.Pattern);
+        Assert.Equal(timeout, replaceException.MatchTimeout);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
 }
