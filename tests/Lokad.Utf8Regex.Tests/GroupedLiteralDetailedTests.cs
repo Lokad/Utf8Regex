@@ -342,6 +342,7 @@ public sealed class GroupedLiteralDetailedTests
             "((a|b)c)",
             "(?<x>ab|(?<y>c))d",
             "((?<x>a)|(?<y>a))b",
+            "(a|ab|abc|abcd|abcde)",
             "((a)|(a))",
         ];
         string[] texts = ["abd", "cd", "xxabdex", "ad", "bcd", "xay", "xby", "ab", "c", "ac", "bc", "xyz"];
