@@ -200,6 +200,15 @@ public sealed class Utf8RegexTimeoutTests
             _ = enumerator.MoveNext();
         });
         Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"));
+        var destination = new byte[65536];
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.TryReplace(input, "z", destination, out var bytesWritten));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(0).GetValueBytes());
+            writer.Append("]"u8);
+        }));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]"));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 

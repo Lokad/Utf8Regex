@@ -291,7 +291,7 @@ public sealed partial class Utf8Regex
         // slice arm; everything else keeps BCL routing below.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
+              (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -303,8 +303,9 @@ public sealed partial class Utf8Regex
 
         // R05: same owned slice replacement as the string core, copied into the
         // caller destination under the same size contract as the encoder helper.
-        if (MatchTimeout == Regex.InfiniteMatchTimeout &&
-            _sliceProgram is not null &&
+        // Finite timeouts stay owned like the bytes core (the public wrapper maps the
+        // deadline exactly like its siblings); only the string core keeps BCL routing.
+        if (_sliceProgram is not null &&
             _sliceProgram.ServesInput(input))
         {
             var sliced = OwnedSliceReplace(input, _sliceProgram, replacement, CancellationToken.None);
