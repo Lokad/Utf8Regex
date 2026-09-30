@@ -151,4 +151,31 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
             new Utf8Pcre2Regex("(?:ab|a)+z", Pcre2CompileOptions.Caseless)
                 .DebugCompiledProgram.Operations.Count);
     }
+
+    [Theory]
+    [InlineData("(?:a|ab){2}", "xaab")]
+    [InlineData("(?:a|ab){2,3}c", "xaababc")]
+    public void RangedDivergentRepeatMatchesOrderedSpans(string pattern, string inputText)
+    {
+        // R05: exact counts and trailing-context ranged counts enumerate
+        // ordered first-success spans identical to the oracle. Bare ranged
+        // counts at end-of-pattern stay diagnosed debt: the literal-family
+        // enumerator returns longest spans there while Match rides the slice.
+        var direct = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var input = Encoding.UTF8.GetBytes(inputText);
+        Assert.Equal(oracle.Match(inputText).Value, direct.Match(input).GetValueString());
+        var values = new System.Collections.Generic.List<string>();
+        var matches = direct.EnumerateMatches(input);
+        while (matches.MoveNext())
+        {
+            values.Add(matches.Current.GetValueString());
+        }
+        var wanted = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(inputText))
+        {
+            wanted.Add(m.Value);
+        }
+        Assert.Equal(wanted, values);
+    }
 }
