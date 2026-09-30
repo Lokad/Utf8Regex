@@ -13,6 +13,7 @@ namespace Lokad.Utf8Regex.Tests;
 /// per-operation owned execution with dedicated counters.
 /// A FallbackRegex row is BCL-constructed; a native row with nonzero verifier invocations is
 /// BCL-verified at runtime (candidate verification) on that input.
+/// The counter records verification attempts; whether BCL executed follows the construction flags (a created anchored fallback witnesses execution: its Lazy is only evaluated inside TryVerify paths).
 /// </summary>
 public sealed class EngineRouteCoverageMatrixTests
 {
@@ -76,6 +77,14 @@ public sealed class EngineRouteCoverageMatrixTests
         // Structural word shapes: BCL fallback on this shape (owner R03).
         yield return new object?[] { "word-email-shape", "\\w+@\\w+\\.\\w+", RegexOptions.CultureInvariant, "mail me a@b.cd ok", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "compiled-literal", "abc", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "negated-shorthand-window-gap-miss", "a\\D{2,5}b", RegexOptions.CultureInvariant, "xa12b", "AsciiSimplePattern", null, false, false };
+        yield return new object?[] { "negated-shorthand-window-gap-hit", "a\\D{2,5}b", RegexOptions.CultureInvariant, "xayzb", "AsciiSimplePattern", null, false, false };
+        yield return new object?[] { "negated-space-window-gap-hit", "a[^\\s]{2,5}b", RegexOptions.CultureInvariant, "xayzb", "AsciiSimplePattern", null, false, false };
+        yield return new object?[] { "divergent-ranged-count", "(?:a|ab){2,3}", RegexOptions.CultureInvariant, "xaabab", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "folded-shorthand-range-astral", "(?i)A\\D{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "negated-property-range-astral", "a\\P{L}{2,3}b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", false, false };
+        yield return new object?[] { "negated-shorthand-plus-astral", "a\\P{Nd}+b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "word-range-astral", "a\\W{2,}?b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", false, false };
     }
 
     [Theory]
