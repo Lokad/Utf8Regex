@@ -3596,6 +3596,9 @@ public sealed class AsciiSimplePatternTests
             ("((a|b)c)+", "xacbc\U0001F600", "Q"),
             ("(a(b|c)d)+", "xabd\U0001F600", "Q"),
             ("((ab|cd)e)+", "xabe\U0001F600", "Q"),
+            ("(a+)+b", "xaab", "Q"),
+            ("(a+)+b", "xaa\U0001F600bb", "Q"),
+            ("(a+)+", "xaa\U0001F600aa", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -3611,6 +3614,7 @@ public sealed class AsciiSimplePatternTests
         // R05: whole-pattern greedy or lazy unbounded loops over unit-closed atoms
         // and word-boundary runs (positive edges, plus negated edges positioned
         // away from scalar halves) run scalarwise exactly like BCL units, so discovery,
+        // Nested-plus loops join this routing (inner groups project last-iteration wins without the fallback engine).
         // shaping, splits, and
         // all three replacement cores never construct the fallback engine here.
         // Byte-level lanes compare encoded bytes because lone halves substitute
@@ -5648,6 +5652,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("\\d+", "x12\U0001F600", "Q"),
             ("\\D+", "xa\U0001F600b", "Q"),
             ("\\d{2,}?", "x12\U0001F600", "Q"),
+            ("a\\S+b", "xa\U0001F600b", "Q"),
+            ("a\\P{Nd}+b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -5666,6 +5672,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         // astral leads closed while BCL halves miss every positive table, and
         // consumes whole scalars where BCL halves match the negation, while
         // BMP matching already agrees exactly), so discovery, shaping, splits,
+        // Headed loops whose tables consume whole astral scalars mid-span join this routing (probed parity-clean on every lane).
         // and all three replacement cores never construct the fallback engine
         // here. Byte-level lanes compare encoded bytes because lone halves
         // substitute identically through the encoder on both sides.
