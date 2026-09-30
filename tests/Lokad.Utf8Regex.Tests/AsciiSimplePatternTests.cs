@@ -6824,6 +6824,61 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         }
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> HeadedGroupCategoryVerifierUseCases()
+    {
+        (string pattern, string text, bool expectUse)[] rows =
+        [
+            ("a\\W{2,}?b", "xa\U0001F600b", true),
+            ("a\\W{2,}b", "xa\U0001F600b", true),
+            ("a\\P{L}{2,}?b", "xa\U0001F600b", true),
+            ("a\\P{L}{2,}b", "xa\U0001F600b", true),
+            ("a\\W{2,}?b", "xa\U0001F600c", false),
+            ("a\\P{L}{2,}b", "xa\U0001F600c", false),
+            ("a\\P{L}{2,}?b", "xa12b", false),
+            ("a\\W{2,}?b", "xa12b", false),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.None, row.text, row.expectUse };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled, row.text, row.expectUse };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(HeadedGroupCategoryVerifierUseCases))]
+    public void HeadedGroupCategoryVerifierUseMatchesConstruction(string pattern, RegexOptions options, string text, bool expectUse)
+    {
+        // R05: the word-group anchored verifier is used exactly when it is built.
+        // On astral-meeting hits one candidate reaches TryVerify, which executes the
+        // anchored regex (one invocation alongside construction, both lanes); on
+        // misses no candidate survives search, so the Lazy is never evaluated and no
+        // anchored regex is constructed; ASCII hits serve fully owned with neither
+        // candidates nor invocations. The verifier mode stays AnchoredRegex on every
+        // row: the plan admits the anchored shape, but construction and execution
+        // both follow candidate demand. This closes the use-vs-construction question
+        // for the word-group contract with invocation evidence, not just flags.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchProbe = new Utf8Regex(pattern, options);
+        var isMatchDiagnostics = isMatchProbe.CollectIsMatchDiagnostics(input);
+        Assert.Equal(oracle.IsMatch(text), isMatchDiagnostics.Result);
+        Assert.Equal("AnchoredRegex", isMatchDiagnostics.FallbackVerifierMode);
+        Assert.Equal(expectUse, isMatchDiagnostics.VerifierInvocations > 0);
+        Assert.Equal(expectUse, isMatchDiagnostics.SearchCandidates > 0);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(expectUse, isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countProbe = new Utf8Regex(pattern, options);
+        var countDiagnostics = countProbe.CollectCountDiagnostics(input);
+        Assert.Equal(oracle.Matches(text).Count, countDiagnostics.Result);
+        Assert.Equal(expectUse, countDiagnostics.VerifierInvocations > 0);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(expectUse, countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> BoundedExactDivergentCases()
     {
         (string pattern, string text, string template)[] rows =
