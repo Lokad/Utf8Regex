@@ -721,6 +721,8 @@ public sealed class LokadPublicRouteGuardrailTests
         {
             (@"a[^\n]{2,5}b", "xa  b"),
             (@"a[\s\S]{2,5}b", "xa12b"),
+            (@"a\s{2,}?b", "xa  b"),
+            (@"a\s{2,}b", "xa  b"),
         })
         {
             var regex = new Utf8Regex(control.Pattern, options);
