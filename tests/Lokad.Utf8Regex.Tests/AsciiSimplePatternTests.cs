@@ -5259,6 +5259,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?i)\\P{IsBasicLatin}+", "\U0001F600", "Q"),
             ("\\P{Nd}+", "x\U0001F600yz", "Q"),
             ("\\p{L}+?b", "\U0001F600aab", "Q"),
+            ("\\d{2,}", "x12\U0001F600", "Q"),
+            ("\\d+", "x12\U0001F600", "Q"),
+            ("\\D+", "xa\U0001F600b", "Q"),
+            ("\\d{2,}?", "x12\U0001F600", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -6129,6 +6133,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         [
             ("([^x]{2,})", "\U0001F600yy", "Q"),
             ("(?i)([^x]{2,})", "\U0001F600yy", "Q"),
+            ("\\p{Nd}{2,}", "x\U000104A0y", "Q"),
         ];
         foreach (var row in rows)
         {
