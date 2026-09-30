@@ -4381,6 +4381,10 @@ public sealed class AsciiSimplePatternTests
             ("\\D{2,}?b", RegexOptions.CultureInvariant, "xa\U0001F600b"),
             (".{2,}?b", RegexOptions.CultureInvariant, "x\U0001F600b"),
             ("(?i)A[^x]{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("(?i)A\\D{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("(?i)A\\D{2,}B", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("(?i)A\\S{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b"),
+            ("(?i)A\\W{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b"),
         ];
         foreach (var row in rows)
         {
@@ -4411,6 +4415,47 @@ public sealed class AsciiSimplePatternTests
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
         Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedHeadedRangeAsciiMissCases()
+    {
+        (string pattern, string text)[] rows =
+        [
+            ("(?i)A\\D{2,}?B", "xa12b"),
+            ("(?i)A\\S{2,}?B", "xa  b"),
+            ("(?i)A\\W{2,}?B", "xayzb"),
+            ("(?i)A[^x]{2,}?B", "xaxb"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedHeadedRangeAsciiMissCases))]
+    public void FoldedHeadedRangeAsciiMissOwnsDiscovery(string pattern, RegexOptions options, string text)
+    {
+        // Folded headed ranges miss ASCII gaps with zero fallback construction:
+        // the folded head matches, the gap rejects, and no candidate survives
+        // to verification on either lane. Parity holds and construction is
+        // pinned per lane.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        Assert.False(oracle.IsMatch(text));
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.False(isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(0, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        Assert.False(matchRegex.Match(input).Success);
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> DotTailedLoopDeclineCases()
