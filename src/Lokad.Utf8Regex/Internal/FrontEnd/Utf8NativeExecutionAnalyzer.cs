@@ -291,6 +291,25 @@ internal static class Utf8NativeExecutionAnalyzer
                     out analyzedRegex);
             }
 
+            // R05: enumerated branch sets feed the longest-match automaton once they
+            // reach its selection floor, but BCL stops ordered repetition at first
+            // success, so mixed-length sets would project longest spans where the
+            // oracle stops early (e.g. (a|ab){2,3} light [1:4] vs oracle [1:2]).
+            // Decline those shapes to the ordered slice-or-fallback routes;
+            // uniform sets cannot diverge and small direct sets resolve in order.
+            if (literalBranches.Length >= Search.PreparedMultiLiteralSearch.AutomatonThreshold)
+            {
+                var firstBranchLength = literalBranches[0].Length;
+                for (var branchIndex = 1; branchIndex < literalBranches.Length; branchIndex++)
+                {
+                    if (literalBranches[branchIndex].Length != firstBranchLength)
+                    {
+                        analyzedRegex = default;
+                        return false;
+                    }
+                }
+            }
+
             var ignoreCase = (executionOptions & RegexOptions.IgnoreCase) != 0;
             analyzedRegex = Utf8RegexAnalysis.Create(
                 semanticRegex,

@@ -22,7 +22,7 @@ internal enum PreparedMultiLiteralKind : byte
 internal readonly struct PreparedMultiLiteralSearch
 {
     private const int TrieThreshold = 8;
-    private const int AutomatonThreshold = 5;
+    internal const int AutomatonThreshold = 5;
 
     public PreparedMultiLiteralSearch(byte[][] literals, bool ignoreCase)
     {
