@@ -5077,6 +5077,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a*", "xa\U0001F600", "Q"),
             ("x*", "x\U0001F600", "Q"),
             ("a*", "\U0001F600", "Q"),
+            ("^[0-9]*$", "12\U0001F60034", "Q"),
         ];
         foreach (var row in rows)
         {
