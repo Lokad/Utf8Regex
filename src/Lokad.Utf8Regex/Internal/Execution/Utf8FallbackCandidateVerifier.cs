@@ -217,28 +217,7 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
             // exactly, so verify anchored from the candidate start over the tail and let
             // the split-tolerant end coverage decide.
             decoded ??= Encoding.UTF8.GetString(input);
-            var tailMatch = MatchCandidate(decoded, candidateStart.Utf16Offset);
-            if (!IsVerifiedMatch(
-                    tailMatch,
-                    candidateStart.Utf16Offset,
-                    candidate,
-                    map,
-                    Plan.RequiresCandidateEndCoverage,
-                    Plan.RequiresTrailingAnchorCoverage))
-            {
-                return false;
-            }
-
-            var tailEnd = map.Resolve(tailMatch.Index + tailMatch.Length);
-            var tailAligned = candidateStart.IsScalarBoundary && tailEnd.IsScalarBoundary;
-            result = new Utf8FallbackVerificationResult(
-                Success: true,
-                IndexInUtf16: tailMatch.Index,
-                LengthInUtf16: tailMatch.Length,
-                IndexInBytes: candidateStart.ByteOffset,
-                LengthInBytes: tailEnd.ByteOffset - candidateStart.ByteOffset,
-                IsByteAligned: tailAligned);
-            return true;
+            return TryVerifyWholeTail(candidate, map, decoded, candidateStart, ref result);
         }
 
         var candidateEnd = map.Resolve(candidateEndUtf16Offset);
@@ -254,7 +233,11 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
             candidateEnd.Utf16Offset - candidateStart.Utf16Offset));
         if (!matches.MoveNext() || matches.Current.Index != 0)
         {
-            return false;
+            // Span missed: byte-measured window ends can exclude the true tail on
+            // non-ASCII input, so retry anchored over the whole tail; ASCII keeps
+            // the single span attempt and coverage still decides everywhere.
+            return !validation.IsAscii &&
+                TryVerifyWholeTail(candidate, map, decoded, candidateStart, ref result);
         }
 
         var valueMatch = matches.Current;
@@ -281,6 +264,41 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
             IndexInBytes: candidate.StartIndex,
             LengthInBytes: matchEnd.ByteOffset - candidate.StartIndex,
             IsByteAligned: matchEnd.IsScalarBoundary);
+        return true;
+    }
+
+    // Whole-tail anchored verification shared by scalar-split ends and span misses:
+    // BCL decides from the candidate start over the full tail while the plan
+    // coverage still adjudicates window bounds.
+    private bool TryVerifyWholeTail(
+        Utf8StructuralCandidate candidate,
+        Utf8BoundaryMap map,
+        string decoded,
+        Utf16Boundary candidateStart,
+        ref Utf8FallbackVerificationResult result)
+    {
+        result = default;
+        var tailMatch = MatchCandidate(decoded, candidateStart.Utf16Offset);
+        if (!IsVerifiedMatch(
+                tailMatch,
+                candidateStart.Utf16Offset,
+                candidate,
+                map,
+                Plan.RequiresCandidateEndCoverage,
+                Plan.RequiresTrailingAnchorCoverage))
+        {
+            return false;
+        }
+
+        var tailEnd = map.Resolve(tailMatch.Index + tailMatch.Length);
+        var tailAligned = candidateStart.IsScalarBoundary && tailEnd.IsScalarBoundary;
+        result = new Utf8FallbackVerificationResult(
+            Success: true,
+            IndexInUtf16: tailMatch.Index,
+            LengthInUtf16: tailMatch.Length,
+            IndexInBytes: candidateStart.ByteOffset,
+            LengthInBytes: tailEnd.ByteOffset - candidateStart.ByteOffset,
+            IsByteAligned: tailAligned);
         return true;
     }
 }

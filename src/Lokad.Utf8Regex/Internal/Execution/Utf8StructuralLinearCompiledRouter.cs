@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -58,6 +59,19 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8ExecutionDeadline budget,
         out bool isMatch)
     {
+        // R05: the direct window executor measures gaps in bytes, selects the
+        // trailing literal greedily, and projects byte offsets as UTF-16 units,
+        // so non-ASCII input fails closed to BCL verification with parity while
+        // ASCII input keeps the owned route below. The byte scan (not just the
+        // validation flag) decides: fused-family callers pass default validation.
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions) &&
+            !validation.IsAscii &&
+            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+        {
+            isMatch = verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
+            return true;
+        }
+
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             isMatch = AsciiOrderedLiteralWindowExecutor.FindNext(
@@ -115,6 +129,19 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8ExecutionDeadline budget,
         out int count)
     {
+        // R05: the direct window executor measures gaps in bytes, selects the
+        // trailing literal greedily, and projects byte offsets as UTF-16 units,
+        // so non-ASCII input fails closed to BCL verification with parity while
+        // ASCII input keeps the owned route below. The byte scan (not just the
+        // validation flag) decides: fused-family callers pass default validation.
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions) &&
+            !validation.IsAscii &&
+            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+        {
+            count = verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
+            return true;
+        }
+
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
@@ -193,6 +220,21 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
+        // R05: the direct window executor measures gaps in bytes, selects the
+        // trailing literal greedily, and projects byte offsets as UTF-16 units,
+        // so non-ASCII input fails closed to BCL verification with parity while
+        // ASCII input keeps the owned route below. The byte scan (not just the
+        // validation flag) decides: fused-family callers pass default validation.
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions) &&
+            !validation.IsAscii &&
+            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+        {
+            var fallbackDecoded = Encoding.UTF8.GetString(input);
+            var fallbackMatch = verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(fallbackDecoded);
+            match = Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, fallbackMatch, Utf8BoundaryMap.Create(input));
+            return true;
+        }
+
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             var index = AsciiOrderedLiteralWindowExecutor.FindNext(

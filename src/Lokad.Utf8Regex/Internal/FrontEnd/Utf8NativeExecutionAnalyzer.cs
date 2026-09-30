@@ -1399,6 +1399,11 @@ internal static class Utf8NativeExecutionAnalyzer
         if (index < childCount &&
             TryGetBoundedGapLoop(node.Child(index), out maxGap, out minGap, out gapSameLine))
         {
+            if (IsLazyGapRange(node.Child(index), minGap, maxGap))
+            {
+                return false;
+            }
+
             index++;
         }
         else if (!hasSeparator)
@@ -1680,7 +1685,8 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         if (index >= childCount ||
-            !TryGetBoundedGapLoop(node.Child(index), out maxGap, out minGap, out gapSameLine))
+            !TryGetBoundedGapLoop(node.Child(index), out maxGap, out minGap, out gapSameLine) ||
+            IsLazyGapRange(node.Child(index), minGap, maxGap))
         {
             return false;
         }
@@ -2514,6 +2520,20 @@ internal static class Utf8NativeExecutionAnalyzer
 
         maxLineBreaks = 0;
         return false;
+    }
+
+    // The direct window executor selects the trailing literal greedily
+    // (LastIndexOf), so lazy ranges decline window plans while greedy and
+    // fixed gaps keep them; BCL parity holds through the fallback route.
+    private static bool IsLazyGapRange(Utf8TreeNode node, int minGap, int maxGap)
+    {
+        if (minGap == maxGap)
+        {
+            return false;
+        }
+
+        var unwrapped = UnwrapRuntimeNode(node);
+        return unwrapped.Kind is Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Setlazy;
     }
 
     private static bool TryGetBoundedAnyTextLoop(Utf8TreeNode node, out int maxCount, out int minCount)

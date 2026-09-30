@@ -6309,6 +6309,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a\\D{2,}b", "xa\U0001F600b", "Q"),
             ("(a\\D{2,}b)", "xa\U0001F600b", "<$1>"),
             ("a\\D{2,}?b", "xa\U0001F600b", "Q"),
+            ("a.{2,5}?b", "xa\U0001F600b", "Q"),
+            ("a[^x]{2,5}?b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -6651,6 +6653,9 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("([^x]{2,})", "\U0001F600yy", "Q"),
             ("(?i)([^x]{2,})", "\U0001F600yy", "Q"),
             ("\\p{Nd}{2,}", "x\U000104A0y", "Q"),
+            ("(.{2,}?)", "a\U0001F600b", "Q"),
+            ("([^x]{2,}?)", "a\U0001F600b", "Q"),
+            ("(\\D{2,}?)", "a\U0001F600b", "<$1>"),
         ];
         foreach (var row in rows)
         {
