@@ -6971,29 +6971,22 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     public void HeadedCategoryRangeAstralKeepsVerifierDiscovery(string pattern, RegexOptions options, string text, string template)
     {
         // R05: headed lazy ranges over unit-divergent category tables keep
-        // verifier-owned discovery with BCL shaping on both lanes, except the compiled-lane anchored-verifier flags, which vary by run context
-        // (suspected pool-history sensitivity in candidate search, same class as
-        // the unpinned tailed a.{2,5}?b row): probe isolation shows no verifier
-        // while the cartesian run constructs it, so only plain-fallback absence
-        // is pinned on those lanes. Ordinary discovery keeps the anchored verifier
-        // deterministically; parity holds on every lane.
+        // verifier-owned discovery with BCL shaping on both lanes. The
+        // anchored verifier is constructed on IsMatch and Count of both
+        // lanes (stable across isolated, reversed-order, and cartesian runs;
+        // the earlier isolation-vs-cartesian variance does not reproduce).
+        // Parity holds on every lane.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
-        if (!compiled)
-        {
-            Assert.True(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
-        }
+        Assert.True(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
-        if (!compiled)
-        {
-            Assert.True(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
-        }
+        Assert.True(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
