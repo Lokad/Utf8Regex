@@ -6736,6 +6736,9 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(a|ab){1,3}", "xaabab", "Q"),
             ("(a|ab){2,3}c", "xaababc", "Q"),
             ("(a|ab){3}", "xaababab", "Q"),
+            ("(?i)(a|ab){2,3}", "xaabab", "Q"),
+            ("(?i)(a|ab){2,3}", "xaABab", "Q"),
+            ("(?i)(a|ab){2,3}c", "xaababc", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -6749,6 +6752,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     public void RangedDivergentCountServesOrderedSpans(string pattern, RegexOptions options, string text, string template)
     {
         // R05: ranged divergent counts serve ordered first-success spans from
+        // IgnoreCase variants join through the same gate (folded first-success spans, including a folding-mismatch text).
         // the owned slice with zero fallback construction on both lanes (the
         // longest-match automaton route is declined at analysis). Exact counts
         // keep their literal routes, see BoundedExactDivergentCases.
