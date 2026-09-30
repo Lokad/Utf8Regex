@@ -536,6 +536,8 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "x*", "ab", "<>a<>b<>" };
         yield return new object?[] { "\\b", "a b", "<>a<> <>b<>" };
         yield return new object?[] { "(a+)(b+)", "xaaby", "x<aa-b>y" };
+        yield return new object?[] { "(a|ab){2,3}", "xaabab", "x<aabab>" };
+        yield return new object?[] { "(a|ab){2,3}", "xaabab\U0001F600", "x<aabab>\U0001F600" };
     }
 
     [Theory]
@@ -568,6 +570,8 @@ public sealed class Utf8SliceRtlOperationTests
             ("a*", "ba", 3),
             ("x*", "ax\U0001F600b", 0),
             ("x*", "\U0001F600", 0),
+            ("(a|ab){2,3}", "xaabab", 0),
+            ("(a|ab){2,3}", "xaabab\U0001F600", 0),
         ];
         foreach (var row in rows)
         {
