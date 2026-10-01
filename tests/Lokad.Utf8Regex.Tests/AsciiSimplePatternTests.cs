@@ -18558,6 +18558,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("^\\d+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
             ("\\w+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
             ("\\w+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab \nxy ", "Q"),
+            ("(\\d.+\\d)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
         ];
         foreach (var row in rows)
         {
