@@ -87,6 +87,9 @@ public sealed class Utf8OwnedTreeParserExplicitTests
     {
         yield return new object?[] { "(?n)\\1", 512, RegexParseError.UndefinedNumberedReference, 6 };
         yield return new object?[] { "(a)\\1", 516, RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "(ab)\\1", 532, RegexParseError.UndefinedNumberedReference, 6 };
+        yield return new object?[] { "(a+)\\1", 532, RegexParseError.UndefinedNumberedReference, 6 };
+        yield return new object?[] { "(a.+)\\1", 532, RegexParseError.UndefinedNumberedReference, 7 };
         yield return new object?[] { "^(ab)\\1$", 518, RegexParseError.UndefinedNumberedReference, 7 };
         yield return new object?[] { "(a+)\\1$", 518, RegexParseError.UndefinedNumberedReference, 6 };
         yield return new object?[] { "(a.+)\\1", 518, RegexParseError.UndefinedNumberedReference, 7 };
