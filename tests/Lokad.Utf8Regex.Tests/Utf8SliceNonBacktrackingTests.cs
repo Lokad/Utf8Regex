@@ -243,6 +243,9 @@ public sealed class Utf8SliceNonBacktrackingTests
             ("a[^x]+b", "xayzb", "Q"),
             ("(a)(b)", "xxabxx", "<$1$2>"),
             ("a.*b", "xaayb", "Q"),
+            ("[a-z]+", "xxabcxx", "Q"),
+            ("(ab|cd)ef", "xxcdefxx", "Q"),
+            ("\\d+", "xx123xx", "Q"),
         ];
         foreach (var row in rows)
         {
