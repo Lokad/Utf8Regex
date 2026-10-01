@@ -132,6 +132,8 @@ public sealed class Utf8SliceNonBacktrackingTests
     [InlineData("ab+", "AB", RegexOptions.IgnoreCase)]
     [InlineData("^a", "x\na", RegexOptions.Multiline)]
     [InlineData("a.c", "a\nc", RegexOptions.Singleline)]
+    [InlineData("a.+b", "xa\nbxx", RegexOptions.Singleline)]
+    [InlineData("a.+b", "xay", RegexOptions.Singleline)]
     [InlineData("a b", "ab", RegexOptions.IgnorePatternWhitespace)]
     [InlineData("(a)(b)", "ab", RegexOptions.ExplicitCapture)]
     public void NonBacktrackingOptionCombosMatchOracle(string pattern, string inputText, RegexOptions extra)
