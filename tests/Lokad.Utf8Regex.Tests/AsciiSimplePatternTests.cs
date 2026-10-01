@@ -10412,6 +10412,54 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> BoundedSplitOwnedCases()
+    {
+        (string pattern, RegexOptions options, string text, int count)[] rows =
+        [
+            ("a+", RegexOptions.CultureInvariant, "xaaxbbx", 2),
+            ("a+", RegexOptions.CultureInvariant, "xaaxbbx", 3),
+            ("(a+)", RegexOptions.CultureInvariant, "xaaxbbx", 2),
+            ("(a+)", RegexOptions.CultureInvariant, "xaaxbbx", 3),
+            ("a+(?=b)", RegexOptions.CultureInvariant, "xaabxb", 2),
+            ("a+(?=b)", RegexOptions.CultureInvariant, "xaabxb", 3),
+            ("\\bword\\b", RegexOptions.CultureInvariant, "xx word yy word zz", 2),
+            ("\\bword\\b", RegexOptions.CultureInvariant, "xx word yy word zz", 3),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, row.options, row.text, row.count };
+            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.count };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundedSplitOwnedCases))]
+    public void BoundedSplitOwnsInput(string pattern, RegexOptions options, string text, int count)
+    {
+        // R05: bounded-count splits (plain, grouped, lookahead, and boundary
+        // shapes at counts 2 and 3) serve fully owned on both lanes with oracle
+        // value parity. (The .NET oracle itself rejects count 1 with
+        // ArgumentOutOfRange, so no pin is needed there.)
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var splitRegex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expectedSplits.Add((text[start..end], start, end - start));
+        }
+        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in splitRegex.EnumerateSplits(input, count))
+        {
+            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+        Assert.Equal(expectedSplits, actualSplits);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> MinBoundHeadedAstralCases()
     {
         (string pattern, string text, string template)[] rows =
