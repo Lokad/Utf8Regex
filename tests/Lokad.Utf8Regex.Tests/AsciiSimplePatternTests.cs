@@ -17923,6 +17923,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("^ab", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
             ("(a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
             ("\\d.+\\d", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
+            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
+            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa", "Q"),
+            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
+            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
         ];
         foreach (var row in rows)
         {
