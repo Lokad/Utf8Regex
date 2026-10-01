@@ -20,6 +20,16 @@
   `unsupported_pattern`: the owned tree parser declines expression conditionals,
   so no tree features refine the taxonomy.
 
+### Capture conformance
+
+- Conformance bug fix: named groups under ExplicitCapture (for example
+  (?<x>ab)(?<y>cd)) were lowered as non-capturing, so owned replacement
+  resolved $1/${x} to empty while .NET fills them (<> on xxabcdxx
+  gives xx<abcd>xx). Named and numbered definitions now capture exactly like
+  BCL; only unnamed groups go slotless under ExplicitCapture. Unnamed-group
+  suppression, numbering, metadata, and the balancing-pop construction errors
+  are unchanged.
+
 ### Character-class conformance
 
 - Conformance bug fix: negated shorthands and properties (`\D`, `\W`,

@@ -11,8 +11,9 @@ namespace Lokad.Utf8Regex.Tests;
 // them, top-level n demotes unnamed groups the same way, backreferences
 // resolve surviving slots (unbound digits fail), unnamed-first numbering holds
 // across explicit scopes (auto groups take the lowest free slots while canonical
-// numbers claim their literal slots, collisions included); scoped n keeps named
-// definitions slotless with mapped slots; decline agreement on references into
+// numbers claim their literal slots, collisions included); named definitions
+// capture under scoped n exactly like BCL (only unnamed groups go slotless);
+// decline agreement on references into
 // skipped slots holds; only the flip-decision balance-pop residual still routes
 // to the provider.
 public sealed class Utf8OwnedTreeParserExplicitTests

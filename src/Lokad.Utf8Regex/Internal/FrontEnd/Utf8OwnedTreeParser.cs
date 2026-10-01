@@ -1369,7 +1369,7 @@ internal static class Utf8OwnedTreeParser
 
             state.Position++;
             state.Options = namedEntryOptions;
-            var group = new Utf8TreeNode(underExplicit ? Utf8TreeNodeKind.Group : Utf8TreeNodeKind.Capture, namedEntryOptions);
+            var group = new Utf8TreeNode(Utf8TreeNodeKind.Capture, namedEntryOptions);
             group.Children = body;
             body.Parent = group;
             node = group;
@@ -1402,12 +1402,9 @@ internal static class Utf8OwnedTreeParser
                     return true;
                 }
 
-                if (!underExplicit)
-                {
-                    group.Str = name;
-                    group.M = declared;
-                    group.N = -1;
-                }
+                group.Str = name;
+                group.M = declared;
+                group.N = -1;
 
                 if (declared != 0)
                 {
@@ -1434,14 +1431,11 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            if (!underExplicit)
-            {
-                group.Str = name;
-                group.M = -1;
-                group.N = -1;
-            }
+            group.Str = name;
+            group.M = -1;
+            group.N = -1;
 
-            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1, UnderExplicit = underExplicit, OpenPosition = openPosition });
+            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1, OpenPosition = openPosition });
 
             return true;
         }
@@ -1666,10 +1660,7 @@ internal static class Utf8OwnedTreeParser
                 if (autoSlots.TryGetValue(definition.Name, out var shared))
                 {
                     definition.Slot = shared;
-                    if (!definition.UnderExplicit)
-                    {
-                        definition.Node.M = shared;
-                    }
+                    definition.Node.M = shared;
 
                     continue;
                 }
@@ -1682,10 +1673,7 @@ internal static class Utf8OwnedTreeParser
                 definition.Slot = nextFree;
                 taken.Add(nextFree);
                 autoSlots[definition.Name] = nextFree;
-                if (!definition.UnderExplicit)
-                {
-                    definition.Node.M = nextFree;
-                }
+                definition.Node.M = nextFree;
             }
 
             var slots = new SortedSet<int> { 0 };
@@ -3239,7 +3227,6 @@ internal static class Utf8OwnedTreeParser
         public string Name = string.Empty;
         public int Declared = -1;
         public bool IsAuto;
-        public bool UnderExplicit;
         public int Slot;
         public int OpenPosition = -1;
     }
