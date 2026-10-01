@@ -22823,6 +22823,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?<x>ab)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
             ("(?<x>AB)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
             ("(?<x>ab)(c)\\k<x>", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
+            ("(?<x>ab)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabc\nabxx", "Q"),
+            ("(?<x>ab)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabc\naxxx", "Q"),
         ];
         foreach (var row in rows)
         {
