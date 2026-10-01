@@ -21006,6 +21006,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(a)?(?(1)b|c)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
             ("^(?>a+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
             ("^(?>a+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
+            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
+            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
+            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc\nzz", "Q"),
+            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
         ];
         foreach (var row in rows)
         {
