@@ -36,7 +36,13 @@ public sealed partial class Utf8Regex
         // Guided verification only tries scalar-boundary starts, so astral inputs
         // need shapes whose matches start at scalar boundaries; everything else
         // verifies through the full BCL decode below.
-        if (CanGuideFallbackVerification() && OwnedMatchStartsAreScalarAligned(input))
+        // Startat-guided verification re-pins a leading contiguous anchor (\G) to the
+        // candidate start, manufacturing hits away from the true scan pin
+        // (bounded-span circularity and plain startat alike). Decline the guided branch
+        // for proven \G-headed trees; whole-subject BCL below answers with the pin
+        // intact. Consuming, branching, and quantified heads end the walk unproven
+        // (out of scope for this gate).
+        if (!HasLeadingContiguousAnchor(_preparedRegex.ExecutionTree) && CanGuideFallbackVerification() && OwnedMatchStartsAreScalarAligned(input))
         {
             return MatchFallbackViaSearchStarts(input, boundaryMap);
         }
@@ -45,6 +51,52 @@ public sealed partial class Utf8Regex
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         var map = boundaryMap ?? Utf8InputAnalyzer.Analyze(input).BoundaryMap;
         return Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, match, map);
+        static bool HasLeadingContiguousAnchor(Utf8ExecutionTree? tree)
+        {
+            return tree?.Root is not null && LeadsWithContiguousAnchor(tree.Root) is true;
+        }
+
+        static bool? LeadsWithContiguousAnchor(Utf8ExecutionNode node)
+        {
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.Start:
+                    return true;
+                case Utf8ExecutionNodeKind.Concatenate:
+                    foreach (var child in node.Children)
+                    {
+                        var lead = LeadsWithContiguousAnchor(child);
+                        if (lead is not null)
+                        {
+                            return lead;
+                        }
+                    }
+                    return false;
+                case Utf8ExecutionNodeKind.Capture:
+                case Utf8ExecutionNodeKind.Group:
+                case Utf8ExecutionNodeKind.Atomic:
+                    return node.Children.Count == 0
+                        ? null
+                        : node.Children.Count == 1
+                            ? LeadsWithContiguousAnchor(node.Children[0])
+                            : (bool?)false;
+                case Utf8ExecutionNodeKind.Empty:
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Eol:
+                case Utf8ExecutionNodeKind.EndZ:
+                case Utf8ExecutionNodeKind.End:
+                case Utf8ExecutionNodeKind.Boundary:
+                case Utf8ExecutionNodeKind.NonBoundary:
+                case Utf8ExecutionNodeKind.ECMABoundary:
+                case Utf8ExecutionNodeKind.NonECMABoundary:
+                case Utf8ExecutionNodeKind.PositiveLookaround:
+                case Utf8ExecutionNodeKind.NegativeLookaround:
+                    return null;
+                default:
+                    return false;
+            }
+        }
     }
 
     private bool RejectsByRequiredPrefilter(ReadOnlySpan<byte> input)

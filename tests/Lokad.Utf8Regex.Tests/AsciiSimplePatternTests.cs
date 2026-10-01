@@ -8532,8 +8532,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.True(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
         var actualDetailed = detailedRegex.MatchDetailed(input);
@@ -8542,8 +8542,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         {
             Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
         }
-        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.True(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -16113,6 +16113,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             (@"\Gab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
             (@"\Gab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
             (@"\Gab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nab", "Q"),
+            (@"(\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxabxx", "Q"),
+            (@"(\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
+            (@"(?m:\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
+            (@"(?m:\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nab", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -16125,14 +16129,14 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(ContiguousMultilineLaneSplitCases))]
     public void ContiguousMultilineLaneSplitPinsBclSoundLanes(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt with a lane split: leading-contiguous-anchor shapes
-        // under Multiline (bare \G-headed literals, hits and misses) route six lanes
-        // through sound BCL fallback while bytes replacement serves natively with
-        // correct output. Match/Detailed are EXCLUDED: the native first-match
-        // returns the literal occurrence ignoring the \G pin on miss inputs
-        // (e.g. \Gab+ML on "xx\nabxx" reports idx 3, without Multiline idx 2,
-        // while the oracle misses; the \A control is exact). Parity holds on the
-        // pinned lanes and routing is pinned per lane.
+        // R05: leading-contiguous-anchor shapes (bare and grouped \G-headed literals
+        // plus scoped-multiline \G, hits and misses) route BCL on every lane of both
+        // lanes: startat-guided verification re-pins \G to the candidate (bounded-span
+        // circularity and plain startat alike), so the guided branch is declined for
+        // proven \G-headed trees and whole-subject BCL answers. Bytes replacement
+        // serves natively with correct output. Parity holds and construction is pinned
+        // per lane. Nullable-prefix and alternation-embedded \G are out of the proven
+        // class for this walk; probed shapes agree on their own routes.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -16143,6 +16147,39 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.True(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+            for (var number = 0; number < expectedDetailed.Groups.Count; number++)
+            {
+                var expectedGroup = expectedDetailed.Groups[number];
+                var actualGroup = actualDetailed.GetGroup(number);
+                Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                if (expectedGroup.Success)
+                {
+                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+                }
+            }
+        }
+        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
