@@ -8842,6 +8842,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("^(ab)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
             ("(a+)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb", "Q"),
             ("(a+)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naaaa", "Q"),
+            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
+            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abab", "Q"),
+            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabc", "Q"),
         ];
         foreach (var row in rows)
         {
