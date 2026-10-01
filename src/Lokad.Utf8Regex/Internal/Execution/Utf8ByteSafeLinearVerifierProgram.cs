@@ -569,6 +569,30 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
     {
         if (TryCreateProjectedAsciiCharClass(runtimeSet, out var asciiCharClass))
         {
+            // R05 units-vs-scalars fence: a projected loop counts scalars while BCL
+            // counts astral units, so unbounded minima other than one diverge when the
+            // set meets astral halves (probed false-miss: (?i)a\\W{2,}b on astral pairs
+            // with no fallback constructed); min-one stays exact by the indifference
+            // argument, bounded ranges route elsewhere, and astral-safe sets (positive
+            // shorthands, ASCII-only sets) never meet halves, so only unbounded minima
+            // other than one over halves-meeting sets divert to BCL-backed engines here.
+            // Halves-meeting holds exactly when both surrogate halves are members
+            // (probed across the shorthand table: negated word-group and
+            // negated-shorthand sets meet both halves while positive shorthands and
+            // ASCII-only sets meet neither).
+            if (loop && min != 1 && max == int.MaxValue &&
+                Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)0xD800, runtimeSet) &&
+                Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)0xDC00, runtimeSet))
+            {
+                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                {
+                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
+                }
+
+                step = default;
+                return false;
+            }
+
             step = loop
                 ? Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet(runtimeSet, asciiCharClass, min, max)
                 : Utf8ByteSafeLinearVerifierStep.MatchProjectedAsciiSet(runtimeSet, asciiCharClass);

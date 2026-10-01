@@ -7702,6 +7702,104 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.Equal(expectUse, countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldedWordGroupMinBoundDivertCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("(?i)a\\W{2,}b", "xa\U0001F600b", "Q"),
+            ("(?i)a\\W*b", "xa\U0001F600b", "Q"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FoldedWordGroupMinBoundDivertCases))]
+    public void FoldedWordGroupMinBoundDivertsToBcl(string pattern, RegexOptions options, string text, string template)
+    {
+        // R05: folded unbounded word-group loops with minima other than one divert
+        // to BCL-backed engines on astral input with oracle parity on every lane.
+        // The byte-safe linear verifier counts scalars while BCL counts astral
+        // units, so these shapes false-missed discovery owned (probed miss against
+        // oracle [1:4] with no fallback constructed); the linear compile fence for
+        // projected unbounded minima other than one closes the hole. Bounded
+        // ranges, min-one loops, lazy loops, unfolded word groups, and sibling
+        // shorthands keep their owned or verifier-owned routes (probe-mapped).
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.True(isMatchRegex.IsMatch(input));
+        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
+        Assert.Equal(1, countRegex.Count(input));
+        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text);
+        var actualMatch = matchRegex.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        Assert.True(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text);
+        var actualDetailed = detailedRegex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        if (expectedDetailed.Success)
+        {
+            Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
+        }
+        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        var enumerateRegex = new Utf8Regex(pattern, options);
+        var expectedPositions = new System.Collections.Generic.List<string>();
+        foreach (Match m in oracle.Matches(text))
+        {
+            expectedPositions.Add(m.Index + ":" + m.Length);
+        }
+        var actualPositions = new System.Collections.Generic.List<string>();
+        foreach (var m in enumerateRegex.EnumerateMatches(input))
+        {
+            actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+        }
+        Assert.Equal(expectedPositions, actualPositions);
+        Assert.True(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        var splitRegex = new Utf8Regex(pattern, options);
+        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expectedSplits.Add((text[start..end], start, end - start));
+        }
+        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
+        {
+            actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+        Assert.Equal(expectedSplits, actualSplits);
+        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        var expected = oracle.Replace(text, template);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
+        Assert.Equal(expectedBytes, bytesActual);
+        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        var destinationRegex = new Utf8Regex(pattern, options);
+        Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
+        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
+        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> BoundedExactDivergentCases()
     {
         (string pattern, string text, string template)[] rows =
