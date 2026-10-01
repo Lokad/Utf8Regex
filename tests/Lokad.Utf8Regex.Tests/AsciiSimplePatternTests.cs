@@ -8078,6 +8078,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a[^x]+b", "xayzb", "Q"),
             ("(a)(b)", "xxabxx", "<$1$2>"),
             ("^a+$", "xaab", "Q"),
+            ("[a-z]+", "xxabcxx", "Q"),
+            ("(ab|cd)ef", "xxcdefxx", "Q"),
         ];
         foreach (var row in rows)
         {
