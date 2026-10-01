@@ -9440,6 +9440,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("\\bword", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
             ("word\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
             ("\\bword\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
+            ("\\b.+\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
+            ("\\b.+\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "   ", "Q"),
+            ("\\Ba.+b\\B", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabcby", "Q"),
+            ("\\Ba.+b\\B", RegexOptions.Multiline | RegexOptions.CultureInvariant, " ab ", "Q"),
         ];
         foreach (var row in rows)
         {
