@@ -9797,6 +9797,10 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("(?'w'ab)c\\k'w'", RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
             ("(?<x>a)?b\\k<x>", RegexOptions.CultureInvariant, "xbxx", "Q"),
             ("(?<x>A+)\\k<x>", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAAax", "Q"),
+            ("(?<w>a.+)\\k<w>", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabaab\nzz", "Q"),
+            ("(?<w>a.+)\\k<w>", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabc\nzz", "Q"),
+            ("^(?<w>a.+)\\k<w>$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabaab", "Q"),
+            ("^(?<w>a.+)\\k<w>$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabc", "Q"),
         ];
         foreach (var row in rows)
         {
