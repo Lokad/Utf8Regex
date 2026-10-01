@@ -16330,6 +16330,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("a.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nyy", "Q"),
             ("(a+).+(b+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
             ("^ab", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
+            ("(a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
+            ("\\d.+\\d", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
         ];
         foreach (var row in rows)
         {
