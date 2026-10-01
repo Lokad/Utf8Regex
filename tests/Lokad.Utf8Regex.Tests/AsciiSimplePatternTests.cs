@@ -5612,6 +5612,56 @@ public sealed class AsciiSimplePatternTests
         Assert.False(enumerateRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
+    public static System.Collections.Generic.IEnumerable<object?[]> CrossFamilyEvaluatorOwnedCases()
+    {
+        (string pattern, RegexOptions options, string text)[] rows =
+        [
+            ("a[^x]{2,}b", RegexOptions.CultureInvariant, "xayzb"),
+            (".a[0-9]+b", RegexOptions.CultureInvariant, "xca12b"),
+            ("^a[^x]*b$", RegexOptions.CultureInvariant, "ab"),
+            ("(a)\\1", RegexOptions.CultureInvariant, "xaax"),
+            ("(?i)a\\D+?b", RegexOptions.CultureInvariant, "xayZb"),
+            ("a\\p{L}{2,}b", RegexOptions.CultureInvariant, "xayzb"),
+            ("a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "xayzb"),
+            ("a\\W{2,}b", RegexOptions.CultureInvariant, "xa, b"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, row.options, row.text };
+            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(CrossFamilyEvaluatorOwnedCases))]
+    public void CrossFamilyEvaluatorsServeOwned(string pattern, RegexOptions options, string text)
+    {
+        // R05: evaluator callbacks serve owned on ASCII input across recently
+        // graduated families (ranges, directed runs, anchored loops, backrefs,
+        // folded atoms, categories, right-to-left, word groups) on both lanes:
+        // string and bytes evaluators project oracle-identical replacements
+        // with zero fallback construction.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static m => "[" + m.Value + "]");
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = bytesRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(0).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expectedBytes, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
     public static System.Collections.Generic.IEnumerable<object?[]> WholeLoopEvaluatorOwnedCases()
     {
         (string pattern, string text)[] rows =
