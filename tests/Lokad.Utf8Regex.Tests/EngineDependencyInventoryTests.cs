@@ -351,6 +351,50 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(offenders);
     }
 
+    [Fact]
+    public void EmittedCodeReachesNoBclRegexEngine()
+    {
+        // R05 IL/generated-code check: the DynamicMethod emitters (Utf8Emit*.cs)
+        // may only call owned helpers, owned search state, and ReadOnlySpan<byte>
+        // primitives. No emitted site may construct, reference, or run the BCL
+        // regex engine; audited call targets are the emitters own private methods
+        // plus span primitives. Own Utf8 names and plan types are out of scope here.
+        var repoRoot = FindRepositoryRoot();
+        var tokens = new[]
+        {
+            "new Regex(",
+            "typeof(Regex",
+            "RegexRunner",
+            "RegexCompiler",
+            "RegexInterpreter",
+            "RegexWriter",
+            "CompileToAssembly",
+        };
+        var offenders = new System.Collections.Generic.List<string>();
+        foreach (var path in Directory.EnumerateFiles(Path.Combine(repoRoot, "src", "Lokad.Utf8Regex"), "Utf8Emit*.cs", SearchOption.AllDirectories))
+        {
+            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) || path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var number = 0;
+            foreach (var line in File.ReadLines(path))
+            {
+                number++;
+                foreach (var token in tokens)
+                {
+                    if (line.Contains(token, StringComparison.Ordinal))
+                    {
+                        offenders.Add($"{GetRelativePath(path)}:{number}: {line.Trim()}");
+                        break;
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(offenders);
+    }
     private static string GetRelativePath(string path)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
