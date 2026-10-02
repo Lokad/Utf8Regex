@@ -48,6 +48,7 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         yield return new object?[] { "(a)(?(1)b|c)", 516, RegexParseError.AlternationHasUndefinedReference, 8 };
         yield return new object?[] { "(a)?(?(1)b|c)", 518, RegexParseError.AlternationHasUndefinedReference, 9 };
         yield return new object?[] { "(a)?(?(1)b|c)", 532, RegexParseError.AlternationHasUndefinedReference, 9 };
+        yield return new object?[] { "(a)?(?(1)b|c)", 596, RegexParseError.AlternationHasUndefinedReference, 9 };
         yield return new object?[] { "(?(01)a|b)", 512, RegexParseError.AlternationHasUndefinedReference, 6 };
         yield return new object?[] { "(?<x>a)(?(02)b|c)", 512, RegexParseError.AlternationHasUndefinedReference, 13 };
     }
