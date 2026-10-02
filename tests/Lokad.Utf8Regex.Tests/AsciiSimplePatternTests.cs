@@ -30884,6 +30884,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
             ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "<>", "Q"),
             ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
             ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
             ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
             ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
         ];
