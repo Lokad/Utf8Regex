@@ -10,8 +10,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // projects its spans without executing the fallback engine. Stored order is the BCL
 // choice order (source order for branches; per-loop preference with rightmost unwinding
 // for loops, as probed on .NET 10), so the first ordinal match wins. Nested divergent
-// alternations and (0,1) loops inside alternation branches expand the same way. Nested
-// loops, other quantifiers, empty entries, more than 64 entries, sets, anchors,
+// alternations and (0,1) loops inside alternation branches expand the same way. Exact-count
+// loops over literal alternations expand per-iteration leftmost-major (the last iteration
+// backtracks first), with loop-body captures taking their span from the last iteration
+// exactly like BCL. Nested loops, other quantifiers, empty entries, more than 64 entries, sets, anchors,
 // lookarounds, backreferences, and empty nodes decline; a null map means
 // the shape keeps the existing BCL routes. Construction is eager and pure over the owned
 // tree: no fallback engine is built here.
@@ -63,7 +65,8 @@ internal sealed class Utf8AlternationBranchSpanMap
                 continue;
             }
 
-            if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0 && node.Children.Count == 1)
+            if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0 && node.Children.Count == 1 &&
+                !SkipsToCountedLoop(node.Children[0]))
             {
                 wholeMatchGroups.Add(node.CaptureNumber);
                 node = node.Children[0];
@@ -71,6 +74,14 @@ internal sealed class Utf8AlternationBranchSpanMap
             }
 
             break;
+        }
+
+        // Captures wrapping a counted loop take their span from the last iteration
+        // (never the whole match), so they route to the exact-count expander below
+        // instead of the whole-match list above.
+        if (SkipsToCountedLoop(node))
+        {
+            return TryCreateExactCountPatterns(root.Children[0], node, wholeMatchGroups);
         }
 
         Utf8ExecutionNode? alternate = null;
@@ -91,6 +102,241 @@ internal sealed class Utf8AlternationBranchSpanMap
         }
 
         return TryCreateNestedPatterns(root.Children[0], node, wholeMatchGroups, alternateCount);
+    }
+
+    // True when the node reaches a counted loop (Min == Max >= 1) through only
+    // transparent group wrappers. Optional (0,1) loops, unbounded repetitions,
+    // and ranged counts return false so the existing single/nested/loop paths
+    // keep their shapes; only exact counts route to the expander below.
+    private static bool SkipsToCountedLoop(Utf8ExecutionNode node)
+    {
+        while (node.Kind == Utf8ExecutionNodeKind.Group && node.Children.Count == 1)
+        {
+            node = node.Children[0];
+        }
+
+        return (node.Kind == Utf8ExecutionNodeKind.Loop || node.Kind == Utf8ExecutionNodeKind.LazyLoop) &&
+            node.Children.Count == 1 && node.Min == node.Max && node.Min >= 1;
+    }
+
+    private static Utf8AlternationBranchSpanMap? TryCreateExactCountPatterns(
+        Utf8ExecutionNode body,
+        Utf8ExecutionNode node,
+        List<int> wholeMatchGroups)
+    {
+        // Unwrap captures around the loop itself: every one takes its span from
+        // the last iteration exactly like BCL (a repeated capture never spans
+        // the whole match), while outer whole-match wrappers were already
+        // collected above. Captures inside alternation branches stay out.
+        var lastIterationGroups = new List<int>();
+        while (true)
+        {
+            if (node.Kind == Utf8ExecutionNodeKind.Group && node.Children.Count == 1)
+            {
+                node = node.Children[0];
+                continue;
+            }
+
+            if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0 && node.Children.Count == 1)
+            {
+                if (lastIterationGroups.Contains(node.CaptureNumber))
+                {
+                    return null;
+                }
+
+                lastIterationGroups.Add(node.CaptureNumber);
+                node = node.Children[0];
+                continue;
+            }
+
+            break;
+        }
+
+        if ((node.Kind != Utf8ExecutionNodeKind.Loop && node.Kind != Utf8ExecutionNodeKind.LazyLoop) ||
+            node.Children.Count != 1 || node.Min != node.Max || node.Min < 1)
+        {
+            return null;
+        }
+
+        // The loop body must be a literal alternation: every branch unwraps
+        // through transparent groups to a non-empty literal run. Captures,
+        // nested loops, sets, anchors, and lookarounds inside branches stay out.
+        var repetitions = node.Min;
+        var loopBody = node.Children[0];
+        while (true)
+        {
+            if (loopBody.Kind == Utf8ExecutionNodeKind.Group && loopBody.Children.Count == 1)
+            {
+                loopBody = loopBody.Children[0];
+                continue;
+            }
+
+            if (loopBody.Kind == Utf8ExecutionNodeKind.Capture && loopBody.CaptureNumber > 0 && loopBody.Children.Count == 1)
+            {
+                if (lastIterationGroups.Contains(loopBody.CaptureNumber))
+                {
+                    return null;
+                }
+
+                lastIterationGroups.Add(loopBody.CaptureNumber);
+                loopBody = loopBody.Children[0];
+                continue;
+            }
+
+            break;
+        }
+
+        if (loopBody.Kind != Utf8ExecutionNodeKind.Alternate || loopBody.Children.Count == 0)
+        {
+            return null;
+        }
+
+        var branchTexts = new string[loopBody.Children.Count];
+        for (var branch = 0; branch < loopBody.Children.Count; branch++)
+        {
+            if (!TryReadLiteralRun(loopBody.Children[branch], out branchTexts[branch]) ||
+                branchTexts[branch].Length == 0)
+            {
+                return null;
+            }
+        }
+
+        // Cross iterations leftmost-major: BCL backtracks the last iteration
+        // first, so earlier iterations vary slowest and source order holds
+        // within each iteration (greedy and lazy enumerate identically for
+        // fixed counts). More than 64 combinations decline like elsewhere.
+        var entries = new List<(string Text, int LastStart, int LastLength)> { ("", 0, 0) };
+        for (var iteration = 0; iteration < repetitions; iteration++)
+        {
+            var next = new List<(string Text, int LastStart, int LastLength)>();
+            foreach (var entry in entries)
+            {
+                for (var branch = 0; branch < branchTexts.Length; branch++)
+                {
+                    next.Add((entry.Text + branchTexts[branch], entry.Text.Length, branchTexts[branch].Length));
+                    if (next.Count > 64)
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            entries = next;
+        }
+
+        var anyGroups = wholeMatchGroups.Count > 0 || lastIterationGroups.Count > 0;
+        if (!anyGroups)
+        {
+            return null;
+        }
+
+        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
+        if (slots is null)
+        {
+            return null;
+        }
+
+        var translatedWhole = new int[wholeMatchGroups.Count];
+        for (var i = 0; i < wholeMatchGroups.Count; i++)
+        {
+            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
+            {
+                return null;
+            }
+
+            translatedWhole[i] = wholeSlot;
+        }
+
+        var branchExpansions = new string[entries.Count];
+        var branchGroups = new int[entries.Count][];
+        var branchStarts = new int[entries.Count][];
+        var branchLengths = new int[entries.Count][];
+        for (var entry = 0; entry < entries.Count; entry++)
+        {
+            if (entries[entry].Text.Length == 0)
+            {
+                return null;
+            }
+
+            var groups = new int[lastIterationGroups.Count];
+            var starts = new int[lastIterationGroups.Count];
+            var lengths = new int[lastIterationGroups.Count];
+            for (var i = 0; i < lastIterationGroups.Count; i++)
+            {
+                if (!slots.TryGetValue(lastIterationGroups[i], out var slot))
+                {
+                    return null;
+                }
+
+                groups[i] = slot;
+                starts[i] = entries[entry].LastStart;
+                lengths[i] = entries[entry].LastLength;
+            }
+
+            branchExpansions[entry] = entries[entry].Text;
+            branchGroups[entry] = groups;
+            branchStarts[entry] = starts;
+            branchLengths[entry] = lengths;
+        }
+
+        return new Utf8AlternationBranchSpanMap(
+            translatedWhole,
+            branchExpansions,
+            branchGroups,
+            branchStarts,
+            branchLengths);
+    }
+
+    // Reads a literal run (single characters, literal text, and concatenations
+    // thereof, through transparent groups) as text. Anything else declines.
+    private static bool TryReadLiteralRun(Utf8ExecutionNode node, out string text)
+    {
+        var builder = new System.Text.StringBuilder();
+        if (!AppendLiteralRun(node, builder))
+        {
+            text = string.Empty;
+            return false;
+        }
+
+        text = builder.ToString();
+        return true;
+    }
+
+    private static bool AppendLiteralRun(Utf8ExecutionNode node, System.Text.StringBuilder builder)
+    {
+        switch (node.Kind)
+        {
+            case Utf8ExecutionNodeKind.One:
+                builder.Append(node.Ch);
+                return true;
+            case Utf8ExecutionNodeKind.Multi:
+                if (node.Text is null)
+                {
+                    return false;
+                }
+
+                builder.Append(node.Text);
+                return true;
+            case Utf8ExecutionNodeKind.Concatenate:
+                foreach (var child in node.Children)
+                {
+                    if (!AppendLiteralRun(child, builder))
+                    {
+                        return false;
+                    }
+                }
+
+                return node.Children.Count > 0;
+            case Utf8ExecutionNodeKind.Group:
+                if (node.Children.Count != 1)
+                {
+                    return false;
+                }
+
+                return AppendLiteralRun(node.Children[0], builder);
+            default:
+                return false;
+        }
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateSingleAlternate(
