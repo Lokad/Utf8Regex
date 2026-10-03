@@ -2794,6 +2794,32 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
+        // R05: absolute-anchored fixed-length simple patterns split owned through
+        // the simple-pattern cursor: anchors pin boundary-to-boundary hits with no
+        // empty matches, so cursor hits tile identically to the oracle (the same
+        // cursor backs owned enumeration). Variable lengths, empty-capable shapes,
+        // and inputs the factory cursor declines keep their existing routes.
+        if (count > 1 &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored &&
+            _preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored &&
+            _preparedRegex.SimplePatternPlan.IsFixedLength &&
+            _preparedRegex.SimplePatternPlan.MinLength > 0 &&
+            (Utf8InputAnalyzer.IsAscii(input) || _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe) &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
+                _preparedRegex,
+                _verifierRuntime,
+                input,
+                validation,
+                totalUtf16Length,
+                count,
+                budget)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
+
         // R03: split segments project the owned match cursor, whose empty-match
         // advancement already follows the BCL search order. Counts below 2 keep the
         // BCL tail below with identical behavior (count 0 means unlimited there,
