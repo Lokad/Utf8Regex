@@ -441,7 +441,7 @@ internal static class Utf8SliceRunner
         var stacks = new ChunkedStacks();
         try
         {
-            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
+            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, -1, startIsScalarBoundary, ref stacks, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
@@ -900,6 +900,7 @@ internal static class Utf8SliceRunner
         int[] balanceHeads,
         bool collectHistory,
         bool requireNonEmpty,
+        int requiredEndIndex,
         bool startIsScalarBoundary,
         ref ChunkedStacks stacks,
         ref Utf8SliceInvocation invocation)
@@ -2497,9 +2498,12 @@ internal static class Utf8SliceRunner
                 case Utf8SliceInstructionKind.Lookbehind:
                     {
                         // Zero-width lookbehind over assertion A: candidate
-                        // starts run from (p - min) down to max(0, p - max);
+                        // starts run from max(0, p - max) up to (p - min);
                         // the first forward sub-match ending exactly at p
-                        // wins (BCL order). Captures run on the shared slots:
+                        // wins, which is the longest span (BCL backward
+                        // order). Nested runs carry p as a required end so
+                        // greedy forward evaluation backtracks into shorter
+                        // ends the oracle would accept. Captures run on the shared slots:
                         // a surviving positive body keeps them (its trail
                         // merges into this run, so history and rollback see
                         // them); every other path restores the entry snapshot
@@ -2539,7 +2543,7 @@ internal static class Utf8SliceRunner
                         var candidateEnd = inputIndex - assertion.MinLengthBytes;
                         var assertionMatched = false;
                         var mergeBreach = Utf8ExecutionLimitKind.None;
-                        for (var candidate = candidateEnd; candidate >= candidateStart; candidate--)
+                        for (var candidate = candidateStart; candidate <= candidateEnd; candidate++)
                         {
                             Array.Copy(saved.Starts, captureStarts, groupTotal);
                             Array.Copy(saved.Ends, captureEnds, groupTotal);
@@ -2561,6 +2565,7 @@ internal static class Utf8SliceRunner
                                     balanceHeads,
                                     false,
                                     false,
+                                    inputIndex,
                                     candidateAligned,
                                     ref nestedStacks,
                                     ref invocation);
@@ -2686,6 +2691,7 @@ internal static class Utf8SliceRunner
                                 balanceHeads,
                                 false,
                                 false,
+                                -1,
                                 lookaheadAligned,
                                 ref lookaheadStacks,
                                 ref invocation);
@@ -2790,6 +2796,12 @@ internal static class Utf8SliceRunner
 
                 case Utf8SliceInstructionKind.Accept:
                     if (requireNonEmpty && inputIndex == start)
+                    {
+                        failed = true;
+                        break;
+                    }
+
+                    if (requiredEndIndex >= 0 && inputIndex != requiredEndIndex)
                     {
                         failed = true;
                         break;
