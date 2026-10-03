@@ -613,7 +613,7 @@ public sealed class Utf8SliceRtlOperationTests
             ("a[^x]+b", "xayzb", "Q", false),
             ("a\\D+b", "xayzb", "Q", false),
             ("a.+b", "xaayb", "Q", false),
-            ("ab", "xxabxx", "Q", true),
+            ("ab", "xxabxx", "Q", false),
             ("a+", "xaay", "Q", false),
             ("a\\d+b", "xa12b", "Q", false),
             ("(a)(b)", "xxabxx", "<$1$2>", false),
@@ -631,10 +631,9 @@ public sealed class Utf8SliceRtlOperationTests
     {
         // R05: right-to-left shaping serves owned on ASCII input across all nine
         // lanes of both lanes: Detailed projects with oracle coordinates, splits
-        // enumerate owned gaps, and all three replacement cores shape from owned
-        // spans, including grouped templates. The only divert is literal-family
-        // splits, which stay BCL-routed on the right-to-left lane per the
-        // literal-family exclusion pin.
+        // enumerate owned gaps through the reverse-search cursor (descending oracle
+        // encounter order), and all three replacement cores shape from owned spans,
+        // including grouped templates. No lane diverts on these rows.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);

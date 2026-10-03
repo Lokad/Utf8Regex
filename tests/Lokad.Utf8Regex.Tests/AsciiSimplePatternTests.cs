@@ -8342,7 +8342,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldedLiteralShapingDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldedLiteralShapingOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -8356,13 +8356,14 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(RtlFoldedLiteralShapingDeclineCases))]
-    public void RtlFoldedLiteralShapingKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(RtlFoldedLiteralShapingOwnedCases))]
+    public void RtlFoldedLiteralShapingOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: right-to-left folded literals serve discovery,
-        // Match, Detailed, enumeration, and all three replacement cores owned
-        // but keep BCL routing for splits on both lanes (literal-family exclusion).
-        // Parity holds and construction is pinned per lane.
+        // R05: right-to-left folded literals serve owned on every lane (both lanes):
+        // discovery, Match, Detailed, enumeration, splits, and all three replacement
+        // cores verify with no fallback construction (splits project descending oracle
+        // encounter order through the reverse-search cursor). Parity holds and
+        // construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -8422,7 +8423,7 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
@@ -49768,7 +49769,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldLiteralSplitCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldLiteralSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -49782,13 +49783,13 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(RtlFoldLiteralSplitCases))]
-    public void RtlFoldLiteralSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(RtlFoldLiteralSplitOwnedCases))]
+    public void RtlFoldLiteralSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: the right-to-left folded literal splits only the splits lane
-        // (both lanes): every other lane serves owned, splits verify through
-        // the BCL fallback per the literal-family exclusion. Parity holds on
-        // every lane; the flags pin this split per lane.
+        // R05: the right-to-left folded literal serves owned on every lane (both
+        // lanes): splits project descending oracle encounter order through the
+        // reverse-search cursor. Parity holds on every lane; the flags pin
+        // this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -49848,7 +49849,7 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
