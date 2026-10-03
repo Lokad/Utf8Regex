@@ -3747,8 +3747,10 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AstralWholeLoopDeclineCases))]
     public void AstralWholeLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: concat tails after divergent atoms, tailless lazy loops,
-        // nested captures, positive shorthands, and inner captures keep BCL
+        // Permanent semantic boundary (triaged 2026-10-03: oracle spans meet lone halves,
+        // e.g. ([^x]b)+ takes 1:2 and ((.)+) captures group 2 as the trail half,
+        // which scalar stepping cannot reproduce): concat tails after divergent atoms,
+        // tailless lazy loops, nested captures, positive shorthands, and inner captures keep BCL
         // routing on astral input; parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -3775,7 +3777,8 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(TaillessLazyAstralEnumerateDeclineCases))]
     public void TaillessLazyAstralEnumerateDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: tailless lazy loops over astral-consuming atoms
+        // Permanent semantic boundary (triaged 2026-10-03: [0:1,1:1,2:1,3:1] on a 4-unit
+        // input): tailless lazy loops over astral-consuming atoms
         // stay BCL-routed on astral input because the oracle matches lone halves
         // ([0:1,1:1,2:1,3:1] on a 4-unit input), which scalar stepping cannot
         // reproduce; parity holds and construction is pinned per lane.
@@ -3817,7 +3820,8 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(TaillessLazyAstralDeclineCases))]
     public void TaillessLazyAstralDeclineKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: tailless lazy loops over astral-consuming atoms stay
+        // Permanent semantic boundary (triaged 2026-10-03: oracle count 4 on a+astral+b
+        // as a, high half, low half, b): tailless lazy loops over astral-consuming atoms stay
         // BCL-routed on every lane on astral input: the oracle matches lone halves
         // (probed count 4 on `a<astral>b`: `a`, high half, low half, `b`), which scalar
         // stepping cannot reproduce, so unlike headed lazy loops no verifier-owned
