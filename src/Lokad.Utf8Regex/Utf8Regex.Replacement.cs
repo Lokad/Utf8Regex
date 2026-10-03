@@ -199,11 +199,12 @@ public sealed partial class Utf8Regex
         // R05: owned replacement advances scalar-wise, so astral inputs need shapes
         // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
         // unit-servable literal templates replace unit-aware past this gate below, as do
-        // slice-served shapes through the slice arm; everything else replaces through
-        // the BCL fallback exactly.
+        // slice-served shapes through the slice arm (empty-capable ones only when
+        // halves-closed, whose empties only ever arise at ASCII positions);
+        // everything else replaces through the BCL fallback exactly.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && !_sliceProgram.CanMatchEmpty)))
+              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || _sliceProgram.HalvesClosedEmptyLoop))))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),

@@ -187,7 +187,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -211,6 +211,7 @@ internal sealed class Utf8SliceProgram
         SawLookaround = sawLookaround;
         SawCapturingLookbehind = sawCapturingLookbehind;
         CanMatchEmpty = canMatchEmpty;
+        HalvesClosedEmptyLoop = halvesClosedEmptyLoop;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -238,6 +239,13 @@ internal sealed class Utf8SliceProgram
     internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
+
+    // R05: whole-pattern greedy minimum-zero loops over halves-closed atoms
+    // (dots and member-free unfolded negated sets). The unit-space runner tiles
+    // these unit-for-unit with the oracle (empties only ever arise at ASCII
+    // positions), so string-space splicing serves them exactly like the byte
+    // cores. Every other empty-capable shape keeps the string-core BCL route.
+    internal bool HalvesClosedEmptyLoop { get; }
 
     // Legacy fallback taxonomy, probed: backreference outranks conditional,
     // conditional outranks lookaround, lookaround outranks atomic, atomic outranks
@@ -573,6 +581,7 @@ internal static class Utf8SliceLowerer
         // run scalarwise exactly like BCL units on astral input, so they clear
         // the astral-free requirement the instruction scan above may have set.
         requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, rightToLeft);
+        var halvesClosedEmptyLoop = IsHalvesClosedEmptyWholeLoop(root, rightToLeft);
 
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
@@ -586,7 +595,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop);
     }
 
     // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar
@@ -621,6 +630,69 @@ internal static class Utf8SliceLowerer
     // stay byte-aligned in both semantics for the same reason, so one checked
     // loop with indifferent runs keeps the argument. Anything unmodeled fails
     // closed to existing routing.
+    // R05: recognizes bare whole-pattern greedy star loops over halves-closed
+    // atoms for the string-core empty-capable arm (see HalvesClosedEmptyLoop).
+    // Only the shapes the indifference gate already clears for the byte cores
+    // qualify: captures, atomics, and flag-prefix single-survivor alternations
+    // unwrap transparently, and the surviving repeat must be greedy, unbounded,
+    // minimum-zero, body-safe, and halves-closed. Head/tail runs, lazy loops,
+    // higher minimums, and divergent bodies stay out exactly like the byte-side
+    // gate; anything unmodeled fails closed.
+    private static bool IsHalvesClosedEmptyWholeLoop(Utf8SliceNode root, bool rightToLeft)
+    {
+        if (rightToLeft)
+        {
+            return false;
+        }
+
+        var node = root;
+        while (true)
+        {
+            while (node is Utf8SliceNode.CaptureNode capture)
+            {
+                node = capture.Body;
+            }
+
+            while (node is Utf8SliceNode.AtomicNode atomic)
+            {
+                node = atomic.Body;
+            }
+
+            if (node is not Utf8SliceNode.AlternationNode alternation ||
+                alternation.Branches.Length != 1)
+            {
+                break;
+            }
+
+            Utf8SliceNode? survivor = null;
+            foreach (var member in alternation.Branches[0])
+            {
+                if (member is Utf8SliceNode.EmptyNode)
+                {
+                    continue;
+                }
+
+                if (survivor is not null)
+                {
+                    return false;
+                }
+
+                survivor = member;
+            }
+
+            if (survivor is null)
+            {
+                return false;
+            }
+
+            node = survivor;
+        }
+
+        return node is Utf8SliceNode.RepeatNode repeat &&
+            repeat.Minimum == 0 && repeat.Maximum == int.MaxValue && !repeat.Lazy &&
+            WholeLoopBodyIsSafe(repeat.Body) && WholeLoopBodyMatchesHalves(repeat.Body);
+    }
+
     private static bool IsAstralIndifferentWholeLoop(Utf8SliceNode root, bool rightToLeft)
     {
         if (rightToLeft)
@@ -767,13 +839,36 @@ internal static class Utf8SliceLowerer
         // a pair split the runner cannot reproduce (probed: `a[^x]{2,}b`
         // misses `xa<astral>b` owned with no fallback while BCL matches the
         // pair as two units).
-        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Minimum != 1 || repeat.Maximum != int.MaxValue ||
+        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Maximum != int.MaxValue ||
             (repeat.Lazy && !lazySawTailAtom))
         {
             return false;
         }
 
-        return WholeLoopBodyIsSafe(repeat.Body);
+        if (repeat.Minimum == 1)
+        {
+            return WholeLoopBodyIsSafe(repeat.Body);
+        }
+
+        // R05: greedy minimum-zero loops over halves-closed atoms (dots and
+        // member-free unfolded negated sets, which meet every surrogate half in
+        // both semantics) stay boundary-locked exactly like minimum-one loops:
+        // empties only ever arise at ASCII positions (halves always match the
+        // first iteration), non-empty matches end at scalar boundaries on both
+        // sides, and the one-unit/one-scalar empty advance coincides there, so
+        // global tiling agrees unit-for-unit. Lazy minimum-zero loops stay out
+        // (BCL stops minimally after one half with no tail forcing a boundary
+        // stop, exactly like tailless lazy plus), as do minimums above one (unit
+        // vs scalar counting, per the probed pair split above) and every other
+        // body (positive sets, shorthands, categories, and hybrids can all meet
+        // empty mid-scalar where scalar stepping cannot follow).
+        if (repeat.Minimum == 0 && !repeat.Lazy &&
+            WholeLoopBodyIsSafe(repeat.Body) && WholeLoopBodyMatchesHalves(repeat.Body))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static bool WholeLoopBodyIsSafe(Utf8SliceNode node)
@@ -820,6 +915,67 @@ internal static class Utf8SliceLowerer
         }
 
         return true;
+    }
+
+    // Halves-closed bodies for greedy minimum-zero loops: every atom meets
+    // every surrogate half in both semantics (dots fail ASCII-only newlines;
+    // member-free unfolded negated sets exclude ASCII-only positives, which
+    // halves never meet), so the first iteration can never fail mid-scalar.
+    // Shorthands, hybrids, categories, positive sets, and folded sets stay out:
+    // their runner arms may fail astral leads the oracle halves would meet
+    // (or vice versa), which desynchronizes empty-match tiling.
+    private static bool WholeLoopBodyMatchesHalves(Utf8SliceNode node)
+    {
+        if (node is Utf8SliceNode.AlternationNode alternation)
+        {
+            if (alternation.Branches.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var branch in alternation.Branches)
+            {
+                if (!WholeLoopBranchMatchesHalves(branch))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return WholeLoopBranchMatchesHalves([node]);
+    }
+
+    private static bool WholeLoopBranchMatchesHalves(Utf8SliceNode[] branch)
+    {
+        if (branch.Length == 0)
+        {
+            return false;
+        }
+
+        foreach (var atom in branch)
+        {
+            if (!WholeLoopAtomMatchesHalves(atom))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool WholeLoopAtomMatchesHalves(Utf8SliceNode node)
+    {
+        switch (node)
+        {
+            case Utf8SliceNode.DotNode:
+                return true;
+            case Utf8SliceNode.SetNode set:
+                return set.Negated && !set.FoldCase && (set.Members is null || set.Members.Length == 0);
+            default:
+                return false;
+        }
     }
 
     private static bool WholeLoopAtomIsSafe(Utf8SliceNode node)
