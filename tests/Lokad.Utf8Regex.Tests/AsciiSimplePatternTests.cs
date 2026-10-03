@@ -53461,7 +53461,7 @@ public sealed class AsciiSimplePatternTests
         Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> BoundedExactDivergentCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> BoundedExactDivergentOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
         [
@@ -53476,13 +53476,15 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(BoundedExactDivergentCases))]
-    public void BoundedExactDivergentKeepsBclDetailed(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(BoundedExactDivergentOwnedCases))]
+    public void BoundedExactDivergentOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
         // R05: exact-count divergent loops serve literal-route discovery,
-        // enumeration, splits, and all three replacement cores with oracle
-        // parity and zero fallback construction on both lanes, while Detailed
-        // shaping keeps BCL routing on both lanes. Ranged counts ({m,n} with
+        // enumeration, splits, Detailed shaping, and all three replacement cores
+        // with oracle parity and zero fallback construction on both lanes: the
+        // exact-count branch map expands per-iteration combinations leftmost-major
+        // with loop-body captures taking their span from the last iteration.
+        // Ranged counts ({m,n} with
         // n>m) are excluded: the literal route returns longest-match spans where
         // the oracle stops at first success (probed: (a|ab){2,3} light [1:4] vs
         // oracle [1:2] with internal Match/Detailed disagreement), which stays
@@ -53547,7 +53549,7 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
             Assert.Equal(expectedDetailed.Length, actualDetailed.LengthInUtf16);
         }
-        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
@@ -53598,7 +53600,7 @@ public sealed class AsciiSimplePatternTests
         // IgnoreCase variants join through the same gate (folded first-success spans, including a folding-mismatch text).
         // the owned slice with zero fallback construction on both lanes (the
         // longest-match automaton route is declined at analysis). Exact counts
-        // keep their literal routes, see BoundedExactDivergentCases.
+        // keep their literal routes, see BoundedExactDivergentOwnedCases.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var sliceRegex = new Utf8Regex(pattern, options);
