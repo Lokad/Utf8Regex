@@ -5,13 +5,15 @@ namespace Lokad.Utf8Regex.Tests;
 
 // R03 lookaround slice: positive and negative lookahead lower to owned
 // fork/jump/fail shapes (atomic first-success on the shared trail) while
-// lookbehind lowers to owned assertion programs searched from the current
-// position down to the body length bound (BCL rightmost-start order).
+// lookbehind lowers to owned assertion programs searched from the earliest
+// start up to the body length bound with consumption capped at the edge
+// (BCL longest-span backward order).
 // Captures run on the shared slots with entry snapshots, so surviving
 // positive bodies keep their groups and every other path restores them.
 // Atomic, comment, branch-reset, conditional, named, and unclosed group
-// forms decline to legacy-exact routing, as do variable-scalar-width
-// lookbehind bodies (greedy forward evaluation would overshoot the edge).
+// forms decline to legacy-exact routing, as do variable-length lookbehind
+// bodies needing context past the edge (inner lookahead, end/contiguous
+// anchors, nested lookbehind, non-leading word boundaries).
 public sealed class Utf8SliceLookaroundTests
 {
     public static IEnumerable<object?[]> SliceLookaroundShapes()
@@ -43,12 +45,11 @@ public sealed class Utf8SliceLookaroundTests
         }
     }
 
-    public static IEnumerable<object?[]> VariableLookbehindDeclines()
+    public static IEnumerable<object?[]> VariableLookbehindOwnedShapes()
     {
-        // Greedy forward evaluation overshoots the lookbehind edge when the
-        // body admits several scalar widths on a byte-variable span, while a
-        // shorter end would hit (BCL evaluates the body backward and finds
-        // it): those bodies ride legacy-exact instead of staying owned.
+        // Variable-length bodies scan earliest-start-first with consumption
+        // capped at the lookbehind edge, which reproduces BCL backward order
+        // (longest span wins); those bodies stay owned on every lane.
         yield return new object?[] { "(?<=(a|ab))", "xab" };
         yield return new object?[] { "(?<=a+)b", "aaab" };
         yield return new object?[] { "(?<=a+)b", "aaac" };
@@ -90,17 +91,17 @@ public sealed class Utf8SliceLookaroundTests
     }
 
     [Theory]
-    [MemberData(nameof(VariableLookbehindDeclines))]
-    public void VariableWidthLookbehindDeclinesToLegacy(string pattern, string inputText)
+    [MemberData(nameof(VariableLookbehindOwnedShapes))]
+    public void VariableWidthLookbehindServesOwned(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
-
     [Theory]
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
@@ -146,10 +147,10 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?=a(?=b))", "ab", true };
         yield return new object?[] { "(?<=(?<=a)a)b", "aab", true };
         yield return new object?[] { "(?<=a)+b", "ab", true };
-        yield return new object?[] { "(?<=(?=\\p{L})\\p{L})x", "axb", true };
         yield return new object?[] { "(?<!\\p{Nd})x", "ax", true };
         yield return new object?[] { "(?<=\\b\\p{L})x", "axb", true };
         yield return new object?[] { "(?<=\\B\\p{L})x", "axb", false };
+        yield return new object?[] { "(?<=(?=\\p{L})\\p{L})x", "axb", true };
         yield return new object?[] { "(?<=\\p{L}{2})x", "abx", true };
         yield return new object?[] { "(?<=\\p{L}{2})x", "axb", false };
         yield return new object?[] { "(?<=a{2})x", "aax", true };
