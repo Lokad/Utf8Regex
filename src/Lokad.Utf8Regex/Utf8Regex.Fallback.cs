@@ -810,6 +810,17 @@ public sealed partial class Utf8Regex
             return false;
         }
 
+        // R05: caret-anchored grouped literals replace owned from the exact prefix
+        // hit (group shaping reuses the span table); the anchored simple-pattern
+        // clause below stays for every other anchored shape.
+        if (MatchTimeout == Regex.InfiniteMatchTimeout &&
+            _caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } &&
+            _groupedLiteralSpanTable is not null &&
+            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+        {
+            return false;
+        }
+
         return replacement.ContainsGroupReferences ||
             (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
              ShouldUseFallbackForAnchoredSimplePattern());

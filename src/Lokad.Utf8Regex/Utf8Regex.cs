@@ -46,6 +46,7 @@ public sealed partial class Utf8Regex
     private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
     private readonly bool _hasCaptures;
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
+    private readonly byte[]? _caretAnchoredGroupedLiteralUtf8;
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
     private readonly Utf8UnitBranchSpanMap? _unitBranchSpanMap;
     private readonly Utf8SliceProgram? _sliceProgram;
@@ -138,6 +139,7 @@ public sealed partial class Utf8Regex
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
         _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
+        _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         _unitBranchSpanMap = UsesRightToLeft() ? null : Utf8UnitBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, preparedRegex.SimplePatternPlan);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
@@ -759,6 +761,18 @@ public sealed partial class Utf8Regex
             return directMatch.Success;
         }
 
+        // R05: caret-anchored grouped literals decide every group-agnostic lane
+        // by byte-prefix compare: the absolute start anchor pins the only candidate
+        // at offset 0, so a miss there rules out every substring match and both
+        // directions answer with no BCL verification (group shaping reuses the span
+        // table). Kelvin stays fenced like the direct arms above.
+        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretIsMatchPrefix &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            return input.Length >= caretIsMatchPrefix.Length &&
+                input.Slice(0, caretIsMatchPrefix.Length).SequenceEqual(caretIsMatchPrefix);
+        }
+
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             if (twin.TryMatchDirectWithoutValidation(input, out var twinDirectMatch))
@@ -1084,6 +1098,15 @@ public sealed partial class Utf8Regex
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
 
+        // R05: caret-anchored grouped literals count owned by prefix compare (at
+        // most one match at offset 0); twin, culture, Kelvin, and RTL stay fenced
+        // by the arms above.
+        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretCountPrefix)
+        {
+            return input.Length >= caretCountPrefix.Length &&
+                input.Slice(0, caretCountPrefix.Length).SequenceEqual(caretCountPrefix) ? 1 : 0;
+        }
+
         if (ShouldDecodeWholeSubjectForFallbackValueOperation())
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
@@ -1375,6 +1398,19 @@ public sealed partial class Utf8Regex
         if (TryMatchDirectWithoutValidation(input, out var directMatch))
         {
             return directMatch;
+        }
+
+        // R05: caret-anchored grouped literals match owned by prefix compare (the
+        // absolute start anchor pins the only candidate at offset 0; ASCII bytes
+        // and units coincide, so the value hit needs no BCL verification and
+        // Detailed shapes from it through the span table). Kelvin stays fenced.
+        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretMatchPrefix &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            return input.Length >= caretMatchPrefix.Length &&
+                input.Slice(0, caretMatchPrefix.Length).SequenceEqual(caretMatchPrefix)
+                ? new Utf8ValueMatch(true, true, 0, caretMatchPrefix.Length, 0, caretMatchPrefix.Length)
+                : Utf8ValueMatch.NoMatch;
         }
 
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -2376,6 +2412,136 @@ public sealed partial class Utf8Regex
         return false;
     }
 
+    // R05: construction-cached caret-anchored grouped-literal prefix for direct
+    // discovery without BCL verification. Admits ^ (outside Multiline) and \A followed
+    // by a single ASCII literal run through transparent groups/captures to the end
+    // of the tree, with a grouped span table covering the same total length for
+    // shaping. Anchors pin every match at offset 0 with the literal bytes, so a
+    // byte-prefix compare decides every group-agnostic lane exactly; group
+    // shaping reuses the span table. Multiline ^, RightToLeft, IgnoreCase,
+    // NonBacktracking, sets, loops, alternations, and other anchors stay out.
+    private static bool TryGetCaretAnchoredGroupedLiteral(
+        Utf8ExecutionTree? tree,
+        RegexOptions options,
+        Utf8GroupedLiteralSpanTable? spanTable,
+        out byte[]? prefixUtf8)
+    {
+        prefixUtf8 = null;
+        if (spanTable is null || tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
+            root.Children.Count != 1 ||
+            (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) != 0)
+        {
+            return false;
+        }
+
+        var node = root.Children[0];
+        while (node.Kind == Utf8ExecutionNodeKind.Group && node.Children.Count == 1)
+        {
+            node = node.Children[0];
+        }
+
+
+        // The anchor leads a top-level concatenation (probed: ^ and \A both lower
+        // to Beginning with the literal run as siblings); a trailing anchor, which
+        // the span table tolerates for shaping, stays out here.
+        if (node.Kind != Utf8ExecutionNodeKind.Concatenate || node.Children.Count < 2)
+        {
+            return false;
+        }
+
+        var head = node.Children[0];
+        var absoluteStart = head.Kind == Utf8ExecutionNodeKind.Beginning && head.Children.Count == 0;
+        if (!absoluteStart && head.Kind == Utf8ExecutionNodeKind.Bol && head.Children.Count == 0 &&
+            (options & RegexOptions.Multiline) == 0)
+        {
+            absoluteStart = true;
+        }
+
+        if (!absoluteStart)
+        {
+            return false;
+        }
+
+        var literal = new System.Collections.Generic.List<byte>();
+        for (var i = 1; i < node.Children.Count; i++)
+        {
+            if (!AppendCaretLiteralRun(node.Children[i], literal))
+            {
+                return false;
+            }
+        }
+
+        if (literal.Count == 0 || literal.Count != spanTable.TotalLengthInUtf16)
+        {
+            return false;
+        }
+
+        prefixUtf8 = literal.ToArray();
+        return true;
+    }
+
+    // Collects ASCII literal bytes through transparent groups/captures. Sets,
+    // loops, alternations, anchors, and non-ASCII content stay out, exactly
+    // matching the span-table literal-run definition minus its width-only set
+    // arm (byte-exact shaping needs the characters themselves).
+    private static bool AppendCaretLiteralRun(Utf8ExecutionNode node, System.Collections.Generic.List<byte> literal)
+    {
+        switch (node.Kind)
+        {
+            case Utf8ExecutionNodeKind.One:
+                if (node.Ch >= 0x80)
+                {
+                    return false;
+                }
+
+                literal.Add((byte)node.Ch);
+                return true;
+            case Utf8ExecutionNodeKind.Multi:
+                if (node.Text is null)
+                {
+                    return false;
+                }
+
+                foreach (var ch in node.Text)
+                {
+                    if (ch >= 0x80)
+                    {
+                        return false;
+                    }
+
+                    literal.Add((byte)ch);
+                }
+
+                return node.Text.Length > 0;
+            case Utf8ExecutionNodeKind.Concatenate:
+                foreach (var child in node.Children)
+                {
+                    if (!AppendCaretLiteralRun(child, literal))
+                    {
+                        return false;
+                    }
+                }
+
+                return node.Children.Count > 0;
+            case Utf8ExecutionNodeKind.Group:
+                if (node.Children.Count != 1)
+                {
+                    return false;
+                }
+
+                return AppendCaretLiteralRun(node.Children[0], literal);
+            case Utf8ExecutionNodeKind.Capture:
+                if (node.CaptureNumber <= 0 || node.Children.Count != 1)
+                {
+                    return false;
+                }
+
+                return AppendCaretLiteralRun(node.Children[0], literal);
+            default:
+                return false;
+        }
+    }
+
     private bool TryGetBranchedLiteralFamilyMap(out Utf8LiteralFamilyCaptureMap? map)
     {
         // R03: multi-group top-level literal alternations with a branch-to-group map discover
@@ -2567,6 +2733,17 @@ public sealed partial class Utf8Regex
                     new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
+        }
+
+        // R05: caret-anchored grouped literals enumerate the single anchored hit
+        // through the anchor-enforcing prefix cursor (group-agnostic value spans;
+        // shaping reuses the span table). Kelvin stays fenced like the direct arms.
+        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretEnumeratePrefix &&
+            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+        {
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input, caretEnumeratePrefix, CreateExecutionBudget()))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -2791,6 +2968,21 @@ public sealed partial class Utf8Regex
         if (count > 0 && (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily || CanServeLineAnchoredOwned(input) || Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input)))
         {
             return CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count, budget)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
+
+        // R05: caret-anchored grouped literals split the single anchored hit through
+        // the anchor-enforcing prefix cursor (group-agnostic segments). Counts below 2
+        // keep the BCL tail like the cursor arms around it.
+        if (count > 1 &&
+            _caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretSplitPrefix &&
+            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+        {
+            return new Utf8ValueSplitEnumerator(
+                input,
+                new Utf8OperationMatchCursor(input, caretSplitPrefix, CreateExecutionBudget()),
+                count,
+                totalUtf16Length)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
