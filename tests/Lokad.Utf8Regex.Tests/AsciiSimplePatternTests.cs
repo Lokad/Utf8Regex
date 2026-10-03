@@ -51700,14 +51700,14 @@ public sealed class AsciiSimplePatternTests
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
@@ -52535,14 +52535,14 @@ public sealed class AsciiSimplePatternTests
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
@@ -52667,7 +52667,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredMultigroupMultilineSplitCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredMultigroupMultilineSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -52683,15 +52683,14 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AnchoredMultigroupMultilineSplitCases))]
-    public void AnchoredMultigroupMultilineSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(AnchoredMultigroupMultilineSplitOwnedCases))]
+    public void AnchoredMultigroupMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: multiline caret-anchored multi-group shapes split the lanes (both
-        // lanes). Discovery, Match, enumeration, splits, and bytes replacement
-        // serve owned through line-anchored native paths; Detailed shapes per-group
-        // values owned from the owned discovery hit via the anchor-aware grouped
-        // span table while string and destination replacement verify through the
-        // whole-subject BCL fallback. Parity holds on every lane, including
+        // R05: multiline caret-anchored multi-group shapes serve owned on every lane
+        // (both lanes). Discovery, Match, enumeration, splits, Detailed shaping, and
+        // all three replacement cores verify with no fallback construction: literal
+        // templates splice from line-anchored discovery hits while group shaping
+        // reuses the anchor-aware span table. Parity holds on every lane, including
         // per-group values and positions; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -52776,14 +52775,14 @@ public sealed class AsciiSimplePatternTests
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
