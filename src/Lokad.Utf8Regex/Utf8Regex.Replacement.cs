@@ -200,7 +200,8 @@ public sealed partial class Utf8Regex
         // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
         // unit-servable literal templates replace unit-aware past this gate below, as do
         // slice-served shapes through the slice arm (empty-capable ones only when
-        // halves-closed, whose empties only ever arise at ASCII positions);
+        // halves-closed: other empty loops tile half-gap empties unit-wise in BCL
+        // but scalar-wise in the runner, so only halves-closed shapes agree);
         // everything else replaces through the BCL fallback exactly.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
