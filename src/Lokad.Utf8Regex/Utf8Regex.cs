@@ -1855,6 +1855,30 @@ public sealed partial class Utf8Regex
             return branched;
         }
 
+        // R05: groupless shapes shape Detailed directly from the shared discovery
+        // hit (group 0 is the whole span). Served shapes return through the arms
+        // above, and BCL-backed discovery builds the fallback inside MatchCore either
+        // way, so this arm only ever flips lanes whose discovery is already owned.
+        if (_groupNumbers.Length <= 1)
+        {
+            Utf8ValueMatch grouplessFirst;
+            try
+            {
+                grouplessFirst = MatchCore(input, cancellationToken);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!grouplessFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, grouplessFirst.IndexInUtf16, grouplessFirst.LengthInUtf16);
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
