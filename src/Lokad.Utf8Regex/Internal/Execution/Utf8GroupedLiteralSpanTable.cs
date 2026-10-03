@@ -6,9 +6,11 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // whose branches agree group for group on spans and end at the same position. Each
 // recorded group spans a fixed UTF-16 range of the discovered literal, so detailed shaping
 // projects every group from the owned discovery hit without executing the fallback engine;
-// the hit length selects the present or absent projection for optional shapes. Other
+// the hit length selects the present or absent projection for optional shapes. Line/begin/end
+// anchors (Bol, Eol, Beginning, Start, EndZ, End) are zero-width: owned discovery enforces
+// hit position while group spans relative to the hit start pass through unchanged. Other
 // quantifiers, divergent alternations, loops inside alternations, multi-char sets,
-// anchors, lookarounds, backreferences, and empty nodes decline; a null table means the shape keeps
+// lookarounds, backreferences, boundaries, and empty nodes decline; a null table means the shape keeps
 // the existing BCL routes. Construction is eager and pure over the owned tree: no fallback
 // engine is built here.
 internal sealed class Utf8GroupedLiteralSpanTable
@@ -308,6 +310,17 @@ internal sealed class Utf8GroupedLiteralSpanTable
                         return false;
                     }
 
+                    return true;
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Eol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Start:
+                case Utf8ExecutionNodeKind.EndZ:
+                case Utf8ExecutionNodeKind.End:
+                    // Zero-width anchors constrain where owned discovery may place the hit
+                    // but never advance within it, so literal-relative group spans are
+                    // unaffected. Boundary kinds stay declining (position-dependent
+                    // widths are out of scope for this table).
                     return true;
                 default:
                     return false;
