@@ -9,9 +9,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // groups plus every enclosed capture per expanded branch as fixed unit offsets, so
 // detailed shaping projects group spans onto the owned unit-space discovery hit
 // without executing the fallback engine. Shaping re-verifies every lowered branch at
-// the hit start in plan order and requires exactly one full-span verifier, so branch
-// order never silently misattributes spans: the BCL winner necessarily verifies, and
-// ambiguity or disagreement declines to the existing BCL routes. The expansion order
+// the hit start in plan order and projects the first full-span verifier: plan order
+// replicates BCL choice order and verification replays the exact lowered tokens, so
+// the first verifier is the BCL winner and disagreement declines to the existing
+// BCL routes. The expansion order
 // replicates the lowerer (source-order alternation, left-major concatenation) and
 // per-index widths pin it to the lowered branches, so any construct the walker does
 // not model (finite repeats, anchors, lookarounds, backreferences, empty nodes, and

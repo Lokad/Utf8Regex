@@ -2165,11 +2165,12 @@ public sealed partial class Utf8Regex
         Utf8ExecutionDeadline budget,
         out Utf8MatchContext detailed)
     {
-        // R05: re-verifies every lowered branch at the owned discovery hit start and
-        // requires exactly one full-span verifier, then projects that branch's
-        // recorded unit spans. The BCL winner necessarily verifies, so uniqueness
-        // identifies it without trusting branch order; ambiguity or disagreement
-        // declines to the BCL routes instead of shaping blindly. Whole-match
+        // R05: re-verifies every lowered branch at the owned discovery hit start in plan
+        // order and projects the first full-span verifier's recorded unit spans.
+        // Plan order replicates BCL backtracking choice order (source-order alternation,
+        // left-major concatenation), and verification replays the exact lowered tokens,
+        // so the first verifier is the BCL winner; disagreement declines to the BCL
+        // routes instead of shaping blindly. Whole-match
         // wrappers take the hit span; every other group takes its recorded unit
         // offset. Half-involving spans project in string space exactly like BCL:
         // values survive as lone halves while byte ranges stay unavailable.
@@ -2195,12 +2196,8 @@ public sealed partial class Utf8Regex
                 continue;
             }
 
-            if (selected >= 0)
-            {
-                return false;
-            }
-
             selected = branch;
+            break;
         }
 
         if (selected < 0 || map.BranchWidths[selected] != hit.LengthInUtf16)
@@ -3605,6 +3602,55 @@ public sealed partial class Utf8Regex
             }
         }
 
+        // R05: nested divergent unit shapes enumerate like groupless shapes and
+        // project the winning branch spans via ordered unit re-verification, with
+        // the same first-hit decline contract as the arms above.
+        if (_unitBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var unitDeclined = false;
+            var unitFirst = true;
+            var unitBudget = CreateExecutionBudget();
+            try
+            {
+                foreach (var valueMatch in EnumerateMatches(input))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!valueMatch.IsByteAligned)
+                    {
+                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                    }
+
+                    if (!TryShapeUnitBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, unitBudget, out var unitContext))
+                    {
+                        if (!unitFirst)
+                        {
+                            throw new InvalidOperationException("The unit branch projection failed after matching began.");
+                        }
+
+                        unitDeclined = true;
+                        break;
+                    }
+
+                    unitFirst = false;
+                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
+                    evaluator(in unitContext, ref writer, ref state);
+                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
+                }
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!unitDeclined)
+            {
+                writer.Append(input[sourcePosition..]);
+                return writer.GetValidatedBytes().ToArray();
+            }
+        }
+
         // R05: slice shapes enumerate owned and project every callback argument
         // from the deterministic re-query above, with the same first-hit decline
         // contract as the arms above.
@@ -3901,6 +3947,45 @@ public sealed partial class Utf8Regex
             {
                 alternationBuilder.Append(decoded, alternationPosition, decoded.Length - alternationPosition);
                 return alternationBuilder.ToString();
+            }
+        }
+
+        // R05: nested divergent unit shapes enumerate like groupless shapes and
+        // project the winning branch spans via ordered unit re-verification, with
+        // the same first-hit decline contract as the arms above.
+        if (_unitBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var unitBuilder = new StringBuilder(decoded.Length);
+            var unitPosition = 0;
+            var unitDeclined = false;
+            var unitFirst = true;
+            var unitBudget = CreateExecutionBudget();
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryShapeUnitBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, unitBudget, out var unitContext))
+                {
+                    if (!unitFirst)
+                    {
+                        throw new InvalidOperationException("The unit branch projection failed after matching began.");
+                    }
+
+                    unitDeclined = true;
+                    break;
+                }
+
+                unitFirst = false;
+                unitBuilder.Append(decoded, unitPosition, valueMatch.IndexInUtf16 - unitPosition);
+                unitBuilder.Append(evaluator(in unitContext, ref state));
+                unitPosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
+            }
+
+            if (!unitDeclined)
+            {
+                unitBuilder.Append(decoded, unitPosition, decoded.Length - unitPosition);
+                return unitBuilder.ToString();
             }
         }
 
