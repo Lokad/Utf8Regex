@@ -3159,6 +3159,9 @@ public sealed class AsciiSimplePatternTests
             ("((a)|(.)c)", "x\U0001F600c", "<$3>"),
             ("((a)|(.)c)", "xabcx\U0001F600c", "<$1>"),
             ("((x)|(.))", "y", "<$2>"),
+            ("((x)|(.))", "x", "<$2>"),
+            ("((x)|(.))", "x", "<$3>"),
+            ("((x)|(.))", "x", "<$1>"),
         ];
         foreach (var row in rows)
         {
@@ -3251,7 +3254,6 @@ public sealed class AsciiSimplePatternTests
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
             ("((a|.)c)", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "a\U0001F600c", "<$1>"),
-            ("((x)|(.))", RegexOptions.CultureInvariant, "x", "<$2>"),
         ];
         foreach (var row in rows)
         {
@@ -3264,11 +3266,10 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AstralUnitBranchDeclineCases))]
     public void AstralUnitBranchDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: ambiguous branch attribution (several branches verify
-        // the hit) keeps BCL routing, while right-to-left and IgnoreCase unit shapes
-        // keep their existing BCL routes; parity holds and construction is pinned
-        // per lane. Single-present-branch shapes such as (a|(.)c) graduate to the
-        // owned battery above: exactly one branch verifies their hits.
+        // Declared R05 debt: right-to-left and IgnoreCase unit shapes keep their
+        // existing BCL routes; parity holds and construction is pinned per lane.
+        // Ordered unit-branch attribution (first verifying branch wins) and nested
+        // divergent evaluator shaping graduate to the owned batteries around it.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options);
@@ -3276,12 +3277,14 @@ public sealed class AsciiSimplePatternTests
         Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchEvaluatorDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchEvaluatorOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
             ("((a|.)c)", "a\U0001F600c"),
             ("((a|.)c)", "xabc"),
+            ("((x)|(.))", "x"),
+            ("((x)|(.))", "y"),
         ];
         foreach (var row in rows)
         {
@@ -3291,20 +3294,22 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitBranchEvaluatorDeclineCases))]
-    public void AstralUnitBranchEvaluatorDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(AstralUnitBranchEvaluatorOwnedCases))]
+    public void AstralUnitBranchEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: evaluator callbacks keep BCL shaping for nested
-        // divergent shapes (half-involving hits would throw under the byte-splicing
-        // evaluator contract instead of shaping like BCL); parity holds and
-        // construction is pinned per lane. FromOffset detailed matches graduate to
-        // the owned battery below.
+        // R05: nested divergent unit shapes project evaluator arguments from ordered
+        // unit re-verification (first verifying branch wins), so string evaluator
+        // replacement never constructs the fallback engine here. Half-involving spans
+        // project in string space exactly like BCL; byte-splicing evaluators keep
+        // their alignment contract on such hits and are covered by the template
+        // battery above for those inputs.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var evaluatorRegex = new Utf8Regex(pattern, options);
         var evaluatorActual = evaluatorRegex.ReplaceToString(input, 0, (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(1).GetValueString() + ">");
         Assert.Equal(oracle.Replace(text, static match => "<" + match.Groups[1].Value + ">"), evaluatorActual);
-        Assert.True(evaluatorRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(evaluatorRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(evaluatorRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetOwnedCases()
