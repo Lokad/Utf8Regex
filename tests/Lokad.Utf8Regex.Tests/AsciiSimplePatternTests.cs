@@ -12064,8 +12064,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         // R05: ExplicitCapture plus Multiline dot shapes (named line spans
         // with dots; hits and misses) serve fully owned on all nine lanes
         // of both lanes with oracle parity throughout. The sibling
-        // ExplicitMultilineSplitKeepsLaneRouting battery pins the
-        // replacement divert on short named anchors.
+        // ExplicitMultilineSplitOwnsInput battery serves the same short named
+        // anchors fully owned, including group-template replacement.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -48434,7 +48434,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitMultilineSplitCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitMultilineSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -48451,14 +48451,15 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     }
 
     [Theory]
-    [MemberData(nameof(ExplicitMultilineSplitCases))]
-    public void ExplicitMultilineSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(ExplicitMultilineSplitOwnedCases))]
+    public void ExplicitMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: ExplicitCapture plus Multiline named anchors split the lanes on
+        // R05: ExplicitCapture plus Multiline named anchors serve fully owned on
         // ASCII input (both lanes). Discovery, Match, Detailed, enumeration,
         // and splits serve owned with per-group named values; all three
-        // replacement cores verify through the BCL fallback whatever the
-        // template shape (numbered or braced-named). Parity holds on every
+        // replacement cores shape numbered and braced-named templates owned from
+        // owned discovery hits via the anchor-aware grouped span table (zero-width
+        // anchors leave literal-relative spans unchanged). Parity holds on every
         // lane; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -48526,19 +48527,19 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
@@ -51538,7 +51539,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitMultilineSplitCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitMultilineSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -51555,15 +51556,15 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     }
 
     [Theory]
-    [MemberData(nameof(FoldExplicitMultilineSplitCases))]
-    public void FoldExplicitMultilineSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(FoldExplicitMultilineSplitOwnedCases))]
+    public void FoldExplicitMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
         // R05: folded ExplicitCapture plus Multiline anchored shapes serve owned
-        // on every lane but Detailed (both lanes). Discovery, Match, enumeration,
-        // splits, and all three replacement cores run native paths with no fallback
-        // built; Detailed shapes folded per-group values through the whole-subject
-        // BCL fallback. Parity holds on every lane, including per-group values and
-        // positions; the flags pin this split per lane.
+        // on every lane (both lanes). Discovery, Match, enumeration, splits, and
+        // all three replacement cores run native paths with no fallback built;
+        // Detailed shapes folded per-group values owned from the owned discovery
+        // hit via the anchor-aware grouped span table. Parity holds on every lane,
+        // including per-group values and positions; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -51605,7 +51606,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
                 }
             }
         }
-        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -52517,10 +52518,11 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         // per lane (both lanes). Discovery, enumeration, splits, and
         // string/destination replacement verify through the whole-subject BCL
         // fallback; Match verifies through the anchored fallback (anchor-position
-        // candidates, sound); Detailed shapes per-group values through the
-        // whole-subject fallback; only bytes replacement serves natively. Parity
-        // holds on every lane, including per-group values and positions; the flags
-        // pin this split per lane.
+        // candidates, sound); Detailed shapes per-group values owned from that
+        // anchored discovery hit via the anchor-aware grouped span table (zero-width
+        // anchors leave literal-relative spans unchanged); only bytes replacement
+        // serves natively otherwise. Parity holds on every lane, including per-group
+        // values and positions; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -52562,8 +52564,8 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
                 }
             }
         }
-        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -52637,8 +52639,9 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         // R05: multiline caret-anchored multi-group shapes split the lanes (both
         // lanes). Discovery, Match, enumeration, splits, and bytes replacement
         // serve owned through line-anchored native paths; Detailed shapes per-group
-        // values through the whole-subject BCL fallback while string and destination
-        // replacement verify through it too. Parity holds on every lane, including
+        // values owned from the owned discovery hit via the anchor-aware grouped
+        // span table while string and destination replacement verify through the
+        // whole-subject BCL fallback. Parity holds on every lane, including
         // per-group values and positions; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -52681,7 +52684,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
                 }
             }
         }
-        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -52734,7 +52737,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredDetailedDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredDetailedOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -52750,14 +52753,15 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     }
 
     [Theory]
-    [MemberData(nameof(DoublyAnchoredDetailedDeclineCases))]
-    public void DoublyAnchoredDetailedKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(DoublyAnchoredDetailedOwnedCases))]
+    public void DoublyAnchoredDetailedOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
         // R05: doubly-anchored multi-group shapes under Multiline serve owned on
-        // every lane but Detailed (both lanes). Discovery, Match, enumeration,
-        // splits, and all three replacement cores run line-anchored native paths
-        // with no fallback built; Detailed shapes per-group values through the
-        // whole-subject BCL fallback. Parity holds on every lane, including
+        // every lane (both lanes). Discovery, Match, enumeration, splits, and all
+        // three replacement cores run line-anchored native paths with no fallback
+        // built; Detailed shapes per-group values owned from the owned discovery
+        // hit via the anchor-aware grouped span table (zero-width anchors leave
+        // literal-relative spans unchanged). Parity holds on every lane, including
         // per-group values and positions; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -52800,7 +52804,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
                 }
             }
         }
-        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
@@ -52872,12 +52876,13 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
     [MemberData(nameof(DoublyAnchoredSplitDeclineCases))]
     public void DoublyAnchoredSplitKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: doubly-anchored multi-group shapes without Multiline split two lanes
-        // (both lanes). Discovery, Match, enumeration, and all three replacement
+        // R05: doubly-anchored multi-group shapes without Multiline split the split
+        // lane (both lanes). Discovery, Match, enumeration, and all three replacement
         // cores run native paths with no fallback built; Detailed shapes per-group
-        // values through the whole-subject BCL fallback while splits enumerate
-        // through it too. Parity holds on every lane, including per-group values
-        // and positions; the flags pin this split per lane.
+        // values owned from the owned discovery hit via the anchor-aware grouped
+        // span table while splits enumerate through the whole-subject BCL fallback.
+        // Parity holds on every lane, including per-group values and positions;
+        // the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -52919,7 +52924,7 @@ public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableRepl
                 }
             }
         }
-        Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
