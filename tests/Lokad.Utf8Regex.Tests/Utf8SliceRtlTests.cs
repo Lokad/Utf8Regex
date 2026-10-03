@@ -10,8 +10,9 @@ namespace Lokad.Utf8Regex.Tests;
 // order, lookahead bodies run left-to-right). The slice mirrors that design:
 // main-stream reversal at parse, mirrored runner arms, sub-program lookahead
 // bodies, shared-slot lookbehind machinery, normalized capture spans. Bare
-// shapes keep native precedence; quantified shapes route owned. Balancing,
-// exotic assertion mixes, and right-to-left splits decline to legacy-exact
+// shapes keep native precedence; quantified shapes route owned. Balancing serves
+// owned (pop-first misses on fresh stacks exactly where the oracle misses);
+// exotic assertion mixes and right-to-left splits decline to legacy-exact
 // routing with identical behavior.
 public sealed class Utf8SliceRtlTests
 {
@@ -62,8 +63,6 @@ public sealed class Utf8SliceRtlTests
 
     public static IEnumerable<object?[]> RtlDeclinedShapes()
     {
-        // Balancing intervals assume forward positions.
-        yield return new object?[] { "(?<open>a+)(?<-open>b+)", "aabb" };
         // Mirrored lookbehind bodies run backreference-first (always missing).
         yield return new object?[] { "(?<=(a)\\1)b", "aab" };
         // Nested assertions inside lookbehind bodies take different positions.
@@ -88,7 +87,6 @@ public sealed class Utf8SliceRtlTests
 
     public static IEnumerable<object?[]> RtlParserDeclines()
     {
-        yield return new object?[] { "(?<open>a+)(?<-open>b+)" };
         yield return new object?[] { "(?<=(a)\\1)b" };
         yield return new object?[] { "(?<=(?=a)b)ab" };
         yield return new object?[] { "(?<=(?<=a)b)ab" };
@@ -108,6 +106,7 @@ public sealed class Utf8SliceRtlTests
         yield return new object?[] { "abc" };
         yield return new object?[] { "a|ab" };
         yield return new object?[] { "(a+)(b+)" };
+        yield return new object?[] { "(?<open>a+)(?<-open>b+)" };
         yield return new object?[] { "^a$" };
         yield return new object?[] { "\\Aa\\z" };
         yield return new object?[] { "a(?=b)" };
