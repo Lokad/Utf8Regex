@@ -332,8 +332,6 @@ internal static class Utf8SliceParser
                     }
 
                     break;
-                case Utf8SliceNode.BalanceNode balance:
-                    return true;
                 default:
                     break;
             }
@@ -534,8 +532,8 @@ internal static class Utf8SliceParser
         // Right-to-left programs run the main stream mirrored: every main-stream
         // concatenation reverses (BCL parses concatenations back-to-front in
         // RightToLeft mode) while assertion bodies keep left-to-right order and
-        // execute through their own machinery. Balancing intervals assume
-        // forward positions, lookbehind bodies with nested assertions,
+        // execute through their own machinery. Balancing serves owned (mirrored
+        // pop-first misses match the oracle), while lookbehind bodies with nested assertions,
         // backreferences, or possessive bodies stay legacy, and lookahead bodies
         // with backreferences, balancing, or nested lookbehinds stay legacy,
         // all with identical behavior through the existing fallback routes.
