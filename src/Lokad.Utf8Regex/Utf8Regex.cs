@@ -2933,6 +2933,34 @@ public sealed partial class Utf8Regex
                 rightToLeft: true)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
+        // R05: right-to-left literal shapes split owned through the reverse-search
+        // cursor (the same cursor backing owned RTL enumeration), projecting segments
+        // descending from the input end exactly like the oracle encounter order.
+        // Mirrors the RTL enumeration gate: boundary/trailing requirements, culture,
+        // and Kelvin-folded inputs keep their existing routes.
+        if ((count == 0 || count > 1) &&
+            UsesRightToLeft() &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+            _preparedRegex.LiteralUtf8 is { Length: > 0 } rtlSplitLiteral &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
+            !RequiresCultureSensitiveFallback &&
+            (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input)))
+        {
+            var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
+            var rtlDecoded = rtlAnalysis.GetDecodedString();
+            var rtlBudget = CreateExecutionBudget();
+            return new Utf8ValueSplitEnumerator(
+                input,
+                rtlDecoded,
+                new Utf8OperationMatchCursor(input, _preparedRegex, rtlSplitLiteral, _preparedRegex.ExecutionKind, rtlBudget, Utf8InputAnalyzer.IsAscii(input), rightToLeft: true),
+                rtlAnalysis.BoundaryMap,
+                count == 0 ? int.MaxValue : count,
+                rtlDecoded.Length,
+                rightToLeft: true)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
+
         if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
             var subject = Utf8InputAnalyzer.Analyze(input);
