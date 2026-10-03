@@ -128,9 +128,7 @@ public sealed class Utf8SliceReplaceTests
     {
         (string pattern, string text, string template)[] rows =
         [
-            ("(a.*b)", "xxaa\U0001F600bbyy", "<$1>"),
             ("(a.c)+", "xxabc\U0001F600ayc", "[$1]"),
-            (".*", "a\U0001F600c", "<$&>"),
         ];
         foreach (var row in rows)
         {
@@ -149,5 +147,62 @@ public sealed class Utf8SliceReplaceTests
         Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(oracle, stringRegex.ReplaceToString(input, template));
         Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> AstralSliceReplaceHalvesClosedOwnedCases()
+    {
+        (string pattern, string text, string template)[] rows =
+        [
+            ("(a.*b)", "xxaa\U0001F600bbyy", "<$1>"),
+            (".*", "a\U0001F600c", "<$&>"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralSliceReplaceHalvesClosedOwnedCases))]
+    public void AstralSliceReplaceHalvesClosedOwnsInput(string pattern, RegexOptions options, string text, string template)
+    {
+        // Halves-closed star loops (bare dot-star and headed dot-star over
+        // ASCII-indifferent runs) tile astral input unit-for-unit with the
+        // oracle, so bytes, string, destination, and split lanes never
+        // construct the fallback engine here. Divergent multi-atom branches
+        // keep the decline battery above.
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout).Replace(text, template);
+        var bytesRegex = new Utf8Regex(pattern, options);
+        Assert.True(bytesRegex.Inspection.DebugUsesOwnedSliceProgram);
+        Assert.Equal(oracle, Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var stringRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle, stringRegex.ReplaceToString(input, template));
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var destinationRegex = new Utf8Regex(pattern, options);
+        Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
+        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        Assert.Equal(System.Buffers.OperationStatus.Done, status);
+        Assert.Equal(oracle, Encoding.UTF8.GetString(destination[..bytesWritten]));
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var splitRegex = new Utf8Regex(pattern, options);
+        var oracleSplits = new System.Collections.Generic.List<string>();
+        foreach (var range in new Regex(pattern, options, Regex.InfiniteMatchTimeout).EnumerateSplits(text, int.MaxValue))
+        {
+            oracleSplits.Add(text[range.Start.Value..range.End.Value]);
+        }
+        var actualSplits = new System.Collections.Generic.List<string>();
+        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
+        {
+            actualSplits.Add(split.GetValueString());
+        }
+        Assert.Equal(oracleSplits, actualSplits);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 }

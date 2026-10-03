@@ -175,7 +175,7 @@ public sealed class Utf8SliceBoundaryTests
 
     [Theory]
     [InlineData("\\A.*\\z", "a\U0001F600b", true)]
-    public void AstralDotAbsoluteAnchorDeclinesToFallback(
+    public void AstralDotAbsoluteAnchorServesOwned(
         string pattern, string inputText, bool expectedSuccess)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -185,7 +185,7 @@ public sealed class Utf8SliceBoundaryTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]

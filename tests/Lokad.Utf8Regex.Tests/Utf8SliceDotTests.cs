@@ -111,7 +111,6 @@ public sealed class Utf8SliceDotTests
     // correctness rides the oracle.
     [Theory]
     [InlineData("(a.c)+", "xa\U0001F600c", false, 0)]
-    [InlineData(".*", "\U0001F600", true, 2)]
     public void NonAsciiDotDeclinesToFallback(
         string pattern, string inputText, bool expectedSuccess, int expectedCount)
     {
@@ -126,6 +125,27 @@ public sealed class Utf8SliceDotTests
         Assert.Equal(expectedCount, regex.Count(input));
         Assert.Equal(expectedSuccess, regex.Match(input).Success);
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    // Bare dot-star over halves-closed atoms tiles unit-for-unit with the
+    // oracle on astral input (IsMatch, Count, and Match serve owned with
+    // no fallback construction). Divergent multi-atom branches keep BCL.
+    [Theory]
+    [InlineData(".*", "\U0001F600", true, 2)]
+    public void NonAsciiDotStarServesOwned(
+        string pattern, string inputText, bool expectedSuccess, int expectedCount)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
+        Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
+        Assert.Equal(expectedSuccess, regex.IsMatch(input));
+        Assert.Equal(expectedCount, regex.Count(input));
+        Assert.Equal(expectedSuccess, regex.Match(input).Success);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]

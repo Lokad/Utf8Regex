@@ -251,6 +251,20 @@ public sealed class Utf8SliceAnchorTests
 
     [Theory]
     [InlineData("^a.*b$", "a\U0001F600b", true)]
+    public void AstralDotAnchorServesOwned(
+        string pattern, string inputText, bool expectedSuccess)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
+        Assert.Equal(expectedSuccess, regex.IsMatch(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
     [InlineData("^(a.c)+$", "xa\U0001F600c", false)]
     public void AstralDotAnchorDeclinesToFallback(
         string pattern, string inputText, bool expectedSuccess)
