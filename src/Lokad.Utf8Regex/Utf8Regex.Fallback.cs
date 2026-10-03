@@ -821,6 +821,19 @@ public sealed partial class Utf8Regex
             return false;
         }
 
+        // R05: line-anchored grouped literals with literal templates replace owned
+        // from line-anchored discovery hits (group-agnostic splice needs no shaping;
+        // group-reference templates keep the routes below). ASCII-only, mirroring
+        // the line-anchored interpreter use sites.
+        if (MatchTimeout == Regex.InfiniteMatchTimeout &&
+            !replacement.ContainsGroupReferences &&
+            _groupedLiteralSpanTable is not null &&
+            CanServeLineAnchoredOwned(input) &&
+            Utf8InputAnalyzer.IsAscii(input))
+        {
+            return false;
+        }
+
         return replacement.ContainsGroupReferences ||
             (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
              ShouldUseFallbackForAnchoredSimplePattern());
