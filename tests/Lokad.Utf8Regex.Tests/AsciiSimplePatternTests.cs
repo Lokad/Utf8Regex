@@ -45546,7 +45546,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> BareNoneAnchorSplitCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> BareNoneAnchorSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -45560,13 +45560,14 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(BareNoneAnchorSplitCases))]
-    public void BareNoneAnchorSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(BareNoneAnchorSplitOwnedCases))]
+    public void BareNoneAnchorSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: the bare-None doubly-anchored whole match splits only the splits
-        // lane (both lanes): every other lane serves owned, splits verify
-        // through the BCL fallback per the literal-family exclusion. Parity
-        // holds on every lane; the flags pin this split per lane.
+        // R05: the bare-None doubly-anchored whole match serves owned on every
+        // lane (both lanes): splits enumerate through the absolute-anchored
+        // simple-pattern cursor (anchors pin the single boundary-to-boundary hit
+        // with no empty matches). Parity holds on every lane; the flags pin
+        // this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -45626,7 +45627,7 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
@@ -52908,7 +52909,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredSplitDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -52924,16 +52925,16 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(DoublyAnchoredSplitDeclineCases))]
-    public void DoublyAnchoredSplitKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(DoublyAnchoredSplitOwnedCases))]
+    public void DoublyAnchoredSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: doubly-anchored multi-group shapes without Multiline split the split
-        // lane (both lanes). Discovery, Match, enumeration, and all three replacement
-        // cores run native paths with no fallback built; Detailed shapes per-group
-        // values owned from the owned discovery hit via the anchor-aware grouped
-        // span table while splits enumerate through the whole-subject BCL fallback.
-        // Parity holds on every lane, including per-group values and positions;
-        // the flags pin this split per lane.
+        // R05: doubly-anchored multi-group shapes without Multiline serve owned on
+        // every lane (both lanes). Discovery, Match, enumeration, Detailed shaping,
+        // and all three replacement cores run native paths with no fallback built;
+        // splits enumerate through the absolute-anchored simple-pattern cursor
+        // (anchors pin boundary-to-boundary hits with no empty matches, so cursor
+        // hits tile identically to the oracle). Parity holds on every lane, including
+        // per-group values and positions; the flags pin this split per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -53005,7 +53006,7 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
