@@ -5519,9 +5519,9 @@ public sealed class AsciiSimplePatternTests
     public void WholeLoopStarFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int offset)
     {
         // R05: halves-closed greedy star loops serve owned FromOffset lanes on
-        // astral input from boundary and scalar starts alike (IsMatch and Count
-        // build no fallback on either lane). Tailless lazy, inner-capture, and
-        // right-to-left shapes keep the decline battery below.
+        // astral input from boundary and scalar starts alike (IsMatch, Count, Match,
+        // and Detailed build no fallback on either lane). Tailless lazy,
+        // inner-capture, and right-to-left shapes keep the decline battery below.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -5535,6 +5535,23 @@ public sealed class AsciiSimplePatternTests
         }
         Assert.Equal(expectedCount, countRegex.CountFromUtf16Offset(input, offset));
         Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        var matchRegex = new Utf8Regex(pattern, options);
+        var expectedMatch = oracle.Match(text, offset);
+        var actualMatch = matchRegex.MatchFromUtf16Offset(input, offset);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        if (expectedMatch.Success)
+        {
+            Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+            Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+        }
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var detailedRegex = new Utf8Regex(pattern, options);
+        var expectedDetailed = oracle.Match(text, offset);
+        var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> WholeLoopFromOffsetDeclineCases()
