@@ -521,6 +521,15 @@ public sealed partial class Utf8Regex
              _unitSliceProgram.HasSharedCaptureDeclarations ||
              _unitSliceProgram.HasExplicitCaptureNumbers ||
              _unitSliceProgram.HasBalancing ||
+             // Absolute anchored simple plans without a dedicated native matcher
+             // otherwise force BCL verification, even on ASCII misses. Serve the
+             // cached unit program; retain qualified direct/native and line paths.
+             _compiledEngine.Kind == Utf8CompiledEngineKind.SimplePatternInterpreter &&
+                !_hasDirectAnchoredHeadTailWithoutValidation &&
+                !_hasDirectFallbackAsciiFamilyWithoutValidation &&
+                !_hasDirectFallbackTokenFamilyWithoutValidation &&
+                _caretAnchoredGroupedLiteralUtf8 is null &&
+                ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input) ||
              _unitSliceProgram.IgnoreCase &&
                 (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
                  ShouldUseKelvinSignFallback(input)) ||

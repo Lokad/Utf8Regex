@@ -4,6 +4,19 @@
 
 ### Owned UTF-16 execution
 
+- The byte-safe linear compiler now suspends node, sequence and nested-loop
+  program construction on explicit frames. Fixed-text, optional-alternation,
+  leading-mask and checked program-width walks are iterative; completed
+  subprograms share width facts. Speculative failure diagnostics and partial
+  append behavior remain unchanged. Compact childless optional loops no
+  longer probe themselves recursively. Public depth admission remains while
+  runtime nested-program calls and other consumers are still being converted.
+
+- Absolutely anchored simple patterns that would force BCL verification now
+  use their cached owned unit program. Qualified direct/native and line paths
+  retain their selection. Bounded overlapping optional loops preserve complete
+  operations, captures, RTL, newline edges and supplementary-input behavior.
+
 - Tree-to-VM conversion and instruction emission now use explicit frames,
   including suspended compilation of nested assertion programs. Shared
   construction facts use reference identity for record nodes and retain

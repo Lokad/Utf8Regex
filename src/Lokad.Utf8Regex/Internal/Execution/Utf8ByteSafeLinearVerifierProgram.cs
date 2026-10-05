@@ -197,6 +197,21 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
     private sealed class Compiler
     {
         private Utf8ByteSafeLinearCompileFailureKind _failureKind;
+        private readonly Dictionary<Utf8ByteSafeLinearVerifierStep[], int> _minimumLengths = [];
+
+        private enum AppendKind : byte { Node, Loop, SubProgram, TerminalLoop, SafeLoop, TerminalAlternation }
+
+        private sealed class AppendRequest(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps)
+        {
+            internal readonly Utf8ExecutionNode Node = node;
+            internal readonly List<Utf8ByteSafeLinearVerifierStep> Steps = steps;
+            internal AppendKind Kind;
+            internal int Index;
+            internal bool AllowVariableLength;
+            internal bool Succeeded;
+            internal Utf8ByteSafeLinearVerifierStep[] Program = [];
+            internal int MinimumConsumedLength;
+        }
 
         public Utf8ByteSafeLinearCompileOutcome Compile(Utf8ExecutionTree? tree)
         {
@@ -206,7 +221,23 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             }
 
             var steps = new List<Utf8ByteSafeLinearVerifierStep>();
-            var program = TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(root), steps)
+            var request = new AppendRequest(Utf8DeterministicAnchorSearch.Unwrap(root), steps);
+            var frames = new Stack<IEnumerator<AppendRequest>>();
+            frames.Push(AppendSteps(request).GetEnumerator());
+            try
+            {
+                while (frames.Count > 0)
+                {
+                    var frame = frames.Peek();
+                    if (frame.MoveNext()) frames.Push(AppendSteps(frame.Current).GetEnumerator());
+                    else frames.Pop().Dispose();
+                }
+            }
+            finally
+            {
+                while (frames.TryPop(out var frame)) frame.Dispose();
+            }
+            var program = request.Succeeded
                 ? new Utf8ByteSafeLinearVerifierProgram([.. steps, Utf8ByteSafeLinearVerifierStep.Accept()])
                 : default;
             if (!program.HasValue && _failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
@@ -215,36 +246,61 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             }
 
             return new Utf8ByteSafeLinearCompileOutcome(program, _failureKind);
+
+            IEnumerable<AppendRequest> AppendSteps(AppendRequest request) => request.Kind switch
+            {
+                AppendKind.Node => AppendNodeSteps(request),
+                AppendKind.Loop => AppendLoopSteps(request),
+                AppendKind.SubProgram => CompileSubProgramSteps(request),
+                AppendKind.TerminalLoop => AppendTerminalLoopSteps(request),
+                AppendKind.SafeLoop => AppendSafeVariableLoopSteps(request),
+                _ => AppendTerminalAlternationSteps(request),
+            };
         }
 
-    private bool TryAppendNode(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps)
+    private IEnumerable<AppendRequest> AppendNodeSteps(AppendRequest request)
     {
+        var node = request.Node;
+        var steps = request.Steps;
         switch (node.Kind)
         {
             case Utf8ExecutionNodeKind.Empty:
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Capture:
             case Utf8ExecutionNodeKind.Group:
-                return node.Children.Count == 1 && TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]), steps);
+                if (node.Children.Count != 1) yield break;
+                var wrapped = new AppendRequest(Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]), steps);
+                yield return wrapped;
+                request.Succeeded = wrapped.Succeeded;
+                yield break;
 
             case Utf8ExecutionNodeKind.Concatenate:
                 for (var i = 0; i < node.Children.Count; i++)
                 {
                     var child = Utf8DeterministicAnchorSearch.Unwrap(node.Children[i]);
-                    if (TryAppendTerminalLoop(node.Children, i, steps))
+                    var terminalLoop = new AppendRequest(node, steps) { Kind = AppendKind.TerminalLoop, Index = i };
+                    yield return terminalLoop;
+                    if (terminalLoop.Succeeded)
                     {
-                        return true;
+                        request.Succeeded = true;
+                        yield break;
                     }
 
-                    if (TryAppendSafeVariableLoop(node.Children, i, steps))
+                    var safeLoop = new AppendRequest(node, steps) { Kind = AppendKind.SafeLoop, Index = i };
+                    yield return safeLoop;
+                    if (safeLoop.Succeeded)
                     {
                         continue;
                     }
 
-                    if (TryAppendTerminalAlternation(node.Children, i, steps))
+                    var terminalAlternation = new AppendRequest(node, steps) { Kind = AppendKind.TerminalAlternation, Index = i };
+                    yield return terminalAlternation;
+                    if (terminalAlternation.Succeeded)
                     {
-                        return true;
+                        request.Succeeded = true;
+                        yield break;
                     }
 
                     if (TryAppendDeterministicOptionalAlternation(node.Children, i, steps))
@@ -259,76 +315,94 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
                     if (child.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
                     {
-                        if (!TryAppendLoop(child, steps, allowVariableLength: false))
+                        var fixedLoop = new AppendRequest(child, steps) { Kind = AppendKind.Loop };
+                        yield return fixedLoop;
+                        if (!fixedLoop.Succeeded)
                         {
-                            return false;
+                            yield break;
                         }
 
                         continue;
                     }
 
-                    if (!TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(child), steps))
+                    var nested = new AppendRequest(Utf8DeterministicAnchorSearch.Unwrap(child), steps);
+                    yield return nested;
+                    if (!nested.Succeeded)
                     {
-                        return false;
+                        yield break;
                     }
                 }
 
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.MatchByte((byte)node.Ch));
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text):
                 steps.Add(Utf8ByteSafeLinearVerifierStep.MatchText(text));
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && TryCreateByteSafeSetStep(set, loop: false, min: 0, max: 0, out var setStep):
                 steps.Add(setStep);
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Bol:
             case Utf8ExecutionNodeKind.Beginning:
             case Utf8ExecutionNodeKind.Start:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.RequireBeginning(node.Options));
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Eol:
             case Utf8ExecutionNodeKind.EndZ:
             case Utf8ExecutionNodeKind.End:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.RequireEnd(node.Options));
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Boundary:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.RequireBoundary());
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.NonBoundary:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.RequireNonBoundary());
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Loop:
             case Utf8ExecutionNodeKind.LazyLoop:
-                return TryAppendLoop(node, steps, allowVariableLength: true);
+                var loop = new AppendRequest(node, steps) { Kind = AppendKind.Loop, AllowVariableLength = true };
+                yield return loop;
+                request.Succeeded = loop.Succeeded;
+                yield break;
 
             default:
                 if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
                     _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedNode;
                 }
-                return false;
+                yield break;
         }
     }
 
-    private bool TryAppendLoop(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps, bool allowVariableLength)
+    private IEnumerable<AppendRequest> AppendLoopSteps(AppendRequest request)
     {
+        var node = request.Node;
+        var steps = request.Steps;
+        var allowVariableLength = request.AllowVariableLength;
         if (node.Kind == Utf8ExecutionNodeKind.LazyLoop && node.Min != node.Max)
         {
             if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
                 _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
             }
-            return false;
+            yield break;
         }
 
         if (!allowVariableLength && node.Min != node.Max)
@@ -337,7 +411,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             {
                 _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
             }
-            return false;
+            yield break;
         }
 
         if (node.Children.Count == 1 &&
@@ -347,30 +421,34 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             (node.Min == node.Max || allowVariableLength))
         {
             steps.Add(Utf8ByteSafeLinearVerifierStep.LoopAnyText(alternatives, node.Min, node.Max));
-            return true;
+            request.Succeeded = true;
+            yield break;
         }
 
         if (node.Ch is > (char)0 and <= (char)0x7F)
         {
             steps.Add(Utf8ByteSafeLinearVerifierStep.LoopByte((byte)node.Ch, node.Min, node.Max));
-            return true;
+            request.Succeeded = true;
+            yield break;
         }
 
         if (node.Text is { Length: > 0 } loopSet && TryCreateByteSafeSetStep(loopSet, loop: true, node.Min, node.Max, out var loopSetStep))
         {
             steps.Add(loopSetStep);
-            return true;
+            request.Succeeded = true;
+            yield break;
         }
 
         if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText))
         {
             steps.Add(Utf8ByteSafeLinearVerifierStep.LoopText(loopText, node.Min, node.Max));
-            return true;
+            request.Succeeded = true;
+            yield break;
         }
 
         if (node.Children.Count != 1)
         {
-            return false;
+            yield break;
         }
 
         var child = Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]);
@@ -378,73 +456,74 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         {
             case Utf8ExecutionNodeKind.One when child.Ch <= 0x7F:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.LoopByte((byte)child.Ch, node.Min, node.Max));
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(child.Text, out var text):
                 steps.Add(Utf8ByteSafeLinearVerifierStep.LoopText(text, node.Min, node.Max));
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Set when child.Text is { Length: > 0 } set && TryCreateByteSafeSetStep(set, loop: true, node.Min, node.Max, out var childLoopSetStep):
                 steps.Add(childLoopSetStep);
-                return true;
+                request.Succeeded = true;
+                yield break;
 
             case Utf8ExecutionNodeKind.Concatenate:
             case Utf8ExecutionNodeKind.Capture:
             case Utf8ExecutionNodeKind.Group:
             case Utf8ExecutionNodeKind.Loop:
             case Utf8ExecutionNodeKind.LazyLoop:
-                if (TryCompileDeterministicSubProgram(child, out var programSteps, out var minConsumedLength))
+                var subProgram = new AppendRequest(child, []) { Kind = AppendKind.SubProgram };
+                yield return subProgram;
+                if (subProgram.Succeeded)
                 {
-                    if (minConsumedLength == 0)
+                    var programSteps = subProgram.Program;
+                    if (subProgram.MinimumConsumedLength == 0)
                     {
                         if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                         {
                             _failureKind = Utf8ByteSafeLinearCompileFailureKind.NestedSubProgram;
                         }
-                        return false;
+                        yield break;
                     }
 
                     if (TryCombineLoopSubProgram(programSteps, node.Min, node.Max, out var combinedLoopStep))
                     {
                         steps.Add(combinedLoopStep);
-                        return true;
+                        request.Succeeded = true;
+                        yield break;
                     }
 
                     steps.Add(Utf8ByteSafeLinearVerifierStep.LoopProgram(programSteps, node.Min, node.Max));
-                    return true;
+                    request.Succeeded = true;
+                    yield break;
                 }
 
-                return false;
+                yield break;
 
             default:
                 if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
                     _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
                 }
-                return false;
+                yield break;
         }
     }
 
-    private bool TryCompileDeterministicSubProgram(
-        Utf8ExecutionNode node,
-        out Utf8ByteSafeLinearVerifierStep[] steps,
-        out int minConsumedLength)
+    private IEnumerable<AppendRequest> CompileSubProgramSteps(AppendRequest request)
     {
-        var list = new List<Utf8ByteSafeLinearVerifierStep>();
-        if (!TryAppendNode(node, list))
+        var child = new AppendRequest(request.Node, request.Steps);
+        yield return child;
+        if (!child.Succeeded)
         {
-            steps = [];
-            minConsumedLength = 0;
             if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
-            {
                 _failureKind = Utf8ByteSafeLinearCompileFailureKind.NestedSubProgram;
-            }
-            return false;
+            yield break;
         }
-
-        steps = [.. list];
-        minConsumedLength = GetMinimumConsumedLength(steps);
-        return steps.Length > 0;
+        request.Program = [.. request.Steps];
+        request.MinimumConsumedLength = GetMinimumConsumedLength(request.Program);
+        request.Succeeded = request.Program.Length > 0;
     }
 
     private bool TryCombineLoopSubProgram(
@@ -516,39 +595,34 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return combined > int.MaxValue ? int.MinValue : (int)combined;
     }
 
-    private bool TryAppendTerminalLoop(
-        IReadOnlyList<Utf8ExecutionNode> children,
-        int index,
-        List<Utf8ByteSafeLinearVerifierStep> steps)
+    private IEnumerable<AppendRequest> AppendTerminalLoopSteps(AppendRequest request)
     {
+        var children = request.Node.Children;
+        var index = request.Index;
         var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (node.Kind is not (Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop) ||
-            !CanTreatRemainingAsZeroWidth(children, index + 1) ||
-            !TryAppendLoop(node, steps, allowVariableLength: true))
-        {
-            return false;
-        }
-
+            !CanTreatRemainingAsZeroWidth(children, index + 1)) yield break;
+        var loop = new AppendRequest(node, request.Steps) { Kind = AppendKind.Loop, AllowVariableLength = true };
+        yield return loop;
+        if (!loop.Succeeded) yield break;
         for (var i = index + 1; i < children.Count; i++)
         {
-            if (!TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(children[i]), steps))
-            {
-                return false;
-            }
+            var child = new AppendRequest(Utf8DeterministicAnchorSearch.Unwrap(children[i]), request.Steps);
+            yield return child;
+            if (!child.Succeeded) yield break;
         }
-
-        return true;
+        request.Succeeded = true;
     }
 
-    private bool TryAppendSafeVariableLoop(
-        IReadOnlyList<Utf8ExecutionNode> children,
-        int index,
-        List<Utf8ByteSafeLinearVerifierStep> steps)
+    private IEnumerable<AppendRequest> AppendSafeVariableLoopSteps(AppendRequest request)
     {
+        var children = request.Node.Children;
+        var index = request.Index;
+        var steps = request.Steps;
         var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (node.Kind != Utf8ExecutionNodeKind.Loop || node.Min == node.Max)
         {
-            return false;
+            yield break;
         }
 
         if (!TryGetLeadingAsciiByteMask(node, out var loopLowMask, out var loopHighMask) ||
@@ -559,10 +633,12 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             {
                 _failureKind = Utf8ByteSafeLinearCompileFailureKind.NonDisjointVariableLoop;
             }
-            return false;
+            yield break;
         }
 
-        return TryAppendLoop(node, steps, allowVariableLength: true);
+        var loop = new AppendRequest(node, steps) { Kind = AppendKind.Loop, AllowVariableLength = true };
+        yield return loop;
+        request.Succeeded = loop.Succeeded;
     }
 
     private bool TryCreateByteSafeSetStep(string runtimeSet, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
@@ -616,11 +692,11 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return FrontEnd.DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(runtimeSet, out asciiCharClass);
     }
 
-    private bool TryAppendTerminalAlternation(
-        IReadOnlyList<Utf8ExecutionNode> children,
-        int index,
-        List<Utf8ByteSafeLinearVerifierStep> steps)
+    private IEnumerable<AppendRequest> AppendTerminalAlternationSteps(AppendRequest request)
     {
+        var children = request.Node.Children;
+        var index = request.Index;
+        var steps = request.Steps;
         var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (!CanTreatRemainingAsZeroWidth(children, index + 1))
         {
@@ -629,7 +705,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             {
                 _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
             }
-            return false;
+            yield break;
         }
 
         if (TryExtractAlternationTexts(node, out var alternatives, out var optional))
@@ -640,16 +716,19 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
             for (var i = index + 1; i < children.Count; i++)
             {
-                if (!TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(children[i]), steps))
+                var child = new AppendRequest(Utf8DeterministicAnchorSearch.Unwrap(children[i]), steps);
+                yield return child;
+                if (!child.Succeeded)
                 {
-                    return false;
+                    yield break;
                 }
             }
 
-            return true;
+            request.Succeeded = true;
+            yield break;
         }
 
-        return false;
+        yield break;
     }
 
     private bool TryAppendDeterministicOptionalAlternation(
@@ -711,17 +790,14 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         alternatives = [];
         optional = false;
 
-        if (node.Kind == Utf8ExecutionNodeKind.Loop &&
-            node.Min == 0 &&
-            node.Max == 1)
+        var sawOptional = false;
+        while (node.Kind == Utf8ExecutionNodeKind.Loop && node.Min == 0 && node.Max == 1 && node.Children.Count == 1)
         {
-            var candidate = node.Children.Count == 1 ? Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]) : node;
-            if (TryExtractAlternationTexts(candidate, out alternatives, out _))
-            {
-                optional = true;
-                return true;
-            }
+            sawOptional = true;
+            node = Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]);
         }
+        // Compact childless loops are not alternations. Probing the same node
+        // recursively used to revisit itself without making progress.
 
         if (node.Kind != Utf8ExecutionNodeKind.Alternate)
         {
@@ -744,6 +820,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         }
 
         alternatives = [.. list];
+        optional = sawOptional && alternatives.Length > 0;
         return alternatives.Length > 0;
     }
 
@@ -806,42 +883,32 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
     private bool TryExtractFixedAsciiText(Utf8ExecutionNode node, out byte[] text)
     {
         text = [];
-        switch (node.Kind)
+        var buffer = new List<byte>();
+        var pending = new Stack<Utf8ExecutionNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            case Utf8ExecutionNodeKind.Empty:
-                text = [];
-                return true;
-
-            case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
-                text = [(byte)node.Ch];
-                return true;
-
-            case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var bytes):
-                text = bytes;
-                return true;
-
-            case Utf8ExecutionNodeKind.Concatenate:
-                var buffer = new List<byte>();
-                foreach (var child in node.Children)
-                {
-                    if (!TryExtractFixedAsciiText(Utf8DeterministicAnchorSearch.Unwrap(child), out var childText))
-                    {
-                        return false;
-                    }
-
-                    buffer.AddRange(childText);
-                }
-
-                text = [.. buffer];
-                return true;
-
-            default:
-                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
-                {
-                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFixedText;
-                }
-                return false;
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.Empty: break;
+                case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
+                    buffer.Add((byte)node.Ch);
+                    break;
+                case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var bytes):
+                    buffer.AddRange(bytes);
+                    break;
+                case Utf8ExecutionNodeKind.Concatenate:
+                    for (var i = node.Children.Count - 1; i >= 0; i--)
+                        pending.Push(Utf8DeterministicAnchorSearch.Unwrap(node.Children[i]));
+                    break;
+                default:
+                    if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                        _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFixedText;
+                    return false;
+            }
         }
+        text = [.. buffer];
+        return true;
     }
 
     private bool AreAlternativesPrefixFree(byte[][] alternatives)
@@ -890,78 +957,90 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
     private bool TryGetLeadingAsciiByteMask(Utf8ExecutionNode node, out ulong lowMask, out ulong highMask)
     {
-        lowMask = 0;
-        highMask = 0;
-
-        switch (node.Kind)
+        var frames = new Stack<(IReadOnlyList<Utf8ExecutionNode> Children, int Next, ulong Low, ulong High)>();
+        while (true)
         {
-            case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
-                AddByteToMask((byte)node.Ch, ref lowMask, ref highMask);
-                return true;
-
-            case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
-                AddByteToMask(text[0], ref lowMask, ref highMask);
-                return true;
-
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set:
-                return TryBuildByteSafeLeadingMask(set, out lowMask, out highMask);
-
-            case Utf8ExecutionNodeKind.Concatenate:
-                foreach (var child in node.Children)
+            if (node.Kind == Utf8ExecutionNodeKind.Alternate && node.Children.Count > 0)
+            {
+                frames.Push((node.Children, 1, 0, 0));
+                node = Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]);
+                continue;
+            }
+            if (node.Kind == Utf8ExecutionNodeKind.Concatenate)
+            {
+                var next = 0;
+                while (next < node.Children.Count && Utf8DeterministicAnchorSearch.IsZeroWidthNode(
+                    Utf8DeterministicAnchorSearch.Unwrap(node.Children[next]))) next++;
+                if (next < node.Children.Count)
                 {
-                    var unwrapped = Utf8DeterministicAnchorSearch.Unwrap(child);
-                    if (Utf8DeterministicAnchorSearch.IsZeroWidthNode(unwrapped))
-                    {
-                        continue;
-                    }
-
-                    return TryGetLeadingAsciiByteMask(unwrapped, out lowMask, out highMask);
+                    node = Utf8DeterministicAnchorSearch.Unwrap(node.Children[next]);
+                    continue;
                 }
-
-                return false;
-
-            case Utf8ExecutionNodeKind.Alternate:
-                foreach (var child in node.Children)
+            }
+            if (node.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop && node.Children.Count == 1)
+            {
+                node = Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]);
+                continue;
+            }
+            lowMask = 0;
+            highMask = 0;
+            var success = ReadScalar(node, out lowMask, out highMask);
+            var resumed = false;
+            while (frames.TryPop(out var frame))
+            {
+                // A failed branch contributes no partial mask to its parent.
+                // Retain only the masks from the parent's successful siblings.
+                if (!success)
                 {
-                    if (!TryGetLeadingAsciiByteMask(Utf8DeterministicAnchorSearch.Unwrap(child), out var childLowMask, out var childHighMask))
-                    {
-                        return false;
-                    }
-
-                    lowMask |= childLowMask;
-                    highMask |= childHighMask;
+                    lowMask = frame.Low;
+                    highMask = frame.High;
+                    continue;
                 }
-
-                return (lowMask | highMask) != 0;
-
-            case Utf8ExecutionNodeKind.Loop:
-            case Utf8ExecutionNodeKind.LazyLoop:
-                if (node.Children.Count == 1)
+                lowMask |= frame.Low;
+                highMask |= frame.High;
+                if (frame.Next < frame.Children.Count)
                 {
-                    return TryGetLeadingAsciiByteMask(Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]), out lowMask, out highMask);
+                    frames.Push((frame.Children, frame.Next + 1, lowMask, highMask));
+                    node = Utf8DeterministicAnchorSearch.Unwrap(frame.Children[frame.Next]);
+                    resumed = true;
+                    break;
                 }
+                success = (lowMask | highMask) != 0;
+            }
+            if (!resumed) return success;
+        }
 
-                if (node.Ch is > (char)0 and <= (char)0x7F)
-                {
-                    AddByteToMask((byte)node.Ch, ref lowMask, ref highMask);
+        bool ReadScalar(Utf8ExecutionNode node, out ulong low, out ulong high)
+        {
+            low = 0;
+            high = 0;
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
+                    AddByteToMask((byte)node.Ch, ref low, ref high);
                     return true;
-                }
-
-                if (node.Text is { Length: > 0 } loopSet)
-                {
-                    return TryBuildByteSafeLeadingMask(loopSet, out lowMask, out highMask);
-                }
-
-                if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
-                {
-                    AddByteToMask(loopText[0], ref lowMask, ref highMask);
+                case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
+                    AddByteToMask(text[0], ref low, ref high);
                     return true;
-                }
-
-                return false;
-
-            default:
-                return false;
+                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set:
+                    return TryBuildByteSafeLeadingMask(set, out low, out high);
+                case Utf8ExecutionNodeKind.Loop:
+                case Utf8ExecutionNodeKind.LazyLoop:
+                    if (node.Ch is > (char)0 and <= (char)0x7F)
+                    {
+                        AddByteToMask((byte)node.Ch, ref low, ref high);
+                        return true;
+                    }
+                    if (node.Text is { Length: > 0 } loopSet)
+                        return TryBuildByteSafeLeadingMask(loopSet, out low, out high);
+                    if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
+                    {
+                        AddByteToMask(loopText[0], ref low, ref high);
+                        return true;
+                    }
+                    return false;
+                default: return false;
+            }
         }
     }
 
@@ -1025,6 +1104,49 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
     {
         return (firstLowMask & secondLowMask) == 0 &&
                (firstHighMask & secondHighMask) == 0;
+    }
+
+    private int GetMinimumConsumedLength(Utf8ByteSafeLinearVerifierStep[] steps)
+    {
+        var frames = new Stack<(Utf8ByteSafeLinearVerifierStep[] Steps, int Index, int Length)>();
+        frames.Push((steps, 0, 0));
+        while (frames.TryPop(out var frame))
+        {
+            if (frame.Index == frame.Steps.Length)
+            {
+                _minimumLengths[frame.Steps] = frame.Length;
+                continue;
+            }
+            var step = frame.Steps[frame.Index];
+            if (step.Kind == Utf8ByteSafeLinearVerifierStepKind.LoopProgram && !_minimumLengths.ContainsKey(step.Program))
+            {
+                frames.Push(frame);
+                frames.Push((step.Program, 0, 0));
+                continue;
+            }
+            var length = frame.Length;
+            checked
+            {
+                length += step.Kind switch
+                {
+                    Utf8ByteSafeLinearVerifierStepKind.MatchByte => 1,
+                    Utf8ByteSafeLinearVerifierStepKind.MatchText => step.Text.Length,
+                    Utf8ByteSafeLinearVerifierStepKind.MatchSet => 1,
+                    Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet => 1,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopByte => step.Min,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopText => step.Min * step.Text.Length,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopSet => step.Min,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet => step.Min,
+                    Utf8ByteSafeLinearVerifierStepKind.MatchAnyText => step.Alternatives.Min(static value => value.Length),
+                    Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional => 0,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => step.Min * step.Alternatives.Min(static value => value.Length),
+                    Utf8ByteSafeLinearVerifierStepKind.LoopProgram => step.Min * _minimumLengths[step.Program],
+                    _ => 0,
+                };
+            }
+            frames.Push((frame.Steps, frame.Index + 1, length));
+        }
+        return _minimumLengths[steps];
     }
 
     }
@@ -1294,35 +1416,6 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             default:
                 return false;
         }
-    }
-
-    private static int GetMinimumConsumedLength(Utf8ByteSafeLinearVerifierStep[] steps)
-    {
-        var length = 0;
-        foreach (var step in steps)
-        {
-            checked
-            {
-                length += step.Kind switch
-                {
-                    Utf8ByteSafeLinearVerifierStepKind.MatchByte => 1,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchText => step.Text.Length,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchSet => 1,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet => 1,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopByte => step.Min,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopText => step.Min * step.Text.Length,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopSet => step.Min,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet => step.Min,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchAnyText => step.Alternatives.Min(static value => value.Length),
-                    Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional => 0,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => step.Min * step.Alternatives.Min(static value => value.Length),
-                    Utf8ByteSafeLinearVerifierStepKind.LoopProgram => step.Min * GetMinimumConsumedLength(step.Program),
-                    _ => 0,
-                };
-            }
-        }
-
-        return length;
     }
 
     private static bool MatchesSet(byte value, string runtimeSet)
