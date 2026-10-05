@@ -74,10 +74,25 @@ public sealed class Utf8SliceReplacementLifetimeTests
     public void CancellationAfterVmEntryCarriesTheCallerToken(string operation, string replacement)
     {
         var input = Encoding.UTF8.GetBytes(new string('a', 5000) + "!");
+        AssertCancellation(operation, replacement, input, TimeSpan.FromSeconds(30));
+    }
+
+    [Theory]
+    [MemberData(nameof(ReplacementSurfaces))]
+    public void InfiniteDeadlineStillObservesCancellationDuringAHealthyMatch(string operation, string replacement)
+    {
+        // A lost token takes the unmetered route and finishes this healthy
+        // subject quickly, so the regression fails without a catastrophic hang.
+        var input = Encoding.UTF8.GetBytes(new string('a', 5000));
+        AssertCancellation(operation, replacement, input, Regex.InfiniteMatchTimeout);
+    }
+
+    private static void AssertCancellation(string operation, string replacement, byte[] input, TimeSpan timeout)
+    {
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex("(a|ab)+$", options, TimeSpan.FromSeconds(30));
+            var regex = new Utf8Regex("(a|ab)+$", options, timeout);
             using var source = new CancellationTokenSource();
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(steps =>
