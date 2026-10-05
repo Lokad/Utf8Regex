@@ -20,8 +20,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// Unicode property escapes (general categories/groups and named blocks as
 /// bare atoms or single-category classes, including blocks under IgnoreCase
 /// (matched through invariant case equivalents, verbatim port). Anything else
-/// (duplicate or
-/// explicitly-numbered names, backreferences and conditionals inside
+/// (explicitly-numbered names, backreferences and conditionals inside
 /// lookbehind bodies, lookbehind bodies of balancing shapes) declines to
 /// <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
@@ -98,24 +97,29 @@ internal static class Utf8SliceParser
         // in our owned VM; deliberately do not reproduce those runtime faults.
         root ??= new Utf8SliceNode.EmptyNode();
 
-        // BCL numbers unnamed groups left-to-right first, then named
-        // groups; backreference digits already denote final numbers
-        // (digit minus one), so only captures rewrite from temporary
-        // open-order slots. Named shapes also publish names by final
-        // number for projection.
-        static Utf8SliceNode RenumberCaptures(Utf8SliceNode node, int[] finals)
+        // Capture declarations use temporary opening-order slots. Shared numbering
+        // folds duplicate names into one identity and binds references after parsing.
+        static Utf8SliceNode RenumberCaptures(Utf8SliceNode node, int[] finals, Utf8CaptureCatalog catalog, ref bool referencesValid)
         {
             switch (node)
             {
+                case Utf8SliceNode.UnresolvedBackrefNode reference:
+                    var number = catalog.ReferenceNumber(reference.Name);
+                    if (number <= 0)
+                    {
+                        referencesValid = false;
+                        return new Utf8SliceNode.EmptyNode();
+                    }
+                    return new Utf8SliceNode.BackrefNode(number - 1, reference.FoldCase);
                 case Utf8SliceNode.CaptureNode capture:
                     return new Utf8SliceNode.CaptureNode(
                         finals[capture.Slot] - 1,
-                        RenumberCaptures(capture.Body, finals));
+                        RenumberCaptures(capture.Body, finals, catalog, ref referencesValid));
                 case Utf8SliceNode.ConcatNode concat:
                     var children = new Utf8SliceNode[concat.Children.Length];
                     for (var child = 0; child < children.Length; child++)
                     {
-                        children[child] = RenumberCaptures(concat.Children[child], finals);
+                        children[child] = RenumberCaptures(concat.Children[child], finals, catalog, ref referencesValid);
                     }
 
                     return new Utf8SliceNode.ConcatNode(children);
@@ -126,7 +130,7 @@ internal static class Utf8SliceParser
                         var rewritten = new Utf8SliceNode[alternation.Branches[branch].Length];
                         for (var child = 0; child < rewritten.Length; child++)
                         {
-                            rewritten[child] = RenumberCaptures(alternation.Branches[branch][child], finals);
+                            rewritten[child] = RenumberCaptures(alternation.Branches[branch][child], finals, catalog, ref referencesValid);
                         }
 
                         branches[branch] = rewritten;
@@ -135,26 +139,26 @@ internal static class Utf8SliceParser
                     return new Utf8SliceNode.AlternationNode(branches);
                 case Utf8SliceNode.RepeatNode repeat:
                     return new Utf8SliceNode.RepeatNode(
-                        RenumberCaptures(repeat.Body, finals),
+                        RenumberCaptures(repeat.Body, finals, catalog, ref referencesValid),
                         repeat.Minimum,
                         repeat.Maximum,
                         repeat.Lazy);
                 case Utf8SliceNode.LookaheadNode lookahead:
                     return new Utf8SliceNode.LookaheadNode(
-                        RenumberCaptures(lookahead.Body, finals),
+                        RenumberCaptures(lookahead.Body, finals, catalog, ref referencesValid),
                         lookahead.Positive);
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     return new Utf8SliceNode.LookbehindNode(
-                        RenumberCaptures(lookbehind.Body, finals),
+                        RenumberCaptures(lookbehind.Body, finals, catalog, ref referencesValid),
                         lookbehind.Positive);
                 case Utf8SliceNode.AtomicNode atomic:
                     return new Utf8SliceNode.AtomicNode(
-                        RenumberCaptures(atomic.Body, finals));
+                        RenumberCaptures(atomic.Body, finals, catalog, ref referencesValid));
                 case Utf8SliceNode.BalanceNode balance:
                     return new Utf8SliceNode.BalanceNode(
                         finals[balance.PopSlot] - 1,
                         balance.CaptureSlot < 0 ? -1 : finals[balance.CaptureSlot] - 1,
-                        RenumberCaptures(balance.Body, finals));
+                        RenumberCaptures(balance.Body, finals, catalog, ref referencesValid));
                 case Utf8SliceNode.ConditionalNode conditional:
                     // Template slots renumber like captures; raw digits already denote
                     // final numbers (validated range above), so they shift to zero-based
@@ -164,9 +168,9 @@ internal static class Utf8SliceParser
                         : conditional.TestSlot == -1 ? -1 : -conditional.TestSlot - 3;
                     return new Utf8SliceNode.ConditionalNode(
                         resolvedTest,
-                        RenumberCaptures(conditional.YesBody, finals),
-                        RenumberCaptures(conditional.NoBody, finals),
-                        conditional.TestBody is null ? null : RenumberCaptures(conditional.TestBody, finals));
+                        RenumberCaptures(conditional.YesBody, finals, catalog, ref referencesValid),
+                        RenumberCaptures(conditional.NoBody, finals, catalog, ref referencesValid),
+                        conditional.TestBody is null ? null : RenumberCaptures(conditional.TestBody, finals, catalog, ref referencesValid));
                 default:
                     return node;
             }
@@ -491,39 +495,19 @@ internal static class Utf8SliceParser
         }
 
         var finals = new int[parser.GroupCount];
-        var final = 1;
-        foreach (var decl in parser.GroupDecls)
-        {
-            if (decl.Name is null)
-            {
-                finals[decl.Slot] = final++;
-            }
-        }
-
-        foreach (var decl in parser.GroupDecls)
-        {
-            if (decl.Name is not null)
-            {
-                finals[decl.Slot] = final++;
-            }
-        }
-
-        var groupNames = new string[parser.GroupCount + 1];
-        groupNames[0] = "0";
-        foreach (var decl in parser.GroupDecls)
-        {
-            groupNames[finals[decl.Slot]] = decl.Name ?? ((uint)finals[decl.Slot]).ToString();
-        }
-
-        // Conditional number tests validate against the full group tally here
-        // (out-of-range digits decline like the BCL construction throw), and
-        // lookbehind bodies with backreferences or conditionals decline: BCL
-        // evaluates bodies back-to-front in one shot while the shared machinery
-        // enumerates starts forward.
-        if (!ConditionalTestsValidate(root, parser.GroupCount) || LookbehindBodyDeclines(root, false))
-        {
-            return null;
-        }
+        var definitions = new Utf8CaptureDefinition[parser.GroupCount];
+        var unnamed = 0;
+        foreach (var declaration in parser.GroupDecls)
+            definitions[declaration.Slot] = declaration.Name is null
+                ? new Utf8CaptureDefinition(string.Empty, ++unnamed, false, declaration.Slot)
+                : new Utf8CaptureDefinition(declaration.Name, -1, true, declaration.Slot);
+        var catalog = new Utf8CaptureCatalog(0, definitions);
+        catalog.DefinitionNumbers.CopyTo(finals, 0);
+        // Numeric conditions validate against distinct identities, not declarations.
+        if (!ConditionalTestsValidate(root, catalog.GroupNumbers.Length - 1)) return null;
+        var referencesValid = true;
+        root = RenumberCaptures(root, finals, catalog, ref referencesValid);
+        if (!referencesValid || LookbehindBodyDeclines(root, false)) return null;
 
         // Right-to-left programs run the main stream mirrored: every main-stream
         // concatenation reverses (BCL parses concatenations back-to-front in
@@ -554,7 +538,7 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase || parser.SawFold, rightToLeft);
+        return Utf8SliceLowerer.Lower(root, catalog.GroupNames, parser.SawBalancing, parser.MatchIgnoreCase || parser.SawFold, rightToLeft, catalog);
     }
 
     // Hex, unicode, and octal escapes produce one UTF-16 unit (exactly two
@@ -1496,10 +1480,7 @@ internal static class Utf8SliceParser
                                 if (captureName is not null)
                                 {
                                     captureTemp = _groups++;
-                                    if (!_groupSlots.TryAdd(captureName, captureTemp))
-                                    {
-                                        return false;
-                                    }
+                                    _groupSlots.TryAdd(captureName, captureTemp);
 
                                     _groupDecls.Add((captureTemp, captureName));
                                 }
@@ -1552,10 +1533,7 @@ internal static class Utf8SliceParser
                             var name = _pattern.Substring(nameStart, nameEnd - nameStart);
                             _position = nameEnd + 1;
                             var namedSlot = _groups++;
-                            if (!_groupSlots.TryAdd(name, namedSlot))
-                            {
-                                return false;
-                            }
+                            _groupSlots.TryAdd(name, namedSlot);
 
                             _groupDecls.Add((namedSlot, name));
                             if (_lookbehindDepth > 0)
@@ -1686,17 +1664,28 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
-                    // Single-digit backreferences bind earlier groups only:
-                    // a following digit makes the escape multi-character
-                    // (octal or two-digit reference in BCL), and undefined
-                    // numbers stay legacy-exact (BCL throws or octal-matches).
+                    // Bind after all declarations: references use final identities and
+                    // may precede their declaration (notably in reverse execution).
+                    // Multi-digit bare escapes retain the existing octal/reference route.
                     if (escaped >= '1' && escaped <= '9' &&
-                        (_position + 2 >= _pattern.Length || !char.IsAsciiDigit(_pattern[_position + 2])) &&
-                        escaped - '0' <= _groups)
+                        (_position + 2 >= _pattern.Length || !char.IsAsciiDigit(_pattern[_position + 2])))
                     {
                         _position += 2;
                         _sawFold |= _matchIgnoreCase;
-                        node = new Utf8SliceNode.BackrefNode(escaped - '0' - 1, _matchIgnoreCase);
+                        node = new Utf8SliceNode.UnresolvedBackrefNode(escaped.ToString(), _matchIgnoreCase);
+                        return true;
+                    }
+                    if (escaped == 'k' && _position + 2 < _pattern.Length && _pattern[_position + 2] is '<' or '\'')
+                    {
+                        var closer = _pattern[_position + 2] == '<' ? '>' : '\'';
+                        var nameStart = _position + 3;
+                        var nameEnd = nameStart;
+                        while (nameEnd < _pattern.Length && Utf8OwnedCharClass.IsWordChar(_pattern[nameEnd])) nameEnd++;
+                        if (nameEnd == nameStart || nameEnd >= _pattern.Length || _pattern[nameEnd] != closer) return false;
+                        var name = _pattern.Substring(nameStart, nameEnd - nameStart);
+                        _position = nameEnd + 1;
+                        _sawFold |= _matchIgnoreCase;
+                        node = new Utf8SliceNode.UnresolvedBackrefNode(name, _matchIgnoreCase);
                         return true;
                     }
 

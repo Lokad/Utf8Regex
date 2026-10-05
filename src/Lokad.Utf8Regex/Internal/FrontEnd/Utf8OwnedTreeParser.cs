@@ -1617,156 +1617,29 @@ internal static class Utf8OwnedTreeParser
             captureNameToNumber = null;
             captureSparseMapping = null;
 
-            var taken = new HashSet<int>();
-            foreach (var definition in state.GroupDefinitions)
+            var definitions = new Utf8CaptureDefinition[state.GroupDefinitions.Count];
+            for (var index = 0; index < definitions.Length; index++)
             {
-                if (!definition.IsAuto && definition.Declared > 0)
-                {
-                    taken.Add(definition.Declared);
-                }
+                var definition = state.GroupDefinitions[index];
+                definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
             }
-
-            for (var slot = 1; slot <= state.Groups; slot++)
+            var catalog = new Utf8CaptureCatalog(state.Groups, definitions);
+            for (var index = 0; index < definitions.Length; index++)
             {
-                taken.Add(slot);
+                var definition = state.GroupDefinitions[index];
+                definition.Slot = catalog.DefinitionNumbers[index];
+                if (definition.IsAuto) definition.Node.M = definition.Slot;
             }
-
-            var nextFree = 1;
-            var autoSlots = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var definition in state.GroupDefinitions)
-            {
-                if (!definition.IsAuto)
-                {
-                    definition.Slot = definition.Declared;
-                }
-            }
-
-            // BCL numbers auto groups in opening order, but definitions append at
-            // close: nested named groups would otherwise take closing order
-            // (oracle: (?<x>ab|(?<y>c))d owns x=1,y=2). Sorting by open position
-            // keeps nested names BCL-exact while leaving sequential shapes unchanged.
-            var autoDefinitions = new List<OwnedGroupDefinition>();
-            foreach (var definition in state.GroupDefinitions)
-            {
-                if (definition.IsAuto)
-                {
-                    autoDefinitions.Add(definition);
-                }
-            }
-
-            autoDefinitions.Sort(static (left, right) => left.OpenPosition.CompareTo(right.OpenPosition));
-            foreach (var definition in autoDefinitions)
-            {
-                if (autoSlots.TryGetValue(definition.Name, out var shared))
-                {
-                    definition.Slot = shared;
-                    definition.Node.M = shared;
-
-                    continue;
-                }
-
-                while (taken.Contains(nextFree))
-                {
-                    nextFree++;
-                }
-
-                definition.Slot = nextFree;
-                taken.Add(nextFree);
-                autoSlots[definition.Name] = nextFree;
-                definition.Node.M = nextFree;
-            }
-
-            var slots = new SortedSet<int> { 0 };
-            for (var slot = 1; slot <= state.Groups; slot++)
-            {
-                slots.Add(slot);
-            }
-
-            foreach (var definition in state.GroupDefinitions)
-            {
-                if (definition.Slot > 0)
-                {
-                    slots.Add(definition.Slot);
-                }
-            }
-
+            var slots = new SortedSet<int>(catalog.GroupNumbers);
             foreach (var required in state.RequiredSlots)
-            {
-                if (!slots.Contains(required))
-                {
-                    return false;
-                }
-            }
-
-            var orderedSlots = new List<int>(slots);
-            captureCount = orderedSlots.Count;
-
-            var autoBySlot = new Dictionary<int, string>();
-            foreach (var definition in state.GroupDefinitions)
-            {
-                if (definition.IsAuto && !autoBySlot.ContainsKey(definition.Slot))
-                {
-                    autoBySlot[definition.Slot] = definition.Name;
-                }
-            }
-
-            captureNames = new string[orderedSlots.Count];
-            for (var i = 0; i < orderedSlots.Count; i++)
-            {
-                var slot = orderedSlots[i];
-                captureNames[i] = slot == 0 ? "0" : autoBySlot.TryGetValue(slot, out var name) ? name : slot.ToString();
-            }
-
-            var dense = orderedSlots.Count == 0 || orderedSlots[orderedSlots.Count - 1] == orderedSlots.Count - 1;
-            if (!dense)
-            {
-                var sparse = new Hashtable();
-                for (var i = 0; i < orderedSlots.Count; i++)
-                {
-                    sparse[orderedSlots[i]] = i;
-                }
-
-                captureSparseMapping = sparse;
-            }
-
-            var hasAuto = false;
-            foreach (var definition in state.GroupDefinitions)
-            {
-                if (definition.IsAuto)
-                {
-                    hasAuto = true;
-                    break;
-                }
-            }
-
-            if (hasAuto)
-            {
-                var nameToNumber = new Hashtable { { "0", 0 } };
-                for (var slot = 1; slot <= state.Groups; slot++)
-                {
-                    nameToNumber[slot.ToString()] = slot;
-                }
-
-                foreach (var definition in state.GroupDefinitions)
-                {
-                    if (definition.IsAuto)
-                    {
-                        nameToNumber[definition.Name] = definition.Slot;
-                    }
-                    else
-                    {
-                        nameToNumber[definition.Declared.ToString()] = definition.Declared;
-                    }
-                }
-
-                captureNameToNumber = nameToNumber;
-            }
-
+                if (!slots.Contains(required)) return false;
+            captureCount = catalog.GroupNumbers.Length;
+            captureNames = catalog.GroupNames;
+            captureNameToNumber = catalog.NameToNumber;
+            captureSparseMapping = catalog.SparseMapping;
             var slotByName = new Dictionary<string, int>(StringComparer.Ordinal);
-            for (var i = 0; i < orderedSlots.Count; i++)
-            {
-                slotByName[captureNames[i]] = orderedSlots[i];
-            }
+            for (var index = 0; index < captureCount; index++)
+                slotByName[captureNames[index]] = catalog.GroupNumbers[index];
 
             var morphed = false;
             foreach (var fixup in state.BackrefFixups)

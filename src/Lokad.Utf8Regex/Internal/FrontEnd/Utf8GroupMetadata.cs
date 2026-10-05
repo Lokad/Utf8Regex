@@ -4,9 +4,8 @@ using System.Globalization;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>
-/// Owned group metadata derived from the vendored front-end parse tree, replicating the
-/// pinned BCL transfer and query algorithms (external/runtime 9ffface2f3f, Regex.Init and
-/// RegexParser.GroupNameFromNumber) instead of constructing a BCL Regex to ask it.
+/// Owned group metadata derived from the owned front-end parse tree without
+/// constructing a BCL Regex to query capture identities.
 /// A null parse tree (invalid patterns, which never reach construction) yields no metadata
 /// and callers retain their BCL fallback.
 /// </summary>

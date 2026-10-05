@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
@@ -82,6 +84,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
     internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record UnresolvedBackrefNode(string Name, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
     internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
@@ -197,7 +200,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop, Utf8CaptureCatalog? captureCatalog)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -212,6 +215,7 @@ internal sealed class Utf8SliceProgram
         Assertions = assertions;
         HasNonFixedLookbehind = hasNonFixedLookbehind;
         GroupNames = groupNames;
+        CaptureCatalog = captureCatalog;
         HasMixedNamedGroups = hasMixedNamedGroups;
         HasBalancing = hasBalancing;
         IgnoreCase = ignoreCase;
@@ -222,8 +226,10 @@ internal sealed class Utf8SliceProgram
         SawCapturingLookbehind = sawCapturingLookbehind;
         CanMatchEmpty = canMatchEmpty;
         HalvesClosedEmptyLoop = halvesClosedEmptyLoop;
+        UsesCaptureOpeningJournal = HasSharedCaptureDeclarations;
         foreach (var instruction in instructions)
         {
+            UsesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
             HasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
             if (instruction.Kind == Utf8SliceInstructionKind.Literal &&
@@ -234,6 +240,7 @@ internal sealed class Utf8SliceProgram
         }
         foreach (var assertion in assertions)
         {
+            UsesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
             HasSurrogateLiteral |= assertion.Body.HasSurrogateLiteral;
             HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
         }
@@ -256,6 +263,9 @@ internal sealed class Utf8SliceProgram
     internal Utf8SliceAssertion[] Assertions { get; }
     internal bool HasNonFixedLookbehind { get; }
     internal bool HasMixedNamedGroups { get; }
+    internal Utf8CaptureCatalog? CaptureCatalog { get; }
+    internal bool UsesCaptureOpeningJournal { get; }
+    internal bool HasSharedCaptureDeclarations => CaptureCatalog is { HasSharedCaptureDeclarations: true };
     internal bool HasBalancing { get; }
     internal bool IgnoreCase { get; }
     internal bool HasContiguousAnchor { get; }
@@ -398,7 +408,13 @@ internal static class Utf8SliceLowerer
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft)
     {
+        return Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, null);
+    }
+
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog)
+    {
         var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft);
+        lowerer.CaptureCatalog = captureCatalog;
         // Right-to-left programs execute backreferences before their groups in
         // reversed order, so seed the slot count from the final group tally
         // (parser-validated digits always land inside it); forward programs grow
@@ -626,7 +642,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop, captureCatalog);
     }
 
     // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar
@@ -1152,6 +1168,7 @@ internal static class Utf8SliceLowerer
         internal bool SawCapturingLookbehind;
         internal readonly List<Utf8SliceAssertion> Assertions = new();
         internal readonly string[]? GroupNames;
+        internal Utf8CaptureCatalog? CaptureCatalog;
         internal readonly bool MaintainBalance;
         internal readonly bool MatchCaseInsensitive;
         internal readonly bool MirrorExecute;
@@ -1485,7 +1502,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.BackrefNode backref:
                     if (backref.Slot < 0 || backref.Slot >= GroupCount)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(node), "Slice backreferences bind earlier groups.");
+                        throw new ArgumentOutOfRangeException(nameof(node), "Slice backreferences require a defined group.");
                     }
 
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, 0, 0));
@@ -1581,7 +1598,7 @@ internal static class Utf8SliceLowerer
                     // like lookbehind bodies).
                     if (MirrorExecute)
                     {
-                        var lookaheadBody = Utf8SliceLowerer.Lower(lookahead.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false);
+                        var lookaheadBody = Utf8SliceLowerer.Lower(lookahead.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false, CaptureCatalog);
                         if (lookaheadBody is null)
                         {
                             return false;
@@ -1648,7 +1665,7 @@ internal static class Utf8SliceLowerer
                         {
                             SawCapturingLookbehind = true;
                         }
-                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false);
+                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false, CaptureCatalog);
                         if (body is null)
                         {
                             return false;

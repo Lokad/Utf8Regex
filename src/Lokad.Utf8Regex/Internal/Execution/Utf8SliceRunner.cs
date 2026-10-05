@@ -30,9 +30,13 @@ internal struct Utf8SliceTrailEntry
     internal int Slot;
     internal int OldValue;
     internal int NewValue;
-    internal bool IsStart;
-    internal bool IsHead;
-    internal bool IsRestore;
+    // Keep the journal entry at sixteen bytes as capture markers are added.
+    private byte _flags;
+    internal bool IsStart { readonly get => (_flags & 1) != 0; set => _flags = (byte)(value ? _flags | 1 : _flags & ~1); }
+    internal bool IsHead { readonly get => (_flags & 2) != 0; set => _flags = (byte)(value ? _flags | 2 : _flags & ~2); }
+    internal bool IsRestore { readonly get => (_flags & 4) != 0; set => _flags = (byte)(value ? _flags | 4 : _flags & ~4); }
+    internal bool IsOpening { readonly get => (_flags & 8) != 0; set => _flags = (byte)(value ? _flags | 8 : _flags & ~8); }
+    internal bool IsClosing { readonly get => (_flags & 16) != 0; set => _flags = (byte)(value ? _flags | 16 : _flags & ~16); }
 }
 
 internal struct Utf8SliceBalanceEntry
@@ -1209,6 +1213,13 @@ internal static class Utf8SliceRunner
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.CaptureStart:
+                    if (program.UsesCaptureOpeningJournal)
+                    {
+                        if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, NewValue = inputIndex, IsOpening = true }, ref invocation))
+                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        programIndex++;
+                        break;
+                    }
                     if (!stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
                     {
                         return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
@@ -1218,12 +1229,26 @@ internal static class Utf8SliceRunner
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.CaptureEnd:
-                    if (!stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
+                    if (program.UsesCaptureOpeningJournal)
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        // An opening capture does not overwrite the last completed one.
+                        // This preserves nested aliases and references inside their bodies.
+                        if (!stacks.TryFindCaptureOpening(instruction.A, ref invocation, out var opening, out var openingBreach))
+                            return new Utf8SliceMatchOutcome(false, -1, openingBreach, null, null);
+                        if (!stacks.PushRestoreTrail(instruction.A, captureStarts[instruction.A], opening, captureEnds[instruction.A], inputIndex, ref invocation) ||
+                            !stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, OldValue = opening, NewValue = inputIndex, IsClosing = true }, ref invocation))
+                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        captureStarts[instruction.A] = opening;
+                        captureEnds[instruction.A] = inputIndex;
                     }
-
-                    captureEnds[instruction.A] = inputIndex;
+                    else
+                    {
+                        if (!stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
+                        {
+                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        }
+                        captureEnds[instruction.A] = inputIndex;
+                    }
                     if (program.HasBalancing)
                     {
                         // Balancing stacks mirror every capture so pops can
@@ -2108,7 +2133,7 @@ internal static class Utf8SliceRunner
                             var rtlBackFailed = false;
                             while (rtlCapIndex > rtlReferStart)
                             {
-                                var rtlBackCharge = invocation.Budget.TryChargeStep();
+                                var rtlBackCharge = invocation.TryChargeStep();
                                 if (rtlBackCharge != Utf8ExecutionLimitKind.None)
                                 {
                                     return new Utf8SliceMatchOutcome(false, -1, rtlBackCharge, null, null);
@@ -2224,7 +2249,7 @@ internal static class Utf8SliceRunner
                         var rtlCompared = 0;
                         while (rtlCompared < rtlReferLength)
                         {
-                            var rtlCharge = invocation.Budget.TryChargeStep();
+                            var rtlCharge = invocation.TryChargeStep();
                             if (rtlCharge != Utf8ExecutionLimitKind.None)
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, rtlCharge, null, null);
@@ -2280,7 +2305,7 @@ internal static class Utf8SliceRunner
                             var backFailed = false;
                             while (capIndex < referEnd)
                             {
-                                var backCharge = invocation.Budget.TryChargeStep();
+                                var backCharge = invocation.TryChargeStep();
                                 if (backCharge != Utf8ExecutionLimitKind.None)
                                 {
                                     return new Utf8SliceMatchOutcome(false, -1, backCharge, null, null);
@@ -2391,7 +2416,7 @@ internal static class Utf8SliceRunner
                         var compared = 0;
                         while (compared < referLength)
                         {
-                            var charge = invocation.Budget.TryChargeStep();
+                            var charge = invocation.TryChargeStep();
                             if (charge != Utf8ExecutionLimitKind.None)
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, charge, null, null);
@@ -2571,7 +2596,7 @@ internal static class Utf8SliceRunner
                                     for (var entry = 0; entry < nestedStacks.TrailCount; entry++)
                                     {
                                         var recorded = nestedStacks.TrailEntryAt(entry);
-                                        if (!stacks.PushTrail(recorded.Slot, recorded.OldValue, recorded.NewValue, recorded.IsStart, ref invocation))
+                                        if (!stacks.PushTrailEntry(recorded, ref invocation))
                                         {
                                             mergeBreach = Utf8ExecutionLimitKind.WorkingBytes;
                                             break;
@@ -2697,7 +2722,7 @@ internal static class Utf8SliceRunner
                                 for (var lookaheadEntry = 0; lookaheadEntry < lookaheadStacks.TrailCount; lookaheadEntry++)
                                 {
                                     var lookaheadRecorded = lookaheadStacks.TrailEntryAt(lookaheadEntry);
-                                    if (!stacks.PushTrail(lookaheadRecorded.Slot, lookaheadRecorded.OldValue, lookaheadRecorded.NewValue, lookaheadRecorded.IsStart, ref invocation))
+                                    if (!stacks.PushTrailEntry(lookaheadRecorded, ref invocation))
                                     {
                                         lookaheadBreach = Utf8ExecutionLimitKind.WorkingBytes;
                                         break;
@@ -2931,6 +2956,37 @@ internal static class Utf8SliceRunner
                 new Utf8SliceTrailEntry { Slot = slot, OldValue = oldValue, NewValue = newValue, IsStart = isStart }, ref invocation, ref _reservedBytes);
         }
 
+        internal bool PushTrailEntry(Utf8SliceTrailEntry entry, ref Utf8SliceInvocation invocation)
+        {
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
+                entry, ref invocation, ref _reservedBytes);
+        }
+
+        internal bool TryFindCaptureOpening(int slot, ref Utf8SliceInvocation invocation, out int opening, out Utf8ExecutionLimitKind breach)
+        {
+            var closed = 0;
+            opening = -1;
+            breach = Utf8ExecutionLimitKind.None;
+            for (var index = _trailCount - 1; index >= 0; index--)
+            {
+                breach = invocation.TryChargeStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+                var entry = TrailEntryAt(index);
+                if (entry.Slot != slot) continue;
+                if (entry.IsClosing) closed++;
+                else if (entry.IsOpening)
+                {
+                    if (closed != 0) closed--;
+                    else
+                    {
+                        opening = entry.NewValue;
+                        return true;
+                    }
+                }
+            }
+            throw new InvalidOperationException("Capture close has no surviving opening marker.");
+        }
+
         internal bool PushRestoreTrail(int slot, int oldStart, int newStart, int oldEnd, int newEnd, ref Utf8SliceInvocation invocation)
         {
             // Balance-pop slot restores: live slot state for backtrack
@@ -2990,6 +3046,7 @@ internal static class Utf8SliceRunner
             {
                 _trailCount--;
                 var entry = _trailTables[_trailCount / TrailChunkCapacity][_trailCount % TrailChunkCapacity];
+                if (entry.IsOpening || entry.IsClosing) continue;
                 if (entry.IsHead)
                 {
                     balanceHeads[entry.Slot] = entry.OldValue;
@@ -3049,7 +3106,7 @@ internal static class Utf8SliceRunner
                 for (var entry = 0; entry < _trailCount; entry++)
                 {
                     var item = _trailTables[entry / TrailChunkCapacity][entry % TrailChunkCapacity];
-                    if (item.IsRestore)
+                    if (item.IsRestore || item.IsOpening)
                     {
                         continue;
                     }
@@ -3108,7 +3165,7 @@ internal static class Utf8SliceRunner
                 for (var entry = 0; entry < _trailCount; entry++)
                 {
                     var item = _trailTables[entry / TrailChunkCapacity][entry % TrailChunkCapacity];
-                    if (item.IsRestore)
+                    if (item.IsRestore || item.IsOpening)
                     {
                         continue;
                     }
@@ -3128,7 +3185,7 @@ internal static class Utf8SliceRunner
                         // Mirrored runs record the right edge at the start entry and
                         // the left edge at the end entry; histories always carry
                         // normalized spans (forward runs already satisfy the order).
-                        var historyOpen = open[item.Slot];
+                        var historyOpen = item.IsClosing ? item.OldValue : open[item.Slot];
                         var historyClose = item.NewValue;
                         captureStarts[item.Slot][counts[item.Slot]] = historyOpen < historyClose ? historyOpen : historyClose;
                         captureLengths[item.Slot][counts[item.Slot]] = historyOpen < historyClose ? historyClose - historyOpen : historyOpen - historyClose;

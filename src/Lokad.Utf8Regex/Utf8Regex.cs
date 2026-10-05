@@ -416,28 +416,8 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
-        // Slice programs publish BCL-exact names by final number, so name
-        // answers need no fallback engine.
-        if (_sliceProgram is not null)
-        {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            var numbers = _sliceProgram.GroupNames;
-            for (var number = 0; number < numbers.Length; number++)
-            {
-                if (numbers[number] == name)
-                {
-                    return number;
-                }
-            }
-
-            return uint.TryParse(name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var result) && result <= (uint)_sliceProgram.GroupCount
-                ? (int)result
-                : -1;
-        }
+        if (name is null) throw new ArgumentNullException(nameof(name));
+        if (_sliceProgram?.CaptureCatalog is { } catalog) return catalog.GroupNumberFromName(name);
 
         return _program.GroupMetadata?.GroupNumberFromName(name)
             ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
@@ -461,10 +441,10 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null)
         {
-            return _sliceProgram.GroupNames;
+            return _sliceProgram.GroupNames.AsSpan().ToArray();
         }
 
-        return _program.GroupMetadata?.GroupNames ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
+        return _program.GroupMetadata?.GroupNames.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
     }
 
     /// <summary>Returns the group numbers defined by the expression, including group zero.</summary>
@@ -472,10 +452,10 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null)
         {
-            return _sliceProgram.OrdinalGroupNumbers;
+            return _sliceProgram.OrdinalGroupNumbers.AsSpan().ToArray();
         }
 
-        return _program.GroupMetadata?.GroupNumbers ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
+        return _program.GroupMetadata?.GroupNumbers.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
     }
 
     /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
@@ -537,6 +517,7 @@ public sealed partial class Utf8Regex
         if (_sliceProgram is not null) return _sliceProgram;
         if (_unitSliceProgram is not null &&
             (_unitSliceProgram.HasSurrogateLiteral ||
+             _unitSliceProgram.HasSharedCaptureDeclarations ||
              _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
              !_unitSliceProgram.ServesInput(input)))

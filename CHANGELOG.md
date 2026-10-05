@@ -4,6 +4,15 @@
 
 ### Owned UTF-16 execution
 
+- Named backreferences, forward references, and duplicate named captures now use
+  owned execution. The front end and VM parser share capture numbering; opening
+  positions and completed captures remain separate through nesting, backtracking,
+  balancing and capture-history projection. Reference comparison observes the
+  shared invocation checkpoints. Public group-name queries retain .NET's exact
+  distinction between aliases and numeric references, including sparse metadata;
+  returned metadata arrays are independent copies. PCRE2 keeps distinct slots for
+  duplicate names through its own profile programs.
+
 - Character-class subtraction, including nested subtraction, now runs in the
   owned VM. Each class applies its own folding and negation before subtraction;
   matching retains UTF-16 unit semantics, shares invocation cancellation and
