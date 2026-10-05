@@ -334,13 +334,11 @@ public sealed class Utf8OwnedTreeParserGroupTests
         }
     }
 
-    public static IEnumerable<object?[]> GroupTransparentDefinitionCases()
+    public static IEnumerable<object?[]> GroupExistingNumberAliasCases()
     {
-        // BCL zero-padded nonzero definitions are transparent groups with a slot
-        // constraint: the content matches with no slot and no name, while the
-        // stripped slot must exist elsewhere (unnamed, canonical, or named). The
-        // fork serves these with a different tree shape, so they pin owned-accept
-        // plus fork-serves plus BCL metadata and behavior instead of tree equality.
+        // Leading-zero declarations capture into an existing public number.
+        // They declare no additional number or name; a canonical, unnamed or
+        // named declaration elsewhere must provide the referenced identity.
         yield return new object?[] { "(?<01>a)(b)", 512, new string[] { "ab", "a", "b" } };
         yield return new object?[] { "(?<01>a)(?<1>b)", 512, new string[] { "ab", "a", "b" } };
         yield return new object?[] { "(?<1>a)(?<01>b)", 512, new string[] { "ab", "a", "b" } };
@@ -363,8 +361,8 @@ public sealed class Utf8OwnedTreeParserGroupTests
     }
 
     [Theory]
-    [MemberData(nameof(GroupTransparentDefinitionCases))]
-    public void OwnedGroupServesTransparentDefinition(string pattern, int options, string[] inputs)
+    [MemberData(nameof(GroupExistingNumberAliasCases))]
+    public void OwnedGroupServesExistingNumberAlias(string pattern, int options, string[] inputs)
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
@@ -378,6 +376,23 @@ public sealed class Utf8OwnedTreeParserGroupTests
             var input = Encoding.UTF8.GetBytes(inputText);
             Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+            var expected = oracle.Match(inputText);
+            var context = product.MatchDetailed(input);
+            Assert.Equal(expected.Value, context.GetValueString());
+            foreach (var number in oracle.GetGroupNumbers())
+            {
+                var group = context.GetGroup(number);
+                Assert.Equal(expected.Groups[number].Value, group.GetValueString());
+                Assert.Equal(expected.Groups[number].Captures.Count, group.CaptureCount);
+                for (var index = 0; index < group.CaptureCount; index++)
+                {
+                    var capture = group.GetCapture(index);
+                    Assert.Equal(expected.Groups[number].Captures[index].Index, capture.IndexInUtf16);
+                    Assert.Equal(expected.Groups[number].Captures[index].Length, capture.LengthInUtf16);
+                    Assert.Equal(expected.Groups[number].Captures[index].Value, capture.GetValueString());
+                }
+            }
+            Assert.False(product.Inspection.DebugFallbackRegexIsCreated);
         }
     }
     private static void AssertGroupNameMapping(Regex oracle, Hashtable? actual)

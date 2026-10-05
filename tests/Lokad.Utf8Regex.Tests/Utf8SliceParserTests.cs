@@ -89,6 +89,10 @@ public sealed class Utf8SliceParserTests
     [InlineData("(\\p{IsGreek}+)", 1)]
     [InlineData("[\\d-e]", 0)]
     [InlineData("\\bword", 0)]
+    [InlineData("(?<1>a)", 1)]
+    [InlineData("(?<-b>a)(?<b>c)", 1)]
+    [InlineData("(?<a-a>x)", 1)]
+    [InlineData("(?<a-1>x)", 1)]
     public void SupportedShapesLower(string pattern, int expectedGroups)
     {
         var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
@@ -133,7 +137,6 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?=a")]
     [InlineData("(?<=a")]
     [InlineData("(?<")]
-    [InlineData("(?<1>a)")]
     [InlineData("(?<1a>x)")]
     [InlineData("(?<>x)")]
     [InlineData("(?<-open>b)")]
@@ -141,11 +144,8 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?P<x>a)")]
     [InlineData("(?<a>x")]
     [InlineData("(?<a>x]")]
-    [InlineData("(?<-b>a)(?<b>c)")]
     [InlineData("(?<b-a>x)(?<b-c>y)")]
-    [InlineData("(?<a-a>x)")]
     [InlineData("(?<1-a>x)")]
-    [InlineData("(?<a-1>x)")]
     public void UnsupportedShapesDecline(string pattern)
     {
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));

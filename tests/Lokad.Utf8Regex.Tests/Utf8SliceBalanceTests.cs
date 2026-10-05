@@ -8,9 +8,9 @@ namespace Lokad.Utf8Regex.Tests;
 // without capturing. Stacks live in the balance chunk with per-group
 // heads journaled through the trail, so backtracking undoes pops exactly
 // like capture writes, and detailed histories drain popped captures.
-// n2 must be backward-defined; forward/undefined targets, duplicates,
-// digit starts, mismatched closers, and self-pops decline to
-// legacy-exact routing.
+// Targets bind against the complete capture catalog, including forward,
+// explicitly numbered and shared declarations. Undefined targets and malformed
+// spellings fail construction.
 public sealed class Utf8SliceBalanceTests
 {
     public static IEnumerable<object?[]> SliceBalanceShapes()
@@ -46,10 +46,24 @@ public sealed class Utf8SliceBalanceTests
     [InlineData("(?<-b>a)(?<b>c)")]
     [InlineData("(?<a-a>x)")]
     [InlineData("(?<a-1>x)")]
-    public void NonBalanceShapesDecline(string pattern)
+    public void ForwardAndSelfBalanceShapesRouteOwned(string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        foreach (var options in new[] { RegexOptions.CultureInvariant,
+            RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            RegexOptions.CultureInvariant | RegexOptions.RightToLeft,
+            RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
+        {
+            var oracle = new Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options);
+            foreach (var text in new[] { "", "x", "abc", "xxx" })
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+                Assert.Equal(oracle.Count(text), regex.Count(input));
+            }
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
     }
 
     [Theory]

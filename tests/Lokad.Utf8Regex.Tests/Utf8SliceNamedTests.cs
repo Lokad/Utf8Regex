@@ -8,8 +8,8 @@ namespace Lokad.Utf8Regex.Tests;
 // groups after, so temporary open-order slots renumber once the full
 // parse lands. Duplicate names share one capture identity. Bare unique
 // shapes keep their native routes; references and duplicate captures use
-// owned execution. Explicit numbers and malformed names retain their
-// existing routes (invalid spellings fail construction).
+// owned execution. Explicit numbers use the same capture catalog; invalid
+// spellings fail construction.
 public sealed class Utf8SliceNamedTests
 {
     public static IEnumerable<object?[]> SliceNamedShapes()
@@ -60,7 +60,6 @@ public sealed class Utf8SliceNamedTests
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
     [InlineData("(?'name'a)")]
-    [InlineData("(?<1>a)")]
     public void NonSliceNamedShapesStayOffSlice(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

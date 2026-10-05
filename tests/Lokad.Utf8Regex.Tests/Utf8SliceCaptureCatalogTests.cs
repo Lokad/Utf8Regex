@@ -39,8 +39,6 @@ public sealed class Utf8SliceCaptureCatalogTests
             Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
             foreach (var name in oracle.GetGroupNames())
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
-            // Sparse projection remains a separate execution milestone.
-            if (oracle.GetGroupNumbers()[^1] != oracle.GetGroupNumbers().Length - 1) continue;
             var context = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
             var expected = oracle.Match(text);
             foreach (var name in oracle.GetGroupNames())
@@ -70,13 +68,15 @@ public sealed class Utf8SliceCaptureCatalogTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void CancellationInterruptsNamedReferenceComparisonAndRecovers(bool compiled)
+    [InlineData(false, "x")]
+    [InlineData(true, "x")]
+    [InlineData(false, "2147483647")]
+    [InlineData(true, "2147483647")]
+    public void CancellationInterruptsReferenceComparisonAndRecovers(bool compiled, string name)
     {
         var literal = new string('a', 1024);
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("(?<x>" + literal + @")(?i:\k<x>)", options);
+        var regex = new Utf8Regex("(?<" + name + ">" + literal + @")(?i:\k<" + name + ">)", options);
         var program = regex.Inspection.OwnedSliceProgram;
         Assert.NotNull(program);
         Assert.Contains(program.Instructions, instruction => instruction.Kind == Utf8SliceInstructionKind.Backref);
@@ -96,14 +96,17 @@ public sealed class Utf8SliceCaptureCatalogTests
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(input));
-        Assert.Equal(literal, regex.MatchDetailed(input).GetGroup("x").GetValueString());
+        Assert.Equal(literal, regex.MatchDetailed(input).GetGroup(name).GetValueString());
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    [Fact]
-    public void CaptureOpeningJournalBreachesWorkAndStorageLimitsWithCleanup()
+    [Theory]
+    [InlineData(@"(?<x>c(?<x>a)+b)")]
+    [InlineData(@"(?<2147483647>c(?<2147483647>a)+b)")]
+    [InlineData(@"(?<1>c(?<01>a)+b)")]
+    public void CaptureOpeningJournalBreachesWorkAndStorageLimitsWithCleanup(string pattern)
     {
-        var program = Utf8SliceParser.TryParse(@"(?<x>c(?<x>a)+b)", RegexOptions.CultureInvariant);
+        var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(program);
         var input = Encoding.ASCII.GetBytes("c" + new string('a', 40) + "b");
         var map = Utf8BoundaryMap.Create(input);
@@ -130,13 +133,16 @@ public sealed class Utf8SliceCaptureCatalogTests
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.IsMatch(program, input, map, starts, ends, ref storage).Breach);
         Assert.Equal(0UL, storage.Ledger.ReservedBytes);
-        Assert.True(new Utf8Regex(@"(?<x>c(?<x>a)+b)").IsMatch(input));
+        Assert.True(new Utf8Regex(pattern).IsMatch(input));
     }
 
-    [Fact]
-    public void CancellationInterruptsCaptureOpeningSearchWithCleanup()
+    [Theory]
+    [InlineData(@"(?<x>c(?<x>a)+b)")]
+    [InlineData(@"(?<2147483647>c(?<2147483647>a)+b)")]
+    [InlineData(@"(?<1>c(?<01>a)+b)")]
+    public void CancellationInterruptsCaptureOpeningSearchWithCleanup(string pattern)
     {
-        var program = Utf8SliceParser.TryParse(@"(?<x>c(?<x>a)+b)", RegexOptions.CultureInvariant);
+        var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(program);
         var input = Encoding.ASCII.GetBytes("c" + new string('a', 40) + "b");
         var map = Utf8BoundaryMap.Create(input);
@@ -157,6 +163,6 @@ public sealed class Utf8SliceCaptureCatalogTests
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Contains("TryFindCaptureOpening", failure.StackTrace);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.True(new Utf8Regex(@"(?<x>c(?<x>a)+b)").IsMatch(input));
+        Assert.True(new Utf8Regex(pattern).IsMatch(input));
     }
 }
