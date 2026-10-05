@@ -14,6 +14,41 @@ public sealed class PythonScalarAtomRegressionTests
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
     [Theory]
+    [InlineData("[[:alpha:]]", "a]", true, 0, 2)]
+    [InlineData("[[:alpha:]]", "abc", false, 0, 0)]
+    [InlineData("[[.a.]]", ".]", true, 0, 2)]
+    [InlineData("[[=a=]]", "=]", true, 0, 2)]
+    [InlineData("[^[:alpha:]]", "\U0001f600]", true, 0, 3)]
+    [InlineData("[^[:alpha:]]", "\u00e9]", true, 0, 2)]
+    public void PosixLookingClassesKeepCpythonLiteralAndScalarSemantics(
+        string pattern, string input, bool success, int start, int end)
+    {
+        // Fresh CPython 3.13.2 witnesses: POSIX-looking spellings are literal
+        // class members, while a complemented member still consumes one scalar.
+        var regex = new Utf8PythonRegex(pattern);
+        AssertSearch(regex, input, success, start, end);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
+    }
+
+    [Fact]
+    public void PosixLookingNegatedCaptureRetainsWholeScalarResults()
+    {
+        var regex = new Utf8PythonRegex("([^[:alpha:]])");
+        var input = Utf8("\U0001f600]x]");
+        var match = regex.SearchDetailed(input, 0);
+        Assert.True(match.Success);
+        Assert.Equal("\U0001f600]", match.GetGroup(0).GetValueString());
+        Assert.Equal("\U0001f600]", match.GetGroup(1).GetValueString());
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "Detailed search stays owned.");
+        Assert.Equal(new[] { "\U0001f600]", "x]" }, regex.FindAllToStrings(input).ScalarValues);
+        // Captured global enumeration/substitution still use the profile's
+        // existing managed result path. Keep this migration gap explicit while
+        // qualifying scalar semantics; the new core admission does not close it.
+        Assert.True(regex.DebugIsManagedRegexValueCreated, "Captured global results remain in the R05 inventory.");
+        Assert.Equal("<_><_>", regex.ReplaceToString(input, "<_>"));
+    }
+
+    [Theory]
     [InlineData(".", "\U0001F600", true, 0, 2)]
     [InlineData(".", "a", true, 0, 1)]
     [InlineData("x.", "x\U0001F600", true, 0, 3)]

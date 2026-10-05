@@ -57,8 +57,50 @@ public sealed class Pcre2SliceClassTests
     [Fact]
     public void PosixClassDeclinesSliceRouting()
     {
-        var regex = new Utf8Pcre2Regex("[[:alpha:]]+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("([[:alpha:]]+)", Pcre2CompileOptions.None);
+        var primary = Assert.IsType<Pcre2Utf8ProgramSlot>(regex.DebugCompiledProgram.PrimaryUtf8);
+        var coreProgram = primary.Regex.Inspection.OwnedSliceProgram;
+        Assert.NotNull(coreProgram);
+        Assert.True(coreProgram.UsesLiteralClassBracketSyntax);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+    }
+
+    [Theory]
+    [InlineData("[[:alpha:]]+", "1ab_3Cd!", new[] { "ab", "Cd" }, "1<_>_3<_>!")]
+    [InlineData("([[:alpha:]]+)", "1ab_3Cd!", new[] { "ab", "Cd" }, "1<_>_3<_>!")]
+    [InlineData("x[[:alpha:]]+y", "xaby xa]y", new[] { "xaby" }, "<_> xa]y")]
+    [InlineData("[^[:alpha:]]+", "a]b3c", new[] { "]", "3" }, "a<_>b<_>c")]
+    [InlineData("[q[:digit:]]+", "1q:23a", new[] { "1q", "23" }, "<_>:<_>a")]
+    public void PosixProgramsKeepProfileResultsAcrossOperations(
+        string pattern, string text, string[] expected, string replacement)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(text);
+        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+        Assert.True(regex.IsMatch(input, 0));
+        Assert.Equal(expected.Length, regex.Count(input, 0));
+        Assert.Equal(expected[0], regex.Match(input, 0).GetValueString());
+        Assert.Equal(expected[0], regex.MatchDetailed(input, 0).Value.GetValueString());
+        var actual = new List<string>();
+        var matches = regex.EnumerateMatches(input, 0);
+        while (matches.MoveNext()) actual.Add(matches.Current.GetValueString());
+        Assert.Equal(expected, actual);
+        Assert.Equal(replacement, regex.ReplaceToString(input, "<_>"));
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, pattern);
+    }
+
+    [Fact]
+    public void PosixCaptureProjectionRetainsPcre2CharacterMembership()
+    {
+        var regex = new Utf8Pcre2Regex("(?<x>[[:alpha:]]+)!");
+        var input = Utf8("1ab! a]!");
+        var match = regex.MatchDetailed(input, 0);
+        Assert.True(match.Success);
+        Assert.Equal("ab!", match.Value.GetValueString());
+        Assert.Equal("ab", match.GetGroup(1).GetValueString());
+        Assert.Equal("1<ab> a]!", regex.ReplaceToString(input, "<$1>"));
+        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> IsMatchCases()

@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Tests;
 
 // R03 class slice: ASCII-only positive and negated classes (literals with
-// `]`-first/`-`-edge/POSIX-guard rules, ascending ranges with escape bounds,
+// `]`-first/`-`-edge rules, ascending ranges with escape bounds,
 // and supported single-char escapes) lower to owned Set programs with BCL
 // oracle parity and zero fallback-engine construction. Negated classes
 // consume whole non-ASCII scalars, so astral inputs decline to fallback
@@ -49,6 +49,7 @@ public sealed class Utf8SliceClassTests
     {
         yield return new object?[] { "[\\w]" };
         yield return new object?[] { "[\\x41]" };
+        // The native plan remains qualified after the VM admits this grammar.
         yield return new object?[] { "[[:alpha:]]" };
         yield return new object?[] { "[\\cA]" };
     }
