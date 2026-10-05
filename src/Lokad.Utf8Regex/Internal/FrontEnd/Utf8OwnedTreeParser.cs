@@ -235,17 +235,17 @@ internal static class Utf8OwnedTreeParser
 
                         if (backrefAtom.Kind == Utf8TreeNodeKind.Empty)
                         {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits });
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits, ReferencePosition = state.Position });
                         }
                         else if (ReferenceEquals(backrefAtom, tentative))
                         {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits });
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position });
                         }
                         else if (backrefAtom.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
                             backrefAtom.ChildCount == 1 &&
                             ReferenceEquals(backrefAtom.Child(0), tentative))
                         {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, Wrapper = backrefAtom });
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position, Wrapper = backrefAtom });
                         }
 
                         children.Add(backrefAtom);
@@ -599,7 +599,7 @@ internal static class Utf8OwnedTreeParser
                     // Other characters spell themselves; a word character
                     // without an escape meaning declines exactly like the
                     // BCL oracle (UnrecognizedEscape).
-                    if (IsWordChar(escaped))
+                    if (IsWordChar(escaped) && ((state.Options & RegexOptions.ECMAScript) == 0 || escaped == 'k'))
                     {
                         return false;
                     }
@@ -622,10 +622,10 @@ internal static class Utf8OwnedTreeParser
             switch (state.Pattern[state.Position + 1])
             {
                 case 'b':
-                    kind = Utf8TreeNodeKind.Boundary;
+                    kind = (state.Options & RegexOptions.ECMAScript) != 0 ? Utf8TreeNodeKind.ECMABoundary : Utf8TreeNodeKind.Boundary;
                     break;
                 case 'B':
-                    kind = Utf8TreeNodeKind.NonBoundary;
+                    kind = (state.Options & RegexOptions.ECMAScript) != 0 ? Utf8TreeNodeKind.NonECMABoundary : Utf8TreeNodeKind.NonBoundary;
                     break;
                 case 'A':
                     kind = Utf8TreeNodeKind.Beginning;
@@ -992,6 +992,7 @@ internal static class Utf8OwnedTreeParser
             var length = 0;
             var number = 0;
             while (length < 3 &&
+                ((state.Options & RegexOptions.ECMAScript) == 0 || number < 32) &&
                 state.Position + 1 + length < state.Pattern.Length &&
                 state.Pattern[state.Position + 1 + length] >= '0' &&
                 state.Pattern[state.Position + 1 + length] <= '7')
@@ -1063,13 +1064,17 @@ internal static class Utf8OwnedTreeParser
             node = null;
             var units = new List<char>();
             var categories = new List<char>();
+            var ecmaShorthand = (state.Options & RegexOptions.ECMAScript) != 0 &&
+                state.Position + 1 < state.Pattern.Length && state.Pattern[state.Position + 1] is 'd' or 'D' or 'w' or 'W' or 's' or 'S';
             if (!TryTakeShorthandMembers(ref state, units, categories))
             {
                 return false;
             }
 
             node = BuildSetNode(state.Options & ~RegexOptions.IgnoreCase, negated: false, units, categories);
-            node.MatchCaseInsensitive = (state.Options & RegexOptions.IgnoreCase) != 0;
+            // Standalone ECMAScript shorthands retain their fixed set even
+            // under IgnoreCase; bracketed unions receive class expansion.
+            node.MatchCaseInsensitive = !ecmaShorthand && (state.Options & RegexOptions.IgnoreCase) != 0;
             return true;
         }
 
@@ -1098,6 +1103,13 @@ internal static class Utf8OwnedTreeParser
             if (state.Position + 1 >= state.Pattern.Length)
             {
                 return false;
+            }
+
+            if ((state.Options & RegexOptions.ECMAScript) != 0 &&
+                TryEcmaShorthand(state.Pattern[state.Position + 1], units))
+            {
+                state.Position += 2;
+                return true;
             }
 
             switch (state.Pattern[state.Position + 1])
@@ -1133,6 +1145,31 @@ internal static class Utf8OwnedTreeParser
                 default:
                     return false;
             }
+        }
+
+        static bool TryEcmaShorthand(char head, List<char> units)
+        {
+            char[] ranges = head switch
+            {
+                'd' or 'D' => ['0', ':'],
+                's' or 'S' => ['\t', '\x0e', ' ', '!'],
+                'w' or 'W' => ['0', ':', 'A', '[', '_', '`', 'a', '{', '\u0130', '\u0131'],
+                _ => [],
+            };
+            if (ranges.Length == 0) return false;
+            if (head is 'd' or 's' or 'w') units.AddRange(ranges);
+            else
+            {
+                var low = (char)0;
+                for (var index = 0; index < ranges.Length; index += 2)
+                {
+                    if (low < ranges[index]) { units.Add(low); units.Add(ranges[index]); }
+                    low = ranges[index + 1];
+                }
+                units.Add(low);
+                units.Add((char)0);
+            }
+            return true;
         }
 
         static bool TryTakeProperty(ref ParserState state, bool invert, List<char> units, List<char> categories)
@@ -1624,6 +1661,8 @@ internal static class Utf8OwnedTreeParser
                 var definition = state.GroupDefinitions[index];
                 definition.Slot = catalog.DefinitionNumbers[index];
                 if (definition.IsAuto) definition.Node.M = definition.Slot;
+                if (!state.CapturePositions.TryGetValue(definition.Slot, out var previous) || definition.OpenPosition < previous)
+                    state.CapturePositions[definition.Slot] = definition.OpenPosition;
             }
             var slots = new SortedSet<int>(catalog.GroupNumbers);
             foreach (var required in state.RequiredSlots)
@@ -1639,7 +1678,7 @@ internal static class Utf8OwnedTreeParser
             var morphed = false;
             foreach (var fixup in state.BackrefFixups)
             {
-                if (!ResolveFixup(fixup, slots, slotByName, ref root, ref morphed))
+                if (!ResolveFixup(fixup, slots, slotByName, state.CapturePositions, ref root, ref morphed))
                 {
                     return false;
                 }
@@ -1650,8 +1689,13 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root, ref bool morphed)
+        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName,
+            Dictionary<int, int> capturePositions, ref Utf8TreeNode root, ref bool morphed)
         {
+            if (fixup.Digits is not null && !fixup.IsConditional && !fixup.IsPop &&
+                (fixup.Node.Options & RegexOptions.ECMAScript) != 0)
+                return ResolveEcmaNumeric(fixup, fixup.Digits, capturePositions,
+                    slots.Max == int.MaxValue ? int.MaxValue : slots.Max + 1, ref root, ref morphed);
             if (fixup.Node.Kind == Utf8TreeNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
             {
                 return ResolveEmptyFixup(fixup, slots, slotByName, ref root, ref morphed);
@@ -1818,6 +1862,54 @@ internal static class Utf8OwnedTreeParser
             }
         }
 
+        static bool ResolveEcmaNumeric(OwnedBackrefFixup fixup, string digits, Dictionary<int, int> capturePositions, int captureScanLimit,
+            ref Utf8TreeNode root, ref bool morphed)
+        {
+            var reference = -1;
+            var consumed = 0;
+            var number = 0;
+            // Only preceding declarations bind, but .NET's ECMAScript grammar
+            // consumes every candidate prefix through the capture-number ceiling,
+            // even when it keeps an earlier binding. Its numeric scan also wraps
+            // on overflow; preserve this interpreted lexical compatibility quirk.
+            for (var index = 0; index < digits.Length; index++)
+            {
+                number = unchecked(number * 10 + digits[index] - '0');
+                if (number > captureScanLimit) break;
+                consumed = index + 1;
+                if (capturePositions.TryGetValue(number, out var position) && position < fixup.ReferencePosition)
+                {
+                    reference = number;
+                }
+            }
+            Utf8TreeNode prefix;
+            if (reference >= 0)
+            {
+                prefix = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, fixup.Node.Options);
+                prefix.M = reference;
+                prefix.N = -1;
+            }
+            else
+            {
+                consumed = 0;
+                var value = 0;
+                while (consumed < digits.Length && consumed < 3 && value < 32 && digits[consumed] is >= '0' and <= '7')
+                {
+                    value = value * 8 + digits[consumed] - '0';
+                    consumed++;
+                }
+                if (consumed == 0) { consumed = 1; value = digits[0]; }
+                prefix = new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                prefix.MatchCaseInsensitive = fixup.Node.MatchCaseInsensitive;
+            }
+            if (consumed < digits.Length)
+                return ResolveNumericRest(fixup, ref root, ref morphed, consumed, prefix);
+            if (fixup.Node.Kind == Utf8TreeNodeKind.Empty) return true;
+            ReplaceNodeInParent(ref root, fixup.Node, prefix);
+            morphed = true;
+            return true;
+        }
+
         static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed)
         {
             // Single non-zero digits never spell octal; longer runs without a
@@ -1922,9 +2014,15 @@ internal static class Utf8OwnedTreeParser
                 morphedLeaf.N = 0;
             }
 
+            return ResolveNumericRest(fixup, ref root, ref morphed, prefixLength, morphedLeaf);
+        }
+
+        static bool ResolveNumericRest(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed,
+            int prefixLength, Utf8TreeNode prefix)
+        {
             var restText = fixup.Digits.Substring(prefixLength);
             var beforeAnchor = new List<Utf8TreeNode>(restText.Length);
-            beforeAnchor.Add(morphedLeaf);
+            beforeAnchor.Add(prefix);
             for (var i = 0; i + 1 < restText.Length; i++)
             {
                 beforeAnchor.Add(new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[i]));
@@ -2705,6 +2803,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseGroup(ref ParserState state, int depth, out Utf8TreeNode? node)
         {
             node = null;
+            var openPosition = state.Position;
             state.Position++;
             var kind = Utf8TreeNodeKind.Capture;
             var slot = 0;
@@ -2787,6 +2886,7 @@ internal static class Utf8OwnedTreeParser
             else
             {
                 state.Groups++;
+                state.CapturePositions.TryAdd(state.Groups, openPosition);
                 if (state.IgnoreNextUnnamedGroup)
                 {
                     kind = Utf8TreeNodeKind.Group;
@@ -3033,6 +3133,7 @@ internal static class Utf8OwnedTreeParser
         public int Position;
         public int Groups;
         public int ExecutionGroups;
+        public Dictionary<int, int> CapturePositions;
         public bool IgnoreNextUnnamedGroup;
         public RegexOptions TreeSeen;
         public int Depth0Branch;
@@ -3055,6 +3156,7 @@ internal static class Utf8OwnedTreeParser
             Position = 0;
             Groups = 0;
             ExecutionGroups = 0;
+            CapturePositions = new Dictionary<int, int>();
             IgnoreNextUnnamedGroup = false;
             TreeSeen = RegexOptions.None;
             Depth0Branch = 0;
@@ -3094,6 +3196,7 @@ internal static class Utf8OwnedTreeParser
     {
         public required Utf8TreeNode Node { get; init; }
         public string? Digits;
+        public int ReferencePosition;
         public string? Name;
         public bool IsPop;
         public bool IsConditional;

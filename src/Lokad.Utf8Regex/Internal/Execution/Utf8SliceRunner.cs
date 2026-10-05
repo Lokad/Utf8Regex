@@ -334,6 +334,9 @@ internal static class Utf8SliceRunner
     }
 
     private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, bool includeJoiners)
+        => IsWordScalarStartingAt(input, index, includeJoiners, false);
+
+    private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, bool includeJoiners, bool ecma)
     {
         if ((uint)index >= (uint)input.Length)
         {
@@ -351,6 +354,7 @@ internal static class Utf8SliceRunner
             return false;
         }
 
+        if (ecma) return scalar == (char)0x0130;
         return (WordUnicodeCategoriesMask & (1 << (int)char.GetUnicodeCategory(scalar))) != 0 ||
             (includeJoiners && (scalar == (char)0x200C || scalar == (char)0x200D));
     }
@@ -1407,10 +1411,10 @@ internal static class Utf8SliceRunner
                                 previous--;
                             }
 
-                            beforeWord = IsWordScalarStartingAt(input, previous, true);
+                            beforeWord = IsWordScalarStartingAt(input, previous, true, instruction.B != 0);
                         }
 
-                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(input, inputIndex, true);
+                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(input, inputIndex, true, instruction.B != 0);
                         if ((beforeWord != afterWord) == (instruction.A != 0))
                         {
                             programIndex++;
@@ -2107,6 +2111,13 @@ internal static class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Backref:
+                    // ECMAScript permits a defined group that has not completed
+                    // a capture yet to match an empty reference.
+                    if (instruction.C != 0 && (captureStarts[instruction.A] < 0 || captureEnds[instruction.A] < 0))
+                    {
+                        programIndex++;
+                        break;
+                    }
                     // Mirrored backreferences compare the captured span backward: the
                     // run records right edges at capture starts and left edges at
                     // capture ends, so an unmatched (or in-progress) group fails on

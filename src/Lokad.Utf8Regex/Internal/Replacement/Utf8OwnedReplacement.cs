@@ -131,6 +131,9 @@ internal sealed class Utf8ReplacementPattern
 
 
     public static Utf8ReplacementPattern Parse(string replacement)
+        => Parse(replacement, [], false);
+
+    internal static Utf8ReplacementPattern Parse(string replacement, ReadOnlySpan<int> validGroupNumbers, bool ecma)
     {
         var tokens = new List<Utf8ReplacementToken>();
         var literal = new StringBuilder();
@@ -170,7 +173,7 @@ internal sealed class Utf8ReplacementPattern
 
             if (IsAsciiDigit(next))
             {
-                position = AppendNumberedGroup(replacement, position, tokens, literal);
+                position = AppendNumberedGroup(replacement, position, tokens, literal, validGroupNumbers, ecma);
                 continue;
             }
 
@@ -223,20 +226,32 @@ internal sealed class Utf8ReplacementPattern
             return value >= '0' && value <= '9';
         }
 
-        static int AppendNumberedGroup(string replacement, int position, List<Utf8ReplacementToken> tokens, StringBuilder literal)
+        static int AppendNumberedGroup(string replacement, int position, List<Utf8ReplacementToken> tokens, StringBuilder literal,
+            ReadOnlySpan<int> validGroupNumbers, bool ecma)
         {
             var value = 0L;
             var end = position + 1;
+            var matchedEnd = -1;
+            var matchedNumber = -1;
             while (end < replacement.Length && IsAsciiDigit(replacement[end]))
             {
                 value = value * 10 + (replacement[end] - '0');
                 if (value > int.MaxValue)
                 {
+                    if (ecma) break;
                     literal.Append('$');
                     return position + 1;
                 }
 
                 end++;
+                if (ecma && validGroupNumbers.Contains((int)value)) { matchedEnd = end; matchedNumber = (int)value; }
+            }
+
+            if (ecma)
+            {
+                if (matchedEnd < 0) { literal.Append('$'); return position + 1; }
+                value = matchedNumber;
+                end = matchedEnd;
             }
 
             FlushLiteral(tokens, literal);

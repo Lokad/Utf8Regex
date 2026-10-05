@@ -15,7 +15,7 @@ internal static class Utf8SliceParser
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
         if (pattern is null || pattern.Length > MaxPatternLength ||
-            (options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) != 0) return null;
+            (options & RegexOptions.NonBacktracking) != 0) return null;
         return TryParse(pattern, options, Utf8OwnedTreeParser.TryParse(pattern, options));
     }
 

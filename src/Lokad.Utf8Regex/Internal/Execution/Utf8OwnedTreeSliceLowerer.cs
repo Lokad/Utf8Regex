@@ -10,7 +10,7 @@ internal static class Utf8OwnedTreeSliceLowerer
 {
     internal static Utf8SliceProgram? TryLower(Utf8OwnedRegexTree tree, RegexOptions options)
     {
-        if ((options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) != 0 ||
+        if ((options & RegexOptions.NonBacktracking) != 0 ||
             tree.CaptureCatalog is not { } catalog)
             return null;
 
@@ -146,8 +146,10 @@ internal static class Utf8OwnedTreeSliceLowerer
                     return ordinal <= 0 ? null : new Utf8SliceNode.CaptureNode(ordinal - 1, body);
                 case Utf8TreeNodeKind.Backreference:
                     var reference = catalog.OrdinalFromNumber(node.M);
-                    return reference < 0 ? null : reference == 0 ? new Utf8SliceNode.FailNode()
-                        : new Utf8SliceNode.BackrefNode(reference - 1, foldCase);
+                    var ecmaReference = (node.Options & RegexOptions.ECMAScript) != 0;
+                    return reference < 0 ? null : reference == 0
+                        ? ecmaReference ? new Utf8SliceNode.EmptyNode() : new Utf8SliceNode.FailNode()
+                        : new Utf8SliceNode.BackrefNode(reference - 1, foldCase, ecmaReference);
                 case Utf8TreeNodeKind.BackreferenceConditional:
                 case Utf8TreeNodeKind.ExpressionConditional:
                     var expression = node.Kind == Utf8TreeNodeKind.ExpressionConditional;
@@ -178,6 +180,9 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.Boundary:
                 case Utf8TreeNodeKind.NonBoundary:
                     return new Utf8SliceNode.BoundaryNode(node.Kind == Utf8TreeNodeKind.Boundary);
+                case Utf8TreeNodeKind.ECMABoundary:
+                case Utf8TreeNodeKind.NonECMABoundary:
+                    return new Utf8SliceNode.BoundaryNode(node.Kind == Utf8TreeNodeKind.ECMABoundary, true);
                 default:
                     return null;
             }

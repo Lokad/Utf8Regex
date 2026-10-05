@@ -81,11 +81,17 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record AnchorNode(Utf8SliceAnchorKind Anchor, bool MatchMultiline) : Utf8SliceNode(Utf8SliceNodeKind.Anchor);
 
-    internal sealed record BoundaryNode(bool IsWordBoundary) : Utf8SliceNode(Utf8SliceNodeKind.Boundary);
+    internal sealed record BoundaryNode(bool IsWordBoundary, bool Ecma) : Utf8SliceNode(Utf8SliceNodeKind.Boundary)
+    {
+        internal BoundaryNode(bool isWordBoundary) : this(isWordBoundary, false) { }
+    }
 
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
-    internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record BackrefNode(int Slot, bool FoldCase, bool AllowUnmatched) : Utf8SliceNode(Utf8SliceNodeKind.Backref)
+    {
+        internal BackrefNode(int slot, bool foldCase) : this(slot, foldCase, false) { }
+    }
     internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
@@ -1489,7 +1495,7 @@ internal static class Utf8SliceLowerer
 
                     break;
                 case Utf8SliceNode.BoundaryNode boundary:
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, boundary.Ecma ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.ShorthandNode shorthand:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));
@@ -1531,7 +1537,7 @@ internal static class Utf8SliceLowerer
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice backreferences require a defined group.");
                     }
 
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, backref.AllowUnmatched ? 1 : 0, 0));
                     break;
                 case Utf8SliceNode.BalanceNode balance:
                     if (balance.PopSlot < 0 || (balance.CaptureSlot < -1))

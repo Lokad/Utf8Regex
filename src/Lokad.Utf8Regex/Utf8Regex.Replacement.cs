@@ -75,11 +75,12 @@ public sealed partial class Utf8Regex
     {
         return _replacementCache.GetOrAdd(
             replacement,
-            (GroupNumbers: _groupNumbers, GroupNames: _groupNames),
+            (GroupNumbers: _groupNumbers, GroupNames: _groupNames, Ecma: (Options & RegexOptions.ECMAScript) != 0),
             static (replacementText, state) => Utf8FrontEndReplacementAnalyzer.Analyze(
                 replacementText,
                 state.GroupNumbers,
-                state.GroupNames));
+                state.GroupNames,
+                state.Ecma));
     }
 
     private static bool TryGetNativeReplacementBytes(

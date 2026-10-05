@@ -4,6 +4,14 @@
 
 ### Owned UTF-16 execution
 
+- Admitted ECMAScript patterns now use the shared owned parser and VM for matching,
+  histories, offsets, enumeration, splitting and replacement. The profile keeps
+  its fixed shorthands and boundaries, empty unmatched references, declaration
+  order for numeric binding, shortened octal escapes and identity escapes.
+  Decimal scanning retains .NET's interpreted capture-ceiling and overflow
+  consumption quirks. Unbraced replacement numbers bind their longest valid
+  group prefix; ordinary .NET and braced-reference behavior remain unchanged.
+
 - VM compilation now lowers the authoritative owned tree, retaining scoped
   whitespace, case folding, capture identities and assertion direction. The
   duplicate compatibility parser and its unresolved VM nodes are removed.
