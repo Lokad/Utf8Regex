@@ -121,7 +121,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
     [Theory]
     [MemberData(nameof(MultilineMixedSplitDeclineCases))]
-    public void MultilineMixedSplitKeepsBclShaping(string pattern, RegexOptions options, string text)
+    public void MultilineMixedSplitUsesOwnedShaping(string pattern, RegexOptions options, string text)
     {
         const int count = int.MaxValue;
         var input = Encoding.UTF8.GetBytes(text);
@@ -143,7 +143,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.Equal(expected, actual);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredReplaceCases()
     {
@@ -551,11 +551,9 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     [Theory]
     [InlineData("^kil", "Kilo")]
     [InlineData("kil$", "xKil")]
-    public void FoldedSplitKeepsBclShapingForKelvin(string pattern, string text)
+    public void FoldedSplitUsesOwnedShapingForKelvin(string pattern, string text)
     {
-        // Declared R05 debt: the split-router Kelvin fence diverts folded anchored
-        // splits to BCL verification when the pattern holds k/K and the input holds
-        // U+212A. Parity holds; construction is pinned.
+        // Invariant Kelvin folding and split projection use the owned unit cursor.
         const int count = int.MaxValue;
         foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
@@ -578,7 +576,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             }
 
             Assert.Equal(expected, actual);
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedReplaceCases()
@@ -764,11 +762,9 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     [Theory]
     [InlineData("^kil", "Kilo", 1)]
     [InlineData("kil$", "xKil", 1)]
-    public void FoldedFromOffsetKeepsBclShapingForKelvin(string pattern, string text, int utf16Offset)
+    public void FoldedFromOffsetUsesOwnedShapingForKelvin(string pattern, string text, int utf16Offset)
     {
-        // Declared R05 debt: the offset-adapter Kelvin fence diverts folded anchored
-        // matches to BCL verification when the pattern holds k/K and the input holds
-        // U+212A. Parity holds; construction is pinned.
+        // Owned invariant folding includes the Kelvin equivalence at every unit start.
         foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);
@@ -777,7 +773,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             var expected = oracle.Match(text, utf16Offset);
             var actual = regex.MatchFromUtf16Offset(input, utf16Offset);
             Assert.Equal(expected.Success, actual.Success);
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredDiscoveryOwnedCases()
@@ -979,18 +975,17 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     }
     [Theory]
     [MemberData(nameof(LineAnchoredFromOffsetNonAsciiDeclineCases))]
-    public void LineAnchoredFromOffsetNonAsciiKeepsBclShaping(string pattern, RegexOptions options, string text, int utf16Offset)
+    public void LineAnchoredFromOffsetNonAsciiUsesOwnedShaping(string pattern, RegexOptions options, string text, int utf16Offset)
     {
-        // Declared R05 debt: non-ASCII FromOffset discovery stays BCL-backed (byte-start
-        // resolution needs scalar-boundary handling); parity holds and construction is pinned.
+        // Discovery retains the full subject and UTF-16 origin in the owned VM.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
-        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
-        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredFromOffsetEnumerationOwnedCases()
     {
@@ -1057,10 +1052,9 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     }
     [Theory]
     [MemberData(nameof(LineAnchoredFromOffsetEnumerationNonAsciiDeclineCases))]
-    public void LineAnchoredFromOffsetEnumerationNonAsciiKeepsBclShaping(string pattern, RegexOptions options, string text, int utf16Offset)
+    public void LineAnchoredFromOffsetEnumerationNonAsciiUsesOwnedShaping(string pattern, RegexOptions options, string text, int utf16Offset)
     {
-        // Declared R05 debt: non-ASCII FromOffset enumeration stays BCL-backed (byte-start
-        // resolution needs scalar-boundary handling); parity holds and construction is pinned.
+        // Enumeration resumes on the original owned unit subject.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1075,7 +1069,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expected, actual);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredSeparatorResumeOwnedCases()
     {
@@ -1209,43 +1203,35 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredAstralResumeShapingCases()
     {
-        (string pattern, string text, int utf16Offset, bool shapingOwned)[] rows =
+        (string pattern, string text, int utf16Offset)[] rows =
         [
-            ("(?m:^ab)", "a\U0001F600b\nab", 0, true),
-            ("(?m:^ab)", "a\U0001F600b\nab", 3, false),
-            ("(?m:^ab$)", "a\U0001F600b\nab", 0, true),
-            ("(?m:^ab$)", "a\U0001F600b\nab", 5, false),
-            ("(?m:ab$)", "a\U0001F600b\nab", 1, true),
-            ("(?m:ab$)", "a\U0001F600b\nab", 2, false),
+            ("(?m:^ab)", "a\U0001F600b\nab", 0),
+            ("(?m:^ab)", "a\U0001F600b\nab", 3),
+            ("(?m:^ab$)", "a\U0001F600b\nab", 0),
+            ("(?m:^ab$)", "a\U0001F600b\nab", 5),
+            ("(?m:ab$)", "a\U0001F600b\nab", 1),
+            ("(?m:ab$)", "a\U0001F600b\nab", 2),
         ];
         foreach (var row in rows)
         {
-            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.utf16Offset, row.shapingOwned };
-            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.utf16Offset, row.shapingOwned };
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.utf16Offset };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.utf16Offset };
         }
     }
 
     [Theory]
     [MemberData(nameof(LineAnchoredAstralResumeShapingCases))]
-    public void LineAnchoredAstralResumePinsShapingRoute(string pattern, RegexOptions options, string text, int utf16Offset, bool shapingOwned)
+    public void LineAnchoredAstralResumeUsesOwnedUnitSubject(string pattern, RegexOptions options, string text, int utf16Offset)
     {
-        // R05: line-anchored resumption on astral-adjacent input splits per op and per
-        // shape with parity everywhere. Discovery (IsMatch, Count, Match) stays
-        // BCL-backed on non-ASCII FromOffset starts (byte-start resolution needs
-        // scalar-boundary handling, recorded decline). Shaping (Detailed, enumeration)
-        // follows the resume gate: caret-headed shapes serve owned only from offset 0
-        // because multiline caret lowers to Bol, which sets HasAbsoluteStartAnchor and
-        // diverts nonzero starts conservatively; dollar-tailed shapes serve owned from
-        // every scalar-aligned offset through the suffix path, diverting only at the
-        // half-scalar offset 2 where the floored cursor cannot land on a boundary.
+        // Discovery, shaping and enumeration resume at every original UTF-16 unit.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
-        Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
-        Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text, utf16Offset);
         var actualMatch = matchRegex.MatchFromUtf16Offset(input, utf16Offset);
@@ -1255,7 +1241,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-        Assert.True(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text, utf16Offset);
         var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, utf16Offset);
@@ -1264,7 +1250,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         {
             Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
         }
-        Assert.Equal(!shapingOwned, detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expected = new System.Collections.Generic.List<string>();
@@ -1278,7 +1264,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             actual.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expected, actual);
-        Assert.Equal(!shapingOwned, enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(enumerateRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 

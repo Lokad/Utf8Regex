@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -299,14 +300,15 @@ public sealed class Utf8SliceBackrefTests
 
     [Theory]
     [MemberData(nameof(MultiDigitDigitEscapeCases))]
-    public void MultiDigitDigitEscapesDeclineWithLegacyAgreement(string pattern, string inputText, bool expected)
+    public void MultiDigitEscapesRunOwnedWithOracleAgreement(string pattern, string inputText, bool expected)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
         Assert.Equal(expected, regex.IsMatch(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> InsufficientGroupDigitCases()

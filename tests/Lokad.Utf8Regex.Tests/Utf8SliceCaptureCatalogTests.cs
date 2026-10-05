@@ -68,15 +68,20 @@ public sealed class Utf8SliceCaptureCatalogTests
     }
 
     [Theory]
-    [InlineData(false, "x")]
-    [InlineData(true, "x")]
-    [InlineData(false, "2147483647")]
-    [InlineData(true, "2147483647")]
-    public void CancellationInterruptsReferenceComparisonAndRecovers(bool compiled, string name)
+    [InlineData(false, "x", false)]
+    [InlineData(true, "x", false)]
+    [InlineData(false, "2147483647", false)]
+    [InlineData(true, "2147483647", false)]
+    [InlineData(false, "12", true)]
+    [InlineData(true, "12", true)]
+    [InlineData(false, "2147483647", true)]
+    [InlineData(true, "2147483647", true)]
+    public void CancellationInterruptsReferenceComparisonAndRecovers(bool compiled, string name, bool bare)
     {
         var literal = new string('a', 1024);
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("(?<" + name + ">" + literal + @")(?i:\k<" + name + ">)", options);
+        var reference = bare ? "\\" + name : @"\k<" + name + ">";
+        var regex = new Utf8Regex("(?<" + name + ">" + literal + ")(?i:" + reference + ")", options);
         var program = regex.Inspection.OwnedSliceProgram;
         Assert.NotNull(program);
         Assert.Contains(program.Instructions, instruction => instruction.Kind == Utf8SliceInstructionKind.Backref);

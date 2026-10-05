@@ -79,9 +79,13 @@ public sealed class Utf8SliceSparseGroupTests
         {
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "IsMatch");
             Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Count");
             AssertValue(oracle.Match(text), regex.Match(input, source.Token));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Match");
             AssertDetailed(oracle, oracle.Match(text), regex.MatchDetailed(input, source.Token));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Detailed");
             for (var offset = 0; offset <= text.Length; offset++)
             {
                 Assert.Equal(oracle.IsMatch(text.AsSpan(), offset), regex.IsMatchFromUtf16Offset(input, offset, source.Token));
@@ -98,10 +102,26 @@ public sealed class Utf8SliceSparseGroupTests
                 }
                 Assert.False(actual.MoveNext());
             }
-            foreach (var count in new[] { 0, 2 })
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Offsets");
+            foreach (var count in new[] { 0, 1, 2 })
+            foreach (var liveToken in new[] { false, true })
             {
+                var actual = liveToken ? regex.EnumerateSplits(input, count, source.Token)
+                    : regex.EnumerateSplits(input, count);
+                if (count == 1)
+                {
+                    // .NET 10.0.12 ValueSplitEnumerator can project a negative
+                    // endpoint for count one. Regex.Split retains the stable
+                    // single whole-input result; do not copy the enumerator bug.
+                    Assert.Equal(new[] { text }, oracle.Split(text, count));
+                    Assert.True(actual.MoveNext());
+                    Assert.Equal(0, actual.Current.IndexInUtf16);
+                    Assert.Equal(text.Length, actual.Current.LengthInUtf16);
+                    Assert.Equal(text, actual.Current.GetValueString());
+                    Assert.False(actual.MoveNext());
+                    continue;
+                }
                 var expected = oracle.EnumerateSplits(text, count);
-                var actual = regex.EnumerateSplits(input, count, source.Token);
                 while (expected.MoveNext())
                 {
                     Assert.True(actual.MoveNext());
@@ -111,17 +131,30 @@ public sealed class Utf8SliceSparseGroupTests
                 }
                 Assert.False(actual.MoveNext());
             }
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Splits");
             foreach (var template in new[] { "Q", "$&", "<$1>|$" + "{5}|$12|$" + "{12}|$" + "{x}|$2147483647",
                 "$00|$01|$" + "{012}|$+", "$" + (char)96 + "|$'|$_", "\ud83d$" + "{12}\ude00" })
             {
                 var expected = oracle.Replace(text, template);
                 Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Text template " + template);
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Byte template " + template);
                 var destination = new byte[expectedBytes.Length + 1];
                 Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, source.Token));
                 Assert.Equal(expectedBytes, destination.AsSpan(0, written).ToArray());
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Destination template " + template);
+                var utf8Template = Encoding.UTF8.GetBytes(template);
+                var expectedUtf8Template = Encoding.UTF8.GetBytes(oracle.Replace(text, Encoding.UTF8.GetString(utf8Template)));
+                Assert.Equal(expectedUtf8Template, regex.Replace(input, utf8Template, source.Token));
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "UTF-8 template");
+                var utf8Destination = new byte[expectedUtf8Template.Length + 1];
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, utf8Template, utf8Destination, out var utf8Written, source.Token));
+                Assert.Equal(expectedUtf8Template, utf8Destination.AsSpan(0, utf8Written).ToArray());
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "UTF-8 destination template");
             }
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Templates");
             var expectedCalls = new List<string>();
             var expectedString = oracle.Replace(text, match => { expectedCalls.Add(Signature(oracle, match)); return "[" + match.Groups[numbers[^1]].Value + "]"; });
             var state = (Numbers: numbers, Calls: new List<string>());
@@ -133,6 +166,7 @@ public sealed class Utf8SliceSparseGroupTests
                 }, source.Token);
             Assert.Equal(expectedString, actualString);
             Assert.Equal(expectedCalls, state.Calls);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "String callback");
             var expectedByteCalls = new List<string>();
             string? expectedByteText = null;
             var unaligned = false;

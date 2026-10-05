@@ -440,11 +440,9 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SplitKeepsBclShapingForKelvin(bool compiled)
+    public void SplitUsesOwnedShapingForKelvin(bool compiled)
     {
-        // Declared R05 debt: the split-router Kelvin fence diverts IgnoreCase splits
-        // to BCL verification when the pattern holds k/K and the input holds U+212A.
-        // Parity holds; construction is pinned.
+        // Invariant Kelvin folding and split projection use the owned unit cursor.
         const int count = int.MaxValue;
         const string pattern = "kil";
         const string text = "x\u212Ailo";
@@ -473,7 +471,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expected, actual);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 

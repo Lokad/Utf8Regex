@@ -129,8 +129,6 @@ public sealed class Utf8SliceParserTests
     [InlineData("\\x4")]
     [InlineData("\\u41")]
     [InlineData("\\8")]
-    [InlineData("a\\12b")]
-    [InlineData("(a)\\10")]
     [InlineData("(?|a)")]
     [InlineData("(?P=name)")]
     [InlineData("(?>a")]

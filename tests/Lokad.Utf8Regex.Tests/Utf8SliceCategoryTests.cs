@@ -20,6 +20,7 @@ public sealed class Utf8SliceCategoryTests
     public static IEnumerable<object?[]> SliceCategoryShapes()
     {
         yield return new object?[] { "\\p{L}+" };
+        yield return new object?[] { "\\p{L}}" };
         yield return new object?[] { "\\p{Lu}+" };
         yield return new object?[] { "\\p{Nd}+" };
         yield return new object?[] { "\\P{L}+" };
@@ -82,11 +83,6 @@ public sealed class Utf8SliceCategoryTests
         }
     }
 
-    public static IEnumerable<object?[]> DeclinedCategoryShapes()
-    {
-        yield return new object?[] { "\\p{L}}", "a}", RegexOptions.CultureInvariant };
-    }
-
     public static IEnumerable<object?[]> TurkicCategoryShapes()
     {
         // Slice IgnoreCase folds invariantly, so Turkic-style construction
@@ -117,18 +113,6 @@ public sealed class Utf8SliceCategoryTests
         {
             CultureInfo.CurrentCulture = savedCulture;
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(DeclinedCategoryShapes))]
-    public void UnsupportedCategoryShapesDeclineToLegacy(string pattern, string inputText, RegexOptions options)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
     }
 
     [Theory]

@@ -1150,9 +1150,7 @@ public sealed class GroupedLiteralDetailedTests
     [MemberData(nameof(FiniteTimeoutTemplateCases))]
     public void FiniteTimeoutTemplateRoutingMatchesContract(string pattern, string template, string text)
     {
-        // Finite timeouts keep BCL timeout enforcement for group-reference expansion
-        // (the owned template worker carries no deadline mapping); all other template
-        // forms stay owned. Parity holds everywhere; construction follows the route.
+        // Admitted group-reference templates keep the finite deadline in the owned VM.
         var timeout = System.TimeSpan.FromSeconds(5);
         var options = RegexOptions.CultureInvariant;
         var input = Encoding.UTF8.GetBytes(text);
@@ -1163,12 +1161,7 @@ public sealed class GroupedLiteralDetailedTests
         var actual = regex.ReplaceToString(input, template);
         Assert.Equal(expected, actual);
 
-        // LastGroup and named references need the same group machinery as numbered
-        // references; whole-match, before/after/input, escaped-dollar, and literal
-        // forms stay owned. The rule covers only the template forms used in this battery.
-        var expectConstruction = template.Contains("$1") || template.Contains("$2") ||
-            template == "$+" || template.Contains("${");
-        Assert.Equal(expectConstruction, regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> NestedInvariantAlternationCases()
     {
@@ -1437,12 +1430,9 @@ public sealed class GroupedLiteralDetailedTests
 
     [Theory]
     [MemberData(nameof(NestedDivergentHalfOffsetDeclineCases))]
-    public void NestedDivergentHalfOffsetDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, int offset)
+    public void NestedDivergentHalfOffsetsUseOwnedShaping(string pattern, RegexOptions options, string text, int offset)
     {
-        // R05: a Detailed FromOffset query starting mid-scalar keeps BCL routing
-        // with oracle parity on both lanes (the shared shaper only resolves
-        // entries from scalar starts); boundary starts serve owned, see
-        // NestedDivergentFromOffsetCases.
+        // Detailed offsets inside scalars use the owned unit subject with complete group projection.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1459,7 +1449,7 @@ public sealed class GroupedLiteralDetailedTests
                 Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
             }
         }
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 

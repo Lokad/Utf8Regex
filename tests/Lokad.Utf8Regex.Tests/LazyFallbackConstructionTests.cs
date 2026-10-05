@@ -165,17 +165,13 @@ public sealed class LazyFallbackConstructionTests
 
     [Theory]
     [InlineData("\\b(?:cat|horse)\\b", "CAT horse Cat")]
-    public void OriginSensitiveFromOffsetConstructsFallbackEngine(string pattern, string inputText)
+    public void OriginSensitiveFromOffsetUsesOwnedProgram(string pattern, string inputText)
     {
-        // From-offset origin shapes that the slice cannot serve (boundaries,
-        // non-slice lookbehind, non-prefix anchors) divert to full-input BCL
-        // verification inside the shared enumerator (established taxonomy).
-        // Anchored ASCII literal prefixes (^abc) graduated to the owned
-        // prefix-family cursor and live in OwnedFromOffsetCases instead.
+        // Boundaries resume on the original owned unit subject.
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         Touch(regex.MatchDetailedFromUtf16Offset(input, 1));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]
