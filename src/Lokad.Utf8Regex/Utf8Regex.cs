@@ -512,6 +512,14 @@ public sealed partial class Utf8Regex
     // Preserve the native scalar lanes on their admitted subjects. The private
     // unit subject owns the slice's supplementary-character declines and the
     // non-ASCII ordered-window lane without changing the public UTF-8 contract.
+    private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input, CancellationToken token)
+    {
+        // Native loops do not yet carry this token through every checkpoint.
+        // Keep their no-token selection; live tokens use the admitted unit VM.
+        if (token.CanBeCanceled && _unitSliceProgram is not null) return _unitSliceProgram;
+        return GetOwnedSliceProgram(input);
+    }
+
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input)
     {
         if (_sliceProgram is not null) return _sliceProgram;
@@ -740,7 +748,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
         }
@@ -1017,7 +1025,7 @@ public sealed partial class Utf8Regex
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
 
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceCount(input, ownedProgram, cancellationToken);
         }
@@ -1403,7 +1411,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
         }
@@ -1728,7 +1736,7 @@ public sealed partial class Utf8Regex
     private Utf8MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceMatchDetailed(input, ownedProgram, cancellationToken);
         }
@@ -1930,7 +1938,14 @@ public sealed partial class Utf8Regex
     public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return MatchDetailedCore(input, cancellationToken);
+        try
+        {
+            return MatchDetailedCore(input, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset.</summary>
@@ -2830,7 +2845,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatches(input, ownedProgram, cancellationToken)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);

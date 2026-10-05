@@ -9,8 +9,13 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal struct Utf8SliceInvocation
 {
     internal Utf8SliceInvocation(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
+        : this(limits, Utf8ExecutionDeadline.Start(timeout), token)
     {
-        Budget = new Utf8ExecutionBudget(limits, timeout, token);
+    }
+
+    internal Utf8SliceInvocation(Utf8ExecutionLimits limits, Utf8ExecutionDeadline deadline, CancellationToken token)
+    {
+        Budget = new Utf8ExecutionBudget(limits, deadline, token);
         Ledger = new Utf8StorageLedger(limits.MaxWorkingBytes);
         CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
         AnchorOriginByte = -1;

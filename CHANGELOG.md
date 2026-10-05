@@ -4,6 +4,20 @@
 
 ### Owned UTF-16 execution
 
+- Fixed deterministic capture programs cache their final capture layout during
+  preparation and match paired instructions iteratively. Matching borrows the
+  prepared layout and caller slots without a runtime continuation stack or
+  projection allocation. Slot clearing and long literals use bounded checks;
+  failures clear unpublished captures and retain the caller's deadline.
+
+- Primary matching and match enumeration with a live cancellation token now
+  use the cached owned unit program where admitted. Cancellation reaches the
+  matching loop on native-pattern families while calls without tokens retain
+  their existing native selection. Detailed matching with a token now maps an
+  expired owned deadline to the public RegexMatchTimeoutException contract.
+  Unadmitted and culture-sensitive paths still
+  require the remaining ownership and cancellation work.
+
 - The byte-safe linear compiler now suspends node, sequence and nested-loop
   program construction on explicit frames. Fixed-text, optional-alternation,
   leading-mask and checked program-width walks are iterative; completed

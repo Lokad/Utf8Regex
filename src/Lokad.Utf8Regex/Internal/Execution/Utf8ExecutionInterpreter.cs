@@ -369,7 +369,7 @@ internal static class Utf8ExecutionInterpreter
         }
 
         if (captures is not null &&
-            TryMatchDeterministicSimplePatternWithCaptures(input, program, plan, startIndex, captures, out matchedLength))
+            TryMatchDeterministicSimplePatternWithCaptures(input, program, plan, startIndex, captures, budget, out matchedLength))
         {
             return true;
         }
@@ -384,31 +384,13 @@ internal static class Utf8ExecutionInterpreter
     }
 
     private static bool TryMatchDeterministicSimplePatternWithCaptures(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program,
-        AsciiSimplePatternPlan plan,
-        int startIndex,
-        Utf8CaptureSlots captures,
-        out int matchedLength)
+        ReadOnlySpan<byte> input, Utf8ExecutionProgram? program, AsciiSimplePatternPlan plan,
+        int startIndex, Utf8CaptureSlots captures, Utf8ExecutionDeadline deadline, out int matchedLength)
     {
         matchedLength = 0;
-        if (program is null ||
-            plan.Branches.Length != 1 ||
-            !plan.IsFixedLength ||
-            !IsDeterministicCaptureProgram(program))
-        {
-            return false;
-        }
-
-        captures.Clear();
-        if (!TryMatchDeterministicNode(input, program, 0, startIndex, captures, out var endIndex))
-        {
-            captures.Clear();
-            return false;
-        }
-
-        matchedLength = endIndex - startIndex;
-        return true;
+        if (program is null || !TryGetDeterministicCaptureLayout(program, plan, out _)) return false;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, CancellationToken.None);
+        return TryMatchDeterministicProgram(input, program, startIndex, captures, ref invocation, out matchedLength, out _);
     }
 
     internal static bool TryMatchProgramAt(
@@ -457,189 +439,137 @@ internal static class Utf8ExecutionInterpreter
     }
 
     public static bool TryGetDeterministicCaptureLayout(
-        Utf8ExecutionProgram? program,
-        AsciiSimplePatternPlan plan,
-        out Utf8DeterministicCaptureLayout layout)
+        Utf8ExecutionProgram? program, AsciiSimplePatternPlan plan, out Utf8DeterministicCaptureLayout layout)
     {
         layout = default;
-        if (program is null ||
-            plan.Branches.Length != 1 ||
-            !plan.IsFixedLength ||
-            !IsDeterministicCaptureProgram(program))
-        {
-            return false;
-        }
+        if (program?.DeterministicCaptureLayout is not { } cached ||
+            plan.Branches.Length != 1 || !plan.IsFixedLength) return false;
+        layout = cached;
+        return true;
+    }
 
+    internal static Utf8DeterministicCaptureLayout? CreateDeterministicCaptureLayout(Utf8ExecutionProgram program)
+    {
+        if (program.Instructions.Count == 0 || !IsDeterministicCaptureProgram(program)) return null;
         var captures = new Dictionary<int, Utf8DeterministicCaptureSlice>();
-        if (!TryAnalyzeDeterministicNode(program, 0, 0, captures, out var endOffset))
+        var frames = new Stack<(int Enter, int Start, int NextChild)>();
+        frames.Push((0, 0, -1));
+        var offset = 0;
+        while (frames.TryPop(out var frame))
         {
-            return false;
-        }
-
-        layout = new Utf8DeterministicCaptureLayout(endOffset, captures);
-        return true;
-    }
-
-    private static bool TryMatchDeterministicNode(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int enterIndex,
-        int index,
-        Utf8CaptureSlots captures,
-        out int endIndex)
-    {
-        var instruction = program.Instructions[enterIndex];
-        if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
-        {
-            endIndex = 0;
-            return false;
-        }
-
-        switch (instruction.NodeKind)
-        {
-            case Utf8ExecutionNodeKind.Capture:
-                if (TryMatchDeterministicSequence(input, program, enterIndex + 1, instruction.PartnerIndex, index, captures, out endIndex))
-                {
-                    captures.Set(instruction.CaptureNumber, index, endIndex - index);
-                    return true;
-                }
-
-                endIndex = 0;
-                return false;
-
-            case Utf8ExecutionNodeKind.Group:
-            case Utf8ExecutionNodeKind.Concatenate:
-                return TryMatchDeterministicSequence(input, program, enterIndex + 1, instruction.PartnerIndex, index, captures, out endIndex);
-
-            case Utf8ExecutionNodeKind.One:
-                return TryMatchOne(input, instruction, index, out endIndex);
-
-            case Utf8ExecutionNodeKind.Multi:
-                return TryMatchMulti(input, instruction, index, out endIndex);
-
-            case Utf8ExecutionNodeKind.Set:
-                return TryMatchSet(input, instruction, index, out endIndex);
-
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-                endIndex = index;
-                return IsBeginningOfLine(input, index, instruction.Options);
-
-            case Utf8ExecutionNodeKind.Eol:
-            case Utf8ExecutionNodeKind.EndZ:
-                endIndex = index;
-                return IsEndAnchorMatch(input, index, instruction.Options);
-
-            case Utf8ExecutionNodeKind.End:
-                endIndex = index;
-                return index == input.Length;
-
-            default:
-                endIndex = 0;
-                return false;
-        }
-    }
-
-    private static bool TryAnalyzeDeterministicNode(
-        Utf8ExecutionProgram program,
-        int enterIndex,
-        int offset,
-        Dictionary<int, Utf8DeterministicCaptureSlice> captures,
-        out int endOffset)
-    {
-        var instruction = program.Instructions[enterIndex];
-        if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
-        {
-            endOffset = 0;
-            return false;
-        }
-
-        switch (instruction.NodeKind)
-        {
-            case Utf8ExecutionNodeKind.Capture:
-                if (TryAnalyzeDeterministicSequence(program, enterIndex + 1, instruction.PartnerIndex, offset, captures, out endOffset))
-                {
-                    captures[instruction.CaptureNumber] = new Utf8DeterministicCaptureSlice(offset, endOffset - offset);
-                    return true;
-                }
-
-                endOffset = 0;
-                return false;
-
-            case Utf8ExecutionNodeKind.Group:
-            case Utf8ExecutionNodeKind.Concatenate:
-                return TryAnalyzeDeterministicSequence(program, enterIndex + 1, instruction.PartnerIndex, offset, captures, out endOffset);
-
-            case Utf8ExecutionNodeKind.One:
-            case Utf8ExecutionNodeKind.Set:
-                endOffset = offset + 1;
-                return true;
-
-            case Utf8ExecutionNodeKind.Multi:
-                endOffset = offset + (instruction.Text?.Length ?? 0);
-                return true;
-
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-            case Utf8ExecutionNodeKind.Eol:
-            case Utf8ExecutionNodeKind.EndZ:
-            case Utf8ExecutionNodeKind.End:
-                endOffset = offset;
-                return true;
-
-            default:
-                endOffset = 0;
-                return false;
-        }
-    }
-
-    private static bool TryAnalyzeDeterministicSequence(
-        Utf8ExecutionProgram program,
-        int currentIndex,
-        int exitIndex,
-        int offset,
-        Dictionary<int, Utf8DeterministicCaptureSlice> captures,
-        out int endOffset)
-    {
-        while (currentIndex < exitIndex)
-        {
-            if (!TryAnalyzeDeterministicNode(program, currentIndex, offset, captures, out offset))
+            var instruction = program.Instructions[frame.Enter];
+            if (instruction.Kind != Utf8ExecutionInstructionKind.Enter) return null;
+            var container = instruction.NodeKind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group or Utf8ExecutionNodeKind.Concatenate;
+            var next = frame.NextChild < 0 ? frame.Enter + 1 : frame.NextChild;
+            if (container && next < instruction.PartnerIndex)
             {
-                endOffset = 0;
-                return false;
+                frames.Push((frame.Enter, frame.Start, program.Instructions[next].PartnerIndex + 1));
+                frames.Push((next, offset, -1));
+                continue;
             }
-
-            currentIndex = program.Instructions[currentIndex].PartnerIndex + 1;
+            if (instruction.NodeKind == Utf8ExecutionNodeKind.Capture)
+                captures[instruction.CaptureNumber] = new Utf8DeterministicCaptureSlice(frame.Start, offset - frame.Start);
+            if (!container)
+            {
+                var width = instruction.NodeKind switch
+                {
+                    Utf8ExecutionNodeKind.One or Utf8ExecutionNodeKind.Set => 1,
+                    Utf8ExecutionNodeKind.Multi => instruction.Text?.Length ?? 0,
+                    _ => 0,
+                };
+                // A specialization decline cannot reject an otherwise valid pattern.
+                if (offset > int.MaxValue - width) return null;
+                offset += width;
+            }
         }
-
-        endOffset = offset;
-        return true;
+        return new Utf8DeterministicCaptureLayout(offset, captures);
     }
 
-    private static bool TryMatchDeterministicSequence(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int currentIndex,
-        int exitIndex,
-        int index,
-        Utf8CaptureSlots captures,
-        out int endIndex)
+    // Fixed deterministic discovery borrows immutable preparation and caller-owned
+    // slots. There is no invocation-owned continuation array, capture stack or
+    // journal to admit. Final slots are projected only after the whole attempt
+    // succeeds, using the cached final values for shared capture numbers.
+    internal static bool TryMatchDeterministicProgram(
+        ReadOnlySpan<byte> input, Utf8ExecutionProgram program, int startIndex, Utf8CaptureSlots captures,
+        ref Utf8SliceInvocation invocation, out int matchedLength, out Utf8ExecutionLimitKind breach)
     {
-        while (currentIndex < exitIndex)
+        matchedLength = 0;
+        breach = Utf8ExecutionLimitKind.None;
+        var index = startIndex;
+        var successful = false;
+        try
         {
-            if (!TryMatchDeterministicNode(input, program, currentIndex, index, captures, out index))
+            breach = captures.TryClear(ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || program.DeterministicCaptureLayout is not { } layout ||
+                (uint)startIndex > (uint)input.Length) return false;
+            breach = invocation.Budget.TryNoteDepth(1);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            for (var pc = 0; pc <= program.Instructions[0].PartnerIndex;)
             {
-                endIndex = 0;
-                return false;
+                breach = invocation.TryChargeStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+                var instruction = program.Instructions[pc];
+                if (instruction.Kind == Utf8ExecutionInstructionKind.Exit ||
+                    instruction.NodeKind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group or Utf8ExecutionNodeKind.Concatenate)
+                {
+                    pc++;
+                    continue;
+                }
+                var hit = instruction.NodeKind switch
+                {
+                    Utf8ExecutionNodeKind.One => TryMatchOne(input, instruction, index, out index),
+                    Utf8ExecutionNodeKind.Set => TryMatchSet(input, instruction, index, out index),
+                    Utf8ExecutionNodeKind.Multi => MatchText(input, instruction, ref index, ref invocation, out breach),
+                    Utf8ExecutionNodeKind.Bol or Utf8ExecutionNodeKind.Beginning or Utf8ExecutionNodeKind.Start => IsBeginningOfLine(input, index, instruction.Options),
+                    Utf8ExecutionNodeKind.Eol or Utf8ExecutionNodeKind.EndZ => IsEndAnchorMatch(input, index, instruction.Options),
+                    Utf8ExecutionNodeKind.End => index == input.Length,
+                    _ => false,
+                };
+                if (!hit) return false;
+                pc = instruction.PartnerIndex + 1;
             }
-
-            currentIndex = program.Instructions[currentIndex].PartnerIndex + 1;
+            foreach (var capture in layout.Captures)
+            {
+                breach = invocation.TryChargeStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+                captures.Set(capture.Key, startIndex + capture.Value.Offset, capture.Value.Length);
+            }
+            matchedLength = index - startIndex;
+            successful = true;
+            return true;
+        }
+        finally
+        {
+            if (!successful) captures.Clear();
         }
 
-        endIndex = index;
-        return true;
+        static bool MatchText(ReadOnlySpan<byte> input, Utf8ExecutionInstruction instruction, ref int index,
+            ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+        {
+            breach = Utf8ExecutionLimitKind.None;
+            var text = instruction.Text;
+            if (text is null || text.Length > input.Length - index) return false;
+            var ignoreCase = (instruction.Options & RegexOptions.IgnoreCase) != 0;
+            for (var offset = 0; offset < text.Length;)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+                var end = offset + Math.Min(2048, text.Length - offset);
+                for (; offset < end; offset++)
+                {
+                    var actual = input[index + offset];
+                    var expected = (byte)text[offset];
+                    if (ignoreCase)
+                    {
+                        actual = Internal.Search.AsciiSearch.FoldCase(actual);
+                        expected = Internal.Search.AsciiSearch.FoldCase(expected);
+                    }
+                    if (actual != expected) return false;
+                }
+            }
+            index += text.Length;
+            return true;
+        }
     }
 
     private static bool MatchesFixedLiterals(ReadOnlySpan<byte> input, int candidateStart, AsciiSimplePatternPlan plan)

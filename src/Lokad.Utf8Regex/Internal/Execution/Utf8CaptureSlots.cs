@@ -35,6 +35,22 @@ internal sealed class Utf8CaptureSlots
         Array.Fill(_lengths, 0);
     }
 
+    internal Utf8ExecutionLimitKind TryClear(ref Utf8SliceInvocation invocation)
+    {
+        if (_journaling)
+            throw new InvalidOperationException("Capture slots cannot be cleared while an invocation is active.");
+        for (var offset = 0; offset < _starts.Length;)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var count = Math.Min(2048, _starts.Length - offset);
+            _starts.AsSpan(offset, count).Fill(-1);
+            _lengths.AsSpan(offset, count).Clear();
+            offset += count;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
     public void Set(int slot, int start, int length)
     {
         if ((uint)slot >= (uint)_starts.Length)

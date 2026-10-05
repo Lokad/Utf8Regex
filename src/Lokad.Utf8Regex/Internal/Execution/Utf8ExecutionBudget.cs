@@ -16,9 +16,14 @@ internal struct Utf8ExecutionBudget
     private readonly CancellationToken _token;
 
     internal Utf8ExecutionBudget(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
+        : this(limits, Utf8ExecutionDeadline.Start(timeout), token)
+    {
+    }
+
+    internal Utf8ExecutionBudget(Utf8ExecutionLimits limits, Utf8ExecutionDeadline deadline, CancellationToken token)
     {
         Limits = limits;
-        _deadline = Utf8ExecutionDeadline.Start(timeout);
+        _deadline = deadline;
         _token = token;
     }
 
