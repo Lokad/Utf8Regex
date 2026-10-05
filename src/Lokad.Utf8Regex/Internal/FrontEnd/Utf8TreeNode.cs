@@ -16,6 +16,7 @@ internal sealed class Utf8TreeNode
     {
         Kind = kind;
         Options = options;
+        MatchCaseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
     }
 
     public Utf8TreeNode(Utf8TreeNodeKind kind, RegexOptions options, char ch)
@@ -46,6 +47,10 @@ internal sealed class Utf8TreeNode
     public Utf8TreeNodeKind Kind { get; set; }
 
     public RegexOptions Options { get; }
+
+    // Execution retains the lexical fold flag even when structural analysis
+    // consumes a partially expanded set and clears IgnoreCase on that node.
+    internal bool MatchCaseInsensitive { get; set; }
 
     public bool IsBacktrackingConstruct => Kind switch
     {

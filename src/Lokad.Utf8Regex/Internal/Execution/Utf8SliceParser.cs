@@ -44,6 +44,13 @@ internal static class Utf8SliceParser
 
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
+        if (pattern is null || pattern.Length > MaxPatternLength || (options & RejectedOptions) != 0)
+            return null;
+        return TryParse(pattern, options, Utf8OwnedTreeParser.TryParse(pattern, options));
+    }
+
+    internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options, Utf8OwnedRegexTree? tree)
+    {
         if (pattern is null)
         {
             return null;
@@ -58,6 +65,12 @@ internal static class Utf8SliceParser
         {
             return null;
         }
+
+        if (tree is not null && Utf8OwnedTreeSliceLowerer.TryLower(tree, options) is { } ownedProgram)
+            return ownedProgram;
+
+        // Temporary compatibility parser for grammar the authoritative front
+        // end still declines. It is removed as those remaining forms migrate.
 
         // IgnorePatternWhitespace strips insignificant pattern whitespace and
         // #-to-newline comments before parsing (escapes, classes, and (?#)
@@ -457,6 +470,14 @@ internal static class Utf8SliceParser
             var current = source[index];
             if (current == '\\' && index + 1 < source.Length)
             {
+                if (source[index + 1] == 'k' && index + 2 < source.Length && source[index + 2] is '<' or '\'')
+                {
+                    var referenceEnd = source.IndexOf(source[index + 2] == '<' ? '>' : '\'', index + 3);
+                    var spanEnd = referenceEnd < 0 ? source.Length : referenceEnd + 1;
+                    filtered.Append(source, index, spanEnd - index);
+                    index = spanEnd;
+                    continue;
+                }
                 // Unicode property spans lex verbatim: BCL reads the property
                 // name raw (a space like \p{Is Greek} throws), so stripping
                 // inside the braces would invent an accepted name. Classes
@@ -474,6 +495,16 @@ internal static class Utf8SliceParser
                     filtered.Append(current).Append(source[index + 1]);
                     index += 2;
                 }
+            }
+            else if (current == '(' && index + 3 < source.Length && source[index + 1] == '?' &&
+                (source[index + 2] == '\'' || source[index + 2] == '<' && source[index + 3] is not '=' and not '!'))
+            {
+                // Keep names raw while the temporary compatibility parser is
+                // still needed: removing spaces could invent a valid declaration.
+                var nameEnd = source.IndexOf(source[index + 2] == '<' ? '>' : '\'', index + 3);
+                var spanEnd = nameEnd < 0 ? source.Length : nameEnd + 1;
+                filtered.Append(source, index, spanEnd - index);
+                index = spanEnd;
             }
             else if (current == '(' && index + 2 < source.Length &&
                 source[index + 1] == '?' && source[index + 2] == '#')
@@ -520,7 +551,7 @@ internal static class Utf8SliceParser
             }
             else if (current == '#')
             {
-                while (index < source.Length && source[index] != '\n' && source[index] != '\r')
+                while (index < source.Length && source[index] != '\n')
                 {
                     index++;
                 }

@@ -146,12 +146,11 @@ public sealed partial class Utf8Regex
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). R02b construction admission caps the pattern length and lowered
         // instruction count; over-cap shapes decline here to legacy routing.
-        _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !RequiresCultureSensitiveFallback
-            ? Utf8SliceParser.TryParse(pattern, options)
+        var ownedSliceProgram = !RequiresCultureSensitiveFallback
+            ? Utf8SliceParser.TryParse(pattern, options, preparedRegex.SemanticRegex.RuntimeTree)
             : null;
-        _unitSliceProgram = _sliceProgram ?? (preparedRegex.ExecutionKind != NativeExecutionKind.FallbackRegex && !RequiresCultureSensitiveFallback
-            ? Utf8SliceParser.TryParse(pattern, options)
-            : null);
+        _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
+        _unitSliceProgram = ownedSliceProgram;
         // R03 lookbehind: the owned front end leaves no runtime tree for
         // captures in lookbehind, which defers group metadata to first use.
         // Invalid patterns must still fail construction exactly like the
@@ -521,6 +520,11 @@ public sealed partial class Utf8Regex
              _unitSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _unitSliceProgram.HasSharedCaptureDeclarations ||
              _unitSliceProgram.HasExplicitCaptureNumbers ||
+             _unitSliceProgram.HasBalancing ||
+             _unitSliceProgram.IgnoreCase &&
+                (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
+                 ShouldUseKelvinSignFallback(input)) ||
+             _unitSliceProgram.IgnoreCase && (Options & RegexOptions.IgnoreCase) == 0 && !Utf8InputAnalyzer.IsAscii(input) ||
              _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
              !_unitSliceProgram.ServesInput(input)))
@@ -3272,7 +3276,7 @@ public sealed partial class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
         _ = Utf8Validation.Validate(replacementPatternUtf8);
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -3351,7 +3355,7 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
+        if (!RequiresCultureSensitiveFallback &&
             (_sliceProgram ?? _unitSliceProgram) is { } ownedProgram)
         {
             try { return OwnedUnitReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
@@ -3690,7 +3694,7 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
+        if (!RequiresCultureSensitiveFallback &&
             (_sliceProgram ?? _unitSliceProgram) is { } ownedProgram)
         {
             try
@@ -3980,7 +3984,7 @@ public sealed partial class Utf8Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),

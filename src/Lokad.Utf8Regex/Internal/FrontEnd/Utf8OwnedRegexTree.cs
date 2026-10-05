@@ -16,6 +16,22 @@ internal sealed class Utf8OwnedRegexTree
         Hashtable? captureNumberSparseMapping,
         RegexOptions options,
         CultureInfo? culture)
+        : this(root, captureCount, captureNames, captureNameToNumberMapping,
+            captureNumberSparseMapping, options, culture, null, false, false)
+    {
+    }
+
+    internal Utf8OwnedRegexTree(
+        Utf8TreeNode root,
+        int captureCount,
+        string[]? captureNames,
+        Hashtable? captureNameToNumberMapping,
+        Hashtable? captureNumberSparseMapping,
+        RegexOptions options,
+        CultureInfo? culture,
+        Utf8CaptureCatalog? captureCatalog,
+        bool usesLiteralClassBracketSyntax,
+        bool usesIgnoreCase)
     {
         Root = root;
         CaptureCount = captureCount;
@@ -24,6 +40,9 @@ internal sealed class Utf8OwnedRegexTree
         CaptureNumberSparseMapping = captureNumberSparseMapping;
         Options = options;
         Culture = culture;
+        CaptureCatalog = captureCatalog;
+        UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
+        UsesIgnoreCase = usesIgnoreCase;
     }
 
     public Utf8TreeNode Root { get; }
@@ -39,4 +58,11 @@ internal sealed class Utf8OwnedRegexTree
     public Hashtable? CaptureNumberSparseMapping { get; }
 
     public RegexOptions Options { get; }
+
+    internal Utf8CaptureCatalog? CaptureCatalog { get; }
+
+    // PCRE2-INTEGRATION-POINT: retain parsed grammar facts for profile routing.
+    internal bool UsesLiteralClassBracketSyntax { get; }
+
+    internal bool UsesIgnoreCase { get; }
 }

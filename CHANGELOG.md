@@ -4,6 +4,17 @@
 
 ### Owned UTF-16 execution
 
+- VM compilation now lowers the authoritative owned tree, retaining scoped
+  whitespace, case folding, capture identities and assertion direction. A
+  temporary compatibility parser remains for forms the front end still declines.
+  Scoped verbose patterns now stay owned across matching, capture histories,
+  enumeration, splitting and replacement, including the Python-compatible
+  adapter. Kelvin folding also stays owned through those result operations.
+  Pattern whitespace follows .NET's ASCII set; vertical tab and Unicode space
+  characters remain literals. Raw group names retain construction failures,
+  incomplete whitespace-containing braces remain literals, class octal escapes
+  wrap to a byte, and undefined-name conditional expressions retain direction.
+
 - POSIX-looking classes now execute with .NET's literal-member semantics in
   the owned VM, including literal closing brackets, captures, subtraction and
   reverse execution. PCRE2 keeps its own profile programs instead of receiving

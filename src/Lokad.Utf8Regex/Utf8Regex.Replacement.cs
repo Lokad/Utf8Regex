@@ -22,7 +22,7 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         CancellationToken cancellationToken)
     {
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -185,7 +185,7 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken)
     {
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -269,7 +269,7 @@ public sealed partial class Utf8Regex
         out int bytesWritten,
         CancellationToken cancellationToken)
     {
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
