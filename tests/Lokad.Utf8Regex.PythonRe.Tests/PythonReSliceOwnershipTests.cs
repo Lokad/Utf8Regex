@@ -784,10 +784,10 @@ public sealed class PythonReSliceOwnershipTests
 
     [Theory]
     [InlineData("(?P<x>a)(?P=x)")]
-    public void BackrefShapesDeclineOwnedSlice(string pattern)
+    public void NamedReferenceShapesRunOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        AssertOwnedBackends(regex);
     }
 
     public static IEnumerable<object?[]> BackrefSearchCases()
@@ -1067,10 +1067,10 @@ public sealed class PythonReSliceOwnershipTests
 
     [Theory]
     [InlineData("(?P<w>a)(?P=w)")]
-    public void NamedBackrefShapesDeclineOwnedSlice(string pattern)
+    public void NamedBackrefShapesRunOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        AssertOwnedBackends(regex);
     }
 
     public static IEnumerable<object?[]> NamedSearchCases()

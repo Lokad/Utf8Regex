@@ -13,7 +13,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         "\U0001f600", "a\U0001f600b", "\U0001f600\U0001f600b", "x\U0001f600ab",
         "\u00e9\U00010400a\u00e9\u00e9", "\u212aKk\u0130Ii\u0131", "\u03a3\u03c3\u03c2\u2126\u03c9",
         "\u00c5\u00e5\u212b\u0178\u00ff", "\u0000\u0080\u00ff\uffff\n", "a\n\U0001f600b",
-        "bcdAEIOUxyz 123_\t\r\n", "\u0000\u0001\u0008\u001a\u001b\u001c\u001d\u001e\u001fA"];
+        "bcdAEIOUxyz 123_\t\r\n", "\u0000\u0001\u0008\u001a\u001b\u001c\u001d\u001e\u001fA", "aa abab abbc bbcc xaa aabbaa abcabc cabcab abcaac"];
 
     private static readonly string[] AtomPatterns = [
             "(\u00e9+)\\1", "(\u6f22|\u00e9)+", "(?i:\u00e9+)", "(?i:\u212a+)", "(?i:\u03a3+)", "(?i:\u0130+)",
@@ -42,6 +42,24 @@ public sealed class Utf8SliceUnicodeAtomTests
             @"[a-[b]]", @"[a-[\b]]", @"([^x-[a]]){2,}", @"([^x-[a]]){0,3}",
             @"[^x-[a]]{2,}", @"([\p{Cs}-[x]]){2,}", @"(?:[^x-[a]]){2,3}?",
             @"(?>([a-z-[e]]+))", @"(?<x>[a-z-[e]]+)(?<-x>[^a-z-[a]])",
+            @"(?<x>[a-z-[e]]+)\k<x>", @"(?'x'a+)\k'x'", @"\k<x>(?<x>a)", @"\1(a)",
+            @"(?<x>a)\k<1>", @"(?<x>a)\k<01>", @"(?<x>a)(b)\k<x>\1",
+            @"(?<x>a)(?<x>b)", @"(?<x>a|b)+\k<x>", @"(?<x>a)(?<x>b)\k<x>",
+            @"(?:(?<x>a)|(?<x>b))+\k<x>", @"(?<x>(?<x>a)b)\k<x>",
+            @"(?<x>a)(?<x>b)?\k<x>", @"(?<x>a)(?<x>b*)\k<x>",
+            @"(?<x>a)(?<x>b)c|(?<x>a)\k<x>", @"(?>(?<x>a)(?<x>b))\k<x>",
+            @"(?<x>a)(?<x>b)(?<-x>c)(?(x)\k<x>|d)",
+            @"(?<x>a)(?<y>b)(?<y-x>c)\k<y>",
+            @"(?=(?<x>a))(?<x>a)\k<x>", @"(?<x>a)(?<x>b)(?(x)c|d)",
+            "(?<\u00e9>\u00e9+)\\k<\u00e9>", "(?<x>\u00e9)(?<x>\u6f22)\\k<x>",
+            "(?i:(?<x>\u00e9+)\\k<x>)", "(?<x>\u212a)(?i:\\k<x>)",
+            "(?<x>\ud83d)\\k<x>", "(?<x>\ude00+)\\k<x>", "(?<x>\U0001f600)\\k<x>",
+            "(?<x>\ud83d)(?<x>\ude00)\\k<x>", "(?<x>\ud83d)|(?<x>\ude00)",
+            @"(?<x>[^x-[a]]){2}\k<x>", @"(?<x>a)(?<x>b)\1", @"\k'x'(?<x>a)",
+            @"(?<x>c(?<x>a)b)\k<x>", @"(?<x>a)(?<x>b\k<x>)", @"(?<x>a)(?<x>\k<x>b)",
+            @"(?<x>a)(?<x>b(?(x)\k<x>|c))", @"(?<x>(?(x)\k<x>|a))+",
+            @"(?<x>a)(?<x>b(?=(?<x>c)))\k<x>",
+            @"(?<x>c(?<x>a)b)", @"(?<x>c(?<x>a)(?<x>b)d)",
     ];
 
     public static IEnumerable<object[]> Patterns()
@@ -88,7 +106,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                 AssertDetailed(oracle.Match(text, offset), regex.MatchDetailedFromUtf16Offset(input, offset, source.Token));
                 AssertSequence(text, oracle.EnumerateMatches(text.AsSpan(), offset), regex.EnumerateMatchesFromUtf16Offset(input, offset));
             }
-            foreach (var template in new[] { "Q", "$&", "<$1>|$2|${\u00e9}", "\ud83d$&\ude00", "$`|$'|$_|$+" })
+            foreach (var template in new[] { "Q", "$&", "<${x}>|${x}${x}", "<$1>|$2|${\u00e9}", "\ud83d$&\ude00", "$`|$'|$_|$+" })
             {
                 var expected = oracle.Replace(text, template);
                 Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));

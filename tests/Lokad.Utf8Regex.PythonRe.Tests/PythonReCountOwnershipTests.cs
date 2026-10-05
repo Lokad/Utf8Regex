@@ -39,12 +39,6 @@ public sealed class PythonReCountOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> ManagedCountCases()
-    {
-        var none = PythonReCompileOptions.None;
-        yield return new object?[] { "(?P<word>foo)-(?P=word)", none, "xx foo-foo yy foo-foo", 3, 2 };
-    }
-
     [Fact]
     public void SplitBackendCountAgreesWithFindAll()
     {
@@ -61,12 +55,12 @@ public sealed class PythonReCountOwnershipTests
     }
 
     [Theory]
-    [MemberData(nameof(ManagedCountCases))]
-    public void ManagedCountMatchesExpected(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, int expected)
+    [InlineData("(?P<word>foo)-(?P=word)", PythonReCompileOptions.None, "xx foo-foo yy foo-foo", 3, 2)]
+    public void NamedReferenceCountRunsOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, int expected)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

@@ -6,11 +6,10 @@ namespace Lokad.Utf8Regex.Tests;
 // R03 named captures: (?<name>...) and (?'name'...) bind like numbered
 // captures; BCL numbers unnamed groups left-to-right first and named
 // groups after, so temporary open-order slots renumber once the full
-// parse lands (backreference digits already denote final numbers and
-// need no rewrite). Bare shapes keep their native routes; quantified
-// shapes route owned. Explicit numbers, digit starts, empty names,
-// mismatched closers, duplicates, and balancing subtraction decline to
-// legacy-exact routing (invalid spellings fail construction).
+// parse lands. Duplicate names share one capture identity. Bare unique
+// shapes keep their native routes; references and duplicate captures use
+// owned execution. Explicit numbers and malformed names retain their
+// existing routes (invalid spellings fail construction).
 public sealed class Utf8SliceNamedTests
 {
     public static IEnumerable<object?[]> SliceNamedShapes()
@@ -61,7 +60,6 @@ public sealed class Utf8SliceNamedTests
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
     [InlineData("(?'name'a)")]
-    [InlineData("(?<a>b)(?<a>c)")]
     [InlineData("(?<1>a)")]
     public void NonSliceNamedShapesStayOffSlice(string pattern)
     {

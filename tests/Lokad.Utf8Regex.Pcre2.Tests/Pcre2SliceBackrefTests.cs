@@ -11,9 +11,9 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 // agrees with native PCRE2 on case-sensitive ASCII shapes (unset groups
 // fail in both, the last iteration wins, empty-but-set groups match
 // empty), so expectations below are BCL-computed ground truths on shapes
-// where BCL and native PCRE2 agree. Multi-digit, forward, named, and \g
+// where BCL and native PCRE2 agree. Multi-digit and \g
 // forms decline to the generic backtracking VM, as do backreferences over
-// non-ASCII literals (the core slice accepts ASCII atoms only).
+// unsupported profile-specific atoms. Named and forward references now bind owned.
 public sealed class Pcre2SliceBackrefTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
@@ -50,8 +50,6 @@ public sealed class Pcre2SliceBackrefTests
 
     [Theory]
     [InlineData("(a)\\11")]
-    [InlineData("(\\2a|(b))+")]
-    [InlineData("(?<x>a)\\k<x>")]
     [InlineData("(a)\\g{1}")]
     public void NonSliceBackrefShapesDeclineSliceRouting(string pattern)
     {
@@ -71,6 +69,12 @@ public sealed class Pcre2SliceBackrefTests
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "(a)\\1", "aa", true };
+        yield return new object?[] { "(?<x>a)\\k<x>", "aa", true };
+        yield return new object?[] { "(?<x>a)\\k<x>", "ab", false };
+        yield return new object?[] { "(\\2a|(b))+", "bba", true };
+        yield return new object?[] { "(?<x>a)\\k<x>", "aa", true };
+        yield return new object?[] { "(?<x>a)\\k<x>", "ab", false };
+        yield return new object?[] { "(\\2a|(b))+", "bba", true };
         yield return new object?[] { "(a)\\1", "ab", false };
         yield return new object?[] { "(a|b)+\\1", "abb", true };
         yield return new object?[] { "(a|b)+\\1", "aba", false };

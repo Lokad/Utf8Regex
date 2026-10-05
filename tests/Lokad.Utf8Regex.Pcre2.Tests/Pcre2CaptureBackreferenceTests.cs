@@ -74,7 +74,7 @@ public sealed class Pcre2CaptureBackreferenceTests
     [InlineData("(?<x>a)\\k<x>", "aa", "aa")]
     [InlineData("(?'x'a)\\k'x'", "aa", "aa")]
     [InlineData("(?P<x>a)(?P=x)", "aa", "aa")]
-    public void NumericRelativeAndNamedBackreferencesUseTheGenericVm(
+    public void NumericRelativeAndNamedBackreferencesUseOwnedPrograms(
         string pattern,
         string input,
         string expected)
@@ -85,7 +85,10 @@ public sealed class Pcre2CaptureBackreferenceTests
 
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        if (pattern.StartsWith("(?<", StringComparison.Ordinal) || pattern.StartsWith("(?'", StringComparison.Ordinal))
+            Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        else
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Theory]

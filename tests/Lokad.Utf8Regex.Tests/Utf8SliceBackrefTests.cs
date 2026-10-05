@@ -6,13 +6,15 @@ namespace Lokad.Utf8Regex.Tests;
 // R03 backreference slice: single-digit backward references lower to owned
 // ordinal Backref programs (unmatched groups fail, last iteration wins,
 // byte comparison is encoding-indifferent) with BCL parity and zero
-// fallback-engine construction. Multi-digit, forward, undefined, and octal
+// fallback-engine construction. Multi-digit, undefined, and octal
 // escapes decline to legacy-exact routing.
 public sealed class Utf8SliceBackrefTests
 {
     public static IEnumerable<object?[]> SliceBackrefShapes()
     {
         yield return new object?[] { "(a)\\1" };
+        yield return new object?[] { "\\1(a)" };
+        yield return new object?[] { "(\\2a|(b))+" };
         yield return new object?[] { "(a|b)+\\1" };
         yield return new object?[] { "(a+)\\1" };
         yield return new object?[] { "(a)(b)\\2\\1" };
@@ -41,10 +43,8 @@ public sealed class Utf8SliceBackrefTests
     }
 
     [Theory]
-    [InlineData("\\1(a)")]
     [InlineData("a\\12b")]
     [InlineData("(a)\\10")]
-    [InlineData("(\\2a|(b))+")]
     public void NonBackrefEscapesDecline(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

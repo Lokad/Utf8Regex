@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 // specialized literal-family IsMatch/Count/Enumerate where one exists;
 // the SameStartLiteral Count/Enumerate keeps precedence for its shapes.
 // Variable-length lookbehind declines to the generic backtracking VM, as do
-// named references and Caseless shapes. Expectations are BCL-computed
+// Caseless shapes. Expectations are BCL-computed
 // ground truths on case-sensitive ASCII shapes where BCL and native PCRE2
 // agree.
 public sealed class Pcre2SliceLookaroundTests
@@ -28,7 +28,7 @@ public sealed class Pcre2SliceLookaroundTests
     [Fact]
     public void LookaroundShapesRouteThroughSlice()
     {
-        foreach (var pattern in new[] { "(?=a)a", "a(?!b)", "(?<=a)b", "(?<!a)b", "foo(?!bar)", "(?=(?=ab))ab", "(?<=(a|b))\\1" })
+        foreach (var pattern in new[] { "(?=a)a", "a(?!b)", "(?<=a)b", "(?<!a)b", "foo(?!bar)", "(?=(?=ab))ab", "(?<=(a|b))\\1", "(?=(?<w>a))\\k<w>" })
         {
             var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
             Assert.Equal(
@@ -47,7 +47,6 @@ public sealed class Pcre2SliceLookaroundTests
     [InlineData("(?<=(a|ab))")]
     [InlineData("(?<!a+)b")]
     [InlineData("(?<=(a|b)+)c")]
-    [InlineData("(?=(?<w>a))\\k<w>")]
     public void NonSliceLookaroundShapesDeclineSliceRouting(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
@@ -57,6 +56,10 @@ public sealed class Pcre2SliceLookaroundTests
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "(?=a)a", "xaa", true };
+        yield return new object?[] { "(?=(?<w>a))\\k<w>", "xaa", true };
+        yield return new object?[] { "(?=(?<w>a))\\k<w>", "bb", false };
+        yield return new object?[] { "(?=(?<w>a))\\k<w>", "xaa", true };
+        yield return new object?[] { "(?=(?<w>a))\\k<w>", "bb", false };
         yield return new object?[] { "a(?!b)", "ac", true };
         yield return new object?[] { "a(?!b)", "ab", false };
         yield return new object?[] { "(?<=a)b", "xab", true };

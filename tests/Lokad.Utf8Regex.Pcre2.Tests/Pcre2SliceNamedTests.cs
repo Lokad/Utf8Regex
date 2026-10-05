@@ -56,6 +56,23 @@ public sealed class Pcre2SliceNamedTests
     }
 
     [Fact]
+    public void EnabledDuplicateNamesKeepDistinctProfileCaptureSlots()
+    {
+        var regex = new Utf8Pcre2Regex("(?<x>a)(?<x>b)",
+            Pcre2CompileOptions.None, new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default(Utf8Pcre2ExecutionLimits), System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+        var context = regex.MatchDetailed("ab"u8);
+        Assert.True(context.Success);
+        Assert.Equal("a", context.GetGroup(1).GetValueString());
+        Assert.Equal("b", context.GetGroup(2).GetValueString());
+        Span<int> numbers = stackalloc int[2];
+        Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
+        Assert.False(isMore);
+        Assert.Equal(new[] { 1, 2 }, numbers.ToArray());
+    }
+
+    [Fact]
     public void MixedNumberingFollowsNativePositionalRule()
     {
         // Native PCRE2 numbers left-to-right: group 1 is (b) here, while
