@@ -1158,6 +1158,7 @@ internal static class Utf8SliceRunner
                     programIndex = instruction.A;
                     break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatGreedyUtf16:
                 case Utf8SliceInstructionKind.RepeatLazy:
                     {
                         var repeatId = instruction.B;
@@ -1175,10 +1176,17 @@ internal static class Utf8SliceRunner
                         var madeNoProgress = count > 0 && positions[repeatId] == inputIndex;
                         var minimum = instruction.C;
                         var maximum = instruction.D;
-                        var greedy = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy;
+                        var greedy = instruction.Kind != Utf8SliceInstructionKind.RepeatLazy;
+                        // Qualified bodies consume one whole scalar per iteration,
+                        // but their minimum is measured in UTF-16 units. An attempt
+                        // starting on the trail half consumes only that remaining
+                        // unit; later astral scalars contribute both units.
+                        var increment = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedyUtf16 &&
+                            inputIndex < input.Length && input[inputIndex] >= 0xF0 &&
+                            (inputIndex != start || startIsScalarBoundary) ? 2 : 1;
                         if (count < minimum)
                         {
-                            if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
+                            if (!SetRepeat(counts, positions, repeatId, count + increment, inputIndex, ref stacks, ref invocation))
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
                             }
@@ -1225,7 +1233,7 @@ internal static class Utf8SliceRunner
 
                         if (greedy)
                         {
-                            if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
+                            if (!SetRepeat(counts, positions, repeatId, count + increment, inputIndex, ref stacks, ref invocation))
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
                             }

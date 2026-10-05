@@ -121,6 +121,7 @@ internal enum Utf8SliceInstructionKind : byte
     TestGroup = 23,
     Category = 24,
     CategorySet = 25,
+    RepeatGreedyUtf16 = 26,
 }
 
 /// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
@@ -280,6 +281,7 @@ internal sealed class Utf8SliceProgram
                         atomic = true;
                         break;
                     case Utf8SliceInstructionKind.RepeatGreedy:
+                    case Utf8SliceInstructionKind.RepeatGreedyUtf16:
                     case Utf8SliceInstructionKind.RepeatLazy:
                         loop = true;
                         break;
@@ -831,14 +833,12 @@ internal static class Utf8SliceLowerer
             continue;
         }
 
-        // Minimum one stays exact under the boundary argument above (a
-        // single unit and a single scalar coincide at scalar boundaries
-        // with indifferent head/tail runs); minimums above one stay out
-        // because BCL counts UTF-16 units while the runner counts scalars,
-        // so a minimum of two or more over a unit-divergent atom can force
-        // a pair split the runner cannot reproduce (probed: `a[^x]{2,}b`
-        // misses `xa<astral>b` owned with no fallback while BCL matches the
-        // pair as two units).
+        // Minimum one stays exact under the boundary argument above. Higher
+        // greedy minimums over one halves-closed atom use a UTF-16 counter:
+        // consuming an astral scalar contributes two units. The unbounded
+        // greedy stop and indifferent head/tail keep every span aligned;
+        // bodies with iteration captures, multiple atoms, and lazy stops
+        // still need actual half-unit execution and stay out.
         if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Maximum != int.MaxValue ||
             (repeat.Lazy && !lazySawTailAtom))
         {
@@ -850,6 +850,11 @@ internal static class Utf8SliceLowerer
             return WholeLoopBodyIsSafe(repeat.Body);
         }
 
+        if (repeat.Minimum > 1 && !repeat.Lazy && CanCountWholeLoopUtf16Units(repeat.Body))
+        {
+            return true;
+        }
+
         // R05: greedy minimum-zero loops over halves-closed atoms (dots and
         // member-free unfolded negated sets, which meet every surrogate half in
         // both semantics) stay boundary-locked exactly like minimum-one loops:
@@ -858,8 +863,7 @@ internal static class Utf8SliceLowerer
         // sides, and the one-unit/one-scalar empty advance coincides there, so
         // global tiling agrees unit-for-unit. Lazy minimum-zero loops stay out
         // (BCL stops minimally after one half with no tail forcing a boundary
-        // stop, exactly like tailless lazy plus), as do minimums above one (unit
-        // vs scalar counting, per the probed pair split above) and every other
+        // stop, exactly like tailless lazy plus), as does every other
         // body (positive sets, shorthands, categories, and hybrids can all meet
         // empty mid-scalar where scalar stepping cannot follow).
         if (repeat.Minimum == 0 && !repeat.Lazy &&
@@ -869,6 +873,32 @@ internal static class Utf8SliceLowerer
         }
 
         return false;
+    }
+
+    // One atom per iteration, with no captures inside the body. Both halves
+    // meet dots and ASCII-only negated sets uniformly; folded ASCII masks
+    // also miss surrogate halves. Transparent singleton sequences do not
+    // change that argument. Captures surrounding the whole loop stay exact.
+    private static bool CanCountWholeLoopUtf16Units(Utf8SliceNode node)
+    {
+        while (true)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.AlternationNode { Branches.Length: 1 } alternation when alternation.Branches[0].Length == 1:
+                    node = alternation.Branches[0][0];
+                    continue;
+                case Utf8SliceNode.ConcatNode { Children.Length: 1 } concat:
+                    node = concat.Children[0];
+                    continue;
+                case Utf8SliceNode.DotNode:
+                    return true;
+                case Utf8SliceNode.SetNode set:
+                    return set.Negated && (set.Members is null || set.Members.Length == 0);
+                default:
+                    return false;
+            }
+        }
     }
 
     private static bool WholeLoopBodyIsSafe(Utf8SliceNode node)
@@ -1367,7 +1397,9 @@ internal static class Utf8SliceLowerer
                     var exitIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatExit, repeatId, 0, 0, 0));
                     Instructions[repeatIndex] = new Utf8SliceInstruction(
-                        repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy,
+                        repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy :
+                        !MirrorExecute && repeat.Minimum > 1 && repeat.Maximum == int.MaxValue && CanCountWholeLoopUtf16Units(repeat.Body)
+                            ? Utf8SliceInstructionKind.RepeatGreedyUtf16 : Utf8SliceInstructionKind.RepeatGreedy,
                         exitIndex, repeatId, repeat.Minimum, repeat.Maximum);
                     break;
                 case Utf8SliceNode.DotNode dot:
