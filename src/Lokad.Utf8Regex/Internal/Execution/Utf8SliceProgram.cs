@@ -133,7 +133,7 @@ internal static class Utf8SliceHybridMembers
 /// <summary>Unicode property table for one owned category atom: a
 /// UnicodeCategory bit mask for general categories/groups plus half-open
 /// range endpoint pairs (with a trailing lone endpoint spanning to char.MaxValue) for
-/// named blocks.</summary>
+/// named blocks, or one immutable class subtraction program.</summary>
 internal sealed class Utf8SliceCategoryTable
 {
     internal Utf8SliceCategoryTable(uint mask, ushort[] ranges)
@@ -142,9 +142,18 @@ internal sealed class Utf8SliceCategoryTable
         Ranges = ranges;
     }
 
+    internal Utf8SliceCategoryTable(Utf8SliceClassProgram classProgram)
+    {
+        Mask = 0;
+        Ranges = [];
+        ClassProgram = classProgram;
+    }
+
     internal uint Mask { get; }
 
     internal ushort[] Ranges { get; }
+
+    internal Utf8SliceClassProgram? ClassProgram { get; }
 }
 
 internal readonly struct Utf8SliceInstruction

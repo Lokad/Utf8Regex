@@ -4,6 +4,11 @@
 
 ### Owned UTF-16 execution
 
+- Character-class subtraction, including nested subtraction, now runs in the
+  owned VM. Each class applies its own folding and negation before subtraction;
+  matching retains UTF-16 unit semantics, shares invocation cancellation and
+  charges work for each class segment. Control escapes also work as class members
+  and range endpoints. Existing literal, shorthand and category routes remain.
 - Owned pattern atoms now include raw and escaped BMP characters, literal
   surrogate halves, and UTF-16 character-class members/ranges. Quantifiers bind
   to individual pattern units, including the low half of a supplementary literal;

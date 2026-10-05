@@ -97,7 +97,9 @@ internal static class Utf8SliceHalvesMirror
 
         foreach (var member in members)
         {
-            var table = TableHalvesVerdict(member.Table.Mask, member.Table.Ranges);
+            var table = member.Table.ClassProgram is { } classProgram
+                ? classProgram.HalvesVerdict
+                : TableHalvesVerdict(member.Table.Mask, member.Table.Ranges);
             if (member.Negated)
             {
                 table = table == 2 ? 2 : 1 - table;

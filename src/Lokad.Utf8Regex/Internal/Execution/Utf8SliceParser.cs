@@ -561,6 +561,19 @@ internal static class Utf8SliceParser
     // or four hex digits, or at most three octal digits masked to a byte).
     // Malformed escapes decline. Shared by literal and class positions (two
     // callers, so the single-caller debt ceiling does not apply).
+    private static bool TryParseControlEscape(string pattern, int start, out int value, out int next)
+    {
+        value = 0;
+        next = start;
+        if (start + 1 >= pattern.Length) return false;
+        var letter = pattern[start + 1];
+        if (letter is >= 'a' and <= 'z') letter = (char)(letter - ('a' - 'A'));
+        if (letter is < '@' or > '_') return false;
+        value = letter - '@';
+        next = start + 2;
+        return true;
+    }
+
     private static bool TryParseNumericEscape(string pattern, int start, bool bareOctal, out int value, out int next)
     {
         static int HexValue(char digit)
@@ -1707,21 +1720,12 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
-                    if (escaped == 'c' && _position + 2 < _pattern.Length)
+                    if (escaped == 'c' && TryParseControlEscape(_pattern, _position + 1, out var control, out var controlNext))
                     {
-                        var controlLetter = _pattern[_position + 2];
-                        if (controlLetter >= 'a' && controlLetter <= 'z')
-                        {
-                            controlLetter = (char)(controlLetter - ('a' - 'A'));
-                        }
-
-                        if (controlLetter >= '@' && controlLetter <= '_')
-                        {
-                            _position += 3;
-                            _sawFold |= _matchIgnoreCase;
-                            node = new Utf8SliceNode.LiteralNode((byte)(controlLetter - '@'), _matchIgnoreCase);
-                            return true;
-                        }
+                        _position = controlNext;
+                        _sawFold |= _matchIgnoreCase;
+                        node = new Utf8SliceNode.LiteralNode((ushort)control, _matchIgnoreCase);
+                        return true;
                     }
 
                     // Hex, unicode, and NUL-led octal escapes produce one unit;
@@ -1759,7 +1763,7 @@ internal static class Utf8SliceParser
                 case ']':
                     return false;
                 case '[':
-                    return TryParseClass(out node);
+                    return TryParseClass(0, out node);
                 case '^':
                     _position++;
                     node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.Beginning, _matchMultiline);
@@ -1784,16 +1788,18 @@ internal static class Utf8SliceParser
         // literals (with `]`-first and `-`/POSIX-edge rules), ascending
         // ranges (escapes allowed as bounds), supported single-char
         // escapes, and shorthand members (always members, never bounds).
-        // Unsupported structural forms (control escapes, subtraction, reversed ranges,
-        // shorthand upper bounds) decline to null so legacy routing
+        // Subtraction recursively parses the final class operand and lowers
+        // to an immutable, invocation-metered class chain. Reversed ranges and
+        // shorthand upper bounds decline to null so legacy routing
         // preserves exact behavior including construction failures.
         // `[` followed by `:`, `.`, or `=` also
         // declines: those open POSIX, collating, or equivalence classes in
         // sibling flavors while BCL reads plain literals, and a shared
         // program cannot serve both readings.
-        private bool TryParseClass(out Utf8SliceNode? node)
+        private bool TryParseClass(int depth, out Utf8SliceNode? node)
         {
             node = null;
+            if (depth > MaxNestingDepth) return false;
             _position++;
 
             // Single-shorthand classes fold to the shorthand atom they denote.
@@ -1892,6 +1898,7 @@ internal static class Utf8SliceParser
             var inRange = false;
             var firstChar = true;
             var closed = false;
+            Utf8SliceNode? subtraction = null;
             for (; !AtEnd; firstChar = false)
             {
                 var translatedChar = false;
@@ -2066,6 +2073,11 @@ internal static class Utf8SliceParser
                         case 'v':
                             value = 11;
                             break;
+                        case 'c':
+                            if (!TryParseControlEscape(_pattern, _position, out value, out var controlNext))
+                                return false;
+                            _position = controlNext - 1;
+                            break;
                         case 'x':
                         case 'u':
                         case '0':
@@ -2123,7 +2135,7 @@ internal static class Utf8SliceParser
 
                     lowerBound = -1;
                 }
-                else if (_position + 1 < _pattern.Length && _pattern[_position] == '-' && _pattern[_position + 1] != ']')
+                else if (_position + 1 < _pattern.Length && _pattern[_position] == '-' && _pattern[_position + 1] is not (']' or '['))
                 {
                     lowerBound = value;
                     inRange = true;
@@ -2131,7 +2143,11 @@ internal static class Utf8SliceParser
                 }
                 else if (value == '-' && !translatedChar && !AtEnd && _pattern[_position] == '[' && !firstChar)
                 {
-                    return false;
+                    if (!TryParseClass(depth + 1, out subtraction) || subtraction is null ||
+                        AtEnd || _pattern[_position] != ']') return false;
+                    _position++;
+                    closed = true;
+                    break;
                 }
                 else
                 {
@@ -2231,6 +2247,8 @@ internal static class Utf8SliceParser
             {
                 node = new Utf8SliceNode.CategorySetNode(mask, negated, members, categoryMembers.ToArray(), _matchIgnoreCase);
             }
+
+            if (subtraction is not null) node = Utf8SliceClassProgram.Subtract(node, subtraction);
 
             return true;
         }

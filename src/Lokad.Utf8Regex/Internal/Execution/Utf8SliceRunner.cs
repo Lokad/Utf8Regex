@@ -1678,6 +1678,48 @@ internal static class Utf8SliceRunner
 
                 case Utf8SliceInstructionKind.CategorySet:
                     {
+                        var classMembers = program.CategorySetMembers[instruction.D];
+                        if (classMembers.Length == 1 && classMembers[0].Table.ClassProgram is { } classProgram)
+                        {
+                            var classIndex = inputIndex;
+                            var classWidth = 0;
+                            if (program.RightToLeft)
+                            {
+                                if (TryGetScalarWidthEndingAt(input, inputIndex, out classWidth))
+                                    classIndex -= classWidth;
+                            }
+                            else if (inputIndex < input.Length && (input[inputIndex] & 0xC0) != 0x80)
+                            {
+                                classWidth = input[inputIndex] < 0x80 ? 1 : input[inputIndex] < 0xE0 ? 2 : input[inputIndex] < 0xF0 ? 3 : 4;
+                            }
+
+                            var classHit = false;
+                            if (classWidth == 4)
+                            {
+                                // Only uniform-half whole loops serve public astral
+                                // scalars here. Other shapes use the private unit subject.
+                                classHit = classProgram.HalvesVerdict == 1;
+                            }
+                            else if (classWidth != 0)
+                            {
+                                var classUnit = (char)input[classIndex];
+                                if (classWidth == 1 || TryDecodeBmpScalar(input, classIndex, out classUnit))
+                                {
+                                    classHit = classProgram.TryMatch(classUnit, ref invocation, out var classBreach);
+                                    if (classBreach != Utf8ExecutionLimitKind.None)
+                                        return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
+                                }
+                            }
+
+                            if (classHit)
+                            {
+                                inputIndex += program.RightToLeft ? -classWidth : classWidth;
+                                programIndex++;
+                            }
+                            else failed = true;
+                            break;
+                        }
+
                         // Mixed category classes: ASCII bytes decide by mask
                         // plus recorded category members (shorthand ASCII
                         // parts ride the mask exactly like hybrids, so only
