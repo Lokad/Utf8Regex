@@ -50,7 +50,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             Assert.False(cursor.MoveNext());
             AssertOwned(regex);
 
-            foreach (var count in new[] { 2, 3, int.MaxValue })
+            foreach (var count in new[] { 0, 2, 3, int.MaxValue })
             {
                 var expectedSplits = new List<(string, int, int)>();
                 foreach (var range in oracle.EnumerateSplits(text, count))
