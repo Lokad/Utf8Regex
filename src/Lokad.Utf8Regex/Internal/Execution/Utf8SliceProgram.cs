@@ -875,10 +875,11 @@ internal static class Utf8SliceLowerer
         return false;
     }
 
-    // One atom per iteration, with no captures inside the body. Both halves
-    // meet dots and ASCII-only negated sets uniformly; folded ASCII masks
-    // also miss surrogate halves. Transparent singleton sequences do not
-    // change that argument. Captures surrounding the whole loop stay exact.
+    // One atom per iteration, with no captures inside the body. The existing
+    // atom qualifier proves uniform surrogate-half behavior for its scalar
+    // arm: admitted astral scalars contribute two units; atoms missing both
+    // halves never consume them. Transparent singleton sequences preserve
+    // that argument. Captures surrounding the whole loop stay exact.
     private static bool CanCountWholeLoopUtf16Units(Utf8SliceNode node)
     {
         while (true)
@@ -891,12 +892,17 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConcatNode { Children.Length: 1 } concat:
                     node = concat.Children[0];
                     continue;
+                case Utf8SliceNode.LiteralNode:
                 case Utf8SliceNode.DotNode:
+                case Utf8SliceNode.SetNode:
+                case Utf8SliceNode.ShorthandNode:
+                    // ASCII masks miss both halves; every shorthand member
+                    // has the same truth value on lead and trail surrogates.
                     return true;
-                case Utf8SliceNode.SetNode set:
-                    return set.Negated && (set.Members is null || set.Members.Length == 0);
+                case Utf8SliceNode.CategoryNode category:
+                    return Utf8SliceHalvesMirror.TableHalvesVerdict(category.Mask, category.Ranges) != 2;
                 default:
-                    return false;
+                    return WholeLoopAtomIsSafe(node);
             }
         }
     }
@@ -1055,16 +1061,11 @@ internal static class Utf8SliceLowerer
                 }
 
                 return Utf8SliceHalvesMirror.CategorySetHalvesVerdict(categorySetMemberBits, categorySet.Categories) != 2;
-            // Positive categories miss astral scalars exactly like BCL halves
-            // miss every positive table (the runner fails astral leads closed
-            // while BMP matching already agrees). Negated categories consume
-            // whole astral scalars in the runner exactly like negated sets,
-            // so the first-stop argument transfers when the positive table
-            // misses halves (BCL halves then match the negation). Surrogate-
-            // covering positives (Cs, high/low surrogate blocks) stay out
-            // because BCL halves are members there while the runner still
-            // misses, and so do their negations (BCL halves miss those
-            // negations while the runner would consume whole scalars).
+            // The standing minimum-one qualifier admits tables whose positive
+            // side misses both halves. The higher-minimum qualifier above
+            // additionally admits uniformly matching tables such as Cs through
+            // the runner's shared half verdict. Split surrogate blocks remain
+            // outside both aligned-loop qualifiers.
             case Utf8SliceNode.CategoryNode category:
                 return PositiveTableMissesHalves(category.Mask, category.Ranges);
             default:
@@ -1073,9 +1074,8 @@ internal static class Utf8SliceLowerer
     }
 
     // Positive tables miss halves unless they cover surrogates (the Cs mask
-    // bit, or a block range overlapping U+D800-U+DFFF where BCL halves are
-    // members the runner misses); shared by the category and category-set
-    // atoms above, whose runner arms both fail astral leads closed.
+    // bit, or a block range overlapping U+D800-U+DFFF). Keep the conservative
+    // minimum-one gate separate from the higher-minimum uniform-half proof.
     private static bool PositiveTableMissesHalves(uint mask, ushort[] ranges)
     {
         if ((mask & (1u << (int)System.Globalization.UnicodeCategory.Surrogate)) != 0)

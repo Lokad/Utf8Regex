@@ -1596,15 +1596,12 @@ internal static class Utf8SliceRunner
                         // half-open block ranges. The IgnoreCase fold bit
                         // widens Ll/Lu/Lt to their cased union (every other
                         // category is already case-complete) and matches block
-                        // ranges through invariant case equivalents (BCL
-                        // AddCaseEquivalenceRange, candidate-side lookup, so
-                        // the negated test keeps the BCL overlap instead of
-                        // a plain complement). Astral leads fail closed for
-                        // positive tables and consume whole for negated ones
-                        // (BCL halves miss positives the runner misses while
-                        // matching negations like the runner consumes, so
-                        // the whole-loop indifference fence admits exactly
-                        // the tables whose positive side misses halves).
+                        // ranges through invariant case equivalents. Astral
+                        // leads use the shared surrogate-half verdict; uniform
+                        // tables consume the scalar exactly when both halves
+                        // match. This includes Cs and its complement for the
+                        // greedy UTF-16 minimum counter. Split-half tables
+                        // remain outside whole-loop admission.
                         // Anything else keeps routing-declined astral inputs
                         // away, so failing there keeps byte-stepping drivers
                         // aligned.
@@ -1708,7 +1705,8 @@ internal static class Utf8SliceRunner
                             }
                             else
                             {
-                                inClass = categoryNegated;
+                                var halfVerdict = Utf8SliceHalvesMirror.TableHalvesVerdict(categoryTable.Mask, categoryTable.Ranges);
+                                inClass = halfVerdict != 2 && (halfVerdict == 1) != categoryNegated;
                             }
 
                             if (inClass)
