@@ -79,8 +79,12 @@ public sealed class Utf8SliceClassSubtractionTests
     {
         var pattern = "[a]";
         for (var level = 0; level < 66; level++) pattern = "[a-" + pattern + "]";
-        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-            Assert.Equal(new Regex(pattern, options).IsMatch("a"), new Utf8Regex(pattern, options).IsMatch(Encoding.UTF8.GetBytes("a")));
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.Equal(new Regex(pattern, options).IsMatch("a"), regex.IsMatch(Encoding.UTF8.GetBytes("a")));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
     }
 }

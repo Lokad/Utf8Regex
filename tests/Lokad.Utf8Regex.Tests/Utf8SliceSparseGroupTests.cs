@@ -50,9 +50,13 @@ public sealed class Utf8SliceSparseGroupTests
     }
 
     internal static void AssertOwnedOperations(string pattern, RegexOptions options, string[] texts, RegexOptions oracleOptions)
+        => AssertOwnedOperations(pattern, options, texts, pattern, oracleOptions);
+
+    internal static void AssertOwnedOperations(string pattern, RegexOptions options, string[] texts,
+        string oraclePattern, RegexOptions oracleOptions)
     {
         Regex oracle;
-        try { oracle = new Regex(pattern, oracleOptions, TimeSpan.FromSeconds(10)); }
+        try { oracle = new Regex(oraclePattern, oracleOptions, TimeSpan.FromSeconds(10)); }
         catch (RegexParseException expected)
         {
             var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10)));

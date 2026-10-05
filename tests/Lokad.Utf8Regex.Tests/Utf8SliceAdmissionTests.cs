@@ -4,27 +4,28 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R02b construction admission: pattern length and lowered instruction caps
-// decline oversized slice shapes to legacy routing with identical behavior.
-// Construction never fails on size; the caps bound retained programs.
+// The former source-length fence no longer selects a BCL engine. The
+// instruction-count cap remains explicit construction-ownership debt.
 public sealed class Utf8SliceAdmissionTests
 {
+    private const int HistoricalPatternLengthLimit = 65536;
+
     [Fact]
     public void BoundaryLengthPatternParses()
     {
         var pattern = string.Concat(
-            System.Linq.Enumerable.Repeat("a|", Utf8SliceParser.MaxPatternLength / 2));
-        Assert.Equal(Utf8SliceParser.MaxPatternLength, pattern.Length);
+            System.Linq.Enumerable.Repeat("a|", HistoricalPatternLengthLimit / 2));
+        Assert.Equal(HistoricalPatternLengthLimit, pattern.Length);
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
     }
 
     [Fact]
-    public void OverLengthPatternDeclines()
+    public void OverLengthPatternParsesOwned()
     {
         var pattern = string.Concat(
-            System.Linq.Enumerable.Repeat("a|", Utf8SliceParser.MaxPatternLength / 2)) + "a";
-        Assert.True(pattern.Length > Utf8SliceParser.MaxPatternLength);
-        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+            System.Linq.Enumerable.Repeat("a|", HistoricalPatternLengthLimit / 2)) + "a";
+        Assert.True(pattern.Length > HistoricalPatternLengthLimit);
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
     }
 
     [Fact]
@@ -76,7 +77,7 @@ public sealed class Utf8SliceAdmissionTests
     public void UnderLengthRepeatedShapeRoutesOwned()
     {
         var pattern = RepeatSliceShape(6000);
-        Assert.True(pattern.Length <= Utf8SliceParser.MaxPatternLength);
+        Assert.True(pattern.Length <= HistoricalPatternLengthLimit);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "length=" + pattern.Length);
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");
@@ -87,12 +88,12 @@ public sealed class Utf8SliceAdmissionTests
     }
 
     [Fact]
-    public void OverLengthRepeatedShapeDeclinesToLegacyRouting()
+    public void OverLengthRepeatedShapeRoutesOwned()
     {
         var pattern = RepeatSliceShape(9000);
-        Assert.True(pattern.Length > Utf8SliceParser.MaxPatternLength);
+        Assert.True(pattern.Length > HistoricalPatternLengthLimit);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "length=" + pattern.Length);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "length=" + pattern.Length);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
@@ -100,5 +101,6 @@ public sealed class Utf8SliceAdmissionTests
         Assert.Equal(oracle.Matches("xxaaabbyy").Count, regex.Count(input));
         Assert.Equal(oracle.Match("xxaaabbyy").Success, regex.Match(input).Success);
         Assert.Equal(oracle.IsMatch("xxaaayy"), regex.IsMatch(Encoding.UTF8.GetBytes("xxaaayy")));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }
