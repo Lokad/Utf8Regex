@@ -413,7 +413,7 @@ internal static class Utf8OwnedTreeParser
                 }
                 else if (character == '[')
                 {
-                    if (!ParseClass(ref state, depth, out var classNode) || classNode is null)
+                    if (!ParseClass(ref state, out var classNode) || classNode is null)
                     {
                         return false;
                     }
@@ -648,13 +648,27 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ParseClass(ref ParserState state, int depth, out Utf8TreeNode? node)
+        static bool ParseClass(ref ParserState state, out Utf8TreeNode? node)
         {
             node = null;
             var wire = new StringBuilder();
-            if (!ParseClassLevel(ref state, depth, wire))
+            var remainingClosers = 0;
+            // Subtraction is a single nested chain. Each segment is emitted
+            // before its child, then all pending parent closers are consumed.
+            // Class depth uses no recursive parser frames or group-depth cap.
+            // .NET 10's recursive class scanner can overflow a worker stack
+            // on these valid patterns; owned parsing retains their semantics.
+            while (true)
             {
-                return false;
+                if (!ParseClassSegment(ref state, wire, out var subtracted)) return false;
+                if (!subtracted) break;
+                remainingClosers++;
+            }
+            while (remainingClosers > 0)
+            {
+                if (state.AtEnd || state.Pattern[state.Position] != ']') return false;
+                state.Position++;
+                remainingClosers--;
             }
 
             node = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, wire.ToString());
@@ -662,9 +676,9 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ParseClassLevel(ref ParserState state, int depth, StringBuilder wire)
+        static bool ParseClassSegment(ref ParserState state, StringBuilder wire, out bool subtracted)
         {
-            if (depth > MaxNestingDepth) return false;
+            subtracted = false;
             state.Position++;
             if (state.AtEnd)
             {
@@ -687,7 +701,6 @@ internal static class Utf8OwnedTreeParser
             var pendingIsPlain = false;
             var pendingAdded = false;
             var first = true;
-            var subtracted = false;
             while (true)
             {
                 if (state.AtEnd)
@@ -728,7 +741,7 @@ internal static class Utf8OwnedTreeParser
                     if (state.Position + 1 < state.Pattern.Length &&
                         state.Pattern[state.Position + 1] == '[')
                     {
-                        if (!subtracted && (hasPending || units.Count + categories.Count > 0))
+                        if (hasPending || units.Count + categories.Count > 0)
                         {
                             if (hasPending && !pendingAdded)
                             {
@@ -746,17 +759,6 @@ internal static class Utf8OwnedTreeParser
                                 return false;
                             }
 
-                            if (!ParseClassLevel(ref state, depth + 1, wire))
-                            {
-                                return false;
-                            }
-
-                            if (state.AtEnd || state.Pattern[state.Position] != ']')
-                            {
-                                return false;
-                            }
-
-                            state.Position++;
                             return true;
                         }
 

@@ -267,13 +267,9 @@ internal static class Utf8OwnedTreeSliceLowerer
                 segments.Add(categories.Count == 0
                     ? new Utf8SliceNode.SetNode(mask, negated, members.ToArray(), foldCase)
                     : new Utf8SliceNode.CategorySetNode(mask, negated, members.ToArray(), categories.ToArray(), foldCase));
-                if (segments.Count > Utf8SliceParser.MaxNestingDepth + 1) return null;
             }
             if (segments.Count == 0) return null;
-            var result = segments[^1];
-            for (var index = segments.Count - 2; index >= 0; index--)
-                result = Utf8SliceClassProgram.Subtract(segments[index], result);
-            return result;
+            return segments.Count == 1 ? segments[0] : Utf8SliceClassProgram.Subtract(segments);
         }
 
         static void AppendRange(List<ushort> ranges, int low, int high)

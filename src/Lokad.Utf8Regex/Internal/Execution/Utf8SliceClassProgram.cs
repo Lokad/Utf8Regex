@@ -6,7 +6,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Immutable UTF-16 class subtraction chain. Each segment owns its
 /// union, folding and class negation; subtraction is applied from the innermost
 /// segment outward. Matching allocates no state and charges the shared invocation
-/// once per segment. Parser nesting bounds the retained chain.</summary>
+/// once per segment. Construction flattens the complete chain once; execution
+/// uses no nested call frames.</summary>
 internal sealed class Utf8SliceClassProgram
 {
     private readonly Segment[] _segments;
@@ -29,7 +30,7 @@ internal sealed class Utf8SliceClassProgram
 
     internal int HalvesVerdict { get; }
 
-    internal static Utf8SliceNode Subtract(Utf8SliceNode outer, Utf8SliceNode inner)
+    internal static Utf8SliceNode Subtract(IReadOnlyList<Utf8SliceNode> operands)
     {
         static Segment FromNode(Utf8SliceNode node) => node switch
         {
@@ -41,18 +42,9 @@ internal sealed class Utf8SliceClassProgram
             _ => throw new ArgumentOutOfRangeException(nameof(node), "Class subtraction requires class operands."),
         };
 
-        Segment[] segments;
-        if (inner is Utf8SliceNode.CategorySetNode { Categories.Length: 1 } set &&
-            set.Categories[0].Table.ClassProgram is { } nested)
-        {
-            segments = new Segment[nested._segments.Length + 1];
-            segments[0] = FromNode(outer);
-            Array.Copy(nested._segments, 0, segments, 1, nested._segments.Length);
-        }
-        else
-        {
-            segments = [FromNode(outer), FromNode(inner)];
-        }
+        var segments = new Segment[operands.Count];
+        for (var index = 0; index < operands.Count; index++)
+            segments[index] = FromNode(operands[index]);
 
         var program = new Utf8SliceClassProgram(segments);
         return new Utf8SliceNode.CategorySetNode(new byte[16], false, [],

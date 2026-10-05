@@ -144,10 +144,10 @@ public sealed partial class Utf8Regex
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         _unitBranchSpanMap = UsesRightToLeft() ? null : Utf8UnitBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, preparedRegex.SimplePatternPlan);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
-        // slice (R03 adds dots). R02b construction admission caps the pattern length and lowered
-        // instruction count; over-cap shapes decline here to legacy routing.
+        // slice (R03 adds dots). Remaining group-depth and lowered-instruction
+        // admission limits still decline to transitional routing.
         var ownedSliceProgram = !RequiresCultureSensitiveFallback
-            ? Utf8SliceParser.TryParse(pattern, options, preparedRegex.SemanticRegex.RuntimeTree)
+            ? Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree)
             : null;
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _unitSliceProgram = ownedSliceProgram;

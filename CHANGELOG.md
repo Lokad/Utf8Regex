@@ -4,6 +4,14 @@
 
 ### Owned UTF-16 execution
 
+- Nested class subtraction now parses iteratively and constructs its flat
+  predicate chain once, retaining each segment's negation and case rules.
+  Class nesting is independent of the remaining general-group depth limit.
+  Deep valid classes retain their semantics without reproducing .NET 10's
+  worker-stack overflow in its recursive character-class parser.
+  Pattern length above 65,536 characters no longer forces BCL routing;
+  admitted long patterns retain owned matching and result operations.
+
 - Admitted ECMAScript patterns now use the shared owned parser and VM for matching,
   histories, offsets, enumeration, splitting and replacement. The profile keeps
   its fixed shorthands and boundaries, empty unmatched references, declaration
