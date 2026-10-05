@@ -5,8 +5,14 @@
 ### Owned UTF-16 execution
 
 - VM compilation now lowers the authoritative owned tree, retaining scoped
-  whitespace, case folding, capture identities and assertion direction. A
-  temporary compatibility parser remains for forms the front end still declines.
+  whitespace, case folding, capture identities and assertion direction. The
+  duplicate compatibility parser and its unresolved VM nodes are removed.
+  The canonical grammar now also covers surrogate and U+FFFF class units,
+  octal range bounds, lookbehind references, explicit expression conditionals,
+  uppercase/plus option clusters and balancing pops under ExplicitCapture.
+  Class ranges ending at U+FFFF retain the final UTF-16 unit without overflow;
+  folded range unions are sorted and overlap-normalized. Explicit conditional
+  tests preserve .NET's transparent unnamed grouping and metadata numbering.
   Scoped verbose patterns now stay owned across matching, capture histories,
   enumeration, splitting and replacement, including the Python-compatible
   adapter. Kelvin folding also stays owned through those result operations.
@@ -56,6 +62,9 @@
   rollback, deliberately avoiding .NET 10.0.12 compiled-engine phantom progress,
   leaked captures and non-progressing enumeration. This also applies when a
   native plan exists; unrelated qualified native routes remain available.
+  Owned reverse conditional/capture-reference loops also retain interpreted
+  positions, avoiding a diagnosed .NET 10.0.12 compiled-engine range mismatch
+  after a later match. The concrete witness is recorded in code and tests.
 
 - Explicitly numbered and sparse captures now execute in the owned VM with
   dense internal slots and their original public numbers, including complete

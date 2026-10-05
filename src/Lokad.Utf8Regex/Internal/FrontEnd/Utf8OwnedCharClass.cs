@@ -1,10 +1,10 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-// Owned character-class wire queries: pure decoders over the set payload
-// encoding (negate flag, range length, category length, half-open range pairs,
-// category payload, chained subtraction segments), verified row by row against
-// the fork over live-parsed payloads. Matching (CharInClass), category payload
-// constants, and builders migrate with the matching core, not here.
+// Owned character-class wire queries over the canonical set payload:
+// negate flag, range length, category length, half-open range pairs,
+// category payload and chained subtraction segments. A final lone range
+// endpoint includes every unit through U+FFFF; zero paired upper bounds
+// likewise mean 65536. Wire facts and .NET matching are qualified separately.
 internal static class Utf8OwnedCharClass
 {
     public const int FlagsIndex = 0;
@@ -50,6 +50,8 @@ internal static class Utf8OwnedCharClass
 
     public static bool IsSingleton(string set)
     {
+        if (set.Length == SetStartIndex + 1 && set[SetLengthIndex] == 1 && !IsNegated(set) && set[CategoryLengthIndex] == 0)
+            return set[SetStartIndex] == char.MaxValue;
         if (set.Length != SetStartIndex + 2 || IsNegated(set) || set[CategoryLengthIndex] != 0)
         {
             return false;
@@ -70,10 +72,11 @@ internal static class Utf8OwnedCharClass
 
     public static bool TryGetSingleRange(string set, out char first, out char last)
     {
-        if (set.Length == SetStartIndex + 2 && !IsNegated(set) && set[CategoryLengthIndex] == 0)
+        if (set.Length is SetStartIndex + 1 or SetStartIndex + 2 &&
+            set[SetLengthIndex] == set.Length - SetStartIndex && !IsNegated(set) && set[CategoryLengthIndex] == 0)
         {
             first = set[SetStartIndex];
-            last = (char)(set[SetStartIndex + 1] - 1);
+            last = set.Length == SetStartIndex + 1 ? char.MaxValue : (char)(set[SetStartIndex + 1] - 1);
             return true;
         }
 
@@ -162,7 +165,7 @@ internal static class Utf8OwnedCharClass
 
         for (var i = SetStartIndex; i < SetStartIndex + set[SetLengthIndex]; i += 2)
         {
-            if (set[i + 1] > 0x80)
+            if (i + 1 == SetStartIndex + set[SetLengthIndex] || set[i + 1] == 0 || set[i + 1] > 0x80)
             {
                 return false;
             }
@@ -191,7 +194,8 @@ internal static class Utf8OwnedCharClass
                 var matched = false;
                 for (var i = segmentStart; i < segmentEnd; i += 2)
                 {
-                    if (innerCh >= innerSet[i] && innerCh < innerSet[i + 1])
+                    var high = i + 1 == segmentEnd || innerSet[i + 1] == 0 ? 65536 : innerSet[i + 1];
+                    if (innerCh >= innerSet[i] && innerCh < high)
                     {
                         matched = true;
                         break;
@@ -232,7 +236,7 @@ internal static class Utf8OwnedCharClass
                 var segmentEnd = pos + SetStartIndex + setLength;
                 for (var i = pos + SetStartIndex; i < segmentEnd; i += 2)
                 {
-                    var last = (char)(innerSet[i + 1] - 1);
+                    var last = i + 1 == segmentEnd ? char.MaxValue : (char)(innerSet[i + 1] - 1);
                     if (last < innerSet[i])
                     {
                         throw new ArgumentOutOfRangeException("last");
@@ -299,7 +303,8 @@ internal static class Utf8OwnedCharClass
         var setEnd = SetStartIndex + setLength;
         for (var i = SetStartIndex; i < setEnd; i += 2)
         {
-            if (ch >= set[i] && ch < set[i + 1])
+            var high = i + 1 == setEnd || set[i + 1] == 0 ? 65536 : set[i + 1];
+            if (ch >= set[i] && ch < high)
             {
                 return true;
             }

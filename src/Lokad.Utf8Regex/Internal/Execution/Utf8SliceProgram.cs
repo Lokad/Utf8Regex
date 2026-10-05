@@ -86,12 +86,6 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
     internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
-    internal sealed record UnresolvedBackrefNode(string Name, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
-    internal sealed record UnresolvedNumericNode(string Digits, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
-    internal sealed record UnresolvedNumericRepeatNode(string Digits, bool FoldCase, int Minimum, int Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat);
-    internal sealed record UnresolvedCaptureNode(int Number, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
-    internal sealed record UnresolvedBalanceNode(string PopName, int CaptureSlot, int CaptureNumber, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
-    internal sealed record UnresolvedConditionalNode(string Number, Utf8SliceNode YesBody, Utf8SliceNode NoBody) : Utf8SliceNode(Utf8SliceNodeKind.Conditional);
     internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);

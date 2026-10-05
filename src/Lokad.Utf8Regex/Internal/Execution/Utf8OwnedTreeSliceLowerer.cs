@@ -18,6 +18,11 @@ internal static class Utf8OwnedTreeSliceLowerer
         // Both VM lanes retain interpreted rollback for the documented .NET
         // 10.0.12 capture-writing finite-lazy-loop defect. Lowering does not
         // reproduce compiled-oracle phantom matches or abandoned captures.
+        // The same shared assertion trail retains interpreted positions for
+        // .NET 10.0.12's compiled RTL conditional/capture-reference defect:
+        // (?x:(?(?=(?<x>a+)) \k<x> | b)+) can return a different earlier
+        // range on aaabab after a later match. Regression oracles use the
+        // ordinary engine for this diagnosed case, per the user's guidance.
         var hasCaptureWritingLazyRange = false;
         var root = Convert(tree.Root, catalog, 0, ref hasBalancing, ref hasCaptureWritingLazyRange);
         return root is null ? null : Utf8SliceLowerer.Lower(root, catalog.GroupNames,
