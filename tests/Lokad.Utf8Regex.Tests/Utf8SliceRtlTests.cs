@@ -12,8 +12,8 @@ namespace Lokad.Utf8Regex.Tests;
 // bodies, shared-slot lookbehind machinery, normalized capture spans. Bare
 // shapes keep native precedence; quantified shapes route owned. Balancing serves
 // owned (pop-first misses on fresh stacks exactly where the oracle misses);
-// exotic assertion mixes and right-to-left splits decline to legacy-exact
-// routing with identical behavior.
+// nested assertions establish their own directions and share capture state.
+// Right-to-left result operations retain oracle encounter order.
 public sealed class Utf8SliceRtlTests
 {
     public static IEnumerable<object?[]> SliceRtlShapes()
@@ -75,14 +75,15 @@ public sealed class Utf8SliceRtlTests
 
     [Theory]
     [MemberData(nameof(RtlDeclinedShapes))]
-    public void RtlExoticShapesDeclineToLegacy(string pattern, string inputText)
+    public void RtlNestedAssertionShapesExecuteOwned(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> RtlParserDeclines()
@@ -96,9 +97,9 @@ public sealed class Utf8SliceRtlTests
 
     [Theory]
     [MemberData(nameof(RtlParserDeclines))]
-    public void RtlExoticShapesDeclineAtParse(string pattern)
+    public void RtlNestedAssertionShapesParseOwned(string pattern)
     {
-        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant));
     }
 
     public static IEnumerable<object?[]> RtlParserShapes()
@@ -470,7 +471,7 @@ public sealed class Utf8SliceRtlOperationTests
         var expected = oracle.Match(inputText);
         Assert.True(expected.Success);
         var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var detailed = regex.MatchDetailed(input);
         Assert.True(detailed.Success);
         Assert.Equal(expectedStart, detailed.IndexInUtf16);

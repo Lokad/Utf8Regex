@@ -3,9 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 balancing captures: (?<n1-n2>sub) pops n2 (fail if empty) and
-// captures [popped end, pop-time position) into n1; (?<-n2>sub) pops
-// without capturing. Stacks live in the balance chunk with per-group
+// R03 balancing captures: successful body close pops n2 (fail if empty),
+// including sources established by the body, and captures its gap/intersection
+// interval into n1; (?<-n2>sub) pops without capturing. Stacks use per-group
 // heads journaled through the trail, so backtracking undoes pops exactly
 // like capture writes, and detailed histories drain popped captures.
 // Targets bind against the complete capture catalog, including forward,
@@ -238,9 +238,8 @@ public sealed class Utf8SliceBalanceTests
 
     public static IEnumerable<object?[]> LookbehindCaptureDeclineCases()
     {
-        // Captures or pops inside a lookbehind body would alias the shared
-        // balance heads through nested tables, so balancing mixes with
-        // lookbehind group writes decline to legacy-exact routing.
+        // Assertion bodies share the caller's balance nodes, head mutations
+        // and capture openings; negative or failed probes restore their mark.
         yield return new object?[] { "(?<=(a))(?<o>x)+(?<-o>y)+", "axy" };
         yield return new object?[] { "(?<!a(?<q>z))(?<o>x)+(?<-o>y)+", "xy" };
         yield return new object?[] { "(?<o>a)+(?<=b(?<-o>))c", "abc" };
@@ -248,14 +247,14 @@ public sealed class Utf8SliceBalanceTests
 
     [Theory]
     [MemberData(nameof(LookbehindCaptureDeclineCases))]
-    public void LookbehindGroupWritesDecline(string pattern, string inputText)
+    public void LookbehindGroupWritesExecuteOwned(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> LookaheadBalanceCases()

@@ -28,6 +28,7 @@ public sealed class Pcre2AssertionCompilerTests
     [InlineData("foo(?=bar)", "xxfoobar", "foo")]
     // The transparent lookahead body now rides the slice, so the VM-routing row spells its group Python-style (the core slice declines it).
     [InlineData("(?=(?P<g>ab|a))a", "xxab", "a")]
+    [InlineData("(?<=(a)(?(1)b|c))d", "abd", "d")]
     public void NonSliceLookaroundsStayInTheGenericProgram(string pattern, string input, string expected)
     {
         // Positive lookahead behind a leading literal keeps native precedence, and the Python-spelled body declines the core slice: both stay on the generic VM.

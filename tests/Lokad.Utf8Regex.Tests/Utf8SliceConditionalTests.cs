@@ -8,10 +8,9 @@ namespace Lokad.Utf8Regex.Tests;
 // branches (downstream failure never retries the other branch), expression
 // tests desugar to lookahead-guarded alternations, and number tests denote
 // final groups (validated post-parse since forward references read groups
-// defined anywhere). Lookbehind bodies with backreferences or conditionals
-// decline: BCL evaluates bodies back-to-front in one shot while the shared
-// machinery enumerates starts forward. Bare shapes keep native precedence;
-// quantified shapes route owned.
+// defined anywhere). Lookbehind bodies execute backward at their exact
+// edge on the shared journal, including references and conditional tests.
+// Bare shapes keep native precedence; quantified shapes route owned.
 public sealed class Utf8SliceConditionalTests
 {
     public static IEnumerable<object?[]> SliceConditionalShapes()
@@ -56,14 +55,15 @@ public sealed class Utf8SliceConditionalTests
 
     [Theory]
     [MemberData(nameof(DeclinedShapes))]
-    public void LookbehindOrderSensitiveShapesDeclineToLegacy(string pattern, string inputText)
+    public void LookbehindOrderSensitiveShapesExecuteOwned(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> ParserDeclines()

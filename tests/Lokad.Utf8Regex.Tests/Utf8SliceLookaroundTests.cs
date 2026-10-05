@@ -5,15 +5,10 @@ namespace Lokad.Utf8Regex.Tests;
 
 // R03 lookaround slice: positive and negative lookahead lower to owned
 // fork/jump/fail shapes (atomic first-success on the shared trail) while
-// lookbehind lowers to owned assertion programs searched from the earliest
-// start up to the body length bound with consumption capped at the edge
-// (BCL longest-span backward order).
-// Captures run on the shared slots with entry snapshots, so surviving
-// positive bodies keep their groups and every other path restores them.
-// Atomic, comment, branch-reset, conditional, named, and unclosed group
-// forms decline to legacy-exact routing, as do variable-length lookbehind
-// bodies needing context past the edge (inner lookahead, end/contiguous
-// anchors, nested lookbehind, non-leading word boundaries).
+// lookbehind lowers to backward assertion programs at the exact current edge.
+// Both directions share capture openings and balancing nodes with their caller;
+// positive bodies retain their trail and other exits restore its entry mark.
+// Unsupported or malformed grammar retains its construction behavior.
 public sealed class Utf8SliceLookaroundTests
 {
     public static IEnumerable<object?[]> SliceLookaroundShapes()
@@ -47,9 +42,8 @@ public sealed class Utf8SliceLookaroundTests
 
     public static IEnumerable<object?[]> VariableLookbehindOwnedShapes()
     {
-        // Variable-length bodies scan earliest-start-first with consumption
-        // capped at the lookbehind edge, which reproduces BCL backward order
-        // (longest span wins); those bodies stay owned on every lane.
+        // Variable-length bodies follow backward greedy/lazy choice order
+        // from the assertion edge; they stay owned on every lane.
         yield return new object?[] { "(?<=(a|ab))", "xab" };
         yield return new object?[] { "(?<=a+)b", "aaab" };
         yield return new object?[] { "(?<=a+)b", "aaac" };
