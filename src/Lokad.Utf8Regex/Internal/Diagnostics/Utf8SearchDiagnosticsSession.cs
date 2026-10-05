@@ -7,19 +7,27 @@ internal sealed class Utf8SearchDiagnosticsSession
 
     private readonly Utf8SearchDiagnosticsSession? _previous;
 
-    private Utf8SearchDiagnosticsSession(Utf8SearchDiagnosticsSession? previous)
+    private Utf8SearchDiagnosticsSession(Utf8SearchDiagnosticsSession? previous, Action<ulong>? sliceCheckpointHook)
     {
         _previous = previous;
+        SliceCheckpointHook = sliceCheckpointHook;
     }
 
-    public static Utf8SearchDiagnosticsSession Start()
+    public static Utf8SearchDiagnosticsSession Start() => Start(null);
+
+    public static Utf8SearchDiagnosticsSession Start(Action<ulong>? sliceCheckpointHook)
     {
-        var session = new Utf8SearchDiagnosticsSession(t_current);
+        var session = new Utf8SearchDiagnosticsSession(t_current, sliceCheckpointHook);
         t_current = session;
         return session;
     }
 
     public static Utf8SearchDiagnosticsSession? Current => t_current;
+
+    // Snapshot into each invocation so deterministic public-operation tests
+    // can cancel at an actual VM checkpoint. Nested sessions restore their
+    // predecessor, and ordinary calls retain a null hook.
+    internal Action<ulong>? SliceCheckpointHook { get; }
 
     public int SearchCandidates { get; private set; }
 

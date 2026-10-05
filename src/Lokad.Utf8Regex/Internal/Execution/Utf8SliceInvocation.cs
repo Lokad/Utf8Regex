@@ -12,7 +12,7 @@ internal struct Utf8SliceInvocation
     {
         Budget = new Utf8ExecutionBudget(limits, timeout, token);
         Ledger = new Utf8StorageLedger(limits.MaxWorkingBytes);
-        CheckpointHook = null;
+        CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
         AnchorOriginByte = -1;
     }
 

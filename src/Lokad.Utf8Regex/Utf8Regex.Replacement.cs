@@ -187,7 +187,7 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
+    private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken)
     {
         if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
@@ -205,7 +205,7 @@ public sealed partial class Utf8Regex
         // everything else replaces through the BCL fallback exactly.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (MatchTimeout == Regex.InfiniteMatchTimeout && _sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || _sliceProgram.HalvesClosedEmptyLoop))))
+              (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || _sliceProgram.HalvesClosedEmptyLoop))))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -213,14 +213,13 @@ public sealed partial class Utf8Regex
         }
 
         // R05: slice shapes expand templates through the owned slice replacement,
-        // mirroring the byte core. Finite timeouts keep the legacy routing so BCL
-        // timeout enforcement is preserved exactly; astral-marked programs keep it
-        // on non-serving inputs.
-        if (MatchTimeout == Regex.InfiniteMatchTimeout &&
-            _sliceProgram is not null &&
+        // mirroring the byte core. The invocation owns the deadline and caller
+        // token; the public facade converts its expired deadline to the .NET
+        // timeout exception. Non-serving inputs keep their existing routes.
+        if (_sliceProgram is not null &&
             _sliceProgram.ServesInput(input))
         {
-            return Encoding.UTF8.GetString(OwnedSliceReplace(input, _sliceProgram, replacement, CancellationToken.None));
+            return Encoding.UTF8.GetString(OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken));
         }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
@@ -276,7 +275,8 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         string replacementText,
         Span<byte> destination,
-        out int bytesWritten)
+        out int bytesWritten,
+        CancellationToken cancellationToken)
     {
         if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
@@ -305,12 +305,12 @@ public sealed partial class Utf8Regex
 
         // R05: same owned slice replacement as the string core, copied into the
         // caller destination under the same size contract as the encoder helper.
-        // Finite timeouts stay owned like the bytes core (the public wrapper maps the
-        // deadline exactly like its siblings); only the string core keeps BCL routing.
+        // Its invocation receives the caller's token and deadline just like the
+        // byte and string cores; the public wrapper converts expired deadlines.
         if (_sliceProgram is not null &&
             _sliceProgram.ServesInput(input))
         {
-            var sliced = OwnedSliceReplace(input, _sliceProgram, replacement, CancellationToken.None);
+            var sliced = OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
             if (sliced.Length > destination.Length)
             {
                 bytesWritten = 0;

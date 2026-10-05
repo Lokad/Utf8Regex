@@ -4024,14 +4024,7 @@ public sealed partial class Utf8Regex
     /// <summary>Replaces all matches and returns the result as a UTF-16 string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
     {
-        try
-        {
-            return ReplaceToStringMappedCore(input, replacement);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
+        return ReplaceToString(input, replacement, CancellationToken.None);
     }
 
     /// <summary>Replaces all matches and returns the result as a UTF-16 string, observing cancellation before matching begins.</summary>
@@ -4042,10 +4035,17 @@ public sealed partial class Utf8Regex
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToString(input, replacement);
+        try
+        {
+            return ReplaceToStringMappedCore(input, replacement, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
-    private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement)
+    private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -4054,7 +4054,7 @@ public sealed partial class Utf8Regex
         }
 
         _ = Utf8Validation.Validate(input);
-        return ReplaceToStringCore(input, analyzed);
+        return ReplaceToStringCore(input, analyzed, cancellationToken);
     }
 
     /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text.</summary>
@@ -4345,21 +4345,15 @@ public sealed partial class Utf8Regex
         Span<byte> destination,
         out int bytesWritten)
     {
-        try
-        {
-            return TryReplaceStringCore(input, replacement, destination, out bytesWritten);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
+        return TryReplace(input, replacement, destination, out bytesWritten, CancellationToken.None);
     }
 
     private OperationStatus TryReplaceStringCore(
         ReadOnlySpan<byte> input,
         string replacement,
         Span<byte> destination,
-        out int bytesWritten)
+        out int bytesWritten,
+        CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -4367,7 +4361,7 @@ public sealed partial class Utf8Regex
             return Utf8AsciiCultureInvariantReplacement.TryReplace(twin, input, analyzed, destination, out bytesWritten);
         }
 
-        return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten);
+        return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten, cancellationToken);
     }
 
     /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination.</summary>
@@ -4378,21 +4372,15 @@ public sealed partial class Utf8Regex
         Span<byte> destination,
         out int bytesWritten)
     {
-        try
-        {
-            return TryReplaceUtf8Core(input, replacementPatternUtf8, destination, out bytesWritten);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
+        return TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, CancellationToken.None);
     }
 
     private OperationStatus TryReplaceUtf8Core(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacementPatternUtf8,
         Span<byte> destination,
-        out int bytesWritten)
+        out int bytesWritten,
+        CancellationToken cancellationToken)
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
@@ -4406,14 +4394,15 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
+        if ((_sliceProgram is null || !_sliceProgram.ServesInput(input)) &&
+            TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten);
         }
 
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
-        return TryReplaceCore(input, replacementPattern, replacementText, destination, out bytesWritten);
+        return TryReplaceCore(input, replacementPattern, replacementText, destination, out bytesWritten, cancellationToken);
     }
 
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination, observing cancellation before matching begins.</summary>
@@ -4426,7 +4415,14 @@ public sealed partial class Utf8Regex
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return TryReplace(input, replacement, destination, out bytesWritten);
+        try
+        {
+            return TryReplaceStringCore(input, replacement, destination, out bytesWritten, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination, observing cancellation before matching begins.</summary>
@@ -4439,7 +4435,14 @@ public sealed partial class Utf8Regex
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return TryReplace(input, replacementPatternUtf8, destination, out bytesWritten);
+        try
+        {
+            return TryReplaceUtf8Core(input, replacementPatternUtf8, destination, out bytesWritten, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     internal Utf8IsMatchDiagnostics CollectIsMatchDiagnostics(ReadOnlySpan<byte> input)
