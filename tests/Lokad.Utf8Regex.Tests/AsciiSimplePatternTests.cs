@@ -4504,7 +4504,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> TailedLazySpaceShapingDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> TailedLazySpaceShapingOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
         [
@@ -4518,14 +4518,9 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(TailedLazySpaceShapingDeclineCases))]
-    public void TailedLazySpaceShapingKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(TailedLazySpaceShapingOwnedCases))]
+    public void TailedLazySpaceShapingServesOwned(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: the whitespace lazy-plus serves discovery owned
-        // through the ordered-literal-window lane. Detailed shapes owned from the
-        // discovery hit (groupless whole span); enumeration, splits, and
-        // replacement keep BCL routing for lack of window cursors on both lanes.
-        // Parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -4568,7 +4563,7 @@ public sealed class AsciiSimplePatternTests
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expectedPositions, actualPositions);
-        Assert.True(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
         var splitRegex = new Utf8Regex(pattern, options);
         var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
@@ -4583,23 +4578,23 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> TailedWholeLoopDeclineCases()
@@ -7743,7 +7738,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> SpaceMinBoundShapingDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SpaceMinBoundShapingOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
         [
@@ -7757,15 +7752,9 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(SpaceMinBoundShapingDeclineCases))]
-    public void SpaceMinBoundShapingKeepsBclRouting(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(SpaceMinBoundShapingOwnedCases))]
+    public void SpaceMinBoundShapingServesOwned(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: the whitespace min-bound serves discovery owned
-        // through the ordered-literal-window lane (like its lazy-plus twin in
-        // TailedLazySpaceShapingDeclineCases). Detailed shapes owned from the
-        // discovery hit (groupless whole span); enumeration, splits, and
-        // replacement keep BCL routing for lack of window cursors on both lanes.
-        // Parity holds and construction is pinned per lane.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -7808,7 +7797,7 @@ public sealed class AsciiSimplePatternTests
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expectedPositions, actualPositions);
-        Assert.True(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
         var splitRegex = new Utf8Regex(pattern, options);
         var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
@@ -7823,23 +7812,23 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> PositiveCategoryRangeAstralCases()
