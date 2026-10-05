@@ -327,34 +327,29 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TryFindQuotedAsciiRun(Utf8TreeNode node, out string? asciiSet, out int runLength)
     {
-        node = UnwrapStructuralNode(node) ?? node;
         asciiSet = null;
         runLength = 0;
-
-        if (node.Kind == Utf8TreeNodeKind.Concatenate &&
-            node.ChildCount >= 3)
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            for (var i = 0; i <= node.ChildCount - 3; i++)
+            node = UnwrapStructuralNode(node) ?? node;
+            if (node.Kind == Utf8TreeNodeKind.Concatenate && node.ChildCount >= 3)
             {
-                if (IsQuoteNode(node.Child(i)) &&
-                    TryGetExactAsciiSetLength(node.Child(i + 1), out var set, out var length) &&
-                    IsQuoteNode(node.Child(i + 2)))
+                for (var i = 0; i <= node.ChildCount - 3; i++)
                 {
-                    asciiSet = set;
-                    runLength = length;
-                    return true;
+                    if (IsQuoteNode(node.Child(i)) &&
+                        TryGetExactAsciiSetLength(node.Child(i + 1), out var set, out var length) &&
+                        IsQuoteNode(node.Child(i + 2)))
+                    {
+                        asciiSet = set;
+                        runLength = length;
+                        return true;
+                    }
                 }
             }
+            for (var i = node.ChildCount - 1; i >= 0; i--) pending.Push(node.Child(i));
         }
-
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            if (TryFindQuotedAsciiRun(node.Child(i), out asciiSet, out runLength))
-            {
-                return true;
-            }
-        }
-
         return false;
     }
 
@@ -963,46 +958,37 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static bool TryExtractAsciiWindowPhrase(Utf8TreeNode node, out string phrase)
     {
         phrase = string.Empty;
-
-        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
-        {
-            node = node.Child(0);
-        }
-
-        if (TryGetLiteralText(node, out var literal) && IsAscii(literal))
-        {
-            phrase = literal;
-            return phrase.Length > 0;
-        }
-
-        if (IsWhitespaceLoop(node))
-        {
-            phrase = " ";
-            return true;
-        }
-
-        if (node.Kind != Utf8TreeNodeKind.Concatenate)
-        {
-            return false;
-        }
-
         var builder = new StringBuilder();
-        for (var i = 0; i < node.ChildCount; i++)
+        var pending = new Stack<(Utf8TreeNode Node, int Start)>();
+        pending.Push((node, -1));
+        while (pending.TryPop(out var frame))
         {
-            var child = node.Child(i);
-            if (child.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
+            if (frame.Start >= 0)
             {
+                // Each suspended concatenation must contribute a nonempty phrase.
+                if (builder.Length == frame.Start) return false;
                 continue;
             }
-
-            if (!TryExtractAsciiWindowPhrase(child, out var childPhrase))
+            node = UnwrapStructuralNode(frame.Node) ?? frame.Node;
+            if (TryGetLiteralText(node, out var literal) && IsAscii(literal))
             {
-                return false;
+                builder.Append(literal);
+                continue;
             }
-
-            builder.Append(childPhrase);
+            if (IsWhitespaceLoop(node))
+            {
+                builder.Append(' ');
+                continue;
+            }
+            if (node.Kind != Utf8TreeNodeKind.Concatenate) return false;
+            pending.Push((node, builder.Length));
+            for (var i = node.ChildCount - 1; i >= 0; i--)
+            {
+                var child = node.Child(i);
+                if (child.Kind is not (Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary))
+                    pending.Push((child, -1));
+            }
         }
-
         phrase = builder.ToString();
         return phrase.Length > 0;
     }
@@ -1050,259 +1036,227 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TryGetFiniteAsciiWindowWidth(Utf8TreeNode node, out int maxWidth, out bool excludesNewlines)
     {
-        var unwrapped = UnwrapStructuralNode(node);
-        if (unwrapped is null)
+        var frames = new Stack<(Utf8TreeNode Node, int NextChild, int Total, bool Excludes)>();
+        while (true)
         {
-            maxWidth = 0;
-            excludesNewlines = true;
-            return true;
-        }
-
-        node = unwrapped;
-
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.Empty:
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Start:
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.End:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.Boundary:
-            case Utf8TreeNodeKind.NonBoundary:
+            var unwrapped = UnwrapStructuralNode(node);
+            bool result;
+            if (unwrapped is null)
+            {
                 maxWidth = 0;
                 excludesNewlines = true;
-                return true;
-
-            case Utf8TreeNodeKind.One:
-                maxWidth = Encoding.UTF8.GetByteCount([node.Ch]);
-                excludesNewlines = node.Ch is not ('\r' or '\n');
-                return true;
-
-            case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
-                maxWidth = Encoding.UTF8.GetByteCount(literal);
-                excludesNewlines = literal.IndexOfAny(['\r', '\n']) < 0;
-                return true;
-
-            case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set:
-                if (!TryGetAsciiSetWidthAndLineSafety(set, out var setWidth, out var setExcludesNewlines))
+                result = true;
+            }
+            else
+            {
+                node = unwrapped;
+                if ((node.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate && node.ChildCount > 0) ||
+                    (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop && node.ChildCount == 1))
                 {
-                    break;
+                    frames.Push((node, 1, 0, true));
+                    node = node.Child(0);
+                    continue;
                 }
-
-                maxWidth = setWidth;
-                excludesNewlines = setExcludesNewlines;
-                return true;
-
-            case Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic:
-                return TryGetFiniteRepeatedWidth(node.N, Encoding.UTF8.GetByteCount([node.Ch]), node.Ch is not ('\r' or '\n'), out maxWidth, out excludesNewlines);
-
-            case Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic:
-                if (node.Str is not { Length: > 0 } repeatedSet ||
-                    !TryGetAsciiSetWidthAndLineSafety(repeatedSet, out var repeatedSetWidth, out var repeatedSetExcludesNewlines))
+                result = ReadScalar(node, out maxWidth, out excludesNewlines);
+            }
+            while (frames.TryPop(out var frame))
+            {
+                if (!result)
                 {
-                    break;
+                    maxWidth = 0;
+                    excludesNewlines = false;
+                    continue;
                 }
-
-                return TryGetFiniteRepeatedWidth(
-                    node.N,
-                    repeatedSetWidth,
-                    repeatedSetExcludesNewlines,
-                    out maxWidth,
-                    out excludesNewlines);
-
-            case Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop:
-                if (node.ChildCount != 1 ||
-                    !TryGetFiniteAsciiWindowWidth(node.Child(0), out var childLoopWidth, out var childLoopExcludesNewlines))
+                if (frame.Node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop)
                 {
-                    break;
+                    result = TryGetFiniteRepeatedWidth(frame.Node.N, maxWidth, excludesNewlines, out maxWidth, out excludesNewlines);
+                    continue;
                 }
-
-                return TryGetFiniteRepeatedWidth(node.N, childLoopWidth, childLoopExcludesNewlines, out maxWidth, out excludesNewlines);
-
-            case Utf8TreeNodeKind.Concatenate:
-                {
-                    var total = 0;
-                    var allExcludeNewlines = true;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        if (!TryGetFiniteAsciiWindowWidth(node.Child(i), out var childWidth, out var childExcludes))
-                        {
-                            break;
-                        }
-
-                        total += childWidth;
-                        allExcludeNewlines &= childExcludes;
-
-                        if (i == node.ChildCount - 1)
-                        {
-                            maxWidth = total;
-                            excludesNewlines = allExcludeNewlines;
-                            return true;
-                        }
-                    }
-                }
+                maxWidth = frame.Node.Kind == Utf8TreeNodeKind.Concatenate
+                    ? frame.Total + maxWidth : Math.Max(frame.Total, maxWidth);
+                excludesNewlines &= frame.Excludes;
+                if (frame.NextChild == frame.Node.ChildCount) continue;
+                frames.Push((frame.Node, frame.NextChild + 1, maxWidth, excludesNewlines));
+                node = frame.Node.Child(frame.NextChild);
                 break;
-
-            case Utf8TreeNodeKind.Alternate:
-                {
-                    var max = 0;
-                    var allExcludeNewlines = true;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        if (!TryGetFiniteAsciiWindowWidth(node.Child(i), out var childWidth, out var childExcludes))
-                        {
-                            break;
-                        }
-
-                        max = Math.Max(max, childWidth);
-                        allExcludeNewlines &= childExcludes;
-
-                        if (i == node.ChildCount - 1)
-                        {
-                            maxWidth = max;
-                            excludesNewlines = allExcludeNewlines;
-                            return true;
-                        }
-                    }
-                }
-                break;
+            }
+            if (frames.Count == 0) return result;
         }
 
-        maxWidth = 0;
-        excludesNewlines = false;
-        return false;
+        static bool ReadScalar(Utf8TreeNode node, out int maxWidth, out bool excludesNewlines)
+        {
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Empty:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.Boundary:
+                case Utf8TreeNodeKind.NonBoundary:
+                    maxWidth = 0;
+                    excludesNewlines = true;
+                    return true;
+
+                case Utf8TreeNodeKind.One:
+                    maxWidth = Encoding.UTF8.GetByteCount([node.Ch]);
+                    excludesNewlines = node.Ch is not ('\r' or '\n');
+                    return true;
+
+                case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
+                    maxWidth = Encoding.UTF8.GetByteCount(literal);
+                    excludesNewlines = literal.IndexOfAny(['\r', '\n']) < 0;
+                    return true;
+
+                case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set:
+                    if (!TryGetAsciiSetWidthAndLineSafety(set, out var setWidth, out var setExcludesNewlines))
+                    {
+                        break;
+                    }
+
+                    maxWidth = setWidth;
+                    excludesNewlines = setExcludesNewlines;
+                    return true;
+
+                case Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic:
+                    return TryGetFiniteRepeatedWidth(node.N, Encoding.UTF8.GetByteCount([node.Ch]), node.Ch is not ('\r' or '\n'), out maxWidth, out excludesNewlines);
+
+                case Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic:
+                    if (node.Str is not { Length: > 0 } repeatedSet ||
+                        !TryGetAsciiSetWidthAndLineSafety(repeatedSet, out var repeatedSetWidth, out var repeatedSetExcludesNewlines))
+                    {
+                        break;
+                    }
+
+                    return TryGetFiniteRepeatedWidth(
+                        node.N,
+                        repeatedSetWidth,
+                        repeatedSetExcludesNewlines,
+                        out maxWidth,
+                        out excludesNewlines);
+
+            }
+
+            maxWidth = 0;
+            excludesNewlines = false;
+            return false;
+        }
     }
 
     private static bool TryGetFiniteLineBreakCount(Utf8TreeNode node, out int maxLineBreaks)
     {
-        var unwrapped = UnwrapStructuralNode(node);
-        if (unwrapped is null)
+        var frames = new Stack<(Utf8TreeNode Node, int NextChild, int Total)>();
+        while (true)
         {
-            maxLineBreaks = 0;
-            return true;
-        }
-
-        node = unwrapped;
-
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.Empty:
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Start:
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.End:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.Boundary:
-            case Utf8TreeNodeKind.NonBoundary:
+            var unwrapped = UnwrapStructuralNode(node);
+            bool result;
+            if (unwrapped is null)
+            {
                 maxLineBreaks = 0;
-                return true;
-
-            case Utf8TreeNodeKind.One:
-                maxLineBreaks = node.Ch is '\r' or '\n' ? 1 : 0;
-                return true;
-
-            case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
-                maxLineBreaks = literal.Count(static ch => ch is '\r' or '\n');
-                return true;
-
-            case Utf8TreeNodeKind.Set:
-                if (node.Str is { Length: > 0 } set &&
-                    !Utf8OwnedCharClass.CharInClass('\r', set) &&
-                    !Utf8OwnedCharClass.CharInClass('\n', set))
+                result = true;
+            }
+            else
+            {
+                node = unwrapped;
+                if ((node.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate && node.ChildCount > 0) ||
+                    (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop && node.ChildCount == 1 && node.N >= 0 && node.N != int.MaxValue))
+                {
+                    frames.Push((node, 1, 0));
+                    node = node.Child(0);
+                    continue;
+                }
+                result = ReadScalar(node, out maxLineBreaks);
+            }
+            while (frames.TryPop(out var frame))
+            {
+                if (!result)
                 {
                     maxLineBreaks = 0;
-                    return true;
+                    continue;
                 }
-
-                break;
-
-            case Utf8TreeNodeKind.Oneloop:
-            case Utf8TreeNodeKind.Onelazy:
-            case Utf8TreeNodeKind.Oneloopatomic:
-                if (node.N >= 0 && node.N != int.MaxValue)
+                if (frame.Node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop)
                 {
-                    maxLineBreaks = node.Ch is '\r' or '\n' ? node.N : 0;
-                    return true;
+                    maxLineBreaks = checked(frame.Node.N * maxLineBreaks);
+                    continue;
                 }
-
+                maxLineBreaks = frame.Node.Kind == Utf8TreeNodeKind.Concatenate
+                    ? frame.Total + maxLineBreaks : Math.Max(frame.Total, maxLineBreaks);
+                if (frame.NextChild == frame.Node.ChildCount) continue;
+                frames.Push((frame.Node, frame.NextChild + 1, maxLineBreaks));
+                node = frame.Node.Child(frame.NextChild);
                 break;
-
-            case Utf8TreeNodeKind.Setloop:
-            case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Setloopatomic:
-                if (node.N >= 0 &&
-                    node.N != int.MaxValue &&
-                    node.Str is { Length: > 0 } repeatedSet &&
-                    !Utf8OwnedCharClass.CharInClass('\r', repeatedSet) &&
-                    !Utf8OwnedCharClass.CharInClass('\n', repeatedSet))
-                {
-                    maxLineBreaks = 0;
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Loop:
-            case Utf8TreeNodeKind.Lazyloop:
-                if (node.ChildCount == 1 &&
-                    node.N >= 0 &&
-                    node.N != int.MaxValue &&
-                    TryGetFiniteLineBreakCount(node.Child(0), out var loopChildBreaks))
-                {
-                    maxLineBreaks = checked(node.N * loopChildBreaks);
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Concatenate:
-                {
-                    var total = 0;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        if (!TryGetFiniteLineBreakCount(node.Child(i), out var childBreaks))
-                        {
-                            break;
-                        }
-
-                        total += childBreaks;
-                        if (i == node.ChildCount - 1)
-                        {
-                            maxLineBreaks = total;
-                            return true;
-                        }
-                    }
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Alternate:
-                {
-                    var max = 0;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        if (!TryGetFiniteLineBreakCount(node.Child(i), out var branchChildBreaks))
-                        {
-                            break;
-                        }
-
-                        max = Math.Max(max, branchChildBreaks);
-                        if (i == node.ChildCount - 1)
-                        {
-                            maxLineBreaks = max;
-                            return true;
-                        }
-                    }
-                }
-
-                break;
+            }
+            if (frames.Count == 0) return result;
         }
 
-        maxLineBreaks = 0;
-        return false;
+        static bool ReadScalar(Utf8TreeNode node, out int maxLineBreaks)
+        {
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Empty:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.Boundary:
+                case Utf8TreeNodeKind.NonBoundary:
+                    maxLineBreaks = 0;
+                    return true;
+
+                case Utf8TreeNodeKind.One:
+                    maxLineBreaks = node.Ch is '\r' or '\n' ? 1 : 0;
+                    return true;
+
+                case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
+                    maxLineBreaks = literal.Count(static ch => ch is '\r' or '\n');
+                    return true;
+
+                case Utf8TreeNodeKind.Set:
+                    if (node.Str is { Length: > 0 } set &&
+                        !Utf8OwnedCharClass.CharInClass('\r', set) &&
+                        !Utf8OwnedCharClass.CharInClass('\n', set))
+                    {
+                        maxLineBreaks = 0;
+                        return true;
+                    }
+
+                    break;
+
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
+                    if (node.N >= 0 && node.N != int.MaxValue)
+                    {
+                        maxLineBreaks = node.Ch is '\r' or '\n' ? node.N : 0;
+                        return true;
+                    }
+
+                    break;
+
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Setloopatomic:
+                    if (node.N >= 0 &&
+                        node.N != int.MaxValue &&
+                        node.Str is { Length: > 0 } repeatedSet &&
+                        !Utf8OwnedCharClass.CharInClass('\r', repeatedSet) &&
+                        !Utf8OwnedCharClass.CharInClass('\n', repeatedSet))
+                    {
+                        maxLineBreaks = 0;
+                        return true;
+                    }
+
+                    break;
+
+            }
+
+            maxLineBreaks = 0;
+            return false;
+        }
     }
 
     private static bool TryGetFiniteRepeatedWidth(int maxRepetitions, int unitWidth, bool excludesNewline, out int maxWidth, out bool excludesNewlines)
@@ -1375,41 +1329,21 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TryExtractTrailingLiteral(Utf8TreeNode node, out string literal)
     {
-        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            node = node.Child(0);
-        }
-
-        if (TryGetLiteralText(node, out literal))
-        {
-            return true;
-        }
-
-        if (node.Kind != Utf8TreeNodeKind.Concatenate)
-        {
-            literal = string.Empty;
-            return false;
-        }
-
-        for (var i = node.ChildCount - 1; i >= 0; i--)
-        {
-            var child = node.Child(i);
-            if (TryGetLiteralText(child, out literal))
+            node = UnwrapStructuralNode(node) ?? node;
+            if (TryGetLiteralText(node, out literal)) return true;
+            if (node.Kind != Utf8TreeNodeKind.Concatenate) continue;
+            // Push forward so the rightmost subtree is searched first.
+            for (var i = 0; i < node.ChildCount; i++)
             {
-                return true;
-            }
-
-            if (child.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
-            {
-                continue;
-            }
-
-            if (TryExtractTrailingLiteral(child, out literal))
-            {
-                return true;
+                var child = node.Child(i);
+                if (child.Kind is not (Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary))
+                    pending.Push(child);
             }
         }
-
         literal = string.Empty;
         return false;
     }
@@ -1716,58 +1650,71 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TryAppendDeterministicPrefixSets(Utf8TreeNode node, List<Utf8FixedDistanceSet> fixedDistanceSets, ref int offset)
     {
-        var unwrapped = UnwrapStructuralNode(node);
-        if (unwrapped is null)
+        var frames = new Stack<(Utf8TreeNode Node, int NextChild)>();
+        while (true)
         {
-            return false;
+            node = UnwrapStructuralNode(node) ?? node;
+            if (node.Kind == Utf8TreeNodeKind.Concatenate && node.ChildCount > 0)
+            {
+                frames.Push((node, 1));
+                node = node.Child(0);
+                continue;
+            }
+            var result = ReadScalar(node, fixedDistanceSets, ref offset);
+            while (frames.TryPop(out var frame))
+            {
+                if (!result)
+                {
+                    result = fixedDistanceSets.Count > 0;
+                    continue;
+                }
+                if (frame.NextChild == frame.Node.ChildCount) continue;
+                frames.Push((frame.Node, frame.NextChild + 1));
+                node = frame.Node.Child(frame.NextChild);
+                break;
+            }
+            if (frames.Count == 0) return result;
         }
 
-        node = unwrapped;
-
-        switch (node.Kind)
+        static bool ReadScalar(Utf8TreeNode node, List<Utf8FixedDistanceSet> fixedDistanceSets, ref int offset)
         {
-            case Utf8TreeNodeKind.Empty:
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Start:
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.End:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.Boundary:
-            case Utf8TreeNodeKind.NonBoundary:
-                return true;
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Empty:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.Boundary:
+                case Utf8TreeNodeKind.NonBoundary:
+                    return true;
 
-            case Utf8TreeNodeKind.One when node.Ch <= 0x7F:
-                return TryAddDeterministicPrefixSet(fixedDistanceSets, Utf8FixedDistanceSet.FromBytes(offset++, [(byte)node.Ch], negated: false));
+                case Utf8TreeNodeKind.One when node.Ch <= 0x7F:
+                    return TryAddDeterministicPrefixSet(fixedDistanceSets, Utf8FixedDistanceSet.FromBytes(offset++, [(byte)node.Ch], negated: false));
 
-            case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
-                foreach (var ch in literal)
-                {
-                    if (ch > 0x7F || !TryAddDeterministicPrefixSet(fixedDistanceSets, Utf8FixedDistanceSet.FromBytes(offset++, [(byte)ch], negated: false)))
+                case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
+                    foreach (var ch in literal)
                     {
-                        return false;
+                        if (ch > 0x7F || !TryAddDeterministicPrefixSet(fixedDistanceSets, Utf8FixedDistanceSet.FromBytes(offset++, [(byte)ch], negated: false)))
+                        {
+                            return false;
+                        }
                     }
-                }
 
-                return true;
+                    return true;
 
-            case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set && Utf8OwnedCharClass.IsAscii(set):
-                return TryCreateAsciiSet(set, offset++, out var fixedDistanceSet) &&
-                    TryAddDeterministicPrefixSet(fixedDistanceSets, fixedDistanceSet);
+                case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set && Utf8OwnedCharClass.IsAscii(set):
+                    return TryCreateAsciiSet(set, offset++, out var fixedDistanceSet) &&
+                        TryAddDeterministicPrefixSet(fixedDistanceSets, fixedDistanceSet);
 
-            case Utf8TreeNodeKind.Concatenate:
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!TryAppendDeterministicPrefixSets(node.Child(i), fixedDistanceSets, ref offset))
-                    {
-                        return fixedDistanceSets.Count > 0;
-                    }
-                }
+                case Utf8TreeNodeKind.Concatenate:
+                    return true;
 
-                return true;
-
-            default:
-                return false;
+                default:
+                    return false;
+            }
         }
     }
 

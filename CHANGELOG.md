@@ -4,6 +4,13 @@
 
 ### Owned UTF-16 execution
 
+- Search analysis and deterministic prefilter preparation now traverse with
+  explicit frames, including required-literal collection, quoted runs, finite
+  windows, prefix guards, literal families and byte masks. Nested prefixes
+  retain their local stopping rules, branch order and existing width/line
+  overflow behavior. The pattern-depth boundary remains while VM and specialized
+  projection consumers are still recursive.
+
 - Owned find facts now compute lengths, anchors, prefixes, and fixed-distance
   literals and sets with explicit traversal frames. Nested sequences retain
   their product order, stopped-branch behavior and saturating length formulas.

@@ -72,61 +72,62 @@ internal static class Utf8OwnedRequiredLiterals
 
         static void CollectInto(Utf8TreeNode node, FamilyCollector collector, bool branch)
         {
-            switch (node.Kind)
+            var pending = new Stack<Utf8TreeNode>();
+            pending.Push(node);
+            while (pending.TryPop(out node))
             {
-                case Utf8TreeNodeKind.One:
-                    collector.Families.Add(new string[] { node.Ch.ToString() });
-                    return;
-                case Utf8TreeNodeKind.Multi:
-                    if (!string.IsNullOrEmpty(node.Str))
-                    {
-                        collector.Families.Add(new string[] { node.Str });
-                    }
+                switch (node.Kind)
+                {
+                    case Utf8TreeNodeKind.One:
+                        collector.Families.Add(new string[] { node.Ch.ToString() });
+                        break;
+                    case Utf8TreeNodeKind.Multi:
+                        if (!string.IsNullOrEmpty(node.Str))
+                        {
+                            collector.Families.Add(new string[] { node.Str });
+                        }
 
-                    return;
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                case Utf8TreeNodeKind.Concatenate:
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        CollectInto(node.Child(i), collector, branch);
-                    }
+                        break;
+                    case Utf8TreeNodeKind.Capture:
+                    case Utf8TreeNodeKind.Group:
+                    case Utf8TreeNodeKind.Atomic:
+                    case Utf8TreeNodeKind.Concatenate:
+                        for (var i = node.ChildCount - 1; i >= 0; i--) pending.Push(node.Child(i));
+                        break;
+                    case Utf8TreeNodeKind.Alternate:
+                        var union = UnionCleanBranches(node);
+                        if (union is not null)
+                        {
+                            collector.Families.Add(union.ToArray());
+                        }
 
-                    return;
-                case Utf8TreeNodeKind.Alternate:
-                    var union = UnionCleanBranches(node);
-                    if (union is not null)
-                    {
-                        collector.Families.Add(union.ToArray());
-                    }
+                        break;
+                    case Utf8TreeNodeKind.Loop:
+                    case Utf8TreeNodeKind.Lazyloop:
+                        if (node.M > 0 && node.ChildCount == 1)
+                        {
+                            pending.Push(node.Child(0));
+                        }
 
-                    return;
-                case Utf8TreeNodeKind.Loop:
-                case Utf8TreeNodeKind.Lazyloop:
-                    if (node.M > 0 && node.ChildCount == 1)
-                    {
-                        CollectInto(node.Child(0), collector, branch);
-                    }
+                        break;
+                    case Utf8TreeNodeKind.Oneloop:
+                    case Utf8TreeNodeKind.Onelazy:
+                    case Utf8TreeNodeKind.Oneloopatomic:
+                    case Utf8TreeNodeKind.Notoneloop:
+                    case Utf8TreeNodeKind.Notonelazy:
+                    case Utf8TreeNodeKind.Notoneloopatomic:
+                    case Utf8TreeNodeKind.Setloop:
+                    case Utf8TreeNodeKind.Setlazy:
+                    case Utf8TreeNodeKind.Setloopatomic:
+                        if (!branch && node.N > 1 && (node.N != int.MaxValue || node.M > 1))
+                        {
+                            collector.Families.Clear();
+                        }
 
-                    return;
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Notoneloopatomic:
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Setloopatomic:
-                    if (!branch && node.N > 1 && (node.N != int.MaxValue || node.M > 1))
-                    {
-                        collector.Families.Clear();
-                    }
-
-                    return;
-                default:
-                    return;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
@@ -201,16 +202,17 @@ internal static class Utf8OwnedRequiredLiterals
         }
         static string? BranchText(Utf8TreeNode node)
         {
+            while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic)
+            {
+                if (node.ChildCount != 1) return null;
+                node = node.Child(0);
+            }
             switch (node.Kind)
             {
                 case Utf8TreeNodeKind.One:
                     return node.Ch.ToString();
                 case Utf8TreeNodeKind.Multi:
                     return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                    return node.ChildCount == 1 ? BranchText(node.Child(0)) : null;
                 default:
                     return null;
             }

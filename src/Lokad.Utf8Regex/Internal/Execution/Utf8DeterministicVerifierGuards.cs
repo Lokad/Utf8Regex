@@ -198,48 +198,65 @@ internal readonly struct Utf8DeterministicVerifierGuards
 
     private static bool TryAppendPrefixGuards(Utf8ExecutionNode node, List<Utf8DeterministicByteGuard> guards, ref int offset)
     {
-        switch (node.Kind)
+        var frames = new Stack<(Utf8ExecutionNode Node, int NextChild)>();
+        while (true)
         {
-            case Utf8ExecutionNodeKind.Empty:
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-                return true;
-
-            case Utf8ExecutionNodeKind.Capture:
-            case Utf8ExecutionNodeKind.Group:
-                return node.Children.Count == 1 && TryAppendPrefixGuards(node.Children[0], guards, ref offset);
-
-            case Utf8ExecutionNodeKind.Concatenate:
-                foreach (var child in node.Children)
+            node = Utf8DeterministicAnchorSearch.Unwrap(node);
+            if (node.Kind == Utf8ExecutionNodeKind.Concatenate && node.Children.Count > 0)
+            {
+                frames.Push((node, 1));
+                node = node.Children[0];
+                continue;
+            }
+            var result = ReadScalar(node, guards, ref offset);
+            while (frames.TryPop(out var frame))
+            {
+                if (!result)
                 {
-                    if (!TryAppendPrefixGuards(child, guards, ref offset))
-                    {
-                        return guards.Count > 0;
-                    }
+                    result = guards.Count > 0;
+                    continue;
                 }
+                if (frame.NextChild == frame.Node.Children.Count) continue;
+                frames.Push((frame.Node, frame.NextChild + 1));
+                node = frame.Node.Children[frame.NextChild];
+                break;
+            }
+            if (frames.Count == 0) return result;
+        }
 
-                return true;
+        static bool ReadScalar(Utf8ExecutionNode node, List<Utf8DeterministicByteGuard> guards, ref int offset)
+        {
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.Empty:
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Start:
+                    return true;
 
-            case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
-                return TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, literal: (byte)node.Ch));
+                case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
+                    return TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, literal: (byte)node.Ch));
 
-            case Utf8ExecutionNodeKind.Multi when node.Text is { Length: > 0 } text:
-                foreach (var ch in text)
-                {
-                    if (ch > 0x7F || !TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, literal: (byte)ch)))
+                case Utf8ExecutionNodeKind.Multi when node.Text is { Length: > 0 } text:
+                    foreach (var ch in text)
                     {
-                        return false;
+                        if (ch > 0x7F || !TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, literal: (byte)ch)))
+                        {
+                            return false;
+                        }
                     }
-                }
 
-                return true;
+                    return true;
 
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
-                return TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, set));
+                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
+                    return TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, set));
 
-            default:
-                return false;
+                case Utf8ExecutionNodeKind.Concatenate:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
     }
 
@@ -257,22 +274,16 @@ internal readonly struct Utf8DeterministicVerifierGuards
 
     private static bool IsAsciiWhitespaceLoop(Utf8ExecutionNode? node)
     {
-        if (node is null)
+        while (node is not null)
         {
-            return false;
-        }
-
-        if (node.Kind is Utf8ExecutionNodeKind.Set or Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
-        {
-            if (node.Text == Internal.FrontEnd.Utf8OwnedCharClass.SpaceClass || node.Text == Internal.FrontEnd.Utf8OwnedCharClass.ECMASpaceClass)
-            {
+            if (node.Kind is Utf8ExecutionNodeKind.Set or Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop &&
+                (node.Text == Internal.FrontEnd.Utf8OwnedCharClass.SpaceClass || node.Text == Internal.FrontEnd.Utf8OwnedCharClass.ECMASpaceClass))
                 return true;
-            }
+            if (node.Kind is not (Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop) || node.Children.Count != 1)
+                return false;
+            node = UnwrapStructuralNode(node.Children[0]);
         }
-
-        return node.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop &&
-            node.Children.Count == 1 &&
-            IsAsciiWhitespaceLoop(UnwrapStructuralNode(node.Children[0]));
+        return false;
     }
 
     private static bool IsAsciiWhitespace(byte value)

@@ -87,62 +87,64 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
     private static void AppendDeterministicLeadingAscii(Utf8ExecutionNode node, StringBuilder prefix)
     {
-        switch (node.Kind)
+        var frames = new Stack<(Utf8ExecutionNode Node, int NextChild, int Before)>();
+        while (true)
         {
-            case Utf8ExecutionNodeKind.Capture:
-            case Utf8ExecutionNodeKind.Group:
-                if (node.Children.Count == 1)
-                {
-                    AppendDeterministicLeadingAscii(node.Children[0], prefix);
-                }
+            node = Unwrap(node);
+            if (node.Kind == Utf8ExecutionNodeKind.Concatenate && node.Children.Count > 0)
+            {
+                frames.Push((node, 1, prefix.Length));
+                node = node.Children[0];
+                continue;
+            }
+            AppendScalar(node, prefix);
+            while (frames.TryPop(out var frame))
+            {
+                if (prefix.Length == frame.Before || frame.NextChild == frame.Node.Children.Count) continue;
+                frames.Push((frame.Node, frame.NextChild + 1, prefix.Length));
+                node = frame.Node.Children[frame.NextChild];
+                break;
+            }
+            if (frames.Count == 0) return;
+        }
 
-                return;
+        static void AppendScalar(Utf8ExecutionNode node, StringBuilder prefix)
+        {
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.Empty:
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Start:
+                    return;
 
-            case Utf8ExecutionNodeKind.Concatenate:
-                foreach (var child in node.Children)
-                {
-                    var before = prefix.Length;
-                    AppendDeterministicLeadingAscii(child, prefix);
-                    if (prefix.Length == before)
+                case Utf8ExecutionNodeKind.One:
+                    if (node.Ch <= 0x7F)
                     {
-                        return;
+                        prefix.Append(node.Ch);
                     }
-                }
 
-                return;
+                    return;
 
-            case Utf8ExecutionNodeKind.Empty:
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-                return;
-
-            case Utf8ExecutionNodeKind.One:
-                if (node.Ch <= 0x7F)
-                {
-                    prefix.Append(node.Ch);
-                }
-
-                return;
-
-            case Utf8ExecutionNodeKind.Multi:
-                if (node.Text is not null)
-                {
-                    foreach (var ch in node.Text)
+                case Utf8ExecutionNodeKind.Multi:
+                    if (node.Text is not null)
                     {
-                        if (ch > 0x7F)
+                        foreach (var ch in node.Text)
                         {
-                            return;
+                            if (ch > 0x7F)
+                            {
+                                return;
+                            }
                         }
+
+                        prefix.Append(node.Text);
                     }
 
-                    prefix.Append(node.Text);
-                }
+                    return;
 
-                return;
-
-            default:
-                return;
+                default:
+                    return;
+            }
         }
     }
 
@@ -193,89 +195,101 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
     private static bool TryGetLeadingAsciiByteMask(Utf8ExecutionNode node, out ulong lowMask, out ulong highMask)
     {
-        lowMask = 0;
-        highMask = 0;
-
-        switch (node.Kind)
+        var frames = new Stack<(Utf8ExecutionNode Node, int NextChild, ulong Low, ulong High)>();
+        while (true)
         {
-            case Utf8ExecutionNodeKind.Empty:
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-                return false;
-
-            case Utf8ExecutionNodeKind.Capture:
-            case Utf8ExecutionNodeKind.Group:
-                return node.Children.Count == 1 &&
-                    TryGetLeadingAsciiByteMask(Unwrap(node.Children[0]), out lowMask, out highMask);
-
-            case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
-                AddByteToMask((byte)node.Ch, ref lowMask, ref highMask);
-                return true;
-
-            case Utf8ExecutionNodeKind.Multi when TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
-                AddByteToMask(text[0], ref lowMask, ref highMask);
-                return true;
-
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
-                return TryBuildAsciiSetMask(set, out lowMask, out highMask);
-
-            case Utf8ExecutionNodeKind.Concatenate:
-                foreach (var child in node.Children)
+            node = Unwrap(node);
+            if (node.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop && node.Children.Count == 1)
+            {
+                node = node.Children[0];
+                continue;
+            }
+            if (node.Kind == Utf8ExecutionNodeKind.Concatenate)
+            {
+                var first = node.Children.Select(Unwrap).FirstOrDefault(static child => !IsZeroWidthNode(child));
+                if (first is not null)
                 {
-                    var unwrapped = Unwrap(child);
-                    if (IsZeroWidthNode(unwrapped))
-                    {
-                        continue;
-                    }
-
-                    return TryGetLeadingAsciiByteMask(unwrapped, out lowMask, out highMask);
+                    node = first;
+                    continue;
                 }
-
-                return false;
-
-            case Utf8ExecutionNodeKind.Alternate:
-                foreach (var child in node.Children)
+            }
+            if (node.Kind == Utf8ExecutionNodeKind.Alternate && node.Children.Count > 0)
+            {
+                frames.Push((node, 1, 0, 0));
+                node = node.Children[0];
+                continue;
+            }
+            var result = ReadScalar(node, out lowMask, out highMask);
+            while (frames.TryPop(out var frame))
+            {
+                if (!result)
                 {
-                    if (!TryGetLeadingAsciiByteMask(Unwrap(child), out var childLowMask, out var childHighMask))
-                    {
-                        return false;
-                    }
-
-                    lowMask |= childLowMask;
-                    highMask |= childHighMask;
+                    // A failed union keeps only its previously completed masks.
+                    lowMask = frame.Low;
+                    highMask = frame.High;
+                    continue;
                 }
-
-                return (lowMask | highMask) != 0;
-
-            case Utf8ExecutionNodeKind.Loop:
-            case Utf8ExecutionNodeKind.LazyLoop:
-                if (node.Children.Count == 1)
+                lowMask |= frame.Low;
+                highMask |= frame.High;
+                if (frame.NextChild == frame.Node.Children.Count)
                 {
-                    return TryGetLeadingAsciiByteMask(Unwrap(node.Children[0]), out lowMask, out highMask);
+                    result = (lowMask | highMask) != 0;
+                    continue;
                 }
+                frames.Push((frame.Node, frame.NextChild + 1, lowMask, highMask));
+                node = frame.Node.Children[frame.NextChild];
+                break;
+            }
+            if (frames.Count == 0) return result;
+        }
 
-                if (node.Ch is > (char)0 and <= (char)0x7F)
-                {
+        static bool ReadScalar(Utf8ExecutionNode node, out ulong lowMask, out ulong highMask)
+        {
+            lowMask = 0;
+            highMask = 0;
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.Empty:
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Start:
+                    return false;
+
+                case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
                     AddByteToMask((byte)node.Ch, ref lowMask, ref highMask);
                     return true;
-                }
 
-                if (node.Text is { Length: > 0 } loopSet && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(loopSet))
-                {
-                    return TryBuildAsciiSetMask(loopSet, out lowMask, out highMask);
-                }
-
-                if (TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
-                {
-                    AddByteToMask(loopText[0], ref lowMask, ref highMask);
+                case Utf8ExecutionNodeKind.Multi when TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
+                    AddByteToMask(text[0], ref lowMask, ref highMask);
                     return true;
-                }
 
-                return false;
+                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
+                    return TryBuildAsciiSetMask(set, out lowMask, out highMask);
 
-            default:
-                return false;
+                case Utf8ExecutionNodeKind.Loop:
+                case Utf8ExecutionNodeKind.LazyLoop:
+                    if (node.Ch is > (char)0 and <= (char)0x7F)
+                    {
+                        AddByteToMask((byte)node.Ch, ref lowMask, ref highMask);
+                        return true;
+                    }
+
+                    if (node.Text is { Length: > 0 } loopSet && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(loopSet))
+                    {
+                        return TryBuildAsciiSetMask(loopSet, out lowMask, out highMask);
+                    }
+
+                    if (TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
+                    {
+                        AddByteToMask(loopText[0], ref lowMask, ref highMask);
+                        return true;
+                    }
+
+                    return false;
+
+                default:
+                    return false;
+            }
         }
     }
 
@@ -323,59 +337,56 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
     private static bool IsByteSafeNode(Utf8ExecutionNode node)
     {
-        switch (node.Kind)
+        var pending = new Stack<Utf8ExecutionNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            case Utf8ExecutionNodeKind.Empty:
-            case Utf8ExecutionNodeKind.Capture:
-            case Utf8ExecutionNodeKind.Group:
-            case Utf8ExecutionNodeKind.Concatenate:
-            case Utf8ExecutionNodeKind.Alternate:
-            case Utf8ExecutionNodeKind.Loop:
-            case Utf8ExecutionNodeKind.LazyLoop:
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-            case Utf8ExecutionNodeKind.Eol:
-            case Utf8ExecutionNodeKind.EndZ:
-            case Utf8ExecutionNodeKind.End:
-                break;
-
-            case Utf8ExecutionNodeKind.One:
-                if (node.Ch > 0x7F)
-                {
-                    return false;
-                }
-
-                break;
-
-            case Utf8ExecutionNodeKind.Multi:
-                if (node.Text is null || node.Text.Any(static ch => ch > 0x7F))
-                {
-                    return false;
-                }
-
-                break;
-
-            case Utf8ExecutionNodeKind.Set:
-                if (node.Text is null || !Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(node.Text))
-                {
-                    return false;
-                }
-
-                break;
-
-            default:
-                return false;
-        }
-
-        foreach (var child in node.Children)
-        {
-            if (!IsByteSafeNode(child))
+            switch (node.Kind)
             {
-                return false;
-            }
-        }
+                case Utf8ExecutionNodeKind.Empty:
+                case Utf8ExecutionNodeKind.Capture:
+                case Utf8ExecutionNodeKind.Group:
+                case Utf8ExecutionNodeKind.Concatenate:
+                case Utf8ExecutionNodeKind.Alternate:
+                case Utf8ExecutionNodeKind.Loop:
+                case Utf8ExecutionNodeKind.LazyLoop:
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Start:
+                case Utf8ExecutionNodeKind.Eol:
+                case Utf8ExecutionNodeKind.EndZ:
+                case Utf8ExecutionNodeKind.End:
+                    break;
 
+                case Utf8ExecutionNodeKind.One:
+                    if (node.Ch > 0x7F)
+                    {
+                        return false;
+                    }
+
+                    break;
+
+                case Utf8ExecutionNodeKind.Multi:
+                    if (node.Text is null || node.Text.Any(static ch => ch > 0x7F))
+                    {
+                        return false;
+                    }
+
+                    break;
+
+                case Utf8ExecutionNodeKind.Set:
+                    if (node.Text is null || !Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(node.Text))
+                    {
+                        return false;
+                    }
+
+                    break;
+
+                default:
+                    return false;
+            }
+            for (var i = node.Children.Count - 1; i >= 0; i--) pending.Push(node.Children[i]);
+        }
         return true;
     }
 
@@ -412,88 +423,72 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
     private static List<string>? TryExtractLeadingAsciiLiteralsCore(Utf8ExecutionNode node)
     {
-        switch (node.Kind)
+        var frames = new Stack<(Utf8ExecutionNode Node, int NextChild, List<string>? Families)>();
+        while (true)
         {
-            case Utf8ExecutionNodeKind.Empty:
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-                return [string.Empty];
-
-            case Utf8ExecutionNodeKind.Capture:
-            case Utf8ExecutionNodeKind.Group:
-                return node.Children.Count == 1 ? TryExtractLeadingAsciiLiteralsCore(node.Children[0]) : null;
-
-            case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
-                return [node.Ch.ToString()];
-
-            case Utf8ExecutionNodeKind.Multi when node.Text is { Length: > 0 } text && text.All(static ch => ch <= 0x7F):
-                return [text];
-
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set:
-                return TryExtractSetChoices(set);
-
-            case Utf8ExecutionNodeKind.Concatenate:
-                return TryExtractConcatenatedLeadingLiterals(node.Children);
-
-            case Utf8ExecutionNodeKind.Alternate:
-                return TryExtractAlternatedLeadingLiterals(node.Children);
-
-            default:
-                return null;
-        }
-    }
-
-    private static List<string>? TryExtractConcatenatedLeadingLiterals(IReadOnlyList<Utf8ExecutionNode> children)
-    {
-        List<string>? prefixes = null;
-        foreach (var child in children)
-        {
-            var childLiterals = TryExtractLeadingAsciiLiteralsCore(child);
-            if (childLiterals is not { Count: > 0 })
+            node = Unwrap(node);
+            if (node.Kind is Utf8ExecutionNodeKind.Concatenate or Utf8ExecutionNodeKind.Alternate && node.Children.Count > 0)
             {
-                return prefixes is { Count: > 0 } ? prefixes : null;
+                frames.Push((node, 1, null));
+                node = node.Children[0];
+                continue;
             }
-
-            prefixes = prefixes is null
-                ? childLiterals
-                : CombineLeadingLiteralFamilies(prefixes, childLiterals);
-
-            if (prefixes is null)
+            var result = ReadScalar(node);
+            while (frames.TryPop(out var frame))
             {
-                return null;
-            }
-        }
-
-        return prefixes;
-    }
-
-    private static List<string>? TryExtractAlternatedLeadingLiterals(IReadOnlyList<Utf8ExecutionNode> children)
-    {
-        List<string>? combined = null;
-        foreach (var child in children)
-        {
-            var childLiterals = TryExtractLeadingAsciiLiteralsCore(child);
-            if (childLiterals is not { Count: > 0 })
-            {
-                return null;
-            }
-
-            combined ??= [];
-            foreach (var literal in childLiterals)
-            {
-                if (!combined.Contains(literal, StringComparer.Ordinal))
+                var union = frame.Node.Kind == Utf8ExecutionNodeKind.Alternate;
+                if (result is not { Count: > 0 })
                 {
-                    combined.Add(literal);
-                    if (combined.Count > MaxDeterministicAnchorBranches)
+                    result = union ? null : frame.Families is { Count: > 0 } ? frame.Families : null;
+                    continue;
+                }
+                List<string>? families;
+                if (union)
+                {
+                    families = frame.Families ?? [];
+                    foreach (var literal in result)
                     {
-                        return null;
+                        if (families.Contains(literal, StringComparer.Ordinal)) continue;
+                        families.Add(literal);
+                        if (families.Count <= MaxDeterministicAnchorBranches) continue;
+                        families = null;
+                        break;
                     }
                 }
+                else
+                    families = frame.Families is null ? result : CombineLeadingLiteralFamilies(frame.Families, result);
+                result = families;
+                if (families is null || frame.NextChild == frame.Node.Children.Count) continue;
+                frames.Push((frame.Node, frame.NextChild + 1, families));
+                node = frame.Node.Children[frame.NextChild];
+                break;
             }
+            if (frames.Count == 0) return result;
         }
 
-        return combined;
+        static List<string>? ReadScalar(Utf8ExecutionNode node)
+        {
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.Empty:
+                case Utf8ExecutionNodeKind.Bol:
+                case Utf8ExecutionNodeKind.Beginning:
+                case Utf8ExecutionNodeKind.Start:
+                    return [string.Empty];
+
+                case Utf8ExecutionNodeKind.One when node.Ch <= 0x7F:
+                    return [node.Ch.ToString()];
+
+                case Utf8ExecutionNodeKind.Multi when node.Text is { Length: > 0 } text && text.All(static ch => ch <= 0x7F):
+                    return [text];
+
+                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set:
+                    return TryExtractSetChoices(set);
+
+                default:
+                    return null;
+            }
+        }
     }
 
     private static List<string>? CombineLeadingLiteralFamilies(List<string> left, List<string> right)
