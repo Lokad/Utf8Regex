@@ -216,7 +216,6 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData(RegexOptions.ECMAScript)]
     [InlineData(RegexOptions.NonBacktracking)]
     public void SensitiveOptionsDecline(RegexOptions options)
     {
@@ -227,9 +226,9 @@ public sealed class Utf8SliceParserTests
     [InlineData("\\p{L}+")]
     [InlineData("[\\p{L}a]+")]
     [InlineData("(?<=\\p{L})x")]
-    public void SensitiveCategoryOptionsDecline(string pattern)
+    public void CategoryOptionsRespectOwnedEngineCapabilities(string pattern)
     {
-        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.ECMAScript));
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.ECMAScript));
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking));
     }
 
