@@ -4,6 +4,14 @@
 
 ### Owned UTF-16 execution
 
+- POSIX-looking classes now execute with .NET's literal-member semantics in
+  the owned VM, including literal closing brackets, captures, subtraction and
+  reverse execution. PCRE2 keeps its own profile programs instead of receiving
+  the .NET literal-member interpretation.
+  Native shapes without complete detailed capture projection now use their
+  cached owned VM. UTF-16 evaluator replacements also use that program,
+  retaining capture histories and right-to-left callback order.
+
 - Lookbehind bodies now execute backward from their exact assertion edge,
   while lookahead bodies execute forward, including nested assertions in both
   ordinary and right-to-left patterns. Assertions share capture openings,

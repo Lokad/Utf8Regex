@@ -863,6 +863,9 @@ internal static class Pcre2CompiledProgramOverlay
             // PCRE2 executes fixed lookbehind forward. Preserve its owned
             // profile program for dependencies whose .NET backward order differs.
             sliceProgram.HasOrderSensitiveLookbehind ||
+            // PCRE2 POSIX classes differ from .NET's literal bracket members.
+            // Collating/equivalence spellings also retain their profile programs.
+            sliceProgram.UsesLiteralClassBracketSyntax ||
             sliceProgram.HasMixedNamedGroups ||
             // .NET aliases duplicate names; PCRE2 keeps distinct physical slots.
             sliceProgram.HasSharedCaptureDeclarations ||

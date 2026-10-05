@@ -1899,6 +1899,13 @@ public sealed partial class Utf8Regex
             return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, grouplessFirst.IndexInUtf16, grouplessFirst.LengthInUtf16);
         }
 
+        // Native discovery may lack a complete capture-history projection.
+        // Keep its qualified shapers above; the cached unit program owns the
+        // remaining admitted detailed result instead of constructing BCL.
+        if (_unitSliceProgram is not null && !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+            return OwnedSliceMatchDetailed(input, _unitSliceProgram, cancellationToken);
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
@@ -3684,7 +3691,7 @@ public sealed partial class Utf8Regex
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
         if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
-            (GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } ownedProgram)
+            (_sliceProgram ?? _unitSliceProgram) is { } ownedProgram)
         {
             try
             {

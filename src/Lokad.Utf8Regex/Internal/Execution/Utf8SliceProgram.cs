@@ -208,7 +208,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -235,6 +235,7 @@ internal sealed class Utf8SliceProgram
         CanMatchEmpty = canMatchEmpty;
         HalvesClosedEmptyLoop = halvesClosedEmptyLoop;
         UsesInterpretedLazyLoopSemantics = usesInterpretedLazyLoopSemantics;
+        UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
         UsesCaptureOpeningJournal = HasSharedCaptureDeclarations;
         foreach (var instruction in instructions)
         {
@@ -253,6 +254,7 @@ internal sealed class Utf8SliceProgram
             HasSurrogateLiteral |= assertion.Body.HasSurrogateLiteral;
             HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
             HasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
+            UsesLiteralClassBracketSyntax |= assertion.Body.UsesLiteralClassBracketSyntax;
             if (assertion.IsLookbehind)
                 foreach (var instruction in assertion.Body.Instructions)
                     HasOrderSensitiveLookbehind |= instruction.Kind is Utf8SliceInstructionKind.Backref
@@ -274,8 +276,12 @@ internal sealed class Utf8SliceProgram
     internal int GroupCount { get; }
     internal Utf8SliceAssertion[] Assertions { get; }
     internal bool HasNonFixedLookbehind { get; }
-    // Profiles that execute fixed lookbehind forward cannot reuse these bodies.
+    // PCRE2-INTEGRATION-POINT: profiles that execute fixed lookbehind forward
+    // cannot reuse these bodies.
     internal bool HasOrderSensitiveLookbehind { get; }
+    // PCRE2-INTEGRATION-POINT: .NET reads POSIX-looking class syntax as
+    // literal members; profiles with a different grammar keep their programs.
+    internal bool UsesLiteralClassBracketSyntax { get; }
     internal bool HasMixedNamedGroups { get; }
     internal Utf8CaptureCatalog? CaptureCatalog { get; }
     internal bool UsesCaptureOpeningJournal { get; }
@@ -431,9 +437,9 @@ internal static class Utf8SliceLowerer
     }
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog)
-        => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, captureCatalog, false);
+        => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, captureCatalog, false, false);
 
-    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics)
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
         var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft);
         lowerer.CaptureCatalog = captureCatalog;
@@ -665,7 +671,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop, captureCatalog, usesInterpretedLazyLoopSemantics);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop, captureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
     }
 
     // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar

@@ -331,7 +331,8 @@ internal static class Utf8SliceParser
 
         return Utf8SliceLowerer.Lower(root, catalog.GroupNames, parser.SawBalancing,
             parser.MatchIgnoreCase || parser.SawFold, rightToLeft, catalog,
-            (options & RegexOptions.Compiled) != 0 && parser.SawCaptureWritingLazyRange);
+            (options & RegexOptions.Compiled) != 0 && parser.SawCaptureWritingLazyRange,
+            parser.SawLiteralClassBracketSyntax);
     }
 
     // Hex, unicode, and octal escapes produce one UTF-16 unit (exactly two
@@ -555,6 +556,7 @@ internal static class Utf8SliceParser
         private readonly Dictionary<string, int> _groupSlots = new(StringComparer.Ordinal);
         private bool _sawBalancing;
         private bool _sawCaptureWritingLazyRange;
+        private bool _sawLiteralClassBracketSyntax;
 
         internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase, bool explicitCapture, bool whitespaceStripped)
         {
@@ -574,6 +576,7 @@ internal static class Utf8SliceParser
         internal bool MatchIgnoreCase => _matchIgnoreCase;
         internal bool SawFold => _sawFold;
         internal bool SawCaptureWritingLazyRange => _sawCaptureWritingLazyRange;
+        internal bool SawLiteralClassBracketSyntax => _sawLiteralClassBracketSyntax;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
         {
@@ -1517,7 +1520,6 @@ internal static class Utf8SliceParser
                 case '*':
                 case '+':
                 case '?':
-                case ']':
                     return false;
                 case '{':
                     // Only a syntactically complete quantifier is special here.
@@ -1568,17 +1570,16 @@ internal static class Utf8SliceParser
         }
 
         // UTF-16 character classes, qualified against the pinned runtime:
-        // literals (with `]`-first and `-`/POSIX-edge rules), ascending
+        // literals (with `]`-first and `-`-edge rules), ascending
         // ranges (escapes allowed as bounds), supported single-char
         // escapes, and shorthand members (always members, never bounds).
         // Subtraction recursively parses the final class operand and lowers
         // to an immutable, invocation-metered class chain. Reversed ranges and
         // shorthand upper bounds decline to null so legacy routing
         // preserves exact behavior including construction failures.
-        // `[` followed by `:`, `.`, or `=` also
-        // declines: those open POSIX, collating, or equivalence classes in
-        // sibling flavors while BCL reads plain literals, and a shared
-        // program cannot serve both readings.
+        // An unescaped `[` followed by `:`, `.`, or `=` is a literal member
+        // under .NET semantics. Retain that syntax fact so sibling profiles
+        // can keep their own POSIX, collating, or equivalence interpretation.
         private bool TryParseClass(int depth, out Utf8SliceNode? node)
         {
             node = null;
@@ -1937,7 +1938,7 @@ internal static class Utf8SliceParser
                     if (value == '[' && !translatedChar && !AtEnd &&
                         (_pattern[_position] == ':' || _pattern[_position] == '.' || _pattern[_position] == '='))
                     {
-                        return false;
+                        _sawLiteralClassBracketSyntax = true;
                     }
 
                     AddRange(value, value);
