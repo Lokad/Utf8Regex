@@ -7,8 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 // Owned parser balance stage: the BCL-oracled battery pins balancing-group
 // pops with BCL metadata (pop nodes carry the resolved slot,
 // definitions keep their numbers), plus decline agreement on pops of
-// undefined groups and a residual for pops under top-level ExplicitCapture
-// where named definitions stay routed to the provider.
+// undefined groups and named pops under top-level ExplicitCapture.
 public sealed class Utf8OwnedTreeParserBalanceTests
 {
     public static IEnumerable<object?[]> BalanceAcceptCases()
@@ -54,11 +53,9 @@ public sealed class Utf8OwnedTreeParserBalanceTests
 
     [Theory]
     [MemberData(nameof(BalanceResidualCases))]
-    public void OwnedBalanceDeclinesTopLevelExplicitResidual(string pattern, int options)
+    public void OwnedBalanceServesTopLevelExplicitCapture(string pattern, int options)
     {
-        // Top-level ExplicitCapture leaves this pop shape to the provider today;
-        // the BCL fallback constructs it, so the flip keeps serving BCL-exactly.
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         Assert.Equal(new[] { 0, 1 }, oracle.GetGroupNumbers());
         Assert.Equal(new[] { "0", "a" }, oracle.GetGroupNames());

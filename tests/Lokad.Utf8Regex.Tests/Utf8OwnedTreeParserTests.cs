@@ -267,9 +267,9 @@ public sealed class Utf8OwnedTreeParserTests
     }
 
     [Fact]
-    public void OwnedParserDeclinesButBclServesShorthandGap()
+    public void OwnedParserServesUppercaseOptions()
     {
-        Assert.Null(Utf8OwnedTreeParser.TryParse("(?I:a)", RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8OwnedTreeParser.TryParse("(?I:a)", RegexOptions.CultureInvariant));
         var oracle = new Regex("(?I:a)", RegexOptions.CultureInvariant);
         var product = new Utf8Regex("(?I:a)", RegexOptions.CultureInvariant);
         Assert.Equal(oracle.ToString(), product.Pattern);
