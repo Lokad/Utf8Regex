@@ -13,6 +13,7 @@ public readonly ref struct Utf8MatchContext
     private readonly string[]? _groupNames;
     private readonly Utf8CaptureCatalog? _captureCatalog;
     private readonly bool _ownedHasValue;
+    private readonly bool _denseNumericNames;
     private readonly int _ownedGroupCount;
     private readonly int[]? _ownedGroupStarts;
     private readonly int[]? _ownedGroupLengths;
@@ -56,7 +57,20 @@ public readonly ref struct Utf8MatchContext
         _ownedGroupCount = groupCount;
         _ownedIndex = indexInUtf16;
         _ownedLength = lengthInUtf16;
-
+        // A dense numeric table has no name dictionary in .NET and accepts
+        // leading-zero numeric queries. Named and sparse tables query exactly.
+        _denseNumericNames = true;
+        if (groupNames is not null)
+        {
+            for (var ordinal = 0; ordinal < groupNames.Length; ordinal++)
+            {
+                if (!Utf8CaptureCatalog.TryParseNumber(groupNames[ordinal], out var number) || number != ordinal)
+                {
+                    _denseNumericNames = false;
+                    break;
+                }
+            }
+        }
     }
     internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths)
         : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: groupStarts.Length)
@@ -88,6 +102,15 @@ public readonly ref struct Utf8MatchContext
         : this(input, decoded, boundaryMap, groupNames, indexInUtf16, lengthInUtf16, groupStarts, groupLengths, captureStarts, captureLengths)
     {
         _captureCatalog = captureCatalog;
+    }
+
+    private int OwnedOrdinalFromName(string name)
+    {
+        if (_captureCatalog is not null) return _captureCatalog.OrdinalFromName(name);
+        if (_denseNumericNames)
+            return Utf8CaptureCatalog.TryParseNumber(name, out var number) &&
+                (uint)number < (uint)(_groupNames?.Length ?? _ownedGroupCount) ? number : -1;
+        return _groupNames is not null ? Array.IndexOf(_groupNames, name) : -1;
     }
 
     private Utf8GroupContext OwnedGroupView(int number, int indexInUtf16, int lengthInUtf16)
@@ -222,7 +245,7 @@ public readonly ref struct Utf8MatchContext
         {
             // R03: names resolve through the owned group table; unmatched or unknown
             // names mirror the unsuccessful BCL group view.
-            var groupIndex = _captureCatalog?.OrdinalFromName(name) ?? (name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1));
+            var groupIndex = OwnedOrdinalFromName(name);
 
             if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
             {
@@ -322,7 +345,7 @@ public readonly ref struct Utf8MatchContext
         {
             // R03: names resolve through the owned group table; valid but unmatched
             // branch groups report an unsuccessful view.
-            var groupIndex = _captureCatalog?.OrdinalFromName(name) ?? (name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1));
+            var groupIndex = OwnedOrdinalFromName(name);
 
             if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
             {

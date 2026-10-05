@@ -528,16 +528,6 @@ public sealed partial class Utf8Regex
         return null;
     }
 
-    // Unicode atoms use the cached unit program for UTF-16 starts, including
-    // starts inside a scalar. Byte-oriented native lanes remain selected by
-    // GetOwnedSliceProgram for the ordinary entry points.
-    private Utf8SliceProgram? GetOwnedSliceProgramFromUnit(ReadOnlySpan<byte> input)
-    {
-        return _unitSliceProgram is { HasUnicodePatternAtoms: true }
-            ? _unitSliceProgram
-            : GetOwnedSliceProgram(input);
-    }
-
     private bool OwnedSliceIsMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
@@ -907,7 +897,10 @@ public sealed partial class Utf8Regex
                 start.Value <= suffixDirect.IndexInUtf16;
         }
 
-        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
+        // Admitted UTF-16 starts use the cached owned unit program for ASCII
+        // and Unicode atoms alike. Ordinary byte-oriented discovery retains
+        // its native choices through GetOwnedSliceProgram.
+        if (_unitSliceProgram is { } ownedProgram)
         {
             return OwnedSliceIsMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1300,7 +1293,7 @@ public sealed partial class Utf8Regex
                 : 0;
         }
 
-        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
+        if (_unitSliceProgram is { } ownedProgram)
         {
             return OwnedSliceCountFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1626,7 +1619,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
+        if (_unitSliceProgram is { } ownedProgram)
         {
             return OwnedSliceMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1987,7 +1980,7 @@ public sealed partial class Utf8Regex
             return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
         }
 
-        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
+        if (_unitSliceProgram is { } ownedProgram)
         {
             return OwnedSliceMatchDetailedFromUnit(input, ownedProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
         }
@@ -2901,7 +2894,7 @@ public sealed partial class Utf8Regex
         // the scan start exactly like BCL startat, unlike suffix slicing); the
         // half-start scan mirrors BCL units, and anything unserved keeps the
         // routing below.
-        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
+        if (_unitSliceProgram is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatchesFromUnit(input, ownedProgram, analysis.BoundaryMap, startInUtf16.Value, CancellationToken.None)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -2936,7 +2929,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
+        if (_unitSliceProgram is { } ownedProgram)
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
@@ -2957,7 +2950,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (_unitSliceProgram is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, int.MaxValue, cancellationToken);
         return EnumerateSplits(input);
     }
@@ -3023,6 +3016,8 @@ public sealed partial class Utf8Regex
 
         if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
+            if (count >= 0 && _unitSliceProgram is { } resumedProgram)
+                return OwnedSliceEnumerateSplits(input, resumedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
             var subject = Utf8InputAnalyzer.Analyze(input);
             return new Utf8ValueSplitEnumerator(input, subject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, subject.BoundaryMap)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
@@ -3141,6 +3136,10 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
+        // Native split cursors above retain their discovery paths. Count zero
+        // and any other admitted shape use the owned unit cursor before BCL.
+        if (count >= 0 && _unitSliceProgram is { } splitProgram)
+            return OwnedSliceEnumerateSplits(input, splitProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
         var fallbackSubject = Utf8InputAnalyzer.Analyze(input);
         return new Utf8ValueSplitEnumerator(input, fallbackSubject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, fallbackSubject.BoundaryMap)
             .WithTimeoutMapping(Pattern, MatchTimeout);
@@ -3154,7 +3153,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (count >= 0 && GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (count >= 0 && _unitSliceProgram is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, cancellationToken);
         return EnumerateSplits(input, count);
     }
@@ -3299,6 +3298,9 @@ public sealed partial class Utf8Regex
 
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
+        if (GetOwnedReplacementProgram(input, replacementPattern) is { } requiredProgram)
+            return OwnedSliceReplace(input, requiredProgram, replacementPattern,
+                Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
         var budget = CreateExecutionBudget();
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, replacementPattern, out var ownedTemplate))
@@ -3325,7 +3327,7 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacementPattern, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacementPattern));
+            return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacementPattern, cancellationToken));
         }
 
         return ReplaceLiteralBytesCore(input, validation, replacementBytes);

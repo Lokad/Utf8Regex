@@ -89,29 +89,74 @@ internal static class Utf8SliceParser
 
         // Capture declarations use temporary opening-order slots. Shared numbering
         // folds duplicate names into one identity and binds references after parsing.
+        static Utf8SliceNode ResolveNumeric(string digits, bool foldCase, Utf8SliceNode.RepeatNode? repeat,
+            Utf8CaptureCatalog catalog, ref bool referencesValid)
+        {
+            var number = catalog.ReferenceNumber(digits);
+            Utf8SliceNode atom;
+            if (number > 0)
+            {
+                atom = new Utf8SliceNode.BackrefNode(catalog.OrdinalFromNumber(number) - 1, foldCase);
+            }
+            else
+            {
+                if (!Utf8NumericEscape.TryReadBareOctal(digits, out var value, out var consumed))
+                {
+                    referencesValid = false;
+                    return new Utf8SliceNode.EmptyNode();
+                }
+                atom = new Utf8SliceNode.LiteralNode((ushort)value, foldCase);
+                if (consumed < digits.Length)
+                {
+                    // Only the final replayed digit takes the escape's lexical
+                    // quantifier. An outer group quantifier still covers the whole
+                    // sequence because it reaches this binder through its body.
+                    var children = new Utf8SliceNode[digits.Length - consumed + 1];
+                    children[0] = atom;
+                    for (var digit = consumed; digit < digits.Length; digit++)
+                        children[digit - consumed + 1] = new Utf8SliceNode.LiteralNode(digits[digit], false);
+                    if (repeat is not null)
+                        children[^1] = new Utf8SliceNode.RepeatNode(children[^1], repeat.Minimum, repeat.Maximum, repeat.Lazy);
+                    return new Utf8SliceNode.ConcatNode(children);
+                }
+            }
+            return repeat is null ? atom : new Utf8SliceNode.RepeatNode(atom, repeat.Minimum, repeat.Maximum, repeat.Lazy);
+        }
+
         static Utf8SliceNode RenumberCaptures(Utf8SliceNode node, int[] finals, Utf8CaptureCatalog catalog, ref bool referencesValid)
         {
             switch (node)
             {
+                case Utf8SliceNode.UnresolvedNumericNode numeric:
+                    return ResolveNumeric(numeric.Digits, numeric.FoldCase, null, catalog, ref referencesValid);
+                case Utf8SliceNode.UnresolvedNumericRepeatNode numericRepeat:
+                    return ResolveNumeric(numericRepeat.Digits, numericRepeat.FoldCase,
+                        new Utf8SliceNode.RepeatNode(new Utf8SliceNode.EmptyNode(), numericRepeat.Minimum, numericRepeat.Maximum, numericRepeat.Lazy),
+                        catalog, ref referencesValid);
                 case Utf8SliceNode.UnresolvedBackrefNode reference:
                     var number = catalog.ReferenceNumber(reference.Name);
-                    if (number <= 0)
+                    if (number < 0)
                     {
                         referencesValid = false;
                         return new Utf8SliceNode.EmptyNode();
                     }
-                    return new Utf8SliceNode.BackrefNode(catalog.OrdinalFromNumber(number) - 1, reference.FoldCase);
+                    // Group zero completes only after the pattern succeeds, so
+                    // references to it always fail inside the pattern.
+                    return number == 0 ? new Utf8SliceNode.FailNode()
+                        : new Utf8SliceNode.BackrefNode(catalog.OrdinalFromNumber(number) - 1, reference.FoldCase);
                 case Utf8SliceNode.UnresolvedBalanceNode balanceReference:
                     var popOrdinal = catalog.OrdinalFromNumber(catalog.ReferenceNumber(balanceReference.PopName));
-                    if (popOrdinal <= 0)
+                    if (popOrdinal < 0)
                     {
                         referencesValid = false;
                         return new Utf8SliceNode.EmptyNode();
                     }
+                    var balanceBody = RenumberCaptures(balanceReference.Body, finals, catalog, ref referencesValid);
+                    if (popOrdinal == 0) return new Utf8SliceNode.FailNode();
                     return new Utf8SliceNode.BalanceNode(popOrdinal - 1,
                         balanceReference.CaptureNumber > 0 ? catalog.OrdinalFromNumber(balanceReference.CaptureNumber) - 1
                             : balanceReference.CaptureSlot < 0 ? -1 : finals[balanceReference.CaptureSlot] - 1,
-                        RenumberCaptures(balanceReference.Body, finals, catalog, ref referencesValid));
+                        balanceBody);
                 case Utf8SliceNode.UnresolvedConditionalNode conditionReference:
                     var testOrdinal = catalog.OrdinalFromNumber(catalog.ReferenceNumber(conditionReference.Number));
                     if (testOrdinal < 0) referencesValid = false;
@@ -525,17 +570,9 @@ internal static class Utf8SliceParser
 
         if (marker >= '0' && marker <= '7' && (bareOctal || marker == '0'))
         {
-            value = 0;
-            var end = start;
-            while (end < pattern.Length && end - start < 3 && pattern[end] >= '0' && pattern[end] <= '7')
-            {
-                value = value * 8 + (pattern[end] - '0');
-                end++;
-            }
-
-            value &= 255;
-            next = end;
-            return true;
+            var parsed = Utf8NumericEscape.TryReadOctal(pattern.AsSpan(start), out value, out var consumed);
+            next = start + consumed;
+            return parsed;
         }
 
         return false;
@@ -810,6 +847,7 @@ internal static class Utf8SliceParser
         private bool TryParseRepeat(int depth, out Utf8SliceNode? node)
         {
             node = null;
+            var atomStart = _position;
             if (!TryParseAtom(depth, out var atom) || atom is null)
             {
                 return false;
@@ -876,7 +914,9 @@ internal static class Utf8SliceParser
                 _sawCaptureWritingLazyRange = true;
             }
 
-            node = new Utf8SliceNode.RepeatNode(atom, minimum, maximum, lazy);
+            node = atom is Utf8SliceNode.UnresolvedNumericNode numeric && _pattern[atomStart] == '\\'
+                ? new Utf8SliceNode.UnresolvedNumericRepeatNode(numeric.Digits, numeric.FoldCase, minimum, maximum, lazy)
+                : new Utf8SliceNode.RepeatNode(atom, minimum, maximum, lazy);
             return true;
         }
 
@@ -1579,13 +1619,16 @@ internal static class Utf8SliceParser
 
                     // Bind after all declarations: references use final identities and
                     // may precede their declaration (notably in reverse execution).
-                    // Multi-digit bare escapes retain the existing octal/reference route.
-                    if (escaped >= '1' && escaped <= '9' &&
-                        (_position + 2 >= _pattern.Length || !char.IsAsciiDigit(_pattern[_position + 2])))
+                    // The complete decimal run binds before octal fallback.
+                    // Retain its lexical atom boundary for trailing quantifiers.
+                    if (escaped >= '1' && escaped <= '9')
                     {
-                        _position += 2;
+                        var digitStart = _position + 1;
+                        var digitEnd = digitStart + 1;
+                        while (digitEnd < _pattern.Length && char.IsAsciiDigit(_pattern[digitEnd])) digitEnd++;
+                        _position = digitEnd;
                         _sawFold |= _matchIgnoreCase;
-                        node = new Utf8SliceNode.UnresolvedBackrefNode(escaped.ToString(), _matchIgnoreCase);
+                        node = new Utf8SliceNode.UnresolvedNumericNode(_pattern.Substring(digitStart, digitEnd - digitStart), _matchIgnoreCase);
                         return true;
                     }
                     if (escaped == 'k' && _position + 2 < _pattern.Length && _pattern[_position + 2] is '<' or '\'')
@@ -1660,10 +1703,34 @@ internal static class Utf8SliceParser
                 case '*':
                 case '+':
                 case '?':
-                case '{':
-                case '}':
                 case ']':
                     return false;
+                case '{':
+                    // Only a syntactically complete quantifier is special here.
+                    // It either belongs to the preceding atom or must be declined
+                    // for the constructor's exact quantifier error (including
+                    // overflow and reversed bounds). Other braces are literals.
+                    var braceEnd = _position + 1;
+                    var firstDigit = braceEnd;
+                    while (braceEnd < _pattern.Length && char.IsAsciiDigit(_pattern[braceEnd])) braceEnd++;
+                    if (braceEnd > firstDigit)
+                    {
+                        if (braceEnd < _pattern.Length && _pattern[braceEnd] == ',')
+                        {
+                            braceEnd++;
+                            while (braceEnd < _pattern.Length && char.IsAsciiDigit(_pattern[braceEnd])) braceEnd++;
+                        }
+                        if (braceEnd < _pattern.Length && _pattern[braceEnd] == '}') return false;
+                    }
+                    _position++;
+                    _sawFold |= _matchIgnoreCase;
+                    node = new Utf8SliceNode.LiteralNode(character, _matchIgnoreCase);
+                    return true;
+                case '}':
+                    _position++;
+                    _sawFold |= _matchIgnoreCase;
+                    node = new Utf8SliceNode.LiteralNode(character, _matchIgnoreCase);
+                    return true;
                 case '[':
                     return TryParseClass(0, out node);
                 case '^':

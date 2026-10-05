@@ -816,9 +816,13 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
         {
             var index = Utf8AsciiCharClassRunExecutor.FindNext(input, _regexPlan.SimplePatternPlan.RunPlan, 0, out var matchedLength, budget);
-            return index < 0
-                ? Utf8ValueMatch.NoMatch
-                : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            if (index < 0) return Utf8ValueMatch.NoMatch;
+            if (validation.IsAscii)
+                return new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            // A class-run search returns bytes even when every matched byte is
+            // ASCII. Preceding Unicode scalars still change the UTF-16 index.
+            if (Utf8ScalarSimplePatternVerifier.TryProjectMatch(input, index, matchedLength, out var projectedRun))
+                return projectedRun;
         }
 
         if (validation.IsAscii &&

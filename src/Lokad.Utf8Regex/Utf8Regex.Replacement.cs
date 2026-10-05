@@ -65,7 +65,7 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacement, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacement));
+            return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken));
         }
 
         return ReplaceLiteralBytesCore(input, validation, replacementBytes);
@@ -224,7 +224,7 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft())
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
-            return ReplaceFallbackWithSharedPlan(input, replacement);
+            return ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken);
         }
 
         var validation = Utf8Validation.Validate(input);
@@ -258,7 +258,7 @@ public sealed partial class Utf8Regex
             return Encoding.UTF8.GetString(Replace(input, replacementBytes));
         }
 
-        return ReplaceFallbackWithSharedPlan(input, replacement);
+        return ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken);
     }
 
     private OperationStatus TryReplaceCore(
@@ -315,7 +315,7 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft())
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
-            return TryEncodeUtf8ToDestination(ReplaceFallbackWithSharedPlan(input, replacement), destination, out bytesWritten)
+            return TryEncodeUtf8ToDestination(ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken), destination, out bytesWritten)
                 ? OperationStatus.Done
                 : OperationStatus.DestinationTooSmall;
         }
@@ -349,7 +349,7 @@ public sealed partial class Utf8Regex
                 out bytesWritten);
         }
 
-        return TryEncodeUtf8ToDestination(ReplaceFallbackWithSharedPlan(input, replacement), destination, out bytesWritten)
+        return TryEncodeUtf8ToDestination(ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken), destination, out bytesWritten)
             ? OperationStatus.Done
             : OperationStatus.DestinationTooSmall;
     }
@@ -498,8 +498,13 @@ public sealed partial class Utf8Regex
         return success ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
     }
 
-    private string ReplaceFallbackWithSharedPlan(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
+    private string ReplaceFallbackWithSharedPlan(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement,
+        CancellationToken cancellationToken)
     {
+        // Qualified native splice routes have already had their opportunity.
+        // Admitted remaining templates use the cached VM with the operation token.
+        if (_unitSliceProgram is { } program)
+            return OwnedSliceReplace(input, program, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
         var decoded = Encoding.UTF8.GetString(input);
         if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var owned))
         {

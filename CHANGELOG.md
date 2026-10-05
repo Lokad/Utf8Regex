@@ -4,6 +4,22 @@
 
 ### Owned UTF-16 execution
 
+- Multi-digit bare numeric escapes now bind against the complete capture table
+  before octal fallback in owned execution. Octal prefixes wrap to one byte and
+  retain their remaining literal digits, including the correct trailing-quantifier
+  boundary. Group-zero references and balancing pops fail within the pattern.
+  The front end now also preserves these octal values, discarded-quantifier
+  prefixes and leading-zero group-zero references, correcting previous parse
+  facts to .NET 10 behavior. Oversized decimal references retain construction errors.
+  Admitted ASCII and Unicode UTF-16 start operations use the cached owned program;
+  split enumeration now keeps an owned cursor for count zero and live tokens.
+  Count-one splits retain the whole-input `Regex.Split` result, avoiding the
+  .NET 10.0.12 split enumerator's negative-position defect.
+  Native detailed contexts accept dense leading-zero numeric group names.
+  Remaining admitted template fallbacks use the owned program and operation token.
+  Native ASCII class runs now project byte positions after Unicode prefixes into
+  their correct UTF-16 coordinates.
+
 - Capture-writing finite lazy ranges admitted by the parser now run in the owned VM in both ordinary
   and compiled modes. Both follow .NET 10 interpreted abandonment and capture
   rollback, deliberately avoiding .NET 10.0.12 compiled-engine phantom progress,

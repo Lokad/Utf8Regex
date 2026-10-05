@@ -10,6 +10,13 @@ public sealed partial class Utf8Regex
     private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
     {
         if ((GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } program) return program;
+        // These branches would otherwise construct BCL before reaching the
+        // ordinary native/template routes. The owned program carries deadlines
+        // and cancellation for every admitted shape.
+        if (_unitSliceProgram is not null &&
+            (UsesRightToLeft() || _unitSliceProgram.HasContiguousAnchor ||
+             ShouldUseFallbackForSimplePatternReplacement(replacement, input)))
+            return _unitSliceProgram;
         // Native byte splicers may encode literals separately. Retain a half
         // supplied by the template until it can pair with the adjacent fragment.
         var text = replacement.OriginalText;

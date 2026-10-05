@@ -28,6 +28,7 @@ internal enum Utf8SliceNodeKind : byte
     Conditional = 16,
     Category = 17,
     CategorySet = 18,
+    Fail = 19,
 }
 
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
@@ -56,6 +57,7 @@ internal enum Utf8SliceAnchorKind : byte
 internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 {
     internal sealed record EmptyNode() : Utf8SliceNode(Utf8SliceNodeKind.Empty);
+    internal sealed record FailNode() : Utf8SliceNode(Utf8SliceNodeKind.Fail);
 
     internal sealed record LiteralNode(ushort Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
@@ -85,6 +87,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
     internal sealed record UnresolvedBackrefNode(string Name, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record UnresolvedNumericNode(string Digits, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record UnresolvedNumericRepeatNode(string Digits, bool FoldCase, int Minimum, int Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat);
     internal sealed record UnresolvedCaptureNode(int Number, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
     internal sealed record UnresolvedBalanceNode(string PopName, int CaptureSlot, int CaptureNumber, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
     internal sealed record UnresolvedConditionalNode(string Number, Utf8SliceNode YesBody, Utf8SliceNode NoBody) : Utf8SliceNode(Utf8SliceNodeKind.Conditional);
@@ -447,6 +451,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConditionalNode conditionalEmpty:
                     return NodeCanMatchEmpty(conditionalEmpty.YesBody) ||
                         NodeCanMatchEmpty(conditionalEmpty.NoBody);
+                case Utf8SliceNode.FailNode:
                 case Utf8SliceNode.LiteralNode:
                 case Utf8SliceNode.SetNode:
                 case Utf8SliceNode.DotNode:
@@ -1353,6 +1358,9 @@ internal static class Utf8SliceLowerer
             switch (node)
             {
                 case Utf8SliceNode.EmptyNode:
+                    break;
+                case Utf8SliceNode.FailNode:
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.LiteralNode literal:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value, literal.FoldCase ? 1 : 0, 0, 0));

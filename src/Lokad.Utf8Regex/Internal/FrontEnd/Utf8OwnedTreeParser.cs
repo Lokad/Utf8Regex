@@ -1659,7 +1659,7 @@ internal static class Utf8OwnedTreeParser
         {
             if (fixup.Node.Kind == Utf8TreeNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
             {
-                return ResolveEmptyFixup(fixup, slots, slotByName, ref root);
+                return ResolveEmptyFixup(fixup, slots, slotByName, ref root, ref morphed);
             }
 
             if (fixup.IsPop)
@@ -1693,9 +1693,11 @@ internal static class Utf8OwnedTreeParser
             if (fixup.Name is not null)
             {
                 var lookupName = fixup.Name;
-                if (lookupName.Length > 1 && IsAllAsciiDigits(lookupName))
+                if (IsAllAsciiDigits(lookupName))
                 {
-                    lookupName = lookupName.TrimStart('0');
+                    if (!TryParseGroupNumber(lookupName, out var numericName) || !slots.Contains(numericName)) return false;
+                    fixup.Node.M = numericName;
+                    return true;
                 }
 
                 if (!slotByName.TryGetValue(lookupName, out var namedSlot))
@@ -1743,7 +1745,7 @@ internal static class Utf8OwnedTreeParser
             return ResolveOctalFallback(fixup, ref root, ref morphed);
         }
 
-        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root)
+        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root, ref bool morphed)
         {
             if (fixup.Name is not null)
             {
@@ -1751,9 +1753,11 @@ internal static class Utf8OwnedTreeParser
                 // exactly like the BCL oracle; conditional fixups never reach
                 // this path (their nodes are BackreferenceConditional).
                 var lookupName = fixup.Name;
-                if (lookupName.Length > 1 && IsAllAsciiDigits(lookupName))
+                if (IsAllAsciiDigits(lookupName))
                 {
-                    lookupName = lookupName.TrimStart('0');
+                    if (!TryParseGroupNumber(lookupName, out var numericName) || !slots.Contains(numericName)) return false;
+                    fixup.Node.M = numericName;
+                    return true;
                 }
 
                 if (!slotByName.TryGetValue(lookupName, out _))
@@ -1785,21 +1789,7 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
-            var length = 0;
-            var value = 0;
-            while (length < 3 && length < fixup.Digits.Length)
-            {
-                var digit = fixup.Digits[length] - '0';
-                if (digit < 0 || digit > 7)
-                {
-                    break;
-                }
-
-                value = value * 8 + digit;
-                length++;
-            }
-
-            if (length == 0)
+            if (!Utf8NumericEscape.TryReadBareOctal(fixup.Digits, out var value, out var length))
             {
                 return false;
             }
@@ -1810,21 +1800,7 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
-            Utf8TreeNode morphedLeaf;
-            if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
-                Utf8OwnedCaseFold.TryGetFold((char)value, out var emptyLower, out var emptyUpper))
-            {
-                morphedLeaf = FoldedSet(fixup.Node.Options, emptyLower, emptyUpper);
-            }
-            else
-            {
-                morphedLeaf = new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
-                morphedLeaf.M = 0;
-                morphedLeaf.N = 0;
-            }
-
-            ReplaceNodeInParent(ref root, fixup.Node, morphedLeaf);
-            return true;
+            return ResolveOctalRest(fixup, ref root, ref morphed, length, value);
         }
 
         static void StripEmptyOptions(ref Utf8TreeNode root, Utf8TreeNode node)
@@ -1845,21 +1821,7 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            var length = 0;
-            var value = 0;
-            while (length < 3 && length < fixup.Digits.Length)
-            {
-                var digit = fixup.Digits[length] - '0';
-                if (digit < 0 || digit > 7)
-                {
-                    break;
-                }
-
-                value = value * 8 + digit;
-                length++;
-            }
-
-            if (length == 0)
+            if (!Utf8NumericEscape.TryReadBareOctal(fixup.Digits, out var value, out var length))
             {
                 return false;
             }
@@ -1961,7 +1923,10 @@ internal static class Utf8OwnedTreeParser
 
             if (fixup.Wrapper is null)
             {
-                beforeAnchor.Add(new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[restText.Length - 1]));
+                // A discarded {0} removes only the final replayed digit,
+                // retaining the octal prefix and every preceding literal digit.
+                if (fixup.Node.Kind != Utf8TreeNodeKind.Empty)
+                    beforeAnchor.Add(new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[restText.Length - 1]));
                 ReplaceNodeWithMany(ref root, fixup.Node, beforeAnchor, null);
                 morphed = true;
                 return true;
@@ -1998,6 +1963,22 @@ internal static class Utf8OwnedTreeParser
                 sequence.Add(trailing);
             }
 
+            if (parent is not null && parent.Kind != Utf8TreeNodeKind.Concatenate)
+            {
+                // A capture, alternation arm or loop owns one expression at this
+                // position. Keep replayed digits together instead of inserting
+                // them as extra children of that enclosing operation.
+                var expression = sequence.Count == 1 ? sequence[0]
+                    : new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, oldNode.Options);
+                if (sequence.Count > 1)
+                {
+                    expression.Children = sequence;
+                    foreach (var child in sequence) child.Parent = expression;
+                }
+                ReplaceNodeInParent(ref root, oldNode, expression);
+                return;
+            }
+
             foreach (var node in sequence)
             {
                 node.Parent = parent;
@@ -2013,6 +1994,7 @@ internal static class Utf8OwnedTreeParser
 
                 var top = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, oldNode.Options);
                 top.Children = sequence;
+                foreach (var child in sequence) child.Parent = top;
                 root = top;
                 return;
             }
