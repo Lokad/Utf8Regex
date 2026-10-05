@@ -203,7 +203,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop, Utf8CaptureCatalog? captureCatalog)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -229,6 +229,7 @@ internal sealed class Utf8SliceProgram
         SawCapturingLookbehind = sawCapturingLookbehind;
         CanMatchEmpty = canMatchEmpty;
         HalvesClosedEmptyLoop = halvesClosedEmptyLoop;
+        UsesInterpretedLazyLoopSemantics = usesInterpretedLazyLoopSemantics;
         UsesCaptureOpeningJournal = HasSharedCaptureDeclarations;
         foreach (var instruction in instructions)
         {
@@ -279,6 +280,10 @@ internal sealed class Utf8SliceProgram
     // their qualified lanes for BMP patterns; half literals always use units.
     internal bool HasSurrogateLiteral { get; }
     internal bool HasUnicodePatternAtoms { get; }
+
+    // The compiled .NET 10 lazy-loop defect is excluded from our semantics.
+    // Route these programs through the owned VM even when a native plan exists.
+    internal bool UsesInterpretedLazyLoopSemantics { get; }
 
     // R05: whole-pattern greedy minimum-zero loops over halves-closed atoms
     // (dots and member-free unfolded negated sets). The unit-space runner tiles
@@ -413,6 +418,9 @@ internal static class Utf8SliceLowerer
     }
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog)
+        => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, captureCatalog, false);
+
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics)
     {
         var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft);
         lowerer.CaptureCatalog = captureCatalog;
@@ -643,7 +651,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop, captureCatalog);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop, captureCatalog, usesInterpretedLazyLoopSemantics);
     }
 
     // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar

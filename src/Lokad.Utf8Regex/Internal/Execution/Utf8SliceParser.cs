@@ -76,21 +76,11 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        // .NET 10 per-lane contract: the BCL compiler keeps one iteration of
-        // progress when a finite-maximum lazy loop abandons at its maximum
-        // while the interpreter abandons fully (pinned by
-        // LazyLoopAbandonmentPinsDotNet10OracleDisagreement), and captured
-        // lazy ranges even oscillate compiled enumeration forever (probed:
-        // (([0-9]){0,2}?x)? on "123" yields 0+0,0+1,...). The shared
-        // runner follows interpreter abandonment, so compiled-lane shapes
-        // with a capture-writing finite lazy range decline to their BCL-compiled
-        // fallback. Exact counts, single maxima, and capture-free ranges agree
-        // on both lanes with full group detail (probe-mapped across nesting,
-        // backreferences, lookarounds, and atomics), as do infinite maxima.
-        if ((options & RegexOptions.Compiled) != 0 && parser.SawCaptureWritingLazyRange)
-        {
-            return null;
-        }
+        // .NET 10.0.12 compiled capture-writing finite lazy ranges can retain
+        // abandoned progress and captures, producing phantom matches and even
+        // non-progressing enumeration. Both owned lanes follow the stable
+        // interpreted semantics: abandon every iteration and undo its captures.
+        // Do not reproduce those diagnosed runtime defects through a fallback.
 
         // .NET 10.0.12 compiled greedy class loops ending at U+FFFF can
         // emit an invalid position. Preserve the interpreted pattern semantics
@@ -462,7 +452,9 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        return Utf8SliceLowerer.Lower(root, catalog.GroupNames, parser.SawBalancing, parser.MatchIgnoreCase || parser.SawFold, rightToLeft, catalog);
+        return Utf8SliceLowerer.Lower(root, catalog.GroupNames, parser.SawBalancing,
+            parser.MatchIgnoreCase || parser.SawFold, rightToLeft, catalog,
+            (options & RegexOptions.Compiled) != 0 && parser.SawCaptureWritingLazyRange);
     }
 
     // Hex, unicode, and octal escapes produce one UTF-16 unit (exactly two
@@ -763,7 +755,7 @@ internal static class Utf8SliceParser
         // balancing groups, anywhere inside including nested loops) exhibit the
         // divergence or the enumeration oscillation. Reads (backreferences),
         // lookarounds, atomics, and conditionals pass through transparently;
-        // nested captures inside them still decline via the recursion.
+        // nested captures inside them still require complete interpreter unwind.
         private static bool RepeatBodyWritesCaptures(Utf8SliceNode node)
         {
             switch (node)

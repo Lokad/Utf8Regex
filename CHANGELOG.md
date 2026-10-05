@@ -4,6 +4,12 @@
 
 ### Owned UTF-16 execution
 
+- Capture-writing finite lazy ranges admitted by the parser now run in the owned VM in both ordinary
+  and compiled modes. Both follow .NET 10 interpreted abandonment and capture
+  rollback, deliberately avoiding .NET 10.0.12 compiled-engine phantom progress,
+  leaked captures and non-progressing enumeration. This also applies when a
+  native plan exists; unrelated qualified native routes remain available.
+
 - Explicitly numbered and sparse captures now execute in the owned VM with
   dense internal slots and their original public numbers, including complete
   histories, numeric references, conditions, balancing, and every replacement

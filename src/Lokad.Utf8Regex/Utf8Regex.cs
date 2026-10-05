@@ -518,6 +518,7 @@ public sealed partial class Utf8Regex
         if (_sliceProgram is not null) return _sliceProgram;
         if (_unitSliceProgram is not null &&
             (_unitSliceProgram.HasSurrogateLiteral ||
+             _unitSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _unitSliceProgram.HasSharedCaptureDeclarations ||
              _unitSliceProgram.HasExplicitCaptureNumbers ||
              _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
