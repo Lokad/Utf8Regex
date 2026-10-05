@@ -132,7 +132,8 @@ public sealed class Utf8SliceEscapeTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal(pattern != "\\400", regex.Inspection.DebugUsesOwnedSliceProgram);
+        // Byte-wrapped class octal zero now admits the native ASCII literal.
+        Assert.Equal(pattern is not "\\400" and not "[\\400]", regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         if (pattern != "\\400") Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }

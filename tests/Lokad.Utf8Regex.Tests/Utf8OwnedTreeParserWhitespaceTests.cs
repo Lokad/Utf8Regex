@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Tests;
 
 // Owned parser whitespace stage: the BCL-oracled battery pins IgnorePatternWhitespace
-// with BCL metadata (Unicode White_Space skipping and end-of-line
+// with BCL metadata (space/tab/LF/FF/CR skipping and LF-terminated
 // comments outside classes, with escapes staying literal), plus decline agreement
 // on comments that swallow their own closer.
 public sealed class Utf8OwnedTreeParserWhitespaceTests

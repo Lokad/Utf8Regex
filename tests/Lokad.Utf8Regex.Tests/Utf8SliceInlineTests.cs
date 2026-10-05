@@ -8,8 +8,8 @@ namespace Lokad.Utf8Regex.Tests;
 // through a transparent wrapper while toggles (?i) mutate the enclosing scope
 // (restored at each closing paren, never across alternatives); literals,
 // classes, shorthand hybrids, and backreferences fold per node, dots and
-// anchors already carry per-node flags. (?x) inline forms decline (regional
-// lexing lives in legacy), as do option constructs directly inside
+// anchors already carry per-node flags. The authoritative tree also preserves
+// regional (?x) lexing. Option constructs directly inside
 // expression-conditional branches. Bare shapes keep native precedence;
 // quantified shapes route owned.
 public sealed class Utf8SliceInlineTests
@@ -70,36 +70,38 @@ public sealed class Utf8SliceInlineTests
         Assert.Equal(expected, regex.IsMatch(input));
     }
 
-    public static IEnumerable<object?[]> DeclinedShapes()
+    public static IEnumerable<object?[]> WhitespaceShapes()
     {
         yield return new object?[] { "(?x: a)+", "aa", RegexOptions.None };
         yield return new object?[] { "(?x)a+", "aa", RegexOptions.None };
     }
 
     [Theory]
-    [MemberData(nameof(DeclinedShapes))]
-    public void InlineUnsupportedShapesDeclineToLegacy(string pattern, string inputText, RegexOptions extra)
+    [MemberData(nameof(WhitespaceShapes))]
+    public void InlineWhitespaceShapesUseOwnedTree(string pattern, string inputText, RegexOptions extra)
     {
         var options = RegexOptions.CultureInvariant | extra;
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
     [InlineData("(?-x: a)+", " a a", RegexOptions.IgnorePatternWhitespace)]
-    public void InlineWhitespaceOffDeclineUnderGlobalWhitespace(string pattern, string inputText, RegexOptions extra)
+    public void InlineWhitespaceOffUsesOwnedTreeUnderGlobalWhitespace(string pattern, string inputText, RegexOptions extra)
     {
         var options = RegexOptions.CultureInvariant | extra;
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> ParserDeclines()

@@ -54680,9 +54680,9 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Assert.Equal(pattern == "(?i)k", isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.Equal(pattern == "(?i)k", stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

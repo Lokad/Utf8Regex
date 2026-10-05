@@ -322,12 +322,8 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void EnumerationKeepsBclShapingForKelvin(bool compiled)
+    public void EnumerationUsesOwnedShapingForKelvin(bool compiled)
     {
-        // Declared R05 debt: the Kelvin fence diverts IgnoreCase enumeration to BCL
-        // verification when the pattern holds k/K and the input holds U+212A, since
-        // byte search cannot reproduce the invariant fold. Parity holds;
-        // construction is pinned.
         const string pattern = "kil";
         const string text = "x\u212Ailo";
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
@@ -359,7 +355,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 

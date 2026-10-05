@@ -49,7 +49,7 @@ public sealed class PythonReSliceInlineTests
     public void RewrittenAndHoistedShapesKeepTheirQualifiedRoutes(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(pattern.Contains('.'), regex.DebugUsesOwnedSlice);
+        Assert.Equal(pattern.Contains('.') || pattern.Contains("(?x:", StringComparison.Ordinal), regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -65,7 +65,11 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex("(?x:a b)+", PythonReCompileOptions.None);
         Assert.Equal("(?x:ab)+", regex.DebugTranslatedPattern);
-        Assert.False(regex.DebugUsesOwnedSlice);
+        AssertOwnedBackends(regex);
+        var input = Utf8("xababx");
+        Assert.Equal("abab", regex.Search(input).GetValueString());
+        Assert.Equal(1, regex.Count(input));
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
 
     public static IEnumerable<object?[]> SearchCases()

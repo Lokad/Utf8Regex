@@ -31,6 +31,7 @@ public sealed class Utf8RtlEnumerationTests
             ("abc", "x\u212Ay"),
             ("(?i)abc", "xxABCxxabc"),
             ("(?i)a", "xAxAx"),
+            ("(?i)k", "x\u212Ay"),
             ("(?i)abc", "éABCé"),
             ("(ab|cd)", "xxabcdyy"),
             ("caf\u00e9", "xcaf\u00e9ycaf\u00e9"),
@@ -80,7 +81,6 @@ public sealed class Utf8RtlEnumerationTests
         (string pattern, string text)[] rows =
         [
             ("\\babc", "xabc"),
-            ("(?i)k", "x\u212Ay"),
             ("", "abc"),
         ];
         foreach (var row in rows)

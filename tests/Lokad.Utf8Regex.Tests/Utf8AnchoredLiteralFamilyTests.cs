@@ -346,12 +346,8 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FoldedPrefixKeepsBclShapingForKelvin(bool compiled)
+    public void FoldedPrefixUsesOwnedShapingForKelvin(bool compiled)
     {
-        // Declared R05 debt: the Kelvin fence diverts folded-prefix matching to BCL
-        // verification when the pattern holds k/K and the input holds U+212A, since
-        // byte folding cannot reproduce the invariant fold. Parity holds;
-        // construction is pinned.
         const string pattern = "^kil";
         const string text = "\u212Ailo";
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
@@ -364,7 +360,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         var enumRegex = new Utf8Regex(pattern, options);
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
@@ -385,7 +381,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedSuffixCases()
@@ -465,12 +461,8 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FoldedSuffixKeepsBclShapingForKelvin(bool compiled)
+    public void FoldedSuffixUsesOwnedShapingForKelvin(bool compiled)
     {
-        // Declared R05 debt: the Kelvin fence diverts folded-suffix matching to BCL
-        // verification when the pattern holds k/K and the input holds U+212A, since
-        // byte folding cannot reproduce the invariant fold. Parity holds;
-        // construction is pinned.
         const string pattern = "k$";
         const string text = "xK";
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
@@ -483,7 +475,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         var enumRegex = new Utf8Regex(pattern, options);
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
@@ -504,7 +496,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.True(enumRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumRegex.Inspection.DebugFallbackRegexIsCreated);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedSplitCases()
     {
@@ -683,11 +675,8 @@ public sealed class Utf8AnchoredLiteralFamilyTests
     [Theory]
     [InlineData("^kil", "Kilo")]
     [InlineData("kil$", "xKil")]
-    public void FoldedReplaceKeepsBclShapingForKelvin(string pattern, string text)
+    public void FoldedReplaceUsesOwnedShapingForKelvin(string pattern, string text)
     {
-        // Declared R05 debt: the replacement Kelvin fence diverts folded anchored
-        // templates to BCL expansion when the pattern holds k/K and the input holds
-        // U+212A. Parity holds; construction is pinned.
         foreach (var options in new[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);
@@ -696,7 +685,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             var expected = oracle.Replace(text, "q$&q");
             var actual = regex.ReplaceToString(input, "q$&q");
             Assert.Equal(expected, actual);
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedFromOffsetCases()
