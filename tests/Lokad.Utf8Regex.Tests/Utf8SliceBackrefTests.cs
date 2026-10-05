@@ -275,16 +275,15 @@ public sealed class Utf8SliceBackrefTests
 
     [Theory]
     [MemberData(nameof(AstralDotBackrefDeclineCases))]
-    public void AstralDotBackrefDeclineKeepsBclShaping(string pattern, string inputText)
+    public void AstralDotBackrefOwnsMatchingWhileReplacementKeepsFallback(string pattern, string inputText)
     {
-        // Declared R05 debt: dot-led backreferences can capture half-split
-        // spans on astral input, so shaping keeps BCL routing; parity holds
-        // and construction is pinned.
+        // Matching owns half-split dot/backreference spans. Replacement still
+        // keeps its separate BCL route until UTF-16 output expansion lands.
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(oracle.Replace(inputText, "Q"), stringRegex.ReplaceToString(input, "Q"));
         Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);

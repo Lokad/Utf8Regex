@@ -266,7 +266,7 @@ public sealed class Utf8SliceAnchorTests
 
     [Theory]
     [InlineData("^(a.c)+$", "xa\U0001F600c", false)]
-    public void AstralDotAnchorDeclinesToFallback(
+    public void AstralDotAnchorUsesOwnedUnits(
         string pattern, string inputText, bool expectedSuccess)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -276,7 +276,7 @@ public sealed class Utf8SliceAnchorTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]

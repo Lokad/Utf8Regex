@@ -329,7 +329,7 @@ public sealed class Utf8SliceLookaroundTests
 
     [Theory]
     [MemberData(nameof(AstralDotBodyCases))]
-    public void AstralDotBodyDeclinesToFallback(string pattern, string inputText, int expected)
+    public void AstralDotBodyUsesOwnedUnits(string pattern, string inputText, int expected)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
@@ -338,6 +338,6 @@ public sealed class Utf8SliceLookaroundTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
         Assert.Equal(expected, regex.Count(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 }

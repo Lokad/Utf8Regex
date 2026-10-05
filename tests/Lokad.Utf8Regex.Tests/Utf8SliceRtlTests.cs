@@ -305,11 +305,10 @@ public sealed class Utf8SliceRtlTests
     [InlineData(".", "\U0001F600", true)]
     [InlineData("a.c", "a\U0001F600c", false)]
     [InlineData("^.", "\U0001F600x", true)]
-    public void RtlAstralDivergentShapesDeclineToLegacy(string pattern, string inputText, bool expected)
+    public void RtlAstralShapesUseOwnedUnits(string pattern, string inputText, bool expected)
     {
-        // Astral inputs decline dot shapes to the fallback engine at routing
-        // (BCL unit semantics split astral scalars while scalar profiles do
-        // not). Construction stays lazy; correctness rides the oracle.
+        // The private unit subject supplies the .NET closing-edge order even
+        // when the winning match splits a scalar. Construction stays lazy.
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
@@ -317,7 +316,7 @@ public sealed class Utf8SliceRtlTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 }
 public sealed class Utf8SliceRtlOperationTests

@@ -111,7 +111,7 @@ public sealed class Utf8SliceDotTests
     // correctness rides the oracle.
     [Theory]
     [InlineData("(a.c)+", "xa\U0001F600c", false, 0)]
-    public void NonAsciiDotDeclinesToFallback(
+    public void NonAsciiDotUsesOwnedUnits(
         string pattern, string inputText, bool expectedSuccess, int expectedCount)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -124,7 +124,7 @@ public sealed class Utf8SliceDotTests
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
         Assert.Equal(expectedCount, regex.Count(input));
         Assert.Equal(expectedSuccess, regex.Match(input).Success);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     // Bare dot-star over halves-closed atoms tiles unit-for-unit with the

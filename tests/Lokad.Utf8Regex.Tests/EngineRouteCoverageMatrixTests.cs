@@ -82,15 +82,15 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "negated-space-window-gap-hit", "a[^\\s]{2,5}b", RegexOptions.CultureInvariant, "xayzb", "AsciiSimplePattern", null, false, false };
         yield return new object?[] { "divergent-ranged-count", "(?:a|ab){2,3}", RegexOptions.CultureInvariant, "xaabab", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "folded-shorthand-range-astral", "(?i)A\\D{2,}?B", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object?[] { "negated-property-range-astral", "a\\P{L}{2,3}b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", false, false };
+        yield return new object?[] { "negated-property-range-astral", "a\\P{L}{2,3}b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "negated-shorthand-plus-astral", "a\\P{Nd}+b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object?[] { "word-range-astral", "a\\W{2,}?b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", false, false };
+        yield return new object?[] { "word-range-astral", "a\\W{2,}?b", RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "negated-shorthand-window-gap-miss-compiled", "a\\D{2,5}b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xa12b", "AsciiSimplePattern", null, false, false };
         yield return new object?[] { "negated-shorthand-window-gap-hit-compiled", "a\\D{2,5}b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xayzb", "AsciiSimplePattern", null, false, false };
         yield return new object?[] { "negated-space-window-gap-hit-compiled", "a[^\\s]{2,5}b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xayzb", "AsciiSimplePattern", null, false, false };
         yield return new object?[] { "divergent-ranged-count-compiled", "(?:a|ab){2,3}", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xaabab", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object?[] { "negated-property-range-astral-compiled", "a\\P{L}{2,3}b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", false, false };
-        yield return new object?[] { "word-range-astral-compiled", "a\\W{2,}?b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", false, false };
+        yield return new object?[] { "negated-property-range-astral-compiled", "a\\P{L}{2,3}b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "word-range-astral-compiled", "a\\W{2,}?b", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xa\U0001F600b", "FallbackRegex", "unsupported_loop", true, true };
     }
 
     [Theory]
