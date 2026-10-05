@@ -12,7 +12,8 @@ public sealed class Utf8SliceUnicodeAtomTests
     private static readonly string[] Texts = ["", "abc", "\u00e9\u00e9a\u00c9", "\u6f22\u6f22a",
         "\U0001f600", "a\U0001f600b", "\U0001f600\U0001f600b", "x\U0001f600ab",
         "\u00e9\U00010400a\u00e9\u00e9", "\u212aKk\u0130Ii\u0131", "\u03a3\u03c3\u03c2\u2126\u03c9",
-        "\u00c5\u00e5\u212b\u0178\u00ff", "\u0000\u0080\u00ff\uffff\n", "a\n\U0001f600b"];
+        "\u00c5\u00e5\u212b\u0178\u00ff", "\u0000\u0080\u00ff\uffff\n", "a\n\U0001f600b",
+        "bcdAEIOUxyz 123_\t\r\n", "\u0000\u0001\u0008\u001a\u001b\u001c\u001d\u001e\u001fA"];
 
     private static readonly string[] AtomPatterns = [
             "(\u00e9+)\\1", "(\u6f22|\u00e9)+", "(?i:\u00e9+)", "(?i:\u212a+)", "(?i:\u03a3+)", "(?i:\u0130+)",
@@ -26,6 +27,21 @@ public sealed class Utf8SliceUnicodeAtomTests
             "(?i:[\u212a]+)", "(?i:[^\u212a]+)", "(?i:[\u00c5\u03a9]+)", "(?i:[\u00c0-\u00de]+)",
             "([\\777]+)", "([\\400]+)", "([\\u0000-\\uD7FF\\uE000-\\uFFFF]+)",
             "a(?:[\\u0000-\\uD7FF\\uE000-\\uFFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])c",
+            @"([a-z-[aeiou]]+)", @"([^a-z-[aeiou]]+)", @"([\w-[\d_]]+)", @"([^\w-[^\d]]+)",
+            @"([\s-[\r\n]]+)", @"(?i:[A-Z-[k]]+)", @"([a-z-[d-w-[m-p]]]+)", @"([a-z-[^b-f]]+)",
+            @"([\p{L}-[\p{Lu}]]+)", @"(?i:[\p{L}-[\p{Lu}]]+)", @"([\p{L}-[\P{IsBasicLatin}]]+)",
+            "([\u00e9\u6f22-[\u6f22]]+)", "([^\u00e9-[^\u6f22]]+)",
+            @"([\ud800-\udfff-[\ud800-\udbff]]+)", @"([^x-[\ud800-\udbff]]+)",
+            @"([\u0000-\uFFFF-[\ud800-\udfff]]+)", @"([\u0000-\uFFFF-[\u0080-\uFFFF]]+)",
+            @"([a-z-[a-z]]*)", @"([a-z-[a-z]]+)", "([\u00e9-[\u00e9-[\u00e9]]]+)",
+            @"([\c@-\c_]+)", @"([\ca-\cz]+)", @"([\c]-\c_]+)", @"([\c@\c[\c\\c]\c^\c_]+)",
+            @"([\cA-\cZ-[\cD-\cW-[\cM-\cP]]]+)",
+            @"(?<=([a-z-[aeiou]]+))a", @"(?=([\w-[\d_]]+))", @"([a-z-[e]]+)\1",
+            @"([a-z-[d-w-[m-p]]]+?)x", @"([a-z-[aeiou]]){2}", @"([a-z-[aeiou]])?",
+            @"([\u0080-\uFFFF-[\p{Cs}]]+)", @"(?i:[\p{IsBasicLatin}-[k]])", @"(?i:[^\P{IsBasicLatin}-[k]])",
+            @"[a-[b]]", @"[a-[\b]]", @"([^x-[a]]){2,}", @"([^x-[a]]){0,3}",
+            @"[^x-[a]]{2,}", @"([\p{Cs}-[x]]){2,}", @"(?:[^x-[a]]){2,3}?",
+            @"(?>([a-z-[e]]+))", @"(?<x>[a-z-[e]]+)(?<-x>[^a-z-[a]])",
     ];
 
     public static IEnumerable<object[]> Patterns()
@@ -202,6 +218,8 @@ public sealed class Utf8SliceUnicodeAtomTests
     [InlineData("([\\u00C0-\\u00FF])+", "\u00e9")]
     [InlineData("((?i:\\u00e9)+)", "\u00e9")]
     [InlineData("([\\ud800-\\udfff])+", "\U0001f600")]
+    [InlineData(@"([a-z-[aeiou]])+", "b")]
+    [InlineData(@"([\ud800-\udfff-[x]])+", "\U0001f600")]
     public void UnicodeAtomsObserveCancellationInsideTheVmAndRecover(string pattern, string unit)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, 256)));
@@ -270,6 +288,20 @@ public sealed class Utf8SliceUnicodeAtomTests
     [InlineData("[\\000-\\777]")]
     [InlineData("[\\u007f-\\uFFFF]")]
     [InlineData("[\\uFFFF\\u0080-\\u0090\\u0088-\\u00ff]")]
+    [InlineData(@"[a-z-[aeiou]]")]
+    [InlineData(@"[^a-z-[aeiou]]")]
+    [InlineData(@"[a-z-[d-w-[m-p]]]")]
+    [InlineData(@"[\w-[\d_]]")]
+    [InlineData(@"[^\w-[^\d]]")]
+    [InlineData(@"[\s-[\r\n]]")]
+    [InlineData(@"[\p{L}-[\p{Lu}]]")]
+    [InlineData(@"(?i:[\p{L}-[\p{Lu}]])")]
+    [InlineData(@"(?i:[\p{IsBasicLatin}-[k]])")]
+    [InlineData(@"(?i:[^\P{IsBasicLatin}-[k]])")]
+    [InlineData(@"[\u0000-\uFFFF-[\ud800-\udfff]]")]
+    [InlineData(@"[\u0080-\uFFFF-[\p{Cs}]]")]
+    [InlineData(@"[\c@-\c_]")]
+    [InlineData(@"[\cA-\cZ-[\cD-\cW-[\cM-\cP]]]")]
     public void BmpMembershipAndFoldingAgreeAcrossTheEntireAlphabet(string pattern)
     {
         // Exclude lone surrogates from public input, retain them in the separate
@@ -281,7 +313,8 @@ public sealed class Utf8SliceUnicodeAtomTests
                 if (value is < 0xD800 or > 0xDFFF) chars[index++] = (char)value;
         });
         var input = Encoding.UTF8.GetBytes(text);
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.RightToLeft,
+            RegexOptions.CultureInvariant | RegexOptions.Compiled, RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(20));
             var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(20));

@@ -24,6 +24,7 @@ public sealed class Utf8SliceClassTests
         yield return new object?[] { "[\\n]+" };
         yield return new object?[] { "([a-z]+)" };
         yield return new object?[] { "[^a-z]+b" };
+        yield return new object?[] { "[a-[b]]" };
     }
 
     [Theory]
@@ -48,7 +49,6 @@ public sealed class Utf8SliceClassTests
     {
         yield return new object?[] { "[\\w]" };
         yield return new object?[] { "[\\x41]" };
-        yield return new object?[] { "[a-[b]]" };
         yield return new object?[] { "[[:alpha:]]" };
         yield return new object?[] { "[\\cA]" };
     }
