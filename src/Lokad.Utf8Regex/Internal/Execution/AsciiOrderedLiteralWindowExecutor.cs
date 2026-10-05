@@ -12,18 +12,18 @@ internal static class AsciiOrderedLiteralWindowExecutor
     public static int FindNext(
         ReadOnlySpan<byte> input,
         AsciiOrderedLiteralWindowPlan plan,
-        Utf8SearchPlan searchPlan,
+        in Utf8SearchPlan searchPlan,
         int startIndex,
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
-        return FindNext(input, plan, searchPlan, default, startIndex, budget, out matchedLength);
+        return FindNext(input, plan, in searchPlan, default, startIndex, budget, out matchedLength);
     }
 
     public static int FindNext(
         ReadOnlySpan<byte> input,
         AsciiOrderedLiteralWindowPlan plan,
-        Utf8SearchPlan searchPlan,
+        in Utf8SearchPlan searchPlan,
         PreparedAsciiFindPlan trailingFindPlan,
         int startIndex,
         Utf8ExecutionDeadline budget,

@@ -706,10 +706,13 @@ internal ref struct Utf8OperationMatchCursor
         if (_mode == EnumeratorMode.AsciiOrderedLiteralWindow)
         {
             ref readonly var windowProgram = ref _plans.StructuralLinearProgram;
+            // Search plans include all operation plans (currently several KiB).
+            // A cursor borrows the immutable plan rather than copying it per hit.
+            ref readonly var windowSearchPlan = ref _plans.SearchPlan;
             var matchIndex = AsciiOrderedLiteralWindowExecutor.FindNext(
                 _input,
                 windowProgram.OrderedLiteralWindowPlan,
-                _plans.SearchPlan,
+                in windowSearchPlan,
                 _consumed,
                 _budget,
                 out var matchedLength);
