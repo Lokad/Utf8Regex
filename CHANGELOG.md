@@ -4,6 +4,14 @@
 
 ### Owned UTF-16 execution
 
+- Tree-to-VM conversion and instruction emission now use explicit frames,
+  including suspended compilation of nested assertion programs. Shared
+  construction facts use reference identity for record nodes and retain
+  empty-match, capture-write and saturating byte-width semantics. Direction,
+  instruction order, jump patching and assertion metadata remain unchanged.
+  The existing depth boundaries remain while other construction and execution
+  consumers are still recursive.
+
 - Search analysis and deterministic prefilter preparation now traverse with
   explicit frames, including required-literal collection, quoted runs, finite
   windows, prefix guards, literal families and byte masks. Nested prefixes

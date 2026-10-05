@@ -441,86 +441,176 @@ internal static class Utf8SliceLowerer
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
-        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft);
+        var facts = AnalyzeNodes(root);
+        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts);
         lowerer.CaptureCatalog = captureCatalog;
-        // Right-to-left programs execute backreferences before their groups in
-        // reversed order, so seed the slot count from the final group tally
-        // (parser-validated digits always land inside it); forward programs grow
-        // it in encounter order exactly as before.
-        if (groupNames is not null)
+        var frames = new Stack<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>();
+        frames.Push((lowerer, root, lowerer.EmitSteps(root).GetEnumerator(), true));
+        try
         {
-            lowerer.GroupCount = groupNames.Length - 1;
+            while (frames.Count > 0)
+            {
+                var frame = frames.Peek();
+                if (frame.Steps.MoveNext())
+                {
+                    var request = frame.Steps.Current;
+                    var owner = frame.Owner;
+                    if (request.Program)
+                    {
+                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts);
+                        owner.CaptureCatalog = frame.Owner.CaptureCatalog;
+                    }
+                    frames.Push((owner, request.Node, owner.EmitSteps(request.Node).GetEnumerator(), request.Program));
+                    continue;
+                }
+                frames.Pop();
+                frame.Steps.Dispose();
+                if (frame.Owner.Failed) return null;
+                if (!frame.Program) continue;
+                var program = FinishLowering(frame.Owner, frame.Root,
+                    frames.Count == 0 && usesInterpretedLazyLoopSemantics,
+                    frames.Count == 0 && usesLiteralClassBracketSyntax);
+                if (frames.Count == 0) return program;
+                frames.Peek().Owner.LastSubprogram = program;
+            }
+            return null;
         }
-        static bool NodeCanMatchEmpty(Utf8SliceNode node)
+        finally
+        {
+            while (frames.TryPop(out var frame)) frame.Steps.Dispose();
+        }
+    }
+
+    private readonly record struct NodeFacts(bool CanMatchEmpty, bool WritesGroup, int Minimum, int Maximum);
+
+    private static Dictionary<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root)
+    {
+        // Slice nodes are records: structural hashing itself would recurse.
+        // One identity cache serves the main and every nested assertion program.
+        var facts = new Dictionary<Utf8SliceNode, NodeFacts>(ReferenceEqualityComparer.Instance);
+        var frames = new Stack<(Utf8SliceNode Node, IEnumerator<Utf8SliceNode> Children)>();
+        frames.Push((root, Children(root).GetEnumerator()));
+        try
+        {
+            while (frames.Count > 0)
+            {
+                var frame = frames.Peek();
+                if (frame.Children.MoveNext())
+                {
+                    var child = frame.Children.Current;
+                    if (!facts.ContainsKey(child)) frames.Push((child, Children(child).GetEnumerator()));
+                    continue;
+                }
+                frames.Pop();
+                frame.Children.Dispose();
+                var node = frame.Node;
+                var writes = node is Utf8SliceNode.CaptureNode or Utf8SliceNode.BalanceNode;
+                foreach (var child in Children(node)) writes |= facts[child].WritesGroup;
+                var empty = node switch
+                {
+                    Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or
+                        Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode or Utf8SliceNode.BackrefNode or Utf8SliceNode.BalanceNode => true,
+                    Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].CanMatchEmpty || facts[conditional.NoBody].CanMatchEmpty,
+                    Utf8SliceNode.CaptureNode capture => facts[capture.Body].CanMatchEmpty,
+                    Utf8SliceNode.AtomicNode atomic => facts[atomic.Body].CanMatchEmpty,
+                    Utf8SliceNode.ConcatNode concat => concat.Children.All(child => facts[child].CanMatchEmpty),
+                    Utf8SliceNode.AlternationNode alternation => alternation.Branches.Any(branch => branch.All(child => facts[child].CanMatchEmpty)),
+                    Utf8SliceNode.RepeatNode repeat => repeat.Minimum == 0 || facts[repeat.Body].CanMatchEmpty,
+                    _ => false,
+                };
+                var (minimum, maximum) = Measure(node, facts);
+                facts[node] = new NodeFacts(empty, writes, minimum, maximum);
+            }
+            return facts;
+        }
+        finally
+        {
+            while (frames.TryPop(out var frame)) frame.Children.Dispose();
+        }
+
+        static IEnumerable<Utf8SliceNode> Children(Utf8SliceNode node)
         {
             switch (node)
             {
-                case Utf8SliceNode.EmptyNode:
-                case Utf8SliceNode.AnchorNode:
-                case Utf8SliceNode.BoundaryNode:
-                case Utf8SliceNode.LookaheadNode:
-                case Utf8SliceNode.LookbehindNode:
-                case Utf8SliceNode.BackrefNode:
-                case Utf8SliceNode.BalanceNode:
-                    return true;
-                case Utf8SliceNode.ConditionalNode conditionalEmpty:
-                    return NodeCanMatchEmpty(conditionalEmpty.YesBody) ||
-                        NodeCanMatchEmpty(conditionalEmpty.NoBody);
-                case Utf8SliceNode.FailNode:
-                case Utf8SliceNode.LiteralNode:
-                case Utf8SliceNode.SetNode:
-                case Utf8SliceNode.DotNode:
-                case Utf8SliceNode.ShorthandNode:
-                case Utf8SliceNode.CategoryNode:
-                case Utf8SliceNode.CategorySetNode:
-                    return false;
-                case Utf8SliceNode.CaptureNode capture:
-                    return NodeCanMatchEmpty(capture.Body);
-                case Utf8SliceNode.AtomicNode atomic:
-                    return NodeCanMatchEmpty(atomic.Body);
+                case Utf8SliceNode.CaptureNode capture: yield return capture.Body; break;
+                case Utf8SliceNode.BalanceNode balance: yield return balance.Body; break;
+                case Utf8SliceNode.AtomicNode atomic: yield return atomic.Body; break;
+                case Utf8SliceNode.RepeatNode repeat: yield return repeat.Body; break;
+                case Utf8SliceNode.LookaheadNode lookahead: yield return lookahead.Body; break;
+                case Utf8SliceNode.LookbehindNode lookbehind: yield return lookbehind.Body; break;
                 case Utf8SliceNode.ConcatNode concat:
-                    foreach (var child in concat.Children)
-                    {
-                        if (!NodeCanMatchEmpty(child))
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
+                    foreach (var child in concat.Children) yield return child;
+                    break;
                 case Utf8SliceNode.AlternationNode alternation:
                     foreach (var branch in alternation.Branches)
-                    {
-                        var branchEmpty = true;
-                        foreach (var child in branch)
-                        {
-                            if (!NodeCanMatchEmpty(child))
-                            {
-                                branchEmpty = false;
-                                break;
-                            }
-                        }
-                        if (branchEmpty)
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                case Utf8SliceNode.RepeatNode repeat:
-                    if (repeat.Minimum == 0)
-                    {
-                        return true;
-                    }
-                    return NodeCanMatchEmpty(repeat.Body);
-                default:
-                    return true;
+                        foreach (var child in branch) yield return child;
+                    break;
+                case Utf8SliceNode.ConditionalNode conditional:
+                    yield return conditional.YesBody;
+                    yield return conditional.NoBody;
+                    if (conditional.TestBody is not null) yield return conditional.TestBody;
+                    break;
             }
         }
-        var canMatchEmpty = NodeCanMatchEmpty(root);
-        if (!lowerer.EmitNode(root))
+
+        static (int Minimum, int Maximum) Measure(Utf8SliceNode node, Dictionary<Utf8SliceNode, NodeFacts> facts)
         {
-            return null;
+            switch (node)
+            {
+                case Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode:
+                    return (0, 0);
+                case Utf8SliceNode.LiteralNode literal:
+                    var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : 3;
+                    return literal.FoldCase ? (1, 3) : (width, width);
+                case Utf8SliceNode.SetNode set: return set.Negated ? (1, 4) : (1, 1);
+                case Utf8SliceNode.DotNode: return (1, 4);
+                case Utf8SliceNode.ShorthandNode shorthand: return (int)shorthand.Shorthand % 2 == 1 ? (1, 4) : (1, 3);
+                case Utf8SliceNode.CategoryNode or Utf8SliceNode.CategorySetNode: return (1, 3);
+                case Utf8SliceNode.BackrefNode: return (0, int.MaxValue);
+                case Utf8SliceNode.CaptureNode capture: return (facts[capture.Body].Minimum, facts[capture.Body].Maximum);
+                case Utf8SliceNode.BalanceNode balance: return (facts[balance.Body].Minimum, facts[balance.Body].Maximum);
+                case Utf8SliceNode.AtomicNode atomic: return (facts[atomic.Body].Minimum, facts[atomic.Body].Maximum);
+                case Utf8SliceNode.ConditionalNode conditional:
+                    return (Math.Min(facts[conditional.YesBody].Minimum, facts[conditional.NoBody].Minimum),
+                        Math.Max(facts[conditional.YesBody].Maximum, facts[conditional.NoBody].Maximum));
+                case Utf8SliceNode.ConcatNode concat:
+                    long minimum = 0, maximum = 0;
+                    foreach (var child in concat.Children)
+                    {
+                        minimum += facts[child].Minimum;
+                        maximum += facts[child].Maximum;
+                    }
+                    return (Saturate(minimum), Saturate(maximum));
+                case Utf8SliceNode.AlternationNode alternation:
+                    var branchMinimum = int.MaxValue;
+                    var branchMaximum = 0;
+                    foreach (var branch in alternation.Branches)
+                    {
+                        long low = 0, high = 0;
+                        foreach (var child in branch)
+                        {
+                            low += facts[child].Minimum;
+                            high += facts[child].Maximum;
+                        }
+                        branchMinimum = Math.Min(branchMinimum, Saturate(low));
+                        branchMaximum = Math.Max(branchMaximum, Saturate(high));
+                    }
+                    return alternation.Branches.Length == 0 ? (0, 0) : (branchMinimum, branchMaximum);
+                case Utf8SliceNode.RepeatNode repeat:
+                    var body = facts[repeat.Body];
+                    return (Saturate((long)body.Minimum * repeat.Minimum),
+                        repeat.Maximum == int.MaxValue || body.Maximum == int.MaxValue ? int.MaxValue : Saturate((long)body.Maximum * repeat.Maximum));
+                default: return (0, int.MaxValue);
+            }
         }
 
+        static int Saturate(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
+    }
+
+    private readonly record struct EmissionRequest(Utf8SliceNode Node, bool Program, bool RightToLeft);
+
+    private static Utf8SliceProgram FinishLowering(Lowering lowerer, Utf8SliceNode root, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+    {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresAstralFreeInput = false;
         var requiresUnicodeWordBoundary = false;
@@ -624,7 +714,7 @@ internal static class Utf8SliceLowerer
         // Hand-built trees (tests, assertion bodies without renumbering
         // context) carry no names; ordinals are BCL-exact for them since
         // only the parser admits named shapes, always with real names.
-        var resolvedNames = groupNames;
+        var resolvedNames = lowerer.GroupNames;
         if (resolvedNames is null)
         {
             resolvedNames = new string[lowerer.GroupCount + 1];
@@ -656,8 +746,8 @@ internal static class Utf8SliceLowerer
         // Whole-pattern greedy or lazy unbounded loops over unit-closed atoms
         // run scalarwise exactly like BCL units on astral input, so they clear
         // the astral-free requirement the instruction scan above may have set.
-        requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, rightToLeft);
-        var halvesClosedEmptyLoop = IsHalvesClosedEmptyWholeLoop(root, rightToLeft);
+        requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, lowerer.MirrorExecute);
+        var halvesClosedEmptyLoop = IsHalvesClosedEmptyWholeLoop(root, lowerer.MirrorExecute);
 
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
@@ -671,7 +761,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, canMatchEmpty, halvesClosedEmptyLoop, captureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, halvesClosedEmptyLoop, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
     }
 
     // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar
@@ -1201,13 +1291,20 @@ internal static class Utf8SliceLowerer
         internal readonly bool MaintainBalance;
         internal readonly bool MatchCaseInsensitive;
         internal readonly bool MirrorExecute;
+        internal readonly Dictionary<Utf8SliceNode, NodeFacts> Facts;
+        internal Utf8SliceProgram? LastSubprogram;
+        internal bool Failed;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts)
         {
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
             MirrorExecute = mirrorExecute;
+            Facts = facts;
+            // RTL references can precede their captures. Every program starts
+            // with the final catalog tally when supplied, just as the old entry.
+            if (groupNames is not null) GroupCount = groupNames.Length - 1;
         }
 
         internal void Emit(Utf8SliceInstruction instruction)
@@ -1215,159 +1312,12 @@ internal static class Utf8SliceLowerer
             Instructions.Add(instruction);
         }
 
-        internal bool EmitNode(Utf8SliceNode node)
+        internal IEnumerable<EmissionRequest> EmitSteps(Utf8SliceNode node)
         {
-            // Byte-length bounds for lookbehind start search, saturated:
-            // the lower bound keeps the search inside the subject, the
-            // upper bound comes from the longest servable body. Captures
-            // are unbounded above and empty below; nested assertions are
-            // zero-width.
-            static int Saturate(long value)
-            {
-                return value > int.MaxValue ? int.MaxValue : (int)value;
-            }
-
-            // Capturing lookbehinds force the residual legacy reason, so the
-            // lookbehind arm detects group writes in the body tree. Balance
-            // pops cannot reach owned bodies (they decline at parse), but
-            // counting them keeps the predicate sound if that ever relaxes.
-            static bool BodyWritesGroup(Utf8SliceNode candidate)
-            {
-                switch (candidate)
-                {
-                    case Utf8SliceNode.CaptureNode:
-                    case Utf8SliceNode.BalanceNode:
-                        return true;
-                    case Utf8SliceNode.ConcatNode concat:
-                        foreach (var child in concat.Children)
-                        {
-                            if (BodyWritesGroup(child))
-                            {
-                                return true;
-                            }
-                        }
-
-                        break;
-                    case Utf8SliceNode.AlternationNode alternation:
-                        foreach (var branch in alternation.Branches)
-                        {
-                            foreach (var child in branch)
-                            {
-                                if (BodyWritesGroup(child))
-                                {
-                                    return true;
-                                }
-                            }
-                        }
-
-                        break;
-                    case Utf8SliceNode.RepeatNode repeat:
-                        return BodyWritesGroup(repeat.Body);
-                    case Utf8SliceNode.AtomicNode atomic:
-                        return BodyWritesGroup(atomic.Body);
-                    case Utf8SliceNode.LookaheadNode lookaheadBody:
-                        return BodyWritesGroup(lookaheadBody.Body);
-                    case Utf8SliceNode.LookbehindNode lookbehindBody:
-                        return BodyWritesGroup(lookbehindBody.Body);
-                    case Utf8SliceNode.ConditionalNode conditional:
-                        return BodyWritesGroup(conditional.YesBody) ||
-                            BodyWritesGroup(conditional.NoBody) ||
-                            (conditional.TestBody is not null && BodyWritesGroup(conditional.TestBody));
-                    default:
-                        break;
-                }
-
-                return false;
-            }
-
-            static (int Minimum, int Maximum) Measure(Utf8SliceNode measured)
-            {
-                switch (measured)
-                {
-                    case Utf8SliceNode.EmptyNode:
-                    case Utf8SliceNode.AnchorNode:
-                    case Utf8SliceNode.BoundaryNode:
-                    case Utf8SliceNode.LookaheadNode:
-                    case Utf8SliceNode.LookbehindNode:
-                        return (0, 0);
-                    case Utf8SliceNode.LiteralNode literal:
-                        var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : 3;
-                        return literal.FoldCase ? (1, 3) : (width, width);
-                    case Utf8SliceNode.SetNode set:
-                        return set.Negated ? (1, 4) : (1, 1);
-                    case Utf8SliceNode.DotNode:
-                        return (1, 4);
-                    case Utf8SliceNode.ShorthandNode shorthand:
-                        return (int)shorthand.Shorthand % 2 == 1 ? (1, 4) : (1, 3);
-                    case Utf8SliceNode.CategorySetNode:
-                        // Served inputs hold no astral scalars (routing
-                        // declines them), so every category-set atom spans
-                        // one to three bytes; astral shapes keep legacy
-                        // routing, exactly like single categories.
-                        return (1, 3);
-                    case Utf8SliceNode.CategoryNode:
-                        // Served inputs hold no astral scalars (routing
-                        // declines them), so every category atom spans one
-                        // to three bytes; astral shapes keep legacy routing.
-                        return (1, 3);
-                    case Utf8SliceNode.BackrefNode:
-                        return (0, int.MaxValue);
-                    case Utf8SliceNode.CaptureNode capture:
-                        return Measure(capture.Body);
-                    case Utf8SliceNode.BalanceNode balance:
-                        return Measure(balance.Body);
-                    case Utf8SliceNode.AtomicNode atomic:
-                        return Measure(atomic.Body);
-                    case Utf8SliceNode.ConditionalNode conditional:
-                        var (conditionalYesMinimum, conditionalYesMaximum) = Measure(conditional.YesBody);
-                        var (conditionalNoMinimum, conditionalNoMaximum) = Measure(conditional.NoBody);
-                        return (Math.Min(conditionalYesMinimum, conditionalNoMinimum), Math.Max(conditionalYesMaximum, conditionalNoMaximum));
-                    case Utf8SliceNode.ConcatNode concat:
-                        var totalMinimum = 0L;
-                        var totalMaximum = 0L;
-                        foreach (var child in concat.Children)
-                        {
-                            var (childMinimum, childMaximum) = Measure(child);
-                            totalMinimum += childMinimum;
-                            totalMaximum += childMaximum;
-                        }
-
-                        return (Saturate(totalMinimum), Saturate(totalMaximum));
-                    case Utf8SliceNode.AlternationNode alternation:
-                        var branchMinimum = int.MaxValue;
-                        var branchMaximum = 0;
-                        foreach (var branch in alternation.Branches)
-                        {
-                            var totalBranchMinimum = 0L;
-                            var totalBranchMaximum = 0L;
-                            foreach (var child in branch)
-                            {
-                                var (childMinimum, childMaximum) = Measure(child);
-                                totalBranchMinimum += childMinimum;
-                                totalBranchMaximum += childMaximum;
-                            }
-
-                            branchMinimum = Math.Min(branchMinimum, Saturate(totalBranchMinimum));
-                            branchMaximum = Math.Max(branchMaximum, Saturate(totalBranchMaximum));
-                        }
-
-                        return alternation.Branches.Length == 0
-                            ? (0, 0)
-                            : (branchMinimum, branchMaximum);
-                    case Utf8SliceNode.RepeatNode repeat:
-                        var (bodyMinimum, bodyMaximum) = Measure(repeat.Body);
-                        var repeatMinimum = Saturate((long)bodyMinimum * repeat.Minimum);
-                        var repeatMaximum = repeat.Maximum == int.MaxValue || bodyMaximum == int.MaxValue
-                            ? int.MaxValue
-                            : Saturate((long)bodyMaximum * repeat.Maximum);
-                        return (repeatMinimum, repeatMaximum);
-                    default:
-                        return (0, int.MaxValue);
-                }
-            }
             if (Instructions.Count >= Utf8SliceLowerer.MaxInstructions)
             {
-                return false;
+                Failed = true;
+                yield break;
             }
 
             switch (node)
@@ -1411,10 +1361,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConcatNode concat:
                     foreach (var child in concat.Children)
                     {
-                        if (!EmitNode(child))
-                        {
-                            return false;
-                        }
+                        yield return new EmissionRequest(child, false, MirrorExecute);
                     }
 
                     break;
@@ -1433,10 +1380,7 @@ internal static class Utf8SliceLowerer
                             Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
                             foreach (var child in alternation.Branches[branch])
                             {
-                                if (!EmitNode(child))
-                                {
-                                    return false;
-                                }
+                                yield return new EmissionRequest(child, false, MirrorExecute);
                             }
 
                             endJumps.Add(Instructions.Count);
@@ -1447,10 +1391,7 @@ internal static class Utf8SliceLowerer
                         {
                             foreach (var child in alternation.Branches[branch])
                             {
-                                if (!EmitNode(child))
-                                {
-                                    return false;
-                                }
+                                yield return new EmissionRequest(child, false, MirrorExecute);
                             }
                         }
                     }
@@ -1470,10 +1411,7 @@ internal static class Utf8SliceLowerer
                     var repeatId = RepeatCount++;
                     var repeatIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatGreedy, 0, 0, 0, 0));
-                    if (!EmitNode(repeat.Body))
-                    {
-                        return false;
-                    }
+                    yield return new EmissionRequest(repeat.Body, false, MirrorExecute);
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatEnd, repeatIndex, 0, 0, 0));
                     var exitIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatExit, repeatId, 0, 0, 0));
@@ -1557,10 +1495,7 @@ internal static class Utf8SliceLowerer
 
                     if (balance.CaptureSlot >= 0)
                         Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalanceStart, balance.PopSlot, balance.CaptureSlot, 0, 0));
-                    if (!EmitNode(balance.Body))
-                    {
-                        return false;
-                    }
+                    yield return new EmissionRequest(balance.Body, false, MirrorExecute);
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalancePop, balance.PopSlot, balance.CaptureSlot, 0, 0));
 
                     break;
@@ -1571,10 +1506,7 @@ internal static class Utf8SliceLowerer
                     // the Fail branch.
                     var atomicFork = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 2, 0, 0));
-                    if (!EmitNode(atomic.Body))
-                    {
-                        return false;
-                    }
+                    yield return new EmissionRequest(atomic.Body, false, MirrorExecute);
 
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.AtomicCommit, 0, 0, 0, 0));
                     var atomicJump = Instructions.Count;
@@ -1591,14 +1523,11 @@ internal static class Utf8SliceLowerer
                         // is a positive lookaround per BCL); the marker preserves the
                         // distinction for consumers with different assertion capture flow.
                         HasConditionalTest = true;
-                        if (!EmitNode(new Utf8SliceNode.AlternationNode(new[]
+                        yield return new EmissionRequest(new Utf8SliceNode.AlternationNode(new[]
                         {
                             new Utf8SliceNode[] { new Utf8SliceNode.LookaheadNode(conditional.TestBody, true), conditional.YesBody },
                             new Utf8SliceNode[] { new Utf8SliceNode.LookaheadNode(conditional.TestBody, false), conditional.NoBody },
-                        })))
-                        {
-                            return false;
-                        }
+                        }), false, MirrorExecute);
 
                         break;
                     }
@@ -1608,18 +1537,12 @@ internal static class Utf8SliceLowerer
                     // failure never retries the other branch (BCL commits to the test).
                     var testIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, 0, 0, 0));
-                    if (!EmitNode(conditional.YesBody))
-                    {
-                        return false;
-                    }
+                    yield return new EmissionRequest(conditional.YesBody, false, MirrorExecute);
 
                     var noJump = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
                     Instructions[testIndex] = new Utf8SliceInstruction(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, Instructions.Count, 0, 0);
-                    if (!EmitNode(conditional.NoBody))
-                    {
-                        return false;
-                    }
+                    yield return new EmissionRequest(conditional.NoBody, false, MirrorExecute);
 
                     Patch(noJump, Instructions.Count);
                     break;
@@ -1632,10 +1555,12 @@ internal static class Utf8SliceLowerer
                     // like lookbehind bodies).
                     if (MirrorExecute)
                     {
-                        var lookaheadBody = Utf8SliceLowerer.Lower(lookahead.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false, CaptureCatalog);
+                        yield return new EmissionRequest(lookahead.Body, true, false);
+                        var lookaheadBody = LastSubprogram;
                         if (lookaheadBody is null)
                         {
-                            return false;
+                            Failed = true;
+                            yield break;
                         }
 
                         if (lookaheadBody.GroupCount > GroupCount)
@@ -1643,7 +1568,7 @@ internal static class Utf8SliceLowerer
                             GroupCount = lookaheadBody.GroupCount;
                         }
 
-                        var (lookaheadMinimum, lookaheadMaximum) = Measure(lookahead.Body);
+                        var (lookaheadMinimum, lookaheadMaximum) = (Facts[lookahead.Body].Minimum, Facts[lookahead.Body].Maximum);
                         var lookaheadAssertionIndex = Assertions.Count;
                         Assertions.Add(new Utf8SliceAssertion(lookaheadBody, lookaheadMinimum, lookaheadMaximum, false));
                         Emit(new Utf8SliceInstruction(
@@ -1664,10 +1589,7 @@ internal static class Utf8SliceLowerer
                     {
                         var forkIndex = Instructions.Count;
                         Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
-                        if (!EmitNode(lookahead.Body))
-                        {
-                            return false;
-                        }
+                        yield return new EmissionRequest(lookahead.Body, false, MirrorExecute);
 
                         Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
                         var jumpIndex = Instructions.Count;
@@ -1681,10 +1603,7 @@ internal static class Utf8SliceLowerer
                     {
                         var forkIndex = Instructions.Count;
                         Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
-                        if (!EmitNode(lookahead.Body))
-                        {
-                            return false;
-                        }
+                        yield return new EmissionRequest(lookahead.Body, false, MirrorExecute);
 
                         Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
                         Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
@@ -1695,14 +1614,16 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     {
                         SawLookaround = true;
-                        if (BodyWritesGroup(lookbehind.Body))
+                        if (Facts[lookbehind.Body].WritesGroup)
                         {
                             SawCapturingLookbehind = true;
                         }
-                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, true, CaptureCatalog);
+                        yield return new EmissionRequest(lookbehind.Body, true, true);
+                        var body = LastSubprogram;
                         if (body is null)
                         {
-                            return false;
+                            Failed = true;
+                            yield break;
                         }
 
                         if (body.GroupCount > GroupCount)
@@ -1710,7 +1631,7 @@ internal static class Utf8SliceLowerer
                             GroupCount = body.GroupCount;
                         }
 
-                        var (minimum, maximum) = Measure(lookbehind.Body);
+                        var (minimum, maximum) = (Facts[lookbehind.Body].Minimum, Facts[lookbehind.Body].Maximum);
 
                         var assertionIndex = Assertions.Count;
                         Assertions.Add(new Utf8SliceAssertion(body, minimum, maximum, true));
@@ -1735,17 +1656,14 @@ internal static class Utf8SliceLowerer
                     }
 
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureStart, capture.Slot, 0, 0, 0));
-                    if (!EmitNode(capture.Body))
-                    {
-                        return false;
-                    }
+                    yield return new EmissionRequest(capture.Body, false, MirrorExecute);
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, 0, 0, 0));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported slice node {node.Kind}.", nameof(node));
             }
 
-            return true;
+            yield break;
         }
 
         private void Patch(int index, int target)
