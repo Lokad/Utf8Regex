@@ -593,6 +593,18 @@ public sealed partial class Utf8Regex
             return new Utf8ValueMatchEnumerator(rtlCursor).WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
+            !RequiresCultureSensitiveFallback && !UsesRightToLeft() &&
+            Utf8InputAnalyzer.IsAscii(input.Bytes))
+        {
+            return new Utf8ValueMatchEnumerator(
+                Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
+                    _preparedRegex, _verifierRuntime, input.Bytes,
+                    new Utf8ValidationResult(input.Bytes.Length, input.Bytes.Length, true, false),
+                    budget, start.Value, start.Value))
+                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+        }
+
         if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {

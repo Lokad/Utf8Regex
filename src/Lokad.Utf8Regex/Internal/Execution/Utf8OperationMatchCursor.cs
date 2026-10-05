@@ -249,7 +249,9 @@ internal ref struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = useStructuralLinearProgram
-            ? (structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
+            ? (structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow
+                ? EnumeratorMode.AsciiOrderedLiteralWindow
+                : structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
                 ? EnumeratorMode.AsciiFixedTokenPattern
                 : EnumeratorMode.AsciiDeterministicPattern)
             : EnumeratorMode.AsciiSimplePattern;
@@ -695,6 +697,29 @@ internal ref struct Utf8OperationMatchCursor
             }
 
             _current = new Utf8ValueMatch(true, true, foldedSuffixStartUtf16, foldedSuffixLiteral.Length, foldedSuffixStart, foldedSuffixLiteral.Length);
+            return true;
+        }
+
+        // Windows resume on the full subject so boundary guards retain their
+        // left context. Every admitted window consumes a nonempty ASCII literal;
+        // the factories reject non-ASCII subjects because gap counts are bytes.
+        if (_mode == EnumeratorMode.AsciiOrderedLiteralWindow)
+        {
+            ref readonly var windowProgram = ref _plans.StructuralLinearProgram;
+            var matchIndex = AsciiOrderedLiteralWindowExecutor.FindNext(
+                _input,
+                windowProgram.OrderedLiteralWindowPlan,
+                _plans.SearchPlan,
+                _consumed,
+                _budget,
+                out var matchedLength);
+            if (matchIndex < 0)
+            {
+                return false;
+            }
+
+            _current = new Utf8ValueMatch(true, true, matchIndex, matchedLength, matchIndex, matchedLength);
+            _consumed = matchIndex + matchedLength;
             return true;
         }
 
@@ -1632,5 +1657,6 @@ internal ref struct Utf8OperationMatchCursor
         RtlExactAsciiLiteral = 22,
         RtlAsciiLiteralIgnoreCase = 23,
         RtlExactUtf8Literal = 24,
+        AsciiOrderedLiteralWindow = 26,
     }
 }

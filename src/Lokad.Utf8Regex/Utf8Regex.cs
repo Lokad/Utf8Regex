@@ -2820,6 +2820,20 @@ public sealed partial class Utf8Regex
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var startInUtf16 = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        // Window boundaries inspect the original subject, including the unit
+        // before startat. Slicing the suffix would invent a word boundary there.
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
+            !RequiresCultureSensitiveFallback && !UsesRightToLeft() &&
+            Utf8InputAnalyzer.IsAscii(input))
+        {
+            return new Utf8ValueMatchEnumerator(
+                Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
+                    _preparedRegex, _verifierRuntime, input,
+                    new Utf8ValidationResult(input.Length, input.Length, true, false),
+                    CreateExecutionBudget(), startInUtf16.Value, startInUtf16.Value))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
         // Anchored prefixes from a nonzero start are a definitive miss; from offset 0
         // they reuse the single-match owned cursor without BCL construction.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -3005,7 +3019,7 @@ public sealed partial class Utf8Regex
         var budget = CreateExecutionBudget();
         var usesAsciiValidationShortcut = TryUseAsciiInputValidationShortcut(input);
         var validation = usesAsciiValidationShortcut
-            ? default
+            ? new Utf8ValidationResult(input.Length, input.Length, true, false)
             : Utf8Validation.Validate(input);
         var totalUtf16Length = usesAsciiValidationShortcut
             ? input.Length
@@ -4509,6 +4523,13 @@ public sealed partial class Utf8Regex
 
     private bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
+        // Both ordinary and emitted window selections use the same owned
+        // cursor. Admission follows the window program, not the backend kind.
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow)
+        {
+            return validation.IsAscii;
+        }
+
         // R03: split segments are match-delimited gaps (BCL EnumerateSplits never splices
         // group captures, unlike array Split), so grouped literal shapes split natively on the
         // same group-agnostic cursors. Structural shapes additionally require the same
