@@ -35,70 +35,72 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
 
     private static void Visit(Utf8TreeNode node, Utf8OwnedTreeAnalysis? runtimeAnalysis, ref FeatureState state)
     {
-        if (runtimeAnalysis?.IsInLoop(node) == true)
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            state.HasLoops = true;
-        }
-
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.Backreference:
-                state.HasBackreferences = true;
-                break;
-
-            case Utf8TreeNodeKind.PositiveLookaround:
-            case Utf8TreeNodeKind.NegativeLookaround:
-                state.HasLookarounds = true;
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
-                {
-                    state.HasLookbehind = true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Atomic:
-                state.HasAtomicGroups = true;
-                break;
-
-            case Utf8TreeNodeKind.BackreferenceConditional:
-            case Utf8TreeNodeKind.ExpressionConditional:
-                state.HasConditionals = true;
-                break;
-
-            case Utf8TreeNodeKind.Loop:
-            case Utf8TreeNodeKind.Lazyloop:
-            case Utf8TreeNodeKind.Oneloop:
-            case Utf8TreeNodeKind.Notoneloop:
-            case Utf8TreeNodeKind.Setloop:
-            case Utf8TreeNodeKind.Onelazy:
-            case Utf8TreeNodeKind.Notonelazy:
-            case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Oneloopatomic:
-            case Utf8TreeNodeKind.Notoneloopatomic:
-            case Utf8TreeNodeKind.Setloopatomic:
+            if (runtimeAnalysis?.IsInLoop(node) == true)
+            {
                 state.HasLoops = true;
-                break;
+            }
 
-            case Utf8TreeNodeKind.Alternate:
-                state.HasAlternation = true;
-                break;
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Backreference:
+                    state.HasBackreferences = true;
+                    break;
 
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Beginning:
-                state.HasAbsoluteStartAnchor = true;
-                break;
+                case Utf8TreeNodeKind.PositiveLookaround:
+                case Utf8TreeNodeKind.NegativeLookaround:
+                    state.HasLookarounds = true;
+                    if ((node.Options & RegexOptions.RightToLeft) != 0)
+                    {
+                        state.HasLookbehind = true;
+                    }
 
-            case Utf8TreeNodeKind.Boundary:
-            case Utf8TreeNodeKind.NonBoundary:
-            case Utf8TreeNodeKind.ECMABoundary:
-            case Utf8TreeNodeKind.NonECMABoundary:
-                state.HasWordBoundary = true;
-                break;
-        }
+                    break;
 
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            Visit(node.Child(i), runtimeAnalysis, ref state);
+                case Utf8TreeNodeKind.Atomic:
+                    state.HasAtomicGroups = true;
+                    break;
+
+                case Utf8TreeNodeKind.BackreferenceConditional:
+                case Utf8TreeNodeKind.ExpressionConditional:
+                    state.HasConditionals = true;
+                    break;
+
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Setloopatomic:
+                    state.HasLoops = true;
+                    break;
+
+                case Utf8TreeNodeKind.Alternate:
+                    state.HasAlternation = true;
+                    break;
+
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Beginning:
+                    state.HasAbsoluteStartAnchor = true;
+                    break;
+
+                case Utf8TreeNodeKind.Boundary:
+                case Utf8TreeNodeKind.NonBoundary:
+                case Utf8TreeNodeKind.ECMABoundary:
+                case Utf8TreeNodeKind.NonECMABoundary:
+                    state.HasWordBoundary = true;
+                    break;
+            }
+            for (var index = node.ChildCount - 1; index >= 0; index--)
+                pending.Push(node.Child(index));
         }
     }
 

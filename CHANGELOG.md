@@ -4,6 +4,12 @@
 
 ### Owned UTF-16 execution
 
+- General groups, assertions and conditionals now parse with explicit
+  continuations. Capture/reference normalization, per-node tree analysis,
+  feature collection and native literal-family planning also use iterative
+  traversal. The existing grammar-depth boundary remains while downstream
+  search-fact derivation and VM compilation still use recursive passes.
+
 - Nested class subtraction now parses iteratively and constructs its flat
   predicate chain once, retaining each segment's negation and case rules.
   Class nesting is independent of the remaining general-group depth limit.

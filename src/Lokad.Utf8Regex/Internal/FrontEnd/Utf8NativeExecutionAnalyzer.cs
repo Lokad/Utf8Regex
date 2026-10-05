@@ -417,93 +417,78 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool IsSupportedSimplePatternNode(Utf8TreeNode node)
     {
-        switch (node.Kind)
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            case Utf8TreeNodeKind.Capture:
-                if (node.N != -1)
-                {
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Capture:
+                    if (node.N != -1) return false;
+                    goto case Utf8TreeNodeKind.Group;
+                case Utf8TreeNodeKind.Group:
+                    if (node.ChildCount != 1) return false;
+                    pending.Push(node.Child(0));
+                    break;
+                case Utf8TreeNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Alternate:
+                    for (var index = node.ChildCount - 1; index >= 0; index--)
+                        pending.Push(node.Child(index));
+                    break;
+                case Utf8TreeNodeKind.One:
+                case Utf8TreeNodeKind.Multi:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.Empty:
+                    break;
+                case Utf8TreeNodeKind.Set:
+                    if (node.Str is null || Utf8OwnedCharClass.IsSubtraction(node.Str)) return false;
+                    break;
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Setloop:
+                    if (node.M < 0 || node.N < node.M || node.N == int.MaxValue) return false;
+                    break;
+                case Utf8TreeNodeKind.Loop:
+                    if (node.M < 0 || node.N < node.M || node.N == int.MaxValue || node.ChildCount != 1) return false;
+                    pending.Push(node.Child(0));
+                    break;
+                default:
                     return false;
-                }
-
-                goto case Utf8TreeNodeKind.Group;
-
-            case Utf8TreeNodeKind.Group:
-                return node.ChildCount == 1 && IsSupportedSimplePatternNode(node.Child(0));
-
-            case Utf8TreeNodeKind.Concatenate:
-            case Utf8TreeNodeKind.Alternate:
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!IsSupportedSimplePatternNode(node.Child(i)))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Multi:
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Start:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.End:
-            case Utf8TreeNodeKind.Empty:
-                return true;
-
-            case Utf8TreeNodeKind.Set:
-                return node.Str is not null && !Utf8OwnedCharClass.IsSubtraction(node.Str);
-
-            case Utf8TreeNodeKind.Oneloop:
-            case Utf8TreeNodeKind.Setloop:
-                return node.M >= 0 &&
-                    node.N >= node.M &&
-                    node.N != int.MaxValue;
-
-            case Utf8TreeNodeKind.Loop:
-                return node.M >= 0 &&
-                    node.N >= node.M &&
-                    node.N != int.MaxValue &&
-                    node.ChildCount == 1 &&
-                    IsSupportedSimplePatternNode(node.Child(0));
-
-            case Utf8TreeNodeKind.PositiveLookaround:
-                return false;
-
-            default:
-                return false;
+            }
         }
+        return true;
     }
 
     private static bool IsSupportedSimplePatternLookaroundNode(Utf8TreeNode node)
     {
-        switch (node.Kind)
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                return node.ChildCount == 1 && IsSupportedSimplePatternLookaroundNode(node.Child(0));
-
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Multi:
-            case Utf8TreeNodeKind.Set:
-                return true;
-
-            case Utf8TreeNodeKind.Concatenate:
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!IsSupportedSimplePatternLookaroundNode(node.Child(i)))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-
-            default:
-                return false;
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                    if (node.ChildCount != 1) return false;
+                    pending.Push(node.Child(0));
+                    break;
+                case Utf8TreeNodeKind.One:
+                case Utf8TreeNodeKind.Multi:
+                case Utf8TreeNodeKind.Set:
+                    break;
+                case Utf8TreeNodeKind.Concatenate:
+                    for (var index = node.ChildCount - 1; index >= 0; index--)
+                        pending.Push(node.Child(index));
+                    break;
+                default:
+                    return false;
+            }
         }
+        return true;
     }
 
     private static bool SupportsNativeOptions(RegexOptions options)
@@ -891,17 +876,10 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryUnwrapLiteralAlternation(Utf8TreeNode node, out string[] literals)
     {
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
+            node = node.Child(0);
         switch (node.Kind)
         {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                if (node.ChildCount == 1)
-                {
-                    return TryUnwrapLiteralAlternation(node.Child(0), out literals);
-                }
-
-                break;
-
             case Utf8TreeNodeKind.Alternate:
                 literals = new string[node.ChildCount];
                 for (var i = 0; i < node.ChildCount; i++)
@@ -922,17 +900,10 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryGetLiteralBranchText(Utf8TreeNode node, out string literal)
     {
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
+            node = node.Child(0);
         switch (node.Kind)
         {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                if (node.ChildCount == 1)
-                {
-                    return TryGetLiteralBranchText(node.Child(0), out literal);
-                }
-
-                break;
-
             case Utf8TreeNodeKind.One:
             case Utf8TreeNodeKind.Multi:
                 return TryGetLiteralText(node, out literal);
@@ -2449,97 +2420,81 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryGetFiniteLineBreakCount(Utf8TreeNode node, out int maxLineBreaks)
     {
-        node = UnwrapRuntimeNode(node);
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Multi:
-                if (TryGetLiteralText(node, out var literal))
-                {
-                    maxLineBreaks = literal.Count(static ch => ch == '\n');
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Set when node.Str is { } set:
-                maxLineBreaks = Utf8OwnedCharClass.CharInClass('\n', set) ? 1 : 0;
-                return true;
-
-            case Utf8TreeNodeKind.Loop:
-            case Utf8TreeNodeKind.Lazyloop:
-            case Utf8TreeNodeKind.Setloop:
-            case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Setloopatomic:
-                if (TryGetSetLoop(node, out var loopSetNode, out _, out var loopSetMax) &&
-                    loopSetNode.Str is { } loopSet &&
-                    !Utf8OwnedCharClass.CharInClass('\n', loopSet))
-                {
-                    maxLineBreaks = 0;
-                    return true;
-                }
-
-                if (node.ChildCount == 1 &&
-                    TryGetFiniteLineBreakCount(node.Child(0), out var loopChildBreaks) &&
-                    (node.N != int.MaxValue || loopChildBreaks == 0))
-                {
-                    maxLineBreaks = checked(loopChildBreaks * node.N);
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Concatenate:
-                {
-                    var total = 0;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        if (!TryGetFiniteLineBreakCount(node.Child(i), out var childBreaks))
-                        {
-                            maxLineBreaks = 0;
-                            return false;
-                        }
-
-                        total = checked(total + childBreaks);
-                    }
-
-                    maxLineBreaks = total;
-                    return true;
-                }
-
-            case Utf8TreeNodeKind.Alternate:
-                {
-                    var max = 0;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        if (!TryGetFiniteLineBreakCount(node.Child(i), out var branchBreaks))
-                        {
-                            maxLineBreaks = 0;
-                            return false;
-                        }
-
-                        max = Math.Max(max, branchBreaks);
-                    }
-
-                    maxLineBreaks = max;
-                    return true;
-                }
-
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Start:
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.End:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.Boundary:
-            case Utf8TreeNodeKind.NonBoundary:
-                maxLineBreaks = 0;
-                return true;
-        }
-
         maxLineBreaks = 0;
-        return false;
+        node = UnwrapRuntimeNode(node);
+        var values = new Dictionary<Utf8TreeNode, int>();
+        var pending = new Stack<(Utf8TreeNode Node, bool Complete)>();
+        pending.Push((node, false));
+        while (pending.TryPop(out var frame))
+        {
+            var current = UnwrapRuntimeNode(frame.Node);
+            switch (current.Kind)
+            {
+                case Utf8TreeNodeKind.One:
+                case Utf8TreeNodeKind.Multi:
+                    if (!TryGetLiteralText(current, out var literal)) return false;
+                    values[current] = literal.Count(static ch => ch == '\n');
+                    break;
+                case Utf8TreeNodeKind.Set when current.Str is { } set:
+                    values[current] = Utf8OwnedCharClass.CharInClass('\n', set) ? 1 : 0;
+                    break;
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Setloopatomic:
+                    if (TryGetSetLoop(current, out var setNode, out _, out _) &&
+                        setNode.Str is { } loopSet && !Utf8OwnedCharClass.CharInClass('\n', loopSet))
+                    {
+                        values[current] = 0;
+                        break;
+                    }
+                    if (current.ChildCount != 1) return false;
+                    if (!frame.Complete)
+                    {
+                        pending.Push((current, true));
+                        pending.Push((current.Child(0), false));
+                        break;
+                    }
+                    var childBreaks = values[UnwrapRuntimeNode(current.Child(0))];
+                    if (current.N == int.MaxValue && childBreaks != 0) return false;
+                    values[current] = checked(childBreaks * current.N);
+                    break;
+                case Utf8TreeNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Alternate:
+                    if (!frame.Complete)
+                    {
+                        pending.Push((current, true));
+                        for (var index = current.ChildCount - 1; index >= 0; index--)
+                            pending.Push((current.Child(index), false));
+                        break;
+                    }
+                    var total = 0;
+                    for (var index = 0; index < current.ChildCount; index++)
+                    {
+                        var count = values[UnwrapRuntimeNode(current.Child(index))];
+                        total = current.Kind == Utf8TreeNodeKind.Alternate ? Math.Max(total, count) : checked(total + count);
+                    }
+                    values[current] = total;
+                    break;
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.Boundary:
+                case Utf8TreeNodeKind.NonBoundary:
+                    values[current] = 0;
+                    break;
+                default:
+                    return false;
+            }
+        }
+        maxLineBreaks = values[node];
+        return true;
     }
+
 
     // The direct window executor selects the trailing literal greedily
     // (LastIndexOf), so lazy ranges decline window plans while greedy and
@@ -2735,236 +2690,126 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractLiteralFamilyStrings(Utf8TreeNode node, out string[] literals)
-    {
-        return TryExtractLiteralFamilyStringsCore(node, new Utf8PreparationBudget(4096, 256), out literals);
-    }
-
-    private static bool TryExtractLiteralFamilyStringsCore(Utf8TreeNode node, Utf8PreparationBudget budget, out string[] literals)
-    {
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                if (node.ChildCount == 1)
-                {
-                    return TryExtractLiteralFamilyStringsCore(node.Child(0), budget, out literals);
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Multi:
-                if (TryGetLiteralText(node, out var literal))
-                {
-                    literals = [literal];
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Setloop:
-            case Utf8TreeNodeKind.Setloopatomic:
-            case Utf8TreeNodeKind.Setlazy:
-                if (node.Str is not null &&
-                    node.M >= 1 &&
-                    node.N == int.MaxValue &&
-                    IsAsciiWhitespaceOnlySet(node.Str))
-                {
-                    literals = [" "];
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Alternate:
-                if (!budget.TryReserve(node.ChildCount, node.ChildCount))
-                {
-                    literals = [];
-                    return false;
-                }
-
-                literals = new string[node.ChildCount];
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!TryExtractLiteralFamilyStringsCore(node.Child(i), budget, out var branchLiterals) || branchLiterals.Length != 1)
-                    {
-                        literals = [];
-                        return false;
-                    }
-
-                    literals[i] = branchLiterals[0];
-                }
-
-                return true;
-
-            case Utf8TreeNodeKind.Concatenate:
-                var current = new List<string> { string.Empty };
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!TryExtractLiteralFamilyStringsCore(node.Child(i), budget, out var partLiterals))
-                    {
-                        literals = [];
-                        return false;
-                    }
-
-                    if (!budget.TryReserveProduct(current.Count, partLiterals.Length, 256, out var product))
-                    {
-                        literals = [];
-                        return false;
-                    }
-
-                    var next = new List<string>(product);
-                    foreach (var left in current)
-                    {
-                        foreach (var right in partLiterals)
-                        {
-                            next.Add(left + right);
-                        }
-                    }
-
-                    current = next;
-                }
-
-                literals = [.. current];
-                return true;
-        }
-
-        literals = [];
-        return false;
-    }
+        => TryExtractLiteralFamilyStringsCore(node, new Utf8PreparationBudget(4096, 256), false, out literals);
 
     private static bool TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings(Utf8TreeNode node, out string[] literals)
+        => TryExtractLiteralFamilyStringsCore(node, new Utf8PreparationBudget(4096, 256), true, out literals);
+
+    private static bool TryExtractLiteralFamilyStringsCore(Utf8TreeNode node, Utf8PreparationBudget budget, bool foldCase, out string[] literals)
     {
-        return TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStringsCore(node, new Utf8PreparationBudget(4096, 256), out literals);
-    }
-
-    private static bool TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStringsCore(Utf8TreeNode node, Utf8PreparationBudget budget, out string[] literals)
-    {
-        node = UnwrapRuntimeNode(node);
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Multi:
-            case Utf8TreeNodeKind.Set:
-                if (TryGetInvariantIgnoreCaseAsciiLiteralText(node, out var literal))
-                {
-                    literals = [literal];
-                    return true;
-                }
-
-                break;
-
-            case Utf8TreeNodeKind.Alternate:
-                if (!budget.TryReserve(node.ChildCount, node.ChildCount))
-                {
-                    literals = [];
-                    return false;
-                }
-
-                literals = new string[node.ChildCount];
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStringsCore(node.Child(i), budget, out var branchLiterals) || branchLiterals.Length != 1)
-                    {
-                        literals = [];
-                        return false;
-                    }
-
-                    literals[i] = branchLiterals[0];
-                }
-
-                return true;
-
-            case Utf8TreeNodeKind.Concatenate:
-                var current = new List<string> { string.Empty };
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStringsCore(node.Child(i), budget, out var partLiterals))
-                    {
-                        literals = [];
-                        return false;
-                    }
-
-                    if (!budget.TryReserveProduct(current.Count, partLiterals.Length, 256, out var product))
-                    {
-                        literals = [];
-                        return false;
-                    }
-
-                    var next = new List<string>(product);
-                    foreach (var left in current)
-                    {
-                        foreach (var right in partLiterals)
-                        {
-                            next.Add(left + right);
-                        }
-                    }
-
-                    current = next;
-                }
-
-                literals = [.. current];
-                return true;
-        }
-
         literals = [];
-        return false;
+        // Preserve pre-order branch reservations and post-order concatenation
+        // products while suspending parent products on an explicit stack.
+        var frames = new Stack<(Utf8TreeNode Node, int Child, string[] Branches, List<string>? Parts)>();
+        string[] values;
+        while (true)
+        {
+            if (foldCase) node = UnwrapRuntimeNode(node);
+            else
+                while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
+                    node = node.Child(0);
+            if (node.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate)
+            {
+                var alternate = node.Kind == Utf8TreeNodeKind.Alternate;
+                if (alternate && !budget.TryReserve(node.ChildCount, node.ChildCount)) return false;
+                var branches = alternate ? new string[node.ChildCount] : Array.Empty<string>();
+                List<string>? parts = alternate ? null : [string.Empty];
+                if (node.ChildCount != 0)
+                {
+                    frames.Push((node, 0, branches, parts));
+                    node = node.Child(0);
+                    continue;
+                }
+                values = alternate ? [] : [string.Empty];
+            }
+            else if (foldCase && node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Set &&
+                TryGetInvariantIgnoreCaseAsciiLiteralText(node, out var folded))
+                values = [folded];
+            else if (!foldCase && node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi &&
+                TryGetLiteralText(node, out var literal))
+                values = [literal];
+            else if (!foldCase && node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Setlazy &&
+                node.Str is { } set && node.M >= 1 && node.N == int.MaxValue && IsAsciiWhitespaceOnlySet(set))
+                values = [" "];
+            else
+                return false;
+
+            while (frames.TryPop(out var frame))
+            {
+                var parts = frame.Parts;
+                if (parts is null)
+                {
+                    if (values.Length != 1) return false;
+                    frame.Branches[frame.Child] = values[0];
+                }
+                else
+                {
+                    if (!budget.TryReserveProduct(parts.Count, values.Length, 256, out var product)) return false;
+                    var next = new List<string>(product);
+                    foreach (var left in parts)
+                    foreach (var right in values)
+                        next.Add(left + right);
+                    parts = next;
+                }
+                var nextChild = frame.Child + 1;
+                if (nextChild == frame.Node.ChildCount)
+                {
+                    values = parts is null ? frame.Branches : [.. parts];
+                    continue;
+                }
+                frames.Push((frame.Node, nextChild, frame.Branches, parts));
+                node = frame.Node.Child(nextChild);
+                break;
+            }
+            if (frames.Count == 0)
+            {
+                literals = values;
+                return true;
+            }
+        }
     }
 
     private static bool TryGetInvariantIgnoreCaseAsciiLiteralText(Utf8TreeNode node, out string literal)
     {
-        node = UnwrapRuntimeNode(node);
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One when node.Ch <= 0x7F:
-                literal = ((char)Internal.Search.AsciiSearch.FoldCase((byte)node.Ch)).ToString();
-                return true;
-
-            case Utf8TreeNodeKind.Multi when node.Str is { } text:
-                var chars = new char[text.Length];
-                for (var i = 0; i < text.Length; i++)
-                {
-                    if (text[i] > 0x7F)
-                    {
-                        literal = string.Empty;
-                        return false;
-                    }
-
-                    chars[i] = (char)Internal.Search.AsciiSearch.FoldCase((byte)text[i]);
-                }
-
-                literal = new string(chars);
-                return true;
-
-            case Utf8TreeNodeKind.Set when node.Str is { } set:
-                literal = string.Empty;
-                if (!TryGetInvariantIgnoreCaseAsciiSetLiteral(set, out var folded))
-                {
-                    return false;
-                }
-
-                literal = ((char)folded).ToString();
-                return true;
-
-            case Utf8TreeNodeKind.Concatenate:
-                var builder = new StringBuilder();
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!TryGetInvariantIgnoreCaseAsciiLiteralText(node.Child(i), out var part))
-                    {
-                        literal = string.Empty;
-                        return false;
-                    }
-
-                    builder.Append(part);
-                }
-
-                literal = builder.ToString();
-                return literal.Length > 0;
-        }
-
         literal = string.Empty;
-        return false;
+        var builder = new StringBuilder();
+        var pending = new Stack<(Utf8TreeNode Node, int Start, bool Complete)>();
+        pending.Push((node, 0, false));
+        while (pending.TryPop(out var frame))
+        {
+            node = UnwrapRuntimeNode(frame.Node);
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.One when node.Ch <= 0x7F:
+                    builder.Append((char)Internal.Search.AsciiSearch.FoldCase((byte)node.Ch));
+                    break;
+                case Utf8TreeNodeKind.Multi when node.Str is { } text:
+                    foreach (var unit in text)
+                    {
+                        if (unit > 0x7F) return false;
+                        builder.Append((char)Internal.Search.AsciiSearch.FoldCase((byte)unit));
+                    }
+                    break;
+                case Utf8TreeNodeKind.Set when node.Str is { } set:
+                    if (!TryGetInvariantIgnoreCaseAsciiSetLiteral(set, out var folded)) return false;
+                    builder.Append((char)folded);
+                    break;
+                case Utf8TreeNodeKind.Concatenate:
+                    if (frame.Complete)
+                    {
+                        if (builder.Length == frame.Start) return false;
+                        break;
+                    }
+                    pending.Push((node, builder.Length, true));
+                    for (var index = node.ChildCount - 1; index >= 0; index--)
+                        pending.Push((node.Child(index), 0, false));
+                    break;
+                default:
+                    return false;
+            }
+        }
+        literal = builder.ToString();
+        return true;
     }
 
     private static bool TryGetInvariantIgnoreCaseAsciiSetLiteral(string runtimeSet, out byte literal)
