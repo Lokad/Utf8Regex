@@ -6,26 +6,27 @@ internal static class Utf8ExecutionTreeLowerer
 {
     public static Utf8ExecutionTree? Lower(Utf8SemanticRegex semanticRegex)
     {
-        return semanticRegex.RuntimeTree?.Root is { } root
-            ? new Utf8ExecutionTree(LowerNode(root))
-            : null;
-    }
+        if (semanticRegex.RuntimeTree?.Root is not { } root) return null;
+        var nodes = new Dictionary<Utf8TreeNode, Utf8ExecutionNode>();
+        var frames = new Stack<(Utf8TreeNode Node, int NextChild)>();
+        frames.Push((root, 0));
+        while (frames.TryPop(out var frame))
+        {
+            var node = frame.Node;
+            if (frame.NextChild < node.ChildCount)
+            {
+                frames.Push((node, frame.NextChild + 1));
+                frames.Push((node.Child(frame.NextChild), 0));
+                continue;
+            }
 
-    private static Utf8ExecutionNode LowerNode(Utf8TreeNode node)
-    {
-        var children = node.ChildCount == 0
-            ? []
-            : node.ChildList.Select(LowerNode).ToArray();
-
-        return new Utf8ExecutionNode(
-            MapKind(node.Kind),
-            node.Options,
-            children,
-            node.Str ?? string.Empty,
-            node.Ch,
-            GetCaptureNumber(node),
-            node.M,
-            node.N);
+            var children = node.ChildCount == 0 ? Array.Empty<Utf8ExecutionNode>() : new Utf8ExecutionNode[node.ChildCount];
+            for (var index = 0; index < children.Length; index++) children[index] = nodes[node.Child(index)];
+            nodes[node] = new Utf8ExecutionNode(
+                MapKind(node.Kind), node.Options, children, node.Str ?? string.Empty,
+                node.Ch, GetCaptureNumber(node), node.M, node.N);
+        }
+        return new Utf8ExecutionTree(nodes[root]);
     }
 
     private static int GetCaptureNumber(Utf8TreeNode node)

@@ -4,6 +4,14 @@
 
 ### Owned UTF-16 execution
 
+- Owned find facts now compute lengths, anchors, prefixes, and fixed-distance
+  literals and sets with explicit traversal frames. Nested sequences retain
+  their product order, stopped-branch behavior and saturating length formulas.
+  Scoped-case scanning and execution-tree/instruction preparation are also
+  iterative, retaining child order, payloads and paired enter/exit positions.
+  The existing pattern-depth boundary remains until all remaining preparation
+  and VM compilation passes can handle deeper input.
+
 - General groups, assertions and conditionals now parse with explicit
   continuations. Capture/reference normalization, per-node tree analysis,
   feature collection and native literal-family planning also use iterative

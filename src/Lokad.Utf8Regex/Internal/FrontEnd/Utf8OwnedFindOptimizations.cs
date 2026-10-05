@@ -2,193 +2,208 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 using System.Text.RegularExpressions;
 // Owned find-optimization facts: lengths, anchors, alternate prefixes and
-// fixed-distance literals. Pure functions over runtime trees of either
-// provenance, differentially pinned against legacy instances. Fixed-distance
-// sets arrive in the next slice; consumers migrate hub by hub. Length
+// fixed-distance literals and sets. Iterative walks over owned runtime-shaped
+// trees retain the facts independently pinned against the original oracle. Length
 // arithmetic saturates exactly like the pinned formulas: minimums cap at
 // int.MaxValue - 1 past int.MaxValue, maximums turn null, lone bounds stay put.
 internal static class Utf8OwnedFindOptimizations
 {
     public static int ComputeMinLength(Utf8TreeNode node)
     {
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Notone:
-            case Utf8TreeNodeKind.Set:
-                return 1;
-            case Utf8TreeNodeKind.Multi:
-                return node.Str?.Length ?? 1;
-            case Utf8TreeNodeKind.Oneloop:
-            case Utf8TreeNodeKind.Notoneloop:
-            case Utf8TreeNodeKind.Setloop:
-            case Utf8TreeNodeKind.Onelazy:
-            case Utf8TreeNodeKind.Notonelazy:
-            case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Oneloopatomic:
-            case Utf8TreeNodeKind.Notoneloopatomic:
-            case Utf8TreeNodeKind.Setloopatomic:
-                return node.M;
-            case Utf8TreeNodeKind.Loop:
-            case Utf8TreeNodeKind.Lazyloop:
-                return CapMin((long)node.M * ChildMinLength(node));
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-            case Utf8TreeNodeKind.Atomic:
-            case Utf8TreeNodeKind.Concatenate:
-                return SumMinLength(node);
-            case Utf8TreeNodeKind.Alternate:
-            case Utf8TreeNodeKind.BackreferenceConditional:
-            case Utf8TreeNodeKind.ExpressionConditional:
-                return AlternateMinLength(node);
-            default:
-                return 0;
-        }
+        var values = new Dictionary<Utf8TreeNode, int>();
+        foreach (var current in PostOrder(node)) values[current] = Measure(current, values);
+        return values[node];
 
-        static int ChildMinLength(Utf8TreeNode parent)
+        static int Measure(Utf8TreeNode node, Dictionary<Utf8TreeNode, int> values)
         {
-            return parent.ChildCount == 0 ? 0 : ComputeMinLength(parent.Child(0));
-        }
-
-        static int SumMinLength(Utf8TreeNode parent)
-        {
-            long total = 0;
-            for (var i = 0; i < parent.ChildCount; i++)
+            switch (node.Kind)
             {
-                total += ComputeMinLength(parent.Child(i));
-                if (total > int.MaxValue)
-                {
-                    return int.MaxValue - 1;
-                }
+                case Utf8TreeNodeKind.One:
+                case Utf8TreeNodeKind.Notone:
+                case Utf8TreeNodeKind.Set:
+                    return 1;
+                case Utf8TreeNodeKind.Multi:
+                    return node.Str?.Length ?? 1;
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Setloopatomic:
+                    return node.M;
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                    return CapMin((long)node.M * ChildMinLength(node));
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
+                case Utf8TreeNodeKind.Concatenate:
+                    return SumMinLength(node);
+                case Utf8TreeNodeKind.Alternate:
+                case Utf8TreeNodeKind.BackreferenceConditional:
+                case Utf8TreeNodeKind.ExpressionConditional:
+                    return AlternateMinLength(node);
+                default:
+                    return 0;
             }
 
-            return CapMin(total);
-        }
-
-        static int AlternateMinLength(Utf8TreeNode parent)
-        {
-            var minimum = int.MaxValue;
-            for (var i = 0; i < parent.ChildCount; i++)
+            int ChildMinLength(Utf8TreeNode parent)
             {
-                var branch = ComputeMinLength(parent.Child(i));
-                if (branch < minimum)
-                {
-                    minimum = branch;
-                }
+                return parent.ChildCount == 0 ? 0 : values[parent.Child(0)];
             }
 
-            return minimum == int.MaxValue ? 0 : minimum;
-        }
+            int SumMinLength(Utf8TreeNode parent)
+            {
+                long total = 0;
+                for (var i = 0; i < parent.ChildCount; i++)
+                {
+                    total += values[parent.Child(i)];
+                    if (total > int.MaxValue)
+                    {
+                        return int.MaxValue - 1;
+                    }
+                }
 
-        static int CapMin(long value)
-        {
-            return value > int.MaxValue ? int.MaxValue - 1 : (int)value;
+                return CapMin(total);
+            }
+
+            int AlternateMinLength(Utf8TreeNode parent)
+            {
+                var minimum = int.MaxValue;
+                for (var i = 0; i < parent.ChildCount; i++)
+                {
+                    var branch = values[parent.Child(i)];
+                    if (branch < minimum)
+                    {
+                        minimum = branch;
+                    }
+                }
+
+                return minimum == int.MaxValue ? 0 : minimum;
+            }
+
+            static int CapMin(long value)
+            {
+                return value > int.MaxValue ? int.MaxValue - 1 : (int)value;
+            }
+
         }
     }
 
     public static int? ComputeMaxLength(Utf8TreeNode node)
     {
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One:
-            case Utf8TreeNodeKind.Notone:
-            case Utf8TreeNodeKind.Set:
-                return 1;
-            case Utf8TreeNodeKind.Multi:
-                return node.Str?.Length ?? 1;
-            case Utf8TreeNodeKind.Oneloop:
-            case Utf8TreeNodeKind.Notoneloop:
-            case Utf8TreeNodeKind.Setloop:
-            case Utf8TreeNodeKind.Onelazy:
-            case Utf8TreeNodeKind.Notonelazy:
-            case Utf8TreeNodeKind.Setlazy:
-            case Utf8TreeNodeKind.Oneloopatomic:
-            case Utf8TreeNodeKind.Notoneloopatomic:
-            case Utf8TreeNodeKind.Setloopatomic:
-                return node.N == int.MaxValue ? null : node.N;
-            case Utf8TreeNodeKind.Loop:
-            case Utf8TreeNodeKind.Lazyloop:
-                return RepeatMaxLength(node);
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-            case Utf8TreeNodeKind.Atomic:
-            case Utf8TreeNodeKind.Concatenate:
-                return SumMaxLength(node);
-            case Utf8TreeNodeKind.Alternate:
-            case Utf8TreeNodeKind.BackreferenceConditional:
-            case Utf8TreeNodeKind.ExpressionConditional:
-                return AlternateMaxLength(node);
-            default:
-                return 0;
-        }
+        var values = new Dictionary<Utf8TreeNode, int?>();
+        foreach (var current in PostOrder(node)) values[current] = Measure(current, values);
+        return values[node];
 
-        static int? RepeatMaxLength(Utf8TreeNode parent)
+        static int? Measure(Utf8TreeNode node, Dictionary<Utf8TreeNode, int?> values)
         {
-            var child = parent.ChildCount == 0 ? 0 : ComputeMaxLength(parent.Child(0));
-            if (parent.N == int.MaxValue || child is null)
+            switch (node.Kind)
             {
-                return null;
+                case Utf8TreeNodeKind.One:
+                case Utf8TreeNodeKind.Notone:
+                case Utf8TreeNodeKind.Set:
+                    return 1;
+                case Utf8TreeNodeKind.Multi:
+                    return node.Str?.Length ?? 1;
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Setloopatomic:
+                    return node.N == int.MaxValue ? null : node.N;
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                    return RepeatMaxLength(node);
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
+                case Utf8TreeNodeKind.Concatenate:
+                    return SumMaxLength(node);
+                case Utf8TreeNodeKind.Alternate:
+                case Utf8TreeNodeKind.BackreferenceConditional:
+                case Utf8TreeNodeKind.ExpressionConditional:
+                    return AlternateMaxLength(node);
+                default:
+                    return 0;
             }
 
-            return CapMax((long)parent.N * child.Value);
-        }
-
-        static int? SumMaxLength(Utf8TreeNode parent)
-        {
-            long total = 0;
-            for (var i = 0; i < parent.ChildCount; i++)
+            int? RepeatMaxLength(Utf8TreeNode parent)
             {
-                var child = ComputeMaxLength(parent.Child(i));
-                if (child is null)
+                var child = parent.ChildCount == 0 ? 0 : values[parent.Child(0)];
+                if (parent.N == int.MaxValue || child is null)
                 {
                     return null;
                 }
 
-                total += child.Value;
-                if (total > int.MaxValue)
-                {
-                    return null;
-                }
+                return CapMax((long)parent.N * child.Value);
             }
 
-            return CapMax(total);
-        }
-
-        static int? AlternateMaxLength(Utf8TreeNode parent)
-        {
-            int? maximum = 0;
-            for (var i = 0; i < parent.ChildCount; i++)
+            int? SumMaxLength(Utf8TreeNode parent)
             {
-                var branch = ComputeMaxLength(parent.Child(i));
-                if (branch is null)
+                long total = 0;
+                for (var i = 0; i < parent.ChildCount; i++)
                 {
-                    return null;
+                    var child = values[parent.Child(i)];
+                    if (child is null)
+                    {
+                        return null;
+                    }
+
+                    total += child.Value;
+                    if (total > int.MaxValue)
+                    {
+                        return null;
+                    }
                 }
 
-                if (branch > maximum)
-                {
-                    maximum = branch;
-                }
+                return CapMax(total);
             }
 
-            return maximum;
-        }
+            int? AlternateMaxLength(Utf8TreeNode parent)
+            {
+                int? maximum = 0;
+                for (var i = 0; i < parent.ChildCount; i++)
+                {
+                    var branch = values[parent.Child(i)];
+                    if (branch is null)
+                    {
+                        return null;
+                    }
 
-        static int? CapMax(long value)
-        {
-            return value > int.MaxValue ? null : (int?)value;
+                    if (branch > maximum)
+                    {
+                        maximum = branch;
+                    }
+                }
+
+                return maximum;
+            }
+
+            static int? CapMax(long value)
+            {
+                return value > int.MaxValue ? null : (int?)value;
+            }
+
         }
     }
 
     public static Utf8TreeNodeKind FindLeadingAnchor(Utf8TreeNode node)
     {
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
+        {
+            if (node.ChildCount == 0) return Utf8TreeNodeKind.Unknown;
+            node = node.Child(0);
+        }
         switch (node.Kind)
         {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-            case Utf8TreeNodeKind.Atomic:
-            case Utf8TreeNodeKind.Concatenate:
-                return node.ChildCount == 0 ? Utf8TreeNodeKind.Unknown : FindLeadingAnchor(node.Child(0));
             case Utf8TreeNodeKind.Beginning:
             case Utf8TreeNodeKind.Bol:
             case Utf8TreeNodeKind.Start:
@@ -202,13 +217,13 @@ internal static class Utf8OwnedFindOptimizations
 
     public static Utf8TreeNodeKind FindTrailingAnchor(Utf8TreeNode node)
     {
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
+        {
+            if (node.ChildCount == 0) return Utf8TreeNodeKind.Unknown;
+            node = node.Child(node.ChildCount - 1);
+        }
         switch (node.Kind)
         {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-            case Utf8TreeNodeKind.Atomic:
-            case Utf8TreeNodeKind.Concatenate:
-                return node.ChildCount == 0 ? Utf8TreeNodeKind.Unknown : FindTrailingAnchor(node.Child(node.ChildCount - 1));
             case Utf8TreeNodeKind.EndZ:
             case Utf8TreeNodeKind.End:
             case Utf8TreeNodeKind.Eol:
@@ -219,15 +234,17 @@ internal static class Utf8OwnedFindOptimizations
     }
     public static string? TryExtractLeadingLiteral(Utf8TreeNode node)
     {
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group)
+        {
+            if (node.ChildCount != 1) return null;
+            node = node.Child(0);
+        }
         switch (node.Kind)
         {
             case Utf8TreeNodeKind.One:
                 return node.Ch.ToString();
             case Utf8TreeNodeKind.Multi:
                 return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                return node.ChildCount == 1 ? TryExtractLeadingLiteral(node.Child(0)) : null;
             case Utf8TreeNodeKind.Concatenate:
                 return LeadingRun(node);
             default:
@@ -269,76 +286,84 @@ internal static class Utf8OwnedFindOptimizations
 
     public static string? TryExtractLongestLiteral(Utf8TreeNode node)
     {
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One:
-                return node.Ch.ToString();
-            case Utf8TreeNodeKind.Multi:
-                return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                return node.ChildCount == 1 ? TryExtractLongestLiteral(node.Child(0)) : null;
-            case Utf8TreeNodeKind.Concatenate:
-                return LongestRun(node);
-            case Utf8TreeNodeKind.Alternate:
-                return LongestBranch(node);
-            default:
-                return null;
-        }
+        var values = new Dictionary<Utf8TreeNode, string?>();
+        foreach (var current in PostOrder(node)) values[current] = Measure(current, values);
+        return values[node];
 
-        static string? LongestRun(Utf8TreeNode parent)
+        static string? Measure(Utf8TreeNode node, Dictionary<Utf8TreeNode, string?> values)
         {
-            string? best = null;
-            var run = new StringBuilder();
-            for (var i = 0; i < parent.ChildCount; i++)
+            switch (node.Kind)
             {
-                var child = parent.Child(i);
-                if (child.Kind == Utf8TreeNodeKind.One)
-                {
-                    run.Append(child.Ch);
-                }
-                else if (child.Kind == Utf8TreeNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
-                {
-                    run.Append(child.Str);
-                }
-                else if (child.Kind == Utf8TreeNodeKind.Empty)
-                {
-                    continue;
-                }
-                else
-                {
-                    best = Longer(best, run.ToString());
-                    run.Clear();
-                }
+                case Utf8TreeNodeKind.One:
+                    return node.Ch.ToString();
+                case Utf8TreeNodeKind.Multi:
+                    return string.IsNullOrEmpty(node.Str) ? null : node.Str;
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                    return node.ChildCount == 1 ? values[node.Child(0)] : null;
+                case Utf8TreeNodeKind.Concatenate:
+                    return LongestRun(node);
+                case Utf8TreeNodeKind.Alternate:
+                    return LongestBranch(node);
+                default:
+                    return null;
             }
 
-            return Longer(best, run.ToString());
-        }
-
-        static string? LongestBranch(Utf8TreeNode parent)
-        {
-            string? best = null;
-            for (var i = 0; i < parent.ChildCount; i++)
+            static string? LongestRun(Utf8TreeNode parent)
             {
-                best = Longer(best, TryExtractLongestLiteral(parent.Child(i)));
+                string? best = null;
+                var run = new StringBuilder();
+                for (var i = 0; i < parent.ChildCount; i++)
+                {
+                    var child = parent.Child(i);
+                    if (child.Kind == Utf8TreeNodeKind.One)
+                    {
+                        run.Append(child.Ch);
+                    }
+                    else if (child.Kind == Utf8TreeNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                    {
+                        run.Append(child.Str);
+                    }
+                    else if (child.Kind == Utf8TreeNodeKind.Empty)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        best = Longer(best, run.ToString());
+                        run.Clear();
+                    }
+                }
+
+                return Longer(best, run.ToString());
             }
 
-            return best;
-        }
-
-        static string? Longer(string? left, string? right)
-        {
-            if (string.IsNullOrEmpty(left))
+            string? LongestBranch(Utf8TreeNode parent)
             {
-                return string.IsNullOrEmpty(right) ? null : right;
+                string? best = null;
+                for (var i = 0; i < parent.ChildCount; i++)
+                {
+                    best = Longer(best, values[parent.Child(i)]);
+                }
+
+                return best;
             }
 
-            if (string.IsNullOrEmpty(right) || right.Length <= left.Length)
+            static string? Longer(string? left, string? right)
             {
-                return left;
+                if (string.IsNullOrEmpty(left))
+                {
+                    return string.IsNullOrEmpty(right) ? null : right;
+                }
+
+                if (string.IsNullOrEmpty(right) || right.Length <= left.Length)
+                {
+                    return left;
+                }
+
+                return right;
             }
 
-            return right;
         }
     }
 
@@ -441,79 +466,60 @@ internal static class Utf8OwnedFindOptimizations
 
         static void WalkPrimary(Utf8TreeNode node, PrefixWalker walker, bool topIgnoreCase)
         {
-            if (walker.Failed || walker.Stopped)
+            var pending = new Stack<Utf8TreeNode>();
+            pending.Push(node);
+            while (!walker.Failed && !walker.Stopped && pending.TryPop(out node))
             {
-                return;
-            }
-
-            switch (node.Kind)
-            {
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                    if (node.ChildCount == 1)
-                    {
-                        WalkPrimary(node.Child(0), walker, topIgnoreCase);
-                        return;
-                    }
-
-                    WalkPrimaryChildren(node, walker, topIgnoreCase);
-                    return;
-                case Utf8TreeNodeKind.Concatenate:
-                    WalkPrimaryChildren(node, walker, topIgnoreCase);
-                    return;
-                case Utf8TreeNodeKind.Alternate:
-                    walker.Failed = true;
-                    return;
-                case Utf8TreeNodeKind.One:
-                    AppendPrefixText(walker, node.Ch.ToString());
-                    return;
-                case Utf8TreeNodeKind.Multi:
-                    if (string.IsNullOrEmpty(node.Str))
-                    {
-                        walker.Stopped = true;
-                        return;
-                    }
-
-                    AppendPrefixText(walker, node.Str);
-                    return;
-                case Utf8TreeNodeKind.Set:
-                    ApplyPrimarySet(walker, node, topIgnoreCase);
-                    return;
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                    ApplyPrimarySingleLoop(walker, node.Ch, node.M, node.N);
-                    return;
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Setloopatomic:
-                    ApplyPrimarySetLoop(walker, node, topIgnoreCase);
-                    return;
-                case Utf8TreeNodeKind.Loop:
-                case Utf8TreeNodeKind.Lazyloop:
-                case Utf8TreeNodeKind.Notone:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Notoneloopatomic:
-                case Utf8TreeNodeKind.Backreference:
-                case Utf8TreeNodeKind.BackreferenceConditional:
-                case Utf8TreeNodeKind.ExpressionConditional:
-                    walker.Stopped = true;
-                    return;
-                default:
-                    return;
-            }
-        }
-
-        static void WalkPrimaryChildren(Utf8TreeNode parent, PrefixWalker walker, bool topIgnoreCase)
-        {
-            for (var i = 0; i < parent.ChildCount; i++)
-            {
-                WalkPrimary(parent.Child(i), walker, topIgnoreCase);
-                if (walker.Failed || walker.Stopped)
+                switch (node.Kind)
                 {
-                    return;
+                    case Utf8TreeNodeKind.Capture:
+                    case Utf8TreeNodeKind.Group:
+                    case Utf8TreeNodeKind.Atomic:
+                    case Utf8TreeNodeKind.Concatenate:
+                        for (var index = node.ChildCount - 1; index >= 0; index--)
+                            pending.Push(node.Child(index));
+                        break;
+                    case Utf8TreeNodeKind.Alternate:
+                        walker.Failed = true;
+                        break;
+                    case Utf8TreeNodeKind.One:
+                        AppendPrefixText(walker, node.Ch.ToString());
+                        break;
+                    case Utf8TreeNodeKind.Multi:
+                        if (string.IsNullOrEmpty(node.Str))
+                        {
+                            walker.Stopped = true;
+                            break;
+                        }
+
+                        AppendPrefixText(walker, node.Str);
+                        break;
+                    case Utf8TreeNodeKind.Set:
+                        ApplyPrimarySet(walker, node, topIgnoreCase);
+                        break;
+                    case Utf8TreeNodeKind.Oneloop:
+                    case Utf8TreeNodeKind.Onelazy:
+                    case Utf8TreeNodeKind.Oneloopatomic:
+                        ApplyPrimarySingleLoop(walker, node.Ch, node.M, node.N);
+                        break;
+                    case Utf8TreeNodeKind.Setloop:
+                    case Utf8TreeNodeKind.Setlazy:
+                    case Utf8TreeNodeKind.Setloopatomic:
+                        ApplyPrimarySetLoop(walker, node, topIgnoreCase);
+                        break;
+                    case Utf8TreeNodeKind.Loop:
+                    case Utf8TreeNodeKind.Lazyloop:
+                    case Utf8TreeNodeKind.Notone:
+                    case Utf8TreeNodeKind.Notoneloop:
+                    case Utf8TreeNodeKind.Notonelazy:
+                    case Utf8TreeNodeKind.Notoneloopatomic:
+                    case Utf8TreeNodeKind.Backreference:
+                    case Utf8TreeNodeKind.BackreferenceConditional:
+                    case Utf8TreeNodeKind.ExpressionConditional:
+                        walker.Stopped = true;
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -780,102 +786,88 @@ internal static class Utf8OwnedFindOptimizations
 
         static (List<string>? Families, bool Done, bool Anchored) ExpandFallback(Utf8TreeNode node, bool topIgnoreCase)
         {
-            switch (node.Kind)
+            var frames = new Stack<(Utf8TreeNode Node, int Child, List<string> Families, bool Anchored)>();
+            (List<string>? Families, bool Done, bool Anchored) result;
+            while (true)
             {
-                case Utf8TreeNodeKind.Alternate:
-                    return ExpandFallbackUnion(node, topIgnoreCase);
-                case Utf8TreeNodeKind.Concatenate:
-                    return ExpandFallbackSequence(node, topIgnoreCase);
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                    if (node.ChildCount == 1)
+                while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
+                    node = node.Child(0);
+                if (node.Kind is Utf8TreeNodeKind.Alternate or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic)
+                {
+                    var union = node.Kind == Utf8TreeNodeKind.Alternate;
+                    var families = union ? new List<string>() : new List<string> { "" };
+                    if (node.ChildCount == 0)
+                        result = (families, true, false);
+                    else if (union && UnwrapsToAlternate(node.Child(0)))
+                        result = (null, true, false);
+                    else
                     {
-                        return ExpandFallback(node.Child(0), topIgnoreCase);
+                        frames.Push((node, 0, families, false));
+                        node = node.Child(0);
+                        continue;
                     }
-
-                    return ExpandFallbackSequence(node, topIgnoreCase);
-                default:
-                    return ExpandFallbackSingle(node, topIgnoreCase);
-            }
-        }
-
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSequence(Utf8TreeNode node, bool topIgnoreCase)
-        {
-            var families = new List<string> { "" };
-            var anchored = false;
-            for (var i = 0; i < node.ChildCount; i++)
-            {
-                var child = ExpandFallback(node.Child(i), topIgnoreCase);
-                if (child.Families is null)
-                {
-                    return (null, true, false);
                 }
+                else
+                    result = ExpandFallbackSingle(node, topIgnoreCase);
 
-                if (!child.Done)
+                while (frames.TryPop(out var frame))
                 {
-                    return (families, false, anchored);
-                }
-
-                if (families.Count * child.Families.Count > 16)
-                {
-                    return (null, true, false);
-                }
-
-                families = ProductPrefix(families, child.Families);
-                anchored = anchored || child.Anchored;
-            }
-
-            return (families, true, anchored);
-        }
-
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackUnion(Utf8TreeNode node, bool topIgnoreCase)
-        {
-            var result = new List<string>();
-            var anchored = false;
-            for (var i = 0; i < node.ChildCount; i++)
-            {
-                var branch = node.Child(i);
-                if (UnwrapsToAlternate(branch))
-                {
-                    return (null, true, false);
-                }
-
-                var expanded = ExpandFallback(branch, topIgnoreCase);
-                if (expanded.Families is null)
-                {
-                    return (null, true, false);
-                }
-
-                if (!expanded.Done)
-                {
+                    if (result.Families is null)
+                    {
+                        result = (null, true, false);
+                        continue;
+                    }
+                    var union = frame.Node.Kind == Utf8TreeNodeKind.Alternate;
+                    if (!result.Done)
+                    {
+                        result = union ? FinishUnion(frame.Families, frame.Anchored)
+                            : (frame.Families, false, frame.Anchored);
+                        continue;
+                    }
+                    List<string> families;
+                    if (union)
+                    {
+                        if (result.Families.Any(static family => family.Length == 0))
+                        {
+                            result = (null, true, false);
+                            continue;
+                        }
+                        families = frame.Families;
+                        families.AddRange(result.Families);
+                    }
+                    else
+                    {
+                        if (frame.Families.Count * result.Families.Count > 16)
+                        {
+                            result = (null, true, false);
+                            continue;
+                        }
+                        families = ProductPrefix(frame.Families, result.Families);
+                    }
+                    var anchored = frame.Anchored || result.Anchored;
+                    var next = frame.Child + 1;
+                    if (next == frame.Node.ChildCount)
+                    {
+                        result = union ? FinishUnion(families, anchored) : (families, true, anchored);
+                        continue;
+                    }
+                    if (union && UnwrapsToAlternate(frame.Node.Child(next)))
+                    {
+                        result = (null, true, false);
+                        continue;
+                    }
+                    frames.Push((frame.Node, next, families, anchored));
+                    node = frame.Node.Child(next);
                     break;
                 }
-
-                foreach (var family in expanded.Families)
-                {
-                    if (family.Length == 0)
-                    {
-                        return (null, true, false);
-                    }
-                }
-
-                result.AddRange(expanded.Families);
-                anchored = anchored || expanded.Anchored;
+                if (frames.Count == 0) return result;
             }
 
-            if (anchored)
+            static (List<string>? Families, bool Done, bool Anchored) FinishUnion(List<string> families, bool anchored)
             {
-                foreach (var family in result)
-                {
-                    if (family.Length < 2)
-                    {
-                        return (null, true, false);
-                    }
-                }
+                if (anchored && families.Any(static family => family.Length < 2)) return (null, true, false);
+                return (families, true, anchored);
             }
-
-            return (result, true, anchored);
         }
 
         static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSingle(Utf8TreeNode node, bool topIgnoreCase)
@@ -1039,51 +1031,61 @@ internal static class Utf8OwnedFindOptimizations
 
         static int WalkLiteral(Utf8TreeNode node, int distance, LiteralHolder holder)
         {
-            switch (node.Kind)
+            var pending = new Stack<Utf8TreeNode>();
+            pending.Push(node);
+            while (pending.TryPop(out node))
             {
-                case Utf8TreeNodeKind.One:
-                    ConsiderLiteral(holder, node.Ch.ToString(), distance);
-                    return distance + 1;
-                case Utf8TreeNodeKind.Multi:
-                    if (!string.IsNullOrEmpty(node.Str))
-                    {
-                        ConsiderLiteral(holder, node.Str, distance);
-                    }
+                switch (node.Kind)
+                {
+                    case Utf8TreeNodeKind.One:
+                        ConsiderLiteral(holder, node.Ch.ToString(), distance);
+                        distance = distance + 1;
+                        break;
+                    case Utf8TreeNodeKind.Multi:
+                        if (!string.IsNullOrEmpty(node.Str))
+                        {
+                            ConsiderLiteral(holder, node.Str, distance);
+                        }
 
-                    return distance + (node.Str is null ? 1 : node.Str.Length);
-                case Utf8TreeNodeKind.Notone:
-                case Utf8TreeNodeKind.Set:
-                    return distance + 1;
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                case Utf8TreeNodeKind.Concatenate:
-                    var running = distance;
-                    for (var i = 0; i < node.ChildCount; i++)
-                    {
-                        running = WalkLiteral(node.Child(i), running, holder);
-                    }
+                        distance = distance + (node.Str is null ? 1 : node.Str.Length);
 
-                    return running;
-                case Utf8TreeNodeKind.Alternate:
-                    return distance + ComputeMinLength(node);
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Notoneloopatomic:
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Setloopatomic:
-                    return distance + node.M;
-                case Utf8TreeNodeKind.Loop:
-                case Utf8TreeNodeKind.Lazyloop:
-                    var body = node.ChildCount == 0 ? 0 : ComputeMinLength(node.Child(0));
-                    return unchecked(distance + node.M * body);
-                default:
-                    return distance + ComputeMinLength(node);
+                        break;
+                    case Utf8TreeNodeKind.Notone:
+                    case Utf8TreeNodeKind.Set:
+                        distance = distance + 1;
+                        break;
+                    case Utf8TreeNodeKind.Capture:
+                    case Utf8TreeNodeKind.Group:
+                    case Utf8TreeNodeKind.Atomic:
+                    case Utf8TreeNodeKind.Concatenate:
+                        for (var index = node.ChildCount - 1; index >= 0; index--)
+                            pending.Push(node.Child(index));
+                        break;
+                    case Utf8TreeNodeKind.Alternate:
+                        distance = distance + ComputeMinLength(node);
+                        break;
+                    case Utf8TreeNodeKind.Oneloop:
+                    case Utf8TreeNodeKind.Onelazy:
+                    case Utf8TreeNodeKind.Oneloopatomic:
+                    case Utf8TreeNodeKind.Notoneloop:
+                    case Utf8TreeNodeKind.Notonelazy:
+                    case Utf8TreeNodeKind.Notoneloopatomic:
+                    case Utf8TreeNodeKind.Setloop:
+                    case Utf8TreeNodeKind.Setlazy:
+                    case Utf8TreeNodeKind.Setloopatomic:
+                        distance = distance + node.M;
+                        break;
+                    case Utf8TreeNodeKind.Loop:
+                    case Utf8TreeNodeKind.Lazyloop:
+                        var body = node.ChildCount == 0 ? 0 : ComputeMinLength(node.Child(0));
+                        distance = unchecked(distance + node.M * body);
+                        break;
+                    default:
+                        distance = distance + ComputeMinLength(node);
+                        break;
+                }
             }
+            return distance;
         }
     }
 
@@ -1114,47 +1116,42 @@ internal static class Utf8OwnedFindOptimizations
 
         static (int Distance, bool Ok) WalkSets(Utf8TreeNode current, int distance, List<OwnedSet> sets)
         {
-            switch (current.Kind)
+            var pending = new Stack<Utf8TreeNode>();
+            pending.Push(current);
+            while (pending.TryPop(out current))
             {
-                case Utf8TreeNodeKind.One:
-                    return (distance + 1, true);
-                case Utf8TreeNodeKind.Multi:
-                    return (distance + (current.Str is null ? 1 : current.Str.Length), true);
-                case Utf8TreeNodeKind.Set:
-                    if (!TryAddSet(current.Str, distance, sets))
-                    {
+                switch (current.Kind)
+                {
+                    case Utf8TreeNodeKind.One:
+                        distance++;
+                        break;
+                    case Utf8TreeNodeKind.Multi:
+                        distance += current.Str is null ? 1 : current.Str.Length;
+                        break;
+                    case Utf8TreeNodeKind.Set:
+                        if (!TryAddSet(current.Str, distance, sets)) return (distance, false);
+                        distance++;
+                        break;
+                    case Utf8TreeNodeKind.Capture:
+                    case Utf8TreeNodeKind.Group:
+                    case Utf8TreeNodeKind.Atomic:
+                    case Utf8TreeNodeKind.Concatenate:
+                        for (var index = current.ChildCount - 1; index >= 0; index--)
+                            pending.Push(current.Child(index));
+                        break;
+                    case Utf8TreeNodeKind.Beginning:
+                    case Utf8TreeNodeKind.Bol:
+                    case Utf8TreeNodeKind.Start:
+                    case Utf8TreeNodeKind.End:
+                    case Utf8TreeNodeKind.EndZ:
+                    case Utf8TreeNodeKind.Eol:
+                    case Utf8TreeNodeKind.Empty:
+                        break;
+                    default:
                         return (distance, false);
-                    }
-
-                    return (distance + 1, true);
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                case Utf8TreeNodeKind.Concatenate:
-                    var running = distance;
-                    for (var i = 0; i < current.ChildCount; i++)
-                    {
-                        var child = WalkSets(current.Child(i), running, sets);
-                        if (!child.Ok)
-                        {
-                            return (running, false);
-                        }
-
-                        running = child.Distance;
-                    }
-
-                    return (running, true);
-                case Utf8TreeNodeKind.Beginning:
-                case Utf8TreeNodeKind.Bol:
-                case Utf8TreeNodeKind.Start:
-                case Utf8TreeNodeKind.End:
-                case Utf8TreeNodeKind.EndZ:
-                case Utf8TreeNodeKind.Eol:
-                case Utf8TreeNodeKind.Empty:
-                    return (distance, true);
-                default:
-                    return (distance, false);
+                }
             }
+            return (distance, true);
         }
 
         static bool TryAddSet(string? wire, int distance, List<OwnedSet> sets)
@@ -1219,6 +1216,23 @@ internal static class Utf8OwnedFindOptimizations
             chars.CopyTo(array);
             sets.Add(new OwnedSet(wire, distance, false, array, null));
             return true;
+        }
+    }
+
+    // One postorder continuation per active ancestor. Scalar facts retain the
+    // pinned formulas while child values are computed without CLR recursion.
+    private static IEnumerable<Utf8TreeNode> PostOrder(Utf8TreeNode node)
+    {
+        var frames = new Stack<(Utf8TreeNode Node, int NextChild)>();
+        frames.Push((node, 0));
+        while (frames.TryPop(out var frame))
+        {
+            if (frame.NextChild < frame.Node.ChildCount)
+            {
+                frames.Push((frame.Node, frame.NextChild + 1));
+                frames.Push((frame.Node.Child(frame.NextChild), 0));
+            }
+            else yield return frame.Node;
         }
     }
 }

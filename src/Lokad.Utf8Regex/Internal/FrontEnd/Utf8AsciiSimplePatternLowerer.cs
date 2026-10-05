@@ -169,18 +169,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     // folding exists.
     internal static bool HasScopedIgnoreCase(Utf8TreeNode node)
     {
-        if (node.Kind == Utf8TreeNodeKind.Group &&
-            (node.Options & RegexOptions.IgnoreCase) != 0)
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out node))
         {
-            return true;
-        }
-
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            if (HasScopedIgnoreCase(node.Child(i)))
-            {
+            if (node.Kind == Utf8TreeNodeKind.Group &&
+                (node.Options & RegexOptions.IgnoreCase) != 0)
                 return true;
-            }
+            for (var index = node.ChildCount - 1; index >= 0; index--)
+                pending.Push(node.Child(index));
         }
 
         return false;

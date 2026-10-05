@@ -10,42 +10,32 @@ internal static class Utf8ExecutionProgramLowerer
         }
 
         var instructions = new List<Utf8ExecutionInstruction>();
-        AppendNode(tree.Root, instructions);
-        return new Utf8ExecutionProgram(instructions);
-    }
-
-    private static void AppendNode(Utf8ExecutionNode node, List<Utf8ExecutionInstruction> instructions)
-    {
-        var enterIndex = instructions.Count;
-        instructions.Add(new Utf8ExecutionInstruction(
-            Utf8ExecutionInstructionKind.Enter,
-            node.Kind,
-            node.Options,
-            node.Text,
-            node.Ch,
-            node.CaptureNumber,
-            node.Min,
-            node.Max,
-            -1));
-
-        foreach (var child in node.Children)
+        var frames = new Stack<(Utf8ExecutionNode Node, int EnterIndex, int NextChild)>();
+        frames.Push((tree.Root, -1, 0));
+        while (frames.TryPop(out var frame))
         {
-            AppendNode(child, instructions);
+            var node = frame.Node;
+            var enterIndex = frame.EnterIndex;
+            if (enterIndex < 0)
+            {
+                enterIndex = instructions.Count;
+                instructions.Add(new Utf8ExecutionInstruction(
+                    Utf8ExecutionInstructionKind.Enter, node.Kind, node.Options,
+                    node.Text, node.Ch, node.CaptureNumber, node.Min, node.Max, -1));
+            }
+            if (frame.NextChild < node.Children.Count)
+            {
+                frames.Push((node, enterIndex, frame.NextChild + 1));
+                frames.Push((node.Children[frame.NextChild], -1, 0));
+                continue;
+            }
+
+            var exitIndex = instructions.Count;
+            instructions.Add(new Utf8ExecutionInstruction(
+                Utf8ExecutionInstructionKind.Exit, node.Kind, node.Options,
+                node.Text, node.Ch, node.CaptureNumber, node.Min, node.Max, enterIndex));
+            instructions[enterIndex] = instructions[enterIndex] with { PartnerIndex = exitIndex };
         }
-
-        var exitIndex = instructions.Count;
-        instructions.Add(new Utf8ExecutionInstruction(
-            Utf8ExecutionInstructionKind.Exit,
-            node.Kind,
-            node.Options,
-            node.Text,
-            node.Ch,
-            node.CaptureNumber,
-            node.Min,
-            node.Max,
-            -1));
-
-        instructions[enterIndex] = instructions[enterIndex] with { PartnerIndex = exitIndex };
-        instructions[exitIndex] = instructions[exitIndex] with { PartnerIndex = enterIndex };
+        return new Utf8ExecutionProgram(instructions);
     }
 }
