@@ -10,8 +10,18 @@
   original UTF-8 input and remain unavailable for split scalars. Conversion
   admits its storage before allocation and observes cancellation and deadlines.
   Non-ASCII ordered-window subjects also use this owned execution path.
-  Replacement and unsupported syntax retain their existing routes at this
-  checkpoint; public input must still be well-formed UTF-8.
+  For patterns admitted by the slice, template replacement and UTF-16 evaluators
+  use the same owned unit execution and retain lone surrogate halves until the
+  finished result is encoded. This
+  preserves pairs formed across captures, template literals, and original gaps.
+  Right-to-left callbacks run in discovery order; output growth, copying, and
+  encoding share the invocation deadline and cancellation token. UTF-8 writer
+  callbacks and unsupported syntax still have migration work remaining; public
+  input must still be well-formed UTF-8.
+- An undersized replacement destination remains untouched. Cancellation or an
+  expired deadline during the final copy may leave a written prefix; owned
+  destination copying checks both between bounded blocks and releases its
+  temporary storage on failure.
 
 ### Parser ownership
 

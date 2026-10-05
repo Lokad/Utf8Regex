@@ -3256,386 +3256,6 @@ public sealed partial class Utf8Regex
         return ReplaceCore(input, replacement, analyzed, cancellationToken);
     }
 
-    private byte[] OwnedSliceReplace(
-        ReadOnlySpan<byte> input,
-        Utf8SliceProgram program,
-        Utf8AnalyzedReplacement replacement,
-        CancellationToken token)
-    {
-        var map = Utf8BoundaryMap.Create(input);
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        if (!Utf8SliceOutputWriter.Rent(input.Length, ref invocation, out var writer))
-        {
-            throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
-        }
-
-        // Right-to-left replacement discovers the right-to-left tiling (which can
-        // differ from the left-to-right tiling) through the shared cursor, then emits
-        // left-to-right with one deterministic single-attempt detailed re-query per
-        // match. Ranges stage as unit pairs in a ledger-charged buffer; capture
-        // histories materialize per emitted match exactly like the forward loop.
-        static void AppendRtlReplaceRange(ref int[] ranges, ref int rangeCount, int startUnit, int endUnit, ref Utf8SliceInvocation rangeInvocation)
-        {
-            if (rangeCount * 2 + 2 > ranges.Length)
-            {
-                var grownLength = ranges.Length == 0 ? 16 : ranges.Length * 2;
-                if (!rangeInvocation.Ledger.TryReserve((ulong)grownLength * 4))
-                {
-                    throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
-                }
-
-                var grown = new int[grownLength];
-                Array.Copy(ranges, grown, ranges.Length);
-                if (ranges.Length != 0)
-                {
-                    rangeInvocation.Ledger.Release((ulong)ranges.Length * 4);
-                }
-
-                ranges = grown;
-            }
-
-            ranges[rangeCount * 2] = startUnit;
-            ranges[rangeCount * 2 + 1] = endUnit;
-            rangeCount++;
-        }
-
-        var rtlRanges = Array.Empty<int>();
-        var rtlRangeCount = 0;
-        var unit = 0;
-        var lastEndUnit = 0;
-        // Contiguous matches chain BCL startat across scans (advancing to each
-        // match end, including past empty matches whose positions all miss).
-        var scanByte = 0;
-        try
-        {
-            if (program.RightToLeft)
-            {
-                var rtlCursor = new Utf8OperationMatchCursor(program, input, map, MatchTimeout, token);
-                while (rtlCursor.MoveNext())
-                {
-                    var rtlCurrent = rtlCursor.Current;
-                    AppendRtlReplaceRange(ref rtlRanges, ref rtlRangeCount, rtlCurrent.IndexInUtf16, rtlCurrent.IndexInUtf16 + rtlCurrent.LengthInUtf16, ref invocation);
-                }
-
-                var rtlEmitByte = 0;
-                for (var rtlMatch = rtlRangeCount - 1; rtlMatch >= 0; rtlMatch--)
-                {
-                    var rtlStartUnit = rtlRanges[rtlMatch * 2];
-                    var rtlEndUnit = rtlRanges[rtlMatch * 2 + 1];
-                    var rtlStartByte = rtlStartUnit >= map.Utf16Length ? input.Length : map.Resolve(rtlStartUnit).ByteOffset;
-                    var rtlEdgeByte = rtlEndUnit >= map.Utf16Length ? input.Length : map.Resolve(rtlEndUnit).ByteOffset;
-                    // The re-query reproduces its discovery attempt exactly (same
-                    // edge, same edge alignment, same chain pin), so the detailed
-                    // outcome always agrees; anything else fails closed.
-                    invocation.AnchorOriginByte = rtlMatch == 0 ? input.Length : map.Resolve(rtlRanges[(rtlMatch - 1) * 2]).ByteOffset;
-                    var rtlEdgeClean = rtlEndUnit >= map.Utf16Length || rtlEndUnit <= 0 || map.Resolve(rtlEndUnit).IsScalarBoundary;
-                    var rtlDetail = Utf8SliceRunner.TryMatchAt(program, input, rtlEdgeByte, slots.Starts, slots.Ends, true, rtlEdgeClean, ref invocation);
-                    if (rtlDetail.Breach != Utf8ExecutionLimitKind.None)
-                    {
-                        throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-                    }
-
-                    if (!rtlDetail.IsMatch || rtlDetail.EndIndex != rtlStartByte || rtlDetail.CaptureStarts is null || rtlDetail.CaptureLengths is null)
-                    {
-                        throw new InvalidOperationException("Owned slice detailed re-query missed its discovered match.");
-                    }
-
-                    var rtlOutcome = new Utf8SliceDetailedOutcome(
-                        true, rtlStartUnit, rtlEndUnit, rtlStartByte, rtlEdgeByte,
-                        rtlDetail.CaptureStarts, rtlDetail.CaptureLengths, Utf8ExecutionLimitKind.None);
-                    if (!writer.Append(input.Slice(rtlEmitByte, rtlStartByte - rtlEmitByte), ref invocation) ||
-                        !ExpandOwnedSliceTemplate(ref writer, replacement, input, map, rtlOutcome, program.GroupCount, ref invocation))
-                    {
-                        throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
-                    }
-
-                    Utf8SliceRunner.ReleaseHistory(rtlDetail.CaptureStarts, rtlDetail.CaptureLengths, ref invocation);
-                    rtlEmitByte = rtlEdgeByte;
-                }
-
-                if (!writer.Append(input.Slice(rtlEmitByte), ref invocation))
-                {
-                    throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
-                }
-
-                return writer.ToArrayAndRelease(ref invocation);
-            }
-
-            while (unit <= map.Utf16Length)
-            {
-                invocation.AnchorOriginByte = scanByte;
-                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, unit, slots.Starts, slots.Ends, ref invocation);
-                if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                {
-                    throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-                }
-
-                if (!outcome.Found || outcome.CaptureStarts is null || outcome.CaptureLengths is null)
-                {
-                    break;
-                }
-
-                if (!AppendReplacementGapBytes(ref writer, input, map, lastEndUnit, outcome.StartUnit, ref invocation) ||
-                    !ExpandOwnedSliceTemplate(ref writer, replacement, input, map, outcome, program.GroupCount, ref invocation))
-                {
-                    throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
-                }
-
-                Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation);
-                lastEndUnit = outcome.EndUnit;
-                unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
-                scanByte = outcome.EndByte;
-            }
-
-            if (!AppendReplacementGapBytes(ref writer, input, map, lastEndUnit, map.Utf16Length, ref invocation))
-            {
-                throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
-            }
-
-            return writer.ToArrayAndRelease(ref invocation);
-        }
-        finally
-        {
-            if (rtlRanges.Length != 0)
-            {
-                invocation.Ledger.Release((ulong)rtlRanges.Length * 4);
-            }
-
-            writer.Release(ref invocation);
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
-    }
-
-    // R05: gap splicing substitutes U+FFFD for scalar-splitting unit ranges so
-    // owned bytes match BCL-as-encoded exactly (BCL copies lone halves, which
-    // encode as U+FFFD on both sides); lead-plus-trail pairs inside the gap splice
-    // raw like BCL pairs them, and whole scalars splice raw, so aligned gaps
-    // behave exactly like the direct slice below.
-    private static bool AppendReplacementGapBytes(
-        ref Utf8SliceOutputWriter writer,
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        int fromUnit,
-        int toUnit,
-        ref Utf8SliceInvocation invocation)
-    {
-        var unit = fromUnit;
-        var runStartByte = -1;
-        while (unit < toUnit)
-        {
-            var unitByte = map.Resolve(unit).ByteOffset;
-            if (map.Resolve(unit).IsScalarBoundary)
-            {
-                var next = unit + 1;
-                if (next < toUnit && !map.Resolve(next).IsScalarBoundary)
-                {
-                    if (runStartByte < 0)
-                    {
-                        runStartByte = unitByte;
-                    }
-
-                    unit += 2;
-                    continue;
-                }
-
-                if (next == toUnit && toUnit < map.Utf16Length && !map.Resolve(toUnit).IsScalarBoundary)
-                {
-                    if (runStartByte >= 0)
-                    {
-                        if (!writer.Append(input.Slice(runStartByte, unitByte - runStartByte), ref invocation))
-                        {
-                            return false;
-                        }
-
-                        runStartByte = -1;
-                    }
-
-                    if (!writer.Append("\uFFFD"u8, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    unit++;
-                    continue;
-                }
-
-                if (runStartByte < 0)
-                {
-                    runStartByte = unitByte;
-                }
-
-                unit++;
-                continue;
-            }
-
-            if (runStartByte >= 0)
-            {
-                if (!writer.Append(input.Slice(runStartByte, unitByte - runStartByte), ref invocation))
-                {
-                    return false;
-                }
-
-                runStartByte = -1;
-            }
-
-            if (!writer.Append("\uFFFD"u8, ref invocation))
-            {
-                return false;
-            }
-
-            unit++;
-        }
-
-        if (runStartByte >= 0)
-        {
-            var endByte = toUnit >= map.Utf16Length ? input.Length : map.Resolve(toUnit).ByteOffset;
-            if (!writer.Append(input.Slice(runStartByte, endByte - runStartByte), ref invocation))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool ExpandOwnedSliceTemplate(
-        ref Utf8SliceOutputWriter writer,
-        Utf8AnalyzedReplacement replacement,
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        Utf8SliceDetailedOutcome outcome,
-        int groups,
-        ref Utf8SliceInvocation invocation)
-    {
-        foreach (var instruction in replacement.Plan.Instructions)
-        {
-            switch (instruction.Kind)
-            {
-                case Utf8ReplacementInstructionKind.Literal:
-                    if (!writer.Append(instruction.LiteralUtf8, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8ReplacementInstructionKind.Group:
-                    if (!AppendOwnedSliceGroup(ref writer, input, outcome, instruction.GroupNumber, groups, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8ReplacementInstructionKind.WholeMatch:
-                    if (!writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8ReplacementInstructionKind.LeftPortion:
-                    if (!AppendReplacementGapBytes(ref writer, input, map, 0, outcome.StartUnit, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8ReplacementInstructionKind.RightPortion:
-                    if (!AppendReplacementGapBytes(ref writer, input, map, outcome.EndUnit, map.Utf16Length, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8ReplacementInstructionKind.LastGroup:
-                    if (!AppendOwnedSliceLastGroup(ref writer, input, outcome, groups, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8ReplacementInstructionKind.WholeString:
-                    if (!writer.Append(input, ref invocation))
-                    {
-                        return false;
-                    }
-
-                    break;
-                default:
-                    throw new InvalidOperationException("Unsupported replacement instruction kind.");
-            }
-        }
-
-        return true;
-    }
-
-    private static bool AppendOwnedSliceGroup(
-        ref Utf8SliceOutputWriter writer,
-        ReadOnlySpan<byte> input,
-        Utf8SliceDetailedOutcome outcome,
-        int groupNumber,
-        int groups,
-        ref Utf8SliceInvocation invocation)
-    {
-        if (groupNumber == 0)
-        {
-            return writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation);
-        }
-
-        if (outcome.CaptureStarts is null || outcome.CaptureLengths is null ||
-            groupNumber < 1 || groupNumber > groups)
-        {
-            return true;
-        }
-
-        var starts = outcome.CaptureStarts[groupNumber - 1];
-        var lengths = outcome.CaptureLengths[groupNumber - 1];
-        if (starts.Length == 0)
-        {
-            return true;
-        }
-
-        return writer.Append(
-            input.Slice(starts[^1], lengths[^1]),
-            ref invocation);
-    }
-
-    private static bool AppendOwnedSliceLastGroup(
-        ref Utf8SliceOutputWriter writer,
-        ReadOnlySpan<byte> input,
-        Utf8SliceDetailedOutcome outcome,
-        int groups,
-        ref Utf8SliceInvocation invocation)
-    {
-        // R05: BCL substitutes Groups[Count - 1] (the whole match when groupless),
-        // not the last participating group: the oracle keeps "ab" for "$+" on
-        // groupless "ab" and drops unmatched highest groups instead of scanning down.
-        if (groups <= 0)
-        {
-            return writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation);
-        }
-
-        if (outcome.CaptureStarts is null || outcome.CaptureLengths is null)
-        {
-            return true;
-        }
-
-        if ((uint)(groups - 1) >= (uint)outcome.CaptureStarts.Length ||
-            (uint)(groups - 1) >= (uint)outcome.CaptureLengths.Length)
-        {
-            return true;
-        }
-
-        var starts = outcome.CaptureStarts[groups - 1];
-        var lengths = outcome.CaptureLengths[groups - 1];
-        if (starts.Length == 0)
-        {
-            return true;
-        }
-
-        return writer.Append(input.Slice(starts[^1], lengths[^1]), ref invocation);
-    }
-
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
     {
@@ -3685,6 +3305,12 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
+        if ((GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } ownedProgram)
+        {
+            return OwnedSliceReplace(input, ownedProgram,
+                GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
+        }
+
         // R05: unit-servable literal templates replace unit-aware past scalar-start
         // alignment (unit matches cover halves), as do slice-served shapes through the
         // slice arm; parsed here once, cached after.
@@ -3696,15 +3322,6 @@ public sealed partial class Utf8Regex
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
-        }
-
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
-        {
-            return OwnedSliceReplace(
-                input,
-                _sliceProgram,
-                GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)),
-                cancellationToken);
         }
 
         if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
@@ -4138,6 +3755,16 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
+            (GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } ownedProgram)
+        {
+            try
+            {
+                return OwnedUnitReplace(input, ownedProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _groupNames),
+                    ref state, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
+            }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
         var validation = Utf8Validation.Validate(input);
         var inputBytes = input.ToArray();
         var decoded = Encoding.UTF8.GetString(input);
@@ -4348,44 +3975,6 @@ public sealed partial class Utf8Regex
             }
         }
 
-        // R05: slice shapes enumerate owned and project every callback argument
-        // from the deterministic re-query above, with the same first-hit decline
-        // contract as the arms above.
-        if (_sliceProgram is not null &&
-            !RequiresCultureSensitiveFallback &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var sliceBuilder = new StringBuilder(decoded.Length);
-            var slicePosition = 0;
-            var sliceDeclined = false;
-            var sliceFirst = true;
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryShapeSliceEvaluatorMatch(input, decoded, boundaryMap, valueMatch, cancellationToken, out var sliceContext))
-                {
-                    if (!sliceFirst)
-                    {
-                        throw new InvalidOperationException("The slice projection failed after matching began.");
-                    }
-
-                    sliceDeclined = true;
-                    break;
-                }
-
-                sliceFirst = false;
-                sliceBuilder.Append(decoded, slicePosition, valueMatch.IndexInUtf16 - slicePosition);
-                sliceBuilder.Append(evaluator(in sliceContext, ref state));
-                slicePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-            }
-
-            if (!sliceDeclined)
-            {
-                sliceBuilder.Append(decoded, slicePosition, decoded.Length - slicePosition);
-                return sliceBuilder.ToString();
-            }
-        }
-
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
             decoded,
             match =>
@@ -4466,7 +4055,7 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if ((_sliceProgram is null || !_sliceProgram.ServesInput(input)) &&
+        if (GetOwnedSliceProgram(input) is null && !(input.IsEmpty && _unitSliceProgram is not null) &&
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten);

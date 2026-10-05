@@ -44,7 +44,7 @@ internal static class Utf8ReplacementPlanInterpreter
             case Utf8ReplacementInstructionKind.Literal:
                 if (instruction.LiteralUtf8.Length > 0)
                 {
-                    builder.Append(Encoding.UTF8.GetString(instruction.LiteralUtf8));
+                    builder.Append(instruction.LiteralText);
                 }
 
                 return;
@@ -100,7 +100,7 @@ internal static class Utf8ReplacementPlanInterpreter
             case Utf8ReplacementInstructionKind.Literal:
                 if (instruction.LiteralUtf8.Length > 0)
                 {
-                    builder.Append(Encoding.UTF8.GetString(instruction.LiteralUtf8));
+                    builder.Append(instruction.LiteralText);
                 }
 
                 return;

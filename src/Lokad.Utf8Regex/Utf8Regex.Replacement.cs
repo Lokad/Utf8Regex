@@ -29,13 +29,9 @@ public sealed partial class Utf8Regex
                 replacementText));
         }
 
-        // R05: empty-capable slice loops tile astral input unit-wise exactly
-        // like BCL (half-gap empties included, U+FFFD-substituted through the
-        // encoder on both sides), so the owned splicer below reproduces BCL
-        // replacement byte-for-byte; right-to-left empty loops keep BCL routing.
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (OwnedMatchStartsAreScalarAligned(input) || !_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))
+        if (GetOwnedReplacementProgram(input, replacement) is { } ownedProgram)
         {
-            return OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
+            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
         }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
@@ -196,6 +192,11 @@ public sealed partial class Utf8Regex
                 replacement.OriginalText);
         }
 
+        if (GetOwnedReplacementProgram(input, replacement) is { } ownedProgram)
+        {
+            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
+        }
+
         // R05: owned replacement advances scalar-wise, so astral inputs need shapes
         // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
         // unit-servable literal templates replace unit-aware past this gate below, as do
@@ -210,16 +211,6 @@ public sealed partial class Utf8Regex
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
                 replacement.OriginalText);
-        }
-
-        // R05: slice shapes expand templates through the owned slice replacement,
-        // mirroring the byte core. The invocation owns the deadline and caller
-        // token; the public facade converts its expired deadline to the .NET
-        // timeout exception. Non-serving inputs keep their existing routes.
-        if (_sliceProgram is not null &&
-            _sliceProgram.ServesInput(input))
-        {
-            return Encoding.UTF8.GetString(OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken));
         }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
@@ -288,6 +279,13 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
+        if (GetOwnedReplacementProgram(input, replacement) is { } ownedProgram)
+        {
+            var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Destination, destination, cancellationToken);
+            bytesWritten = result.BytesWritten;
+            return result.Status;
+        }
+
         // R05: unit-servable literal templates replace unit-aware past scalar-start
         // alignment (unit matches cover halves), as do slice-served shapes through the
         // slice arm; everything else keeps BCL routing below.
@@ -301,25 +299,6 @@ public sealed partial class Utf8Regex
             return TryEncodeUtf8ToDestination(astralReplaced, destination, out bytesWritten)
                 ? OperationStatus.Done
                 : OperationStatus.DestinationTooSmall;
-        }
-
-        // R05: same owned slice replacement as the string core, copied into the
-        // caller destination under the same size contract as the encoder helper.
-        // Its invocation receives the caller's token and deadline just like the
-        // byte and string cores; the public wrapper converts expired deadlines.
-        if (_sliceProgram is not null &&
-            _sliceProgram.ServesInput(input))
-        {
-            var sliced = OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
-            if (sliced.Length > destination.Length)
-            {
-                bytesWritten = 0;
-                return OperationStatus.DestinationTooSmall;
-            }
-
-            sliced.CopyTo(destination);
-            bytesWritten = sliced.Length;
-            return OperationStatus.Done;
         }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))

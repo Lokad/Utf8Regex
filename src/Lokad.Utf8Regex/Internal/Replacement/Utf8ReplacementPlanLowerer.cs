@@ -29,7 +29,7 @@ internal static class Utf8ReplacementPlanLowerer
         return token.Kind switch
         {
             Utf8ReplacementTokenKind.Literal => Utf8ReplacementInstruction.Literal(
-                token.Literal is null ? [] : Encoding.UTF8.GetBytes(token.Literal)),
+                token.Literal ?? string.Empty),
             Utf8ReplacementTokenKind.Group => Utf8ReplacementInstruction.Group(
                 ResolveGroupNumber(token, validGroupNumbers, validGroupNames),
                 token.IsBraceEnclosed),
