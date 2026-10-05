@@ -732,29 +732,26 @@ public sealed class Utf8SliceRtlOperationTests
 
     [Theory]
     [MemberData(nameof(RtlEmptyReplaceDeclineCases))]
-    public void RtlEmptyReplaceDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    public void RtlEmptyReplacementKeepsOracleAndOwnsShaping(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: right-to-left empty-capable replacement keeps BCL
-        // routing on astral input (the unit machinery serving the left-to-right
-        // lanes is direction-locked, and slice programs keep the astral flag for
-        // right-to-left shapes); parity holds and construction is pinned per lane.
-        // Discovery, enumeration, and splits for these shapes already serve owned.
+        // Reverse discovery expands each match once, retaining half-unit gaps
+        // until the finished output is encoded in its original character order.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
         Assert.Equal(expectedBytes, bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(expected, stringRegex.ReplaceToString(input, template));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> FromOffsetCases()

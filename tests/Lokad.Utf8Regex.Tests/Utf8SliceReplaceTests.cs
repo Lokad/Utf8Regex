@@ -139,14 +139,14 @@ public sealed class Utf8SliceReplaceTests
 
     [Theory]
     [MemberData(nameof(AstralSliceReplaceDeclineCases))]
-    public void AstralSliceReplaceDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    public void AstralSliceReplacementKeepsOracleAndOwnsShaping(string pattern, RegexOptions options, string text, string template)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout).Replace(text, template);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(oracle, stringRegex.ReplaceToString(input, template));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AstralSliceReplaceHalvesClosedOwnedCases()

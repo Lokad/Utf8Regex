@@ -3063,16 +3063,16 @@ public sealed class AsciiSimplePatternTests
     }
     [Theory]
     [MemberData(nameof(AstralUnitLiteralTemplateDeclineCases))]
-    public void AstralUnitLiteralTemplateDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    public void AstralUnitLiteralTemplateReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: IgnoreCase plans and anchored plans keep BCL routing for
-        // astral literal templates; parity holds and construction is pinned per lane.
+        // The owned unit driver preserves template fragments and gaps in UTF-16
+        // through expansion, then encodes the completed byte result.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);
         var bytesRegex = new Utf8Regex(pattern, options);
         Assert.Equal(expected, Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitGroupTemplateOwnedCases()
@@ -3264,17 +3264,15 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(AstralUnitBranchDeclineCases))]
-    public void AstralUnitBranchDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    public void AstralUnitBranchReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: right-to-left and IgnoreCase unit shapes keep their
-        // existing BCL routes; parity holds and construction is pinned per lane.
-        // Ordered unit-branch attribution (first verifying branch wins) and nested
-        // divergent evaluator shaping graduate to the owned batteries around it.
+        // The owned unit driver preserves template fragments and gaps in UTF-16
+        // through expansion, then encodes the completed byte result.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, template), stringRegex.ReplaceToString(input, template));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchEvaluatorOwnedCases()
@@ -3747,18 +3745,15 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(AstralWholeLoopDeclineCases))]
-    public void AstralWholeLoopDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    public void AstralWholeLoopReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
     {
-        // Permanent semantic boundary (triaged 2026-10-03: oracle spans meet lone halves,
-        // e.g. ([^x]b)+ takes 1:2 and ((.)+) captures group 2 as the trail half,
-        // which scalar stepping cannot reproduce): concat tails after divergent atoms,
-        // tailless lazy loops, nested captures, positive shorthands, and inner captures keep BCL
-        // routing on astral input; parity holds and construction is pinned per lane.
+        // The owned unit driver preserves template fragments and gaps in UTF-16
+        // through expansion, then encodes the completed byte result.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, template), stringRegex.ReplaceToString(input, template));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> TaillessLazyAstralEnumerateDeclineCases()
@@ -3820,7 +3815,7 @@ public sealed class AsciiSimplePatternTests
     public void TaillessLazyAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var sliceRegex = new Utf8Regex(pattern, options);
@@ -3889,19 +3884,19 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
             public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryLoopDeclineCases()
@@ -3923,7 +3918,7 @@ public sealed class AsciiSimplePatternTests
             public void WordBoundaryLoopMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, bool verifierDiscovery)
             {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
                 var compiled = (options & RegexOptions.Compiled) != 0;
                 var input = Encoding.UTF8.GetBytes(text);
                 var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -4023,7 +4018,7 @@ public sealed class AsciiSimplePatternTests
                 var expected = oracle.Replace(text, "Q");
                 var stringRegex = new Utf8Regex(pattern, options);
                 Assert.Equal(expected, stringRegex.ReplaceToString(input, "Q"));
-                Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+                Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
             }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedWholeLoopOwnedCases()
@@ -4194,7 +4189,7 @@ public sealed class AsciiSimplePatternTests
     public void FoldedWholeLoopMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -4202,7 +4197,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> TailedWholeLoopOwnedCases()
@@ -4623,7 +4618,7 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(pattern is "a+(?=\U0001F600)" or "(?<=\U0001F600)a+", isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(pattern is "a+(?=\U0001F600)" or "(?<=\U0001F600)a+", stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedHeadedRangeAsciiMissCases()
@@ -4885,7 +4880,7 @@ public sealed class AsciiSimplePatternTests
     public void DotTailedLoopMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -4953,17 +4948,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes("Q"));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, "Q");
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
         var status = destinationRegex.TryReplace(input, "Q", destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLoopOwnedCases()
@@ -5129,7 +5124,7 @@ public sealed class AsciiSimplePatternTests
     public void AnchoredLoopMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -5137,7 +5132,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLoopAsciiOwnedCases()
@@ -6093,17 +6088,15 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(EmptyCapableStringDeclineCases))]
-    public void EmptyCapableStringDeclineKeepsBclShaping(string pattern, RegexOptions options, string text, string template)
+    public void EmptyCapableStringReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: the string replacement lane cannot reproduce lone
-        // halves under well-formedness (BCL keeps them, owned substitutes
-        // U+FFFD), so it keeps BCL routing for empty-capable programs on
-        // astral input; parity holds and construction is pinned per lane.
+        // The owned unit driver preserves template fragments and gaps in UTF-16
+        // through expansion, then encodes the completed byte result.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, template), stringRegex.ReplaceToString(input, template));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableEvaluatorAlignedCases()
@@ -6578,7 +6571,7 @@ public sealed class AsciiSimplePatternTests
     public void PositiveCategoryLoopMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -6643,18 +6636,18 @@ public sealed class AsciiSimplePatternTests
         var expectedBytes = Encoding.UTF8.GetBytes(oracle.Replace(text, "Q"));
         var bytesRegex = new Utf8Regex(pattern, options);
         Assert.Equal(expectedBytes, bytesRegex.Replace(input, Encoding.UTF8.GetBytes("Q")));
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
         var status = destinationRegex.TryReplace(input, "Q", destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
@@ -6945,7 +6938,7 @@ public sealed class AsciiSimplePatternTests
     public void PositiveCategorySetMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -6953,7 +6946,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ComplexFeatureShapingOwnedCases()
@@ -7226,7 +7219,7 @@ public sealed class AsciiSimplePatternTests
     public void AtomicLoopMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -7234,7 +7227,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> DotGapOwnedCases()
@@ -7506,7 +7499,7 @@ public sealed class AsciiSimplePatternTests
     public void DirectedAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -7567,17 +7560,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> OwnedAsciiTractCases()
@@ -7799,7 +7792,7 @@ public sealed class AsciiSimplePatternTests
     public void PositiveCategoryRangeAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -7867,17 +7860,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> PositiveCategoryRangeAsciiOwnedCases()
@@ -53230,7 +53223,7 @@ public sealed class AsciiSimplePatternTests
     public void MinBoundHeadedAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -53298,17 +53291,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -53317,7 +53310,7 @@ public sealed class AsciiSimplePatternTests
     public void HeadedGroupCategoryRangeAstralMatchesOracleAndPinsEngineUse(RegexOptions options)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var compiled = (options & RegexOptions.Compiled) != 0;
         foreach (var pattern in new string[] { "a\\W{2,}?b", "a\\P{L}{2,}?b" })
         {
@@ -53344,10 +53337,10 @@ public sealed class AsciiSimplePatternTests
             Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
             var stringRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-            Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
             var bytesRegex = new Utf8Regex(pattern, options);
             Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(text, "Q")), bytesRegex.Replace(input, Encoding.UTF8.GetBytes("Q")));
-            Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 
@@ -53417,7 +53410,7 @@ public sealed class AsciiSimplePatternTests
     public void FoldedWordGroupMinBoundMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -53477,17 +53470,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> BoundedExactDivergentOwnedCases()
@@ -53746,7 +53739,7 @@ public sealed class AsciiSimplePatternTests
     public void HeadedCategoryRangeAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -53814,17 +53807,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> HeadedUnboundedLazyRangeAstralCases()
@@ -53849,7 +53842,7 @@ public sealed class AsciiSimplePatternTests
     public void HeadedUnboundedLazyRangeAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var compiled = (options & RegexOptions.Compiled) != 0;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -53925,17 +53918,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> HeadedUnboundedLazyRangeAstralMissCases()
@@ -53957,7 +53950,7 @@ public sealed class AsciiSimplePatternTests
     public void HeadedUnboundedLazyRangeAstralMissMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var oracleHit = oracle.IsMatch(text);
@@ -54005,17 +53998,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> HeadedUnboundedGreedyRangeAsciiOwnedCases()
@@ -54359,7 +54352,7 @@ public sealed class AsciiSimplePatternTests
     public void MinBoundBareAstralMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
     {
         // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
@@ -54420,17 +54413,17 @@ public sealed class AsciiSimplePatternTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedUnitOwnedCases()
@@ -54726,6 +54719,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(pattern == "(?i)k", isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(pattern == "(?i)k", stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

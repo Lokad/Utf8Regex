@@ -275,10 +275,9 @@ public sealed class Utf8SliceBackrefTests
 
     [Theory]
     [MemberData(nameof(AstralDotBackrefDeclineCases))]
-    public void AstralDotBackrefOwnsMatchingWhileReplacementKeepsFallback(string pattern, string inputText)
+    public void AstralDotBackrefOwnsMatchingAndReplacement(string pattern, string inputText)
     {
-        // Matching owns half-split dot/backreference spans. Replacement still
-        // keeps its separate BCL route until UTF-16 output expansion lands.
+        // Matching and template output retain original half-unit coordinates.
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
@@ -286,7 +285,7 @@ public sealed class Utf8SliceBackrefTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         var stringRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(oracle.Replace(inputText, "Q"), stringRegex.ReplaceToString(input, "Q"));
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> MultiDigitDigitEscapeCases()
