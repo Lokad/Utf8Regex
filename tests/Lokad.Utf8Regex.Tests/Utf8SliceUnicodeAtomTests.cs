@@ -37,9 +37,6 @@ public sealed class Utf8SliceUnicodeAtomTests
         foreach (var rtl in new[] { false, true })
         foreach (var folded in pattern is 0 or 1 or 9 or 25 or 27 or 30 or 33 or 34 ? new[] { false, true } : new[] { false })
         {
-            // The oracle-defect lane is retained separately below; never
-            // replace its compiled failures with interpreted expectations.
-            if (pattern is 36 or 37 && compiled && !rtl) continue;
             yield return [pattern, RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None) |
@@ -53,7 +50,7 @@ public sealed class Utf8SliceUnicodeAtomTests
     {
         var pattern = AtomPatterns[patternId];
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, options));
-        var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var oracle = new Regex(pattern, OracleOptions(patternId, options), TimeSpan.FromSeconds(10));
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
@@ -97,7 +94,7 @@ public sealed class Utf8SliceUnicodeAtomTests
     public void UnicodeCallbacksKeepCaptureHistoriesAndByteAlignment(int patternId, RegexOptions options)
     {
         var pattern = AtomPatterns[patternId];
-        var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var oracle = new Regex(pattern, OracleOptions(patternId, options), TimeSpan.FromSeconds(10));
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
@@ -171,18 +168,33 @@ public sealed class Utf8SliceUnicodeAtomTests
     [Theory]
     [InlineData("([\\uFFFF]+)", "\uffff")]
     [InlineData("([^\\uFFFF]+)", "a")]
-    public void CompiledMaximumUnitLoopRetainsTheExplicitOracleDefectRoute(string pattern, string text)
+    [InlineData("([\\uFFFE-\\uFFFF]+)", "\ufffe\uffff")]
+    [InlineData("([^\\uFFFE-\\uFFFF]+)", "ab")]
+    public void CompiledMaximumUnitLoopsUseInterpretedSemantics(string pattern, string text)
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
-        Assert.True(new Regex(pattern, RegexOptions.CultureInvariant).IsMatch(text));
-        // The invalid compiled position can falsely miss or throw even in
-        // IsMatch. Its outcome varies between allocations and platforms, so
-        // qualify the retained engine route rather than pinning a fault mode.
-        Assert.Null(Utf8SliceParser.TryParse(pattern, options));
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, options));
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
-        var failure = Record.Exception(() => regex.IsMatch(Encoding.UTF8.GetBytes(text)));
-        if (failure is not null) Assert.IsType<ArgumentOutOfRangeException>(failure);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(oracle.Count(text), regex.Count(input));
+        AssertMatch(text, oracle.Match(text), regex.Match(input));
+        AssertDetailed(oracle.Match(text), regex.MatchDetailed(input));
+        AssertSequence(text, oracle.EnumerateMatches(text), regex.EnumerateMatches(input));
+        Assert.Equal(oracle.Replace(text, "[$1]"), regex.ReplaceToString(input, "[$1]"));
+        AssertOwned(regex);
+    }
+
+    private static RegexOptions OracleOptions(int patternId, RegexOptions options)
+    {
+        // .NET 10.0.12 compiled LTR [FFFF]+ and its complement use an
+        // invalid emitted position. The approved contract follows interpreted
+        // semantics for these loops instead of copying allocation-dependent
+        // false misses or exceptions. Keep compiled oracles on other lanes.
+        return patternId is 36 or 37 && (options & RegexOptions.RightToLeft) == 0
+            ? options & ~RegexOptions.Compiled
+            : options;
     }
 
     [Theory]
