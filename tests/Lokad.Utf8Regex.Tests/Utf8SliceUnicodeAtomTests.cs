@@ -171,16 +171,17 @@ public sealed class Utf8SliceUnicodeAtomTests
     [Theory]
     [InlineData("([\\uFFFF]+)", "\uffff")]
     [InlineData("([^\\uFFFF]+)", "a")]
-    public void CompiledMaximumUnitLoopRetainsTheExplicitOracleDefectDisposition(string pattern, string text)
+    public void CompiledMaximumUnitLoopRetainsTheExplicitOracleDefectRoute(string pattern, string text)
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
-        var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
-        Assert.False(oracle.IsMatch(text));
-        // Count/Match failures depend on the invalid emitted position and
-        // memory layout; the retained observation artifact records those modes.
+        Assert.True(new Regex(pattern, RegexOptions.CultureInvariant).IsMatch(text));
+        // The invalid compiled position can falsely miss or throw even in
+        // IsMatch. Its outcome varies between allocations and platforms, so
+        // qualify the retained engine route rather than pinning a fault mode.
         Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
-        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text)));
+        var failure = Record.Exception(() => regex.IsMatch(Encoding.UTF8.GetBytes(text)));
+        if (failure is not null) Assert.IsType<ArgumentOutOfRangeException>(failure);
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 

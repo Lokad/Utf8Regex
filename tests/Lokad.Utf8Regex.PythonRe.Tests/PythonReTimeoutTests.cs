@@ -38,7 +38,9 @@ public sealed class PythonReTimeoutTests
     [Fact]
     public void TimedOutInstanceRemainsUsable()
     {
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        // Recovery includes the first substitution call. Give its cold path
+        // scheduling headroom while still forcing a real catastrophic timeout.
+        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Search(CreateCatastrophicInput()));
 
         var input = Encoding.UTF8.GetBytes("aaabaaa");
