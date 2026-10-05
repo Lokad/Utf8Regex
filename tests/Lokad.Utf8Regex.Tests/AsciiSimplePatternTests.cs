@@ -53263,8 +53263,6 @@ public sealed class AsciiSimplePatternTests
     {
         (string pattern, string text, string template)[] rows =
         [
-            ("(a[^x]{2,}b)", "xa\U0001F600b", "<$1>"),
-            ("(a[^x]{2,}b)", "xa\U0001F600yb", "<$1>"),
             ("(a\\D{2,}b)", "xa\U0001F600b", "<$1>"),
         ];
         foreach (var row in rows)
@@ -53278,11 +53276,10 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(MinBoundHeadedGroupedAstralCases))]
     public void MinBoundHeadedGroupedAstralKeepsVerifierDiscovery(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: minimum bounds count UTF-16 units in BCL but
-        // scalars in the slice runner, so a minimum of two or more over a
-        // unit-divergent atom can force a pair split the runner cannot
-        // reproduce (probed: `a[^x]{2,}b` misses `xa<astral>b` owned with no
-        // fallback). Headed shapes keep verifier-owned discovery on astral
+        // Declared R05 debt: shorthand bodies still need unit-wise atom
+        // classification and repetition. Greedy dot and ASCII negated-set
+        // minimums moved to Utf8SliceUtf16MinimumTests with owned projection.
+        // The remaining headed shapes keep verifier discovery on astral
         // input (the ordinary lane builds the anchored verifier; compiled
         // Match diverts). Detailed shapes owned from the discovery hit on the
         // ordinary lane is groupless-only; grouped spans need span projection, which
@@ -53375,8 +53372,6 @@ public sealed class AsciiSimplePatternTests
     {
         (string pattern, string text, string template)[] rows =
         [
-            ("a[^x]{2,}b", "xa\U0001F600b", "Q"),
-            ("a.{2,}b", "xa\U0001F600b", "Q"),
             ("a[^x]{2,}?b", "xa\U0001F600b", "Q"),
             ("a.{2,}?b", "xa\U0001F600b", "Q"),
             ("a\\D{2,}b", "xa\U0001F600b", "Q"),
@@ -53395,7 +53390,6 @@ public sealed class AsciiSimplePatternTests
             ("a\\P{Nd}{2,}b", "xa\U0001F600b", "Q"),
             ("a\\P{Lu}{2,}?b", "xa\U0001F600b", "Q"),
             ("a[\\s\\S]{2,}b", "xa\U0001F600b", "Q"),
-            ("a[^\n]{2,}b", "xa\U0001F600b", "Q"),
         ];
         foreach (var row in rows)
         {
@@ -53408,11 +53402,11 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(MinBoundHeadedAstralCases))]
     public void MinBoundHeadedAstralKeepsVerifierDiscovery(string pattern, RegexOptions options, string text, string template)
     {
-        // Declared R05 debt: minimum bounds count UTF-16 units in BCL but
-        // scalars in the slice runner, so a minimum of two or more over a
-        // unit-divergent atom can force a pair split the runner cannot
-        // reproduce (probed: `a[^x]{2,}b` misses `xa<astral>b` owned with no
-        // fallback). Headed shapes keep verifier-owned discovery on astral
+        // Declared R05 debt: bounded/lazy stops and Unicode atom bodies
+        // still need unit-wise execution. Greedy unbounded dot and ASCII
+        // negated-set minimums moved to Utf8SliceUtf16MinimumTests, whose
+        // UTF-16 counter also verifies a lone astral scalar as two units.
+        // The remaining headed shapes keep verifier discovery on astral
         // input (the ordinary lane builds the anchored verifier; compiled
         // Match diverts). Detailed shapes owned from the discovery hit on the
         // ordinary lane (groupless whole span); enumeration, splits, and replacement
@@ -54379,14 +54373,11 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(HeadedUnboundedGreedyRangeAstralMissCases))]
-    public void HeadedUnboundedGreedyRangeAstralMissOwnsDiscoveryKeepsFallbackShaping(string pattern, RegexOptions options, string text, string template)
+    public void HeadedUnboundedGreedyRangeAstralMissOwnsEveryOperation(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: headed unbounded greedy ranges miss astral input with zero fallback
-        // on discovery: the unbounded greedy gap exhausts without meeting the tail,
-        // so no candidate survives slice discovery to verification on either lane.
-        // The shaping lanes still construct the plain fallback eagerly, except Detailed
-        // (unsuccessful shapes project no groups). Parity holds on every lane. Mirrors
-        // the unbounded-lazy miss battery exactly.
+        // R05: the owned UTF-16 minimum counter admits this whole greedy loop
+        // on astral subjects. Its miss projects directly on every operation,
+        // including the unchanged replacement and single split tail.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var oracleHit = oracle.IsMatch(text);
@@ -54420,7 +54411,7 @@ public sealed class AsciiSimplePatternTests
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expectedPositions, actualPositions);
-        Assert.True(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
         var splitRegex = new Utf8Regex(pattern, options);
         var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
@@ -54428,23 +54419,23 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(new System.Collections.Generic.List<(string Value, int Index, int Length)> { (text, 0, text.Length) }, actualSplits);
-        Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(splitRegex.Inspection.DebugFallbackRegexIsCreated);
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> MinBoundAsciiClosedOwnedCases()
@@ -54689,8 +54680,6 @@ public sealed class AsciiSimplePatternTests
     {
         (string pattern, string text, string template)[] rows =
         [
-            ("([^x]{2,})", "\U0001F600yy", "Q"),
-            ("(?i)([^x]{2,})", "\U0001F600yy", "Q"),
             ("\\p{Nd}{2,}", "x\U000104A0y", "Q"),
             ("(.{2,}?)", "a\U0001F600b", "Q"),
             ("([^x]{2,}?)", "a\U0001F600b", "Q"),
