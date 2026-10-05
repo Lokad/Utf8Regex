@@ -15,13 +15,23 @@
   finished result is encoded. This
   preserves pairs formed across captures, template literals, and original gaps.
   Right-to-left callbacks run in discovery order; output growth, copying, and
-  encoding share the invocation deadline and cancellation token. UTF-8 writer
-  callbacks and unsupported syntax still have migration work remaining; public
-  input must still be well-formed UTF-8.
+  encoding share the invocation deadline and cancellation token. Unsupported
+  syntax still has migration work remaining; public input must still be
+  well-formed UTF-8.
 - An undersized replacement destination remains untouched. Cancellation or an
   expired deadline during the final copy may leave a written prefix; owned
   destination copying checks both between bounded blocks and releases its
   temporary storage on failure.
+- UTF-8 writer callbacks now use the owned unit program where available,
+  preserving complete captures and the whole-match scalar-alignment requirement.
+  Raw bytes are validated after the complete output is assembled, so fragments
+  can form a UTF-8 sequence across callbacks. Writer copies share their buffer;
+  resetting the writer clears accumulated output. Scope, buffer, growth overlap,
+  and result storage are admitted, with cancellation/deadline checks during
+  append, reordering, validation, and copying. Callback-local discarded buffers
+  are reclaimed at the callback boundary; nested operations restore the outer
+  invocation. Supported right-to-left callbacks now follow oracle encounter
+  order and produce correctly ordered output instead of slicing gaps forward.
 
 ### Parser ownership
 

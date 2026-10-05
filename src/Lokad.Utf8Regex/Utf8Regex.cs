@@ -2405,36 +2405,6 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private bool TryShapeSliceEvaluatorMatch(
-        ReadOnlySpan<byte> input,
-        string decoded,
-        Utf8BoundaryMap boundaryMap,
-        Utf8ValueMatch valueMatch,
-        CancellationToken cancellationToken,
-        out Utf8MatchContext context)
-    {
-        // R05: slice shapes project every callback argument from a deterministic
-        // single-attempt detailed re-query at the enumerated hit start. A start or
-        // length disagreement fails closed to the BCL fallback.
-        context = default;
-        var program = _sliceProgram;
-        if (program is null || !program.ServesInput(input))
-        {
-            return false;
-        }
-
-        var detailed = OwnedSliceMatchDetailedFromUnit(input, program, decoded, boundaryMap, valueMatch.IndexInUtf16, cancellationToken);
-        if (!detailed.Success ||
-            detailed.GetGroup(0).IndexInUtf16 != valueMatch.IndexInUtf16 ||
-            detailed.GetGroup(0).LengthInUtf16 != valueMatch.LengthInUtf16)
-        {
-            return false;
-        }
-
-        context = detailed;
-        return true;
-    }
-
     // R05: construction-cached pure-tree capture predicate for the template divert.
     // A missing tree conservatively reports captures so BCL routing is preserved.
     private static bool HasOwnedCaptures(Utf8ExecutionTree? tree)
@@ -3374,6 +3344,12 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
+        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
+            (_sliceProgram ?? _unitSliceProgram) is { } ownedProgram)
+        {
+            try { return OwnedUnitReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
         var validation = Utf8Validation.Validate(input);
         var decoded = Encoding.UTF8.GetString(input);
         var boundaryMap = Utf8BoundaryMap.Create(input, validation);
@@ -3621,54 +3597,6 @@ public sealed partial class Utf8Regex
             }
 
             if (!unitDeclined)
-            {
-                writer.Append(input[sourcePosition..]);
-                return writer.GetValidatedBytes().ToArray();
-            }
-        }
-
-        // R05: slice shapes enumerate owned and project every callback argument
-        // from the deterministic re-query above, with the same first-hit decline
-        // contract as the arms above.
-        if (_sliceProgram is not null &&
-            !RequiresCultureSensitiveFallback &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var sliceDeclined = false;
-            var sliceFirst = true;
-            try
-            {
-                foreach (var valueMatch in EnumerateMatches(input))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (!valueMatch.IsByteAligned)
-                    {
-                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                    }
-
-                    if (!TryShapeSliceEvaluatorMatch(input, decoded, boundaryMap, valueMatch, cancellationToken, out var sliceContext))
-                    {
-                        if (!sliceFirst)
-                        {
-                            throw new InvalidOperationException("The slice projection failed after matching began.");
-                        }
-
-                        sliceDeclined = true;
-                        break;
-                    }
-
-                    sliceFirst = false;
-                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
-                    evaluator(in sliceContext, ref writer, ref state);
-                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!sliceDeclined)
             {
                 writer.Append(input[sourcePosition..]);
                 return writer.GetValidatedBytes().ToArray();

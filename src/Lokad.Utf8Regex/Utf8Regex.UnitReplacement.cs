@@ -52,7 +52,7 @@ public sealed partial class Utf8Regex
             if (!invocation.Ledger.TryReserve(decodedReservation))
                 throw new InvalidOperationException("Owned replacement input exceeded the invocation storage budget.");
             decodedAdmitted = true;
-            var decoded = Encoding.UTF8.GetString(input);
+            var decoded = Utf8SliceBufferWork.DecodeUtf8(input, map.Utf16Length, ref invocation);
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var unit = program.RightToLeft ? map.Utf16Length : 0;
             var edge = unit;
@@ -114,6 +114,87 @@ public sealed partial class Utf8Regex
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
             subject.Release(ref invocation);
             if (decodedAdmitted) invocation.Ledger.Release(decodedReservation);
+        }
+    }
+
+    private byte[] OwnedUnitReplaceEvaluator<TState>(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken token)
+    {
+        var validation = Utf8Validation.Validate(input);
+        var map = Utf8BoundaryMap.Create(input, validation);
+        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        ref var invocation = ref scope.Invocation;
+        var subject = new Utf8SliceUnitSubject();
+        var slots = new Utf8SliceSlots([], []);
+        var decodedReservation = (ulong)map.Utf16Length * 2;
+        var decodedAdmitted = false;
+        try
+        {
+            subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
+            if (!invocation.Ledger.TryReserve(decodedReservation))
+                throw new InvalidOperationException("Owned replacement input exceeded the invocation storage budget.");
+            decodedAdmitted = true;
+            var decoded = Utf8SliceBufferWork.DecodeUtf8(input, map.Utf16Length, ref invocation);
+            slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+            var writer = new Utf8ReplacementWriter(scope.CreateBuffer());
+            var unit = program.RightToLeft ? map.Utf16Length : 0;
+            var edgeByte = program.RightToLeft ? input.Length : 0;
+            var anchor = unit;
+            while (unit >= 0 && unit <= map.Utf16Length)
+            {
+                invocation.AnchorOriginByte = subject.Map.Resolve(anchor).ByteOffset;
+                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, subject.Input, subject.Map,
+                    unit, slots.Starts, slots.Ends, ref invocation);
+                try
+                {
+                    if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                        throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
+                    if (!outcome.Found) break;
+                    var start = map.Resolve(outcome.StartUnit);
+                    var end = map.Resolve(outcome.EndUnit);
+                    if (!start.IsScalarBoundary || !end.IsScalarBoundary)
+                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                    if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, start.ByteOffset - edgeByte));
+                    var projection = Utf8SliceCaptureProjection.Create(outcome, subject.Map, ref invocation);
+                    try
+                    {
+                        var context = projection.CreateContext(input, decoded, map, _groupNames, outcome);
+                        evaluator(in context, ref writer, ref state);
+                        Utf8SliceBufferWork.Checkpoint(ref invocation);
+                    }
+                    finally { projection.Release(ref invocation); }
+                    scope.Retain(writer.OwnedOutput);
+                    if (program.RightToLeft)
+                    {
+                        writer.Append(input.Slice(end.ByteOffset, edgeByte - end.ByteOffset));
+                        writer.GetOwnedOutput(scope).MarkPiece();
+                        edgeByte = start.ByteOffset;
+                        unit = outcome.EndUnit > outcome.StartUnit ? outcome.StartUnit : outcome.EndUnit - 1;
+                    }
+                    else
+                    {
+                        edgeByte = end.ByteOffset;
+                        unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+                    }
+                    if (outcome.EndUnit > outcome.StartUnit) anchor = program.RightToLeft ? outcome.StartUnit : outcome.EndUnit;
+                }
+                finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
+            }
+            if (program.RightToLeft)
+            {
+                writer.Append(input.Slice(0, edgeByte));
+                writer.GetOwnedOutput(scope).MarkPiece();
+                writer.GetOwnedOutput(scope).ReversePieces();
+            }
+            else writer.Append(input[edgeByte..]);
+            return writer.GetOwnedOutput(scope).ToArray();
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+            subject.Release(ref invocation);
+            if (decodedAdmitted) invocation.Ledger.Release(decodedReservation);
+            scope.Release();
         }
     }
 }
