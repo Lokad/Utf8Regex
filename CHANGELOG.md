@@ -12,8 +12,10 @@
   Unicode group names and escaped punctuation are also admitted. Python scalar
   translations now use the admitted unit subject during owned Count, preserving
   scalar advancement and empty/nonempty adjacency. Qualified native BMP literal
-  lanes and the Cyrillic Count kernel remain available. Some compiled .NET 10
-  oracle defects and other syntax still require migration dispositions.
+  lanes and the Cyrillic Count kernel remain available. For greedy class loops
+  ending at U+FFFF, both owned lanes follow .NET 10 interpreted semantics;
+  they deliberately avoid .NET 10.0.12 compiled-engine false misses and invalid
+  position exceptions. Other supported syntax still requires migration work.
 - The owned slice VM now handles supplementary characters as .NET UTF-16 code
   units for matching, complete capture histories, enumeration, and splits,
   including starts inside surrogate pairs. Byte ranges still refer to the

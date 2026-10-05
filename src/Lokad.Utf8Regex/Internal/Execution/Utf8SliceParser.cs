@@ -93,39 +93,9 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        // .NET 10.0.12 emits broken compiled code for a greedy unbounded
-        // character-class loop whose only range ends at U+FFFF and has one
-        // or two members. IsMatch misses; result modes can read an invalid
-        // position and throw. Keep its existing route pending the explicit
-        // oracle-defect disposition; this is migration debt, not a language
-        // rejection or a qualified owned compatibility mechanism.
-        static bool HasInvalidCompiledClassLoop(Utf8SliceNode? node)
-        {
-            return node switch
-            {
-                Utf8SliceNode.RepeatNode repeat =>
-                    repeat.Maximum == int.MaxValue && !repeat.Lazy &&
-                    repeat.Body is Utf8SliceNode.CategorySetNode { Members.Length: 0, Categories.Length: 1 } set &&
-                    set.Mask16.All(static value => value == 0) &&
-                    set.Categories[0] is { Negated: false, Table.Mask: 0, Table.Ranges.Length: 1 } member &&
-                    member.Table.Ranges[0] >= 0xFFFE || HasInvalidCompiledClassLoop(repeat.Body),
-                Utf8SliceNode.ConcatNode concat => concat.Children.Any(HasInvalidCompiledClassLoop),
-                Utf8SliceNode.AlternationNode alternation => alternation.Branches.Any(static branch => branch.Any(HasInvalidCompiledClassLoop)),
-                Utf8SliceNode.CaptureNode capture => HasInvalidCompiledClassLoop(capture.Body),
-                Utf8SliceNode.LookaheadNode lookahead => HasInvalidCompiledClassLoop(lookahead.Body),
-                Utf8SliceNode.LookbehindNode lookbehind => HasInvalidCompiledClassLoop(lookbehind.Body),
-                Utf8SliceNode.AtomicNode atomic => HasInvalidCompiledClassLoop(atomic.Body),
-                Utf8SliceNode.BalanceNode balance => HasInvalidCompiledClassLoop(balance.Body),
-                Utf8SliceNode.ConditionalNode conditional => HasInvalidCompiledClassLoop(conditional.TestBody) ||
-                    HasInvalidCompiledClassLoop(conditional.YesBody) || HasInvalidCompiledClassLoop(conditional.NoBody),
-                _ => false,
-            };
-        }
-        if ((options & (RegexOptions.Compiled | RegexOptions.RightToLeft)) == RegexOptions.Compiled && HasInvalidCompiledClassLoop(root))
-        {
-            return null;
-        }
-
+        // .NET 10.0.12 compiled greedy class loops ending at U+FFFF can
+        // emit an invalid position. Preserve the interpreted pattern semantics
+        // in our owned VM; deliberately do not reproduce those runtime faults.
         root ??= new Utf8SliceNode.EmptyNode();
 
         // BCL numbers unnamed groups left-to-right first, then named
