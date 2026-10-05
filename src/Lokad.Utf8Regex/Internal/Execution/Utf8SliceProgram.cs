@@ -132,6 +132,7 @@ internal enum Utf8SliceInstructionKind : byte
     Category = 24,
     CategorySet = 25,
     RepeatGreedyUtf16 = 26,
+    BalanceStart = 27,
 }
 
 /// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
@@ -251,6 +252,12 @@ internal sealed class Utf8SliceProgram
             UsesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
             HasSurrogateLiteral |= assertion.Body.HasSurrogateLiteral;
             HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
+            HasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
+            if (assertion.IsLookbehind)
+                foreach (var instruction in assertion.Body.Instructions)
+                    HasOrderSensitiveLookbehind |= instruction.Kind is Utf8SliceInstructionKind.Backref
+                        or Utf8SliceInstructionKind.TestGroup or Utf8SliceInstructionKind.Lookahead
+                        or Utf8SliceInstructionKind.Lookbehind or Utf8SliceInstructionKind.AtomicCommit;
         }
         GroupNumbers = captureCatalog?.GroupNumbers ?? new int[groupCount + 1];
         if (captureCatalog is null)
@@ -267,6 +274,8 @@ internal sealed class Utf8SliceProgram
     internal int GroupCount { get; }
     internal Utf8SliceAssertion[] Assertions { get; }
     internal bool HasNonFixedLookbehind { get; }
+    // Profiles that execute fixed lookbehind forward cannot reuse these bodies.
+    internal bool HasOrderSensitiveLookbehind { get; }
     internal bool HasMixedNamedGroups { get; }
     internal Utf8CaptureCatalog? CaptureCatalog { get; }
     internal bool UsesCaptureOpeningJournal { get; }
@@ -596,14 +605,14 @@ internal static class Utf8SliceLowerer
                 hasNonFixedLookbehind = true;
             }
 
-            foreach (var nested in assertion.Body.Instructions)
-            {
-                Classify(nested, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand, ref requiresUnicodeCategory);
-                if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand && requiresUnicodeCategory)
-                {
-                    break;
-                }
-            }
+            // Hoist complete nested facts, including assertions below this body.
+            requiresAstralFreeInput |= assertion.Body.RequiresAstralFreeInput;
+            requiresUnicodeWordBoundary |= assertion.Body.RequiresUnicodeWordBoundary;
+            requiresUnicodeShorthand |= assertion.Body.RequiresUnicodeShorthand;
+            requiresUnicodeCategory |= assertion.Body.RequiresUnicodeCategory;
+            hasNonFixedLookbehind |= assertion.Body.HasNonFixedLookbehind;
+            lowerer.HasConditionalTest |= assertion.Body.HasConditionalTest;
+            lowerer.SawCapturingLookbehind |= assertion.Body.SawCapturingLookbehind;
         }
 
         // Hand-built trees (tests, assertion bodies without renumbering
@@ -1540,11 +1549,13 @@ internal static class Utf8SliceLowerer
                         GroupCount = balance.CaptureSlot + 1;
                     }
 
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalancePop, balance.PopSlot, balance.CaptureSlot, 0, 0));
+                    if (balance.CaptureSlot >= 0)
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalanceStart, balance.PopSlot, balance.CaptureSlot, 0, 0));
                     if (!EmitNode(balance.Body))
                     {
                         return false;
                     }
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalancePop, balance.PopSlot, balance.CaptureSlot, 0, 0));
 
                     break;
                 case Utf8SliceNode.AtomicNode atomic:
@@ -1682,7 +1693,7 @@ internal static class Utf8SliceLowerer
                         {
                             SawCapturingLookbehind = true;
                         }
-                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false, CaptureCatalog);
+                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, true, CaptureCatalog);
                         if (body is null)
                         {
                             return false;

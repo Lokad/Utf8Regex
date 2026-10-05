@@ -445,7 +445,7 @@ internal static class Utf8SliceRunner
         var stacks = new ChunkedStacks();
         try
         {
-            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, -1, startIsScalarBoundary, ref stacks, ref invocation);
+            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
@@ -904,11 +904,11 @@ internal static class Utf8SliceRunner
         int[] balanceHeads,
         bool collectHistory,
         bool requireNonEmpty,
-        int requiredEndIndex,
         bool startIsScalarBoundary,
         ref ChunkedStacks stacks,
         ref Utf8SliceInvocation invocation)
     {
+        var frameBase = stacks.FrameCount;
         var instructions = program.Instructions;
         var programIndex = 0;
         var inputIndex = start;
@@ -2117,14 +2117,14 @@ internal static class Utf8SliceRunner
                     if (program.RightToLeft)
                     {
                         if (captureEnds[instruction.A] < 0 ||
-                            captureStarts[instruction.A] < captureEnds[instruction.A])
+                            captureStarts[instruction.A] < 0)
                         {
                             failed = true;
                             break;
                         }
 
-                        var rtlReferStart = captureEnds[instruction.A];
-                        var rtlReferEnd = captureStarts[instruction.A];
+                        var rtlReferStart = Math.Min(captureStarts[instruction.A], captureEnds[instruction.A]);
+                        var rtlReferEnd = Math.Max(captureStarts[instruction.A], captureEnds[instruction.A]);
                         var rtlReferLength = rtlReferEnd - rtlReferStart;
                         if (instruction.B != 0)
                         {
@@ -2284,15 +2284,16 @@ internal static class Utf8SliceRunner
                     // charges work so long captures stay bounded and
                     // cancellable like the rest of the engine.
                     if (captureStarts[instruction.A] < 0 ||
-                        captureEnds[instruction.A] < captureStarts[instruction.A])
+                        captureEnds[instruction.A] < 0)
                     {
                         failed = true;
                         break;
                     }
 
                     {
-                        var referEnd = captureEnds[instruction.A];
-                        var referLength = referEnd - captureStarts[instruction.A];
+                        var referStart = Math.Min(captureStarts[instruction.A], captureEnds[instruction.A]);
+                        var referEnd = Math.Max(captureStarts[instruction.A], captureEnds[instruction.A]);
+                        var referLength = referEnd - referStart;
                         if (instruction.B != 0)
                         {
                             // Case-insensitive backreferences compare per-scalar BCL-invariant
@@ -2300,7 +2301,7 @@ internal static class Utf8SliceRunner
                             // astral halves compare raw and only ever equal themselves). The input
                             // advances by its own scalar widths, which may differ from the
                             // captured widths on fold hits (k versus U+212A).
-                            var capIndex = captureStarts[instruction.A];
+                            var capIndex = referStart;
                             var backIndex = inputIndex;
                             var backFailed = false;
                             while (capIndex < referEnd)
@@ -2422,7 +2423,7 @@ internal static class Utf8SliceRunner
                                 return new Utf8SliceMatchOutcome(false, -1, charge, null, null);
                             }
 
-                            if (input[captureStarts[instruction.A] + compared] != input[inputIndex + compared])
+                            if (input[referStart + compared] != input[inputIndex + compared])
                             {
                                 break;
                             }
@@ -2469,7 +2470,7 @@ internal static class Utf8SliceRunner
                         // resume its alternatives), keeping input, captures,
                         // and repeat state.
                         var foundAtomic = false;
-                        while (stacks.PopFrame(out var committed))
+                        while (stacks.FrameCount > frameBase && stacks.PopFrame(out var committed))
                         {
                             if (committed.ResumeKind == Utf8SliceResumeKind.Atomic)
                             {
@@ -2496,7 +2497,7 @@ internal static class Utf8SliceRunner
                         // state to the fork mark, and keep capture writes.
                         var journalMark = -1;
                         var rewindTo = -1;
-                        while (stacks.PopFrame(out var committed))
+                        while (stacks.FrameCount > frameBase && stacks.PopFrame(out var committed))
                         {
                             if (committed.ResumeKind == Utf8SliceResumeKind.Assertion)
                             {
@@ -2518,258 +2519,74 @@ internal static class Utf8SliceRunner
                         break;
                     }
                 case Utf8SliceInstructionKind.Lookbehind:
+                case Utf8SliceInstructionKind.Lookahead:
                     {
-                        // Zero-width lookbehind over assertion A: candidate
-                        // starts run from max(0, p - max) up to (p - min);
-                        // the first forward sub-match ending exactly at p
-                        // wins, which is the longest span (BCL backward
-                        // order). Nested runs carry p as a required end so
-                        // greedy forward evaluation backtracks into shorter
-                        // ends the oracle would accept. Captures run on the shared slots:
-                        // a surviving positive body keeps them (its trail
-                        // merges into this run, so history and rollback see
-                        // them); every other path restores the entry snapshot
-                        // so partial writes never leak into sibling attempts.
+                        // The body starts at this exact edge, in its own direction.
+                        // Share capture openings, balance nodes and the trail with
+                        // the caller. A frame boundary prevents nested backtracking
+                        // from entering the caller's program; a retained positive
+                        // body commits only its frames/repeat mutations, while every
+                        // other exit unwinds its capture/head writes as well.
                         var assertion = program.Assertions[instruction.A];
-                        var lookbehindPositive = instruction.B != 0;
-                        var groupTotal = program.GroupCount;
-                        Utf8SliceSlots saved;
-                        try
-                        {
-                            saved = RentSlots(groupTotal, ref invocation);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
-                        }
-
-                        Array.Copy(captureStarts, saved.Starts, groupTotal);
-                        Array.Copy(captureEnds, saved.Ends, groupTotal);
+                        var positive = instruction.B != 0;
                         var nestedCounts = RentIntArray(assertion.Body.RepeatCount, ref invocation, out var nestedBreach);
                         if (nestedBreach != Utf8ExecutionLimitKind.None)
-                        {
-                            ReleaseSlots(saved, ref invocation);
                             return new Utf8SliceMatchOutcome(false, -1, nestedBreach, null, null);
-                        }
-
                         var nestedPositions = RentIntArray(assertion.Body.RepeatCount, ref invocation, out nestedBreach);
                         if (nestedBreach != Utf8ExecutionLimitKind.None)
                         {
                             ReleaseIntArray(nestedCounts, ref invocation);
-                            ReleaseSlots(saved, ref invocation);
                             return new Utf8SliceMatchOutcome(false, -1, nestedBreach, null, null);
                         }
-
-                        var floor = (long)inputIndex - assertion.MaxLengthBytes;
-                        var candidateStart = floor < 0 ? 0 : (int)floor;
-                        var candidateEnd = inputIndex - assertion.MinLengthBytes;
-                        var assertionMatched = false;
-                        var mergeBreach = Utf8ExecutionLimitKind.None;
-                        for (var candidate = candidateStart; candidate <= candidateEnd; candidate++)
-                        {
-                            Array.Copy(saved.Starts, captureStarts, groupTotal);
-                            Array.Copy(saved.Ends, captureEnds, groupTotal);
-                            Array.Fill(nestedCounts, -1);
-                            Array.Fill(nestedPositions, -1);
-                            var candidateAligned = (uint)candidate >= (uint)input.Length || (input[candidate] & 0xC0) != 0x80;
-                            var nestedStacks = new ChunkedStacks();
-                            Utf8SliceMatchOutcome nested;
-                            try
-                            {
-                                nested = RunFrom(
-                                    assertion.Body,
-                                    input,
-                                    candidate,
-                                    captureStarts,
-                                    captureEnds,
-                                    nestedCounts,
-                                    nestedPositions,
-                                    balanceHeads,
-                                    false,
-                                    false,
-                                    inputIndex,
-                                    candidateAligned,
-                                    ref nestedStacks,
-                                    ref invocation);
-                                if (nested.IsMatch && nested.EndIndex == inputIndex && lookbehindPositive)
-                                {
-                                    for (var entry = 0; entry < nestedStacks.TrailCount; entry++)
-                                    {
-                                        var recorded = nestedStacks.TrailEntryAt(entry);
-                                        if (!stacks.PushTrailEntry(recorded, ref invocation))
-                                        {
-                                            mergeBreach = Utf8ExecutionLimitKind.WorkingBytes;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                nestedStacks.ReleaseAll(ref invocation);
-                            }
-
-                            if (nested.Breach != Utf8ExecutionLimitKind.None)
-                            {
-                                ReleaseIntArray(nestedPositions, ref invocation);
-                                ReleaseIntArray(nestedCounts, ref invocation);
-                                ReleaseSlots(saved, ref invocation);
-                                return new Utf8SliceMatchOutcome(false, -1, nested.Breach, null, null);
-                            }
-
-                            if (mergeBreach != Utf8ExecutionLimitKind.None)
-                            {
-                                ReleaseIntArray(nestedPositions, ref invocation);
-                                ReleaseIntArray(nestedCounts, ref invocation);
-                                Array.Copy(saved.Starts, captureStarts, groupTotal);
-                                Array.Copy(saved.Ends, captureEnds, groupTotal);
-                                ReleaseSlots(saved, ref invocation);
-                                return new Utf8SliceMatchOutcome(false, -1, mergeBreach, null, null);
-                            }
-
-                            if (nested.IsMatch && nested.EndIndex == inputIndex)
-                            {
-                                assertionMatched = true;
-                                break;
-                            }
-                        }
-
-                        ReleaseIntArray(nestedPositions, ref invocation);
-                        ReleaseIntArray(nestedCounts, ref invocation);
-                        var keepCaptures = lookbehindPositive && assertionMatched;
-                        if (!keepCaptures)
-                        {
-                            Array.Copy(saved.Starts, captureStarts, groupTotal);
-                            Array.Copy(saved.Ends, captureEnds, groupTotal);
-                        }
-
-                        ReleaseSlots(saved, ref invocation);
-                        if (assertionMatched == lookbehindPositive)
-                        {
-                            programIndex++;
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-                    }
-
-                    break;
-                case Utf8SliceInstructionKind.Lookahead:
-                    {
-                        // Zero-width lookahead over assertion A at the current
-                        // position: the body runs left-to-right from here (BCL parses
-                        // lookahead bodies without RightToLeft even inside
-                        // right-to-left programs). Captures behave like lookbehind
-                        // bodies: a surviving positive body keeps them through a
-                        // trail merge while every other path restores the entry
-                        // snapshot, and the position restores since the nested run
-                        // owns its input index.
-                        var lookaheadAssertion = program.Assertions[instruction.A];
-                        var lookaheadPositive = instruction.B != 0;
-                        var lookaheadGroups = program.GroupCount;
-                        Utf8SliceSlots lookaheadSaved;
+                        Array.Fill(nestedCounts, -1);
+                        Array.Fill(nestedPositions, -1);
+                        var frameMark = stacks.FrameCount;
+                        var journalMark = stacks.JournalCount;
+                        var trailMark = stacks.TrailCount;
+                        var keepCaptures = false;
+                        Utf8SliceMatchOutcome nested;
                         try
                         {
-                            lookaheadSaved = RentSlots(lookaheadGroups, ref invocation);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
-                        }
-
-                        Array.Copy(captureStarts, lookaheadSaved.Starts, lookaheadGroups);
-                        Array.Copy(captureEnds, lookaheadSaved.Ends, lookaheadGroups);
-                        var lookaheadCounts = RentIntArray(lookaheadAssertion.Body.RepeatCount, ref invocation, out var lookaheadBreach);
-                        if (lookaheadBreach != Utf8ExecutionLimitKind.None)
-                        {
-                            ReleaseSlots(lookaheadSaved, ref invocation);
-                            return new Utf8SliceMatchOutcome(false, -1, lookaheadBreach, null, null);
-                        }
-
-                        var lookaheadPositions = RentIntArray(lookaheadAssertion.Body.RepeatCount, ref invocation, out lookaheadBreach);
-                        if (lookaheadBreach != Utf8ExecutionLimitKind.None)
-                        {
-                            ReleaseIntArray(lookaheadCounts, ref invocation);
-                            ReleaseSlots(lookaheadSaved, ref invocation);
-                            return new Utf8SliceMatchOutcome(false, -1, lookaheadBreach, null, null);
-                        }
-
-                        Array.Fill(lookaheadCounts, -1);
-                        Array.Fill(lookaheadPositions, -1);
-                        var lookaheadAligned = (uint)inputIndex >= (uint)input.Length || (input[inputIndex] & 0xC0) != 0x80;
-                        var lookaheadStacks = new ChunkedStacks();
-                        Utf8SliceMatchOutcome lookaheadNested;
-                        try
-                        {
-                            lookaheadNested = RunFrom(
-                                lookaheadAssertion.Body,
-                                input,
-                                inputIndex,
-                                captureStarts,
-                                captureEnds,
-                                lookaheadCounts,
-                                lookaheadPositions,
-                                balanceHeads,
-                                false,
-                                false,
-                                -1,
-                                lookaheadAligned,
-                                ref lookaheadStacks,
-                                ref invocation);
-                            if (lookaheadNested.IsMatch && lookaheadPositive)
-                            {
-                                for (var lookaheadEntry = 0; lookaheadEntry < lookaheadStacks.TrailCount; lookaheadEntry++)
-                                {
-                                    var lookaheadRecorded = lookaheadStacks.TrailEntryAt(lookaheadEntry);
-                                    if (!stacks.PushTrailEntry(lookaheadRecorded, ref invocation))
-                                    {
-                                        lookaheadBreach = Utf8ExecutionLimitKind.WorkingBytes;
-                                        break;
-                                    }
-                                }
-                            }
+                            // Keep assertion recursion visible to the shared depth
+                            // budget even when its body contains no backtrack fork.
+                            if (!stacks.PushFrame(new Utf8SliceFrame { ResumeKind = Utf8SliceResumeKind.Assertion }, ref invocation))
+                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            if (invocation.Budget.TryNoteDepth((uint)stacks.FrameCount) != Utf8ExecutionLimitKind.None)
+                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.Depth, null, null);
+                            var aligned = (uint)inputIndex >= (uint)input.Length || (input[inputIndex] & 0xC0) != 0x80;
+                            nested = RunFrom(assertion.Body, input, inputIndex, captureStarts, captureEnds,
+                                nestedCounts, nestedPositions, balanceHeads, false, false, aligned,
+                                ref stacks, ref invocation);
+                            keepCaptures = positive && nested.IsMatch && nested.Breach == Utf8ExecutionLimitKind.None;
                         }
                         finally
                         {
-                            lookaheadStacks.ReleaseAll(ref invocation);
+                            while (stacks.FrameCount > frameMark) stacks.PopFrame(out _);
+                            stacks.TruncateJournal(journalMark, nestedCounts, nestedPositions);
+                            if (!keepCaptures) stacks.TruncateTrail(trailMark, captureStarts, captureEnds, balanceHeads);
+                            ReleaseIntArray(nestedPositions, ref invocation);
+                            ReleaseIntArray(nestedCounts, ref invocation);
                         }
-
-                        ReleaseIntArray(lookaheadPositions, ref invocation);
-                        ReleaseIntArray(lookaheadCounts, ref invocation);
-                        var keepLookaheadCaptures = lookaheadPositive && lookaheadNested.IsMatch;
-                        if (!keepLookaheadCaptures)
-                        {
-                            Array.Copy(lookaheadSaved.Starts, captureStarts, lookaheadGroups);
-                            Array.Copy(lookaheadSaved.Ends, captureEnds, lookaheadGroups);
-                        }
-
-                        ReleaseSlots(lookaheadSaved, ref invocation);
-                        if (lookaheadBreach != Utf8ExecutionLimitKind.None)
-                        {
-                            return new Utf8SliceMatchOutcome(false, -1, lookaheadBreach, null, null);
-                        }
-
-                        if (lookaheadNested.IsMatch == lookaheadPositive)
-                        {
-                            programIndex++;
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
+                        if (nested.Breach != Utf8ExecutionLimitKind.None) return nested;
+                        if (nested.IsMatch == positive) programIndex++;
+                        else failed = true;
                     }
-
                     break;
+                case Utf8SliceInstructionKind.BalanceStart:
+                    // Retain the body's opening without testing its source yet:
+                    // the body can establish the capture popped at successful close.
+                    if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry {
+                            Slot = instruction.B, NewValue = inputIndex, IsOpening = true }, ref invocation))
+                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                    programIndex++;
+                    break;
+
                 case Utf8SliceInstructionKind.BalancePop:
                     {
-                        // Balancing pop: an empty stack fails the path;
-                        // otherwise the top capture leaves the stack, slots
-                        // restore to the previous top (or unset), and an
-                        // interval capture optionally records [popped end,
-                        // current position). Every write journals through
-                        // the trail, so backtracking undoes pops exactly
-                        // like any capture write.
+                        // Check at successful close: the body may have consumed
+                        // the source through a nested balancing group. Pop its
+                        // current completed capture, then project the interval
+                        // against the completed body independently of direction.
                         var popSlot = instruction.A;
                         var captureSlot = instruction.B;
                         if (balanceHeads[popSlot] < 0)
@@ -2777,7 +2594,6 @@ internal static class Utf8SliceRunner
                             failed = true;
                             break;
                         }
-
                         var top = stacks.BalanceEntryAt(balanceHeads[popSlot]);
                         var previousStart = -1;
                         var previousEnd = -1;
@@ -2787,43 +2603,56 @@ internal static class Utf8SliceRunner
                             previousStart = below.Start;
                             previousEnd = below.End;
                         }
-
-                        if (!stacks.PushRestoreTrail(popSlot, captureStarts[popSlot], previousStart, captureEnds[popSlot], previousEnd, ref invocation) ||
+                        if (!stacks.PushRestoreTrail(popSlot, captureStarts[popSlot], previousStart,
+                                captureEnds[popSlot], previousEnd, ref invocation) ||
                             !stacks.PushHeadTrail(popSlot, balanceHeads[popSlot], top.Prev, ref invocation))
-                        {
                             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
-                        }
-
                         captureStarts[popSlot] = previousStart;
                         captureEnds[popSlot] = previousEnd;
                         balanceHeads[popSlot] = top.Prev;
                         if (captureSlot >= 0)
                         {
-                            if (!stacks.PushTrail(captureSlot, captureStarts[captureSlot], top.End, true, ref invocation) ||
-                                !stacks.PushTrail(captureSlot, captureEnds[captureSlot], inputIndex, false, ref invocation) ||
-                                !stacks.PushBalance(captureSlot, top.End, inputIndex, balanceHeads[captureSlot], ref invocation) ||
-                                !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
+                            if (!stacks.TryFindCaptureOpening(captureSlot, ref invocation,
+                                    out var opening, out var openingBreach))
+                                return new Utf8SliceMatchOutcome(false, -1, openingBreach, null, null);
+                            var sourceStart = Math.Min(top.Start, top.End);
+                            var sourceEnd = Math.Max(top.Start, top.End);
+                            var gapStart = Math.Min(opening, inputIndex);
+                            var gapEnd = Math.Max(opening, inputIndex);
+                            // Capture the gap for disjoint spans or their
+                            // intersection when the body overlaps its source.
+                            if (gapStart >= sourceEnd)
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                                gapEnd = gapStart;
+                                gapStart = sourceEnd;
                             }
-
-                            captureStarts[captureSlot] = top.End;
-                            captureEnds[captureSlot] = inputIndex;
+                            else if (gapEnd <= sourceStart)
+                            {
+                                gapStart = gapEnd;
+                                gapEnd = sourceStart;
+                            }
+                            else
+                            {
+                                gapStart = Math.Max(gapStart, sourceStart);
+                                gapEnd = Math.Min(gapEnd, sourceEnd);
+                            }
+                            if (!stacks.PushRestoreTrail(captureSlot, captureStarts[captureSlot], gapStart,
+                                    captureEnds[captureSlot], gapEnd, ref invocation) ||
+                                !stacks.PushTrailEntry(new Utf8SliceTrailEntry {
+                                    Slot = captureSlot, OldValue = gapStart, NewValue = gapEnd, IsClosing = true }, ref invocation) ||
+                                !stacks.PushBalance(captureSlot, gapStart, gapEnd, balanceHeads[captureSlot], ref invocation) ||
+                                !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
+                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            captureStarts[captureSlot] = gapStart;
+                            captureEnds[captureSlot] = gapEnd;
                             balanceHeads[captureSlot] = stacks.BalanceCount - 1;
                         }
-
                         programIndex++;
                         break;
                     }
 
                 case Utf8SliceInstructionKind.Accept:
                     if (requireNonEmpty && inputIndex == start)
-                    {
-                        failed = true;
-                        break;
-                    }
-
-                    if (requiredEndIndex >= 0 && inputIndex != requiredEndIndex)
                     {
                         failed = true;
                         break;
@@ -2846,7 +2675,7 @@ internal static class Utf8SliceRunner
 
             if (failed)
             {
-                if (!stacks.PopFrame(out var popped))
+                if (stacks.FrameCount == frameBase || !stacks.PopFrame(out var popped))
                 {
                     return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
                 }

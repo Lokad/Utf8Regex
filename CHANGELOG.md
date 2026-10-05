@@ -4,6 +4,18 @@
 
 ### Owned UTF-16 execution
 
+- Lookbehind bodies now execute backward from their exact assertion edge,
+  while lookahead bodies execute forward, including nested assertions in both
+  ordinary and right-to-left patterns. Assertions share capture openings,
+  histories, balancing nodes and rollback with their caller. Numeric and named
+  references, conditional tests and balancing groups inside lookbehind now run
+  owned. Reference reads normalize captures from either execution direction;
+  balancing sources remain available through their bodies and pop at successful
+  close, with interval captures using the completed body's span. Assertion entries
+  count toward the shared depth budget, and scratch state releases on failure,
+  limit breach and cancellation. PCRE2 retains its own forward-lookbehind
+  program where order dependencies differ and normalizes shared capture spans.
+
 - Multi-digit bare numeric escapes now bind against the complete capture table
   before octal fallback in owned execution. Octal prefixes wrap to one byte and
   retain their remaining literal digits, including the correct trailing-quantifier

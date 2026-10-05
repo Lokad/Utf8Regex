@@ -860,6 +860,9 @@ internal static class Pcre2CompiledProgramOverlay
             sliceProgram.RequiresUnicodeCategory ||
             sliceProgram.IgnoreCase ||
             sliceProgram.HasNonFixedLookbehind ||
+            // PCRE2 executes fixed lookbehind forward. Preserve its owned
+            // profile program for dependencies whose .NET backward order differs.
+            sliceProgram.HasOrderSensitiveLookbehind ||
             sliceProgram.HasMixedNamedGroups ||
             // .NET aliases duplicate names; PCRE2 keeps distinct physical slots.
             sliceProgram.HasSharedCaptureDeclarations ||

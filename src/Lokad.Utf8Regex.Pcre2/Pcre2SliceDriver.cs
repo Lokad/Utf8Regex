@@ -330,10 +330,12 @@ internal static class Pcre2SliceDriver
         {
             var captureStart = captureStarts[group - 1];
             var captureEnd = captureEnds[group - 1];
-            groups[group] = captureStart < 0 || captureEnd < captureStart
+            // A backward assertion stores its opening edge before its closing
+            // edge; project the normalized public span independently of direction.
+            groups[group] = captureStart < 0 || captureEnd < 0
                 ? new Pcre2GroupData { Number = group, Success = false }
                 : Pcre2GroupData.FromByteOffsets(
-                    input, group, captureStart, captureEnd);
+                    input, group, Math.Min(captureStart, captureEnd), Math.Max(captureStart, captureEnd));
         }
 
         return groups;

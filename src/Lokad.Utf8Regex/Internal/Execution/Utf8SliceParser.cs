@@ -19,11 +19,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// case (Turkic instances keep legacy routing through the construction gate).
 /// Unicode property escapes (general categories/groups and named blocks as
 /// bare atoms or single-category classes, including blocks under IgnoreCase
-/// (matched through invariant case equivalents, verbatim port). Anything else
-/// (backreferences and conditionals inside
-/// lookbehind bodies, lookbehind bodies of balancing shapes) declines to
-/// <c>null</c> so the existing
-/// routes preserve their behavior, including construction failures. Group
+/// (matched through invariant case equivalents). Assertion bodies establish
+/// their own direction and share the invocation's capture/balancing journal.
+/// Unsupported grammar declines to <c>null</c> so existing routes preserve
+/// its behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
 /// admission: patterns longer than <see cref="MaxPatternLength"/> decline before any
 /// parse work so retained slice programs stay bounded; declined shapes keep
@@ -232,11 +231,10 @@ internal static class Utf8SliceParser
             }
         }
 
-        // Single-caller tree walks stay static-local: reversal mirrors BCL
-        // RightToLeft parsing (main-stream concatenations back-to-front,
-        // assertion bodies untouched), and the decline walk keeps exotic
-        // direction-sensitive mixes on legacy-exact routing.
-        static Utf8SliceNode ReverseRtlMainStream(Utf8SliceNode node, bool inAssertion)
+        // Every concatenation follows its containing execution direction.
+        // Assertions establish their own direction even when nested: lookahead
+        // runs forward and lookbehind runs backward in both main-stream modes.
+        static Utf8SliceNode OrientConcatenations(Utf8SliceNode node, bool rightToLeft)
         {
             switch (node)
             {
@@ -244,10 +242,10 @@ internal static class Utf8SliceParser
                     var children = new Utf8SliceNode[concat.Children.Length];
                     for (var child = 0; child < children.Length; child++)
                     {
-                        children[child] = ReverseRtlMainStream(concat.Children[child], inAssertion);
+                        children[child] = OrientConcatenations(concat.Children[child], rightToLeft);
                     }
 
-                    if (!inAssertion)
+                    if (rightToLeft)
                     {
                         Array.Reverse(children);
                     }
@@ -261,10 +259,10 @@ internal static class Utf8SliceParser
                         var rewritten = new Utf8SliceNode[source.Length];
                         for (var child = 0; child < rewritten.Length; child++)
                         {
-                            rewritten[child] = ReverseRtlMainStream(source[child], inAssertion);
+                            rewritten[child] = OrientConcatenations(source[child], rightToLeft);
                         }
 
-                        if (!inAssertion)
+                        if (rightToLeft)
                         {
                             Array.Reverse(rewritten);
                         }
@@ -275,179 +273,39 @@ internal static class Utf8SliceParser
                     return new Utf8SliceNode.AlternationNode(branches);
                 case Utf8SliceNode.RepeatNode repeat:
                     return new Utf8SliceNode.RepeatNode(
-                        ReverseRtlMainStream(repeat.Body, inAssertion),
+                        OrientConcatenations(repeat.Body, rightToLeft),
                         repeat.Minimum,
                         repeat.Maximum,
                         repeat.Lazy);
                 case Utf8SliceNode.CaptureNode capture:
                     return new Utf8SliceNode.CaptureNode(
                         capture.Slot,
-                        ReverseRtlMainStream(capture.Body, inAssertion));
+                        OrientConcatenations(capture.Body, rightToLeft));
                 case Utf8SliceNode.AtomicNode atomic:
                     return new Utf8SliceNode.AtomicNode(
-                        ReverseRtlMainStream(atomic.Body, inAssertion));
+                        OrientConcatenations(atomic.Body, rightToLeft));
                 case Utf8SliceNode.ConditionalNode conditional:
                     return new Utf8SliceNode.ConditionalNode(
                         conditional.TestSlot,
-                        ReverseRtlMainStream(conditional.YesBody, inAssertion),
-                        ReverseRtlMainStream(conditional.NoBody, inAssertion),
-                        conditional.TestBody is null ? null : ReverseRtlMainStream(conditional.TestBody, true));
+                        OrientConcatenations(conditional.YesBody, rightToLeft),
+                        OrientConcatenations(conditional.NoBody, rightToLeft),
+                        conditional.TestBody is null ? null : OrientConcatenations(conditional.TestBody, false));
                 case Utf8SliceNode.BalanceNode balance:
                     return new Utf8SliceNode.BalanceNode(
                         balance.PopSlot,
                         balance.CaptureSlot,
-                        ReverseRtlMainStream(balance.Body, inAssertion));
+                        OrientConcatenations(balance.Body, rightToLeft));
                 case Utf8SliceNode.LookaheadNode lookahead:
                     return new Utf8SliceNode.LookaheadNode(
-                        ReverseRtlMainStream(lookahead.Body, true),
+                        OrientConcatenations(lookahead.Body, false),
                         lookahead.Positive);
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     return new Utf8SliceNode.LookbehindNode(
-                        ReverseRtlMainStream(lookbehind.Body, true),
+                        OrientConcatenations(lookbehind.Body, true),
                         lookbehind.Positive);
                 default:
                     return node;
             }
-        }
-
-        static bool RtlTreeDeclines(Utf8SliceNode node, bool inLookbehindBody, bool inLookaheadBody)
-        {
-            switch (node)
-            {
-                case Utf8SliceNode.LookaheadNode lookahead:
-                    if (inLookbehindBody)
-                    {
-                        return true;
-                    }
-
-                    return RtlTreeDeclines(lookahead.Body, false, true);
-                case Utf8SliceNode.LookbehindNode lookbehind:
-                    if (inLookbehindBody || inLookaheadBody)
-                    {
-                        return true;
-                    }
-
-                    return RtlTreeDeclines(lookbehind.Body, true, false);
-                case Utf8SliceNode.BackrefNode:
-                    if (inLookbehindBody || inLookaheadBody)
-                    {
-                        return true;
-                    }
-
-                    break;
-                case Utf8SliceNode.ConcatNode concat:
-                    foreach (var child in concat.Children)
-                    {
-                        if (RtlTreeDeclines(child, inLookbehindBody, inLookaheadBody))
-                        {
-                            return true;
-                        }
-                    }
-
-                    break;
-                case Utf8SliceNode.AlternationNode alternation:
-                    foreach (var branch in alternation.Branches)
-                    {
-                        foreach (var child in branch)
-                        {
-                            if (RtlTreeDeclines(child, inLookbehindBody, inLookaheadBody))
-                            {
-                                return true;
-                            }
-                        }
-                    }
-
-                    break;
-                case Utf8SliceNode.RepeatNode repeat:
-                    if (RtlTreeDeclines(repeat.Body, inLookbehindBody, inLookaheadBody))
-                    {
-                        return true;
-                    }
-
-                    break;
-                case Utf8SliceNode.CaptureNode capture:
-                    if (RtlTreeDeclines(capture.Body, inLookbehindBody, inLookaheadBody))
-                    {
-                        return true;
-                    }
-
-                    break;
-                case Utf8SliceNode.AtomicNode atomic:
-                    if (RtlTreeDeclines(atomic.Body, inLookbehindBody, inLookaheadBody))
-                    {
-                        return true;
-                    }
-
-                    break;
-                case Utf8SliceNode.ConditionalNode conditional:
-                    if (RtlTreeDeclines(conditional.YesBody, inLookbehindBody, inLookaheadBody)
-                        || RtlTreeDeclines(conditional.NoBody, inLookbehindBody, inLookaheadBody)
-                        || (conditional.TestBody is not null && RtlTreeDeclines(conditional.TestBody, inLookbehindBody, true)))
-                    {
-                        return true;
-                    }
-
-                    break;
-                default:
-                    break;
-            }
-
-            return false;
-        }
-
-        static bool LookbehindBodyDeclines(Utf8SliceNode node, bool inBody)
-        {
-            switch (node)
-            {
-                case Utf8SliceNode.BackrefNode when inBody:
-                case Utf8SliceNode.ConditionalNode when inBody:
-                    return true;
-                case Utf8SliceNode.LookbehindNode lookbehind:
-                    return LookbehindBodyDeclines(lookbehind.Body, true);
-                case Utf8SliceNode.ConcatNode concat:
-                    foreach (var child in concat.Children)
-                    {
-                        if (LookbehindBodyDeclines(child, inBody))
-                        {
-                            return true;
-                        }
-                    }
-
-                    break;
-                case Utf8SliceNode.AlternationNode alternation:
-                    foreach (var branch in alternation.Branches)
-                    {
-                        foreach (var child in branch)
-                        {
-                            if (LookbehindBodyDeclines(child, inBody))
-                            {
-                                return true;
-                            }
-                        }
-                    }
-
-                    break;
-                case Utf8SliceNode.RepeatNode repeat:
-                    return LookbehindBodyDeclines(repeat.Body, inBody);
-                case Utf8SliceNode.CaptureNode capture:
-                    return LookbehindBodyDeclines(capture.Body, inBody);
-                case Utf8SliceNode.AtomicNode atomic:
-                    return LookbehindBodyDeclines(atomic.Body, inBody);
-                case Utf8SliceNode.BalanceNode balance:
-                    return LookbehindBodyDeclines(balance.Body, inBody);
-                case Utf8SliceNode.LookaheadNode lookahead:
-                    return LookbehindBodyDeclines(lookahead.Body, inBody);
-                case Utf8SliceNode.ConditionalNode conditional when inBody:
-                    return true;
-                case Utf8SliceNode.ConditionalNode conditionalOut:
-                    return LookbehindBodyDeclines(conditionalOut.YesBody, inBody)
-                        || LookbehindBodyDeclines(conditionalOut.NoBody, inBody)
-                        || (conditionalOut.TestBody is not null && LookbehindBodyDeclines(conditionalOut.TestBody, inBody));
-                default:
-                    break;
-            }
-
-            return false;
         }
 
         var finals = new int[parser.GroupCount];
@@ -466,36 +324,10 @@ internal static class Utf8SliceParser
             if (catalog.OrdinalFromNumber(required) < 0) return null;
         var referencesValid = true;
         root = RenumberCaptures(root, finals, catalog, ref referencesValid);
-        if (!referencesValid || LookbehindBodyDeclines(root, false)) return null;
+        if (!referencesValid) return null;
 
-        // Right-to-left programs run the main stream mirrored: every main-stream
-        // concatenation reverses (BCL parses concatenations back-to-front in
-        // RightToLeft mode) while assertion bodies keep left-to-right order and
-        // execute through their own machinery. Balancing serves owned (mirrored
-        // pop-first misses match the oracle), while lookbehind bodies with nested assertions,
-        // backreferences, or possessive bodies stay legacy, and lookahead bodies
-        // with backreferences, balancing, or nested lookbehinds stay legacy,
-        // all with identical behavior through the existing fallback routes.
         var rightToLeft = (options & RegexOptions.RightToLeft) != 0;
-        if (rightToLeft)
-        {
-            if (RtlTreeDeclines(root, false, false))
-            {
-                return null;
-            }
-
-            root = ReverseRtlMainStream(root, false);
-        }
-
-        // Balancing stacks live in attempt-local chunks while nested
-        // lookbehind runs share live slots and heads: a capture or pop
-        // inside a lookbehind body would alias shared balance heads through
-        // the nested tables, so such mixes decline to legacy-exact routing.
-        // (Inline lookahead shares the same tables and stays owned.)
-        if (parser.SawBalancing && parser.SawLookbehindGroupWrite)
-        {
-            return null;
-        }
+        root = OrientConcatenations(root, rightToLeft);
 
         return Utf8SliceLowerer.Lower(root, catalog.GroupNames, parser.SawBalancing,
             parser.MatchIgnoreCase || parser.SawFold, rightToLeft, catalog,
@@ -723,8 +555,6 @@ internal static class Utf8SliceParser
         private readonly Dictionary<string, int> _groupSlots = new(StringComparer.Ordinal);
         private bool _sawBalancing;
         private bool _sawCaptureWritingLazyRange;
-        private int _lookbehindDepth;
-        private bool _sawLookbehindGroupWrite;
 
         internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase, bool explicitCapture, bool whitespaceStripped)
         {
@@ -743,7 +573,6 @@ internal static class Utf8SliceParser
         internal bool SawBalancing => _sawBalancing;
         internal bool MatchIgnoreCase => _matchIgnoreCase;
         internal bool SawFold => _sawFold;
-        internal bool SawLookbehindGroupWrite => _sawLookbehindGroupWrite;
         internal bool SawCaptureWritingLazyRange => _sawCaptureWritingLazyRange;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
@@ -1023,9 +852,7 @@ internal static class Utf8SliceParser
                             var behindPositive = _pattern[_position + 3] == '=';
                             _position += 4;
                             var savedBehind = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
-                            _lookbehindDepth++;
                             var parsedBehind = TryParseAlternation(depth + 1, out var lookbehind);
-                            _lookbehindDepth--;
                             if (!parsedBehind || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
@@ -1436,10 +1263,6 @@ internal static class Utf8SliceParser
                                 (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedBalance;
                                 node = new Utf8SliceNode.UnresolvedBalanceNode(popName, captureTemp, captureAlias, balanceBody ?? new Utf8SliceNode.EmptyNode());
                                 _sawBalancing = true;
-                                if (_lookbehindDepth > 0)
-                                {
-                                    _sawLookbehindGroupWrite = true;
-                                }
                                 return true;
                             }
 
@@ -1480,7 +1303,6 @@ internal static class Utf8SliceParser
                                     _position++;
                                     (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedNumeric;
                                     node = new Utf8SliceNode.UnresolvedCaptureNode(declared, numericBody ?? new Utf8SliceNode.EmptyNode());
-                                    if (_lookbehindDepth > 0) _sawLookbehindGroupWrite = true;
                                     return true;
                                 }
                             }
@@ -1489,10 +1311,6 @@ internal static class Utf8SliceParser
                             _groupSlots.TryAdd(name, namedSlot);
 
                             _groupDecls.Add((namedSlot, name));
-                            if (_lookbehindDepth > 0)
-                            {
-                                _sawLookbehindGroupWrite = true;
-                            }
                             var savedNamed = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             if (!TryParseAlternation(depth + 1, out var namedBody) || AtEnd || _pattern[_position] != ')')
                             {
@@ -1526,10 +1344,6 @@ internal static class Utf8SliceParser
 
                     var slot = _groups++;
                     _groupDecls.Add((slot, null));
-                    if (_lookbehindDepth > 0)
-                    {
-                        _sawLookbehindGroupWrite = true;
-                    }
                     var savedPlain = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                     if (!TryParseAlternation(depth + 1, out var body) || AtEnd || _pattern[_position] != ')')
                     {
