@@ -506,9 +506,10 @@ public sealed partial class Utf8Regex
             return owned;
         }
 
+        var lastGroupNumber = _groupNumbers[^1];
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
             decoded,
-            match => Utf8ReplacementPlanInterpreter.Apply(replacement.Plan, match, decoded));
+            match => Utf8ReplacementPlanInterpreter.Apply(replacement.Plan, match, decoded, lastGroupNumber));
     }
 
     // R05: the native plan cursor is BCL-backed for fallback-backed and absolute-anchored

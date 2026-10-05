@@ -11,7 +11,7 @@ internal interface IUtf8SliceUtf16Expansion<TState>
         ref Utf8SliceUtf16OutputWriter writer, ref TState state, ref Utf8SliceInvocation invocation);
 }
 
-internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement replacement, int groupCount)
+internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement replacement, Utf8SliceProgram program)
     : IUtf8SliceUtf16Expansion<int>
 {
     public void Append(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap originalMap,
@@ -30,10 +30,10 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
                     writer.Append(decoded.AsSpan(outcome.StartUnit, outcome.EndUnit - outcome.StartUnit), ref invocation);
                     break;
                 case Utf8ReplacementInstructionKind.Group:
-                    AppendGroup(instruction.GroupNumber, decoded, executionMap, outcome, ref writer, ref invocation);
+                    AppendGroup(program.CaptureCatalog?.OrdinalFromNumber(instruction.GroupNumber) ?? instruction.GroupNumber, decoded, executionMap, outcome, ref writer, ref invocation);
                     break;
                 case Utf8ReplacementInstructionKind.LastGroup:
-                    AppendGroup(groupCount, decoded, executionMap, outcome, ref writer, ref invocation);
+                    AppendGroup(program.GroupCount, decoded, executionMap, outcome, ref writer, ref invocation);
                     break;
                 case Utf8ReplacementInstructionKind.LeftPortion:
                     writer.Append(decoded.AsSpan(0, outcome.StartUnit), ref invocation);
@@ -68,7 +68,7 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
     }
 }
 
-internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator<TState> evaluator, string[] groupNames)
+internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator<TState> evaluator, Utf8SliceProgram program)
     : IUtf8SliceUtf16Expansion<TState>
 {
     public void Append(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap originalMap,
@@ -78,7 +78,7 @@ internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator
         var projection = Utf8SliceCaptureProjection.Create(outcome, executionMap, ref invocation);
         try
         {
-            var context = projection.CreateContext(input, decoded, originalMap, groupNames, outcome);
+            var context = projection.CreateContext(input, decoded, originalMap, program, outcome);
             var result = evaluator(in context, ref state);
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             writer.Append(result.AsSpan(), ref invocation);

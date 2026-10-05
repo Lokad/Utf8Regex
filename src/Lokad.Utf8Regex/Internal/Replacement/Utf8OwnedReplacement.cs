@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 // a word character head, int overflow falling back to literal, and unclosed
 // braces degrading to literal runs. Group resolution validates numbered groups
 // against the valid numbers, maps names through the parallel arrays, demotes
-// unknown references to their normalized literal text with adjacent literals
+// unknown references to their original literal text with adjacent literals
 // merged brace free, and extracts literal text when nothing substitutes.
 // Replacement never throws: every shape degrades to literal text. Token kind
 // names follow the public documented replacement syntax. Every rule above was
@@ -28,11 +28,17 @@ internal enum Utf8ReplacementTokenKind : byte
 internal readonly struct Utf8ReplacementToken
 {
     public Utf8ReplacementToken(Utf8ReplacementTokenKind kind, string? literal, int groupNumber, bool isBraceEnclosed)
+        : this(kind, literal, groupNumber, isBraceEnclosed, null)
+    {
+    }
+
+    public Utf8ReplacementToken(Utf8ReplacementTokenKind kind, string? literal, int groupNumber, bool isBraceEnclosed, string? referenceText)
     {
         Kind = kind;
         Literal = literal;
         GroupNumber = groupNumber;
         IsBraceEnclosed = isBraceEnclosed;
+        ReferenceText = referenceText;
     }
 
     public Utf8ReplacementTokenKind Kind { get; }
@@ -42,6 +48,9 @@ internal readonly struct Utf8ReplacementToken
     public int GroupNumber { get; }
 
     public bool IsBraceEnclosed { get; }
+
+    // Undefined numeric references remain literal, including their leading zeros.
+    public string? ReferenceText { get; }
 
     public string? GroupName => Kind == Utf8ReplacementTokenKind.Group && GroupNumber < 0 ? Literal : null;
 }
@@ -231,7 +240,8 @@ internal sealed class Utf8ReplacementPattern
             }
 
             FlushLiteral(tokens, literal);
-            tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, (int)value, false));
+            tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, (int)value, false,
+                replacement.Substring(position, end - position)));
             return end;
         }
 
@@ -249,7 +259,8 @@ internal sealed class Utf8ReplacementPattern
             if (TryParseGroupNumber(content, out var number))
             {
                 FlushLiteral(tokens, literal);
-                tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, number, true));
+                tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, number, true,
+                    replacement.Substring(position, close - position + 1)));
                 return close + 1;
             }
 
@@ -348,9 +359,9 @@ internal sealed class Utf8ReplacementPattern
                     }
                 }
 
-                var text = token.IsBraceEnclosed
-                    ? "${" + token.GroupNumber.ToString() + "}"
-                    : "$" + token.GroupNumber.ToString();
+                var text = token.ReferenceText ?? (token.IsBraceEnclosed
+                    ? "${" + token.GroupNumber.ToString(CultureInfo.InvariantCulture) + "}"
+                    : "$" + token.GroupNumber.ToString(CultureInfo.InvariantCulture));
                 return new Utf8ReplacementToken(Utf8ReplacementTokenKind.Literal, text, -1, token.IsBraceEnclosed);
             }
 
@@ -422,4 +433,3 @@ internal sealed class Utf8ReplacementPattern
         return ResolveGroupReferences(validGroupNumbers, validGroupNames).TryGetLiteralText(out literalText);
     }
 }
-

@@ -10,11 +10,20 @@ internal readonly record struct Utf8CaptureDefinition(string Name, int DeclaredN
 internal sealed class Utf8CaptureCatalog
 {
     internal Utf8CaptureCatalog(int unnamedCount, Utf8CaptureDefinition[] definitions)
+        : this(unnamedCount, definitions, [])
+    {
+    }
+
+    internal Utf8CaptureCatalog(int unnamedCount, Utf8CaptureDefinition[] definitions, int[] referencedCaptureNumbers)
     {
         var taken = new HashSet<int>();
         for (var slot = 1; slot <= unnamedCount; slot++) taken.Add(slot);
         foreach (var definition in definitions)
-            if (!definition.IsAutomatic && definition.DeclaredNumber > 0) taken.Add(definition.DeclaredNumber);
+            if (!definition.IsAutomatic && definition.DeclaredNumber > 0)
+            {
+                taken.Add(definition.DeclaredNumber);
+                HasExplicitCaptureNumbers |= definition.Name.Length != 0;
+            }
 
         DefinitionNumbers = new int[definitions.Length];
         var automatic = new List<int>();
@@ -47,7 +56,7 @@ internal sealed class Utf8CaptureCatalog
             if (slot > 0) slots.Add(slot);
         GroupNumbers = new int[slots.Count];
         slots.CopyTo(GroupNumbers);
-        HasSharedCaptureDeclarations = definitions.Length + unnamedCount > slots.Count - 1;
+        HasSharedCaptureDeclarations = definitions.Length + unnamedCount > slots.Count - 1 || referencedCaptureNumbers.Length != 0;
 
         var autoBySlot = new Dictionary<int, string>();
         for (var index = 0; index < definitions.Length; index++)
@@ -86,6 +95,16 @@ internal sealed class Utf8CaptureCatalog
     internal Hashtable? NameToNumber { get; }
     internal Hashtable? SparseMapping { get; }
     internal bool HasSharedCaptureDeclarations { get; }
+    internal bool HasExplicitCaptureNumbers { get; }
+
+    internal int OrdinalFromNumber(int number)
+        => SparseMapping is null ? (uint)number < (uint)GroupNumbers.Length ? number : -1
+            : SparseMapping[number] is int ordinal ? ordinal : -1;
+
+    internal int OrdinalFromName(string name) => OrdinalFromNumber(GroupNumberFromName(name));
+
+    internal static bool TryParseNumber(string text, out int number)
+        => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out number);
 
     internal int GroupNumberFromName(string name)
     {

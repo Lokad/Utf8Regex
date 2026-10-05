@@ -4,6 +4,14 @@
 
 ### Owned UTF-16 execution
 
+- Explicitly numbered and sparse captures now execute in the owned VM with
+  dense internal slots and their original public numbers, including complete
+  histories, numeric references, conditions, balancing, and every replacement
+  surface. Forward and self-balancing targets bind against the complete catalog.
+  Leading-zero capture spellings alias an existing number without declaring
+  another group. Undefined numeric replacement references keep their original
+  spelling. PCRE2 retains its separate positional capture contract.
+
 - Named backreferences, forward references, and duplicate named captures now use
   owned execution. The front end and VM parser share capture numbering; opening
   positions and completed captures remain separate through nesting, backtracking,

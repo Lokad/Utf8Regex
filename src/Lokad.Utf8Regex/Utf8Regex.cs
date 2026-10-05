@@ -314,7 +314,7 @@ public sealed partial class Utf8Regex
     private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
         _program.DirectStructuralFamilyKernelMatcher;
 
-    private int[] _groupNumbers => _sliceProgram is not null ? _sliceProgram.OrdinalGroupNumbers : _program.GroupNumbers.Value;
+    private int[] _groupNumbers => _sliceProgram is not null ? _sliceProgram.GroupNumbers : _program.GroupNumbers.Value;
 
     private string[] _groupNames => _sliceProgram is not null ? _sliceProgram.GroupNames : _program.GroupNames.Value;
 
@@ -428,8 +428,9 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null)
         {
+            var ordinal = _sliceProgram.CaptureCatalog?.OrdinalFromNumber(i) ?? i;
             var names = _sliceProgram.GroupNames;
-            return (uint)i < (uint)names.Length ? names[i] : string.Empty;
+            return (uint)ordinal < (uint)names.Length ? names[ordinal] : string.Empty;
         }
 
         return _program.GroupMetadata?.GroupNameFromNumber(i)
@@ -452,7 +453,7 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null)
         {
-            return _sliceProgram.OrdinalGroupNumbers.AsSpan().ToArray();
+            return _sliceProgram.GroupNumbers.AsSpan().ToArray();
         }
 
         return _program.GroupMetadata?.GroupNumbers.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
@@ -518,6 +519,7 @@ public sealed partial class Utf8Regex
         if (_unitSliceProgram is not null &&
             (_unitSliceProgram.HasSurrogateLiteral ||
              _unitSliceProgram.HasSharedCaptureDeclarations ||
+             _unitSliceProgram.HasExplicitCaptureNumbers ||
              _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
              !_unitSliceProgram.ServesInput(input)))
@@ -628,7 +630,7 @@ public sealed partial class Utf8Regex
             return new Utf8MatchContext(
                 input, decoded, map, _groupNames,
                 outcome.StartUnit, outcome.EndUnit - outcome.StartUnit,
-                groupStarts, groupLengths, historyStarts, historyLengths);
+                groupStarts, groupLengths, historyStarts, historyLengths, program.CaptureCatalog);
         }
         finally
         {
@@ -3683,7 +3685,7 @@ public sealed partial class Utf8Regex
         {
             try
             {
-                return OwnedUnitReplace(input, ownedProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _groupNames),
+                return OwnedUnitReplace(input, ownedProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, ownedProgram),
                     ref state, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
             }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }

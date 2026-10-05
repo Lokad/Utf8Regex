@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8ReplacementPlanInterpreter
 {
-    public static string Apply(Utf8ReplacementPlan plan, Match match, string input)
+    public static string Apply(Utf8ReplacementPlan plan, Match match, string input, int lastGroupNumber)
     {
         if (plan.Instructions.Count == 0)
         {
@@ -12,7 +12,7 @@ internal static class Utf8ReplacementPlanInterpreter
         var builder = new StringBuilder();
         foreach (var instruction in plan.Instructions)
         {
-            AppendInstruction(builder, instruction, match, input);
+            AppendInstruction(builder, instruction, match, input, lastGroupNumber);
         }
 
         return builder.ToString();
@@ -84,16 +84,16 @@ internal static class Utf8ReplacementPlanInterpreter
 
     private static void AppendOwnedLastGroup(StringBuilder builder, in Utf8MatchContext context)
     {
-        // R05: BCL substitutes Groups[Count - 1] (the whole match when groupless),
-        // not empty: the oracle keeps "ab" for "$+" on groupless "ab".
-        if (context.TryGetGroup(context.GroupCount - 1, out var group) && group.Success)
+        // The last ordinal may have a sparse public number; group zero is last
+        // when the pattern has no captures.
+        if (context.TryGetGroup(context.OwnedLastGroupNumber, out var group) && group.Success)
         {
             builder.Append(group.GetValueString());
         }
     }
 
 
-    private static void AppendInstruction(StringBuilder builder, Utf8ReplacementInstruction instruction, Match match, string input)
+    private static void AppendInstruction(StringBuilder builder, Utf8ReplacementInstruction instruction, Match match, string input, int lastGroupNumber)
     {
         switch (instruction.Kind)
         {
@@ -122,7 +122,7 @@ internal static class Utf8ReplacementPlanInterpreter
                 return;
 
             case Utf8ReplacementInstructionKind.LastGroup:
-                AppendLastGroup(builder, match);
+                AppendLastGroup(builder, match, lastGroupNumber);
                 return;
 
             case Utf8ReplacementInstructionKind.WholeString:
@@ -136,9 +136,7 @@ internal static class Utf8ReplacementPlanInterpreter
 
     private static void AppendGroup(StringBuilder builder, Utf8ReplacementInstruction instruction, Match match)
     {
-        Group? group = (uint)instruction.GroupNumber < (uint)match.Groups.Count
-            ? match.Groups[instruction.GroupNumber]
-            : null;
+        var group = match.Groups[instruction.GroupNumber];
 
         if (group is { Success: true })
         {
@@ -146,17 +144,14 @@ internal static class Utf8ReplacementPlanInterpreter
         }
     }
 
-    private static void AppendLastGroup(StringBuilder builder, Match match)
+    private static void AppendLastGroup(StringBuilder builder, Match match, int lastGroupNumber)
     {
-        if (match.Groups.Count <= 1)
+        // Use metadata's final public number; sparse groups cannot be visited
+        // as consecutive numbers or inferred from GroupCollection.Count.
+        var last = match.Groups[lastGroupNumber];
+        if (last.Success)
         {
-            return;
-        }
-
-        var group = match.Groups[match.Groups.Count - 1];
-        if (group.Success)
-        {
-            builder.Append(group.Value);
+            builder.Append(last.Value);
         }
     }
 }

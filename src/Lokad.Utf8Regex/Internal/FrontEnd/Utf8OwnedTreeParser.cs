@@ -1391,13 +1391,13 @@ internal static class Utf8OwnedTreeParser
 
                 if (name.Length > 1 && name[0] == '0')
                 {
-                    // BCL transparent-constrained definition: the content matches
-                    // with no slot and no name (lowered exactly like (?:)), while
-                    // the end pass requires the stripped slot to exist elsewhere.
-                    var transparent = new Utf8TreeNode(Utf8TreeNodeKind.Group, namedEntryOptions);
-                    transparent.Children = body;
-                    body.Parent = transparent;
-                    node = transparent;
+                    // A zero-padded spelling does not declare a number during
+                    // .NET's capture scan, but captures into it when it is declared
+                    // elsewhere. Keep that alias separate from numbered declarations.
+                    group.Str = name;
+                    group.M = declared;
+                    group.N = -1;
+                    node = group;
                     state.RequiredSlots.Add(declared);
                     return true;
                 }
@@ -1623,7 +1623,7 @@ internal static class Utf8OwnedTreeParser
                 var definition = state.GroupDefinitions[index];
                 definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
             }
-            var catalog = new Utf8CaptureCatalog(state.Groups, definitions);
+            var catalog = new Utf8CaptureCatalog(state.Groups, definitions, state.RequiredSlots.ToArray());
             for (var index = 0; index < definitions.Length; index++)
             {
                 var definition = state.GroupDefinitions[index];

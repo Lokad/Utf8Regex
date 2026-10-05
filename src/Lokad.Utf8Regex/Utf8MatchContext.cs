@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex;
 
@@ -10,6 +11,7 @@ public readonly ref struct Utf8MatchContext
     private readonly Match? _match;
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly string[]? _groupNames;
+    private readonly Utf8CaptureCatalog? _captureCatalog;
     private readonly bool _ownedHasValue;
     private readonly int _ownedGroupCount;
     private readonly int[]? _ownedGroupStarts;
@@ -80,6 +82,14 @@ public readonly ref struct Utf8MatchContext
         _ownedCaptureLengths = captureLengths;
     }
 
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap,
+        string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths,
+        int[][] captureStarts, int[][] captureLengths, Utf8CaptureCatalog? captureCatalog)
+        : this(input, decoded, boundaryMap, groupNames, indexInUtf16, lengthInUtf16, groupStarts, groupLengths, captureStarts, captureLengths)
+    {
+        _captureCatalog = captureCatalog;
+    }
+
     private Utf8GroupContext OwnedGroupView(int number, int indexInUtf16, int lengthInUtf16)
     {
         if (_ownedCaptureStarts is { } starts &&
@@ -95,6 +105,8 @@ public readonly ref struct Utf8MatchContext
 
     /// <summary>Gets whether the regex found a match.</summary>
     public bool Success => _match?.Success ?? _ownedHasValue;
+
+    internal int OwnedLastGroupNumber => _captureCatalog?.GroupNumbers[^1] ?? _ownedGroupCount - 1;
 
     /// <summary>Gets the successful match start as a zero-based UTF-16 code-unit offset, or zero otherwise.</summary>
     public int IndexInUtf16 => _match is { Success: true } match ? match.Index : (_ownedHasValue ? _ownedIndex : 0);
@@ -165,6 +177,7 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
+            number = _captureCatalog?.OrdinalFromNumber(number) ?? number;
             // R03: branch-mapped groups project owned spans; single-whole-match groups
             // project the whole span; misses mirror the single BCL group view.
             if (_ownedHasValue)
@@ -204,11 +217,12 @@ public readonly ref struct Utf8MatchContext
     /// <remarks>An undefined group name produces an unsuccessful group view, matching .NET group-collection semantics.</remarks>
     public Utf8GroupContext GetGroup(string name)
     {
+        if (name is null) throw new ArgumentNullException(nameof(name));
         if (_match is null)
         {
             // R03: names resolve through the owned group table; unmatched or unknown
             // names mirror the unsuccessful BCL group view.
-            var groupIndex = name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1);
+            var groupIndex = _captureCatalog?.OrdinalFromName(name) ?? (name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1));
 
             if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
             {
@@ -249,6 +263,7 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
+            number = _captureCatalog?.OrdinalFromNumber(number) ?? number;
             if (_ownedHasValue)
             {
                 if (number == 0)
@@ -284,7 +299,9 @@ public readonly ref struct Utf8MatchContext
             return false;
         }
 
-        if (number < 0 || number >= _match.Groups.Count)
+        // Sparse groups may have an empty Name in .NET 10. Identity with its
+        // unavailable-group view distinguishes holes from defined unmatched slots.
+        if (number < 0 || ReferenceEquals(_match.Groups[number], _match.Groups[-1]))
         {
             group = default;
             return false;
@@ -300,12 +317,12 @@ public readonly ref struct Utf8MatchContext
     /// <returns><see langword="true"/> when the named group exists.</returns>
     public bool TryGetGroup(string name, out Utf8GroupContext group)
     {
-        if (_match is null)
+        if (name is null) { group = default; return false; }
         if (_match is null)
         {
             // R03: names resolve through the owned group table; valid but unmatched
             // branch groups report an unsuccessful view.
-            var groupIndex = name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1);
+            var groupIndex = _captureCatalog?.OrdinalFromName(name) ?? (name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1));
 
             if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
             {

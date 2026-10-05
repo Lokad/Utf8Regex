@@ -85,6 +85,9 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
     internal sealed record UnresolvedBackrefNode(string Name, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record UnresolvedCaptureNode(int Number, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
+    internal sealed record UnresolvedBalanceNode(string PopName, int CaptureSlot, int CaptureNumber, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
+    internal sealed record UnresolvedConditionalNode(string Number, Utf8SliceNode YesBody, Utf8SliceNode NoBody) : Utf8SliceNode(Utf8SliceNodeKind.Conditional);
     internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
@@ -244,12 +247,9 @@ internal sealed class Utf8SliceProgram
             HasSurrogateLiteral |= assertion.Body.HasSurrogateLiteral;
             HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
         }
-        OrdinalGroupNumbers = new int[groupCount + 1];
-        for (var group = 0; group <= groupCount; group++)
-        {
-            OrdinalGroupNumbers[group] = group;
-
-        }
+        GroupNumbers = captureCatalog?.GroupNumbers ?? new int[groupCount + 1];
+        if (captureCatalog is null)
+            for (var group = 0; group <= groupCount; group++) GroupNumbers[group] = group;
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
@@ -265,6 +265,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasMixedNamedGroups { get; }
     internal Utf8CaptureCatalog? CaptureCatalog { get; }
     internal bool UsesCaptureOpeningJournal { get; }
+    internal bool HasExplicitCaptureNumbers => CaptureCatalog is { HasExplicitCaptureNumbers: true };
     internal bool HasSharedCaptureDeclarations => CaptureCatalog is { HasSharedCaptureDeclarations: true };
     internal bool HasBalancing { get; }
     internal bool IgnoreCase { get; }
@@ -356,7 +357,7 @@ internal sealed class Utf8SliceProgram
             return "unsupported_pattern";
         }
     }
-    internal int[] OrdinalGroupNumbers { get; }
+    internal int[] GroupNumbers { get; }
     internal string[] GroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
     // scalar per dot while the .NET oracle matches one UTF-16 unit per dot,

@@ -863,6 +863,8 @@ internal static class Pcre2CompiledProgramOverlay
             sliceProgram.HasMixedNamedGroups ||
             // .NET aliases duplicate names; PCRE2 keeps distinct physical slots.
             sliceProgram.HasSharedCaptureDeclarations ||
+            // Explicit .NET numbers do not establish PCRE2 positional identities.
+            sliceProgram.HasExplicitCaptureNumbers ||
             sliceProgram.HasBalancing ||
             sliceProgram.HasConditionalTest)
         {

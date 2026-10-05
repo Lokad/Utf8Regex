@@ -62,8 +62,8 @@ internal struct Utf8SliceCaptureProjection
         }
     }
 
-    internal readonly Utf8MatchContext CreateContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap originalMap, string[] groupNames, Utf8SliceDetailedOutcome outcome)
-        => new(input, decoded, originalMap, groupNames, outcome.StartUnit, outcome.EndUnit - outcome.StartUnit, Starts, Lengths, CaptureStarts, CaptureLengths);
+    internal readonly Utf8MatchContext CreateContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap originalMap, Utf8SliceProgram program, Utf8SliceDetailedOutcome outcome)
+        => new(input, decoded, originalMap, program.GroupNames, outcome.StartUnit, outcome.EndUnit - outcome.StartUnit, Starts, Lengths, CaptureStarts, CaptureLengths, program.CaptureCatalog);
 
     internal void Release(ref Utf8SliceInvocation invocation)
     {

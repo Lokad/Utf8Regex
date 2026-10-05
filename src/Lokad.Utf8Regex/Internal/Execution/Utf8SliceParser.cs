@@ -20,7 +20,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// Unicode property escapes (general categories/groups and named blocks as
 /// bare atoms or single-category classes, including blocks under IgnoreCase
 /// (matched through invariant case equivalents, verbatim port). Anything else
-/// (explicitly-numbered names, backreferences and conditionals inside
+/// (backreferences and conditionals inside
 /// lookbehind bodies, lookbehind bodies of balancing shapes) declines to
 /// <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
@@ -110,7 +110,29 @@ internal static class Utf8SliceParser
                         referencesValid = false;
                         return new Utf8SliceNode.EmptyNode();
                     }
-                    return new Utf8SliceNode.BackrefNode(number - 1, reference.FoldCase);
+                    return new Utf8SliceNode.BackrefNode(catalog.OrdinalFromNumber(number) - 1, reference.FoldCase);
+                case Utf8SliceNode.UnresolvedBalanceNode balanceReference:
+                    var popOrdinal = catalog.OrdinalFromNumber(catalog.ReferenceNumber(balanceReference.PopName));
+                    if (popOrdinal <= 0)
+                    {
+                        referencesValid = false;
+                        return new Utf8SliceNode.EmptyNode();
+                    }
+                    return new Utf8SliceNode.BalanceNode(popOrdinal - 1,
+                        balanceReference.CaptureNumber > 0 ? catalog.OrdinalFromNumber(balanceReference.CaptureNumber) - 1
+                            : balanceReference.CaptureSlot < 0 ? -1 : finals[balanceReference.CaptureSlot] - 1,
+                        RenumberCaptures(balanceReference.Body, finals, catalog, ref referencesValid));
+                case Utf8SliceNode.UnresolvedConditionalNode conditionReference:
+                    var testOrdinal = catalog.OrdinalFromNumber(catalog.ReferenceNumber(conditionReference.Number));
+                    if (testOrdinal < 0) referencesValid = false;
+                    return new Utf8SliceNode.ConditionalNode(testOrdinal - 1,
+                        RenumberCaptures(conditionReference.YesBody, finals, catalog, ref referencesValid),
+                        RenumberCaptures(conditionReference.NoBody, finals, catalog, ref referencesValid), null);
+                case Utf8SliceNode.UnresolvedCaptureNode aliasCapture:
+                    var captureOrdinal = catalog.OrdinalFromNumber(aliasCapture.Number);
+                    if (captureOrdinal <= 0) referencesValid = false;
+                    return new Utf8SliceNode.CaptureNode(captureOrdinal - 1,
+                        RenumberCaptures(aliasCapture.Body, finals, catalog, ref referencesValid));
                 case Utf8SliceNode.CaptureNode capture:
                     return new Utf8SliceNode.CaptureNode(
                         finals[capture.Slot] - 1,
@@ -160,12 +182,11 @@ internal static class Utf8SliceParser
                         balance.CaptureSlot < 0 ? -1 : finals[balance.CaptureSlot] - 1,
                         RenumberCaptures(balance.Body, finals, catalog, ref referencesValid));
                 case Utf8SliceNode.ConditionalNode conditional:
-                    // Template slots renumber like captures; raw digits already denote
-                    // final numbers (validated range above), so they shift to zero-based
-                    // slots directly, and group zero stays always-false.
+                    // Named tests hold temporary declaration slots; numeric tests
+                    // bind separately through the catalog. Group zero stays false.
                     var resolvedTest = conditional.TestSlot >= 0
                         ? finals[conditional.TestSlot] - 1
-                        : conditional.TestSlot == -1 ? -1 : -conditional.TestSlot - 3;
+                        : -1;
                     return new Utf8SliceNode.ConditionalNode(
                         resolvedTest,
                         RenumberCaptures(conditional.YesBody, finals, catalog, ref referencesValid),
@@ -339,106 +360,6 @@ internal static class Utf8SliceParser
             return false;
         }
 
-        // Conditional number tests denote final groups, so out-of-range digits
-        // decline exactly like the BCL construction throw (forward references read
-        // groups defined anywhere). Group tests inside lookbehind bodies also
-        // decline: BCL evaluates bodies back-to-front in one shot while the shared
-        // machinery enumerates starts forward, which diverges on order-sensitive
-        // tests (and on backreferences, for the same reason).
-        static bool ConditionalTestsValidate(Utf8SliceNode node, int groupCount)
-        {
-            switch (node)
-            {
-                case Utf8SliceNode.ConcatNode concat:
-                    foreach (var child in concat.Children)
-                    {
-                        if (!ConditionalTestsValidate(child, groupCount))
-                        {
-                            return false;
-                        }
-                    }
-
-                    break;
-                case Utf8SliceNode.AlternationNode alternation:
-                    foreach (var branch in alternation.Branches)
-                    {
-                        foreach (var child in branch)
-                        {
-                            if (!ConditionalTestsValidate(child, groupCount))
-                            {
-                                return false;
-                            }
-                        }
-                    }
-
-                    break;
-                case Utf8SliceNode.RepeatNode repeat:
-                    if (!ConditionalTestsValidate(repeat.Body, groupCount))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8SliceNode.CaptureNode capture:
-                    if (!ConditionalTestsValidate(capture.Body, groupCount))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8SliceNode.AtomicNode atomic:
-                    if (!ConditionalTestsValidate(atomic.Body, groupCount))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8SliceNode.BalanceNode balance:
-                    if (!ConditionalTestsValidate(balance.Body, groupCount))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8SliceNode.LookaheadNode lookahead:
-                    if (!ConditionalTestsValidate(lookahead.Body, groupCount))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8SliceNode.LookbehindNode lookbehind:
-                    if (!ConditionalTestsValidate(lookbehind.Body, groupCount))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case Utf8SliceNode.ConditionalNode conditional:
-                    if (conditional.TestSlot <= -2)
-                    {
-                        var rawNumber = -conditional.TestSlot - 2;
-                        if (rawNumber < 1 || rawNumber > groupCount)
-                        {
-                            return false;
-                        }
-                    }
-
-                    if (!ConditionalTestsValidate(conditional.YesBody, groupCount)
-                        || !ConditionalTestsValidate(conditional.NoBody, groupCount)
-                        || (conditional.TestBody is not null && !ConditionalTestsValidate(conditional.TestBody, groupCount)))
-                    {
-                        return false;
-                    }
-
-                    break;
-                default:
-                    break;
-            }
-
-            return true;
-        }
-
         static bool LookbehindBodyDeclines(Utf8SliceNode node, bool inBody)
         {
             switch (node)
@@ -500,11 +421,14 @@ internal static class Utf8SliceParser
         foreach (var declaration in parser.GroupDecls)
             definitions[declaration.Slot] = declaration.Name is null
                 ? new Utf8CaptureDefinition(string.Empty, ++unnamed, false, declaration.Slot)
-                : new Utf8CaptureDefinition(declaration.Name, -1, true, declaration.Slot);
-        var catalog = new Utf8CaptureCatalog(0, definitions);
-        catalog.DefinitionNumbers.CopyTo(finals, 0);
-        // Numeric conditions validate against distinct identities, not declarations.
-        if (!ConditionalTestsValidate(root, catalog.GroupNumbers.Length - 1)) return null;
+                : Utf8CaptureCatalog.TryParseNumber(declaration.Name, out var declared)
+                    ? new Utf8CaptureDefinition(declaration.Name, declared, false, declaration.Slot)
+                    : new Utf8CaptureDefinition(declaration.Name, -1, true, declaration.Slot);
+        var catalog = new Utf8CaptureCatalog(0, definitions, parser.RequiredNumbers.ToArray());
+        for (var declaration = 0; declaration < finals.Length; declaration++)
+            finals[declaration] = catalog.OrdinalFromNumber(catalog.DefinitionNumbers[declaration]);
+        foreach (var required in parser.RequiredNumbers)
+            if (catalog.OrdinalFromNumber(required) < 0) return null;
         var referencesValid = true;
         root = RenumberCaptures(root, finals, catalog, ref referencesValid);
         if (!referencesValid || LookbehindBodyDeclines(root, false)) return null;
@@ -766,6 +690,7 @@ internal static class Utf8SliceParser
         private int _position;
         private int _groups;
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
+        private readonly List<int> _requiredNumbers = new();
         private readonly Dictionary<string, int> _groupSlots = new(StringComparer.Ordinal);
         private bool _sawBalancing;
         private bool _sawCaptureWritingLazyRange;
@@ -785,6 +710,7 @@ internal static class Utf8SliceParser
         internal int Position => _position;
         internal int GroupCount => _groups;
         internal List<(int Slot, string? Name)> GroupDecls => _groupDecls;
+        internal List<int> RequiredNumbers => _requiredNumbers;
         internal bool SawBalancing => _sawBalancing;
         internal bool MatchIgnoreCase => _matchIgnoreCase;
         internal bool SawFold => _sawFold;
@@ -843,7 +769,9 @@ internal static class Utf8SliceParser
             switch (node)
             {
                 case Utf8SliceNode.CaptureNode:
+                case Utf8SliceNode.UnresolvedCaptureNode:
                 case Utf8SliceNode.BalanceNode:
+                case Utf8SliceNode.UnresolvedBalanceNode:
                     return true;
                 case Utf8SliceNode.ConcatNode concat:
                     foreach (var child in concat.Children)
@@ -876,6 +804,8 @@ internal static class Utf8SliceParser
                     return RepeatBodyWritesCaptures(lookbehind.Body);
                 case Utf8SliceNode.AtomicNode atomic:
                     return RepeatBodyWritesCaptures(atomic.Body);
+                case Utf8SliceNode.UnresolvedConditionalNode conditionalReference:
+                    return RepeatBodyWritesCaptures(conditionalReference.YesBody) || RepeatBodyWritesCaptures(conditionalReference.NoBody);
                 case Utf8SliceNode.ConditionalNode conditional:
                     return RepeatBodyWritesCaptures(conditional.YesBody) ||
                         RepeatBodyWritesCaptures(conditional.NoBody) ||
@@ -1233,6 +1163,7 @@ internal static class Utf8SliceParser
                             var testStart = _position + 3;
                             var testChar = testStart < _pattern.Length ? _pattern[testStart] : '\0';
                             int testSlot = int.MinValue;
+                            string? testNumber = null;
                             Utf8SliceNode? testBody = null;
                             if (testChar >= '0' && testChar <= '9')
                             {
@@ -1251,7 +1182,7 @@ internal static class Utf8SliceParser
                                 {
                                     return false;
                                 }
-                                testSlot = rawNumber == 0 ? -1 : -(int)rawNumber - 2;
+                                testNumber = _pattern.Substring(testStart, testEnd - testStart);
                                 _position = testEnd + 1;
                             }
                             else
@@ -1358,7 +1289,9 @@ internal static class Utf8SliceParser
                             }
                             else
                             {
-                                node = new Utf8SliceNode.ConditionalNode(testSlot, yesBranch, noBranch, null);
+                                node = testNumber is null
+                                    ? new Utf8SliceNode.ConditionalNode(testSlot, yesBranch, noBranch, null)
+                                    : new Utf8SliceNode.UnresolvedConditionalNode(testNumber, yesBranch, noBranch);
                             }
                             return true;
                         }
@@ -1386,17 +1319,9 @@ internal static class Utf8SliceParser
 
                         if (marker == '<' || marker == '\'')
                         {
-                            // Named captures bind like numbered captures;
-                            // BCL numbers unnamed groups left-to-right first
-                            // and named groups after, so temporary slots
-                            // renumber once the full parse lands (see
-                            // TryParse). Names are ASCII letters, digits,
-                            // and underscores with a non-digit start;
-                            // all-digit spellings (explicit numbers),
-                            // digit starts, empty names, mismatched closers,
-                            // duplicates, and balancing subtraction all
-                            // decline so legacy routing preserves exact BCL
-                            // behavior including construction failures.
+                            // Numbered and named declarations share final capture identities.
+                            // Zero-padded numbers alias an existing declaration; balancing
+                            // operands bind after the complete pattern has been parsed.
                             var closer = marker == '<' ? '>' : '\'';
                             var scan = _position + 3;
                             var nameScanEnd = scan;
@@ -1420,24 +1345,13 @@ internal static class Utf8SliceParser
                                 nameScanEnd < _pattern.Length &&
                                 _pattern[nameScanEnd] == '-')
                             {
-                                // Balancing `(?<n1-n2>`, `(?<-n2>` (and
-                                // '-quoted forms): pop n2 (fail if empty),
-                                // optionally capturing [popped end,
-                                // pop-time position) into n1. n1 follows
-                                // named rules and defines a group; n2 must
-                                // be backward-defined; forward or undefined
-                                // targets, duplicates, digit starts,
-                                // mismatched closers, and self-pops decline
-                                // so legacy routing preserves exact BCL
-                                // behavior including construction failures.
+                                // Pop a final named or numeric identity, optionally capturing
+                                // the interval into another identity. The body runs after pop.
                                 string? captureName = nameScanEnd > scan
                                     ? _pattern.Substring(scan, nameScanEnd - scan)
                                     : null;
-                                if (captureName is not null &&
-                                    (captureName[0] >= '0' && captureName[0] <= '9'))
-                                {
-                                    return false;
-                                }
+                                if (captureName is not null && char.IsAsciiDigit(captureName[0]) &&
+                                    (!Utf8CaptureCatalog.TryParseNumber(captureName, out var captureNumber) || captureNumber == 0)) return false;
 
                                 var popStart = nameScanEnd + 1;
                                 var popEnd = popStart;
@@ -1458,7 +1372,6 @@ internal static class Utf8SliceParser
                                 }
 
                                 if (popEnd == popStart ||
-                                    _pattern[popStart] >= '0' && _pattern[popStart] <= '9' ||
                                     popEnd >= _pattern.Length ||
                                     _pattern[popEnd] != closer)
                                 {
@@ -1466,23 +1379,18 @@ internal static class Utf8SliceParser
                                 }
 
                                 var popName = _pattern.Substring(popStart, popEnd - popStart);
-                                if (captureName == popName)
-                                {
-                                    return false;
-                                }
-
-                                if (!_groupSlots.TryGetValue(popName, out var popTemp))
-                                {
-                                    return false;
-                                }
-
                                 var captureTemp = -1;
+                                var captureAlias = 0;
                                 if (captureName is not null)
                                 {
-                                    captureTemp = _groups++;
-                                    _groupSlots.TryAdd(captureName, captureTemp);
-
-                                    _groupDecls.Add((captureTemp, captureName));
+                                    if (captureName.Length > 1 && captureName[0] == '0' && Utf8CaptureCatalog.TryParseNumber(captureName, out captureAlias))
+                                        _requiredNumbers.Add(captureAlias);
+                                    else
+                                    {
+                                        captureTemp = _groups++;
+                                        _groupSlots.TryAdd(captureName, captureTemp);
+                                        _groupDecls.Add((captureTemp, captureName));
+                                    }
                                 }
 
                                 _position = popEnd + 1;
@@ -1494,7 +1402,7 @@ internal static class Utf8SliceParser
 
                                 _position++;
                                 (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedBalance;
-                                node = new Utf8SliceNode.BalanceNode(popTemp, captureTemp, balanceBody ?? new Utf8SliceNode.EmptyNode());
+                                node = new Utf8SliceNode.UnresolvedBalanceNode(popName, captureTemp, captureAlias, balanceBody ?? new Utf8SliceNode.EmptyNode());
                                 _sawBalancing = true;
                                 if (_lookbehindDepth > 0)
                                 {
@@ -1525,12 +1433,25 @@ internal static class Utf8SliceParser
                                 return false;
                             }
 
-                            if (_pattern[nameStart] >= '0' && _pattern[nameStart] <= '9')
-                            {
-                                return false;
-                            }
-
                             var name = _pattern.Substring(nameStart, nameEnd - nameStart);
+                            if (char.IsAsciiDigit(name[0]))
+                            {
+                                if (!Utf8CaptureCatalog.TryParseNumber(name, out var declared) || declared == 0) return false;
+                                if (name.Length > 1 && name[0] == '0')
+                                {
+                                    // This spelling captures into an existing number without
+                                    // declaring it; bind the alias after all declarations.
+                                    _requiredNumbers.Add(declared);
+                                    _position = nameEnd + 1;
+                                    var savedNumeric = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
+                                    if (!TryParseAlternation(depth + 1, out var numericBody) || AtEnd || _pattern[_position] != ')') return false;
+                                    _position++;
+                                    (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedNumeric;
+                                    node = new Utf8SliceNode.UnresolvedCaptureNode(declared, numericBody ?? new Utf8SliceNode.EmptyNode());
+                                    if (_lookbehindDepth > 0) _sawLookbehindGroupWrite = true;
+                                    return true;
+                                }
+                            }
                             _position = nameEnd + 1;
                             var namedSlot = _groups++;
                             _groupSlots.TryAdd(name, namedSlot);
