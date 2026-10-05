@@ -1,15 +1,16 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
+/// <summary>Recognizes the owned R02a slice: UTF-16 patterns built from
 /// literals, concatenation, ordered alternation, greedy/lazy repetition,
 /// numbered and named groups (BCL unnamed-first numbering), balancing
 /// captures, atomic groups, transparent non-capturing groups and inline comments,
 /// (R03) dots
 /// with Singleline-scoped newline matching, anchors with Multiline-scoped line
-/// edges, ASCII character classes (literals, ranges, supported escapes, and
+/// edges, UTF-16 character classes (literals, ranges, supported escapes, and
 /// shorthand members), word boundaries, shorthand classes, backreferences,
 /// conditional alternations (group tests with committed branches, expression
 /// tests via lookahead desugar), and zero-width lookarounds (dots, negated classes,
@@ -63,19 +64,11 @@ internal static class Utf8SliceParser
         // IgnorePatternWhitespace strips insignificant pattern whitespace and
         // #-to-newline comments before parsing (escapes, classes, and (?#)
         // comments pass through verbatim). Only the ASCII insignificance set
-        // matters: slice patterns are ASCII-only by the gate below, and BCL skips
+        // matters: BCL skips
         // exactly space/tab/LF/FF/CR (vertical tab stays significant, probed).
         if ((options & RegexOptions.IgnorePatternWhitespace) != 0)
         {
             pattern = StripInsignificantPatternWhitespace(pattern);
-        }
-
-        foreach (var character in pattern)
-        {
-            if (character > 127)
-            {
-                return null;
-            }
         }
 
         var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0, (options & RegexOptions.IgnoreCase) != 0, (options & RegexOptions.ExplicitCapture) != 0, (options & RegexOptions.IgnorePatternWhitespace) != 0);
@@ -96,6 +89,39 @@ internal static class Utf8SliceParser
         // on both lanes with full group detail (probe-mapped across nesting,
         // backreferences, lookarounds, and atomics), as do infinite maxima.
         if ((options & RegexOptions.Compiled) != 0 && parser.SawCaptureWritingLazyRange)
+        {
+            return null;
+        }
+
+        // .NET 10.0.12 emits broken compiled code for a greedy unbounded
+        // character-class loop whose only range ends at U+FFFF and has one
+        // or two members. IsMatch misses; result modes can read an invalid
+        // position and throw. Keep its existing route pending the explicit
+        // oracle-defect disposition; this is migration debt, not a language
+        // rejection or a qualified owned compatibility mechanism.
+        static bool HasInvalidCompiledClassLoop(Utf8SliceNode? node)
+        {
+            return node switch
+            {
+                Utf8SliceNode.RepeatNode repeat =>
+                    repeat.Maximum == int.MaxValue && !repeat.Lazy &&
+                    repeat.Body is Utf8SliceNode.CategorySetNode { Members.Length: 0, Categories.Length: 1 } set &&
+                    set.Mask16.All(static value => value == 0) &&
+                    set.Categories[0] is { Negated: false, Table.Mask: 0, Table.Ranges.Length: 1 } member &&
+                    member.Table.Ranges[0] >= 0xFFFE || HasInvalidCompiledClassLoop(repeat.Body),
+                Utf8SliceNode.ConcatNode concat => concat.Children.Any(HasInvalidCompiledClassLoop),
+                Utf8SliceNode.AlternationNode alternation => alternation.Branches.Any(static branch => branch.Any(HasInvalidCompiledClassLoop)),
+                Utf8SliceNode.CaptureNode capture => HasInvalidCompiledClassLoop(capture.Body),
+                Utf8SliceNode.LookaheadNode lookahead => HasInvalidCompiledClassLoop(lookahead.Body),
+                Utf8SliceNode.LookbehindNode lookbehind => HasInvalidCompiledClassLoop(lookbehind.Body),
+                Utf8SliceNode.AtomicNode atomic => HasInvalidCompiledClassLoop(atomic.Body),
+                Utf8SliceNode.BalanceNode balance => HasInvalidCompiledClassLoop(balance.Body),
+                Utf8SliceNode.ConditionalNode conditional => HasInvalidCompiledClassLoop(conditional.TestBody) ||
+                    HasInvalidCompiledClassLoop(conditional.YesBody) || HasInvalidCompiledClassLoop(conditional.NoBody),
+                _ => false,
+            };
+        }
+        if ((options & (RegexOptions.Compiled | RegexOptions.RightToLeft)) == RegexOptions.Compiled && HasInvalidCompiledClassLoop(root))
         {
             return null;
         }
@@ -561,11 +587,11 @@ internal static class Utf8SliceParser
         return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase || parser.SawFold, rightToLeft);
     }
 
-    // Hex, unicode, and octal escapes with ASCII results (BCL-exact shapes:
-    // exactly-2-hex, exactly-4-hex, and up to 3 octal digits; malformed or
-    // non-ASCII results decline). Shared by literal and class positions (two
+    // Hex, unicode, and octal escapes produce one UTF-16 unit (exactly two
+    // or four hex digits, or at most three octal digits masked to a byte).
+    // Malformed escapes decline. Shared by literal and class positions (two
     // callers, so the single-caller debt ceiling does not apply).
-    private static bool TryParseAsciiNumericEscape(string pattern, int start, bool bareOctal, out int value, out int next)
+    private static bool TryParseNumericEscape(string pattern, int start, bool bareOctal, out int value, out int next)
     {
         static int HexValue(char digit)
         {
@@ -588,11 +614,6 @@ internal static class Utf8SliceParser
             }
 
             value = HexValue(pattern[start + 1]) * 16 + HexValue(pattern[start + 2]);
-            if (value > 127)
-            {
-                return false;
-            }
-
             next = start + 3;
             return true;
         }
@@ -615,11 +636,6 @@ internal static class Utf8SliceParser
                 value = value * 16 + HexValue(pattern[start + digit]);
             }
 
-            if (value > 127)
-            {
-                return false;
-            }
-
             next = start + 5;
             return true;
         }
@@ -634,11 +650,7 @@ internal static class Utf8SliceParser
                 end++;
             }
 
-            if (value > 127)
-            {
-                return false;
-            }
-
+            value &= 255;
             next = end;
             return true;
         }
@@ -1532,10 +1544,7 @@ internal static class Utf8SliceParser
                             while (nameEnd < _pattern.Length)
                             {
                                 var nameChar = _pattern[nameEnd];
-                                if ((nameChar >= 'a' && nameChar <= 'z') ||
-                                    (nameChar >= 'A' && nameChar <= 'Z') ||
-                                    (nameChar >= '0' && nameChar <= '9') ||
-                                    nameChar == '_')
+                                if (Utf8OwnedCharClass.IsWordChar(nameChar))
                                 {
                                     nameEnd++;
                                 }
@@ -1745,30 +1754,30 @@ internal static class Utf8SliceParser
                         }
                     }
 
-                    // Hex, unicode, and NUL-led octal escapes with ASCII results
-                    // lower to literals; malformed or non-ASCII results decline to
+                    // Hex, unicode, and NUL-led octal escapes produce one unit;
+                    // malformed results decline to
                     // legacy-exact routing (BCL throws on the former).
                     if (escaped == 'x' || escaped == 'u' || escaped == '0')
                     {
-                        if (!TryParseAsciiNumericEscape(_pattern, _position + 1, false, out var number, out var next))
+                        if (!TryParseNumericEscape(_pattern, _position + 1, false, out var number, out var next))
                         {
                             return false;
                         }
 
                         _position = next;
                         _sawFold |= _matchIgnoreCase;
-                        node = new Utf8SliceNode.LiteralNode((byte)number, _matchIgnoreCase);
+                        node = new Utf8SliceNode.LiteralNode((ushort)number, _matchIgnoreCase);
                         return true;
                     }
 
-                    if (!IsEscapablePunctuation(escaped))
+                    if (Utf8OwnedCharClass.IsWordChar(escaped))
                     {
                         return false;
                     }
 
                     _position += 2;
                     _sawFold |= _matchIgnoreCase;
-                    node = new Utf8SliceNode.LiteralNode((byte)escaped, _matchIgnoreCase);
+                    node = new Utf8SliceNode.LiteralNode(escaped, _matchIgnoreCase);
                     return true;
                 case ')':
                 case '|':
@@ -1796,23 +1805,17 @@ internal static class Utf8SliceParser
                 default:
                     _position++;
                     _sawFold |= _matchIgnoreCase;
-                    node = new Utf8SliceNode.LiteralNode((byte)character, _matchIgnoreCase);
+                    node = new Utf8SliceNode.LiteralNode(character, _matchIgnoreCase);
                     return true;
             }
         }
 
-        private static bool IsEscapablePunctuation(char character)
-        {
-            return character is '.' or '$' or '^' or '{' or '}' or '[' or ']' or '(' or ')' or '|' or '*' or '+' or '?' or '\\';
-        }
-
-        // ASCII character classes, mirroring the pinned runtime parser:
+        // UTF-16 character classes, qualified against the pinned runtime:
         // literals (with `]`-first and `-`/POSIX-edge rules), ascending
         // ranges (escapes allowed as bounds), supported single-char
         // escapes, and shorthand members (always members, never bounds).
-        // Anything Unicode, categorical, or structural (categories,
-        // hex/octal/control escapes, subtraction, reversed ranges,
-        // shorthand upper bounds) declines to null so legacy routing
+        // Unsupported structural forms (control escapes, subtraction, reversed ranges,
+        // shorthand upper bounds) decline to null so legacy routing
         // preserves exact behavior including construction failures.
         // `[` followed by `:`, `.`, or `=` also
         // declines: those open POSIX, collating, or equivalence classes in
@@ -1902,6 +1905,19 @@ internal static class Utf8SliceParser
             var bits = new bool[128];
             var memberBits = 0;
             var categoryMembers = new List<Utf8SliceNode.CategorySetMember>();
+            var unicodeRanges = new List<(int Start, int End)>();
+            void AddRange(int start, int end)
+            {
+                for (var member = start; member <= Math.Min(end, 127); member++)
+                {
+                    bits[member] = true;
+                }
+
+                if (end >= 128)
+                {
+                    unicodeRanges.Add((Math.Max(start, 128), end));
+                }
+            }
             var lowerBound = -1;
             var inRange = false;
             var firstChar = true;
@@ -2041,10 +2057,7 @@ internal static class Utf8SliceParser
                                 return false;
                             }
 
-                            for (var member = lowerBound; member <= '-'; member++)
-                            {
-                                bits[member] = true;
-                            }
+                            AddRange(lowerBound, '-');
 
                             inRange = false;
                             lowerBound = -1;
@@ -2096,7 +2109,7 @@ internal static class Utf8SliceParser
                             // Hex, unicode, and octal escapes (bare octal included)
                             // resolve here; the value flows into member/range logic
                             // below. Anything unusable declines to legacy-exact.
-                            if (!TryParseAsciiNumericEscape(_pattern, _position, true, out value, out var next))
+                            if (!TryParseNumericEscape(_pattern, _position, true, out value, out var next))
                             {
                                 return false;
                             }
@@ -2106,12 +2119,7 @@ internal static class Utf8SliceParser
                             _position = next - 1;
                             break;
                         default:
-                            if ((escaped >= 'a' && escaped <= 'z') || (escaped >= 'A' && escaped <= 'Z') || (escaped >= '0' && escaped <= '9'))
-                            {
-                                return false;
-                            }
-
-                            if (escaped > 127)
+                            if (Utf8OwnedCharClass.IsWordChar(escaped))
                             {
                                 return false;
                             }
@@ -2125,11 +2133,6 @@ internal static class Utf8SliceParser
                 }
                 else
                 {
-                    if (character > 127)
-                    {
-                        return false;
-                    }
-
                     value = character;
                 }
 
@@ -2146,10 +2149,7 @@ internal static class Utf8SliceParser
                         return false;
                     }
 
-                    for (var member = lowerBound; member <= value; member++)
-                    {
-                        bits[member] = true;
-                    }
+                    AddRange(lowerBound, value);
 
                     lowerBound = -1;
                 }
@@ -2171,13 +2171,43 @@ internal static class Utf8SliceParser
                         return false;
                     }
 
-                    bits[value] = true;
+                    AddRange(value, value);
                 }
             }
 
             if (!closed)
             {
                 return false;
+            }
+
+            // Keep the ASCII mask compact. Merge the remaining literal ranges
+            // once and reuse the owned category-set membership/case tables.
+            // A final lone endpoint represents a range ending at U+FFFF.
+            if (unicodeRanges.Count != 0)
+            {
+                unicodeRanges.Sort(static (left, right) => left.Start.CompareTo(right.Start));
+                var endpoints = new List<ushort>();
+                var start = unicodeRanges[0].Start;
+                var end = unicodeRanges[0].End;
+                for (var range = 1; range <= unicodeRanges.Count; range++)
+                {
+                    if (range < unicodeRanges.Count && unicodeRanges[range].Start <= end + 1)
+                    {
+                        end = Math.Max(end, unicodeRanges[range].End);
+                        continue;
+                    }
+
+                    endpoints.Add((ushort)start);
+                    if (end != char.MaxValue) endpoints.Add((ushort)(end + 1));
+                    if (range < unicodeRanges.Count)
+                    {
+                        start = unicodeRanges[range].Start;
+                        end = unicodeRanges[range].End;
+                    }
+                }
+
+                categoryMembers.Add(new Utf8SliceNode.CategorySetMember(
+                    new Utf8SliceCategoryTable(0, endpoints.ToArray()), false));
             }
 
             // Case-insensitive classes carry both cases (input scalars fold

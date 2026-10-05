@@ -536,10 +536,22 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null) return _sliceProgram;
         if (_unitSliceProgram is not null &&
-            (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
+            (_unitSliceProgram.HasSurrogateLiteral ||
+             _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
+             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
              !_unitSliceProgram.ServesInput(input)))
             return _unitSliceProgram;
         return null;
+    }
+
+    // Unicode atoms use the cached unit program for UTF-16 starts, including
+    // starts inside a scalar. Byte-oriented native lanes remain selected by
+    // GetOwnedSliceProgram for the ordinary entry points.
+    private Utf8SliceProgram? GetOwnedSliceProgramFromUnit(ReadOnlySpan<byte> input)
+    {
+        return _unitSliceProgram is { HasUnicodePatternAtoms: true }
+            ? _unitSliceProgram
+            : GetOwnedSliceProgram(input);
     }
 
     private bool OwnedSliceIsMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
@@ -911,7 +923,7 @@ public sealed partial class Utf8Regex
                 start.Value <= suffixDirect.IndexInUtf16;
         }
 
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
         {
             return OwnedSliceIsMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1008,6 +1020,13 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        // Retain the qualified Unicode literal Count kernel. Other operations
+        // can now use the newly admitted owned program for the same pattern.
+        if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
+        {
+            return invariantCyrillicLiteralCountStrategy.Count(input);
+        }
+
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
         {
             return OwnedSliceCount(input, ownedProgram, cancellationToken);
@@ -1114,11 +1133,6 @@ public sealed partial class Utf8Regex
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.Count(input);
-        }
-
-        if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
-        {
-            return invariantCyrillicLiteralCountStrategy.Count(input);
         }
 
         // R05: caret-anchored grouped literals count owned by prefix compare (at
@@ -1302,7 +1316,7 @@ public sealed partial class Utf8Regex
                 : 0;
         }
 
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
         {
             return OwnedSliceCountFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1628,7 +1642,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
         {
             return OwnedSliceMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1989,7 +2003,7 @@ public sealed partial class Utf8Regex
             return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
         }
 
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
         {
             return OwnedSliceMatchDetailedFromUnit(input, ownedProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
         }
@@ -2903,7 +2917,7 @@ public sealed partial class Utf8Regex
         // the scan start exactly like BCL startat, unlike suffix slicing); the
         // half-start scan mirrors BCL units, and anything unserved keeps the
         // routing below.
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatchesFromUnit(input, ownedProgram, analysis.BoundaryMap, startInUtf16.Value, CancellationToken.None)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -2938,7 +2952,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (GetOwnedSliceProgramFromUnit(input) is { } ownedProgram)
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));

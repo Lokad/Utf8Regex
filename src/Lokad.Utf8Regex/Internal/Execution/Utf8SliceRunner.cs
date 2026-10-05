@@ -921,110 +921,64 @@ internal static class Utf8SliceRunner
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
-                    // Mirrored literals consume the byte ending at the attempt edge;
-                    // case-insensitive literals fold the scalar ending there exactly
-                    // like the forward arm.
+                    // One pattern character denotes one UTF-16 unit, including
+                    // each half of a supplementary literal. Core unit subjects
+                    // encode halves independently; scalar consumers never receive
+                    // programs containing half literals on astral subjects.
+                    var literalIndex = inputIndex;
+                    var literalWidth = 0;
                     if (program.RightToLeft)
                     {
-                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlLiteralWidth))
-                        {
-                            var literalLead = input[inputIndex - rtlLiteralWidth];
-                            if (instruction.B == 0)
-                            {
-                                if (literalLead == (byte)instruction.A)
-                                {
-                                    inputIndex -= rtlLiteralWidth;
-                                    programIndex++;
-                                }
-                                else
-                                {
-                                    failed = true;
-                                }
-                            }
-                            else if (literalLead < 0x80)
-                            {
-                                if (Internal.Search.AsciiSearch.FoldCase(literalLead) == Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
-                                {
-                                    inputIndex--;
-                                    programIndex++;
-                                }
-                                else
-                                {
-                                    failed = true;
-                                }
-                            }
-                            else if (literalLead < 0xF0 &&
-                                TryDecodeBmpScalar(input, inputIndex - rtlLiteralWidth, out var rtlLiteralScalar) &&
-                                TryFoldBmpScalarForCaseInsensitiveMatch(rtlLiteralScalar, out var rtlLiteralFolded) &&
-                                rtlLiteralFolded == (char)Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
-                            {
-                                inputIndex -= rtlLiteralWidth;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-
-                        break;
+                        if (TryGetScalarWidthEndingAt(input, inputIndex, out literalWidth))
+                            literalIndex -= literalWidth;
                     }
-
-                    if (instruction.B == 0)
-                    {
-                        if (inputIndex < input.Length && input[inputIndex] == (byte)instruction.A)
-                        {
-                            inputIndex++;
-                            programIndex++;
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-
-                        break;
-                    }
-
-                    // Case-insensitive literals fold the input scalar BCL-invariant
-                    // style (ASCII pairs plus single-char ToLowerInvariant; U+0130 never
-                    // folds to one char) and consume its whole width on a hit.
-                    if (inputIndex < input.Length)
+                    else if (inputIndex < input.Length && (input[inputIndex] & 0xC0) != 0x80)
                     {
                         var lead = input[inputIndex];
-                        if (lead < 0x80)
-                        {
-                            if (Internal.Search.AsciiSearch.FoldCase(lead) == Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
-                            {
-                                inputIndex++;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-                        }
-                        else if (lead < 0xF0 &&
-                            TryDecodeBmpScalar(input, inputIndex, out var literalScalar) &&
-                            TryFoldBmpScalarForCaseInsensitiveMatch(literalScalar, out var foldedScalar) &&
-                            foldedScalar == (char)Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
-                        {
-                            inputIndex += lead < 0xE0 ? 2 : 3;
-                            programIndex++;
-                        }
-                        else
+                        literalWidth = lead < 0x80 ? 1 : lead < 0xE0 ? 2 : lead < 0xF0 ? 3 : 4;
+                    }
+
+                    if (literalWidth == 0)
+                    {
+                        failed = true;
+                        break;
+                    }
+
+                    var literalLead = input[literalIndex];
+                    bool literalMatches;
+                    if (literalLead < 0x80 && instruction.A < 0x80)
+                    {
+                        // Retain the byte-only ASCII fast path.
+                        literalMatches = instruction.B == 0
+                            ? literalLead == instruction.A
+                            : Internal.Search.AsciiSearch.FoldCase(literalLead) ==
+                                Internal.Search.AsciiSearch.FoldCase((byte)instruction.A);
+                    }
+                    else
+                    {
+                        char literalScalar;
+                        if (literalLead < 0x80)
+                            literalScalar = (char)literalLead;
+                        else if (!TryDecodeBmpScalar(input, literalIndex, out literalScalar))
                         {
                             failed = true;
+                            break;
                         }
+
+                        literalMatches = literalScalar == (char)instruction.A ||
+                            instruction.B != 0 && Utf8SliceCaseEquivalences.GetInvariantEquivalents(literalScalar)
+                                .Contains((char)instruction.A);
+                    }
+
+                    if (literalMatches)
+                    {
+                        inputIndex += program.RightToLeft ? -literalWidth : literalWidth;
+                        programIndex++;
                     }
                     else
                     {
                         failed = true;
                     }
-
                     break;
                 case Utf8SliceInstructionKind.Set:
                     // Mirrored classes test the scalar ending at the attempt edge with

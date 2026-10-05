@@ -4,6 +4,16 @@
 
 ### Owned UTF-16 execution
 
+- Owned pattern atoms now include raw and escaped BMP characters, literal
+  surrogate halves, and UTF-16 character-class members/ranges. Quantifiers bind
+  to individual pattern units, including the low half of a supplementary literal;
+  captures and replacements retain those units. Unicode classes reuse owned
+  range and invariant case-equivalence tables while retaining compact ASCII masks.
+  Unicode group names and escaped punctuation are also admitted. Python scalar
+  translations now use the admitted unit subject during owned Count, preserving
+  scalar advancement and empty/nonempty adjacency. Qualified native BMP literal
+  lanes and the Cyrillic Count kernel remain available. Some compiled .NET 10
+  oracle defects and other syntax still require migration dispositions.
 - The owned slice VM now handles supplementary characters as .NET UTF-16 code
   units for matching, complete capture histories, enumeration, and splits,
   including starts inside surrogate pairs. Byte ranges still refer to the

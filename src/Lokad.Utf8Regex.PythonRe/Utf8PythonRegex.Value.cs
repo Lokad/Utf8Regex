@@ -302,9 +302,12 @@ public sealed partial class Utf8PythonRegex
             Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimits.Unlimited,
             MatchTimeout,
             cancellationToken);
-        var slots = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        var unitSubject = default(Lokad.Utf8Regex.Internal.Execution.Utf8SliceUnitSubject);
+        var slots = new Lokad.Utf8Regex.Internal.Execution.Utf8SliceSlots([], []);
         try
         {
+            unitSubject = Lokad.Utf8Regex.Internal.Execution.Utf8SliceUnitSubject.Create(input, map, ref invocation);
+            slots = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var count = 0;
             var unit = startOffsetInUtf16;
             var retryPending = false;
@@ -321,7 +324,7 @@ public sealed partial class Utf8PythonRegex
                     }
 
                     outcome = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.TryMatchFromUnitNonEmpty(
-                        program, input, map, retryUnit, slots.Starts, slots.Ends, ref invocation);
+                        program, unitSubject.Input, unitSubject.Map, retryUnit, slots.Starts, slots.Ends, ref invocation);
                     if (outcome.Breach != Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind.None)
                     {
                         throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -349,7 +352,7 @@ public sealed partial class Utf8PythonRegex
                 }
 
                 outcome = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.TryMatchFromUnit(
-                    program, input, map, unit, slots.Starts, slots.Ends, ref invocation);
+                    program, unitSubject.Input, unitSubject.Map, unit, slots.Starts, slots.Ends, ref invocation);
                 if (outcome.Breach != Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind.None)
                 {
                     throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -357,7 +360,8 @@ public sealed partial class Utf8PythonRegex
 
                 if (!outcome.Found)
                 {
-                    unit++;
+                    if (!map.TryAdvanceScalar(unit, out var advanced)) break;
+                    unit = advanced.Utf16Offset;
                     continue;
                 }
 
@@ -374,9 +378,14 @@ public sealed partial class Utf8PythonRegex
 
             return count;
         }
+        catch (Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Decode(input), _translation.Pattern, MatchTimeout);
+        }
         finally
         {
             Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+            unitSubject.Release(ref invocation);
         }
     }
 

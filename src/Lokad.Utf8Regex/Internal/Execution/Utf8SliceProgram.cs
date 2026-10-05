@@ -1,7 +1,7 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
-/// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
+/// ordered alternation, greedy/lazy repetition, captures, UTF-16 literals, ASCII
 /// sets, dots, anchors, word boundaries, shorthand classes, Unicode property
 /// escapes, backreferences, lookarounds,
 /// and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
@@ -55,7 +55,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 {
     internal sealed record EmptyNode() : Utf8SliceNode(Utf8SliceNodeKind.Empty);
 
-    internal sealed record LiteralNode(byte Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
+    internal sealed record LiteralNode(ushort Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
     internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Set)
     {
@@ -213,6 +213,21 @@ internal sealed class Utf8SliceProgram
         SawCapturingLookbehind = sawCapturingLookbehind;
         CanMatchEmpty = canMatchEmpty;
         HalvesClosedEmptyLoop = halvesClosedEmptyLoop;
+        foreach (var instruction in instructions)
+        {
+            HasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
+                instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
+            if (instruction.Kind == Utf8SliceInstructionKind.Literal &&
+                instruction.A is >= 0xD800 and <= 0xDFFF)
+            {
+                HasSurrogateLiteral = true;
+            }
+        }
+        foreach (var assertion in assertions)
+        {
+            HasSurrogateLiteral |= assertion.Body.HasSurrogateLiteral;
+            HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
+        }
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -240,6 +255,10 @@ internal sealed class Utf8SliceProgram
     internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
+    // Native scalar literal plans cannot represent a lone pattern half. Keep
+    // their qualified lanes for BMP patterns; half literals always use units.
+    internal bool HasSurrogateLiteral { get; }
+    internal bool HasUnicodePatternAtoms { get; }
 
     // R05: whole-pattern greedy minimum-zero loops over halves-closed atoms
     // (dots and member-free unfolded negated sets). The unit-space runner tiles
@@ -461,6 +480,7 @@ internal static class Utf8SliceLowerer
             ref bool category)
         {
             if (instruction.Kind == Utf8SliceInstructionKind.Dot ||
+                (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A is >= 0xD800 and <= 0xDFFF) ||
                 (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0) ||
                 (instruction.Kind == Utf8SliceInstructionKind.Shorthand && instruction.A % 2 == 1))
             {
@@ -892,7 +912,8 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConcatNode { Children.Length: 1 } concat:
                     node = concat.Children[0];
                     continue;
-                case Utf8SliceNode.LiteralNode:
+                case Utf8SliceNode.LiteralNode literal:
+                    return literal.Value is < 0xD800 or > 0xDFFF;
                 case Utf8SliceNode.DotNode:
                 case Utf8SliceNode.SetNode:
                 case Utf8SliceNode.ShorthandNode:
@@ -1018,7 +1039,8 @@ internal static class Utf8SliceLowerer
     {
         switch (node)
         {
-            case Utf8SliceNode.LiteralNode:
+            case Utf8SliceNode.LiteralNode literal:
+                return literal.Value is < 0xD800 or > 0xDFFF;
             case Utf8SliceNode.DotNode:
                 return true;
             case Utf8SliceNode.SetNode set:
@@ -1098,8 +1120,8 @@ internal static class Utf8SliceLowerer
     {
         switch (node)
         {
-            case Utf8SliceNode.LiteralNode:
-                return true;
+            case Utf8SliceNode.LiteralNode literal:
+                return literal.Value is < 0xD800 or > 0xDFFF;
             case Utf8SliceNode.SetNode set:
                 return !set.Negated && (set.Members is null || set.Members.Length == 0);
             default:
@@ -1213,8 +1235,9 @@ internal static class Utf8SliceLowerer
                     case Utf8SliceNode.LookaheadNode:
                     case Utf8SliceNode.LookbehindNode:
                         return (0, 0);
-                    case Utf8SliceNode.LiteralNode:
-                        return (1, 1);
+                    case Utf8SliceNode.LiteralNode literal:
+                        var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : 3;
+                        return literal.FoldCase ? (1, 3) : (width, width);
                     case Utf8SliceNode.SetNode set:
                         return set.Negated ? (1, 4) : (1, 1);
                     case Utf8SliceNode.DotNode:
