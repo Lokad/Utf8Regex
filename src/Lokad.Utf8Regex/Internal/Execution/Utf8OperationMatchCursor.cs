@@ -53,6 +53,7 @@ internal ref struct Utf8OperationMatchCursor
     private int _baseUtf16Offset;
     private Utf8SliceProgram? _sliceProgram;
     private Utf8SliceInvocation _sliceInvocation;
+    private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
     private int _sliceOriginUnit;
     private string? _decodedUnits;
@@ -313,6 +314,7 @@ internal ref struct Utf8OperationMatchCursor
         _baseUtf16Offset = 0;
         _sliceProgram = program;
         _sliceInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token);
+        _sliceSubject = Utf8SliceUnitSubject.Create(input, map, ref _sliceInvocation);
         _sliceUnit = 0;
         _sliceOriginUnit = -1;
         _mode = EnumeratorMode.OwnedSlice;
@@ -343,7 +345,8 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
-        var map = _boundaryMap.Value;
+        var projectionMap = _boundaryMap.Value;
+        var map = _sliceSubject.Map;
         var slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
         try
         {
@@ -368,7 +371,7 @@ internal ref struct Utf8OperationMatchCursor
                 while (_sliceUnit >= 0)
                 {
                     var rtlOutcome = Utf8SliceRunner.TryMatchAtRightEdgeUnit(
-                        _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
+                        _sliceProgram, _sliceSubject.Input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
                     if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
                     {
                         throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -380,7 +383,7 @@ internal ref struct Utf8OperationMatchCursor
                         continue;
                     }
 
-                    _current = Utf8SliceRunner.ProjectMatch(map, rtlOutcome);
+                    _current = Utf8SliceRunner.ProjectMatch(projectionMap, rtlOutcome);
                     _sliceUnit = rtlOutcome.EndUnit > rtlOutcome.StartUnit ? rtlOutcome.StartUnit : rtlOutcome.EndUnit - 1;
                     if (rtlOutcome.EndUnit > rtlOutcome.StartUnit)
                     {
@@ -390,31 +393,27 @@ internal ref struct Utf8OperationMatchCursor
                     return true;
                 }
 
+                _sliceSubject.Release(ref _sliceInvocation);
+                _sliceProgram = null;
                 return false;
             }
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
-        }
+            // Contiguous matches chain BCL startat: a fresh scan pins \\G to its
+            // start, a non-empty match advances the pin to its end, and an empty
+            // match keeps the pin (later positions all miss it, ending the chain).
+            if (_sliceOriginUnit < 0)
+            {
+                _sliceOriginUnit = _sliceUnit;
+            }
 
-        // Contiguous matches chain BCL startat: a fresh scan pins \\G to its
-        // start, a non-empty match advances the pin to its end, and an empty
-        // match keeps the pin (later positions all miss it, ending the chain).
-        if (_sliceOriginUnit < 0)
-        {
-            _sliceOriginUnit = _sliceUnit;
-        }
-
-        if (_sliceOriginUnit >= 0 && _sliceOriginUnit <= map.Utf16Length)
-        {
-            _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
-        }
+            if (_sliceOriginUnit >= 0 && _sliceOriginUnit <= map.Utf16Length)
+            {
+                _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
+            }
 
             while (_sliceUnit <= map.Utf16Length)
             {
                 var outcome = Utf8SliceRunner.TryMatchFromUnit(
-                    _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
+                    _sliceProgram, _sliceSubject.Input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 {
                     throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -426,7 +425,7 @@ internal ref struct Utf8OperationMatchCursor
                     continue;
                 }
 
-                _current = Utf8SliceRunner.ProjectMatch(map, outcome);
+                _current = Utf8SliceRunner.ProjectMatch(projectionMap, outcome);
                 _sliceUnit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
                 if (outcome.EndUnit > outcome.StartUnit)
                 {
@@ -436,7 +435,20 @@ internal ref struct Utf8OperationMatchCursor
                 return true;
             }
 
+            _sliceSubject.Release(ref _sliceInvocation);
+            _sliceProgram = null;
             return false;
+        }
+        catch
+        {
+            _sliceSubject.Release(ref _sliceInvocation);
+            _sliceProgram = null;
+            throw;
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
+        }
     }
 
     // Anchored ASCII literal prefix enumeration: at most one match at offset 0,

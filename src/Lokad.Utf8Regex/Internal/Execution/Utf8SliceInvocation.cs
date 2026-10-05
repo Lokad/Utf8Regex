@@ -24,4 +24,21 @@ internal struct Utf8SliceInvocation
     internal int AnchorOriginByte;
 
     internal bool IsUnmetered => Budget.IsUnmetered && Ledger.IsUnlimited;
+
+    internal Utf8ExecutionLimitKind TryChargeStep()
+    {
+        var breach = Budget.TryChargeStep();
+        if (breach == Utf8ExecutionLimitKind.None && CheckpointHook is not null && (Budget.Steps & 63) == 0)
+        {
+            CheckpointHook(Budget.Steps);
+        }
+        return breach;
+    }
+
+    internal Utf8ExecutionLimitKind TryChargeInputStep()
+    {
+        var breach = TryChargeStep();
+        Budget.CheckDeadline();
+        return breach;
+    }
 }

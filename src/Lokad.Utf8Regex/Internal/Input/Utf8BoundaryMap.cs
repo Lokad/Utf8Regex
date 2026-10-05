@@ -8,6 +8,7 @@ internal readonly struct Utf8BoundaryMap
     private readonly int[] _byteOffsets;
     private readonly uint[] _scalarBoundaryBits;
     private readonly bool _isAscii;
+    private readonly bool _allUnitBoundaries;
 
     private Utf8BoundaryMap(int byteLength, int utf16Length, bool isAscii)
     {
@@ -21,6 +22,22 @@ internal readonly struct Utf8BoundaryMap
     public int ByteLength { get; }
 
     public int Utf16Length { get; }
+
+    private Utf8BoundaryMap(int byteLength, int[] byteOffsets)
+    {
+        ByteLength = byteLength;
+        Utf16Length = byteOffsets.Length - 1;
+        _byteOffsets = byteOffsets;
+        _scalarBoundaryBits = [];
+        _isAscii = false;
+        _allUnitBoundaries = true;
+    }
+
+    // Only the owned unit converter may supply this private alphabet. Every
+    // encoded char has its own boundary, including surrogate halves; this map
+    // never replaces the original subject's public scalar-boundary map.
+    internal static Utf8BoundaryMap FromUnitEncoding(int byteLength, int[] byteOffsets)
+        => new(byteLength, byteOffsets);
 
     public static Utf8BoundaryMap Create(ReadOnlySpan<byte> input)
     {
@@ -271,7 +288,7 @@ internal readonly struct Utf8BoundaryMap
     }
 
     private bool IsScalarBoundary(int utf16Offset)
-        => (_scalarBoundaryBits[utf16Offset >> 5] & (1u << (utf16Offset & 31))) != 0;
+        => _allUnitBoundaries || (_scalarBoundaryBits[utf16Offset >> 5] & (1u << (utf16Offset & 31))) != 0;
 
     private void SetScalarBoundary(int utf16Offset)
         => _scalarBoundaryBits[utf16Offset >> 5] |= 1u << (utf16Offset & 31);

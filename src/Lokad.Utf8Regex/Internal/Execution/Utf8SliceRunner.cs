@@ -510,8 +510,8 @@ internal static class Utf8SliceRunner
             aligned,
             found.StartUnit,
             found.EndUnit - found.StartUnit,
-            found.StartByte,
-            found.EndByte - found.StartByte);
+            startBoundary.ByteOffset,
+            endBoundary.ByteOffset - startBoundary.ByteOffset);
     }
 
     // Right-edge attempt for right-to-left scans: runs the mirrored program
@@ -910,15 +910,10 @@ internal static class Utf8SliceRunner
         var inputIndex = start;
         while (true)
         {
-            var stepBreach = invocation.Budget.TryChargeStep();
+            var stepBreach = invocation.TryChargeStep();
             if (stepBreach != Utf8ExecutionLimitKind.None)
             {
                 return new Utf8SliceMatchOutcome(false, -1, stepBreach, null, null);
-            }
-
-            if (invocation.CheckpointHook is not null && (invocation.Budget.Steps & 63) == 0)
-            {
-                invocation.CheckpointHook(invocation.Budget.Steps);
             }
 
             var instruction = instructions[programIndex];

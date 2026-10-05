@@ -58,6 +58,15 @@ internal sealed class Utf8ExecutionDeadline
             throw new Utf8ExecutionDeadlineExpiredException();
         }
     }
+
+    // Buffer work charges one step per bounded block instead of one per VM
+    // instruction. Check its deadline directly so polling cannot be diluted
+    // by multiplying the VM cadence by the block size.
+    internal void CheckNow()
+    {
+        if (!IsInfinite && Environment.TickCount64 - _startTickCount64 >= _timeoutMilliseconds)
+            throw new Utf8ExecutionDeadlineExpiredException();
+    }
 }
 
 internal sealed class Utf8ExecutionDeadlineExpiredException : Exception

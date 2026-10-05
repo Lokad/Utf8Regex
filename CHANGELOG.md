@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Owned UTF-16 execution
+
+- The owned slice VM now handles supplementary characters as .NET UTF-16 code
+  units for matching, complete capture histories, enumeration, and splits,
+  including starts inside surrogate pairs. Byte ranges still refer to the
+  original UTF-8 input and remain unavailable for split scalars. Conversion
+  admits its storage before allocation and observes cancellation and deadlines.
+  Non-ASCII ordered-window subjects also use this owned execution path.
+  Replacement and unsupported syntax retain their existing routes at this
+  checkpoint; public input must still be well-formed UTF-8.
+
 ### Parser ownership
 
 - The regex front end is now fully owned: the previous `System.Text.RegularExpressions`

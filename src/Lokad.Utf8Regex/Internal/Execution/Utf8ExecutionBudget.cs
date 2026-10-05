@@ -44,6 +44,8 @@ internal struct Utf8ExecutionBudget
         _deadline.IsInfinite &&
         !_token.CanBeCanceled;
 
+    internal void CheckDeadline() => _deadline.CheckNow();
+
     internal Utf8ExecutionLimitKind TryChargeStep()
     {
         _token.ThrowIfCancellationRequested();
