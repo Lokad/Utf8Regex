@@ -46,10 +46,10 @@ public sealed class PythonReSliceInlineTests
     [InlineData("(?s:(?i:a.c))+")]
     [InlineData("(?x:a b)+")]
     [InlineData("(?i)a+")]
-    public void RewrittenAndHoistedShapesDeclineOwnedSlice(string pattern)
+    public void RewrittenAndHoistedShapesKeepTheirQualifiedRoutes(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(pattern.Contains('.'), regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -200,4 +200,3 @@ public sealed class PythonReSliceInlineTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }
-

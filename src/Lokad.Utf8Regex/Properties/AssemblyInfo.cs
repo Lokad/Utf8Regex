@@ -6,3 +6,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Lokad.Utf8Regex.Pcre2")] // PCRE2-INTEGRATION-POINT
 [assembly: InternalsVisibleTo("Lokad.Utf8Regex.Pcre2.Tests")] // PCRE2-INTEGRATION-POINT
 [assembly: InternalsVisibleTo("Lokad.Utf8Regex.PythonRe")] // PYTHONRE-INTEGRATION-POINT
+[assembly: InternalsVisibleTo("Lokad.Utf8Regex.PythonRe.Tests")] // PYTHONRE-INTEGRATION-POINT: deterministic shared-invocation qualification

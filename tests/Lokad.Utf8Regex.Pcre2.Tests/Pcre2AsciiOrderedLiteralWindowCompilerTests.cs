@@ -117,7 +117,7 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
         Assert.IsNotType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(
             new Utf8Pcre2Regex("Holmes.*Watson|Watson.*Holmes")
                 .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("Hólmes.{0,25}Watson|Watson.{0,25}Hólmes")
                 .DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(

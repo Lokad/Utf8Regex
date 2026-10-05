@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
@@ -201,10 +202,10 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("^(a.c)+$")]
     [InlineData("a$")]
     [InlineData("^a")]
-    public void DottedAndSimpleAnchorsDeclineOwnedSlice(string pattern)
+    public void DottedAndSimpleAnchorsKeepTheirQualifiedRoutes(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(pattern.Contains('.'), regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> AnchorSearchCases()
@@ -300,14 +301,14 @@ public sealed class PythonReSliceOwnershipTests
     // (pre-existing translator gap, out of slice scope).
     // The translator wraps every class in a non-capturing group (now
     // transparent on the core slice) and rewrites complements scalar-exact:
-    // quantified member shapes route owned while negated shapes still
-    // decline, all with parity through the translated pattern.
+    // quantified members and scalar-safe complements now route owned,
+    // all with parity through the translated pattern.
     [Theory]
     [InlineData("[^a-z]+")]
-    public void ClassShapesDeclineOwnedSlice(string pattern)
+    public void ClassShapesRouteOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -507,8 +508,8 @@ public sealed class PythonReSliceOwnershipTests
 
     // R03 numeric escapes: the space rewrite is a plain class with hex members
     // that the core slice now parses, so bare \s shapes route owned with
-    // translated-oracle parity; the other shorthands keep scalar-exact rewrites
-    // that still decline.
+    // translated-oracle parity; scalar-exact complement rewrites now use the
+    // admitted Unicode ranges too.
     [Theory]
     [InlineData("(\\s+)")]
     [InlineData("\\s+")]
@@ -521,8 +522,8 @@ public sealed class PythonReSliceOwnershipTests
 
     // R03 mixed category classes: the translator emits [\p{L}\p{N}_]
     // categories for \w, which the core slice now serves, so bare word
-    // shapes route owned with translated-oracle parity; the other bare
-    // shorthands keep scalar-exact rewrites that still decline.
+    // shapes route owned with translated-oracle parity. Complement rewrites
+    // also use the slice; native bare digit selections retain their route.
     [Theory]
     [InlineData("(\\w+)")]
     [InlineData("\\w+")]
@@ -538,10 +539,10 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("\\W+")]
     [InlineData("\\S+")]
     [InlineData("[\\d]")]
-    public void BareShorthandShapesDeclineOwnedSlice(string pattern)
+    public void BareShorthandShapesRouteOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(pattern != "[\\d]", regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> ShorthandSearchCases()
@@ -636,10 +637,10 @@ public sealed class PythonReSliceOwnershipTests
 
     [Theory]
     [MemberData(nameof(DotShapes))]
-    public void DotShapesDeclineOwnedSlice(string pattern)
+    public void DotShapesRouteOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> DotSearchCases()
@@ -671,7 +672,7 @@ public sealed class PythonReSliceOwnershipTests
             Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
         }
 
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
@@ -688,7 +689,7 @@ public sealed class PythonReSliceOwnershipTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startByte));
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
@@ -696,6 +697,31 @@ public sealed class PythonReSliceOwnershipTests
     public void DotStarCountMatchesCpython()
     {
         Assert.Equal(2, new Utf8PythonRegex(".*", PythonReCompileOptions.None).Count(Utf8("\U0001F600"), 0));
+    }
+
+    [Fact]
+    public void TranslatedScalarCountCancelsInsideOwnedMatchingAndRecovers()
+    {
+        var regex = new Utf8PythonRegex("(.)+", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout);
+        var input = Utf8(string.Concat(Enumerable.Repeat("\U0001f600", 256)));
+        using var source = new CancellationTokenSource();
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            entered = true;
+            source.Cancel();
+            if (steps >= 128) throw new InvalidOperationException("Scalar Count dropped its token.");
+        });
+        try
+        {
+            var failure = Assert.Throws<OperationCanceledException>(() => regex.Count(input, 0, source.Token));
+            Assert.True(entered);
+            Assert.Equal(source.Token, failure.CancellationToken);
+        }
+        finally { session.Complete(); }
+        Assert.Equal(1, regex.Count(Utf8("\U0001f600\U0001f600"), 0));
+        Assert.True(regex.DebugUsesOwnedSlice);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
 
     [Theory]
@@ -733,7 +759,7 @@ public sealed class PythonReSliceOwnershipTests
     public void DotAllSearchMatchesNewline()
     {
         var regex = new Utf8PythonRegex("a.*b", PythonReCompileOptions.DotAll);
-        Assert.False(regex.DebugUsesOwnedSlice);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.True(regex.Search(Utf8("xxa\nbzz"), 0).Success);
         Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
@@ -927,8 +953,8 @@ public sealed class PythonReSliceOwnershipTests
     }
     // R03 mixed-class shorthands: member shorthands are rewritten
     // scalar-exact by the translator (like bare shorthands). Bare digit,
-    // negated, and category shapes decline the owned slice with
-    // translated-oracle parity; quantified member shapes route owned now
+    // negated, and category shapes retain translated-oracle parity;
+    // scalar-safe complements and quantified member shapes route owned now
     // that the translator's (?:...) wrapper lowers transparently on the
     // core slice, as do bare word hybrids (an alternation of a literal
     // dash with a category set).
@@ -937,10 +963,10 @@ public sealed class PythonReSliceOwnershipTests
     [Theory]
     [InlineData("[\\da]")]
     [InlineData("[^\\da]")]
-    public void HybridShapesDeclineOwnedSlice(string pattern)
+    public void HybridShapesRouteOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(pattern == "[^\\da]", regex.DebugUsesOwnedSlice);
     }
 
     // Bare word hybrids route owned too: the translator splits [\w-]

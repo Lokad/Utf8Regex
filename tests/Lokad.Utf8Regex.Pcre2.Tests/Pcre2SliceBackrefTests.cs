@@ -60,11 +60,11 @@ public sealed class Pcre2SliceBackrefTests
     }
 
     [Fact]
-    public void NonAsciiLiteralBackrefDeclinesSliceRouting()
+    public void NonAsciiBmpLiteralBackrefUsesSharedRouting()
     {
         var pattern = "(" + ((char)0xE9) + ")\\1";
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+        Assert.Contains("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Utf8(new string((char)0xE9, 2))));
     }
 

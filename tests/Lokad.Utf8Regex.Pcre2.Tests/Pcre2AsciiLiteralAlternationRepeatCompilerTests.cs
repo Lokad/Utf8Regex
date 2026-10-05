@@ -143,7 +143,7 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
             new Utf8Pcre2Regex("(?:ab|a)*z").DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("(?:ab|a)++z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("(?:áb|a)+z").DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("(?:(ab)|a)+z").DebugCompiledProgram.Operations.Count);

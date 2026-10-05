@@ -13,7 +13,7 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
         var regex = new Utf8Pcre2Regex(FtpLinePattern);
 
         Assert.Equal(
-            "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+            "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("123-file listing"u8));
         Assert.True(regex.IsMatch("123 αβ"u8));

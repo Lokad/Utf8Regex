@@ -127,13 +127,14 @@ public sealed class Utf8SliceEscapeTests
 
     [Theory]
     [MemberData(nameof(NonAsciiCases))]
-    public void NonAsciiResultsDeclineToLegacy(string pattern, string inputText)
+    public void NonAsciiEscapesKeepOracleAgreement(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(pattern != "\\400", regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+        if (pattern != "\\400") Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]

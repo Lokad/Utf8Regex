@@ -137,7 +137,7 @@ public sealed class Pcre2MultilinePrefixCompilerTests
         Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("^ERROR: .+?$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("^ÉCHEC: .+$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
         // The explicit-LF shape joins the slice set now that bare C0

@@ -13,6 +13,7 @@ public sealed class Utf8SliceParserTests
     [Theory]
     [InlineData("", 0)]
     [InlineData("abc", 0)]
+    [InlineData("é", 0)]
     [InlineData("(a+)(b+)", 2)]
     [InlineData("(ab|cd)+", 1)]
     [InlineData("(a|ab)c", 1)]
@@ -96,7 +97,6 @@ public sealed class Utf8SliceParserTests
 
     [Theory]
     [InlineData(@"\q")]
-    [InlineData("é")]
     [InlineData("(a")]
     [InlineData("a)")]
     [InlineData("a**")]
@@ -166,10 +166,10 @@ public sealed class Utf8SliceParserTests
     }
 
     [Fact]
-    public void NonAsciiLiteralBackrefShapesDecline()
+    public void NonAsciiLiteralBackrefShapesLower()
     {
-        Assert.Null(Utf8SliceParser.TryParse("(" + ((char)0xE9) + ")\\1", RegexOptions.CultureInvariant));
-        Assert.Null(Utf8SliceParser.TryParse("(" + char.ConvertFromUtf32(0x1F600) + ")\\1", RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8SliceParser.TryParse("(" + ((char)0xE9) + ")\\1", RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8SliceParser.TryParse("(" + char.ConvertFromUtf32(0x1F600) + ")\\1", RegexOptions.CultureInvariant));
     }
 
     [Theory]
