@@ -220,8 +220,8 @@ public sealed class LazyFallbackConstructionTests
         // Single-maximum lazies (??, {0,1}?) agree on both oracle lanes with
         // full group detail (probe-mapped, including inner captures), so the
         // slice serves discovery owned on both lanes with parity and no
-        // fallback construction. Finite maxima above one stay BCL-backed on
-        // the compiled lane (see FiniteRangeLazyCompiledDiscoveryKeepsBclShaping).
+        // fallback construction. Capture-writing finite ranges also stay owned,
+        // following interpreter unwind (see FiniteRangeLazyCompiledDiscoveryUsesStableOwnedUnwind).
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
@@ -360,24 +360,29 @@ public sealed class LazyFallbackConstructionTests
     [InlineData("(([0-9]){1,2}?x)?", "12x")]
     [InlineData("((a){1,3}?x)?", "aaa")]
     [InlineData("((a){0,2}?x)?", "aaa")]
-    public void FiniteRangeLazyCompiledDiscoveryKeepsBclShaping(string pattern, string text)
+    public void FiniteRangeLazyCompiledDiscoveryUsesStableOwnedUnwind(string pattern, string text)
     {
-        // Capture-writing lazy ranges stay BCL-backed for discovery on the
-        // compiled lane: the compiler keeps abandonment progress there while
-        // the interpreter abandons fully, and captured ranges even oscillate
-        // compiled enumeration forever (probed: 0+0,0+1,...). The divergence is
-        // not specific to set/shorthand bodies: literal-body ranges diverge too
-        // once the kept progress is observable. IsMatch terminates on both lanes
-        // so parity is asserted; full enumeration is deliberately not compared
-        // because the BCL-compiled lane never finishes.
+        // The diagnosed .NET 10 compiled defect retains abandoned progress and
+        // may never finish enumeration. Both owned lanes use the interpreter's
+        // correct abandonment, including Count and global cursor termination.
         var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
-            var expectConstruction = (options & RegexOptions.Compiled) != 0;
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var regex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
-            Assert.Equal(expectConstruction, regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(oracle.Count(text), regex.Count(input));
+            var expected = oracle.EnumerateMatches(text);
+            var actual = regex.EnumerateMatches(input);
+            while (expected.MoveNext())
+            {
+                Assert.True(actual.MoveNext());
+                Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
+                Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
+            }
+            Assert.False(actual.MoveNext());
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         }
     }
 
@@ -385,9 +390,8 @@ public sealed class LazyFallbackConstructionTests
     [InlineData("a+?b", "xxaaabxx")]
     public void LazyPlusCompiledDiscoveryStaysOwned(string pattern, string text)
     {
-        // Control: lazy-plus shapes execute owned discovery on both lanes, so the
-        // remaining compiled debt is specific to capture-writing finite lazy ranges
-        // (see FiniteRangeLazyCompiledDiscoveryKeepsBclShaping).
+        // Control: unbounded lazy-plus shapes still execute owned discovery on
+        // both lanes and agree with the compiled oracle as well as the interpreter.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
@@ -430,10 +434,9 @@ public sealed class LazyFallbackConstructionTests
         // capture-free ranges) serve shaping owned on both lanes with full group
         // detail: Detailed projects every group with oracle coordinates and values,
         // splits enumerate owned gaps, and all three replacement cores shape from
-        // owned spans, on ASCII and astral input alike. Only capture-writing true
-        // ranges stay BCL-backed on the compiled lane (abandonment divergence and
-        // enumeration oscillation, pinned decline); the emitter debt is otherwise
-        // discharged, with the shared interpreter equal to compiled behavior here.
+        // owned spans, on ASCII and astral input alike. These shapes agree with
+        // the compiled oracle as well as the interpreter. Capture-writing true
+        // ranges also stay owned with the documented interpreted-semantics disposition.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var detailedRegex = new Utf8Regex(pattern, options);
@@ -514,8 +517,8 @@ public sealed class LazyFallbackConstructionTests
     public void LazyOptionalDetailedStaysOwned(string pattern, string inputText)
     {
         // Single-maximum lazies (??) serve Detailed owned on the compiled lane too
-        // (probe-mapped lane agreement); finite lazy maxima above one stay BCL-backed
-        // there. Greedy six-loop shapes and below graduate to owned shaping in
+        // (probe-mapped lane agreement); capture-writing finite lazy ranges use
+        // stable interpreter unwind too. Greedy six-loop shapes graduate to owned shaping in
         // GroupedLiteralDetailedTests, and lazy shapes stay owned on the ordinary
         // lane through the slice.
         var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);

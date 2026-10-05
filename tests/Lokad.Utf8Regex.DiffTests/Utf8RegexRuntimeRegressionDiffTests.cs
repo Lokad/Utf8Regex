@@ -80,17 +80,48 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
     }
 
+    [Theory]
+    [InlineData(@"(([0-9]){0,2}?x)?", "123")]
+    [InlineData(@"(([0-9]){1,2}?x)?", "123")]
+    [InlineData(@"((a){0,2}?x)?", "aaa")]
+    public void NonprogressingCompiledOraclePrefixKeepsOwnedGlobalOperationsFinite(string pattern, string input)
+    {
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var ordinary = new Regex(pattern, options, TimeSpan.FromSeconds(2));
+        var compiled = new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromSeconds(2));
+        var prefix = compiled.EnumerateMatches(input);
+        // Probe only a bounded prefix: .NET 10.0.12 repeats 0:0, 0:1 rather
+        // than advancing. Calling its complete Count or enumeration would hang.
+        for (var sample = 0; sample < 8; sample++)
+        {
+            Assert.True(prefix.MoveNext());
+            Assert.Equal(0, prefix.Current.Index);
+            Assert.Equal(sample % 2, prefix.Current.Length);
+        }
+        foreach (var selection in new[] { options, options | RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, selection);
+            var bytes = Encoding.UTF8.GetBytes(input);
+            Assert.Equal(4, regex.Count(bytes));
+            var matches = regex.EnumerateMatches(bytes);
+            for (var position = 0; position <= input.Length; position++)
+            {
+                Assert.True(matches.MoveNext());
+                Assert.Equal(position, matches.Current.IndexInUtf16);
+                Assert.Equal(0, matches.Current.LengthInUtf16);
+            }
+            Assert.False(matches.MoveNext());
+            Assert.Equal(ordinary.Replace(input, "Q"), regex.ReplaceToString(bytes, "Q"));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
     [Fact]
     public void LazyLoopAbandonmentPinsDotNet10OracleDisagreement()
     {
-        // dotnet/runtime 04c21ab8734 fixes lazy-loop abandonment at maximum
-        // iterations in the compiler/generator only. On .NET 10 the oracle
-        // disagrees with itself for "(([0-9]){1,3}?x)?" on "123": interpreted
-        // matches empty (length 0) while compiled keeps one iteration of
-        // progress (length 1, outer group unmatched while the inner capture keeps its last iteration). Both Utf8 lanes ride
-        // BCL fallback and mirror their own oracle lane faithfully, so only
-        // per-lane fidelity is asserted here; the shared parity helper would
-        // demand cross-lane agreement no faithful implementation can give.
+        // .NET 10 compiled unwind retains abandoned progress and an inner
+        // capture on this failed optional branch. Record that oracle defect,
+        // while both owned modes follow the stable interpreted semantics.
         const string pattern = @"(([0-9]){1,3}?x)?";
         const string input = "123";
         const RegexOptions options = RegexOptions.CultureInvariant;
@@ -113,26 +144,22 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.Equal(expected.Groups.Count, actual.GroupCount);
 
         var actualCompiled = context.Utf8Compiled.MatchDetailed(bytes);
-        Assert.Equal(expectedCompiled.Success, actualCompiled.Success);
-        Assert.Equal(expectedCompiled.Index, actualCompiled.IndexInUtf16);
-        Assert.Equal(expectedCompiled.Length, actualCompiled.LengthInUtf16);
-        Assert.Equal(expectedCompiled.Groups.Count, actualCompiled.GroupCount);
+        Assert.Equal(expected.Success, actualCompiled.Success);
+        Assert.Equal(expected.Index, actualCompiled.IndexInUtf16);
+        Assert.Equal(expected.Length, actualCompiled.LengthInUtf16);
+        Assert.Equal(expected.Groups.Count, actualCompiled.GroupCount);
+        Assert.False(actualCompiled.GetGroup(1).Success);
+        Assert.False(actualCompiled.GetGroup(2).Success);
+        Assert.False(context.Utf8.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(context.Utf8Compiled.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]
     public void LazyLoopLiteralBodyAbandonmentPinsOracleDisagreement()
     {
-        // The abandonment divergence is not specific to set/shorthand loop
-        // bodies: "((a){1,3}?x)?" on "aaa" also abandons fully interpreted
-        // (empty match) while compiled keeps one iteration of progress
-        // (length 1, outer group unmatched while the inner capture keeps "a").
-        // A {a,b,c,x} brute force to length 5 further shows masking
-        // continuations still leak: "((a){1,3}?b)?c" on "acaaa" agrees on the
-        // match but compiled enumeration yields a phantom trailing empty, so
-        // the compiled-lane decline stands for every capture-writing range.
-        // The ordinary lane serves the slice owned (interpreter abandonment)
-        // while the compiled lane rides BCL fallback, so only per-lane
-        // fidelity is asserted here.
+        // Literal bodies exhibit the same compiled .NET 10 unwind defect:
+        // failed optional branches leak one unit and an inner capture. Both
+        // owned modes deliberately undo the complete branch like the interpreter.
         const string pattern = @"((a){1,3}?x)?";
         const string input = "aaa";
         const RegexOptions options = RegexOptions.CultureInvariant;
@@ -156,10 +183,14 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.Equal(expected.Groups.Count, actual.GroupCount);
 
         var actualCompiled = context.Utf8Compiled.MatchDetailed(bytes);
-        Assert.Equal(expectedCompiled.Success, actualCompiled.Success);
-        Assert.Equal(expectedCompiled.Index, actualCompiled.IndexInUtf16);
-        Assert.Equal(expectedCompiled.Length, actualCompiled.LengthInUtf16);
-        Assert.Equal(expectedCompiled.Groups.Count, actualCompiled.GroupCount);
+        Assert.Equal(expected.Success, actualCompiled.Success);
+        Assert.Equal(expected.Index, actualCompiled.IndexInUtf16);
+        Assert.Equal(expected.Length, actualCompiled.LengthInUtf16);
+        Assert.Equal(expected.Groups.Count, actualCompiled.GroupCount);
+        Assert.False(actualCompiled.GetGroup(1).Success);
+        Assert.False(actualCompiled.GetGroup(2).Success);
+        Assert.False(context.Utf8.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(context.Utf8Compiled.Inspection.DebugFallbackRegexIsCreated);
     }
     [Theory]
     [InlineData(@"^b", "a\nb\nc", RegexOptions.Multiline | RegexOptions.CultureInvariant)]

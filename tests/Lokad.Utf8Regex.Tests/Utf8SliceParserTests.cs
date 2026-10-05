@@ -176,15 +176,16 @@ public sealed class Utf8SliceParserTests
     [InlineData("([0-9]){1,3}?x")]
     [InlineData("([0-9]){1,2}?x")]
     [InlineData("((a){1,3}?b)?c")]
-    public void CapturedLazyRangeDeclinesCompiledLane(string pattern)
+    public void CapturedLazyRangeUsesInterpreterUnwindInBothModes(string pattern)
     {
-        // Only ranges whose body writes captures decline: the per-lane
-        // abandonment divergence and the enumeration oscillation need
-        // capture-writing subtrees (probe-mapped, including literal bodies
-        // once the kept progress is observable, plus phantom trailing
-        // empties under masking continuations).
-        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
+        // Compiled .NET 10 can leak abandoned progress or repeat global positions.
+        // Both owned modes retain the interpreter's complete capture rollback.
+        var ordinary = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(ordinary);
+        Assert.False(ordinary.UsesInterpretedLazyLoopSemantics);
+        var compiled = Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        Assert.NotNull(compiled);
+        Assert.True(compiled.UsesInterpretedLazyLoopSemantics);
     }
 
     [Theory]
@@ -200,7 +201,7 @@ public sealed class Utf8SliceParserTests
         // Single maxima, exact counts, and capture-free ranges agree on both
         // oracle lanes (probe-mapped across nesting, backreferences,
         // lookarounds, and atomics), so the compiled lane keeps the slice
-        // program; only capture-writing ranges decline above.
+        // program; the affected capture-writing ranges above also stay owned.
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
     }

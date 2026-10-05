@@ -46,9 +46,13 @@ public sealed class Utf8SliceSparseGroupTests
     [MemberData(nameof(Cases))]
     public void SparseNumbersRetainOperationsHistoriesAndPublicIdentity(int patternId, RegexOptions options)
     {
-        var pattern = Patterns[patternId];
+        AssertOwnedOperations(Patterns[patternId], options, Texts, options);
+    }
+
+    internal static void AssertOwnedOperations(string pattern, RegexOptions options, string[] texts, RegexOptions oracleOptions)
+    {
         Regex oracle;
-        try { oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10)); }
+        try { oracle = new Regex(pattern, oracleOptions, TimeSpan.FromSeconds(10)); }
         catch (RegexParseException expected)
         {
             var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10)));
@@ -71,7 +75,7 @@ public sealed class Utf8SliceSparseGroupTests
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "00", "01", "05", "012", "1", "x", "12", "missing" }))
             Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
         using var source = new CancellationTokenSource();
-        foreach (var text in Texts)
+        foreach (var text in texts)
         {
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
@@ -242,6 +246,8 @@ public sealed class Utf8SliceSparseGroupTests
     private static void AssertDetailed(Regex oracle, Match expected, Utf8MatchContext actual)
     {
         Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
         Assert.Equal(expected.Groups.Count, actual.GroupCount);
         Assert.Equal(expected.Value, actual.GetValueString());
         var numbers = expected.Success ? oracle.GetGroupNumbers() : new[] { 0 };
@@ -250,6 +256,8 @@ public sealed class Utf8SliceSparseGroupTests
             var group = actual.GetGroup(number);
             var expectedGroup = expected.Groups[number];
             Assert.Equal(expectedGroup.Success, group.Success);
+            Assert.Equal(expectedGroup.Index, group.IndexInUtf16);
+            Assert.Equal(expectedGroup.Length, group.LengthInUtf16);
             Assert.Equal(expectedGroup.Value, group.GetValueString());
             Assert.Equal(expectedGroup.Captures.Count, group.CaptureCount);
             Assert.Equal(numbers.Contains(number), actual.TryGetGroup(number, out var tryGroup));

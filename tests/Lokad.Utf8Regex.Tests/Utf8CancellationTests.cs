@@ -274,11 +274,10 @@ public sealed class Utf8CancellationTests
     }
 
     [Fact]
-    public void CancelInsideBclFallbackEvaluatorAbortsReplace()
+    public void CancelInsideCapturedFiniteLazyEvaluatorAbortsReplace()
     {
-        // Finite lazy ranges above one stay BCL-backed on the compiled lane
-        // (probe-mapped per-lane abandonment divergence), so cancellation
-        // inside the BCL fallback evaluator still aborts the replace there.
+        // Captured finite lazy ranges now execute owned interpreter unwind on
+        // the compiled lane; cancellation inside the callback still aborts output.
         var regex = new Utf8Regex("(([0-9]){1,2}?x)?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         using var canceled = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes("12x 12x");
@@ -290,7 +289,9 @@ public sealed class Utf8CancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(new Regex(regex.Pattern, RegexOptions.CultureInvariant).Replace("12x", "Q"),
+            regex.ReplaceToString("12x"u8, "Q"));
     }
 
     [Theory]
