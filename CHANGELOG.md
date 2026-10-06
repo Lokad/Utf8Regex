@@ -4,6 +4,18 @@
 
 ### Owned UTF-16 execution
 
+- Lazy-DFA compilation walks optional transitions and emits nested NFA programs
+  without CLR recursion. Speculative construction admits continuation data and
+  enforces its existing state/transition caps before extending graphs, including
+  deterministic routes. Oversized optimizations retain the owned linear engine.
+  Complete public construction storage accounting remains open.
+
+- Byte-safe linear and DFA programs retain individual absolute, contiguous,
+  line and strict/final-newline anchor facts. DFA matching keeps the last valid
+  accepting position when a greedy suffix fails later, checks shared work/token/
+  deadline during execution, and retains the structural caller's deadline.
+  Public depth admission and remaining call-wide resource-policy work are unchanged.
+
 - Nested byte-safe linear programs now execute with explicit loop frames and
   aggregate storage admission. Failed body trials discard their partial input;
   projected Unicode compatibility requests propagate through optional parents.

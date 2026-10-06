@@ -87,6 +87,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
 
     public RegexOptions Options { get; }
 
+    internal Utf8ExecutionNodeKind AnchorKind => Value != 0 ? (Utf8ExecutionNodeKind)Value
+        : Kind == Utf8ByteSafeLinearVerifierStepKind.RequireBeginning ? Utf8ExecutionNodeKind.Bol : Utf8ExecutionNodeKind.Eol;
+
     public static Utf8ByteSafeLinearVerifierStep MatchByte(byte value) =>
         new(Utf8ByteSafeLinearVerifierStepKind.MatchByte, value, null, null, null, default, null, 0, 0, RegexOptions.None);
 
@@ -116,6 +119,12 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
 
     public static Utf8ByteSafeLinearVerifierStep RequireEnd(RegexOptions options) =>
         new(Utf8ByteSafeLinearVerifierStepKind.RequireEnd, 0, null, null, null, default, null, 0, 0, options);
+
+    internal static Utf8ByteSafeLinearVerifierStep RequireBeginning(Utf8ExecutionNodeKind kind, RegexOptions options) =>
+        new(Utf8ByteSafeLinearVerifierStepKind.RequireBeginning, (byte)kind, null, null, null, default, null, 0, 0, options);
+
+    internal static Utf8ByteSafeLinearVerifierStep RequireEnd(Utf8ExecutionNodeKind kind, RegexOptions options) =>
+        new(Utf8ByteSafeLinearVerifierStepKind.RequireEnd, (byte)kind, null, null, null, default, null, 0, 0, options);
 
     public static Utf8ByteSafeLinearVerifierStep RequireBoundary() =>
         CreateMarker(Utf8ByteSafeLinearVerifierStepKind.RequireBoundary);
@@ -325,14 +334,14 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ExecutionNodeKind.Bol:
             case Utf8ExecutionNodeKind.Beginning:
             case Utf8ExecutionNodeKind.Start:
-                steps.Add(Utf8ByteSafeLinearVerifierStep.RequireBeginning(node.Options));
+                steps.Add(Utf8ByteSafeLinearVerifierStep.RequireBeginning(node.Kind, node.Options));
                 request.Succeeded = true;
                 yield break;
 
             case Utf8ExecutionNodeKind.Eol:
             case Utf8ExecutionNodeKind.EndZ:
             case Utf8ExecutionNodeKind.End:
-                steps.Add(Utf8ByteSafeLinearVerifierStep.RequireEnd(node.Options));
+                steps.Add(Utf8ByteSafeLinearVerifierStep.RequireEnd(node.Kind, node.Options));
                 request.Succeeded = true;
                 yield break;
 
@@ -1125,23 +1134,6 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
     private static bool MatchesSet(byte value, string runtimeSet)
     {
         return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
-    }
-
-    private static bool IsBeginningOfLine(ReadOnlySpan<byte> input, int index, RegexOptions options)
-    {
-        return index == 0 || ((options & RegexOptions.Multiline) != 0 && input[index - 1] == (byte)'\n');
-    }
-
-    private static bool IsEndAnchorMatch(ReadOnlySpan<byte> input, int index, RegexOptions options)
-    {
-        if (index == input.Length)
-        {
-            return true;
-        }
-
-        return ((options & RegexOptions.Multiline) != 0 &&
-                input[index] == (byte)'\n') ||
-               (index == input.Length - 1 && input[index] == (byte)'\n');
     }
 
 }

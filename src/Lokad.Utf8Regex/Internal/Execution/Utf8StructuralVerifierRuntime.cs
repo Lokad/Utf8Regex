@@ -94,7 +94,7 @@ internal sealed class Utf8ByteSafeLazyDfaVerifierRuntime : Utf8StructuralVerifie
     {
         if (Plan.ByteSafeLazyDfaProgram.HasValue)
         {
-            return Plan.ByteSafeLazyDfaProgram.TryMatch(input, matchIndex, out matchedLength);
+            return Plan.ByteSafeLazyDfaProgram.TryMatch(input, matchIndex, budget, out matchedLength);
         }
 
         matchedLength = 0;

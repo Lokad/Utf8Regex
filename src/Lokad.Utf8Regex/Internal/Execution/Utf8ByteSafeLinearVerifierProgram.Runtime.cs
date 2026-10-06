@@ -76,7 +76,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                     {
                         succeeded = step.Kind == Utf8ByteSafeLinearVerifierStepKind.LoopProgram
                             ? step.Min == 0
-                            : TryExecuteAtom(step, input, ref index, ref invocation, out requiresCompatibilityFallback, out breach);
+                            : TryExecuteAtom(step, input, ref index, startIndex, ref invocation, out requiresCompatibilityFallback, out breach);
                         if (breach != Utf8ExecutionLimitKind.None) return false;
                         if (succeeded) { pc++; continue; }
                     }
@@ -115,7 +115,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
     }
 
     private static bool TryExecuteAtom(Utf8ByteSafeLinearVerifierStep step, ReadOnlySpan<byte> input,
-        ref int index, ref Utf8SliceInvocation invocation, out bool fallback, out Utf8ExecutionLimitKind breach)
+        ref int index, int origin, ref Utf8SliceInvocation invocation, out bool fallback, out Utf8ExecutionLimitKind breach)
     {
         fallback = false;
         breach = Utf8ExecutionLimitKind.None;
@@ -178,9 +178,10 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                 }
                 return iterations >= step.Min;
             case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
-                return IsBeginningOfLine(input, index, step.Options);
+                return Utf8ByteSafeAnchor.MatchesBeginning(input, index, step.AnchorKind, step.Options,
+                    invocation.AnchorOriginByte >= 0 ? invocation.AnchorOriginByte : origin);
             case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
-                return IsEndAnchorMatch(input, index, step.Options);
+                return Utf8ByteSafeAnchor.MatchesEnd(input, index, step.AnchorKind, step.Options);
             case Utf8ByteSafeLinearVerifierStepKind.RequireBoundary:
                 return DotNetUtf8WordBoundary.IsBoundary(input, index);
             case Utf8ByteSafeLinearVerifierStepKind.RequireNonBoundary:

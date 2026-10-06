@@ -7,7 +7,7 @@ internal readonly record struct Utf8ByteSafeLazyDfaCompileOutcome(
     public bool Succeeded => Program.HasValue;
 }
 
-internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
+internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
 {
     private const int MaxDfaStates = 256;
     private const int MaxDfaTransitions = 4096;
@@ -18,6 +18,10 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
     private readonly AsciiCharClass[] _transitionSets;
     private readonly int[] _transitionTargets;
     private readonly bool[] _acceptingStates;
+    private readonly Utf8ExecutionNodeKind _beginningKind;
+    private readonly Utf8ExecutionNodeKind _endKind;
+    private readonly RegexOptions _beginningOptions;
+    private readonly RegexOptions _endOptions;
 
     private Utf8ByteSafeLazyDfaVerifierProgram(
         int[] transitionOffsets,
@@ -26,8 +30,14 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         int[] transitionTargets,
         bool[] acceptingStates,
         bool requiresBeginning,
-        bool requiresEnd)
+        bool requiresEnd,
+        Utf8ByteSafeLinearVerifierStep beginningAnchor,
+        Utf8ByteSafeLinearVerifierStep endAnchor)
     {
+        _beginningKind = beginningAnchor.AnchorKind;
+        _endKind = endAnchor.AnchorKind;
+        _beginningOptions = beginningAnchor.Options;
+        _endOptions = endAnchor.Options;
         _transitionOffsets = transitionOffsets;
         _transitionCounts = transitionCounts;
         _transitionSets = transitionSets;
@@ -50,123 +60,71 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
     public static Utf8ByteSafeLazyDfaCompileOutcome Compile(Utf8ByteSafeLinearVerifierProgram linearProgram)
         => new Compiler().Compile(linearProgram);
 
-    public bool TryMatch(ReadOnlySpan<byte> input, int startIndex, out int matchedLength)
-    {
-        matchedLength = 0;
-        if (!HasValue || (uint)startIndex > (uint)input.Length)
-        {
-            return false;
-        }
-
-        if (RequiresBeginning && startIndex != 0)
-        {
-            return false;
-        }
-
-        var state = 0;
-        var lastAcceptLength = _acceptingStates[state] ? 0 : -1;
-        var index = startIndex;
-
-        while ((uint)index < (uint)input.Length)
-        {
-            var nextState = FindTransition(state, input[index]);
-            if (nextState < 0)
-            {
-                break;
-            }
-
-            state = nextState;
-            index++;
-            if (_acceptingStates[state])
-            {
-                lastAcceptLength = index - startIndex;
-            }
-        }
-
-        if (RequiresEnd)
-        {
-            if (index != input.Length || !_acceptingStates[state])
-            {
-                return false;
-            }
-
-            matchedLength = index - startIndex;
-            return true;
-        }
-
-        if (lastAcceptLength < 0)
-        {
-            return false;
-        }
-
-        matchedLength = lastAcceptLength;
-        return true;
-    }
-
-    private int FindTransition(int state, byte value)
-    {
-        var offset = _transitionOffsets[state];
-        var count = _transitionCounts[state];
-        for (var i = 0; i < count; i++)
-        {
-            var transitionIndex = offset + i;
-            if (_transitionSets[transitionIndex].Contains(value))
-            {
-                return _transitionTargets[transitionIndex];
-            }
-        }
-
-        return -1;
-    }
-
-    private sealed class Compiler
+    private sealed partial class Compiler
     {
         private Utf8ByteSafeLazyDfaCompileFailureKind _failureKind;
+        private Utf8ByteSafeLinearVerifierStep _beginningAnchor;
+        private Utf8ByteSafeLinearVerifierStep _endAnchor;
+        // Speculative optimizer limits: rejection keeps the owned linear route.
+        // Immutable graph storage remains separate from public construction policy.
+        private Utf8SliceInvocation _invocation = new(new Utf8ExecutionLimits(1048576, 0, 64 * 1024 * 1024),
+            Regex.InfiniteMatchTimeout, System.Threading.CancellationToken.None);
 
         public Utf8ByteSafeLazyDfaCompileOutcome Compile(Utf8ByteSafeLinearVerifierProgram linearProgram)
         {
-            if (!linearProgram.HasValue)
+            try
             {
-                return new Utf8ByteSafeLazyDfaCompileOutcome(default, Utf8ByteSafeLazyDfaCompileFailureKind.EmptyProgram);
-            }
-
-            if (IsCurrentlyTooComplex(linearProgram.Steps))
-            {
-                if (_failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
+                if (!linearProgram.HasValue)
                 {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.ComplexLoopShape;
+                    return new Utf8ByteSafeLazyDfaCompileOutcome(default, Utf8ByteSafeLazyDfaCompileFailureKind.EmptyProgram);
                 }
 
-                return new Utf8ByteSafeLazyDfaCompileOutcome(default, _failureKind);
-            }
-
-            if (TryCompileDeterministicSequence(linearProgram.Steps, out var deterministicProgram))
-            {
-                return new Utf8ByteSafeLazyDfaCompileOutcome(deterministicProgram, Utf8ByteSafeLazyDfaCompileFailureKind.None);
-            }
-
-            if (!TryCompileNfa(linearProgram.Steps, out var nfa, out var requiresBeginning, out var requiresEnd))
-            {
-                if (_failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
+                if (IsCurrentlyTooComplex(linearProgram.Steps))
                 {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedStep;
+                    if (_failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
+                    {
+                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.ComplexLoopShape;
+                    }
+
+                    return new Utf8ByteSafeLazyDfaCompileOutcome(default, _failureKind);
                 }
 
-                return new Utf8ByteSafeLazyDfaCompileOutcome(default, _failureKind);
-            }
+                if (!TryReadAnchors(linearProgram.Steps))
+                    return new(default, Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedAnchoring);
 
-            var program = BuildDfa(nfa, requiresBeginning, requiresEnd);
-            if (!program.HasValue && _failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
+                if (TryCompileDeterministicSequence(linearProgram.Steps, out var deterministicProgram))
+                {
+                    return new Utf8ByteSafeLazyDfaCompileOutcome(deterministicProgram, Utf8ByteSafeLazyDfaCompileFailureKind.None);
+                }
+
+                if (!TryCompileNfa(linearProgram.Steps, out var nfa, out var requiresBeginning, out var requiresEnd))
+                {
+                    if (_failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
+                    {
+                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedStep;
+                    }
+
+                    return new Utf8ByteSafeLazyDfaCompileOutcome(default, _failureKind);
+                }
+
+                var program = BuildDfa(nfa, requiresBeginning, requiresEnd);
+                if (!program.HasValue && _failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
+                {
+                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
+                }
+
+                return new Utf8ByteSafeLazyDfaCompileOutcome(program, _failureKind);
+            }
+            catch (CompilationBudgetExceededException)
             {
-                _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
+                return new(default, Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded);
             }
-
-            return new Utf8ByteSafeLazyDfaCompileOutcome(program, _failureKind);
         }
     private bool IsCurrentlyTooComplex(IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps)
     {
         for (var i = 0; i < steps.Count; i++)
         {
+            ChargeCompilationStep();
             var step = steps[i];
             switch (step.Kind)
             {
@@ -202,6 +160,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var hasPrevious = false;
         for (var i = 0; i < program.Length; i++)
         {
+            ChargeCompilationStep();
             if (!TryGetDisjointLoopSet(program[i], out var currentSet))
             {
                 return false;
@@ -254,6 +213,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return default;
             }
 
+            ChargeCompilationStep();
             var current = queue.Dequeue();
             var buckets = new Dictionary<TransitionKey, HashSet<int>>(TransitionKeyComparer.Instance);
 
@@ -285,7 +245,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 if (!stateMap.TryGetValue(closure, out var targetIndex))
                 {
                     targetIndex = dfaStateSets.Count;
-                    if (targetIndex > MaxDfaStates)
+                    if (targetIndex >= MaxDfaStates)
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
                         return default;
@@ -297,6 +257,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     queue.Enqueue(closure);
                 }
 
+                if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
                 transitionSets.Add(orderedBuckets[i].Key.Set);
                 transitionTargets.Add(targetIndex);
                 if (transitionSets.Count > MaxDfaTransitions)
@@ -314,7 +275,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             [.. transitionTargets],
             [.. accepting],
             requiresBeginning,
-            requiresEnd);
+            requiresEnd, _beginningAnchor, _endAnchor);
     }
 
     private NfaStateSet ComputeClosure(int[] startStates, NfaGraph nfa)
@@ -323,6 +284,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var stack = new Stack<int>(startStates);
         while (stack.Count > 0)
         {
+            ChargeCompilationStep();
             var state = stack.Pop();
             if (!visited.Add(state))
             {
@@ -357,7 +319,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var accepting = new List<bool>();
         var stateIndex = 0;
 
-        accepting.Add(false);
+        AddDfaState(accepting);
 
         for (var stepIndex = 0; stepIndex < steps.Count; stepIndex++)
         {
@@ -393,7 +355,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                         [.. transitionTargets],
                         [.. accepting],
                         requiresBeginning,
-                        requiresEnd);
+                        requiresEnd, _beginningAnchor, _endAnchor);
                     return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
@@ -611,6 +573,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             return false;
         }
 
+        if (endExclusive - start >= MaxDfaStates) return false;
         var payloadSteps = steps.Skip(start).Take(endExclusive - start).ToArray();
         if (payloadSteps.Length == 0)
         {
@@ -633,6 +596,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             coreSteps = payloadSteps;
         }
 
+        if (coreSteps.Length >= MaxDfaStates) return false;
         var loopSets = new AsciiCharClass[coreSteps.Length];
         for (var i = 0; i < coreSteps.Length; i++)
         {
@@ -661,15 +625,15 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var transitionCounts = new List<int> { 0 };
         var transitionSets = new List<AsciiCharClass>();
         var transitionTargets = new List<int>();
-        var accepting = new List<bool> { false };
+        var accepting = new List<bool>();
+        AddDfaState(accepting);
 
         var previousStageState = 0;
         for (var i = 0; i < coreSteps.Length; i++)
         {
-            var stageState = accepting.Count;
+            var stageState = AddDfaState(accepting);
             transitionOffsets.Add(0);
             transitionCounts.Add(0);
-            accepting.Add(false);
 
             AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
             AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
@@ -707,7 +671,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             [.. transitionTargets],
             [.. accepting],
             requiresBeginning,
-            requiresEnd);
+            requiresEnd, _beginningAnchor, _endAnchor);
         return true;
     }
 
@@ -740,54 +704,64 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         int startIndex,
         out AsciiCharClass set)
     {
-        for (var i = startIndex; i < steps.Count; i++)
+        while (true)
         {
-            var step = steps[i];
-            switch (step.Kind)
+            var descended = false;
+            for (var i = startIndex; i < steps.Count; i++)
             {
-                case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
-                case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
-                case Utf8ByteSafeLinearVerifierStepKind.Accept:
-                    continue;
+                ChargeCompilationStep();
+                var step = steps[i];
+                switch (step.Kind)
+                {
+                    case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
+                    case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
+                    case Utf8ByteSafeLinearVerifierStepKind.Accept:
+                        continue;
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                    set = AsciiCharClass.ForByte(step.Value);
-                    return true;
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
+                        set = AsciiCharClass.ForByte(step.Value);
+                        return true;
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchText when step.Text is { Length: > 0 } text:
-                    set = AsciiCharClass.ForByte(text[0]);
-                    return true;
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchText when step.Text is { Length: > 0 } text:
+                        set = AsciiCharClass.ForByte(text[0]);
+                        return true;
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchSet when step.Set is not null:
-                    return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchSet when step.Set is not null:
+                        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                    return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
+                        return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                    set = AsciiCharClass.ForByte(step.Value);
-                    return true;
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
+                        set = AsciiCharClass.ForByte(step.Value);
+                        return true;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopSet when step.Set is not null:
-                    return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopSet when step.Set is not null:
+                        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                    return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
+                        return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
-                    step.Min == 0 &&
-                    step.Max == 1 &&
-                    step.Program is { Length: > 0 } optionalProgram:
-                    return TryGetFirstDeterministicTransitionSet(optionalProgram, 0, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
+                        step.Min == 0 &&
+                        step.Max == 1 &&
+                        step.Program is { Length: > 0 } optionalProgram:
+                        steps = optionalProgram;
+                        startIndex = 0;
+                        descended = true;
+                        break;
 
-                default:
-                    set = AsciiCharClass.Empty;
-                    return false;
+                    default:
+                        set = AsciiCharClass.Empty;
+                        return false;
+                }
+                if (descended) break;
             }
-        }
+            if (descended) continue;
 
-        set = AsciiCharClass.Empty;
-        return false;
+            set = AsciiCharClass.Empty;
+            return false;
+        }
     }
 
     private bool TryAppendDeterministicOptionalProgram(
@@ -941,6 +915,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
         for (var i = 0; i < program.Length; i++)
         {
+            ChargeCompilationStep();
             if (!IsSupportedDeterministicSubProgramStep(program[i]))
             {
                 return false;
@@ -982,6 +957,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var hasPrevious = false;
         for (var i = 0; i < steps.Count; i++)
         {
+            ChargeCompilationStep();
             if (!TryGetDisjointLoopSet(steps[i], out var currentSet))
             {
                 return false;
@@ -1023,6 +999,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             return false;
         }
 
+        if (steps.Count >= MaxDfaStates) return false;
         var loopSets = new AsciiCharClass[steps.Count];
         for (var i = 0; i < steps.Count; i++)
         {
@@ -1051,10 +1028,9 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var previousStageState = stateIndex;
         for (var i = 0; i < loopSets.Length; i++)
         {
-            var stageState = accepting.Count;
+            var stageState = AddDfaState(accepting);
             transitionOffsets.Add(0);
             transitionCounts.Add(0);
-            accepting.Add(false);
 
             AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
             AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
@@ -1100,19 +1076,20 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
+        ChargeCompilationStep();
         while (transitionOffsets.Count <= stateIndex)
         {
             transitionOffsets.Add(0);
             transitionCounts.Add(0);
         }
 
-        var nextState = accepting.Count;
-        accepting.Add(false);
+        var nextState = AddDfaState(accepting);
         if (transitionCounts[stateIndex] == 0)
         {
             transitionOffsets[stateIndex] = transitionSets.Count;
             transitionCounts[stateIndex] = 1;
-            transitionSets.Add(transitionSet);
+            if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
+        transitionSets.Add(transitionSet);
             transitionTargets.Add(nextState);
             return nextState;
         }
@@ -1137,6 +1114,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
+        ChargeCompilationStep();
         while (transitionOffsets.Count <= stateIndex)
         {
             transitionOffsets.Add(0);
@@ -1158,58 +1136,10 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             }
         }
 
+        if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
         transitionSets.Add(transitionSet);
         transitionTargets.Add(targetState);
         transitionCounts[stateIndex] = count + 1;
-    }
-
-    private bool TryCompileNfa(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        out NfaGraph graph,
-        out bool requiresBeginning,
-        out bool requiresEnd)
-    {
-        try
-        {
-            requiresBeginning = false;
-            requiresEnd = false;
-            var states = new List<NfaState>
-            {
-                new(),
-            };
-
-            var current = 0;
-            for (var i = 0; i < steps.Count; i++)
-            {
-                var step = steps[i];
-                if (!TryAppendNfaStep(states, ref current, step, isTopLevel: true, ref requiresBeginning, ref requiresEnd, isLastBeforeAccept: i == steps.Count - 2 && steps[^1].Kind == Utf8ByteSafeLinearVerifierStepKind.Accept))
-                {
-                    graph = default;
-                    if (_failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
-                    {
-                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedStep;
-                    }
-                    return false;
-                }
-
-                if (step.Kind == Utf8ByteSafeLinearVerifierStepKind.Accept)
-                {
-                    graph = new NfaGraph([.. states], current);
-                    return true;
-                }
-            }
-
-            graph = default;
-            return false;
-        }
-        catch (NfaBudgetExceededException)
-        {
-            _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
-            graph = default;
-            requiresBeginning = false;
-            requiresEnd = false;
-            return false;
-        }
     }
 
     private bool TryAppendNfaStep(
@@ -1221,6 +1151,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         ref bool requiresEnd,
         bool isLastBeforeAccept)
     {
+        ChargeCompilationStep();
         switch (step.Kind)
         {
             case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
@@ -1282,6 +1213,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopText:
+                if (step.Text.Length >= MaxNfaStates) throw new CompilationBudgetExceededException();
                 current = AppendLoop(states, current, step.Text.Select(static value => AsciiCharClass.ForByte(value)).ToArray(), step.Min, step.Max);
                 return true;
 
@@ -1317,10 +1249,6 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 current = AppendAlternativeLoop(states, current, step.Alternatives, step.Min, step.Max);
                 return true;
 
-            case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                current = AppendProgramLoop(states, current, step.Program, step.Min, step.Max);
-                return true;
-
             default:
                 _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedStep;
                 return false;
@@ -1342,6 +1270,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
     {
         for (var i = 0; i < min; i++)
         {
+            ChargeCompilationStep();
             current = AppendSequence(states, current, units);
         }
 
@@ -1358,6 +1287,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
         for (var i = min; i < max; i++)
         {
+            ChargeCompilationStep();
             states[current].EpsilonTransitions.Add(exitState);
             current = AppendSequence(states, current, units);
         }
@@ -1386,6 +1316,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
         for (var i = 0; i < alternatives.Length; i++)
         {
+            ChargeCompilationStep();
             var branchState = AddState(states);
             states[current].EpsilonTransitions.Add(branchState);
             var branchCurrent = branchState;
@@ -1404,6 +1335,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
     {
         for (var i = 0; i < min; i++)
         {
+            ChargeCompilationStep();
             current = AppendAlternatives(states, current, alternatives, optional: false);
         }
 
@@ -1420,59 +1352,13 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
         for (var i = min; i < max; i++)
         {
+            ChargeCompilationStep();
             states[current].EpsilonTransitions.Add(exitState);
             current = AppendAlternatives(states, current, alternatives, optional: false);
         }
 
         states[current].EpsilonTransitions.Add(exitState);
         return exitState;
-    }
-
-    private int AppendProgramLoop(List<NfaState> states, int current, Utf8ByteSafeLinearVerifierStep[] program, int min, int max)
-    {
-        for (var i = 0; i < min; i++)
-        {
-            current = AppendProgram(states, current, program);
-        }
-
-        var exitState = AddState(states);
-        if (max < 0)
-        {
-            states[current].EpsilonTransitions.Add(exitState);
-            var loopStart = current;
-            current = AppendProgram(states, current, program);
-            states[current].EpsilonTransitions.Add(loopStart);
-            states[current].EpsilonTransitions.Add(exitState);
-            return exitState;
-        }
-
-        for (var i = min; i < max; i++)
-        {
-            states[current].EpsilonTransitions.Add(exitState);
-            current = AppendProgram(states, current, program);
-        }
-
-        states[current].EpsilonTransitions.Add(exitState);
-        return exitState;
-    }
-
-    private int AppendProgram(List<NfaState> states, int current, Utf8ByteSafeLinearVerifierStep[] program)
-    {
-        var requiresBeginning = false;
-        var requiresEnd = false;
-        for (var i = 0; i < program.Length; i++)
-        {
-            if (!TryAppendNfaStep(states, ref current, program[i], isTopLevel: false, ref requiresBeginning, ref requiresEnd, isLastBeforeAccept: false))
-            {
-                if (_failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedSubProgram;
-                }
-                throw new InvalidOperationException($"Unsupported sub-program step {program[i].Kind} in lazy DFA compiler.");
-            }
-        }
-
-        return current;
     }
 
     private int AppendSet(List<NfaState> states, int current, AsciiCharClass set)
@@ -1484,9 +1370,10 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private int AddState(List<NfaState> states)
     {
+        ChargeCompilationStep();
         if (states.Count >= MaxNfaStates)
         {
-            throw new NfaBudgetExceededException();
+            throw new CompilationBudgetExceededException();
         }
 
         var index = states.Count;
@@ -1562,7 +1449,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private readonly record struct NfaGraph(NfaState[] States, int AcceptState);
 
-    private sealed class NfaBudgetExceededException : Exception;
+    private sealed class CompilationBudgetExceededException : Exception;
     }
 }
 
