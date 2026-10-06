@@ -7333,6 +7333,7 @@ internal static partial class BenchmarkInspectReporter
         PreparedSearchMatch match)
     {
         var plan = regex.Inspection.SearchPlan;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         return Utf8BackendInstructionExecutor.ProjectLiteralFamilyMatch(
             plan.EnumerationOperation,
             input,
@@ -7340,6 +7341,7 @@ internal static partial class BenchmarkInspectReporter
             consumedBytes: 0,
             consumedUtf16: 0,
             in match,
+            ref invocation,
             out _,
             out _);
     }
@@ -8955,6 +8957,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteExactUtf8LiteralFamilyBoundaryFilteredIndexSum(Utf8SearchPlan plan, byte[] input)
     {
         var sum = 0;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         var consumedBytes = 0;
         var consumedUtf16 = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
@@ -8973,6 +8976,7 @@ internal static partial class BenchmarkInspectReporter
                 consumedBytes,
                 consumedUtf16,
                 match,
+                ref invocation,
                 out consumedBytes,
                 out consumedUtf16);
             sum += valueMatch.IndexInUtf16;
@@ -9014,6 +9018,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(Utf8SearchPlan plan, byte[] input, bool pollDeadline)
     {
         var sum = 0;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         var consumedBytes = 0;
         var consumedUtf16 = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
@@ -9048,6 +9053,7 @@ internal static partial class BenchmarkInspectReporter
                 consumedBytes,
                 consumedUtf16,
                 match,
+                ref invocation,
                 out consumedBytes,
                 out consumedUtf16);
             sum += valueMatch.IndexInUtf16;

@@ -14,6 +14,7 @@ internal static class Utf8BackendInstructionExecutor
         int consumedBytes,
         int consumedUtf16,
         in PreparedSearchMatch match,
+        ref Utf8SliceInvocation invocation,
         out int nextConsumedBytes,
         out int nextConsumedUtf16)
     {
@@ -24,6 +25,7 @@ internal static class Utf8BackendInstructionExecutor
             consumedBytes,
             consumedUtf16,
             match,
+            ref invocation,
             out nextConsumedBytes,
             out nextConsumedUtf16);
     }
@@ -36,6 +38,7 @@ internal static class Utf8BackendInstructionExecutor
         int matchIndex,
         int matchedByteLength,
         int matchedUtf16Length,
+        ref Utf8SliceInvocation invocation,
         out int nextConsumedBytes,
         out int nextConsumedUtf16)
     {
@@ -47,6 +50,7 @@ internal static class Utf8BackendInstructionExecutor
             matchIndex,
             matchedByteLength,
             matchedUtf16Length,
+            ref invocation,
             out nextConsumedBytes,
             out nextConsumedUtf16);
     }
@@ -106,6 +110,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8ExecutionDeadline budget,
         bool rightToLeft)
     {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         if (rightToLeft)
         {
             budget.Step();
@@ -118,7 +123,7 @@ internal static class Utf8BackendInstructionExecutor
             var matchedUtf16Length = utf16Lengths is { Length: > 0 } &&
                 (uint)rightToLeftMatch.LiteralId < (uint)utf16Lengths.Length
                 ? utf16Lengths[rightToLeftMatch.LiteralId]
-                : Utf8Validation.Validate(input.Slice(rightToLeftMatch.Index, rightToLeftMatch.Length)).Utf16Length;
+                : Utf8Validation.Validate(input.Slice(rightToLeftMatch.Index, rightToLeftMatch.Length), ref invocation).Utf16Length;
 
             return ProjectMatch(
                 program,
@@ -128,6 +133,7 @@ internal static class Utf8BackendInstructionExecutor
                 rightToLeftMatch.Index,
                 rightToLeftMatch.Length,
                 matchedUtf16Length,
+                ref invocation,
                 out _,
                 out _);
         }
@@ -138,7 +144,7 @@ internal static class Utf8BackendInstructionExecutor
             return Utf8ValueMatch.NoMatch;
         }
 
-        return ProjectLiteralFamilyMatch(program, input, alternateLiteralUtf16Lengths, 0, 0, match, out _, out _);
+        return ProjectLiteralFamilyMatch(program, input, alternateLiteralUtf16Lengths, 0, 0, match, ref invocation, out _, out _);
     }
 
     public static bool TryFindNextFallbackVerifiedMatch(

@@ -52,6 +52,8 @@ internal ref struct Utf8OperationMatchCursor
     private int _baseByteOffset;
     private int _baseUtf16Offset;
     private Utf8SliceProgram? _sliceProgram;
+    // Owned VM state and native projection share this cursor's invocation.
+    // Native scan-wide token/finite-policy routing and accounting remain open.
     private Utf8SliceInvocation _sliceInvocation;
     private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
@@ -73,6 +75,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = literal.Length;
         // This nonempty-literal mode projects incrementally and never uses the
         // whole-subject UTF-16 length owned by the empty-literal mode.
@@ -117,8 +120,9 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = executionKind == NativeExecutionKind.ExactUtf8Literal
-            ? Utf8Validation.Validate(literal).Utf16Length
+            ? Utf8Validation.Validate(literal, ref _sliceInvocation).Utf16Length
             : literal.Length;
         _totalUtf16Length = 0;
         _projectionPlan = default;
@@ -230,6 +234,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
         _asciiInput = asciiInput;
         _totalUtf16Length = input.Length;
@@ -467,6 +472,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = literal.Length;
         _totalUtf16Length = input.Length;
         _projectionPlan = default;
@@ -484,7 +490,6 @@ internal ref struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = null;
-        _sliceInvocation = default;
         _sliceUnit = 0;
         _sliceOriginUnit = 0;
         _emittedKernelMatcher = null;
@@ -508,6 +513,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = boundaryMap;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
         _totalUtf16Length = input.Length;
         _projectionPlan = default;
@@ -525,7 +531,6 @@ internal ref struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = null;
-        _sliceInvocation = default;
         _sliceUnit = 0;
         _sliceOriginUnit = 0;
         _emittedKernelMatcher = null;
@@ -663,7 +668,7 @@ internal ref struct Utf8OperationMatchCursor
             var suffixStartUtf16 = suffixStart;
             if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {
-                suffixStartUtf16 = Utf8Validation.Validate(_input[..suffixStart]).Utf16Length;
+                suffixStartUtf16 = Utf8Validation.Validate(_input[..suffixStart], ref _sliceInvocation).Utf16Length;
             }
 
             _current = new Utf8ValueMatch(true, true, suffixStartUtf16, suffixLiteral.Length, suffixStart, suffixLiteral.Length);
@@ -705,7 +710,7 @@ internal ref struct Utf8OperationMatchCursor
             var foldedSuffixStartUtf16 = foldedSuffixStart;
             if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {
-                foldedSuffixStartUtf16 = Utf8Validation.Validate(_input[..foldedSuffixStart]).Utf16Length;
+                foldedSuffixStartUtf16 = Utf8Validation.Validate(_input[..foldedSuffixStart], ref _sliceInvocation).Utf16Length;
             }
 
             _current = new Utf8ValueMatch(true, true, foldedSuffixStartUtf16, foldedSuffixLiteral.Length, foldedSuffixStart, foldedSuffixLiteral.Length);
@@ -801,6 +806,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = literalUtf16Length;
         _totalUtf16Length = input.Length;
         _projectionPlan = searchPlan.EnumerationOperation.Projection;
@@ -845,6 +851,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
         _totalUtf16Length = input.Length;
         var useByteOnlyProjection = inputIsAscii &&
@@ -884,6 +891,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = boundaryMap;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
         _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
@@ -917,6 +925,7 @@ internal ref struct Utf8OperationMatchCursor
         _input = input;
         _boundaryMap = null;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
         _totalUtf16Length = input.Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly);
@@ -944,6 +953,7 @@ internal ref struct Utf8OperationMatchCursor
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _input = input;
         _budget = budget;
+        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _emittedKernelMatcher = emittedKernelMatcher;
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
@@ -997,6 +1007,7 @@ internal ref struct Utf8OperationMatchCursor
                 _consumed + index,
                 literal.Length,
                 literal.Length,
+                ref _sliceInvocation,
                 out _consumed,
                 out _consumedUtf16);
             _remaining = _input[_consumed..];
@@ -1049,6 +1060,7 @@ internal ref struct Utf8OperationMatchCursor
                 _consumed + index,
                 literal.Length,
                 literal.Length,
+                ref _sliceInvocation,
                 out _consumed,
                 out _consumedUtf16);
             _remaining = _input[_consumed..];
@@ -1104,6 +1116,7 @@ internal ref struct Utf8OperationMatchCursor
                 index,
                 literal.Length,
                 literal.Length,
+                ref _sliceInvocation,
                 out _,
                 out _);
             _remaining = _remaining[..index];
@@ -1153,6 +1166,7 @@ internal ref struct Utf8OperationMatchCursor
                 index,
                 literal.Length,
                 literal.Length,
+                ref _sliceInvocation,
                 out _,
                 out _);
             _remaining = _remaining[..index];
@@ -1203,6 +1217,7 @@ internal ref struct Utf8OperationMatchCursor
                 index,
                 literal.Length,
                 _literalUtf16Length,
+                ref _sliceInvocation,
                 out _,
                 out _);
             _remaining = _remaining[..index];
@@ -1250,6 +1265,7 @@ internal ref struct Utf8OperationMatchCursor
             _consumed + index,
             literal.Length,
             _literalUtf16Length,
+            ref _sliceInvocation,
             out _consumed,
             out _consumedUtf16);
         _remaining = _input[_consumed..];
@@ -1304,6 +1320,7 @@ internal ref struct Utf8OperationMatchCursor
             _consumed,
             _consumedUtf16,
             match,
+            ref _sliceInvocation,
             out _consumed,
             out _consumedUtf16);
         _remaining = _input[_consumed..];
@@ -1332,6 +1349,7 @@ internal ref struct Utf8OperationMatchCursor
             match.Index,
             match.Length,
             match.Length,
+            ref _sliceInvocation,
             out _consumed,
             out _consumedUtf16);
         _remaining = _input[_consumed..];
@@ -1429,6 +1447,7 @@ internal ref struct Utf8OperationMatchCursor
                 _consumed + relative,
                 matchLength,
                 matchLength,
+                ref _sliceInvocation,
                 out _consumed,
                 out _consumedUtf16);
             _remaining = _input[_consumed..];
@@ -1579,6 +1598,7 @@ internal ref struct Utf8OperationMatchCursor
                 match.Index,
                 match.Length,
                 match.Length,
+                ref _sliceInvocation,
                 out _consumed,
                 out _consumedUtf16);
             return true;

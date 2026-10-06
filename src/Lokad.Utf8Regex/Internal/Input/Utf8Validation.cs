@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
-internal static class Utf8Validation
+internal static partial class Utf8Validation
 {
     private static readonly Encoding s_strictEncoding = new UTF8Encoding(
         encoderShouldEmitUTF8Identifier: false,

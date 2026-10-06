@@ -4,6 +4,12 @@
 
 ### Owned UTF-16 execution
 
+- Native match projection retains its cursor or operation deadline through UTF-8
+  gap and match-length validation. Metered validation uses bounded scalar-aligned
+  blocks, preserves invalid-input offsets, and checks before publishing results.
+  The shared validator accepts the caller invocation for work, token and deadline
+  checks; complete native scan and public policy accounting remain open.
+
 - ASCII branch lowering uses explicit continuations while preserving its existing
   depth boundary, branch order, finite-repeat greediness and assertion offsets.
   Literal materialization and branch payload copies obey the speculative work

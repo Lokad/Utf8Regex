@@ -1736,7 +1736,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
                 return Utf8ValueMatch.NoMatch;
             }
 
-            var matchedUtf16Length = Utf8Validation.Validate(input.Slice(index, matchedByteLength)).Utf16Length;
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var matchedUtf16Length = Utf8Validation.Validate(input.Slice(index, matchedByteLength), ref invocation).Utf16Length;
             return Utf8BackendInstructionExecutor.ProjectMatch(
                 _firstMatchProgram,
                 input,
@@ -1745,6 +1746,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
                 index,
                 matchedByteLength,
                 matchedUtf16Length,
+                ref invocation,
                 out _,
                 out _);
         }
