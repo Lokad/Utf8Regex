@@ -4,6 +4,13 @@
 
 ### Owned UTF-16 execution
 
+- Native literal-family enumeration retains one invocation through bounded branch
+  search, full-subject confirmation and projection. Deadline-aware family Count,
+  IsMatch and Match also use bounded scans; unlimited prepared-search lanes remain.
+  Tokens and cumulative work survive successive matches, and cursor state is
+  published only after successful projection. Public finite-policy routing and
+  other native families remain open.
+
 - Native single-literal cursors share one invocation through search, bounded
   comparisons, boundary confirmation and projection, including successive matches.
   Boundary assertions inspect the original subject in both directions. Token-aware

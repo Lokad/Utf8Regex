@@ -825,6 +825,14 @@ internal ref struct Utf8OperationMatchCursor
         this = new Utf8OperationMatchCursor(input, regexPlan, NativeExecutionKind.ExactUtf8Literals, budget);
     }
 
+    // The caller transfers the state already used for whole-subject validation.
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
+        bool inputIsAscii, Utf8SliceInvocation invocation)
+        : this(input, regexPlan, regexPlan.ExecutionKind, inputIsAscii, invocation.Budget.Deadline)
+    {
+        _sliceInvocation = invocation;
+    }
+
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
         : this(input, regexPlan, executionKind, Utf8InputAnalyzer.IsAscii(input), budget)
     {
@@ -956,6 +964,7 @@ internal ref struct Utf8OperationMatchCursor
         _consumed = startByteOffset;
         _consumedUtf16 = startUtf16Offset;
         _deterministicScanState = new Utf8AsciiDeterministicScanState(startByteOffset, startByteOffset);
+        _multiLiteralScanState = new PreparedMultiLiteralScanState(startByteOffset, startByteOffset, 0);
         return this;
     }
 
@@ -1033,60 +1042,43 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextExactUtf8Literals()
     {
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(
-                in searchPlan,
-                in _program,
-                _input,
-                ref _multiLiteralScanState,
-                _budget,
-                out var match))
-        {
-            return false;
-        }
-
-        _lastLiteralFamilyBranchId = match.LiteralId;
-        _current = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
-            _projectionPlan,
-            _input,
-            _alternateLiteralUtf16Lengths,
-            _consumed,
-            _consumedUtf16,
-            match,
-            ref _sliceInvocation,
-            out _consumed,
-            out _consumedUtf16);
-        _remaining = _input[_consumed..];
-        return true;
+        var breach = TryMoveNextLiteralFamily(out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+        return found;
     }
 
     private bool MoveNextAsciiIgnoreCaseLiterals()
+        => MoveNextExactUtf8Literals();
+
+    internal Utf8ExecutionLimitKind TryMoveNextLiteralFamily(out bool found)
     {
+        found = false;
+        _current = Utf8ValueMatch.NoMatch;
+        var pendingState = _multiLiteralScanState;
         ref readonly var searchPlan = ref _plans.SearchPlan;
-        if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(
-                in searchPlan,
-                in _program,
-                _input,
-                ref _multiLiteralScanState,
-                _budget,
-                out var match))
+        var breach = Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(searchPlan, _program,
+            _input, ref pendingState, ref _sliceInvocation, out var match, out var discovered);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (!discovered)
         {
-            return false;
+            _multiLiteralScanState = pendingState;
+            return Utf8ExecutionLimitKind.None;
         }
+        var units = _alternateLiteralUtf16Lengths is { } lengths && (uint)match.LiteralId < (uint)lengths.Length
+            ? lengths[match.LiteralId] : match.Length;
+        breach = Utf8ProjectionExecutor.TryProjectMatch(_projectionPlan, _input,
+            _consumed, _consumedUtf16, match.Index, match.Length, units,
+            ref _sliceInvocation, out var projected, out var bytes, out var utf16);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _multiLiteralScanState = pendingState;
         _lastLiteralFamilyBranchId = match.LiteralId;
-        _current = Utf8ProjectionExecutor.ProjectMatch(
-            _projectionPlan,
-            _input,
-            _consumed,
-            _consumedUtf16,
-            match.Index,
-            match.Length,
-            match.Length,
-            ref _sliceInvocation,
-            out _consumed,
-            out _consumedUtf16);
+        _current = projected;
+        _consumed = bytes;
+        _consumedUtf16 = utf16;
         _remaining = _input[_consumed..];
-        return true;
+        found = true;
+        return Utf8ExecutionLimitKind.None;
     }
 
     private bool MoveNextSmallAsciiLiteralFamily()

@@ -126,6 +126,15 @@ internal static class Utf8SearchStrategyExecutor
             out match);
     }
 
+    internal static Utf8ExecutionLimitKind TryFindNextLiteralFamilyMatch(
+        in Utf8SearchPlan plan, in Utf8SearchOperationPlan operation,
+        ReadOnlySpan<byte> input, ref PreparedMultiLiteralScanState state,
+        ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
+    {
+        return Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(
+            plan, operation, input, ref state, ref invocation, out match, out found);
+    }
+
     public static int CountLiteralFamily(Utf8SearchPlan plan, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         return Utf8BackendInstructionExecutor.CountLiteralFamily(

@@ -63,6 +63,17 @@ internal static class Utf8BackendInstructionExecutor
         Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
+        // Legacy diagnostic callers still supply only a deadline. Each call is
+        // bounded; production cursors pass their retained invocation below.
+        if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = TryFindNextLiteralFamilyMatch(plan, program, input, ref state,
+                ref invocation, out match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return found;
+        }
         if (plan.HasAlternateLiteralPrefixOverlap || plan.HasAlternateLiteralProperStartOverlap)
         {
             return Utf8SearchPortfolioRuntime.TryFindNextOverlappingLiteralFamilyMatch(
@@ -92,6 +103,31 @@ internal static class Utf8BackendInstructionExecutor
         return Utf8SearchPortfolioRuntime.CountLiteralFamily(plan, program, input, budget);
     }
 
+    internal static Utf8ExecutionLimitKind TryFindNextLiteralFamilyMatch(
+        in Utf8SearchPlan plan, in Utf8SearchOperationPlan program,
+        ReadOnlySpan<byte> input, ref PreparedMultiLiteralScanState state,
+        ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
+    {
+        match = default;
+        found = false;
+        var pendingState = state;
+        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+        {
+            found = TryFindNextLiteralFamilyMatch(plan, program, input, ref pendingState,
+                invocation.Budget.Deadline, out match);
+        }
+        else
+        {
+            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, state.NextStart,
+                input.Length, false, ref invocation, out match, out found);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var next = found ? match.Index + match.Length : input.Length;
+            pendingState = new PreparedMultiLiteralScanState(next, next, 0);
+        }
+        state = pendingState;
+        return Utf8ExecutionLimitKind.None;
+    }
+
     public static bool IsMatchLiteralFamily(
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan program,
@@ -100,6 +136,25 @@ internal static class Utf8BackendInstructionExecutor
         bool rightToLeft)
     {
         return Utf8SearchPortfolioRuntime.IsMatchLiteralFamily(plan, program, input, budget, rightToLeft);
+    }
+
+    internal static Utf8ExecutionLimitKind TryCountLiteralFamily(in Utf8SearchPlan plan,
+        ReadOnlySpan<byte> input, bool reverse, ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        var total = 0;
+        var low = 0;
+        var high = input.Length;
+        while (true)
+        {
+            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, low, high, reverse,
+                ref invocation, out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (!found) { count = total; return Utf8ExecutionLimitKind.None; }
+            total++;
+            if (reverse) high = match.Index;
+            else low = match.Index + match.Length;
+        }
     }
 
     public static Utf8ValueMatch MatchLiteralFamily(
@@ -111,35 +166,22 @@ internal static class Utf8BackendInstructionExecutor
         bool rightToLeft)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        if (rightToLeft)
+        if (rightToLeft || !invocation.IsUnmetered || invocation.CheckpointHook is not null)
         {
-            budget.Step();
-            if (!Utf8SearchExecutor.TryFindLastMatch(plan, input, input.Length, out var rightToLeftMatch))
-            {
-                return Utf8ValueMatch.NoMatch;
-            }
-
-            var utf16Lengths = alternateLiteralUtf16Lengths;
-            var matchedUtf16Length = utf16Lengths is { Length: > 0 } &&
-                (uint)rightToLeftMatch.LiteralId < (uint)utf16Lengths.Length
-                ? utf16Lengths[rightToLeftMatch.LiteralId]
-                : Utf8Validation.Validate(input.Slice(rightToLeftMatch.Index, rightToLeftMatch.Length), ref invocation).Utf16Length;
-
-            return ProjectMatch(
-                program,
-                input,
-                0,
-                0,
-                rightToLeftMatch.Index,
-                rightToLeftMatch.Length,
-                matchedUtf16Length,
-                ref invocation,
-                out _,
-                out _);
+            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
+                rightToLeft, ref invocation, out var selected, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            if (!found) return Utf8ValueMatch.NoMatch;
+            return ProjectLiteralFamilyMatch(program, input, alternateLiteralUtf16Lengths,
+                0, 0, selected, ref invocation, out _, out _);
         }
 
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
-        if (!TryFindNextLiteralFamilyMatch(plan, program, input, ref state, budget, out var match))
+        var kind = TryFindNextLiteralFamilyMatch(plan, program, input, ref state, ref invocation, out var match, out var exists);
+        if (kind != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal-family execution exceeded {kind}.");
+        if (!exists)
         {
             return Utf8ValueMatch.NoMatch;
         }

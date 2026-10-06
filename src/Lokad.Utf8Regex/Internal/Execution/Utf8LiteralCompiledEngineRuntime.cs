@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Buffers;
@@ -1328,6 +1329,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private int CountExactUtf8Literals(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
+        if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _countProgram, input, budget);
         if (budget.IsInfinite &&
             _shortAsciiLiteralFamilyCounter.HasValue)
         {
@@ -1640,6 +1643,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private int CountAsciiLiteralIgnoreCaseLiterals(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
+        if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _countProgram, input, budget);
         if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
@@ -1678,6 +1683,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private bool IsMatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
+        if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+            return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive)
@@ -1708,6 +1715,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private Utf8ValueMatch MatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
+        if (rightToLeft || !budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+            return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input,
+                _regexPlan.SearchPlan.AlternateLiteralUtf16Lengths, budget, rightToLeft);
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive)

@@ -755,6 +755,14 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (TryStartNativeFamilyInvocation(input, cancellationToken, out var invocation))
+        {
+            var breach = Utf8SearchExecutor.TryFindLiteralFamily(_preparedRegex.SearchPlan, input, 0, input.Length,
+                UsesRightToLeft(), ref invocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return found;
+        }
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
@@ -1025,6 +1033,14 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (TryStartNativeFamilyInvocation(input, cancellationToken, out var invocation))
+        {
+            var breach = Utf8BackendInstructionExecutor.TryCountLiteralFamily(_preparedRegex.SearchPlan,
+                input, UsesRightToLeft(), ref invocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return count;
+        }
         // Retain the qualified Unicode literal Count kernel. Other operations
         // can now use the newly admitted owned program for the same pattern.
         if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
@@ -1418,6 +1434,16 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (TryStartNativeFamilyInvocation(input, cancellationToken, out var invocation))
+        {
+            var plan = _preparedRegex.SearchPlan;
+            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
+                UsesRightToLeft(), ref invocation, out var selected, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return found ? Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(plan.ProjectionPlan, input,
+                plan.AlternateLiteralUtf16Lengths, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
+        }
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
@@ -2870,6 +2896,23 @@ public sealed partial class Utf8Regex
                 return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
                     input, _preparedRegex, validation.IsAscii, UsesRightToLeft(), invocation))
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
+
+        if (!UsesRightToLeft() && !RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
+            _unitSliceProgram is not { HasSurrogateLiteral: true } &&
+            _unitSliceProgram is not ({ HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true }) &&
+            (_unitSliceProgram is not { IgnoreCase: true } ||
+                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            try
+            {
+                var validation = Utf8Validation.Validate(input, ref invocation);
+                return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
+                    input, _preparedRegex, validation.IsAscii, invocation)).WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }

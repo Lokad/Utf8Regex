@@ -109,6 +109,15 @@ internal static class Utf8SearchPortfolioRuntime
         Utf8ExecutionDeadline budget,
         bool rightToLeft)
     {
+        if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
+                rightToLeft, ref invocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return found;
+        }
         if (!plan.HasPreparedSearcher)
         {
             return false;
@@ -160,6 +169,14 @@ internal static class Utf8SearchPortfolioRuntime
         ReadOnlySpan<byte> input,
         Utf8ExecutionDeadline budget)
     {
+        if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = Utf8BackendInstructionExecutor.TryCountLiteralFamily(plan, input, false, ref invocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return count;
+        }
         if (!plan.HasPreparedSearcher)
         {
             return 0;
