@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8LinearRuntimeContinuationTests
 {
-    private static Utf8ByteSafeLinearVerifierProgram Nested(int depth, bool failedTrial)
+    internal static Utf8ByteSafeLinearVerifierProgram Nested(int depth, bool failedTrial)
     {
         Utf8ByteSafeLinearVerifierStep[] steps = [Utf8ByteSafeLinearVerifierStep.MatchText("ab"u8.ToArray())];
         if (failedTrial) steps = [Utf8ByteSafeLinearVerifierStep.LoopProgram(steps, 1, -1), Utf8ByteSafeLinearVerifierStep.MatchText("ac"u8.ToArray())];
@@ -187,20 +187,6 @@ public sealed class Utf8LinearRuntimeContinuationTests
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => program.TryMatch(input, 0, ref invocation, out _, out _, out _));
         Assert.True(entered);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-    }
-
-    [Fact]
-    public void WarmNestedRuntimeHasNoTemporaryAllocation()
-    {
-        var program = Nested(65, true);
-        var input = Encoding.ASCII.GetBytes("ababac" + new string('c', 65) + "x");
-        for (var index = 0; index < 100; index++) Assert.True(program.TryMatch(input, 0, out _));
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var hits = 0;
-        for (var index = 0; index < 1000; index++) if (program.TryMatch(input, 0, out _)) hits++;
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(1000, hits);
-        Assert.Equal(0, allocated);
     }
 
     public static IEnumerable<object[]> PublicCases()

@@ -128,7 +128,9 @@ public sealed class Utf8SliceReplacementLifetimeTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var timeout = TimeSpan.FromMilliseconds(20);
+            // This witness expires after VM entry. Allow preparation and JIT
+            // work to reach the hook even during a parallel full-suite run.
+            var timeout = TimeSpan.FromMilliseconds(200);
             var regex = new Utf8Regex("(a|ab)+$", options, timeout);
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -136,7 +138,7 @@ public sealed class Utf8SliceReplacementLifetimeTests
                 if (!entered)
                 {
                     entered = true;
-                    Thread.Sleep(50);
+                    Thread.Sleep(250);
                 }
             });
             try
