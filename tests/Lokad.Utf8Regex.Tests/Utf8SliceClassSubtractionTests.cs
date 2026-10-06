@@ -35,13 +35,33 @@ public sealed class Utf8SliceClassSubtractionTests
         Assert.NotNull(predicate);
 
         var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(2, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.False(predicate.TryMatch('e', ref denied, out var breach));
+        Assert.False(predicate.TryMatch(new Rune('e'), ref denied, out var breach));
         Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach);
         Assert.Equal(3UL, denied.Budget.Steps);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
 
         var admitted = new Utf8SliceInvocation(new Utf8ExecutionLimits(3, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(predicate.TryMatch('e', ref admitted, out breach));
+        Assert.True(predicate.TryMatch(new Rune('e'), ref admitted, out breach));
+        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
+        Assert.Equal(3UL, admitted.Budget.Steps);
+        Assert.Equal(0UL, admitted.Ledger.ReservedBytes);
+    }
+
+    [Fact]
+    public void SupplementarySubtractionChargesEverySegmentAndRecovers()
+    {
+        var program = Utf8SliceParser.TryParse(@"[\p{L}-[\p{Lu}-[\p{Ll}]]]", RegexOptions.CultureInvariant);
+        Assert.NotNull(program);
+        var predicate = Assert.Single(program.CategorySetMembers[0]).Table.ClassProgram;
+        Assert.NotNull(predicate);
+        var scalar = new Rune(0x10428);
+        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(2, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Assert.False(predicate.TryMatch(scalar, ref denied, out var breach));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach);
+        Assert.Equal(3UL, denied.Budget.Steps);
+        Assert.Equal(0UL, denied.Ledger.ReservedBytes);
+        var admitted = new Utf8SliceInvocation(new Utf8ExecutionLimits(3, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Assert.True(predicate.TryMatch(scalar, ref admitted, out breach));
         Assert.Equal(Utf8ExecutionLimitKind.None, breach);
         Assert.Equal(3UL, admitted.Budget.Steps);
         Assert.Equal(0UL, admitted.Ledger.ReservedBytes);
@@ -61,7 +81,7 @@ public sealed class Utf8SliceClassSubtractionTests
         try
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
-            var failure = Assert.Throws<OperationCanceledException>(() => predicate.TryMatch('a', ref invocation, out _));
+            var failure = Assert.Throws<OperationCanceledException>(() => predicate.TryMatch(new Rune('a'), ref invocation, out _));
             Assert.Equal(source.Token, failure.CancellationToken);
             Assert.Equal(64UL, invocation.Budget.Steps);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -69,7 +89,7 @@ public sealed class Utf8SliceClassSubtractionTests
         finally { session.Complete(); }
 
         var recovered = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(predicate.TryMatch('a', ref recovered, out var breach));
+        Assert.True(predicate.TryMatch(new Rune('a'), ref recovered, out var breach));
         Assert.Equal(Utf8ExecutionLimitKind.None, breach);
         Assert.Equal(65UL, recovered.Budget.Steps);
     }

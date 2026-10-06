@@ -4,78 +4,80 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SliceUtf16MinimumTests
+// Broad minimum/capture/output grammar checks use BMP subjects where scalar
+// and BCL units overlap. Utf8ScalarSubjectTests supplies direct plane-wide witnesses.
+public sealed class Utf8ScalarMinimumOverlapTests
 {
     public static IEnumerable<object[]> GreedyMinimums()
     {
-        yield return [@"([^x]{2,})", "\U0001f600yy", "<$1>"];
-        yield return [@"(?i)([^x]{2,})", "\U0001f600yy", "<$1>"];
-        yield return [@"(?i)([^k]{2,})", "\U0001f600\u212ay\U0001f600", "<$1>"];
-        yield return [@"([^x]{2,})", "\U0001f600x\U000104a0x", "<$1>"];
-        yield return [@"([^x]{3,})", "\U0001f600xy\U0001f600x", "<$1>"];
-        yield return [@"([^x]{4,})", "\U0001f600\U000104a0x\U0001f600y", "<$1>"];
-        yield return [@"(.{2,})", "\U0001f600\nx\n\U000104a0", "<$1>"];
-        yield return [@"(.{3,})", "\U0001f600\nx\U0001f600\n", "<$1>"];
-        yield return [@"(?s)(.{3,})", "\U0001f600\nx", "<$1>"];
-        yield return [@"^(?<run>[^x]{2,})$", "\U0001f600", "<${run}>"];
-        yield return [@"^(?<run>[^x]{3,})$", "\U0001f600", "<${run}>"];
-        yield return [@"^(a[^x]{2,}b)$", "a\U0001f600b", "<$1>"];
-        yield return [@"^(a[^x]{3,}b)$", "a\U0001f600b", "<$1>"];
-        yield return [@"a[^x]{3,}b", "xa\U0001f600ybx a\U0001f600b", "Q"];
-        yield return [@"(?i)(a[^x]{2,}b)", "xA\U0001f600B", "<$1>"];
-        yield return [@"(a[^x]{2,}b)", "xa\U0001f600b", "<$1>"];
-        yield return [@"(a[^x]{2,}b)", "xa\U0001f600yb", "<$1>"];
-        yield return [@"a[^x]{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"a.{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"a[^\n]{2,}b", "xa\U0001f600b", "Q"];
+        yield return [@"([^x]{2,})", "\u2603yy", "<$1>"];
+        yield return [@"(?i)([^x]{2,})", "\u2603yy", "<$1>"];
+        yield return [@"(?i)([^k]{2,})", "\u2603\u212ay\u2603", "<$1>"];
+        yield return [@"([^x]{2,})", "\u2603x\u0661x", "<$1>"];
+        yield return [@"([^x]{3,})", "\u2603xy\u2603x", "<$1>"];
+        yield return [@"([^x]{4,})", "\u2603\u0661x\u2603y", "<$1>"];
+        yield return [@"(.{2,})", "\u2603\nx\n\u0661", "<$1>"];
+        yield return [@"(.{3,})", "\u2603\nx\u2603\n", "<$1>"];
+        yield return [@"(?s)(.{3,})", "\u2603\nx", "<$1>"];
+        yield return [@"^(?<run>[^x]{2,})$", "\u2603", "<${run}>"];
+        yield return [@"^(?<run>[^x]{3,})$", "\u2603", "<${run}>"];
+        yield return [@"^(a[^x]{2,}b)$", "a\u2603b", "<$1>"];
+        yield return [@"^(a[^x]{3,}b)$", "a\u2603b", "<$1>"];
+        yield return [@"a[^x]{3,}b", "xa\u2603ybx a\u2603b", "Q"];
+        yield return [@"(?i)(a[^x]{2,}b)", "xA\u2603B", "<$1>"];
+        yield return [@"(a[^x]{2,}b)", "xa\u2603b", "<$1>"];
+        yield return [@"(a[^x]{2,}b)", "xa\u2603yb", "<$1>"];
+        yield return [@"a[^x]{2,}b", "xa\u2603b", "Q"];
+        yield return [@"a.{2,}b", "xa\u2603b", "Q"];
+        yield return [@"a[^\n]{2,}b", "xa\u2603b", "Q"];
         yield return [@"([^x]{2,})", "\u00e9yx\u03bbx", "<$1>"];
         yield return [@"([^x]{2,})", "yxyyx", "<$1>"];
         yield return [@"([^x]{2,})", "", "<$1>"];
-        yield return [@"a\D{2,}", "xa\U0001f600", "Q"];
-        yield return [@"a\D{2,}", "xa\U0001d7ce\U0001d7ce1a\U0001f6001", "Q"];
-        yield return [@"a\D{3,}", "xa\U0001f6001", "Q"];
-        yield return [@"(a\D{2,}b)", "xa\U0001f600b", "<$1>"];
-        yield return [@"a\D{2,}b", "xa\U0001d7ce\U0001d7ceb", "Q"];
-        yield return [@"a\D{2,}b", "xa\U0001f600c", "Q"];
-        yield return [@"(\D{2,})", "\U0001d7ce\U0001d7ce1\U00010400a2", "<$1>"];
-        yield return [@"(\D{3,})", "\U0001f6001y\U000104a02", "<$1>"];
-        yield return [@"(\W{2,})", "\U00010400\U000104001a\U0001f600", "<$1>"];
-        yield return [@"(\S{2,})", "\U00010400\U0001f600 \u00a0\U000104a0", "<$1>"];
-        yield return [@"a\S{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"(\P{Nd}{2,})", "\U000104a0\U000104a01\U0001f6002", "<$1>"];
-        yield return [@"a\P{Nd}{2,}b", "xa\U000104a0b", "Q"];
-        yield return [@"a\P{Lu}{2,}b", "xa\U00010400b", "Q"];
-        yield return [@"(?i)(\P{Lu}{3,})", "\U00010400\U0001f600a", "<$1>"];
-        yield return [@"(\p{L}{2,})", "xa\U0001f600bc", "<$1>"];
-        yield return [@"(\p{Nd}{2,})", "x\U000104a0y\u0661\u0662", "<$1>"];
-        yield return [@"([\s\S]{2,})", "\U00010400\n\U000104a0", "<$1>"];
-        yield return [@"a[\s\S]{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"([^\d]{2,})", "\U000104a01\U0001f600a", "<$1>"];
-        yield return [@"([\D\s]{3,})", "\U0001f600 1a\U000104a0", "<$1>"];
-        yield return [@"([a\p{L}]{2,})", "ab\U00010400cd", "<$1>"];
-        yield return [@"([\p{Cs}]{2,})", "\U00010400a\U0001f600", "<$1>"];
-        yield return [@"([^\p{Cs}]{2,})", "ab\U00010400cd", "<$1>"];
+        yield return [@"a\D{2,}", "xa\u2603", "Q"];
+        yield return [@"a\D{2,}", "xa\u0660\u06601a\u26031", "Q"];
+        yield return [@"a\D{3,}", "xa\u26031", "Q"];
+        yield return [@"(a\D{2,}b)", "xa\u2603b", "<$1>"];
+        yield return [@"a\D{2,}b", "xa\u0660\u0660b", "Q"];
+        yield return [@"a\D{2,}b", "xa\u2603c", "Q"];
+        yield return [@"(\D{2,})", "\u0660\u06601\u00c0a2", "<$1>"];
+        yield return [@"(\D{3,})", "\u26031y\u06612", "<$1>"];
+        yield return [@"(\W{2,})", "\u00c0\u00c01a\u2603", "<$1>"];
+        yield return [@"(\S{2,})", "\u00c0\u2603 \u00a0\u0661", "<$1>"];
+        yield return [@"a\S{2,}b", "xa\u2603b", "Q"];
+        yield return [@"(\P{Nd}{2,})", "\u0661\u06611\u26032", "<$1>"];
+        yield return [@"a\P{Nd}{2,}b", "xa\u0661b", "Q"];
+        yield return [@"a\P{Lu}{2,}b", "xa\u00c0b", "Q"];
+        yield return [@"(?i)(\P{Lu}{3,})", "\u00c0\u2603a", "<$1>"];
+        yield return [@"(\p{L}{2,})", "xa\u2603bc", "<$1>"];
+        yield return [@"(\p{Nd}{2,})", "x\u0661y\u0661\u0662", "<$1>"];
+        yield return [@"([\s\S]{2,})", "\u00c0\n\u0661", "<$1>"];
+        yield return [@"a[\s\S]{2,}b", "xa\u2603b", "Q"];
+        yield return [@"([^\d]{2,})", "\u06611\u2603a", "<$1>"];
+        yield return [@"([\D\s]{3,})", "\u2603 1a\u0661", "<$1>"];
+        yield return [@"([a\p{L}]{2,})", "ab\u00c0cd", "<$1>"];
+        yield return [@"([\p{Cs}]{2,})", "\u00c0a\u2603", "<$1>"];
+        yield return [@"([^\p{Cs}]{2,})", "ab\u00c0cd", "<$1>"];
         // Exact subjects migrated from the former verifier/shaping route pins.
-        yield return [@"(?i)a\p{L}{2,}b", "xa\U00010400b", "Q"];
-        yield return [@"\D{2,}b", "x\U0001f600b", "Q"];
-        yield return [@"(?i)A\D{2,}B", "xa\U0001f600b", "Q"];
-        yield return [@"a\p{L}{2,}b", "xa\U00010400b", "Q"];
-        yield return [@"a\p{Nd}{2,}b", "xa\U0001d7ce\U0001d7ceb", "Q"];
-        yield return [@"a\D{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"a\P{Nd}{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"a\W{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"a\P{L}{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"(?i)a\W{2,}b", "xa\U0001f600b", "Q"];
-        yield return [@"\p{Nd}{2,}", "x\U000104a0y", "Q"];
-        yield return [@"\p{L}{2,}", "xa\U0001f600b", "Q"];
-        yield return [@"(\d{2,})", "x\U000104a0\u0661\u0662y", "<$1>"];
-        yield return [@"(\w{2,})", "a\U00010400bc\U0001f600", "<$1>"];
-        yield return [@"(\s{2,})", "x\U0001f600 \u00a0y", "<$1>"];
+        yield return [@"(?i)a\p{L}{2,}b", "xa\u00c0b", "Q"];
+        yield return [@"\D{2,}b", "x\u2603b", "Q"];
+        yield return [@"(?i)A\D{2,}B", "xa\u2603b", "Q"];
+        yield return [@"a\p{L}{2,}b", "xa\u00c0b", "Q"];
+        yield return [@"a\p{Nd}{2,}b", "xa\u0660\u0660b", "Q"];
+        yield return [@"a\D{2,}b", "xa\u2603b", "Q"];
+        yield return [@"a\P{Nd}{2,}b", "xa\u2603b", "Q"];
+        yield return [@"a\W{2,}b", "xa\u2603b", "Q"];
+        yield return [@"a\P{L}{2,}b", "xa\u2603b", "Q"];
+        yield return [@"(?i)a\W{2,}b", "xa\u2603b", "Q"];
+        yield return [@"\p{Nd}{2,}", "x\u0661y", "Q"];
+        yield return [@"\p{L}{2,}", "xa\u2603b", "Q"];
+        yield return [@"(\d{2,})", "x\u0661\u0661\u0662y", "<$1>"];
+        yield return [@"(\w{2,})", "a\u00c0bc\u2603", "<$1>"];
+        yield return [@"(\s{2,})", "x\u2603 \u00a0y", "<$1>"];
     }
 
     [Theory]
     [MemberData(nameof(GreedyMinimums))]
-    public void GreedyMinimumCountsUtf16UnitsAcrossAllOperations(string pattern, string text, string template)
+    public void GreedyMinimumKeepsAllOperationsOnBmpOverlap(string pattern, string text, string template)
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
@@ -161,9 +163,9 @@ public sealed class Utf8SliceUtf16MinimumTests
     [InlineData(@"\P{Nd}{2,}")]
     [InlineData(@"[\s\S]{3,}")]
     [InlineData(@"[\p{Cs}]{2,}")]
-    public void OffsetEnumerationCountsOnlyTheRemainingTrailUnit(string pattern)
+    public void OffsetEnumerationCountsRemainingBmpScalars(string pattern)
     {
-        const string text = "\U0001f600yx\U000104a0x\U0001f600\U0001f600";
+        const string text = "\u2603yx\u0661x\u2603\u2603";
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
         {
@@ -189,11 +191,11 @@ public sealed class Utf8SliceUtf16MinimumTests
     }
 
     [Theory]
-    [InlineData(@"((.){2,})", "\U0001f600", "<$2>")]
-    [InlineData(@"(.{2,}?)", "a\U0001f600b", "<$1>")]
-    [InlineData(@"(.{2,3})", "\U0001f600\U0001f600", "<$1>")]
-    [InlineData(@"(\D{2,})", "\U0001d7ce\U0001d7ce", "<$1>")]
-    public void HalfCapturesLazyStopsFiniteBoundsAndUnicodeAtomsKeepTheirUnitBehavior(string pattern, string text, string template)
+    [InlineData(@"((.){2,})", "\u2603", "<$2>")]
+    [InlineData(@"(.{2,}?)", "a\u2603b", "<$1>")]
+    [InlineData(@"(.{2,3})", "\u2603\u2603", "<$1>")]
+    [InlineData(@"(\D{2,})", "\u0660\u0660", "<$1>")]
+    public void CapturesLazyStopsAndFiniteBoundsKeepBmpOverlap(string pattern, string text, string template)
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
@@ -208,29 +210,20 @@ public sealed class Utf8SliceUtf16MinimumTests
     [Theory]
     [InlineData(@"([a\p{IsHighSurrogates}]{2,})")]
     [InlineData(@"([a\p{IsLowSurrogates}]{2,})")]
-    public void SplitHalfCategoryMinimumsPreserveUnalignedUnitSpans(string pattern)
+    public void SurrogateRangeMembersCannotMatchSupplementaryScalars(string pattern)
     {
         const string text = "a\U0001f600a\U0001f600a";
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options);
-            Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
-            Assert.Equal(oracle.Count(text), regex.Count(input));
-            var expected = oracle.Match(text);
-            var actual = regex.MatchDetailed(input);
-            Assert.Equal(expected.Groups[1].Value, actual.GetGroup(1).GetValueString());
-            Assert.Equal((expected.Index, expected.Length), (actual.IndexInUtf16, actual.LengthInUtf16));
-            var positions = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input))
-            {
-                Assert.False(match.IsByteAligned);
-                positions.Add((match.IndexInUtf16, match.LengthInUtf16));
-            }
-            Assert.Equal(oracle.Matches(text).Select(m => (m.Index, m.Length)), positions);
-            Assert.Equal(oracle.Replace(text, "<$1>"), regex.ReplaceToString(input, "<$1>"));
+            Assert.False(regex.IsMatch(input));
+            Assert.Equal(0, regex.Count(input));
+            Assert.False(regex.MatchDetailed(input).Success);
+            Assert.False(regex.EnumerateMatches(input).GetEnumerator().MoveNext());
+            Assert.Equal(text, regex.ReplaceToString(input, "<$1>"));
+            AssertOwned(regex);
         }
     }
 

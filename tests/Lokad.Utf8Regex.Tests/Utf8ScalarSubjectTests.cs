@@ -30,6 +30,51 @@ public sealed class Utf8ScalarSubjectTests
             ("^(\U0001f600){2}$", "\U0001f600\U0001f600", [0, 8]),
             ("^\U0001f600?$", "", [0, 0]),
             ("(?i)^(\U00010400)+$", "\U00010428\U00010428", [0, 8]),
+            (@"^\p{Lu}$", "\U00010400", [0, 4]),
+            (@"^\p{Lu}$", "\U00010428", []),
+            (@"^\p{Ll}$", "\U00010428", [0, 4]),
+            (@"^\p{Ll}$", "\U00010400", []),
+            (@"(?i)^\p{Lu}$", "\U00010428", [0, 4]),
+            (@"\p{L}+", "\U0001f600\U00010400\U00010428\u4e2d", [4, 11]),
+            (@"^\p{Nd}+$", "\U000104a0\U0001d7ce", [0, 8]),
+            (@"^\p{Co}$", "\U000f0000", [0, 4]),
+            (@"^\p{So}$", "\U0001f600", [0, 4]),
+            (@"\p{Cs}+", "a\U0001f600\U00010400", []),
+            (@"\P{Cs}+", "a\U0001f600\U00010400", [0, 9]),
+            (@"^\d+$", "\U000104a0\U0001d7ce", [0, 8]),
+            (@"^\D+$", "\U000104a0", []),
+            (@"^\w+$", "\U00010400\U00010428", [0, 8]),
+            (@"^\W+$", "\U00010400", []),
+            (@"^\W+$", "\U0001f600", [0, 4]),
+            (@"^\s$", "\U0001f600", []),
+            (@"^\S$", "\U0001f600", [0, 4]),
+            (@"\b\w+\b", "\U0001f600\U00010400\U0001f600", [4, 4]),
+            (@"\b", "\U00010400", [0, 0, 4, 0]),
+            (@"\B", "\U0001f600", [0, 0, 4, 0]),
+            (@"[\w!]+", "\U0001f600\U00010400!", [4, 5]),
+            (@"(?i)[k\w]+", "\u212a\U00010400", [0, 7]),
+            (@"[^\p{L}0]", "\U00010400", []),
+            (@"[^\p{L}0]", "\U0001f600", [0, 4]),
+            (@"[\p{Lu}\d]+", "\U00010400\U000104a0\U00010428", [0, 8]),
+            (@"[\p{L}-[\p{Lu}]]", "\U00010400\U00010428", [4, 4]),
+            (@"[\w-[\d]]", "\U00010400\U000104a0", [0, 4]),
+            (@"[\p{L}-[\p{Lu}-[\p{Ll}]]]", "\U00010400\U00010428", [4, 4]),
+            (@"[^\u0000-\uffff]", "a\U0001f600", [1, 4]),
+            (@"\p{IsHighSurrogates}", "\U0001f600", []),
+            (@"\P{IsHighSurrogates}", "\U0001f600", [0, 4]),
+            (@"[^\P{IsHighSurrogates}]", "\U0001f600", []),
+            (@"[\P{IsGreek}-[\p{L}]]", "\u03b1\U00010400\U0001f600", [6, 4]),
+            (@"^\D{2,}$", "\U0001f600", []),
+            (@"^\D{2,}$", "\U0001f600\U00010400", [0, 8]),
+            (@"^\p{L}{2,}$", "\U00010400", []),
+            (@"^\p{L}{2,}$", "\U00010400\U00010428", [0, 8]),
+            (@"(?<=\w)x", "\U00010400x", [4, 1]),
+            (@"(?<=\d)x", "\U000104a0x", [4, 1]),
+            (@"(?<=\p{Lu})x", "\U00010400x", [4, 1]),
+            (@"(?<=[\w!])x", "\U00010400x", [4, 1]),
+            (@"(?<=[\p{Lu}0])x", "\U00010400x", [4, 1]),
+            ("(?<=\U0001f600)x", "\U0001f600x", [4, 1]),
+            ("(?i)(?<=\U00010400)x", "\U00010428x", [4, 1]),
         ];
         foreach (var item in cases)
         foreach (var compiled in new[] { false, true })
@@ -42,6 +87,10 @@ public sealed class Utf8ScalarSubjectTests
                 RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None)];
         }
+        foreach (var compiled in new[] { false, true })
+        foreach (var pattern in new[] { @"\D", @"\W", @"\S", @"[\D0]", @"[^\w]" })
+            yield return [pattern, "\U00010400", new[] { 0, 4 },
+                RegexOptions.ECMAScript | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None)];
     }
 
     [Theory]
@@ -135,6 +184,26 @@ public sealed class Utf8ScalarSubjectTests
             Assert.Equal(input, output);
             Assert.Equal(rtl ? new[] { "\u00e9", "\U0001f600", "a" } : new[] { "a", "\U0001f600", "\u00e9" }, seen);
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData(@"\B")]
+    [InlineData("(?:)")]
+    public void RunnerRejectsInteriorAndFormerHalfStartsBeforeScratchAdmission(string pattern)
+    {
+        var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(program);
+        var input = Encoding.UTF8.GetBytes("\U0001f600");
+        foreach (var position in new[] { (0, false), (1, true), (3, true) })
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
+            var outcome = Utf8SliceRunner.TryMatchAt(program, input, position.Item1, [], [], position.Item2, ref invocation);
+            Assert.False(outcome.IsMatch);
+            Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+            Assert.Equal(0UL, invocation.Budget.Steps);
         }
     }
 

@@ -5,16 +5,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 Unicode property slice: \p{...}/\P{...} general categories and groups
-// resolve to UnicodeCategory masks while Is*/_xml* blocks resolve to the
-// pinned half-open ranges; both lower to owned Category programs with BCL
-// oracle parity and zero fallback-engine construction. Single-category
-// classes fold to their atom; mixed category classes decline (hybrid
-// category operands are future work) as do blocks under IgnoreCase
-// (case-equivalent range expansion lives in legacy). Categories consume
-// whole BMP scalars while the oracle tests astral halves, so astral inputs
-// decline to fallback; ASCII and BMP inputs stay owned. Bare shapes keep
-// the fallback execution kind with fallback-free general behavior.
+// Owned scalar Unicode categories and named BMP blocks. BCL comparisons
+// below cover BMP overlap; supplementary subjects use explicit scalar results.
 public sealed class Utf8SliceCategoryTests
 {
     public static IEnumerable<object?[]> SliceCategoryShapes()
@@ -518,34 +510,27 @@ public sealed class Utf8SliceCategoryTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> AstralDeclineCases()
+    public static IEnumerable<object?[]> SurrogateCategoryCases()
     {
         yield return new object?[] { "\\p{IsHighSurrogates}+", "\U00010400" };
         yield return new object?[] { "\\p{Cs}+", "\U00010400" };
     }
 
     [Theory]
-    [MemberData(nameof(AstralDeclineCases))]
-    public void AstralInputsDeclineToLegacy(string pattern, string inputText)
+    [MemberData(nameof(SurrogateCategoryCases))]
+    public void SurrogateCategoriesNeverMatchValidScalarSubjects(string pattern, string inputText)
     {
-        // The oracle tests astral halves while the shared runner consumes
-        // whole scalars, so surrogate-covering positives (halves are members
-        // the runner misses) and their negations (halves miss those negations
-        // while the runner would consume) decline astral inputs and the
-        // fallback answers with unit-exact behavior. Other positive and
-        // half-missing-negation categories serve owned, as pinned by the
-        // positive-category loop battery.
         var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        var expected = oracle.Match(inputText);
-        var found = regex.Match(input);
-        Assert.Equal(expected.Success, found.Success);
-        Assert.Equal(expected.Index, found.IndexInUtf16);
-        Assert.Equal(expected.Length, found.LengthInUtf16);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
+            Assert.False(regex.IsMatch(input));
+            Assert.Equal(0, regex.Count(input));
+            Assert.False(regex.Match(input).Success);
+            Assert.False(regex.MatchDetailed(input).Success);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
     }
 
     [Fact]

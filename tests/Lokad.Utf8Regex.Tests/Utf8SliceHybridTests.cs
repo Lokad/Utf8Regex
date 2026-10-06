@@ -10,9 +10,8 @@ namespace Lokad.Utf8Regex.Tests;
 // AsciiSimplePattern route; quantified and captured shapes route owned.
 // The ASCII mask (with shorthand ASCII parts folded in) decides ASCII
 // bytes; recorded members decide non-ASCII scalars with full Unicode
-// categories (BMP units agree; astral follows the halves mirror).
-// Negated hybrids and hybrids with negated members decline astral inputs
-// at routing; PCRE2 declines every hybrid (native ASCII scope).
+// categories across all scalar planes. Negation complements the scalar union;
+// PCRE2 applies its own profile admission to the shared program.
 public sealed class Utf8SliceHybridTests
 {
     public static IEnumerable<object?[]> SliceHybridShapes()
@@ -146,7 +145,7 @@ public sealed class Utf8SliceHybridTests
     public static IEnumerable<object?[]> AstralOwnedCases()
     {
         var astralNd = char.ConvertFromUtf32(0x1D7CE);
-        yield return new object?[] { "[\\da]+", astralNd, false };
+        yield return new object?[] { "[\\da]+", astralNd, true };
         yield return new object?[] { "[\\da]+", "a" + astralNd, true };
     }
 
@@ -154,11 +153,9 @@ public sealed class Utf8SliceHybridTests
     [MemberData(nameof(AstralOwnedCases))]
     public void OwnedAstralPositiveStaysOwned(string pattern, string inputText, bool expected)
     {
-        // Positive hybrids with positive-only members miss astral scalars
-        // exactly like the oracle halves, so astral inputs stay owned.
+        // The digit is one complete Nd scalar; its surrogate halves have no
+        // role in shorthand membership.
         var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));

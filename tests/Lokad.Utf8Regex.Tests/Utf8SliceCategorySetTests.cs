@@ -12,8 +12,8 @@ namespace Lokad.Utf8Regex.Tests;
 // complement the whole union. Block members match under IgnoreCase through
 // invariant case equivalents (candidate-side lookup, no parse expansion);
 // general members fold Ll/Lu/Lt per member exactly like atoms. Class-negated
-// block atoms ride the general class path so both negations survive. Astral
-// inputs decline to fallback (halves mirror); ASCII and BMP inputs stay owned.
+// block atoms ride the general class path so both negations survive. All
+// members classify complete scalars; BMP overlap retains BCL comparisons.
 public sealed class Utf8SliceCategorySetTests
 {
     public static IEnumerable<object?[]> SliceCategorySetShapes()
@@ -426,31 +426,20 @@ public sealed class Utf8SliceCategorySetTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> AstralDeclineCases()
+    public static IEnumerable<object?[]> SupplementaryCases()
     {
-        yield return new object?[] { "[\\p{L}a]+", "a\U00010400b" };
-        yield return new object?[] { "[^\\p{L}a]+", "a\U00010400b" };
-        yield return new object?[] { "[\\P{L}a]+", "a\U00010400b" };
-        yield return new object?[] { "[\\p{IsGreek}a]+", "\u03B1\U00010400" };
+        yield return new object?[] { "[\\p{L}a]+", "a\U00010400b", new[] { 0, 6 } };
+        yield return new object?[] { "[^\\p{L}a]+", "a\U00010400b", Array.Empty<int>() };
+        yield return new object?[] { "[\\P{L}a]+", "a\U00010400b", new[] { 0, 1 } };
+        yield return new object?[] { "[\\p{IsGreek}a]+", "\u03B1\U00010400", new[] { 0, 2 } };
     }
 
     [Theory]
-    [MemberData(nameof(AstralDeclineCases))]
-    public void AstralInputsDeclineToLegacy(string pattern, string inputText)
+    [MemberData(nameof(SupplementaryCases))]
+    public void SupplementaryClassesUseScalarMembership(string pattern, string inputText, int[] ranges)
     {
-        // The oracle tests astral halves while the shared runner consumes
-        // whole scalars, so category-set programs decline astral inputs and
-        // the fallback answers with unit-exact behavior.
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        var expected = oracle.Match(inputText);
-        var found = regex.Match(input);
-        Assert.Equal(expected.Success, found.Success);
-        Assert.Equal(expected.Index, found.IndexInUtf16);
-        Assert.Equal(expected.Length, found.LengthInUtf16);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            RegexOptions.CultureInvariant | RegexOptions.RightToLeft, RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
+            new Utf8ScalarSubjectTests().PublicOperationsUseCompleteScalars(pattern, inputText, ranges, options);
     }
 }
