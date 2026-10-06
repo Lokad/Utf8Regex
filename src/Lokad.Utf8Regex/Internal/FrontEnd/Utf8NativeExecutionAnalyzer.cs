@@ -72,6 +72,17 @@ internal static class Utf8NativeExecutionAnalyzer
             return TryCreateLiteralAnalyzedRegex(semanticRegex, executionPattern, executionOptions, out analyzedRegex);
         }
 
+        // Named capture wrappers retain the same literal discovery. The
+        // NonBacktracking admission proof separately excludes shared declarations
+        // and scoped folding; offsets/results retain the owned unit verifier.
+        if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
+            (executionOptions & RegexOptions.IgnoreCase) == 0 &&
+            semanticRegex.RuntimeTree is { Root.ChildCount: 1 } literalTree &&
+            TryGetLiteralBranchText(literalTree.Root.Child(0), out var wrappedLiteral))
+        {
+            return TryCreateLiteralAnalyzedRegex(semanticRegex, wrappedLiteral, executionOptions, out analyzedRegex);
+        }
+
         if (TryExtractBoundaryWrappedLiteralTree(semanticRegex, out var boundaryLiteral, out var leadingBoundary, out var trailingBoundary))
         {
             return TryCreateLiteralAnalyzedRegex(
@@ -690,7 +701,11 @@ internal static class Utf8NativeExecutionAnalyzer
             RegexOptions.CultureInvariant |
             RegexOptions.IgnoreCase |
             RegexOptions.IgnorePatternWhitespace |
-            RegexOptions.RightToLeft;
+            RegexOptions.RightToLeft |
+            // Literal discovery has no backtracking choices or repeated capture
+            // history. The same native result therefore serves NonBacktracking;
+            // unsupported syntax/option combinations retain constructor validation.
+            RegexOptions.NonBacktracking;
         if ((options & ~allowedOptions) != 0)
         {
             return false;

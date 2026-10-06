@@ -4,6 +4,21 @@
 
 ### Owned UTF-16 execution
 
+- Native single-literal cursors share one invocation through search, bounded
+  comparisons, boundary confirmation and projection, including successive matches.
+  Boundary assertions inspect the original subject in both directions. Token-aware
+  literal enumeration also uses this path through bounded UTF-8 validation; other
+  native families and complete public finite-policy accounting remain open.
+
+- Loopless native literal, literal-family and boundary-wrapped literal execution
+  also serves `NonBacktracking`, with the bounded unit verifier for offsets and
+  results. Loops and shared capture declarations retain their migration route.
+  Eager BCL constructor validation remains an explicit dependency.
+
+- Empty native literals replace through owned UTF-16 output on every template
+  surface, including UTF-8 destinations, preserving fragments between surrogate
+  halves before encoding the complete result.
+
 - Native match projection retains its cursor or operation deadline through UTF-8
   gap and match-length validation. Metered validation uses bounded scalar-aligned
   blocks, preserves invalid-input offsets, and checks before publishing results.

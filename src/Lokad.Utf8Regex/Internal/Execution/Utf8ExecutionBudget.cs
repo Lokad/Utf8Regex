@@ -37,6 +37,8 @@ internal struct Utf8ExecutionBudget
 
     internal bool IsInfiniteDeadline => _deadline.IsInfinite;
 
+    internal Utf8ExecutionDeadline Deadline => _deadline;
+
     internal void ThrowIfCancellationRequested()
     {
         _token.ThrowIfCancellationRequested();

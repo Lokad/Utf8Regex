@@ -146,8 +146,15 @@ public sealed partial class Utf8Regex
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). Remaining group-depth and lowered-instruction
         // admission limits still decline to transitional routing.
+        // The admitted NonBacktracking literal graphs have no loops, balancing,
+        // or shared capture declarations. Their bounded unit verifier supplies
+        // half-unit offsets and result projection without an input-dependent
+        // backtracking search. Other NonBacktracking graphs retain their route.
+        var sliceOptions = (options & RegexOptions.NonBacktracking) != 0 &&
+            preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral
+                ? options & ~RegexOptions.NonBacktracking : options;
         var ownedSliceProgram = !RequiresCultureSensitiveFallback
-            ? Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree)
+            ? Utf8SliceParser.TryParse(sliceOptions, preparedRegex.SemanticRegex.RuntimeTree)
             : null;
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _unitSliceProgram = ownedSliceProgram;
@@ -2845,6 +2852,28 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        // Single literals now retain one invocation through bounded validation,
+        // discovery, confirmation and projection. Other shapes retain the unit VM.
+        // A possible non-ASCII folding partner stays in its existing semantic route.
+        if (!RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
+            _unitSliceProgram is not { HasSurrogateLiteral: true } &&
+            (_unitSliceProgram is not { IgnoreCase: true } ||
+                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase) &&
+            _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
+                NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            try
+            {
+                var validation = Utf8Validation.Validate(input, ref invocation);
+                return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
+                    input, _preparedRegex, validation.IsAscii, UsesRightToLeft(), invocation))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        }
+
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatches(input, ownedProgram, cancellationToken)
@@ -3307,7 +3336,9 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
-        if ((GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } ownedProgram)
+        if ((GetOwnedSliceProgram(input) ??
+            (input.IsEmpty || _unitSliceProgram is { CanMatchEmpty: true } &&
+                _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _unitSliceProgram : null)) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram,
                 GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
@@ -4019,6 +4050,7 @@ public sealed partial class Utf8Regex
         }
 
         if (GetOwnedSliceProgram(input) is null && !(input.IsEmpty && _unitSliceProgram is not null) &&
+            !(_unitSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten);

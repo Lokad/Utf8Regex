@@ -10,6 +10,10 @@ internal ref struct Utf8OperationMatchCursor
 {
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8OperationMatchCursor>();
 
+    internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;
+
+    internal ulong DebugInvocationReservedBytes => _sliceInvocation.Ledger.ReservedBytes;
+
     internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
 
     internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
@@ -25,11 +29,8 @@ internal ref struct Utf8OperationMatchCursor
     private readonly EnumeratorMode _mode;
     private readonly Utf8OperationMatchCursorPlans _plans;
     private readonly PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
-    private readonly PreparedSubstringSearch? _literalSearch;
     private readonly Utf8EmittedKernelMatcher? _emittedKernelMatcher;
     private readonly int[]? _alternateLiteralUtf16Lengths;
-    private readonly bool _hasBoundaryRequirements;
-    private readonly bool _hasTrailingLiteralRequirement;
     private readonly bool _asciiInput;
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
@@ -53,7 +54,8 @@ internal ref struct Utf8OperationMatchCursor
     private int _baseUtf16Offset;
     private Utf8SliceProgram? _sliceProgram;
     // Owned VM state and native projection share this cursor's invocation.
-    // Native scan-wide token/finite-policy routing and accounting remain open.
+    // Literal discovery and projection use one state; other native families
+    // still need scan-wide token/finite-policy routing and accounting.
     private Utf8SliceInvocation _sliceInvocation;
     private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
@@ -66,10 +68,7 @@ internal ref struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = searchPlan.LiteralSearch;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
-        _hasBoundaryRequirements = searchPlan.HasBoundaryRequirements;
-        _hasTrailingLiteralRequirement = searchPlan.HasTrailingLiteralRequirement;
         _asciiInput = asciiInput;
         _literal = literal;
         _input = input;
@@ -101,6 +100,28 @@ internal ref struct Utf8OperationMatchCursor
         };
     }
 
+    // Transfer invocation ownership exactly once when constructing a literal
+    // cursor. Validation already performed by its caller keeps its charged work.
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
+        bool asciiInput, bool rightToLeft, Utf8SliceInvocation invocation)
+        : this(input, regexPlan, regexPlan.LiteralUtf8 ?? throw new InvalidOperationException("A literal cursor requires a literal."),
+            regexPlan.ExecutionKind, invocation.Budget.Deadline, asciiInput)
+    {
+        _sliceInvocation = invocation;
+        _literalUtf16Length = regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
+            ? Utf8Validation.Validate(_literal, ref _sliceInvocation).Utf16Length : _literalUtf16Length;
+        _mode = (regexPlan.ExecutionKind, rightToLeft) switch
+        {
+            (NativeExecutionKind.ExactAsciiLiteral, false) => EnumeratorMode.ExactAsciiLiteral,
+            (NativeExecutionKind.ExactUtf8Literal, false) => EnumeratorMode.ExactUtf8Literal,
+            (NativeExecutionKind.AsciiLiteralIgnoreCase, false) => EnumeratorMode.AsciiLiteralIgnoreCase,
+            (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
+            (NativeExecutionKind.ExactUtf8Literal, true) => EnumeratorMode.RtlExactUtf8Literal,
+            (NativeExecutionKind.AsciiLiteralIgnoreCase, true) => EnumeratorMode.RtlAsciiLiteralIgnoreCase,
+            _ => throw new InvalidOperationException("The plan is not a single literal."),
+        };
+    }
+
     // Right-to-left twin of the literal cursor above: the same literal, search
     // plan, and budget iterate matches from right to left instead. Only exact
     // ASCII literals (plain or folded) qualify; the divert guarantees a nonempty
@@ -111,10 +132,7 @@ internal ref struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = searchPlan.LiteralSearch;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
-        _hasBoundaryRequirements = searchPlan.HasBoundaryRequirements;
-        _hasTrailingLiteralRequirement = searchPlan.HasTrailingLiteralRequirement;
         _asciiInput = asciiInput;
         _literal = literal;
         _input = input;
@@ -151,10 +169,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = null;
         _input = input;
         _boundaryMap = boundaryMap;
@@ -185,10 +200,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = null;
         _input = input;
         _boundaryMap = boundaryMap;
@@ -226,10 +238,7 @@ internal ref struct Utf8OperationMatchCursor
         ref readonly var structuralLinearProgram = ref regexPlan.StructuralLinearProgram;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = null;
         _input = input;
         _boundaryMap = null;
@@ -293,10 +302,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = null;
         _input = input;
         _boundaryMap = map;
@@ -464,10 +470,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = literal;
         _input = input;
         _boundaryMap = null;
@@ -504,10 +507,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _asciiInput = false;
         _literal = null;
         _input = input;
@@ -745,14 +745,14 @@ internal ref struct Utf8OperationMatchCursor
 
         return _mode switch
         {
-            EnumeratorMode.ExactAsciiLiteral => MoveNextExactLiteral(),
-            EnumeratorMode.ExactUtf8Literal => MoveNextExactUtf8Literal(),
+            EnumeratorMode.ExactAsciiLiteral => MoveNextLiteral(),
+            EnumeratorMode.ExactUtf8Literal => MoveNextLiteral(),
             EnumeratorMode.ExactUtf8Literals => MoveNextExactUtf8Literals(),
-            EnumeratorMode.AsciiLiteralIgnoreCase => MoveNextIgnoreCaseLiteral(),
+            EnumeratorMode.AsciiLiteralIgnoreCase => MoveNextLiteral(),
             EnumeratorMode.AsciiLiteralIgnoreCaseLiterals => MoveNextAsciiIgnoreCaseLiterals(),
-            EnumeratorMode.RtlExactAsciiLiteral => MoveNextRtlExactAsciiLiteral(),
-            EnumeratorMode.RtlAsciiLiteralIgnoreCase => MoveNextRtlAsciiLiteralIgnoreCase(),
-            EnumeratorMode.RtlExactUtf8Literal => MoveNextRtlExactUtf8Literal(),
+            EnumeratorMode.RtlExactAsciiLiteral => MoveNextLiteral(),
+            EnumeratorMode.RtlAsciiLiteralIgnoreCase => MoveNextLiteral(),
+            EnumeratorMode.RtlExactUtf8Literal => MoveNextLiteral(),
             EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
             EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
             EnumeratorMode.AsciiSimplePatternUnit => MoveNextUnitSimplePattern(),
@@ -798,10 +798,7 @@ internal ref struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = searchPlan.LiteralSearch;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
-        _hasBoundaryRequirements = searchPlan.HasBoundaryRequirements;
-        _hasTrailingLiteralRequirement = searchPlan.HasTrailingLiteralRequirement;
         _literal = literal;
         _input = input;
         _boundaryMap = null;
@@ -843,10 +840,7 @@ internal ref struct Utf8OperationMatchCursor
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
-        _hasBoundaryRequirements = searchPlan.HasBoundaryRequirements;
-        _hasTrailingLiteralRequirement = searchPlan.HasTrailingLiteralRequirement;
         _literal = null;
         _input = input;
         _boundaryMap = null;
@@ -883,10 +877,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = Array.Empty<byte>();
         _input = input;
         _boundaryMap = boundaryMap;
@@ -917,10 +908,7 @@ internal ref struct Utf8OperationMatchCursor
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = smallAsciiLiteralFamilySearch;
-        _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
         _literal = null;
         _input = input;
         _boundaryMap = null;
@@ -978,299 +966,44 @@ internal ref struct Utf8OperationMatchCursor
         return this;
     }
 
-    private bool MoveNextExactLiteral()
+    private bool MoveNextLiteral()
     {
+        var breach = TryMoveNextLiteral(out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+        return found;
+    }
+
+    internal Utf8ExecutionLimitKind TryMoveNextLiteral(out bool found)
+    {
+        found = false;
+        _current = Utf8ValueMatch.NoMatch;
         var literal = _literal;
-        if (literal is null || literal.Length == 0)
-        {
-            return false;
-        }
+        if (literal is not { Length: > 0 }) return Utf8ExecutionLimitKind.None;
+        var reverse = _mode is EnumeratorMode.RtlExactAsciiLiteral or
+            EnumeratorMode.RtlAsciiLiteralIgnoreCase or EnumeratorMode.RtlExactUtf8Literal;
+        ref readonly var plan = ref _plans.SearchPlan;
+        var breach = Utf8SearchExecutor.TryFindLiteral(plan, _input, reverse ? 0 : _consumed,
+            reverse ? _remaining.Length : _input.Length, reverse, ref _sliceInvocation, out var index);
+        if (breach != Utf8ExecutionLimitKind.None || index < 0) return breach;
 
-        _budget.Step();
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        var index = Utf8SearchExecutor.FindFirst(in searchPlan, _remaining);
-        if (index < 0)
+        var projection = new Utf8ProjectionPlan(_asciiInput ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental);
+        breach = Utf8ProjectionExecutor.TryProjectMatch(projection, _input,
+            reverse ? 0 : _consumed, reverse ? 0 : _consumedUtf16, index,
+            literal.Length, _literalUtf16Length, ref _sliceInvocation,
+            out var match, out var nextBytes, out var nextUnits);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _current = match;
+        if (reverse) _remaining = _input[..index];
+        else
         {
-            return false;
-        }
-
-        if (!_asciiInput)
-        {
-            // R05: ASCII literals on non-ASCII input project incrementally (the
-            // literal length is the UTF-16 length; only the gap needs decoding),
-            // mirroring the UTF-8 literal mode instead of declining to BCL.
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                _consumed,
-                _consumedUtf16,
-                _consumed + index,
-                literal.Length,
-                literal.Length,
-                ref _sliceInvocation,
-                out _consumed,
-                out _consumedUtf16);
+            _consumed = nextBytes;
+            _consumedUtf16 = nextUnits;
             _remaining = _input[_consumed..];
-            _lastLiteralFamilyBranchId = 0;
-            return true;
         }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: _consumed + index,
-            lengthInUtf16: literal.Length,
-            indexInBytes: _consumed + index,
-            lengthInBytes: literal.Length);
-
-        var advance = index + literal.Length;
-        _remaining = _remaining[advance..];
-        _consumed += advance;
         _lastLiteralFamilyBranchId = 0;
-        return true;
-    }
-
-    private bool MoveNextIgnoreCaseLiteral()
-    {
-        var literal = _literal;
-        if (literal is null || literal.Length == 0)
-        {
-            return false;
-        }
-
-        _budget.Step();
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        var index = Utf8SearchExecutor.FindFirst(in searchPlan, _remaining);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (!_asciiInput)
-        {
-            // R05: folded ASCII literals project incrementally on non-ASCII input
-            // (every fold variant is ASCII, so the literal length is the UTF-16
-            // length), mirroring the exact-literal mode. Kelvin and culture
-            // divergences stay fenced upstream of the cursor.
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                _consumed,
-                _consumedUtf16,
-                _consumed + index,
-                literal.Length,
-                literal.Length,
-                ref _sliceInvocation,
-                out _consumed,
-                out _consumedUtf16);
-            _remaining = _input[_consumed..];
-            _lastLiteralFamilyBranchId = 0;
-            return true;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: _consumed + index,
-            lengthInUtf16: literal.Length,
-            indexInBytes: _consumed + index,
-            lengthInBytes: literal.Length);
-
-        var advance = index + literal.Length;
-        _remaining = _remaining[advance..];
-        _consumed += advance;
-        _lastLiteralFamilyBranchId = 0;
-        return true;
-    }
-
-    // Right-to-left literal enumeration finds the last occurrence in the
-    // shrinking prefix on every move and truncates the bound to its start, so
-    // each consumed region is scanned once overall. BCL advances runtextstart
-    // to the match start with the same exclusive-end rule, so overlapping and
-    // adjacent hits agree exactly. Reverse byte search never meets multibyte
-    // scalars (ASCII bytes sit on scalar boundaries), and ASCII lengths equal
-    // UTF-16 lengths, so only the gap needs decoding on non-ASCII input.
-    private bool MoveNextRtlExactAsciiLiteral()
-    {
-        var literal = _literal;
-        if (literal is null || literal.Length == 0)
-        {
-            return false;
-        }
-
-        _budget.Step();
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        var index = Utf8SearchExecutor.FindLast(in searchPlan, _remaining);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (!_asciiInput)
-        {
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                0,
-                0,
-                index,
-                literal.Length,
-                literal.Length,
-                ref _sliceInvocation,
-                out _,
-                out _);
-            _remaining = _remaining[..index];
-            _lastLiteralFamilyBranchId = 0;
-            return true;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: index,
-            lengthInUtf16: literal.Length,
-            indexInBytes: index,
-            lengthInBytes: literal.Length);
-        _remaining = _remaining[..index];
-        _lastLiteralFamilyBranchId = 0;
-        return true;
-    }
-
-    // Folded twin of the reverse arm above: the search plan folds variants at
-    // the byte level (ASCII patterns never meet non-ASCII fold partners except
-    // Kelvin, which stays fenced upstream of the cursor), so discovery and
-    // projection mirror the exact arm with the folded search kind.
-    private bool MoveNextRtlAsciiLiteralIgnoreCase()
-    {
-        var literal = _literal;
-        if (literal is null || literal.Length == 0)
-        {
-            return false;
-        }
-
-        _budget.Step();
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        var index = Utf8SearchExecutor.FindLast(in searchPlan, _remaining);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (!_asciiInput)
-        {
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                0,
-                0,
-                index,
-                literal.Length,
-                literal.Length,
-                ref _sliceInvocation,
-                out _,
-                out _);
-            _remaining = _remaining[..index];
-            _lastLiteralFamilyBranchId = 0;
-            return true;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: index,
-            lengthInUtf16: literal.Length,
-            indexInBytes: index,
-            lengthInBytes: literal.Length);
-        _remaining = _remaining[..index];
-        _lastLiteralFamilyBranchId = 0;
-        return true;
-    }
-
-    // UTF-8 twin of the reverse arms above: reverse byte search cannot meet a
-    // non-ASCII literal mid-scalar (well-formed occurrences always start their
-    // first byte on a scalar boundary), and the match length rides the literal
-    // field computed at construction, so discovery and projection mirror the
-    // ASCII arms with the literal UTF-16 length.
-    private bool MoveNextRtlExactUtf8Literal()
-    {
-        var literal = _literal;
-        if (literal is null || literal.Length == 0)
-        {
-            return false;
-        }
-
-        _budget.Step();
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        var index = Utf8SearchExecutor.FindLast(in searchPlan, _remaining);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (!_asciiInput)
-        {
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                0,
-                0,
-                index,
-                literal.Length,
-                _literalUtf16Length,
-                ref _sliceInvocation,
-                out _,
-                out _);
-            _remaining = _remaining[..index];
-            _lastLiteralFamilyBranchId = 0;
-            return true;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: index,
-            lengthInUtf16: _literalUtf16Length,
-            indexInBytes: index,
-            lengthInBytes: literal.Length);
-        _remaining = _remaining[..index];
-        _lastLiteralFamilyBranchId = 0;
-        return true;
-    }
-
-    private bool MoveNextExactUtf8Literal()
-    {
-        var literal = _literal;
-        if (literal is null || literal.Length == 0)
-        {
-            return false;
-        }
-
-        _budget.Step();
-        ref readonly var searchPlan = ref _plans.SearchPlan;
-        var index = _literalSearch is { } literalSearch &&
-            !_hasBoundaryRequirements &&
-            !_hasTrailingLiteralRequirement
-            ? literalSearch.IndexOf(_remaining)
-            : Utf8SearchExecutor.FindFirst(in searchPlan, _remaining);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        _current = Utf8ProjectionExecutor.ProjectMatch(
-            _projectionPlan,
-            _input,
-            _consumed,
-            _consumedUtf16,
-            _consumed + index,
-            literal.Length,
-            _literalUtf16Length,
-            ref _sliceInvocation,
-            out _consumed,
-            out _consumedUtf16);
-        _remaining = _input[_consumed..];
-        _lastLiteralFamilyBranchId = 0;
-        return true;
+        found = true;
+        return Utf8ExecutionLimitKind.None;
     }
 
     private bool MoveNextEmittedKernelPattern()

@@ -10,6 +10,11 @@ public sealed partial class Utf8Regex
     private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
     {
         if ((GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } program) return program;
+        // Empty literals also match between surrogate halves. Keep UTF-16 output
+        // fragments together before encoding instead of using a byte splicer.
+        if (_unitSliceProgram is { CanMatchEmpty: true } emptyProgram &&
+            _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral)
+            return emptyProgram;
         // These branches would otherwise construct BCL before reaching the
         // ordinary native/template routes. The owned program carries deadlines
         // and cancellation for every admitted shape.

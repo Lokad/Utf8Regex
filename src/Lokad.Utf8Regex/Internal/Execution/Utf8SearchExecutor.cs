@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class Utf8SearchExecutor
+internal static partial class Utf8SearchExecutor
 {
     public static bool TryFindNextMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
     {
