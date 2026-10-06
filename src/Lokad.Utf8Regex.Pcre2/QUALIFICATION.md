@@ -1,5 +1,31 @@
 # Managed PCRE2 profile qualification
 
+## Capture admission correction (development, 2026-10-06)
+
+The published coherent 0.3.0 package pair admitted .NET-style `(?<1>a)` and
+`(?<100>a)` definitions; the latter lost its participating capture during dense
+detailed projection. Current-source reproduction confirmed the same behavior.
+Native PCRE2 10.47 rejects names starting with ASCII or Unicode decimal digits.
+Development now rejects those definitions before any backend/foundation is chosen,
+using `Pcre2CompileException` and the existing `InvalidAfterParensQuery` kind.
+This is a profile conformance correction, not a sparse-numbering API extension.
+
+`Pcre2NumericCaptureAdmissionTests` covers the three naming syntaxes, constructor
+and policy-factory surfaces, scoped comments/literals, valid declaration-order
+slots, name tables, unmatched captures, backreferences, supplementary coordinates
+and replacement callback views. The core .NET numeric-definition contract remains
+separate. Public API declarations and native dependency boundaries are unchanged.
+Detached coherent packed consumers are qualified with `test-packaged-pcre2.ps1`.
+Published 0.3.0 remains the reported affected release; local development packages
+with that same version need isolated caches and an explicit source identity.
+
+Additional native-valid probes found existing quoted-class matching and
+parenthesized MARK-label structural gaps. Admission tests preserve their lexical
+meaning without claiming those execution shapes work or pinning the gaps as the
+desired semantics. These remain separate profile work, not numeric-capture fixes.
+
+## Historical qualification
+
 > Historical ledger for the 0.2.0 qualification (2026-08-21). Current release
 > qualification work is tracked in [PLAN.md](../../PLAN.md).
 

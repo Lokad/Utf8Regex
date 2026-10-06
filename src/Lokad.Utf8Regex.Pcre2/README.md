@@ -28,6 +28,14 @@ selected profile are not included. The executable corpus and backlog ledgers
 are the authoritative capability boundary; support is never inferred from
 similarity to .NET behavior.
 
+Capture names start with a Unicode letter or underscore; later characters may
+also be decimal digits. Names alias slots assigned in declaration order. Explicit
+.NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail
+construction with `Pcre2CompileException` / `InvalidAfterParensQuery`. This fixes
+their accidental admission and inaccessible sparse capture results in 0.3.0.
+Ordinary numbered groups, numeric backreferences, duplicate names and branch-reset
+numbering retain their PCRE2 contracts. The core .NET profile is unaffected.
+
 Patterns and subjects must be well-formed UTF-8. Public start positions and
 raw match ranges use byte offsets. UTF-16 coordinates are exposed only when
 the reported range is exactly projectable. Opted-in `\C` can return a byte

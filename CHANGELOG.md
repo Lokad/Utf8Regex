@@ -1,5 +1,7 @@
 # Changelog
 
+- The PCRE2 profile rejects capture definitions whose names start with a decimal digit before selecting an execution backend. This corrects accidental .NET-style numeric capture admission and lost sparse capture results in 0.3.0. Ordinary numeric slots and backreferences retain PCRE2 semantics; the core .NET profile continues to support explicit numeric definitions.
+
 - Owned split setup admits coordinate arrays, decoded UTF-16 payload and private unit buffers in one aggregate invocation. Decoding fills bounded scalar-aligned blocks and guards final publication; failed setup restores borrowed storage. Count-one splits retain an invocation holder, and cursor-backed tails and terminal moves observe its token/deadline. Map and decoded storage stay charged while split views need them. Getter/output admission, copied/abandoned ownership, remaining native/fallback setup and public finite policies remain open.
 
 - Owned UTF-16-offset enumeration now starts validation, offset checks and boundary-map admission under one invocation. Qualified forward cursors receive the same work, token and deadline; temporary maps are released before native transfer. Empty, mixed byte-unsafe, surrogate-half and RTL starts retain unit execution with full anchor origin. Exact anchored prefix/suffix cursors use bounded comparison and projection, retaining their native selection. Unserved entry, split decoding, result/copy ownership and public finite policies remain open.

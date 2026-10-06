@@ -99,6 +99,7 @@ internal static class Pcre2CompileValidator
             throw new Pcre2CompileException("Quantifier is too large.", Pcre2ErrorKind.QuantifierTooBig);
         }
 
+        Pcre2CaptureNameValidator.Validate(pattern, options, compileSettings.Newline);
         ValidateStructure(pattern);
     }
 

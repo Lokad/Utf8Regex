@@ -14,6 +14,14 @@ Semantics are chosen by **type**, not by a runtime mode flag. `Utf8Regex` remain
 
 For PCRE2, the detailed public result model must be **numeric-slot-first**, with explicit access to the **name table**. Singular by-name lookup may exist only as a convenience and must be clearly documented as “first set group for that name,” not as the primary truth. This follows PCRE2’s own behavior: with duplicate names, `pcre2_substring_number_from_name()` can report “not unique,” while the convenience by-name extractors scan the groups for that name and return the first one that is set. ([PCRE][3])
 
+Capture names may start with a Unicode letter or underscore, followed by letters,
+decimal digits or underscores. A digit-starting definition such as `(?<100>a)` is
+invalid PCRE2 syntax; it must throw `Pcre2CompileException` with the existing
+`InvalidAfterParensQuery` kind before selecting an execution backend. Do not admit
+.NET explicit numeric definitions through the foundation or invent a sparse-slot
+extension to repair their result projection. Ordinary capture slots and numeric
+backreferences retain PCRE2 declaration-order numbering. ([PCRE][7])
+
 PCRE2 match values must be modeled using **reported start and end offsets**, not just `Index + Length`. This is necessary because PCRE2 documents that `\K` inside positive lookahead can yield a successful match whose reported start offset is greater than its end offset. ([PCRE][3])
 
 Partial matching must be exposed through a **dedicated tri-state probing API**, not smuggled into normal “successful match” APIs. PCRE2 documents partial matching as a distinct outcome (`PCRE2_ERROR_PARTIAL`), and when it occurs only substring 0 is defined; the rest of the ovector is undefined. ([PCRE][4])
