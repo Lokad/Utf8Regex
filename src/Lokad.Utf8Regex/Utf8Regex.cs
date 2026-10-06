@@ -534,6 +534,7 @@ public sealed partial class Utf8Regex
              _ownedSliceProgram.HasSharedCaptureDeclarations ||
              _ownedSliceProgram.HasExplicitCaptureNumbers ||
              _ownedSliceProgram.HasBalancing ||
+             _ownedSliceProgram.HasContiguousAnchor ||
              // A shorter structural prefix can fail its suffix where a longer
              // branch at the same start succeeds. The owned VM retries it.
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
@@ -550,10 +551,7 @@ public sealed partial class Utf8Regex
              _ownedSliceProgram.IgnoreCase &&
                 (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
                  ShouldUseKelvinSignFallback(input)) ||
-             _hasCaptures && (_ownedSliceProgram.HasUnicodePatternAtoms ||
-                // Fixed unit-span branch maps cannot project variable UTF-8 widths
-                // or preserve full capture histories. Use the authoritative VM.
-                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern) ||
+             _hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
              // Exact byte literals already preserve scalar endpoints. Native
              // boundary/class predicates need scalar qualification before they
              // can serve mixed subjects without the shared owned VM.
@@ -1621,7 +1619,11 @@ public sealed partial class Utf8Regex
     private Utf8MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
+        // Native simple discovery may ignore captures; detailed projection needs
+        // the scalar VM instead of the removed fixed unit-span branch maps.
+        var detailedProgram = GetOwnedSliceProgram(input, cancellationToken) ??
+            (_hasCaptures && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern ? _ownedSliceProgram : null);
+        if (detailedProgram is { } ownedProgram)
         {
             return OwnedSliceMatchDetailed(input, ownedProgram, cancellationToken);
         }

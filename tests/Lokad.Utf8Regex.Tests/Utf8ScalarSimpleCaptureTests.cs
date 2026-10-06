@@ -12,11 +12,14 @@ public sealed class Utf8ScalarSimpleCaptureTests
     {
         var regex = new Utf8Regex("(a(.)c)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(new string('x', 100000) + "ayc");
-        if (count) Assert.Equal(1, regex.Count(input));
-        else Assert.True(regex.IsMatch(input));
+        // A live token selects scalar discovery; qualified no-token native lanes
+        // remain available and are outside this allocation control.
+        using var source = new CancellationTokenSource();
+        if (count) Assert.Equal(1, regex.Count(input, source.Token));
+        else Assert.True(regex.IsMatch(input, source.Token));
         var before = GC.GetAllocatedBytesForCurrentThread();
-        if (count) Assert.Equal(1, regex.Count(input));
-        else Assert.True(regex.IsMatch(input));
+        if (count) Assert.Equal(1, regex.Count(input, source.Token));
+        else Assert.True(regex.IsMatch(input, source.Token));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
