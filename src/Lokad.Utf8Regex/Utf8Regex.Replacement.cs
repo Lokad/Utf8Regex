@@ -29,7 +29,7 @@ public sealed partial class Utf8Regex
                 replacementText));
         }
 
-        if (GetOwnedReplacementProgram(input, replacement) is { } ownedProgram)
+        if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
         }
@@ -193,7 +193,7 @@ public sealed partial class Utf8Regex
                 replacement.OriginalText);
         }
 
-        if (GetOwnedReplacementProgram(input, replacement) is { } ownedProgram)
+        if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
         }
@@ -280,7 +280,7 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if (GetOwnedReplacementProgram(input, replacement) is { } ownedProgram)
+        if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
             var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Destination, destination, cancellationToken);
             bytesWritten = result.BytesWritten;

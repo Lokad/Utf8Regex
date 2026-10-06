@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class Utf8AsciiFindExecutor
+internal static partial class Utf8AsciiFindExecutor
 {
     public static bool TryFindNextAnchor(
         ReadOnlySpan<byte> input,

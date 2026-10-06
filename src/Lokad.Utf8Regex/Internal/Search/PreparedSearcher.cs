@@ -12,7 +12,7 @@ internal enum PreparedSearcherKind : byte
     QuotedAsciiRun = 5,
 }
 
-internal readonly struct PreparedSearcher
+internal readonly partial struct PreparedSearcher
 {
     public PreparedSearcher(PreparedSubstringSearch literalSearch, bool ignoreCase)
     {

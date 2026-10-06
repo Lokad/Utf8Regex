@@ -104,7 +104,14 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
         Assert.Equal(
             Regex.Count(input, Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled),
             regex.Count(bytes));
-        Assert.Equal("native_structural_family_emit", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
+        // Mixed structural subjects retain owned unit semantics; the ASCII
+        // fused route is still qualified by the dedicated ASCII witnesses.
+        Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
+        var expected = Regex.Match(input, Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var actual = regex.Match(bytes);
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]

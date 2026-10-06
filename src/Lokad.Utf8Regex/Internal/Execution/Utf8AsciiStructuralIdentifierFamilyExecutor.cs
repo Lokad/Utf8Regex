@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
+internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 {
     internal readonly record struct SharedPrefixSuffixKernelDiagnostics(
         int BucketCount,
@@ -33,6 +33,18 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         out int matchedLength)
     {
         matchedLength = 0;
+        if ((!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null) &&
+            verifierRuntime.Plan.AsciiProgram.LinearProgram.HasValue && structuralSearchPlan.HasValue)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var state = new Utf8StructuralSearchState(new PreparedSearchScanState(startIndex, default), default);
+            var breach = TryFindNext(structuralSearchPlan, verifierRuntime.Plan.AsciiProgram, input, startIndex,
+                ref state, ref invocation, out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            matchedLength = found ? match.Length : 0;
+            return found ? match.Index : -1;
+        }
         var searchData = searchPlan.AlternateLiteralSearchData;
         if (!searchData.HasValue)
         {
@@ -151,6 +163,15 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8StructuralVerifierRuntime verifierRuntime,
         Utf8ExecutionDeadline budget)
     {
+        if ((!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null) &&
+            verifierRuntime.Plan.AsciiProgram.LinearProgram.HasValue && structuralSearchPlan.HasValue)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = TryCount(structuralSearchPlan, verifierRuntime.Plan.AsciiProgram, input, ref invocation, out var boundedCount);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            return boundedCount;
+        }
         var searchData = searchPlan.AlternateLiteralSearchData;
         if (searchData.HasValue &&
             structuralSearchPlan.HasValue &&

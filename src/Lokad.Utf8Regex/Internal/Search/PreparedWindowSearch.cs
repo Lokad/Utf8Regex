@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Internal.Search;
 
-internal readonly struct PreparedWindowSearch
+internal readonly partial struct PreparedWindowSearch
 {
     // Each leading source and trailing source advances monotonically. A failed
     // trailing scan reaches end-of-input once, so the scan is O(n + candidates).

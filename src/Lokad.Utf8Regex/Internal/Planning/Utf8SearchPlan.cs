@@ -494,7 +494,7 @@ internal readonly struct Utf8SearchPlan
             : null;
     }
 
-    private static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)
+    internal static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)
     {
         if (literals is not { Length: > 1 })
         {

@@ -27,7 +27,7 @@ public sealed class LokadCodeRouteGuardrailTests
     }
 
     [Fact]
-    public void CompiledMethodTokenFamilyUsesEmittedBoundaryLiteralKernel()
+    public void CompiledMethodTokenFamilyUsesOwnedUnitsForMixedSubjects()
     {
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
         const string input = "é LogTrace λLogError LogWarning_ LogDebug.";
@@ -38,7 +38,12 @@ public sealed class LokadCodeRouteGuardrailTests
         Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
         Assert.Equal(expected, regex.Count(bytes));
         Assert.Equal(expected > 0, regex.IsMatch(bytes));
-        Assert.Equal("native_structural_family_emit", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
+        // The compiled ASCII plan remains prepared, while mixed subjects use
+        // owned unit semantics for Unicode boundaries and UTF-16 projection.
+        Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
+        var match = regex.Match(bytes);
+        Assert.Equal(Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index, match.IndexInUtf16);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]

@@ -536,6 +536,10 @@ public sealed partial class Utf8Regex
              _unitSliceProgram.HasSharedCaptureDeclarations ||
              _unitSliceProgram.HasExplicitCaptureNumbers ||
              _unitSliceProgram.HasBalancing ||
+             // A shorter structural prefix can fail its suffix where a longer
+             // branch at the same start succeeds. The unit verifier retries it.
+             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
              // Absolute anchored simple plans without a dedicated native matcher
              // otherwise force BCL verification, even on ASCII misses. Serve the
              // cached unit program; retain qualified direct/native and line paths.
@@ -550,6 +554,9 @@ public sealed partial class Utf8Regex
                  ShouldUseKelvinSignFallback(input)) ||
              _unitSliceProgram.IgnoreCase && (Options & RegexOptions.IgnoreCase) == 0 && !Utf8InputAnalyzer.IsAscii(input) ||
              _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
+             // ASCII structural kernels cannot apply Unicode whitespace or
+             // project UTF-16 coordinates from byte offsets on mixed subjects.
+             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily && !Utf8InputAnalyzer.IsAscii(input) ||
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
              !_unitSliceProgram.ServesInput(input)))
             return _unitSliceProgram;
@@ -755,6 +762,22 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, out var structuralInvocation, out var structuralValidation))
+        {
+            // Non-ASCII subjects and overlapping prefixes retain the unit semantic
+            // verifier and this same deadline; map acquisition still needs bounds.
+            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+                _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
+                _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
+                return OwnedSliceIsMatchFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                    Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
+            var state = new Utf8StructuralSearchState(default, default);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
+                _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            return found;
+        }
         if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
         {
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan, input, 0, input.Length,
@@ -976,6 +999,12 @@ public sealed partial class Utf8Regex
         CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        return OwnedSliceIsMatchFromUnit(input, program, map, startUnit, ref invocation);
+    }
+
+    private bool OwnedSliceIsMatchFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
+        int startUnit, ref Utf8SliceInvocation invocation)
+    {
         var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         if (startUnit >= 0 && startUnit <= map.Utf16Length)
@@ -1033,6 +1062,19 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, out var structuralInvocation, out var structuralValidation))
+        {
+            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+                _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
+                _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
+                return OwnedSliceCountFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                    Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(_preparedRegex.StructuralSearchPlan,
+                _preparedRegex.StructuralVerifier.AsciiProgram, input, ref structuralInvocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            return count;
+        }
         if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
@@ -1382,6 +1424,12 @@ public sealed partial class Utf8Regex
         CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        return OwnedSliceCountFromUnit(input, program, map, startUnit, ref invocation);
+    }
+
+    private int OwnedSliceCountFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
+        int startUnit, ref Utf8SliceInvocation invocation)
+    {
         var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         try
@@ -1434,6 +1482,21 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, out var structuralInvocation, out var structuralValidation))
+        {
+            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+                _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
+                _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
+                return OwnedSliceMatchFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                    Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
+            var state = new Utf8StructuralSearchState(default, default);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
+                _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            return found ? Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly), input,
+                0, 0, match.Index, match.Length, match.Length, ref structuralInvocation, out _, out _) : Utf8ValueMatch.NoMatch;
+        }
         if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
         {
             var plan = _preparedRegex.SearchPlan;
@@ -1723,6 +1786,12 @@ public sealed partial class Utf8Regex
         CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        return OwnedSliceMatchFromUnit(input, program, map, startUnit, ref invocation);
+    }
+
+    private Utf8ValueMatch OwnedSliceMatchFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
+        int startUnit, ref Utf8SliceInvocation invocation)
+    {
         var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         if (startUnit >= 0 && startUnit <= map.Utf16Length)
@@ -3379,7 +3448,7 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
-        if ((GetOwnedSliceProgram(input) ??
+        if ((GetOwnedSliceProgram(input, cancellationToken) ??
             (input.IsEmpty || _unitSliceProgram is { CanMatchEmpty: true } &&
                 _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _unitSliceProgram : null)) is { } ownedProgram)
         {
@@ -3407,7 +3476,7 @@ public sealed partial class Utf8Regex
 
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
-        if (GetOwnedReplacementProgram(input, replacementPattern) is { } requiredProgram)
+        if (GetOwnedReplacementProgram(input, replacementPattern, cancellationToken) is { } requiredProgram)
             return OwnedSliceReplace(input, requiredProgram, replacementPattern,
                 Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
         var budget = CreateExecutionBudget();
@@ -4092,7 +4161,7 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if (GetOwnedSliceProgram(input) is null && !(input.IsEmpty && _unitSliceProgram is not null) &&
+        if (GetOwnedSliceProgram(input, cancellationToken) is null && !(input.IsEmpty && _unitSliceProgram is not null) &&
             !(_unitSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {

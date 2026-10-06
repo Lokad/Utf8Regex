@@ -7,9 +7,9 @@ namespace Lokad.Utf8Regex;
 /// <summary>Owned replacement over original UTF-16 coordinates.</summary>
 public sealed partial class Utf8Regex
 {
-    private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
+    private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken token)
     {
-        if ((GetOwnedSliceProgram(input) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } program) return program;
+        if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } program) return program;
         // Empty literals also match between surrogate halves. Keep UTF-16 output
         // fragments together before encoding instead of using a byte splicer.
         if (_unitSliceProgram is { CanMatchEmpty: true } emptyProgram &&

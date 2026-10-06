@@ -13,6 +13,20 @@ internal static partial class Utf8SearchExecutor
         in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int start, int end,
         bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match,
         out bool found)
+        => TryFindLiteralFamilyCore(plan, plan.AlternateLiteralsUtf8 ?? [],
+            plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals, true, input, start, end,
+            reverse, ref invocation, out match, out found);
+
+    internal static Utf8ExecutionLimitKind TryFindLiteralFamilyCandidate(
+        byte[][] literals, bool folded, ReadOnlySpan<byte> input, int start, int end,
+        bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
+        => TryFindLiteralFamilyCore(default, literals, folded, false, input, start, end,
+            reverse, ref invocation, out match, out found);
+
+    private static Utf8ExecutionLimitKind TryFindLiteralFamilyCore(
+        in Utf8SearchPlan plan, byte[][] literals, bool folded, bool confirm,
+        ReadOnlySpan<byte> input, int start, int end, bool reverse,
+        ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
     {
         match = default;
         found = false;
@@ -23,9 +37,8 @@ internal static partial class Utf8SearchExecutor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         var low = start;
         var high = end - 1;
-        if (plan.AlternateLiteralsUtf8 is { } literals)
+        if (literals.Length > 0)
         {
-            var folded = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals;
             while (low <= high)
             {
                 // Search only one candidate window for every branch. Searching
@@ -42,7 +55,9 @@ internal static partial class Utf8SearchExecutor
                     var literal = literals[id];
                     if (literal.Length == 0)
                         throw new InvalidOperationException("Native literal families require nonempty branches.");
-                    var value = reverse ? literal[^1] : literal[0];
+                    // Regex RTL literal execution prioritizes the latest end.
+                    // Raw prepared candidate searches prioritize latest starts.
+                    var value = reverse && confirm ? literal[^1] : literal[0];
                     var other = folded && (uint)((value | 0x20) - 'a') <= 'z' - 'a' ? (byte)(value ^ 0x20) : value;
                     var relative = reverse ? block.LastIndexOfAny(value, other) : block.IndexOfAny(value, other);
                     if (relative >= 0 && (candidateByte < 0 || (reverse
@@ -61,14 +76,16 @@ internal static partial class Utf8SearchExecutor
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     var literal = literals[id];
-                    var candidate = reverse ? candidateByte + 1 - literal.Length : candidateByte;
+                    var candidate = reverse && confirm ? candidateByte + 1 - literal.Length : candidateByte;
                     if (candidate < start || candidate > end - literal.Length) continue;
                     breach = TryCompareLiteral(input.Slice(candidate, literal.Length), literal, folded,
                         ref invocation, out var equal);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!equal) continue;
-                    breach = TryConfirmLiteral(plan, input, candidate, literal.Length,
-                        ref invocation, out var accepted);
+                    var accepted = true;
+                    if (confirm)
+                        breach = TryConfirmLiteral(plan, input, candidate, literal.Length,
+                            ref invocation, out accepted);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (accepted)
                     {
@@ -77,7 +94,7 @@ internal static partial class Utf8SearchExecutor
                         invocation.Budget.ThrowIfCancellationRequested();
                         match = new PreparedSearchMatch(candidate, literal.Length, id);
                         found = true;
-                        Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+                        if (confirm) Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                         return Utf8ExecutionLimitKind.None;
                     }
                 }

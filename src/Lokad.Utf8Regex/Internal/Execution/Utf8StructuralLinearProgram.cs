@@ -2433,6 +2433,16 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
     private int CountForward(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
+        if ((!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null) &&
+            Program.StructuralVerifierPlan.AsciiProgram.LinearProgram.HasValue && Program.StructuralSearchPlan.HasValue)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(Program.StructuralSearchPlan,
+                Program.StructuralVerifierPlan.AsciiProgram, input, ref invocation, out var boundedCount);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            return boundedCount;
+        }
         if (CanUseStatefulSearch())
         {
             var statefulCount = 0;
@@ -2486,6 +2496,21 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     {
         matchIndex = -1;
         matchedLength = 0;
+        if ((!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null) &&
+            Program.StructuralVerifierPlan.AsciiProgram.LinearProgram.HasValue && Program.StructuralSearchPlan.HasValue)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var pending = state.SearchState;
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(Program.StructuralSearchPlan,
+                Program.StructuralVerifierPlan.AsciiProgram, input, state.MinStartIndex, ref pending, ref invocation,
+                out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            state = new Utf8AsciiStructuralFamilyScanState(pending, found ? match.Index + Math.Max(1, match.Length) : state.MinStartIndex);
+            matchIndex = found ? match.Index : -1;
+            matchedLength = found ? match.Length : 0;
+            return found;
+        }
         var searchData = Program.SearchPlan.AlternateLiteralSearchData;
         if (!CanUseStatefulSearch() || !searchData.HasValue)
         {
@@ -2555,6 +2580,18 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     private int FindNext(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
+        if ((!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null) &&
+            Program.StructuralVerifierPlan.AsciiProgram.LinearProgram.HasValue && Program.StructuralSearchPlan.HasValue)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var state = new Utf8StructuralSearchState(new PreparedSearchScanState(startIndex, default), default);
+            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(Program.StructuralSearchPlan,
+                Program.StructuralVerifierPlan.AsciiProgram, input, startIndex, ref state, ref invocation, out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
+            matchedLength = found ? match.Length : 0;
+            return found ? match.Index : -1;
+        }
         var searchData = Program.SearchPlan.AlternateLiteralSearchData;
         if (!searchData.HasValue)
         {

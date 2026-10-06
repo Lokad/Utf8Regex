@@ -4,6 +4,21 @@
 
 ### Owned UTF-16 execution
 
+- Metered structural candidates share invocation state through prepared searches,
+  fixed-distance guards, start transforms and paired windows. Structural family
+  value operations retain the validation deadline and token through candidate
+  rejection and bounded suffix verification. Mixed UTF-8 subjects and overlapping
+  prefixes retain the owned unit verifier under that invocation. Boundary-map
+  acquisition, other structural families and common finite policies remain open.
+  Cached structural prefix-overlap facts preserve retries such as
+  `(?:foo|foobar)[A-Z][A-Za-z0-9_]*` matching `foobarAlpha`, including unlimited
+  operations. Live-token replacement templates and UTF-8 destination fast paths
+  retain the admitted owned program rather than bypassing it through native/BCL
+  splicers. This fixes a fork routing defect; .NET 10 matches the longer branch.
+  Unlimited structural family operations also retain unit semantics on mixed
+  subjects, preserving UTF-16 offsets after non-ASCII prefixes and Unicode
+  whitespace matching (for example, `LogError\u2003(`).
+
 - Native single-literal IsMatch, Count and Match share one invocation from bounded
   UTF-8 validation through search and coordinate projection. Tokens and deadlines
   survive all phases, and denied Count work publishes no partial total. Empty
