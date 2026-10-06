@@ -17,6 +17,10 @@ public ref struct Utf8ValueSplitEnumerator
     private readonly int _totalUtf16Length;
     private Regex.ValueSplitEnumerator _fallbackEnumerator;
     private Utf8OperationMatchCursor _matchCursor;
+    internal ulong DebugInvocationSteps => _matchCursor.DebugInvocationSteps;
+    internal ulong DebugInvocationReservedBytes => _matchCursor.DebugInvocationReservedBytes;
+    internal ulong DebugDecodedReservedBytes => _matchCursor.DebugSplitDecodedReservedBytes;
+    internal ulong DebugPeakWorkingBytes => _matchCursor.DebugPeakWorkingBytes;
     private int _segmentStartBytes;
     private int _segmentStartUtf16;
     private int _remainingCount;
@@ -38,13 +42,17 @@ public ref struct Utf8ValueSplitEnumerator
         _boundaryMap = boundaryMap;
         _totalUtf16Length = decoded.Length;
         _fallbackEnumerator = emitTailOnly ? default : regex.EnumerateSplits(decoded, count);
-        _matchCursor = default;
+        // Count one publishes only a tail, but still needs a valid deadline
+        // holder for publication and subsequent terminal moves.
+        _matchCursor = emitTailOnly
+            ? new Utf8OperationMatchCursor(input, boundaryMap, Utf8ExecutionDeadline.Start(regex.MatchTimeout))
+            : default;
         _segmentStartBytes = 0;
         _segmentStartUtf16 = 0;
         _remainingCount = emitTailOnly ? 1 : 0;
         _completed = false;
-        _timeoutPattern = null;
-        _timeout = default;
+        _timeoutPattern = emitTailOnly ? regex.ToString() : null;
+        _timeout = regex.MatchTimeout;
         Current = default;
     }
 
@@ -132,6 +140,7 @@ public ref struct Utf8ValueSplitEnumerator
     {
         try
         {
+            if (_sourceKind != SplitSourceKind.FallbackRegex) _matchCursor.CheckOwnedSliceCursorBoundary();
             return _sourceKind switch
             {
                 SplitSourceKind.NativeMatchCursor => MoveNextNative(),
@@ -143,10 +152,16 @@ public ref struct Utf8ValueSplitEnumerator
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
         {
+            if (_sourceKind is SplitSourceKind.OwnedSlice or SplitSourceKind.OwnedSliceRtl) _matchCursor.AbortOwnedSplitMatches();
             throw new RegexMatchTimeoutException(
                 Encoding.UTF8.GetString(_input),
                 _timeoutPattern,
                 _timeout);
+        }
+        catch
+        {
+            if (_sourceKind is SplitSourceKind.OwnedSlice or SplitSourceKind.OwnedSliceRtl) _matchCursor.AbortOwnedSplitMatches();
+            throw;
         }
     }
 
@@ -207,17 +222,20 @@ public ref struct Utf8ValueSplitEnumerator
 
             if (_remainingCount == 1 || !_matchCursor.MoveNext())
             {
+                _matchCursor.CheckOwnedSliceCursorBoundary();
                 Current = new Utf8ValueSplit(
                     _input,
                     _decoded,
                     _segmentStartUtf16,
                     _totalUtf16Length - _segmentStartUtf16,
                     ownedMap);
+                _matchCursor.AbortOwnedSplitMatches();
                 _completed = true;
                 return true;
             }
 
             var ownedMatch = _matchCursor.Current;
+            _matchCursor.CheckOwnedSliceCursorBoundary();
             Current = new Utf8ValueSplit(
                 _input,
                 _decoded,
@@ -241,17 +259,20 @@ public ref struct Utf8ValueSplitEnumerator
 
             if (_remainingCount == 1 || !_matchCursor.MoveNext())
             {
+                _matchCursor.CheckOwnedSliceCursorBoundary();
                 Current = new Utf8ValueSplit(
                     _input,
                     _decoded,
                     0,
                     _segmentStartUtf16,
                     rtlMap);
+                _matchCursor.AbortOwnedSplitMatches();
                 _completed = true;
                 return true;
             }
 
             var rtlMatch = _matchCursor.Current;
+            _matchCursor.CheckOwnedSliceCursorBoundary();
             Current = new Utf8ValueSplit(
                 _input,
                 _decoded,
@@ -269,6 +290,7 @@ public ref struct Utf8ValueSplitEnumerator
         }
 
         var match = _matchCursor.Current;
+        _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,
             decoded: null,
@@ -295,6 +317,7 @@ public ref struct Utf8ValueSplitEnumerator
             return EmitTail();
         }
 
+        _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,
             decoded: null,
@@ -310,6 +333,7 @@ public ref struct Utf8ValueSplitEnumerator
 
     private bool EmitTail()
     {
+        _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,
             _decoded,

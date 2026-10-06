@@ -3349,23 +3349,8 @@ public sealed partial class Utf8Regex
         try
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-            var validation = Utf8Validation.Validate(input, ref invocation);
-            // Split owns this map beyond match EOF. Decode/result storage still
-            // needs bounded materialization and separate aggregate admission.
-            Utf8BoundaryMap map = default;
-            var cursor = count == 1 ? default : Utf8OperationMatchCursor.CreateMapped(program, input,
-                validation, ref invocation, true, out map);
-            if (count == 1) map = Utf8BoundaryMap.Create(input, validation, ref invocation, out _);
-            var decoded = Encoding.UTF8.GetString(input);
-            if (count != 1) cursor.CheckOwnedSliceCursorBoundary();
-            else
-            {
-                var breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned split entry exceeded {breach}.");
-                invocation.Budget.ThrowIfCancellationRequested();
-            }
-            return new Utf8ValueSplitEnumerator(input, decoded, cursor, map,
-                count, decoded.Length, program.RightToLeft).WithTimeoutMapping(Pattern, MatchTimeout);
+            return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
