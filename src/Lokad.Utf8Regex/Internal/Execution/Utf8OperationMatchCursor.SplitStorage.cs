@@ -10,7 +10,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     // The split's map and decoded text outlive match EOF: Current and copied
     // views still refer to them. Keep both charged for the holder lifetime.
-    // Count one needs only this invocation holder, not a private unit subject.
+    // Count one needs only this invocation holder, without match discovery.
     internal static Utf8OperationMatchCursor CreateSplitCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         Utf8BoundaryMap map, Utf8SliceInvocation invocation, ulong mapBytes, ulong decodedBytes, bool tailOnly)
     {
@@ -33,13 +33,11 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal void AbortOwnedSplitMatches()
     {
-        _sliceSubject.Release(ref _sliceInvocation);
         _sliceProgram = null;
     }
 
     internal void AbortOwnedSplitSetup()
     {
-        _sliceSubject.AbortBeforePublication(ref _sliceInvocation);
         _boundaryMap?.StorageLease?.AbortBeforePublication();
         _boundaryMap = null;
         _boundaryMapReservedBytes = 0;

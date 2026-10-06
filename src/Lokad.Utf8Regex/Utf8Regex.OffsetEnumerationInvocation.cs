@@ -12,7 +12,7 @@ public sealed partial class Utf8Regex
         out Utf8ValueMatchEnumerator enumerator)
     {
         enumerator = default;
-        if (_unitSliceProgram is not { } program) return false;
+        if (_ownedSliceProgram is not { } program) return false;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         ulong reservation = 0;
         try
@@ -21,6 +21,9 @@ public sealed partial class Utf8Regex
             var start = Utf16Position.CreateChecked(validation, utf16Offset, nameof(utf16Offset));
             var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
             var boundary = map.Resolve(start.Value);
+            if (!boundary.IsScalarBoundary)
+                throw new ArgumentOutOfRangeException(nameof(utf16Offset), utf16Offset,
+                    "The requested UTF-16 offset is not aligned to a UTF-8 scalar boundary.");
             var eligible = boundary.IsScalarBoundary && !UsesRightToLeft() &&
                 (Options & RegexOptions.NonBacktracking) == 0 && !RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
                 !program.HasSurrogateLiteral && !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&

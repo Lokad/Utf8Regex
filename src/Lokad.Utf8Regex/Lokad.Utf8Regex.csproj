@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>Lokad.Utf8Regex</PackageId>
     <Title>Lokad.Utf8Regex</Title>
-    <Description>UTF-8 native regular expressions for .NET, aligned semantically with System.Text.RegularExpressions.Regex on .NET 10 while operating on ReadOnlySpan&lt;byte&gt;.</Description>
+    <Description>Regular expressions over UTF-8 ReadOnlySpan&lt;byte&gt;, targeting owned Unicode-scalar matching with byte coordinates.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>regex;utf8;utf-8;span;bytes;performance</PackageTags>
   </PropertyGroup>

@@ -290,7 +290,7 @@ Baseline API notes:
 
 ## 4.2 UTF-16 offset compatibility APIs
 
-These APIs accept explicitly named **UTF-16 coordinate offsets** for interoperability with .NET strings. The offsets must resolve to complete scalar boundaries; they do not request UTF-16-unit matching. Define and qualify the interior-surrogate rejection during migration. The preferred native surface uses UTF-8 spans and byte coordinates.
+These APIs accept explicitly named **UTF-16 coordinate offsets** for interoperability with .NET strings. The offsets must resolve to complete scalar boundaries; they do not request UTF-16-unit matching. An offset inside a supplementary scalar throws `ArgumentOutOfRangeException`, naming the offset parameter. The preferred native surface uses UTF-8 spans and byte coordinates.
 
 ```csharp
 public sealed class Utf8Regex

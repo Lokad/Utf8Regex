@@ -50,7 +50,7 @@ public sealed partial class Utf8Regex
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
     private readonly Utf8UnitBranchSpanMap? _unitBranchSpanMap;
     private readonly Utf8SliceProgram? _sliceProgram;
-    private readonly Utf8SliceProgram? _unitSliceProgram;
+    private readonly Utf8SliceProgram? _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
@@ -157,7 +157,7 @@ public sealed partial class Utf8Regex
             ? Utf8SliceParser.TryParse(sliceOptions, preparedRegex.SemanticRegex.RuntimeTree)
             : null;
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
-        _unitSliceProgram = ownedSliceProgram;
+        _ownedSliceProgram = ownedSliceProgram;
         // R03 lookbehind: the owned front end leaves no runtime tree for
         // captures in lookbehind, which defers group metadata to first use.
         // Invalid patterns must still fail construction exactly like the
@@ -516,50 +516,49 @@ public sealed partial class Utf8Regex
         }
     }
 
-    // Preserve the native scalar lanes on their admitted subjects. The private
-    // unit subject owns the slice's supplementary-character declines and the
-    // non-ASCII ordered-window lane without changing the public UTF-8 contract.
+    // Preserve qualified native lanes; the shared owned VM traverses the original
+    // UTF-8 subject and projects derived UTF-16 coordinates through its boundary map.
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input, CancellationToken token)
     {
         // Native loops do not yet carry this token through every checkpoint.
-        // Keep their no-token selection; live tokens use the admitted unit VM.
-        if (token.CanBeCanceled && _unitSliceProgram is not null) return _unitSliceProgram;
+        // Keep their no-token selection; live tokens use the owned scalar VM.
+        if (token.CanBeCanceled && _ownedSliceProgram is not null) return _ownedSliceProgram;
         return GetOwnedSliceProgram(input);
     }
 
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input)
     {
         if (_sliceProgram is not null) return _sliceProgram;
-        if (_unitSliceProgram is not null &&
-            (_unitSliceProgram.HasSurrogateLiteral ||
-             _unitSliceProgram.UsesInterpretedLazyLoopSemantics ||
-             _unitSliceProgram.HasSharedCaptureDeclarations ||
-             _unitSliceProgram.HasExplicitCaptureNumbers ||
-             _unitSliceProgram.HasBalancing ||
+        if (_ownedSliceProgram is not null &&
+            (_ownedSliceProgram.HasSurrogateLiteral ||
+             _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
+             _ownedSliceProgram.HasSharedCaptureDeclarations ||
+             _ownedSliceProgram.HasExplicitCaptureNumbers ||
+             _ownedSliceProgram.HasBalancing ||
              // A shorter structural prefix can fail its suffix where a longer
-             // branch at the same start succeeds. The unit verifier retries it.
+             // branch at the same start succeeds. The owned VM retries it.
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                 _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
              // Absolute anchored simple plans without a dedicated native matcher
              // otherwise force BCL verification, even on ASCII misses. Serve the
-             // cached unit program; retain qualified direct/native and line paths.
+             // cached owned program; retain qualified direct/native and line paths.
              _compiledEngine.Kind == Utf8CompiledEngineKind.SimplePatternInterpreter &&
                 !_hasDirectAnchoredHeadTailWithoutValidation &&
                 !_hasDirectFallbackAsciiFamilyWithoutValidation &&
                 !_hasDirectFallbackTokenFamilyWithoutValidation &&
                 _caretAnchoredGroupedLiteralUtf8 is null &&
                 ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input) ||
-             _unitSliceProgram.IgnoreCase &&
+             _ownedSliceProgram.IgnoreCase &&
                 (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
                  ShouldUseKelvinSignFallback(input)) ||
-             _unitSliceProgram.IgnoreCase && (Options & RegexOptions.IgnoreCase) == 0 && !Utf8InputAnalyzer.IsAscii(input) ||
-             _hasCaptures && _unitSliceProgram.HasUnicodePatternAtoms ||
+             _ownedSliceProgram.IgnoreCase && (Options & RegexOptions.IgnoreCase) == 0 && !Utf8InputAnalyzer.IsAscii(input) ||
+             _hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
              // ASCII structural kernels cannot apply Unicode whitespace or
              // project UTF-16 coordinates from byte offsets on mixed subjects.
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily && !Utf8InputAnalyzer.IsAscii(input) ||
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
-             !_unitSliceProgram.ServesInput(input)))
-            return _unitSliceProgram;
+             !_ownedSliceProgram.ServesInput(input)))
+            return _ownedSliceProgram;
         return null;
     }
 
@@ -590,11 +589,10 @@ public sealed partial class Utf8Regex
         CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
         {
-            invocation.AnchorOriginByte = subject.Map.Resolve(fromUnit).ByteOffset;
+            invocation.AnchorOriginByte = map.Resolve(fromUnit).ByteOffset;
         }
 
         int[][]? byteStarts = null;
@@ -606,7 +604,7 @@ public sealed partial class Utf8Regex
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, subject.Input, subject.Map, fromUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, fromUnit, slots.Starts, slots.Ends, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -635,7 +633,7 @@ public sealed partial class Utf8Regex
             for (var group = 1; group <= program.GroupCount; group++)
             {
                 ConvertHistory(
-                    subject.Map,
+                    map,
                     byteStarts[group - 1],
                     byteLengths[group - 1],
                     ref invocation,
@@ -693,7 +691,6 @@ public sealed partial class Utf8Regex
 
             Utf8SliceRunner.ReleaseHistory(byteStarts, byteLengths, ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            subject.Release(ref invocation);
         }
     }
 
@@ -769,7 +766,7 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceIsMatchFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                return OwnedSliceIsMatchFromUnit(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
@@ -962,7 +959,7 @@ public sealed partial class Utf8Regex
         // Admitted UTF-16 starts use the cached owned unit program for ASCII
         // and Unicode atoms alike. Ordinary byte-oriented discovery retains
         // its native choices through GetOwnedSliceProgram.
-        if (_unitSliceProgram is { } ownedProgram)
+        if (_ownedSliceProgram is { } ownedProgram)
         {
             return OwnedSliceIsMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1008,17 +1005,16 @@ public sealed partial class Utf8Regex
     private bool OwnedSliceIsMatchFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
         int startUnit, ref Utf8SliceInvocation invocation)
     {
-        var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         if (startUnit >= 0 && startUnit <= map.Utf16Length)
         {
-            invocation.AnchorOriginByte = subject.Map.Resolve(startUnit).ByteOffset;
+            invocation.AnchorOriginByte = map.Resolve(startUnit).ByteOffset;
         }
 
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, subject.Input, subject.Map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -1029,7 +1025,6 @@ public sealed partial class Utf8Regex
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            subject.Release(ref invocation);
         }
     }
 
@@ -1070,7 +1065,7 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceCountFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                return OwnedSliceCountFromUnit(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
                 ? AsciiOrderedLiteralWindowExecutor.TryCount(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -1385,7 +1380,7 @@ public sealed partial class Utf8Regex
                 : 0;
         }
 
-        if (_unitSliceProgram is { } ownedProgram)
+        if (_ownedSliceProgram is { } ownedProgram)
         {
             return OwnedSliceCountFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1436,12 +1431,11 @@ public sealed partial class Utf8Regex
     private int OwnedSliceCountFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
         int startUnit, ref Utf8SliceInvocation invocation)
     {
-        var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.CountFrom(program, subject.Input, subject.Map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.CountFrom(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -1452,7 +1446,6 @@ public sealed partial class Utf8Regex
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            subject.Release(ref invocation);
         }
     }
 
@@ -1493,7 +1486,7 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceMatchFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                return OwnedSliceMatchFromUnit(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
@@ -1745,7 +1738,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (_unitSliceProgram is { } ownedProgram)
+        if (_ownedSliceProgram is { } ownedProgram)
         {
             return OwnedSliceMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1801,17 +1794,16 @@ public sealed partial class Utf8Regex
     private Utf8ValueMatch OwnedSliceMatchFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
         int startUnit, ref Utf8SliceInvocation invocation)
     {
-        var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         if (startUnit >= 0 && startUnit <= map.Utf16Length)
         {
-            invocation.AnchorOriginByte = subject.Map.Resolve(startUnit).ByteOffset;
+            invocation.AnchorOriginByte = map.Resolve(startUnit).ByteOffset;
         }
 
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, subject.Input, subject.Map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -1827,7 +1819,6 @@ public sealed partial class Utf8Regex
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            subject.Release(ref invocation);
         }
     }
 
@@ -2034,9 +2025,9 @@ public sealed partial class Utf8Regex
         // Native discovery may lack a complete capture-history projection.
         // Keep its qualified shapers above; the cached unit program owns the
         // remaining admitted detailed result instead of constructing BCL.
-        if (_unitSliceProgram is not null && !RequiresCultureSensitiveFallback &&
+        if (_ownedSliceProgram is not null && !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
-            return OwnedSliceMatchDetailed(input, _unitSliceProgram, cancellationToken);
+            return OwnedSliceMatchDetailed(input, _ownedSliceProgram, cancellationToken);
 
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
@@ -2126,7 +2117,7 @@ public sealed partial class Utf8Regex
             return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
         }
 
-        if (_unitSliceProgram is { } ownedProgram)
+        if (_ownedSliceProgram is { } ownedProgram)
         {
             return OwnedSliceMatchDetailedFromUnit(input, ownedProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
         }
@@ -2966,8 +2957,8 @@ public sealed partial class Utf8Regex
         // discovery, confirmation and projection. Other shapes retain the unit VM.
         // A possible non-ASCII folding partner stays in its existing semantic route.
         if (!RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
-            _unitSliceProgram is not { HasSurrogateLiteral: true } &&
-            (_unitSliceProgram is not { IgnoreCase: true } ||
+            _ownedSliceProgram is not { HasSurrogateLiteral: true } &&
+            (_ownedSliceProgram is not { IgnoreCase: true } ||
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase) &&
             _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
@@ -2985,9 +2976,9 @@ public sealed partial class Utf8Regex
         }
 
         if (!UsesRightToLeft() && !RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
-            _unitSliceProgram is not { HasSurrogateLiteral: true } &&
-            _unitSliceProgram is not ({ HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true }) &&
-            (_unitSliceProgram is not { IgnoreCase: true } ||
+            _ownedSliceProgram is not { HasSurrogateLiteral: true } &&
+            _ownedSliceProgram is not ({ HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true }) &&
+            (_ownedSliceProgram is not { IgnoreCase: true } ||
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
         {
@@ -3086,7 +3077,7 @@ public sealed partial class Utf8Regex
         // the scan start exactly like BCL startat, unlike suffix slicing); the
         // half-start scan mirrors BCL units, and anything unserved keeps the
         // routing below.
-        if (_unitSliceProgram is { } ownedProgram)
+        if (_ownedSliceProgram is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatchesFromUnit(input, ownedProgram, analysis.BoundaryMap, startInUtf16.Value, CancellationToken.None)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -3136,7 +3127,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_unitSliceProgram is { } ownedProgram)
+        if (_ownedSliceProgram is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, int.MaxValue, cancellationToken);
         return EnumerateSplits(input);
     }
@@ -3202,7 +3193,7 @@ public sealed partial class Utf8Regex
 
         if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
-            if (count >= 0 && _unitSliceProgram is { } resumedProgram)
+            if (count >= 0 && _ownedSliceProgram is { } resumedProgram)
                 return OwnedSliceEnumerateSplits(input, resumedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
             var subject = Utf8InputAnalyzer.Analyze(input);
             return new Utf8ValueSplitEnumerator(input, subject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, subject.BoundaryMap)
@@ -3324,7 +3315,7 @@ public sealed partial class Utf8Regex
 
         // Native split cursors above retain their discovery paths. Count zero
         // and any other admitted shape use the owned unit cursor before BCL.
-        if (count >= 0 && _unitSliceProgram is { } splitProgram)
+        if (count >= 0 && _ownedSliceProgram is { } splitProgram)
             return OwnedSliceEnumerateSplits(input, splitProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
         var fallbackSubject = Utf8InputAnalyzer.Analyze(input);
         return new Utf8ValueSplitEnumerator(input, fallbackSubject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, fallbackSubject.BoundaryMap)
@@ -3339,7 +3330,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (count >= 0 && _unitSliceProgram is { } ownedProgram)
+        if (count >= 0 && _ownedSliceProgram is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, cancellationToken);
         return EnumerateSplits(input, count);
     }
@@ -3449,7 +3440,7 @@ public sealed partial class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
         _ = Utf8Validation.Validate(replacementPatternUtf8);
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -3457,8 +3448,8 @@ public sealed partial class Utf8Regex
         }
 
         if ((GetOwnedSliceProgram(input, cancellationToken) ??
-            (input.IsEmpty || _unitSliceProgram is { CanMatchEmpty: true } &&
-                _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _unitSliceProgram : null)) is { } ownedProgram)
+            (input.IsEmpty || _ownedSliceProgram is { CanMatchEmpty: true } &&
+                _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _ownedSliceProgram : null)) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram,
                 GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
@@ -3531,7 +3522,7 @@ public sealed partial class Utf8Regex
     private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
         if (!RequiresCultureSensitiveFallback &&
-            (_sliceProgram ?? _unitSliceProgram) is { } ownedProgram)
+            (_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
         {
             try { return OwnedUnitReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
@@ -3870,7 +3861,7 @@ public sealed partial class Utf8Regex
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
         if (!RequiresCultureSensitiveFallback &&
-            (_sliceProgram ?? _unitSliceProgram) is { } ownedProgram)
+            (_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
         {
             try
             {
@@ -4159,7 +4150,7 @@ public sealed partial class Utf8Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -4169,8 +4160,8 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if (GetOwnedSliceProgram(input, cancellationToken) is null && !(input.IsEmpty && _unitSliceProgram is not null) &&
-            !(_unitSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
+        if (GetOwnedSliceProgram(input, cancellationToken) is null && !(input.IsEmpty && _ownedSliceProgram is not null) &&
+            !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten);

@@ -22,7 +22,21 @@
 
 ## Unreleased
 
-### Owned UTF-16 execution
+### UTF-8 scalar migration (in progress)
+
+- Owned matching now traverses the original strict UTF-8 subject. Removed the
+  private surrogate-half conversion buffer, its alternate boundary map and cursor
+  storage loan, and the `RepeatGreedyUtf16` instruction. Repeats count atom
+  iterations; empty scans cannot publish matches inside a scalar. Supplementary
+  literal runs and their quantifiers lower to scalar instructions, including RTL.
+- Explicit UTF-16 start APIs reject positions inside a supplementary scalar.
+  UTF-16 result coordinates remain derived interoperability data.
+- Direct scalar operation, capture, replacement, cancellation and scratch-admission
+  regressions replace the retired unit-subject suite. Character classes/categories,
+  PythonRe's UTF-16 compensation patterns, remaining BCL/unit routes and the wider
+  parity test migration are unfinished. This is not full scalar qualification.
+
+### Historical UTF-16 parity work (superseded)
 
 - ASCII structural-family enumeration, offset cursors and capture-free splits use
   the shared owned candidate/verifier cursor. It retains the validation invocation,

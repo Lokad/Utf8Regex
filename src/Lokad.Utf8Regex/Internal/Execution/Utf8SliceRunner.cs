@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Input;
@@ -386,6 +387,8 @@ internal static partial class Utf8SliceRunner
         }
 
         var startBoundary = map.Resolve(unit);
+        if (!startBoundary.IsScalarBoundary)
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
         var startByte = startBoundary.ByteOffset;
         var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, false, true, startBoundary.IsScalarBoundary, ref invocation);
         if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
@@ -501,6 +504,8 @@ internal static partial class Utf8SliceRunner
         }
 
         var startBoundary = map.Resolve(unit);
+        if (!startBoundary.IsScalarBoundary)
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
         var startByte = startBoundary.ByteOffset;
         var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, startBoundary.IsScalarBoundary, ref invocation);
         if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
@@ -554,6 +559,8 @@ internal static partial class Utf8SliceRunner
 
         var edgeByte = endUnit >= map.Utf16Length ? input.Length : map.Resolve(endUnit).ByteOffset;
         var edgeClean = endUnit >= map.Utf16Length || endUnit <= 0 || map.Resolve(endUnit).IsScalarBoundary;
+        if (!edgeClean)
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
         var outcome = TryMatchAt(program, input, edgeByte, captureStarts, captureEnds, edgeClean, ref invocation);
         if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
         {
@@ -565,21 +572,6 @@ internal static partial class Utf8SliceRunner
             return new Utf8SliceUnitOutcome(true, endUnit, endUnit, edgeByte, edgeByte, Utf8ExecutionLimitKind.None);
         }
 
-        // Trail-half closing edges cannot host a non-empty hit for served programs
-        // (mirrored atoms never consume halves): the greedy hit below belongs to the
-        // lead edge, where the scan reports it with mapped coordinates. Empty-capable
-        // shapes report the exact edge empty the oracle finds here instead; word-boundary
-        // shapes keep the mapped span because unit and byte evaluations of the boundary
-        // disagree at collapsed edges.
-        if (!edgeClean && program.CanMatchEmpty && !program.RequiresUnicodeWordBoundary)
-        {
-            return new Utf8SliceUnitOutcome(true, endUnit, endUnit, edgeByte, edgeByte, Utf8ExecutionLimitKind.None);
-        }
-
-        // The closing edge may sit mid-scalar (the scan tries every unit, halves
-        // included): report the unit of the edge byte actually attempted, which the
-        // mirrored consumption always leaves on a scalar boundary for served programs,
-        // exactly like the ascending attempt maps both edges through bytes.
         var startUnit = map.GetUtf16OffsetForByteOffset(outcome.EndIndex);
         var closeUnit = map.GetUtf16OffsetForByteOffset(edgeByte);
         return new Utf8SliceUnitOutcome(true, startUnit, closeUnit, outcome.EndIndex, edgeByte, Utf8ExecutionLimitKind.None);
@@ -826,6 +818,7 @@ internal static partial class Utf8SliceRunner
                 {
                     var rtlEdgeByte = rtlUnit >= rtlMap.Utf16Length ? rtlInput.Length : rtlMap.Resolve(rtlUnit).ByteOffset;
                     var rtlEdgeClean = rtlUnit >= rtlMap.Utf16Length || rtlUnit <= 0 || rtlMap.Resolve(rtlUnit).IsScalarBoundary;
+                    if (!rtlEdgeClean) continue;
                     var rtlOutcome = TryMatchAt(rtlProgram, rtlInput, rtlEdgeByte, rtlStarts, rtlEnds, true, rtlEdgeClean, ref rtlInvocation);
                     if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
                     {
@@ -844,26 +837,6 @@ internal static partial class Utf8SliceRunner
                             rtlOutcome.CaptureStarts, rtlOutcome.CaptureLengths, Utf8ExecutionLimitKind.None);
                     }
 
-                    // Trail-half closing edges mirror the unit-scan rule: only an
-                    // empty hit can close here for served programs, so empty-capable
-                    // shapes report the exact edge empty with unmatched histories
-                    // (word-boundary shapes keep the mapped span); the closing edge maps
-                    // through bytes exactly like the ascending attempt.
-                    if (!rtlEdgeClean && rtlProgram.CanMatchEmpty && !rtlProgram.RequiresUnicodeWordBoundary)
-                    {
-                        var rtlEmptyStarts = new int[rtlProgram.GroupCount][];
-                        var rtlEmptyLengths = new int[rtlProgram.GroupCount][];
-                        for (var rtlGroup = 0; rtlGroup < rtlEmptyStarts.Length; rtlGroup++)
-                        {
-                            rtlEmptyStarts[rtlGroup] = Array.Empty<int>();
-                            rtlEmptyLengths[rtlGroup] = Array.Empty<int>();
-                        }
-
-                        return new Utf8SliceDetailedOutcome(
-                            true, rtlUnit, rtlUnit, rtlEdgeByte, rtlEdgeByte,
-                            rtlEmptyStarts, rtlEmptyLengths, Utf8ExecutionLimitKind.None);
-                    }
-
                     var rtlStartUnit = rtlMap.GetUtf16OffsetForByteOffset(rtlOutcome.EndIndex);
                     var rtlCloseUnit = rtlMap.GetUtf16OffsetForByteOffset(rtlEdgeByte);
                     return new Utf8SliceDetailedOutcome(
@@ -878,6 +851,7 @@ internal static partial class Utf8SliceRunner
         for (var unit = fromUnit; unit <= map.Utf16Length; unit++)
         {
             var startBoundary = map.Resolve(unit);
+            if (!startBoundary.IsScalarBoundary) continue;
             var startByte = startBoundary.ByteOffset;
             var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, true, startBoundary.IsScalarBoundary, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -941,10 +915,7 @@ internal static partial class Utf8SliceRunner
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
-                    // One pattern character denotes one UTF-16 unit, including
-                    // each half of a supplementary literal. Core unit subjects
-                    // encode halves independently; scalar consumers never receive
-                    // programs containing half literals on astral subjects.
+                    // Literal atoms consume one complete scalar in either direction.
                     var literalIndex = inputIndex;
                     var literalWidth = 0;
                     if (program.RightToLeft)
@@ -976,18 +947,21 @@ internal static partial class Utf8SliceRunner
                     }
                     else
                     {
-                        char literalScalar;
-                        if (literalLead < 0x80)
-                            literalScalar = (char)literalLead;
-                        else if (!TryDecodeBmpScalar(input, literalIndex, out literalScalar))
+                        if (Rune.DecodeFromUtf8(input.Slice(literalIndex), out var literalScalar, out _) != OperationStatus.Done)
                         {
                             failed = true;
                             break;
                         }
 
-                        literalMatches = literalScalar == (char)instruction.A ||
-                            instruction.B != 0 && Utf8SliceCaseEquivalences.GetInvariantEquivalents(literalScalar)
-                                .Contains((char)instruction.A);
+                        literalMatches = literalScalar.Value == instruction.A;
+                        if (!literalMatches && instruction.B != 0)
+                        {
+                            literalMatches = literalScalar.IsBmp && instruction.A <= char.MaxValue
+                                ? Utf8SliceCaseEquivalences.GetInvariantEquivalents((char)literalScalar.Value)
+                                    .Contains((char)instruction.A)
+                                : Rune.IsValid(instruction.A) && Rune.ToUpperInvariant(literalScalar) ==
+                                    Rune.ToUpperInvariant(new Rune(instruction.A));
+                        }
                     }
 
                     if (literalMatches)
@@ -1127,7 +1101,6 @@ internal static partial class Utf8SliceRunner
                     programIndex = instruction.A;
                     break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
-                case Utf8SliceInstructionKind.RepeatGreedyUtf16:
                 case Utf8SliceInstructionKind.RepeatLazy:
                     {
                         var repeatId = instruction.B;
@@ -1146,16 +1119,10 @@ internal static partial class Utf8SliceRunner
                         var minimum = instruction.C;
                         var maximum = instruction.D;
                         var greedy = instruction.Kind != Utf8SliceInstructionKind.RepeatLazy;
-                        // Qualified bodies consume one whole scalar per iteration,
-                        // but their minimum is measured in UTF-16 units. An attempt
-                        // starting on the trail half consumes only that remaining
-                        // unit; later astral scalars contribute both units.
-                        var increment = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedyUtf16 &&
-                            inputIndex < input.Length && input[inputIndex] >= 0xF0 &&
-                            (inputIndex != start || startIsScalarBoundary) ? 2 : 1;
+                        // Repetition counts atom iterations, independently of UTF-8 or UTF-16 width.
                         if (count < minimum)
                         {
-                            if (!SetRepeat(counts, positions, repeatId, count + increment, inputIndex, ref stacks, ref invocation))
+                            if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
                             }
@@ -1202,7 +1169,7 @@ internal static partial class Utf8SliceRunner
 
                         if (greedy)
                         {
-                            if (!SetRepeat(counts, positions, repeatId, count + increment, inputIndex, ref stacks, ref invocation))
+                            if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
                             }

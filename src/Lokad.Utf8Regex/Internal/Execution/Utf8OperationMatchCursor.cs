@@ -68,7 +68,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private bool _nativeStructuralExhausted;
     private bool _preserveOffsetCurrent;
     private Utf8StructuralSearchState _structuralSearchState;
-    private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
     private int _sliceOriginUnit;
     private string? _decodedUnits;
@@ -329,16 +328,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = program;
         _sliceInvocation = invocation;
         _sliceInvocation.ShareStorageForCursor();
-        try
-        {
-            _sliceSubject = Utf8SliceUnitSubject.Create(input, map, ref _sliceInvocation);
-            _sliceSubject.ShareStorageForCursor(ref _sliceInvocation);
-        }
-        catch
-        {
-            _sliceSubject.AbortBeforePublication(ref _sliceInvocation);
-            throw;
-        }
         _sliceUnit = 0;
         _sliceOriginUnit = -1;
         _mode = EnumeratorMode.OwnedSlice;
@@ -421,7 +410,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private bool MoveNextOwnedSlice()
     {
         var slots = new Utf8SliceSlots([], []);
-        var subjectLease = _sliceSubject.StorageLease;
         try
         {
             // A new MoveNext and result publication are operation boundaries,
@@ -429,7 +417,7 @@ internal ref partial struct Utf8OperationMatchCursor
             CheckOwnedSliceCursorBoundary();
             if (_sliceProgram is null || _boundaryMap is null) return false;
             var projectionMap = _boundaryMap.Value;
-            var map = _sliceSubject.Map;
+            var map = projectionMap;
             slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
             // Right-to-left enumeration descends closing edges from the search
             // bound (BCL runtextstart): non-empty matches chain the bound to
@@ -452,7 +440,7 @@ internal ref partial struct Utf8OperationMatchCursor
                 while (_sliceUnit >= 0)
                 {
                     var rtlOutcome = Utf8SliceRunner.TryMatchAtRightEdgeUnit(
-                        _sliceProgram, _sliceSubject.Input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
+                        _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
                     if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
                     {
                         throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -477,7 +465,6 @@ internal ref partial struct Utf8OperationMatchCursor
                 }
 
                 CheckOwnedSliceCursorBoundary();
-                _sliceSubject.Release(ref _sliceInvocation);
                 ReleaseOwnedBoundaryMap();
                 _sliceProgram = null;
                 return false;
@@ -498,7 +485,7 @@ internal ref partial struct Utf8OperationMatchCursor
             while (_sliceUnit <= map.Utf16Length)
             {
                 var outcome = Utf8SliceRunner.TryMatchFromUnit(
-                    _sliceProgram, _sliceSubject.Input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
+                    _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 {
                     throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -523,14 +510,12 @@ internal ref partial struct Utf8OperationMatchCursor
             }
 
             CheckOwnedSliceCursorBoundary();
-            _sliceSubject.Release(ref _sliceInvocation);
             ReleaseOwnedBoundaryMap();
             _sliceProgram = null;
             return false;
         }
         catch
         {
-            _sliceSubject.Release(ref _sliceInvocation);
             ReleaseOwnedBoundaryMap();
             _sliceProgram = null;
             throw;
@@ -538,9 +523,6 @@ internal ref partial struct Utf8OperationMatchCursor
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
-            // The VM receives the private byte span separately from its lease.
-            // Keep the descriptor rooted through the last span read and cleanup.
-            GC.KeepAlive(subjectLease);
         }
     }
 

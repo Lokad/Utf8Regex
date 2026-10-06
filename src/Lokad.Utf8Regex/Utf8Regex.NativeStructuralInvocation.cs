@@ -22,8 +22,8 @@ public sealed partial class Utf8Regex
             _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.HasValue;
         if (!eligible ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
-            RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _unitSliceProgram is null ||
-            _unitSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true } or
+            RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _ownedSliceProgram is null ||
+            _ownedSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true } or
                 { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true })
             return false;
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);

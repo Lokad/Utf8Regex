@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
-/// ordered alternation, greedy/lazy repetition, captures, UTF-16 literals, ASCII
+/// ordered alternation, greedy/lazy repetition, captures, scalar literals, ASCII
 /// sets, dots, anchors, word boundaries, shorthand classes, Unicode property
 /// escapes, backreferences, lookarounds,
 /// and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
@@ -59,7 +59,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record EmptyNode() : Utf8SliceNode(Utf8SliceNodeKind.Empty);
     internal sealed record FailNode() : Utf8SliceNode(Utf8SliceNodeKind.Fail);
 
-    internal sealed record LiteralNode(ushort Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
+    internal sealed record LiteralNode(int Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
     internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Set)
     {
@@ -131,7 +131,6 @@ internal enum Utf8SliceInstructionKind : byte
     TestGroup = 23,
     Category = 24,
     CategorySet = 25,
-    RepeatGreedyUtf16 = 26,
     BalanceStart = 27,
 }
 
@@ -344,7 +343,6 @@ internal sealed class Utf8SliceProgram
                         atomic = true;
                         break;
                     case Utf8SliceInstructionKind.RepeatGreedy:
-                    case Utf8SliceInstructionKind.RepeatGreedyUtf16:
                     case Utf8SliceInstructionKind.RepeatLazy:
                         loop = true;
                         break;
@@ -1416,9 +1414,7 @@ internal static class Utf8SliceLowerer
                     var exitIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatExit, repeatId, 0, 0, 0));
                     Instructions[repeatIndex] = new Utf8SliceInstruction(
-                        repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy :
-                        !MirrorExecute && repeat.Minimum > 1 && repeat.Maximum == int.MaxValue && CanCountWholeLoopUtf16Units(repeat.Body)
-                            ? Utf8SliceInstructionKind.RepeatGreedyUtf16 : Utf8SliceInstructionKind.RepeatGreedy,
+                        repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy,
                         exitIndex, repeatId, repeat.Minimum, repeat.Maximum);
                     break;
                 case Utf8SliceNode.DotNode dot:

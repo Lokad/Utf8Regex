@@ -375,10 +375,14 @@ internal static class Utf8OwnedTreeParser
 
                 if (IsQuantifierStart(character) && run.Length != 0)
                 {
+                    // A literal supplementary scalar is one quantified atom.
+                    var lastWidth = run.Length >= 2 && char.IsHighSurrogate(run[run.Length - 2]) &&
+                        char.IsLowSurrogate(run[run.Length - 1]) ? 2 : 1;
                     var last = run[run.Length - 1];
-                    run.Length--;
+                    var supplementaryLiteral = lastWidth == 2 ? run.ToString(run.Length - 2, 2) : null;
+                    run.Length -= lastWidth;
                     FlushRun(state, children, run);
-                    var unit = One(state, last);
+                    var unit = supplementaryLiteral is not null ? Multi(state, supplementaryLiteral) : One(state, last);
                     if (!ParseQuantifier(ref state, ref unit, out var decayedUnit))
                     {
                         context.Fail(state);

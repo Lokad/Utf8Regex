@@ -56,7 +56,16 @@ internal ref struct Utf8ValidatedInput
     }
 
     public Utf16Position GetUtf16Position(int value, string parameterName)
-        => Utf16Position.CreateChecked(_validation, value, parameterName);
+    {
+        var position = Utf16Position.CreateChecked(_validation, value, parameterName);
+        if (!BoundaryMap.Resolve(value).IsScalarBoundary)
+        {
+            throw new ArgumentOutOfRangeException(parameterName, value,
+                "The requested UTF-16 offset is not aligned to a UTF-8 scalar boundary.");
+        }
+
+        return position;
+    }
 
     public Utf8ByteRange GetByteRange(int start, int length, string startParameterName, string lengthParameterName)
     {

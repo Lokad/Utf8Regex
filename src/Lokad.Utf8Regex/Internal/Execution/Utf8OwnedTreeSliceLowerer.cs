@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Lowers the authoritative owned tree to the shared UTF-16 VM.
+/// <summary>Lowers the authoritative owned tree to the shared UTF-8 VM.
 /// Capture identities and scoped options are already resolved by the front end;
 /// this pass translates execution order and decoded class unions without
 /// lexing the pattern again.</summary>
@@ -78,10 +78,16 @@ internal static class Utf8OwnedTreeSliceLowerer
                         return node.Str is { } set ? DecodeClass(set, foldCase) : null;
                     case Utf8TreeNodeKind.Multi:
                         if (node.Str is not { } text) return null;
-                        var units = new Utf8SliceNode[text.Length];
-                        for (var index = 0; index < units.Length; index++)
-                            units[index] = new Utf8SliceNode.LiteralNode(text[rightToLeft ? text.Length - 1 - index : index], foldCase);
-                        return new Utf8SliceNode.ConcatNode(units);
+                        var literals = new List<Utf8SliceNode>();
+                        for (var index = 0; index < text.Length;)
+                        {
+                            var width = char.IsSurrogatePair(text, index) ? 2 : 1;
+                            var value = width == 2 ? char.ConvertToUtf32(text, index) : text[index];
+                            literals.Add(new Utf8SliceNode.LiteralNode(value, foldCase));
+                            index += width;
+                        }
+                        if (rightToLeft) literals.Reverse();
+                        return new Utf8SliceNode.ConcatNode(literals.ToArray());
                     case Utf8TreeNodeKind.Concatenate:
                         var children = new Utf8SliceNode[node.ChildCount];
                         for (var index = 0; index < children.Length; index++)

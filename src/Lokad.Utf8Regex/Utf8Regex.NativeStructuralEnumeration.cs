@@ -26,7 +26,7 @@ public sealed partial class Utf8Regex
                 !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap);
             var cursor = native
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation)
-                : Utf8OperationMatchCursor.CreateMapped(_unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     input, validation, ref invocation, false, out _);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
             return true;

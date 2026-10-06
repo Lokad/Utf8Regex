@@ -22,7 +22,7 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         CancellationToken cancellationToken)
     {
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -186,7 +186,7 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken)
     {
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -270,7 +270,7 @@ public sealed partial class Utf8Regex
         out int bytesWritten,
         CancellationToken cancellationToken)
     {
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _unitSliceProgram is null)
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -504,7 +504,7 @@ public sealed partial class Utf8Regex
     {
         // Qualified native splice routes have already had their opportunity.
         // Admitted remaining templates use the cached VM with the operation token.
-        if (_unitSliceProgram is { } program)
+        if (_ownedSliceProgram is { } program)
             return OwnedSliceReplace(input, program, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
         var decoded = Encoding.UTF8.GetString(input);
         if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var owned))

@@ -9,19 +9,19 @@ public sealed partial class Utf8Regex
 {
     private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken token)
     {
-        if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _unitSliceProgram : null)) is { } program) return program;
+        if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _ownedSliceProgram : null)) is { } program) return program;
         // Empty literals also match between surrogate halves. Keep UTF-16 output
         // fragments together before encoding instead of using a byte splicer.
-        if (_unitSliceProgram is { CanMatchEmpty: true } emptyProgram &&
+        if (_ownedSliceProgram is { CanMatchEmpty: true } emptyProgram &&
             _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral)
             return emptyProgram;
         // These branches would otherwise construct BCL before reaching the
         // ordinary native/template routes. The owned program carries deadlines
         // and cancellation for every admitted shape.
-        if (_unitSliceProgram is not null &&
-            (UsesRightToLeft() || _unitSliceProgram.HasContiguousAnchor ||
+        if (_ownedSliceProgram is not null &&
+            (UsesRightToLeft() || _ownedSliceProgram.HasContiguousAnchor ||
              ShouldUseFallbackForSimplePatternReplacement(replacement, input)))
-            return _unitSliceProgram;
+            return _ownedSliceProgram;
         // Native byte splicers may encode literals separately. Retain a half
         // supplied by the template until it can pair with the adjacent fragment.
         var text = replacement.OriginalText;
@@ -33,7 +33,7 @@ public sealed partial class Utf8Regex
                 unit++;
                 continue;
             }
-            return _unitSliceProgram;
+            return _ownedSliceProgram;
         }
         return null;
     }
@@ -54,7 +54,6 @@ public sealed partial class Utf8Regex
         var validation = Utf8Validation.Validate(input);
         var map = Utf8BoundaryMap.Create(input, validation);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        var subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
         var slots = new Utf8SliceSlots([], []);
         var writer = new Utf8SliceUtf16OutputWriter();
         var decodedReservation = (ulong)map.Utf16Length * 2;
@@ -71,8 +70,8 @@ public sealed partial class Utf8Regex
             var anchor = unit;
             while (unit >= 0 && unit <= map.Utf16Length)
             {
-                invocation.AnchorOriginByte = subject.Map.Resolve(anchor).ByteOffset;
-                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, subject.Input, subject.Map,
+                invocation.AnchorOriginByte = map.Resolve(anchor).ByteOffset;
+                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map,
                     unit, slots.Starts, slots.Ends, ref invocation);
                 try
                 {
@@ -83,7 +82,7 @@ public sealed partial class Utf8Regex
                         throw new InvalidOperationException("Owned replacement match is missing capture histories.");
                     if (!program.RightToLeft)
                         writer.Append(decoded.AsSpan(edge, outcome.StartUnit - edge), ref invocation);
-                    expansion.Append(input, decoded, map, subject.Map, outcome, ref writer, ref state, ref invocation);
+                    expansion.Append(input, decoded, map, map, outcome, ref writer, ref state, ref invocation);
                     if (program.RightToLeft)
                     {
                         writer.Append(decoded.AsSpan(outcome.EndUnit, edge - outcome.EndUnit), ref invocation);
@@ -124,7 +123,6 @@ public sealed partial class Utf8Regex
         {
             writer.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            subject.Release(ref invocation);
             if (decodedAdmitted) invocation.Ledger.Release(decodedReservation);
         }
     }
@@ -136,13 +134,11 @@ public sealed partial class Utf8Regex
         var map = Utf8BoundaryMap.Create(input, validation);
         var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         ref var invocation = ref scope.Invocation;
-        var subject = new Utf8SliceUnitSubject();
         var slots = new Utf8SliceSlots([], []);
         var decodedReservation = (ulong)map.Utf16Length * 2;
         var decodedAdmitted = false;
         try
         {
-            subject = Utf8SliceUnitSubject.Create(input, map, ref invocation);
             if (!invocation.Ledger.TryReserve(decodedReservation))
                 throw new InvalidOperationException("Owned replacement input exceeded the invocation storage budget.");
             decodedAdmitted = true;
@@ -154,8 +150,8 @@ public sealed partial class Utf8Regex
             var anchor = unit;
             while (unit >= 0 && unit <= map.Utf16Length)
             {
-                invocation.AnchorOriginByte = subject.Map.Resolve(anchor).ByteOffset;
-                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, subject.Input, subject.Map,
+                invocation.AnchorOriginByte = map.Resolve(anchor).ByteOffset;
+                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map,
                     unit, slots.Starts, slots.Ends, ref invocation);
                 try
                 {
@@ -167,7 +163,7 @@ public sealed partial class Utf8Regex
                     if (!start.IsScalarBoundary || !end.IsScalarBoundary)
                         throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
                     if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, start.ByteOffset - edgeByte));
-                    var projection = Utf8SliceCaptureProjection.Create(outcome, subject.Map, ref invocation);
+                    var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
                     try
                     {
                         var context = projection.CreateContext(input, decoded, map, program, outcome);
@@ -204,7 +200,6 @@ public sealed partial class Utf8Regex
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            subject.Release(ref invocation);
             if (decodedAdmitted) invocation.Ledger.Release(decodedReservation);
             scope.Release();
         }

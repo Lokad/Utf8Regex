@@ -17,8 +17,8 @@ public sealed partial class Utf8Regex
             _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
             _preparedRegex.SimplePatternPlan.Branches is not { Length: > 0 } ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
-            RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _unitSliceProgram is null ||
-            _unitSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true })
+            RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _ownedSliceProgram is null ||
+            _ownedSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true })
             return false;
         try
         {
@@ -30,7 +30,7 @@ public sealed partial class Utf8Regex
                 ? _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe : _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe;
             var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, validation.IsAscii)
-                : Utf8OperationMatchCursor.CreateMapped(_unitSliceProgram, input, validation, ref invocation, false, out _);
+                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
             return true;
         }
