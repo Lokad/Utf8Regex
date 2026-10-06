@@ -6,6 +6,24 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SearchExecutor
 {
+    internal static Utf8ExecutionLimitKind TryFindNativeLiteralMatch(
+        in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int start, int end,
+        bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match,
+        out bool found)
+    {
+        if (plan.AlternateLiteralsUtf8 is { Length: > 0 })
+            return TryFindLiteralFamily(plan, input, start, end, reverse, ref invocation, out match, out found);
+
+        match = default;
+        found = false;
+        var breach = TryFindLiteral(plan, input, start, end, reverse, ref invocation, out var index);
+        if (breach != Utf8ExecutionLimitKind.None || index < 0) return breach;
+        var search = plan.LiteralSearch ?? throw new InvalidOperationException("An accepted native literal requires a prepared search.");
+        match = new PreparedSearchMatch(index, search.Length, 0);
+        found = true;
+        return Utf8ExecutionLimitKind.None;
+    }
+
     // A charged search or comparison examines at most 2,048 bytes. Filtering
     // first-byte candidates separately avoids multiplying an unbounded needle
     // by a search window inside an opaque prepared-search call.

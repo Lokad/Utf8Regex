@@ -172,7 +172,7 @@ internal static class Utf8SearchPortfolioRuntime
         if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-            var breach = Utf8BackendInstructionExecutor.TryCountLiteralFamily(plan, input, false, ref invocation, out var count);
+            var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, input, false, ref invocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
             return count;

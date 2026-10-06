@@ -755,12 +755,12 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (TryStartNativeFamilyInvocation(input, cancellationToken, out var invocation))
+        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
         {
-            var breach = Utf8SearchExecutor.TryFindLiteralFamily(_preparedRegex.SearchPlan, input, 0, input.Length,
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan, input, 0, input.Length,
                 UsesRightToLeft(), ref invocation, out _, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return found;
         }
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
@@ -1033,12 +1033,12 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (TryStartNativeFamilyInvocation(input, cancellationToken, out var invocation))
+        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
         {
-            var breach = Utf8BackendInstructionExecutor.TryCountLiteralFamily(_preparedRegex.SearchPlan,
+            var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
                 input, UsesRightToLeft(), ref invocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return count;
         }
         // Retain the qualified Unicode literal Count kernel. Other operations
@@ -1434,13 +1434,13 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (TryStartNativeFamilyInvocation(input, cancellationToken, out var invocation))
+        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
         {
             var plan = _preparedRegex.SearchPlan;
-            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length,
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0, input.Length,
                 UsesRightToLeft(), ref invocation, out var selected, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return found ? Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(plan.ProjectionPlan, input,
                 plan.AlternateLiteralUtf16Lengths, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
         }

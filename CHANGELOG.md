@@ -4,6 +4,12 @@
 
 ### Owned UTF-16 execution
 
+- Native single-literal IsMatch, Count and Match share one invocation from bounded
+  UTF-8 validation through search and coordinate projection. Tokens and deadlines
+  survive all phases, and denied Count work publishes no partial total. Empty
+  literals and capture-sensitive or non-native folding shapes retain their owned
+  semantic routes. Public finite-policy accounting remains open.
+
 - Native literal-family enumeration retains one invocation through bounded branch
   search, full-subject confirmation and projection. Deadline-aware family Count,
   IsMatch and Match also use bounded scans; unlimited prepared-search lanes remain.

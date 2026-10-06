@@ -113,14 +113,14 @@ public sealed class Utf8NativeFamilyInvocationTests
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 needle 😀 target");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountLiteralFamily(plan, input,
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, input,
             reverse, ref baseline, out var total));
         Assert.Equal(3, total);
         for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BackendInstructionExecutor.TryCountLiteralFamily(plan, input,
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, input,
                 reverse, ref invocation, out var partial));
             Assert.Equal(0, partial);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
@@ -461,10 +461,10 @@ public sealed class Utf8NativeFamilyInvocationTests
         var large = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         var smallInput = Encoding.UTF8.GetBytes(new string('a', 16384));
         var largeInput = Encoding.UTF8.GetBytes(new string('a', 32768));
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountLiteralFamily(plan, smallInput,
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, smallInput,
             reverse, ref small, out var smallCount));
         Assert.Equal(smallInput.Length, smallCount);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountLiteralFamily(plan, largeInput,
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan, largeInput,
             reverse, ref large, out var largeCount));
         Assert.Equal(largeInput.Length, largeCount);
         Assert.True(large.Budget.Steps <= small.Budget.Steps * 9 / 4);

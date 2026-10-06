@@ -106,6 +106,14 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (TryStartSingleLiteralInvocation(budget, out var invocation))
+        {
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_regexPlan.SearchPlan, input, 0, input.Length,
+                _usesRightToLeft, ref invocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+            return found;
+        }
         if (!_usesRightToLeft)
         {
             if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
@@ -150,6 +158,14 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (TryStartSingleLiteralInvocation(budget, out var invocation))
+        {
+            var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_regexPlan.SearchPlan,
+                input, _usesRightToLeft, ref invocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+            return count;
+        }
         if (_regexPlan.SearchPlan.HasBoundaryRequirements ||
             _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
@@ -189,6 +205,16 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (TryStartSingleLiteralInvocation(budget, out var invocation))
+        {
+            var plan = _regexPlan.SearchPlan;
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0, input.Length,
+                _usesRightToLeft, ref invocation, out var selected, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+            return found ? Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(plan.ProjectionPlan, input,
+                null, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
+        }
         if (!_usesRightToLeft)
         {
             if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
@@ -252,6 +278,19 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
                 => MatchLiteralFamily(input, budget, rightToLeft: true),
             _ => throw UnexpectedExecutionKind(),
         };
+    }
+
+    private bool TryStartSingleLiteralInvocation(Utf8ExecutionDeadline budget, out Utf8SliceInvocation invocation)
+    {
+        invocation = default;
+        if (budget.IsInfinite && Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null ||
+            _regexPlan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or
+                NativeExecutionKind.AsciiLiteralIgnoreCase) || _regexPlan.LiteralUtf8 is not { Length: > 0 })
+            return false;
+        // Diagnostic/backend consumers borrow their caller's original deadline;
+        // the public front door also retains validation and its operation token.
+        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        return true;
     }
 
     private bool CanUseDirectExactSingleScalar(Utf8ExecutionDeadline budget)

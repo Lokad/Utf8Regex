@@ -5,13 +5,13 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Supplies shared invocation state to metered native literal-family operations.</summary>
+/// <summary>Supplies shared invocation state to metered native literal operations.</summary>
 public sealed partial class Utf8Regex
 {
-    // Metered family value operations start their one deadline before validation.
+    // Metered literal value operations start their one deadline before validation.
     // Unlimited operations keep the established specialized kernels. Semantic
     // exclusions match native token enumeration; other profiles retain their VM.
-    private bool TryStartNativeFamilyInvocation(ReadOnlySpan<byte> input, CancellationToken token,
+    private bool TryStartNativeLiteralInvocation(ReadOnlySpan<byte> input, CancellationToken token,
         out Utf8SliceInvocation invocation)
     {
         invocation = default;
@@ -21,9 +21,14 @@ public sealed partial class Utf8Regex
         if (RequiresCultureSensitiveFallback || _requiresKelvinSignFallback ||
             _unitSliceProgram is { HasSurrogateLiteral: true } ||
             _unitSliceProgram is { HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true } ||
-            _unitSliceProgram is { IgnoreCase: true } && _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals ||
-            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+            _unitSliceProgram is { IgnoreCase: true } && _preparedRegex.ExecutionKind is not
+                (NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
+            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or
+                NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
+            _preparedRegex.LiteralUtf8 is { Length: 0 })
             return false;
+        // Empty literals progress through UTF-16 positions, including between
+        // surrogate halves, and must retain their owned unit execution route.
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         _ = Utf8Validation.Validate(input, ref invocation);
         return true;

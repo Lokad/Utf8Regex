@@ -138,7 +138,7 @@ internal static class Utf8BackendInstructionExecutor
         return Utf8SearchPortfolioRuntime.IsMatchLiteralFamily(plan, program, input, budget, rightToLeft);
     }
 
-    internal static Utf8ExecutionLimitKind TryCountLiteralFamily(in Utf8SearchPlan plan,
+    internal static Utf8ExecutionLimitKind TryCountNativeLiteralMatches(in Utf8SearchPlan plan,
         ReadOnlySpan<byte> input, bool reverse, ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
@@ -147,7 +147,7 @@ internal static class Utf8BackendInstructionExecutor
         var high = input.Length;
         while (true)
         {
-            var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, low, high, reverse,
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, low, high, reverse,
                 ref invocation, out var match, out var found);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (!found) { count = total; return Utf8ExecutionLimitKind.None; }
