@@ -20,14 +20,14 @@ public sealed partial class Utf8Regex
             if (!TryStartNativeStructuralInvocation(input, token, family, out var invocation, out var validation)) return false;
             // Mixed subjects require UTF-16 gap widths and Unicode separator
             // semantics. Preserve this invocation through the existing unit VM;
-            // boundary-map acquisition still needs aggregate admission bounds.
+            // admission and entry work stay in the same aggregate invocation.
             var native = validation.IsAscii && (!family ||
                 !_preparedRegex.StructuralIdentifierFamilyPlan.HasPrefixOverlap &&
                 !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap);
             var cursor = native
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation)
-                : new Utf8OperationMatchCursor(_unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
-                    input, Utf8BoundaryMap.Create(input, validation), invocation);
+                : Utf8OperationMatchCursor.CreateMapped(_unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                    input, validation, ref invocation, false, out _);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
             return true;
         }

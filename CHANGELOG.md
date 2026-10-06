@@ -1,5 +1,7 @@
 # Changelog
 
+- Owned global match and split entry now start the invocation before bounded UTF-8 validation and boundary-map construction. Map array payloads join aggregate storage admission before allocation, and normal owned match cursors release them at EOF or failure. Mixed simple/structural transfers retain the entry invocation; split maps remain charged while tail projection needs them. UTF-16-offset entry, opaque split decoding, object overhead, abandoned/copied cursor ownership and public finite policies remain open.
+
 - Remaining prepared ASCII simple-pattern cursors now share caller work accounting, deadlines and tokens through candidate scans, branch verification, projection and terminal moves. Branch order and full-subject anchors are retained; denied moves keep the previous result and scan floor. Mixed byte-unsafe and assertion-bearing subjects carry entry validation into the owned unit cursor. Upstream factory validation, mapping/storage admission, cursor copy ownership and public finite policies remain open.
 
 - Deterministic ASCII match cursors carry one invocation through bounded candidate search, verification, incremental UTF-16 projection and terminal moves. Failed work admission retains the previous result and scan state; original deadlines and tokens remain active between moves. Mixed byte-unsafe subjects transfer the same entry invocation into the unit VM. General simple patterns, mapping/storage admission, copied cursor ownership and public finite policies remain open.

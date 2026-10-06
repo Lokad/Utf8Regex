@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
-internal readonly struct Utf8BoundaryMap
+internal readonly partial struct Utf8BoundaryMap
 {
     private readonly int[] _byteOffsets;
     private readonly uint[] _scalarBoundaryBits;

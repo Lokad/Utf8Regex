@@ -2928,10 +2928,12 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator OwnedSliceEnumerateMatches(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
-        var map = Utf8BoundaryMap.Create(input);
         try
         {
-            return new Utf8ValueMatchEnumerator(program, input, map, MatchTimeout, token);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+            var validation = Utf8Validation.Validate(input, ref invocation);
+            var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
+            return new Utf8ValueMatchEnumerator(cursor);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -3349,12 +3351,25 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueSplitEnumerator OwnedSliceEnumerateSplits(ReadOnlySpan<byte> input, Utf8SliceProgram program, int count, CancellationToken token)
     {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        var decoded = analysis.GetDecodedString();
         try
         {
-            var cursor = count == 1 ? default : new Utf8OperationMatchCursor(program, input, analysis.BoundaryMap, MatchTimeout, token);
-            return new Utf8ValueSplitEnumerator(input, decoded, cursor, analysis.BoundaryMap,
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+            var validation = Utf8Validation.Validate(input, ref invocation);
+            // Split owns this map beyond match EOF. Decode/result storage still
+            // needs bounded materialization and separate aggregate admission.
+            Utf8BoundaryMap map = default;
+            var cursor = count == 1 ? default : Utf8OperationMatchCursor.CreateMapped(program, input,
+                validation, ref invocation, true, out map);
+            if (count == 1) map = Utf8BoundaryMap.Create(input, validation, ref invocation, out _);
+            var decoded = Encoding.UTF8.GetString(input);
+            if (count != 1) cursor.CheckOwnedSliceCursorBoundary();
+            else
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned split entry exceeded {breach}.");
+                invocation.Budget.ThrowIfCancellationRequested();
+            }
+            return new Utf8ValueSplitEnumerator(input, decoded, cursor, map,
                 count, decoded.Length, program.RightToLeft).WithTimeoutMapping(Pattern, MatchTimeout);
         }
         catch (Utf8ExecutionDeadlineExpiredException)

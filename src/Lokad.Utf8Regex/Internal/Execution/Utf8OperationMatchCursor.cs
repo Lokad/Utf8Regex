@@ -40,7 +40,9 @@ internal ref struct Utf8OperationMatchCursor
     private readonly bool _asciiInput;
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
-    private readonly Utf8BoundaryMap? _boundaryMap;
+    private Utf8BoundaryMap? _boundaryMap;
+    private ulong _boundaryMapReservedBytes;
+    private bool _retainBoundaryMapReservation;
     private readonly Utf8ExecutionDeadline _budget;
     private readonly int _literalUtf16Length;
     private readonly int _totalUtf16Length;
@@ -329,6 +331,36 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.OwnedSlice;
     }
 
+    // Entry work and the map reservation move together into the cursor. Split
+    // enumeration still needs its map for tail/result projection after EOF.
+    internal static Utf8OperationMatchCursor CreateMapped(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        Utf8ValidationResult validation, scoped ref Utf8SliceInvocation invocation, bool retainMap,
+        out Utf8BoundaryMap map)
+    {
+        map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var reservation);
+        try
+        {
+            var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
+            cursor._boundaryMapReservedBytes = reservation;
+            cursor._retainBoundaryMapReservation = retainMap;
+            return cursor;
+        }
+        catch
+        {
+            map = default;
+            invocation.Ledger.Release(reservation);
+            throw;
+        }
+    }
+
+    internal void ReleaseOwnedBoundaryMap()
+    {
+        if (_retainBoundaryMapReservation) return;
+        _boundaryMap = null;
+        _sliceInvocation.Ledger.Release(_boundaryMapReservedBytes);
+        _boundaryMapReservedBytes = 0;
+    }
+
     // From-unit slice enumeration starts the scan at the caller's start unit
     // on full input (anchors keep true left context, \G pins to the scan
     // start like BCL startat); the origin pin takes the scan start up front so
@@ -406,6 +438,7 @@ internal ref struct Utf8OperationMatchCursor
 
                 CheckOwnedSliceCursorBoundary();
                 _sliceSubject.Release(ref _sliceInvocation);
+                ReleaseOwnedBoundaryMap();
                 _sliceProgram = null;
                 return false;
             }
@@ -451,12 +484,14 @@ internal ref struct Utf8OperationMatchCursor
 
             CheckOwnedSliceCursorBoundary();
             _sliceSubject.Release(ref _sliceInvocation);
+            ReleaseOwnedBoundaryMap();
             _sliceProgram = null;
             return false;
         }
         catch
         {
             _sliceSubject.Release(ref _sliceInvocation);
+            ReleaseOwnedBoundaryMap();
             _sliceProgram = null;
             throw;
         }
@@ -831,7 +866,7 @@ internal ref struct Utf8OperationMatchCursor
         this = new Utf8OperationMatchCursor(input, regexPlan, NativeExecutionKind.ExactUtf8Literals, budget);
     }
 
-    private void CheckOwnedSliceCursorBoundary()
+    internal void CheckOwnedSliceCursorBoundary()
     {
         var breach = _sliceInvocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned slice cursor exceeded {breach}.");
