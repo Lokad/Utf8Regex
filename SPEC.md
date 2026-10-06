@@ -1,16 +1,16 @@
 # Lokad.Utf8Regex specification
 
-`Lokad.Utf8Regex` is a `net10.0` library whose semantic oracle is **`System.Text.RegularExpressions.Regex` on .NET 10**, while its primary I/O surface is **UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`**. That choice is justified because the official regex APIs and span-based matching APIs are currently defined on UTF-16 `string` / `ReadOnlySpan<char>`, not bytes, and the open runtime request for first-class UTF-8 regex support is still in **Future / No due date**. .NET strings themselves are UTF-16 sequences, so this project must preserve **UTF-16 regex semantics** while changing the execution/storage model to UTF-8 bytes. ([Microsoft Learn][1])
+`Lokad.Utf8Regex` is a `net10.0` library whose primary I/O surface is **UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`**. Its matching unit is **one Unicode scalar**, and byte offsets and lengths are the primary result coordinates. The framework target and .NET-shaped API do not impose UTF-16 code-unit matching.
+
+This target contract was revised by explicit user direction on 2026-10-06. Existing unit-subject and BCL compatibility paths are migration debt; the revised specification does not by itself qualify current implementation behavior. The active cutover, operation coverage, cleanup and resource gates are recorded in PLAN.md.
 
 ## 1. Charter
 
-`Lokad.Utf8Regex` must be a **managed, dependency-minimal, high-performance UTF-8-native regex engine** that stays aligned with the .NET regex language and behavior: same pattern language, same option model, same replacement language, same timeout model, same right-to-left behavior, and the same default backtracking semantics unless the caller explicitly requests `RegexOptions.NonBacktracking`. The primary qualified mode is `RegexOptions.CultureInvariant` behavior; culture-sensitive modes execute with the captured construction-culture .NET semantics described in §3.3 rather than being rejected. The .NET regex language is documented as Perl-5-compatible with additional .NET features such as right-to-left matching, and inline options are part of that language. ([Microsoft Learn][2])
+Build a managed, dependency-minimal, high-performance UTF-8 regex engine that owns supported construction and execution. Preserve useful regex grammar and supported constructs, including inline options, captures and histories, backreferences, balancing groups, conditionals, lookarounds, contiguous anchors and right-to-left matching. `RegexOptions.NonBacktracking` is a separate linear-time mode rather than the default engine.
 
-The project goal is **not** “a different regex flavor that happens to be fast.” It is “the fastest possible managed UTF-8 implementation that behaves like .NET regex.” That means the default engine must preserve constructs and behaviors that `RegexOptions.NonBacktracking` intentionally does not: backreferences, balancing groups, conditionals, lookarounds, `\G`, and full capture history inside loops. The public `NonBacktracking` option should still be supported, but it is a separate mode, not the foundation of the default engine. ([Microsoft Learn][3])
+Matching advances through complete Unicode scalars in either direction. Dot consumes one scalar subject to its newline options; quantifiers count complete atom matches. Successful match and capture endpoints are UTF-8 scalar boundaries. Supplementary scalars are not split into surrogate-half subject units. Combining marks remain separate scalars; matching does not implicitly normalize text or promote dot to grapheme matching.
 
-Implementation priority may still be performance-first. In practice, that means the engine should optimize first for the overwhelmingly common aligned region where UTF-8 byte boundaries and the relevant UTF-16-observable boundaries coincide, especially ASCII and BMP-dominant workloads. Rare supplementary / surrogate-splitting edge cases may initially use slower native machinery, or explicit compatibility fallback during development, but the destination remains full .NET-semantic behavior rather than a weakened UTF-8-specific regex flavor.
-
-This performance-first stance must not turn into parser accretion. `Lokad.Utf8Regex` should have exactly one semantic front-end, and native fast paths must be derived from that front-end rather than from independent pattern-string parsers. Temporary bootstrap heuristics are acceptable only as a short-lived development tactic before the vendored front-end is integrated; they are not the long-term semantic basis of the project.
+Use one owned semantic front-end, with native search and execution plans derived from it. BCL Regex may be a comparator for overlapping grammar/behavior and performance, but it is not the semantic authority and must disappear from production execution. Do not retain a second engine or encoding just to reproduce exact UTF-16 parity.
 
 ## 2. Hard requirements
 
@@ -20,22 +20,22 @@ This performance-first stance must not turn into parser accretion. `Lokad.Utf8Re
 * Options model: use **`RegexOptions`** directly.
 * Timeout model: use **`TimeSpan`** and throw **`RegexMatchTimeoutException`** for timeout.
 * Public primary surface: **UTF-8 spans and byte buffers**.
-* Public semantic oracle: .NET 10 `Regex`.
-* Performance objective: beat `UTF8 decode -> Regex -> UTF8 encode` on the intended workloads, especially ASCII and ASCII-dominant workloads, without changing semantics. The built-in regex engine is powerful and often fast, but Microsoft explicitly documents that backtracking can still become pathological, which is why timeout parity is mandatory. ([Microsoft Learn][4])
+* Public semantic contract: Unicode-scalar matching over strict UTF-8, with primary byte coordinates. Qualify direct scalar fixtures; use .NET/other comparators only on declared overlapping semantics.
+* Performance objective: beat decode-then-Regex and predecoded Regex on result-compatible workloads, while qualifying native UTF-8 cases under their scalar contract. Exclude semantically mismatched comparisons explicitly. Bound pathological backtracking with owned resource admission and cancellation.
 
 ## 3. Semantic contract
 
 ### 3.1 Pattern language and options
 
-The accepted pattern language must match .NET regex behavior on .NET 10. That includes the normal grammar, inline options, `RightToLeft`, `ECMAScript`, `CultureInvariant` behavior, backtracking behavior, captures, backreferences, balancing groups, conditionals, lookarounds, and the documented replacement syntax. Culture-sensitive execution follows the ambient construction culture through the compatibility path (see §3.3); performance qualification centers on `CultureInvariant`. ([Microsoft Learn][2])
+Retain the supported regex grammar and option model, including inline options, `RightToLeft`, `ECMAScript`, `CultureInvariant`, captures, backreferences, balancing groups, conditionals and lookarounds. Apply them to Unicode scalars. Define supplementary literals/classes/ranges and lone-surrogate pattern escapes explicitly as the owned front-end migrates; char-based parser behavior is not an implicit contract. Use .NET grammar observations where they agree with these rules. Reject unsupported syntax deliberately rather than hiding engine dependence behind a fallback.
 
 ### 3.2 Replacement semantics
 
-The fixed replacement-string path must behave like `.NET Regex.Replace`, including the substitution language (`$1`, `${name}`, `$&`, `$```, `$'`, `$+`, `$_`, `$$`) and the numeric-group parsing rules. The evaluator path must behave like `MatchEvaluator`: the replacement callback is invoked once per match, and its result is substituted for that match. Right-to-left replacement must search from the end, and the segment assembly logic must preserve the same observable output order as the runtime. ([Microsoft Learn][5])
+Retain the .NET-style replacement language (`$1`, `${name}`, `$&`, `$```, `$'`, `$+`, `$_`, `$$`) and numeric-group parsing rules, expanding captures discovered under scalar matching. Invoke replacement evaluators once per match. Right-to-left replacement discovers matches from the end and assembles output in subject order. UTF-8 output remains well formed; string-returning APIs materialize the same scalar result as a .NET string. They are not surrogate-half compatibility escape hatches.
 
 ### 3.3 Culture and casing
 
-`RegexOptions.CultureInvariant` is the primary supported and performance-tested mode. In practice, that means `IgnoreCase` must match the runtime when `CultureInvariant` is in effect, and culture-sensitive modes are admitted through the captured-culture compatibility fallback rather than silently approximating behavior. Do not hand-roll “close enough” case folding. The effective culture without `CultureInvariant` is the ambient `CultureInfo.CurrentCulture` captured at construction, and the static instance cache keys entries by that construction culture so an instance is never reused under another culture. `CurrentCulture`-dependent cases such as Turkish-I behavior follow captured .NET culture semantics but are not performance-qualified to the same degree as `CultureInvariant`. ([GitHub][6])
+`IgnoreCase` compares complete scalars using qualified Unicode case-equivalence rules; pin the Unicode data and culture behavior as those owned paths migrate. `CultureInvariant` selects invariant behavior. Culture-sensitive options retain the construction culture and include it in cache identity, including scoped inline folds. BCL behavior can qualify overlapping cases but cannot supply the production engine or justify folding surrogate halves. Supplementary casing and Turkish-I need direct scalar fixtures.
 
 ### 3.4 Timeout behavior
 
@@ -45,11 +45,11 @@ Timeout behavior must mirror .NET’s model: the timeout is **approximate**, and
 
 The public UTF-8 APIs accept **well-formed UTF-8 only**. Invalid UTF-8 must not be silently repaired or replacement-decoded on the main API. The low-level .NET UTF-8 transcoder exposes invalid-data signaling when replacement is disabled; `Lokad.Utf8Regex` should follow that spirit and reject malformed input. Public failure mode: throw `ArgumentException` with a precise message and the offending byte offset when the input is ill-formed. ([Microsoft Learn][7])
 
-### 3.6 Unavoidable representability edge case
+### 3.6 Scalar boundaries and coordinates
 
-This is the one place where the spec must be explicit: .NET regex semantics are defined over **UTF-16 code units**, and .NET strings are sequences of `char`, with supplementary Unicode characters occupying **two UTF-16 code units**. Because of that, a .NET-semantic match, capture, or replacement can theoretically begin or end **between the two surrogates** of one supplementary scalar. A byte-oriented UTF-8 API cannot represent that boundary as a valid byte slice. Therefore the engine must keep exact **internal UTF-16 semantics**, but if a public **byte-oriented** result is not representable as valid UTF-8, the byte API must **fail explicitly** rather than silently diverge. Provide a slow-path compatibility API that can still return the exact UTF-16 result as `string`. This is a design consequence of the documented UTF-16 string model and char-based regex surface. ([Microsoft Learn][8])
+Every successful core match and capture on valid input has a representable UTF-8 byte range. For `😀`, dot returns one match at byte offset 0 with byte length 4; `^.$` succeeds and `^..$` fails. Dot on `a😀b` returns ranges (0,1), (1,4) and (5,1). `^(.)\1$` matches `😀😀`, retaining the complete first scalar in group 1. Dot on `e` followed by U+0301 returns two scalar matches.
 
-This requirement should not be misread as an instruction to optimize the rarest edge cases first. It is a statement of the final semantic invariant. The implementation should prioritize the common aligned cases first, while keeping these non-byte-aligned edge cases correct, measurable, and progressively moved from fallback/slower paths into the native engine.
+Existing UTF-16 coordinate properties are derived interoperability coordinates. They do not affect matching width or permit a capture endpoint inside a scalar. Primary byte operations must not require whole-subject UTF-16 conversion merely to emulate .NET. Remove obsolete half-unit encoding, non-representable-match exceptions and parity-only execution/output paths as qualified scalar consumers replace them.
 
 ### 3.7 Cancellation and resource limits
 
@@ -277,23 +277,20 @@ public ref struct Utf8ReplacementWriter
 Baseline API notes:
 
 * This surface mirrors span-based `.NET Regex` APIs where possible, but with `ReadOnlySpan<byte>` as the primary input. Materialized `Matches` / `Split` collections are intentionally deferred. `TryReplace` uses `OperationStatus`. ([Microsoft Learn][1])
-* Options whose semantics depend on runtime compilation strategy rather than regex behavior are rejected explicitly. In particular, `RegexOptions.Compiled` is not accepted.
+* `RegexOptions.Compiled` selects an execution strategy with the same scalar semantics; it must not change the accepted language or results.
 * Overloads without an explicit timeout use `Utf8Regex.DefaultMatchTimeout`, whose initial value must be `Regex.InfiniteMatchTimeout`.
 * `Utf8ValueMatch` is the cheap, storable coordinate result. Rich group/capture inspection is provided by `MatchDetailed(...)` and by evaluator contexts.
-* Successful matches and captures may be non-byte-aligned. In that case `IsByteAligned == false`, UTF-16 coordinates remain exact, and byte-oriented accessors throw `InvalidOperationException`.
+* Successful core matches and captures on valid input are byte-aligned at scalar boundaries. Byte accessors expose their ranges; UTF-16 properties are derived coordinates. An unsuccessful group still follows its documented unsuccessful-access contract.
 * `Utf8GroupContext.CaptureCount` and `GetCapture(int index)` must match .NET capture history ordering.
-* `Utf8ValueSplitEnumerator` must mirror `.NET 10 Regex.EnumerateSplits` exactly: `count` has the same stopping semantics, empty elements are preserved, and `RightToLeft` yields the same observable ordering. Match captures are not surfaced as separate split elements unless the baseline span API does so.
+* `Utf8ValueSplitEnumerator` preserves the span API's count/empty-element/RTL ordering conventions, using scalar matches. Captures are not emitted as separate split elements. Compare with `.NET Regex.EnumerateSplits` only when delimiter matching semantics overlap.
 * `replacementPatternUtf8` overloads interpret bytes as UTF-8 encoded .NET replacement patterns, not as literal bytes.
 * All `ref struct` match/group/capture/split views are ephemeral over the original input span and cannot outlive the calling frame or input buffer.
-* `TryReplace` returns `Done` or `DestinationTooSmall` only for destination sizing. On `DestinationTooSmall`, `bytesWritten == 0` and callers must treat `destination` as unchanged. Invalid UTF-8, invalid replacement text, invalid regex construction, timeout, and non-representable byte results still throw.
+* `TryReplace` returns `Done` or `DestinationTooSmall` only for destination sizing. On `DestinationTooSmall`, `bytesWritten == 0` and callers must treat `destination` as unchanged. Invalid UTF-8, invalid replacement text, invalid regex construction and timeout still throw. Successful scalar matches do not introduce non-representable byte results.
 * Evaluator-based replacement is currently the allocating replacement path; allocation control is provided only for fixed replacement-pattern overloads.
 
 ## 4.2 UTF-16 offset compatibility APIs
 
-These APIs are explicit compatibility affordances for `.NET Regex`
-`startat` semantics. They take **UTF-16 code-unit offsets**, not byte
-offsets. They are not the preferred hot-path surface for native UTF-8
-callers; native callers should slice the input span instead.
+These APIs accept explicitly named **UTF-16 coordinate offsets** for interoperability with .NET strings. The offsets must resolve to complete scalar boundaries; they do not request UTF-16-unit matching. Define and qualify the interior-surrogate rejection during migration. The preferred native surface uses UTF-8 spans and byte coordinates.
 
 ```csharp
 public sealed class Utf8Regex
@@ -310,8 +307,7 @@ Rules for these compatibility APIs:
 
 * The `utf16Offset` parameter is measured in UTF-16 code units, exactly like
   `.NET Regex`.
-* These methods exist to preserve `.NET` semantic compatibility across UTF-8
-  input, not to define the preferred native execution model.
+* Resolve these offsets into scalar boundaries and execute the same scalar engine. No alternate char-unit matching mode is implied.
 * Method names must keep the UTF-16 coordinate system explicit; do not expose
   these as plain `startat` overloads on otherwise byte-native methods.
 
@@ -364,9 +360,9 @@ Rules for these extensions:
 
 The architecture must keep these invariants:
 
-* one runtime-compatible semantic front-end
+* one owned semantic front-end for the declared scalar language
 * separate lowerings for candidate search and full execution
-* internal UTF-16-exact semantics over UTF-8 input
+* scalar-aware UTF-8 subject traversal and primary byte ranges
 * native `RightToLeft`; never emulate it by reversing the input
 * `RegexOptions.NonBacktracking` remains a separate official mode, not a hidden default optimization
 * `Utf8Regex` instances are immutable and thread-safe
@@ -384,23 +380,24 @@ Performance rules:
 
 Testing and benchmarks:
 
-* differential behavior is measured against .NET 10 `Regex`
-* tests must cover parser parity, matching, replacement, right-to-left behavior, timeout behavior, and non-byte-aligned edge cases
+* direct scalar fixtures define semantic acceptance; .NET 10 and other engines are differential comparators only for overlapping cases
+* tests cover grammar, scalar matching, supplementary ranges/captures, replacement, RTL, empty advancement, malformed input, boundaries, resources and cancellation; retarget old surrogate-half witnesses to scalar outcomes
 * benchmark methodology must use warm throughput, not cold-start `Dry` numbers, for parity decisions
 * benchmark suite must report both baselines:
   * **Baseline A**: `Encoding.UTF8.GetString(input)` -> built-in `Regex` -> UTF-8 re-encoding where relevant
   * **Baseline B**: built-in `Regex` on a predecoded `string`
-* benchmark catalog must include both native-target families and explicit fallback families
+* benchmark catalogs identify equal-result lanes, exclusions and owned routes; historical fallback or UTF-16-parity rows do not qualify scalar execution
 
 ## 7. Acceptance criteria
 
 The implementation is done when all of the following are true:
 
-* For supported features on valid UTF-8 input, the engine matches .NET 10 `Regex` behavior.
-* `ReplaceToString` remains the exact compatibility escape hatch.
-* Byte-oriented APIs either return the correct UTF-8 result or fail explicitly when the exact UTF-16-semantic result is not representable as UTF-8.
+* Supported features obey the declared Unicode-scalar contract over strict UTF-8, with direct coverage across all public operations.
+* String-returning APIs materialize the same scalar results as byte APIs.
+* Every successful core match and capture has a correct scalar-aligned byte range. There is no surrogate-half execution mode.
 * `RegexOptions.NonBacktracking` behaves like the official mode, including its documented restrictions and capture differences.
-* Hot native paths are allocation-light, and the benchmark suite meets explicit per-scenario thresholds against both baselines.
+* Supported construction/execution is owned, common construction/invocation/result/retained bounds work, and synchronous cancellation interrupts ongoing work. Obsolete parity machinery and production BCL engine dependence are removed.
+* Hot native paths are allocation-light, and the benchmark suite meets qualified per-scenario thresholds against semantically comparable baselines.
 
 [1]: https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-10.0
 [2]: https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions

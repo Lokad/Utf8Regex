@@ -1,5 +1,7 @@
 # Changelog
 
+- Development contract: core matching now targets Unicode scalars over strict UTF-8, with byte coordinates as primary. Exact .NET UTF-16 parity is superseded; implementation migration and removal of obsolete parity machinery are in progress. Published 0.3.0 behavior is unchanged by this documentation decision.
+
 - Whole-segment getters on owned split views retain their prepared decoded-string loan after the view or cursor disappears. Decoded text and coordinate maps now have separate leases, so an escaped text alias does not retain unused coordinate storage. Weak alias attachments preserve the existing string identity and release after the last alias is collected. Independent substring results, getter/result limits and registry/object-overhead admission remain open.
 
 - Owned mapped match cursors and split views now share payload leases. Ending one cursor copy leaves another copy's prepared subject and coordinate map charged and usable; abandoned holders release their loans through collection. Split views retain coordinate and decoded payloads after EOF or cancellation. Failed setup releases its own loans immediately. Controlled invocation copies share one aggregate storage ledger. Fixed object overhead, getter/result bounds, other routes and public finite core/Python policies remain open.

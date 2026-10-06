@@ -1,6 +1,8 @@
 # Lokad.Utf8Regex
 
-`Lokad.Utf8Regex` is a `net10.0` regular expression library whose semantic reference is `.NET 10`'s `System.Text.RegularExpressions.Regex`, while its primary I/O surface is UTF-8 `ReadOnlySpan<byte>`.
+`Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
+
+The contract changed on 2026-10-06. The published 0.3.0 packages and existing compatibility paths retain the former .NET UTF-16 behavior; the scalar migration is in progress. [SPEC.md](SPEC.md) defines the target and its qualification requirements. Existing benchmark snapshots describe their recorded implementations and qualify scalar comparisons only where results agree.
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you want to avoid decoding to UTF-16 before every regex operation.
 
@@ -16,12 +18,12 @@ Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Support Scope
 
-- Semantic oracle: `Utf8Regex` follows `System.Text.RegularExpressions.Regex` on `.NET 10`.
-- Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`, while match coordinates remain aligned with `.NET` regex semantics and UTF-16 positions.
+- Development semantics: Unicode-scalar matching over strict UTF-8. Dot, classes, quantifiers, capture boundaries, references and RTL traversal operate on complete scalars.
+- Primary I/O model: UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` with primary byte coordinates. Existing UTF-16 coordinate/string APIs provide interoperability and do not define matching width.
 - Primary option scope: `RegexOptions.CultureInvariant` is the main supported and performance-tested mode.
-- Other options: unsupported optimizations fall back to slower `.NET`-equivalent execution paths rather than silently changing semantics.
-- Execution model: some patterns lower to native UTF-8 backends, while others use fallback verification paths. This affects performance characteristics, not the semantic target.
-- Byte coordinates: `Utf8ValueMatch` exposes byte offsets only when the match is byte-aligned. UTF-16 coordinates remain available even when byte alignment is not available.
+- Execution model: owned UTF-8 execution is the target. Transitional BCL verification and private UTF-16-unit routes remain implementation debt to remove.
+- Byte coordinates: the scalar target requires every successful core match/capture to have a scalar-aligned UTF-8 byte range. Older compatibility paths can still return non-byte-aligned results during migration.
+- Comparators: use .NET Regex only where its behavior overlaps the scalar contract; direct scalar fixtures define supplementary behavior.
 - Stability: the package is suitable for early production use on `CultureInvariant` UTF-8 workloads, but still evolving in backend coverage and performance portability.
 
 ## Public API
