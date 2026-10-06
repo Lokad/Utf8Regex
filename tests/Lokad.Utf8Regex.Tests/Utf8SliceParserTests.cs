@@ -244,10 +244,15 @@ public sealed class Utf8SliceParserTests
     }
 
     [Fact]
-    public void DeepNestingDeclines()
+    public void DeepNestingKeepsOwnedProgram()
     {
-        Assert.Null(Utf8SliceParser.TryParse(new string((char)40, 65) + "a" + new string((char)41, 65), RegexOptions.CultureInvariant));
-        Assert.NotNull(Utf8SliceParser.TryParse(new string((char)40, 64) + "a" + new string((char)41, 64), RegexOptions.CultureInvariant));
+        foreach (var depth in new[] { 64, 65, 257 })
+        {
+            var program = Utf8SliceParser.TryParse(new string('(', depth) + "a" + new string(')', depth), RegexOptions.CultureInvariant);
+            Assert.NotNull(program);
+            Assert.Equal(depth, program.GroupCount);
+            Assert.False(program.CanMatchEmpty);
+        }
     }
 
     [Fact]
