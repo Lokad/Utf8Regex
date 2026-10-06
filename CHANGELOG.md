@@ -4,6 +4,13 @@
 
 ### Owned UTF-16 execution
 
+- External lookaround programs run on explicit assertion continuations instead
+  of recursive calls. Child repeat arrays and continuation growth share the
+  invocation ledger; positive captures commit and other exits roll them back.
+  Failed or canceled attempts clear unpublished capture slots. Stack-table
+  growth checks aggregate admission before allocating its replacement array.
+  Public depth admission and full call-wide resource-policy work remain open.
+
 - Lazy-DFA compilation walks optional transitions and emits nested NFA programs
   without CLR recursion. Speculative construction admits continuation data and
   enforces its existing state/transition caps before extending graphs, including

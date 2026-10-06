@@ -150,7 +150,7 @@ internal readonly struct Utf8SliceCountOutcome
 /// ledger-admitted before acquisition and released on every return path,
 /// including breach, cancellation, and disposal. Capture slot pairs hold
 /// start/end input indexes, -1 when unset; the trail journal restores them.</summary>
-internal static class Utf8SliceRunner
+internal static partial class Utf8SliceRunner
 {
     internal const int FrameChunkCapacity = 64;
     internal const int TrailChunkCapacity = 128;
@@ -447,6 +447,7 @@ internal static class Utf8SliceRunner
 
         Array.Fill(heads, -1);
         var stacks = new ChunkedStacks();
+        var completed = false;
         try
         {
             var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
@@ -466,10 +467,18 @@ internal static class Utf8SliceRunner
                 }
             }
 
+            completed = attempt.IsMatch;
             return attempt;
         }
         finally
         {
+            if (!completed)
+            {
+                // A committed positive assertion still belongs to this attempt;
+                // failure or cancellation must not publish its capture slots.
+                Array.Fill(captureStarts, -1);
+                Array.Fill(captureEnds, -1);
+            }
             stacks.ReleaseAll(ref invocation);
             ReleaseIntArray(heads, ref invocation);
             ReleaseIntArray(positions, ref invocation);
@@ -897,27 +906,31 @@ internal static class Utf8SliceRunner
         return new Utf8SliceDetailedOutcome(false, -1, -1, -1, -1, null, null, Utf8ExecutionLimitKind.None);
     }
 
-    private static Utf8SliceMatchOutcome RunFrom(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        int start,
-        int[] captureStarts,
-        int[] captureEnds,
-        int[] counts,
-        int[] positions,
-        int[] balanceHeads,
-        bool collectHistory,
-        bool requireNonEmpty,
-        bool startIsScalarBoundary,
-        ref ChunkedStacks stacks,
-        ref Utf8SliceInvocation invocation)
+    private static Utf8SliceMatchOutcome RunSegment(
+        ReadOnlySpan<byte> input, int[] captureStarts, int[] captureEnds, int[] balanceHeads,
+        ref AssertionCursor cursor, bool resumeFailure,
+        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended)
     {
-        var frameBase = stacks.FrameCount;
+        suspended = false;
+        var program = cursor.Program;
+        var start = cursor.Start;
+        var counts = cursor.Counts;
+        var positions = cursor.Positions;
+        var collectHistory = cursor.CollectHistory;
+        var requireNonEmpty = cursor.RequireNonEmpty;
+        var startIsScalarBoundary = cursor.Aligned;
+        var frameBase = cursor.FrameBase;
         var instructions = program.Instructions;
-        var programIndex = 0;
-        var inputIndex = start;
+        var programIndex = cursor.ProgramIndex;
+        var inputIndex = cursor.InputIndex;
         while (true)
         {
+            var failed = resumeFailure;
+            if (resumeFailure)
+            {
+                resumeFailure = false;
+                goto Backtrack;
+            }
             var stepBreach = invocation.TryChargeStep();
             if (stepBreach != Utf8ExecutionLimitKind.None)
             {
@@ -925,7 +938,6 @@ internal static class Utf8SliceRunner
             }
 
             var instruction = instructions[programIndex];
-            var failed = false;
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
@@ -2531,58 +2543,13 @@ internal static class Utf8SliceRunner
                     }
                 case Utf8SliceInstructionKind.Lookbehind:
                 case Utf8SliceInstructionKind.Lookahead:
-                    {
-                        // The body starts at this exact edge, in its own direction.
-                        // Share capture openings, balance nodes and the trail with
-                        // the caller. A frame boundary prevents nested backtracking
-                        // from entering the caller's program; a retained positive
-                        // body commits only its frames/repeat mutations, while every
-                        // other exit unwinds its capture/head writes as well.
-                        var assertion = program.Assertions[instruction.A];
-                        var positive = instruction.B != 0;
-                        var nestedCounts = RentIntArray(assertion.Body.RepeatCount, ref invocation, out var nestedBreach);
-                        if (nestedBreach != Utf8ExecutionLimitKind.None)
-                            return new Utf8SliceMatchOutcome(false, -1, nestedBreach, null, null);
-                        var nestedPositions = RentIntArray(assertion.Body.RepeatCount, ref invocation, out nestedBreach);
-                        if (nestedBreach != Utf8ExecutionLimitKind.None)
-                        {
-                            ReleaseIntArray(nestedCounts, ref invocation);
-                            return new Utf8SliceMatchOutcome(false, -1, nestedBreach, null, null);
-                        }
-                        Array.Fill(nestedCounts, -1);
-                        Array.Fill(nestedPositions, -1);
-                        var frameMark = stacks.FrameCount;
-                        var journalMark = stacks.JournalCount;
-                        var trailMark = stacks.TrailCount;
-                        var keepCaptures = false;
-                        Utf8SliceMatchOutcome nested;
-                        try
-                        {
-                            // Keep assertion recursion visible to the shared depth
-                            // budget even when its body contains no backtrack fork.
-                            if (!stacks.PushFrame(new Utf8SliceFrame { ResumeKind = Utf8SliceResumeKind.Assertion }, ref invocation))
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
-                            if (invocation.Budget.TryNoteDepth((uint)stacks.FrameCount) != Utf8ExecutionLimitKind.None)
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.Depth, null, null);
-                            var aligned = (uint)inputIndex >= (uint)input.Length || (input[inputIndex] & 0xC0) != 0x80;
-                            nested = RunFrom(assertion.Body, input, inputIndex, captureStarts, captureEnds,
-                                nestedCounts, nestedPositions, balanceHeads, false, false, aligned,
-                                ref stacks, ref invocation);
-                            keepCaptures = positive && nested.IsMatch && nested.Breach == Utf8ExecutionLimitKind.None;
-                        }
-                        finally
-                        {
-                            while (stacks.FrameCount > frameMark) stacks.PopFrame(out _);
-                            stacks.TruncateJournal(journalMark, nestedCounts, nestedPositions);
-                            if (!keepCaptures) stacks.TruncateTrail(trailMark, captureStarts, captureEnds, balanceHeads);
-                            ReleaseIntArray(nestedPositions, ref invocation);
-                            ReleaseIntArray(nestedCounts, ref invocation);
-                        }
-                        if (nested.Breach != Utf8ExecutionLimitKind.None) return nested;
-                        if (nested.IsMatch == positive) programIndex++;
-                        else failed = true;
-                    }
-                    break;
+                    // The driver owns child arrays and saves this exact edge;
+                    // returning here suspends, rather than recursively entering,
+                    // the assertion's independent instruction stream.
+                    cursor.ProgramIndex = programIndex;
+                    cursor.InputIndex = inputIndex;
+                    suspended = true;
+                    return default;
                 case Utf8SliceInstructionKind.BalanceStart:
                     // Retain the body's opening without testing its source yet:
                     // the body can establish the capture popped at successful close.
@@ -2684,6 +2651,7 @@ internal static class Utf8SliceRunner
                     throw new InvalidOperationException($"Unsupported slice instruction {instruction.Kind}.");
             }
 
+        Backtrack:
             if (failed)
             {
                 if (stacks.FrameCount == frameBase || !stacks.PopFrame(out var popped))
@@ -2757,7 +2725,21 @@ internal static class Utf8SliceRunner
             return Array.Empty<int>();
         }
 
-        return new int[length];
+        try
+        {
+            breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            if (breach != Utf8ExecutionLimitKind.None)
+            {
+                invocation.Ledger.Release((ulong)length * 4);
+                return Array.Empty<int>();
+            }
+            return new int[length];
+        }
+        catch
+        {
+            invocation.Ledger.Release((ulong)length * 4);
+            throw;
+        }
     }
 
     private static void ReleaseIntArray(int[] array, ref Utf8SliceInvocation invocation)
@@ -3107,20 +3089,38 @@ internal static class Utf8SliceRunner
                     }
 
                     reservedBytes += (ulong)ChunkTableCapacity * 8;
+                    if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
+                        return false;
                     tables = new T[ChunkTableCapacity][];
                 }
                 else if (chunk >= tables.Length)
                 {
-                    var grown = new T[tables.Length * 2][];
-                    if (!invocation.Ledger.TryReserve((ulong)grown.Length * 8))
+                    var capacity = tables.Length <= Array.MaxLength / 2 ? tables.Length * 2 : Array.MaxLength;
+                    if (capacity <= chunk) return false;
+                    var bytes = (ulong)capacity * 8;
+                    if (!invocation.Ledger.TryReserve(bytes)) return false;
+                    reservedBytes += bytes;
+                    var adopted = false;
+                    try
                     {
-                        return false;
+                        if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
+                            return false;
+                        var grown = new T[capacity][];
+                        Array.Copy(tables, grown, tables.Length);
+                        var oldBytes = (ulong)tables.Length * 8;
+                        invocation.Ledger.Release(oldBytes);
+                        reservedBytes -= oldBytes;
+                        tables = grown;
+                        adopted = true;
                     }
-
-                    Array.Copy(tables, grown, tables.Length);
-                    invocation.Ledger.Release((ulong)tables.Length * 8);
-                    reservedBytes += (ulong)tables.Length * 8;
-                    tables = grown;
+                    finally
+                    {
+                        if (!adopted)
+                        {
+                            invocation.Ledger.Release(bytes);
+                            reservedBytes -= bytes;
+                        }
+                    }
                 }
 
                 if (tables[chunk] is null)
@@ -3131,6 +3131,8 @@ internal static class Utf8SliceRunner
                     }
 
                     reservedBytes += (ulong)chunkBytes;
+                    if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
+                        return false;
                     tables[chunk] = new T[chunkCapacity];
                 }
             }
