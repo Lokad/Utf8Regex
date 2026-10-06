@@ -16,6 +16,8 @@ internal ref struct Utf8OperationMatchCursor
 
     internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
 
+    internal Utf8AsciiDeterministicScanState DebugDeterministicScanState => _deterministicScanState;
+
     internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
 
     internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
@@ -50,8 +52,6 @@ internal ref struct Utf8OperationMatchCursor
     private Utf8AsciiDeterministicScanState _deterministicScanState;
     private Utf8ValueMatch _current;
     private int _lastLiteralFamilyBranchId;
-    private int _asciiFixedTokenCurrentIndex;
-    private int _asciiFixedTokenMatchLength;
     private int _baseByteOffset;
     private int _baseUtf16Offset;
     private Utf8SliceProgram? _sliceProgram;
@@ -92,8 +92,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = executionKind switch
@@ -156,8 +154,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = (executionKind, rightToLeft) switch
@@ -191,8 +187,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = boundaryMap is null
@@ -222,8 +216,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = boundaryMap is null
@@ -260,11 +252,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = useStructuralLinearProgram &&
-            structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
-                ? structuralLinearProgram.DeterministicProgram.FixedWidthLength
-                : 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = useStructuralLinearProgram
@@ -276,16 +263,16 @@ internal ref struct Utf8OperationMatchCursor
             : EnumeratorMode.AsciiSimplePattern;
     }
 
-    public Utf8ValueMatch CurrentValueMatch
-        => _mode == EnumeratorMode.AsciiFixedTokenPattern && _asciiInput && _asciiFixedTokenCurrentIndex >= 0
-            ? new Utf8ValueMatch(
-                success: true,
-                isByteAligned: true,
-                indexInUtf16: _baseUtf16Offset + _asciiFixedTokenCurrentIndex,
-                lengthInUtf16: _asciiFixedTokenMatchLength,
-                indexInBytes: _baseByteOffset + _asciiFixedTokenCurrentIndex,
-                lengthInBytes: _asciiFixedTokenMatchLength)
-            : ApplyBaseOffsets(_current);
+    public Utf8ValueMatch CurrentValueMatch => ApplyBaseOffsets(_current);
+
+    // Transfer the already validated caller invocation into a deterministic
+    // cursor, retaining work counters, deadline, token and borrowed reservations.
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
+        Utf8SliceInvocation invocation, bool asciiInput)
+        : this(input, regexPlan, true, invocation.Budget.Deadline, asciiInput)
+    {
+        _sliceInvocation = invocation;
+    }
 
     public Utf8OperationMatch Current
         => new(CurrentValueMatch, branchId: 0, captureSlots: null);
@@ -329,8 +316,6 @@ internal ref struct Utf8OperationMatchCursor
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
         _lastLiteralFamilyBranchId = 0;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = program;
@@ -504,8 +489,6 @@ internal ref struct Utf8OperationMatchCursor
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
         _lastLiteralFamilyBranchId = 0;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = null;
@@ -542,8 +525,6 @@ internal ref struct Utf8OperationMatchCursor
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
         _lastLiteralFamilyBranchId = 0;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = null;
@@ -781,8 +762,7 @@ internal ref struct Utf8OperationMatchCursor
             EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
             EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
             EnumeratorMode.AsciiSimplePatternUnit => MoveNextUnitSimplePattern(),
-            EnumeratorMode.AsciiFixedTokenPattern => MoveNextAsciiFixedTokenPattern(),
-            EnumeratorMode.AsciiDeterministicPattern => MoveNextAsciiDeterministicPattern(),
+            EnumeratorMode.AsciiFixedTokenPattern or EnumeratorMode.AsciiDeterministicPattern => MoveNextAsciiDeterministicPattern(),
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
             EnumeratorMode.EmittedKernelPattern => MoveNextEmittedKernelPattern(),
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
@@ -840,8 +820,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _mode = EnumeratorMode.ExactUtf8Literal;
     }
 
@@ -912,8 +890,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
@@ -942,8 +918,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = EnumeratorMode.EmptyLiteral;
@@ -973,8 +947,6 @@ internal ref struct Utf8OperationMatchCursor
         _multiLiteralScanState = default;
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
@@ -992,7 +964,6 @@ internal ref struct Utf8OperationMatchCursor
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _emittedKernelMatcher = emittedKernelMatcher;
         _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
         _mode = EnumeratorMode.EmittedKernelPattern;
     }
 
@@ -1337,81 +1308,46 @@ internal ref struct Utf8OperationMatchCursor
         return true;
     }
 
-    private bool MoveNextAsciiFixedTokenPattern()
-    {
-        ref readonly var structuralLinearProgram = ref _plans.StructuralLinearProgram;
-        if (!Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicFixedWidthMatch(
-                in structuralLinearProgram,
-                _input,
-                ref _deterministicScanState,
-                _budget,
-                out var matchIndex))
-        {
-            _asciiFixedTokenCurrentIndex = -1;
-            return false;
-        }
-
-        if (!_asciiInput)
-        {
-            // R05: fixed-width byte-safe matches are ASCII-only; decode only the gap
-            // and project the hit, keeping byte/UTF-16 cursors for the next gap.
-            var utf16Index = _consumedUtf16 + System.Text.Encoding.UTF8.GetCharCount(_input[_consumed..matchIndex]);
-            _consumed = matchIndex + _asciiFixedTokenMatchLength;
-            _consumedUtf16 = utf16Index + _asciiFixedTokenMatchLength;
-            _current = new Utf8ValueMatch(
-                success: true,
-                isByteAligned: true,
-                indexInUtf16: utf16Index,
-                lengthInUtf16: _asciiFixedTokenMatchLength,
-                indexInBytes: matchIndex,
-                lengthInBytes: _asciiFixedTokenMatchLength);
-            _asciiFixedTokenCurrentIndex = matchIndex;
-            return true;
-        }
-
-        _asciiFixedTokenCurrentIndex = matchIndex;
-        return true;
-    }
-
     private bool MoveNextAsciiDeterministicPattern()
     {
+        var breach = TryMoveNextDeterministic(out var found);
+        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native deterministic cursor exceeded {breach}.");
+        return found;
+    }
+
+    internal Utf8ExecutionLimitKind TryMoveNextDeterministic(out bool found)
+    {
+        found = false;
+        var breach = _sliceInvocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
         ref readonly var structuralLinearProgram = ref _plans.StructuralLinearProgram;
-        if (!Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-                in structuralLinearProgram,
-                _input,
-                ref _deterministicScanState,
-                _budget,
-                out var match))
+        var pending = _deterministicScanState;
+        breach = Utf8AsciiInstructionLinearExecutor.TryFindNextDeterministicMatch(structuralLinearProgram,
+            _input, ref pending, ref _sliceInvocation, out var match, out var discovered);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (!discovered)
         {
-            return false;
+            breach = _sliceInvocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            _sliceInvocation.Budget.ThrowIfCancellationRequested();
+            _nativeStructuralExhausted = true;
+            _deterministicScanState = pending;
+            return Utf8ExecutionLimitKind.None;
         }
-
-        if (!_asciiInput)
-        {
-            // R05: deterministic byte-safe matches are ASCII-only (see the simple
-            // mode above); project incrementally off the scan position.
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                _consumed,
-                _consumedUtf16,
-                match.Index,
-                match.Length,
-                match.Length,
-                ref _sliceInvocation,
-                out _consumed,
-                out _consumedUtf16);
-            return true;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: match.Index,
-            lengthInUtf16: match.Length,
-            indexInBytes: match.Index,
-            lengthInBytes: match.Length);
-        return true;
+        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(_asciiInput
+                ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental), _input,
+            _consumed, _consumedUtf16, match.Index, match.Length, match.Length, ref _sliceInvocation,
+            out var projected, out var consumed, out var consumedUtf16);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        _deterministicScanState = pending;
+        _current = projected;
+        _consumed = consumed;
+        _consumedUtf16 = consumedUtf16;
+        found = true;
+        return Utf8ExecutionLimitKind.None;
     }
 
     private bool MoveNextEmptyLiteral()

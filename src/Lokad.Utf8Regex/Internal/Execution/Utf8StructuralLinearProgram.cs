@@ -1024,7 +1024,7 @@ internal static class Utf8AsciiFixedTokenLinearExecutor
     }
 }
 
-internal static class Utf8AsciiInstructionLinearExecutor
+internal static partial class Utf8AsciiInstructionLinearExecutor
 {
     public static bool SupportsInput(in Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
     {

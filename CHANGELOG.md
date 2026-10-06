@@ -1,5 +1,7 @@
 # Changelog
 
+- Deterministic ASCII match cursors carry one invocation through bounded candidate search, verification, incremental UTF-16 projection and terminal moves. Failed work admission retains the previous result and scan state; original deadlines and tokens remain active between moves. Mixed byte-unsafe subjects transfer the same entry invocation into the unit VM. General simple patterns, mapping/storage admission, copied cursor ownership and public finite policies remain open.
+
 ## Unreleased
 
 ### Owned UTF-16 execution
