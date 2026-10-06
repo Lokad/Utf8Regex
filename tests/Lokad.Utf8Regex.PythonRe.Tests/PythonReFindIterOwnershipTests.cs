@@ -76,12 +76,12 @@ public sealed class PythonReFindIterOwnershipTests
 
     [Theory]
     [MemberData(nameof(ManagedCases))]
-    public void ManagedFindIterMatchesExpected(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
+    public void FormerManagedFindIterStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var matches = regex.FindIterDetailed(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.Value.ValueText).ToArray());
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

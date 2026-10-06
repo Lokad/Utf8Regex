@@ -328,7 +328,7 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void CancelInsideEvaluatorAbortsManagedSubn()
+    public void CancelInsideEvaluatorAbortsScalarSubn()
     {
         var regex = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None);
         using var canceled = new CancellationTokenSource();
@@ -343,7 +343,7 @@ public sealed class PythonReCancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.True(regex.DebugIsManagedRegexValueCreated);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
 
     [Fact]

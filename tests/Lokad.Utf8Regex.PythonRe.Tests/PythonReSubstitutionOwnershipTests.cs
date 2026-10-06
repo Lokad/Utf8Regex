@@ -58,13 +58,13 @@ public sealed class PythonReSubstitutionOwnershipTests
 
     [Theory]
     [MemberData(nameof(ManagedCases))]
-    public void ManagedSubstitutionMatchesCpython(string pattern, PythonReCompileOptions options, string inputText, string replacement, int count, int startOffsetInBytes, string expectedText, int expectedCount)
+    public void FormerManagedSubstitutionStaysOwned(string pattern, PythonReCompileOptions options, string inputText, string replacement, int count, int startOffsetInBytes, string expectedText, int expectedCount)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var subn = regex.SubnToString(input, replacement, count, startOffsetInBytes);
         Assert.Equal(expectedText, subn.ResultText);
         Assert.Equal(expectedCount, subn.ReplacementCount);
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

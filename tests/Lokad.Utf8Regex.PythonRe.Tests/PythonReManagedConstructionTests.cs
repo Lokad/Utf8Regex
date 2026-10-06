@@ -49,14 +49,14 @@ public sealed class PythonReManagedConstructionTests
     [InlineData("[a-z]+", "xxabcxx")]
     [InlineData("(a)(b)", "xxabxx")]
     [InlineData("(?<=a)b", "xab")]
-    public void ManagedOperationsConstructManagedEngine(string pattern, string inputText)
+    public void ScalarGlobalOperationsConstructNoManagedEngine(string pattern, string inputText)
     {
-        // FindIterDetailed always runs on the managed cursor; lookbehind Search keeps the
-        // verified managed route. Both construct the managed engine on first use, never before.
+        // Scalar global discovery retains captures and full lookbehind context
+        // without constructing the former managed engine.
         var regex = new Utf8PythonRegex(pattern);
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
         Assert.False(regex.DebugIsManagedRegexValueCreated);
         Assert.NotEmpty(regex.FindIterDetailed(input));
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

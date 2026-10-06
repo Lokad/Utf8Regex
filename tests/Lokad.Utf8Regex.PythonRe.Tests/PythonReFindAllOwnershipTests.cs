@@ -98,12 +98,12 @@ public sealed class PythonReFindAllOwnershipTests
 
     [Theory]
     [MemberData(nameof(ManagedCases))]
-    public void ManagedFindAllMatchesExpected(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
+    public void FormerManagedFindAllStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var matches = regex.FindAll(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

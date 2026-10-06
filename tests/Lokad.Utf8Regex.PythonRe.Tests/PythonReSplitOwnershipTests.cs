@@ -95,12 +95,12 @@ public sealed class PythonReSplitOwnershipTests
 
     [Theory]
     [MemberData(nameof(ManagedCases))]
-    public void ManagedSplitMatchesCpython(string pattern, PythonReCompileOptions options, string inputText, int maxSplit, int startOffsetInBytes, string?[] expected)
+    public void FormerManagedSplitStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int maxSplit, int startOffsetInBytes, string?[] expected)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var actual = regex.SplitToStrings(input, maxSplit, startOffsetInBytes);
         Assert.Equal(expected, actual);
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

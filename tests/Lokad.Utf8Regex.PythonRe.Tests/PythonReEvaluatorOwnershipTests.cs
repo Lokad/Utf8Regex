@@ -80,12 +80,12 @@ public sealed class PythonReEvaluatorOwnershipTests
 
     [Theory]
     [MemberData(nameof(ManagedCases))]
-    public void ManagedEvaluatorStaysManaged(string pattern, PythonReCompileOptions options, string inputText, int count, int startOffsetInBytes)
+    public void FormerManagedEvaluatorStaysOwned(string pattern, PythonReCompileOptions options, string inputText, int count, int startOffsetInBytes)
     {
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var subn = regex.SubnToString(input, 0, static (int state, Utf8PythonDetailedMatchData match) => "[" + match.Value.ValueText + "]", count, startOffsetInBytes);
         Assert.Equal(regex.Count(input), subn.ReplacementCount);
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 }

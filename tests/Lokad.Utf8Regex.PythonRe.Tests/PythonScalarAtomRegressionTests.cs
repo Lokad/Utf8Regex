@@ -41,10 +41,7 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.Equal("\U0001f600]", match.GetGroup(1).GetValueString());
         Assert.False(regex.DebugIsManagedRegexValueCreated, "Detailed search stays owned.");
         Assert.Equal(new[] { "\U0001f600]", "x]" }, regex.FindAllToStrings(input).ScalarValues);
-        // Captured global enumeration/substitution still use the profile's
-        // existing managed result path. Keep this migration gap explicit while
-        // qualifying scalar semantics; the new core admission does not close it.
-        Assert.True(regex.DebugIsManagedRegexValueCreated, "Captured global results remain in the R05 inventory.");
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "Captured scalar results stay owned.");
         Assert.Equal("<_><_>", regex.ReplaceToString(input, "<_>"));
     }
 
