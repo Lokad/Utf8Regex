@@ -92,57 +92,6 @@ internal static partial class BenchmarkInspectReporter
         return 1;
     }
 
-    public static int RunInspectAsciiTwinReplicaCase(string caseId)
-    {
-        LokadReplicaScriptBenchmarkCase benchmarkCase;
-        try
-        {
-            benchmarkCase = LokadReplicaScriptBenchmarkCatalog.Get(caseId);
-        }
-        catch (Exception)
-        {
-            Console.Error.WriteLine($"Case '{caseId}' was not found.");
-            return 1;
-        }
-
-        if (benchmarkCase.Model != LokadReplicaScriptBenchmarkModel.PrefixMatchLoop)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"Model             : {benchmarkCase.Model}");
-            Console.WriteLine("AsciiTwinInspect  : case is not a PrefixMatchLoop");
-            return 1;
-        }
-
-        var context = new LokadReplicaScriptBenchmarkContext(benchmarkCase);
-        var regex = context.Utf8Regex;
-
-        Console.WriteLine($"CaseId            : {caseId}");
-        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
-        Console.WriteLine($"Options           : {benchmarkCase.Utf8Options}");
-        Console.WriteLine($"HasAsciiTwin      : {regex.Inspection.DebugHasAsciiCultureInvariantTwin}");
-        if (!regex.Inspection.DebugHasAsciiCultureInvariantTwin || !regex.Inspection.DebugTryGetAsciiCultureInvariantTwin(out var twin))
-        {
-            return 0;
-        }
-
-        Console.WriteLine($"TwinExecutionKind : {twin.ExecutionKind}");
-        Console.WriteLine($"TwinCompiledEngine: {twin.CompiledEngineKind}");
-        Console.WriteLine($"TwinFallback      : {twin.FallbackReason ?? "<native>"}");
-
-        for (var i = 0; i < context.SampleBytes.Length; i++)
-        {
-            var sample = context.SampleBytes[i];
-            var mainMatch = regex.Match(sample);
-            var twinMatch = twin.Match(sample);
-            Console.WriteLine(
-                $"Sample[{i}]         : ascii={Utf8InputAnalyzer.IsAscii(sample)} len={sample.Length} " +
-                $"main={mainMatch.Success}/{(mainMatch.Success ? mainMatch.LengthInBytes : 0)} " +
-                $"twin={twinMatch.Success}/{(twinMatch.Success ? twinMatch.LengthInBytes : 0)}");
-        }
-
-        return 0;
-    }
-
     public static int RunDumpDotNetGeneratedRegexCase(string caseId)
     {
         if (TryResolveCasePattern(caseId, out var pattern, out var options, out var origin))
@@ -2415,11 +2364,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("WholeMatchProjectionOnly", iterations, context.ExecuteWholeMatchProjectionOnly);
             Measure("AnchoredValidatorEmitted", iterations, context.ExecuteAnchoredValidatorEmittedOnly);
         }
-        if (context.Utf8Regex.Inspection.DebugHasAsciiCultureInvariantTwin)
-        {
-            Measure("AsciiTwinMatchOnly", iterations, context.ExecuteUtf8PrefixAsciiCultureInvariantTwinOnly);
-            Measure("AsciiTwinDirectOnly", iterations, context.ExecuteUtf8PrefixAsciiCultureInvariantTwinDirectOnly);
-        }
         Measure("DirectUrlMatcher", iterations, context.ExecuteLokadScriptDirectUrlMatcher);
         Measure("PublicAfterValidation", iterations, context.ExecuteUtf8PrefixPublicAfterValidationOnly);
         Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
@@ -3792,6 +3736,9 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
+        Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
+        Console.WriteLine($"ActiveScalarPlan  : {regex.Inspection.DebugUsesOwnedSliceProgram}");
+        Console.WriteLine($"BclRegexCreated   : {regex.Inspection.DebugFallbackRegexIsCreated}");
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
         return 0;
     }
@@ -5492,13 +5439,6 @@ internal static partial class BenchmarkInspectReporter
 
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"HasAsciiTwin      : {regex.Inspection.DebugHasAsciiCultureInvariantTwin}");
-        if (regex.Inspection.DebugHasAsciiCultureInvariantTwin)
-        {
-            Console.WriteLine($"AsciiTwinEngine   : {regex.Inspection.DebugAsciiCultureInvariantTwinCompiledEngineKind}");
-            Console.WriteLine($"AsciiTwinKind     : {regex.Inspection.DebugAsciiCultureInvariantTwinExecutionKind}");
-            Console.WriteLine($"AsciiTwinFallback : {regex.Inspection.DebugAsciiCultureInvariantTwinFallbackReason ?? "<native>"}");
-        }
         Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
         Console.WriteLine($"SearchKind        : {regex.Inspection.SearchPlan.Kind}");
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");

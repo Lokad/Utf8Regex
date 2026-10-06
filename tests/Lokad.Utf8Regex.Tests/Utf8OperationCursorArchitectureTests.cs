@@ -45,8 +45,10 @@ public sealed class Utf8OperationCursorArchitectureTests
         Assert.Contains("Utf8OperationMatchCursor", splitEnumerator, StringComparison.Ordinal);
         Assert.DoesNotContain("NativeSimplePattern", splitEnumerator, StringComparison.Ordinal);
         Assert.DoesNotContain("NativeDeterministicPattern", splitEnumerator, StringComparison.Ordinal);
-        Assert.Contains("Utf8AsciiCultureInvariantStrategy", facade, StringComparison.Ordinal);
-        Assert.DoesNotContain("Utf8Regex? _asciiCultureInvariantTwin", facade, StringComparison.Ordinal);
+        Assert.Contains("Utf8SliceProgram? _ownedSliceProgram", facade, StringComparison.Ordinal);
+        Assert.DoesNotContain("AsciiCulture" + "Invariant", facade, StringComparison.Ordinal);
+        Assert.DoesNotContain(typeof(Utf8Regex).Assembly.GetTypes(), static type =>
+            type.Name.Contains("AsciiCulture" + "Invariant", StringComparison.Ordinal));
         Assert.Contains("Utf8RegexProgram _program", facade, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateMatchEnumerator", runtime, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateSplitEnumerator", runtime, StringComparison.Ordinal);

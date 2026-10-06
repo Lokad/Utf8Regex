@@ -620,48 +620,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteUtf8PrefixAsciiCultureInvariantTwinOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.DebugHasAsciiCultureInvariantTwin)
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            Utf8Regex.Inspection.DebugTryMatchViaAsciiCultureInvariantTwin(sample, out var match);
-            if (match.Success)
-            {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
-            }
-        }
-
-        return total;
-    }
-
-    public int ExecuteUtf8PrefixAsciiCultureInvariantTwinDirectOnly()
-    {
-        EnsurePrefixMatchLoop();
-        if (!Utf8Regex.Inspection.DebugHasAsciiCultureInvariantTwin || !Utf8Regex.Inspection.DebugTryGetAsciiCultureInvariantTwin(out var twin))
-        {
-            return 0;
-        }
-
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            twin.DebugTryMatchWithoutValidation(sample, out var match);
-            if (match.Success)
-            {
-                total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
-            }
-        }
-
-        return total;
-    }
-
     private int ExecuteImportLineVerifierModel()
     {
         var count = Utf8QuotedLineSegmentExecutor.CountViaCandidateScan(InputBytes, ImportPrefix, ImportOptionalSegment, out var requiresFallback);

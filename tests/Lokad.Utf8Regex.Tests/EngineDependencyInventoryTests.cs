@@ -110,8 +110,6 @@ public sealed class EngineDependencyInventoryTests
         var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
         var expectedFallbackFiles = new[]
         {
-            "Utf8AsciiCultureInvariantReplacement.cs",
-            "Utf8AsciiCultureInvariantStrategy.cs",
             "Utf8CompiledEngineRuntime.cs",
             "Utf8CompiledOperationCursorFactory.cs",
             "Utf8FallbackCandidateVerifier.cs",

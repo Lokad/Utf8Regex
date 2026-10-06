@@ -193,8 +193,8 @@ public sealed partial class Utf8Regex
             return Utf8ValueMatch.NoMatch;
         }
         // Folded anchored suffixes match the same single tail hit with per-byte invariant
-        // folding; the shared twin projects coordinates. Kelvin and Turkic divergences
-        // fall through to the fenced BCL paths below.
+        // folding; the suffix kernel projects coordinates. Non-native folds use
+        // scalar execution.
         if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
@@ -521,7 +521,7 @@ public sealed partial class Utf8Regex
         }
 
         // Folded anchored suffixes enumerate the same single tail hit with per-byte
-        // invariant folding under the same fence contract; the shared twin projects
+        // invariant folding under the same fence contract; the suffix kernel projects
         // coordinates.
         if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })

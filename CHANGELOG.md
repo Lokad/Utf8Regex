@@ -24,6 +24,13 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Removed the separate ASCII invariant culture plan/runtime and replacement
+  implementation, their cached state, facade dispatch and benchmark inspection
+  hooks. Culture-sensitive construction now prepares one program. Admitted
+  cell/URL families retain complete scalar captures; unserved NonBacktracking
+  loops keep their original construction culture on BMP overlap instead of
+  replaying through an invariant plan. General owned admission and remaining
+  BCL execution still require migration.
 - Admitted culture-sensitive and scoped IgnoreCase patterns now use the owned
   scalar program, with the construction-time I equivalence groups retained in
   classes, assertions and backreferences. Supplementary matches and captures

@@ -30,8 +30,6 @@ public sealed partial class Utf8Regex
 
     private string DebugFallbackDirectFamilyKind => _preparedRegex.FallbackDirectFamily.Kind.ToString();
 
-    private bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantStrategy is not null;
-
     private bool DebugHasInvariantCyrillicLiteralCountStrategy =>
         _invariantCyrillicLiteralCountStrategy is not null;
 
@@ -50,12 +48,6 @@ public sealed partial class Utf8Regex
     private bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
         _fusedAsciiBoundaryLiteralFamilyCounter is not null;
 
-    private NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
-
-    private Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind => _asciiCultureInvariantStrategy?.CompiledEngine.Kind;
-
-    private string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantStrategy?.PreparedRegex.FallbackReason;
-
     private bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
         Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(_preparedRegex);
 
@@ -70,36 +62,6 @@ public sealed partial class Utf8Regex
     private bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
     {
         return RejectsByRequiredPrefilter(input);
-    }
-
-    private bool DebugTryMatchViaAsciiCultureInvariantTwin(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
-    {
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            if (twin.TryMatchDirectWithoutValidation(input, out match))
-            {
-                return true;
-            }
-
-            match = twin.Match(input);
-            return true;
-        }
-
-        match = Utf8ValueMatch.NoMatch;
-        return false;
-    }
-
-    private bool DebugTryGetAsciiCultureInvariantTwin(
-        [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy)
-    {
-        if (_asciiCultureInvariantStrategy is not null)
-        {
-            strategy = _asciiCultureInvariantStrategy;
-            return true;
-        }
-
-        strategy = null;
-        return false;
     }
 
     private int DebugCountViaCompiledEngine(ReadOnlySpan<byte> input)
@@ -588,8 +550,6 @@ public sealed partial class Utf8Regex
 
         public string DebugFallbackDirectFamilyKind => _owner.DebugFallbackDirectFamilyKind;
 
-        public bool DebugHasAsciiCultureInvariantTwin => _owner.DebugHasAsciiCultureInvariantTwin;
-
         public bool DebugHasInvariantCyrillicLiteralCountStrategy =>
             _owner.DebugHasInvariantCyrillicLiteralCountStrategy;
 
@@ -607,15 +567,6 @@ public sealed partial class Utf8Regex
 
         public bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
             _owner.DebugHasFusedAsciiBoundaryLiteralFamilyCount;
-
-        public NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind =>
-            _owner.DebugAsciiCultureInvariantTwinExecutionKind;
-
-        public Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind =>
-            _owner.DebugAsciiCultureInvariantTwinCompiledEngineKind;
-
-        public string? DebugAsciiCultureInvariantTwinFallbackReason =>
-            _owner.DebugAsciiCultureInvariantTwinFallbackReason;
 
         public Utf8StructuralLinearProgramKind StructuralLinearProgramKind =>
             _owner.StructuralLinearProgramKind;
@@ -645,15 +596,6 @@ public sealed partial class Utf8Regex
 
         public bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input) =>
             _owner.DebugRejectsByRequiredPrefilter(input);
-
-        public bool DebugTryMatchViaAsciiCultureInvariantTwin(
-            ReadOnlySpan<byte> input,
-            out Utf8ValueMatch match) =>
-            _owner.DebugTryMatchViaAsciiCultureInvariantTwin(input, out match);
-
-        public bool DebugTryGetAsciiCultureInvariantTwin(
-            [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy) =>
-            _owner.DebugTryGetAsciiCultureInvariantTwin(out strategy);
 
         public int DebugCountViaCompiledEngine(ReadOnlySpan<byte> input) =>
             _owner.DebugCountViaCompiledEngine(input);

@@ -1333,35 +1333,38 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorCreatesAsciiTwinForDirectCellReferenceFamily()
+    public void ConstructorUsesOwnedCultureProgramForDirectCellReferenceFamily()
     {
         var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
-        Assert.True(regex.Inspection.DebugHasAsciiCultureInvariantTwin);
+        Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]
-    public void ConstructorCreatesAsciiTwinForDashboardUrlIgnoreCasePattern()
+    public void ConstructorUsesOwnedCultureProgramForDashboardUrlIgnoreCasePattern()
     {
         const string pattern = "^(?<before>.*)(https://go(\\.testing)?\\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/d/(?<topicId>\\d+)/?\\?t=(?<tab>[^ ?]+)(?<rest>.*)$";
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
-        Assert.True(regex.Inspection.DebugHasAsciiCultureInvariantTwin);
+        Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]
-    public void ConstructorCreatesAsciiTwinForDownloadUrlIgnoreCasePattern()
+    public void ConstructorUsesOwnedCultureProgramForDownloadUrlIgnoreCasePattern()
     {
         const string pattern = "^(?<before>.*)(https://go(\\.testing)?\\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \\n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \\n]+)?(?<rest>.*)$";
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
-        Assert.True(regex.Inspection.DebugHasAsciiCultureInvariantTwin);
+        Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]

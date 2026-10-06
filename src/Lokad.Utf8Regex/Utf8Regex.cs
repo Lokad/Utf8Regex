@@ -304,9 +304,6 @@ public sealed partial class Utf8Regex
 
     private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime;
 
-    private Utf8AsciiCultureInvariantStrategy? _asciiCultureInvariantStrategy =>
-        _program.AsciiCultureInvariantStrategy;
-
     private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
         _program.DirectStructuralFamilyKernelMatcher;
 
@@ -678,16 +675,6 @@ public sealed partial class Utf8Regex
                 input.Slice(0, caretIsMatchPrefix.Length).SequenceEqual(caretIsMatchPrefix);
         }
 
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            if (twin.TryMatchDirectWithoutValidation(input, out var twinDirectMatch))
-            {
-                return twinDirectMatch.Success;
-            }
-
-            return twin.IsMatch(input);
-        }
-
         if (ShouldDecodeWholeSubjectForFallbackValueOperation())
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
@@ -1002,14 +989,8 @@ public sealed partial class Utf8Regex
                 Utf8Validation.DecodeStrict(input));
         }
 
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return twin.Count(input);
-        }
-
         // R05: caret-anchored grouped literals count owned by prefix compare (at
-        // most one match at offset 0); twin, culture, Kelvin, and RTL stay fenced
-        // by the arms above.
+        // most one match at offset 0); folding and RTL use the routes above.
         if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretCountPrefix)
         {
             return input.Length >= caretCountPrefix.Length &&
@@ -1339,16 +1320,6 @@ public sealed partial class Utf8Regex
                 : Utf8ValueMatch.NoMatch;
         }
 
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            if (twin.TryMatchDirectWithoutValidation(input, out var twinDirectMatch))
-            {
-                return twinDirectMatch;
-            }
-
-            return twin.Match(input);
-        }
-
         var canUseAsciiWellFormedOnlyMatch =
             _compiledEngineRuntime.SupportsAsciiWellFormedOnlyMatch &&
             TryUseAsciiInputValidationShortcut(input);
@@ -1498,7 +1469,7 @@ public sealed partial class Utf8Regex
         }
 
         // Folded anchored suffixes serve the same single tail hit with per-byte invariant
-        // folding through the shared twin; Kelvin and Turkic divergences fall through.
+        // folding through the suffix kernel; non-native folds use scalar execution.
         if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
@@ -1594,11 +1565,6 @@ public sealed partial class Utf8Regex
         if (detailedProgram is { } ownedProgram)
         {
             return OwnedSliceMatchDetailed(input, ownedProgram, cancellationToken);
-        }
-
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return twin.MatchDetailed(input);
         }
 
         var analysis = Utf8InputAnalyzer.Analyze(input);
@@ -2512,11 +2478,6 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
-
         var subject = Utf8ValidatedInput.Create(input);
         var startOffsetInBytes = UsesRightToLeft() ? input.Length : 0;
         var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
@@ -2729,11 +2690,6 @@ public sealed partial class Utf8Regex
     {
         if (count >= 0 && GetOwnedSliceProgram(input) is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return twin.EnumerateSplits(input, count).WithTimeoutMapping(Pattern, MatchTimeout);
-        }
-
         // R05: right-to-left slice shapes split owned through the same cursor
         // the ascending arm uses, projecting segments descending from the input end
         // with UTF-16 indexes exactly like the BCL oracle (encounter order, tail
@@ -2980,11 +2936,6 @@ public sealed partial class Utf8Regex
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return Utf8AsciiCultureInvariantReplacement.Replace(twin, input, analyzed);
-        }
-
         return ReplaceCore(input, replacement, analyzed, cancellationToken);
     }
 
@@ -3368,11 +3319,6 @@ public sealed partial class Utf8Regex
     private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return Utf8AsciiCultureInvariantReplacement.ReplaceToString(twin, input, analyzed);
-        }
-
         _ = Utf8Validation.Validate(input);
         return ReplaceToStringCore(input, analyzed, cancellationToken);
     }
@@ -3606,11 +3552,6 @@ public sealed partial class Utf8Regex
         CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return Utf8AsciiCultureInvariantReplacement.TryReplace(twin, input, analyzed, destination, out bytesWritten);
-        }
-
         return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten, cancellationToken);
     }
 
@@ -3853,21 +3794,6 @@ public sealed partial class Utf8Regex
         }
 
         return Utf8InputAnalyzer.IsAscii(input);
-    }
-
-    private bool TryGetAsciiCultureInvariantTwin(
-        ReadOnlySpan<byte> input,
-        [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy)
-    {
-        if (_ownedSliceProgram is null && _asciiCultureInvariantStrategy is not null &&
-            Utf8InputAnalyzer.IsAscii(input))
-        {
-            strategy = _asciiCultureInvariantStrategy;
-            return true;
-        }
-
-        strategy = null;
-        return false;
     }
 
 }
