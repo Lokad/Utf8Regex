@@ -2811,10 +2811,23 @@ public sealed class Utf8RegexConstructionTests
             """u8;
 
         Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-        Assert.Equal(2, regex.Count(input));
+        // The separator may consume the newline in "public\nclass" before dot
+        // begins; the old trailing-anchor shortcut incorrectly discarded it.
+        var oracle = new Regex(regex.Pattern, RegexOptions.CultureInvariant);
+        var text = Encoding.UTF8.GetString(input);
+        Assert.Equal(3, oracle.Count(text));
+        Assert.Equal(oracle.Count(text), regex.Count(input));
+        var actual = regex.EnumerateMatches(input);
+        foreach (var expected in oracle.EnumerateMatches(text))
+        {
+            Assert.True(actual.MoveNext());
+            Assert.Equal((expected.Index, expected.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
+        }
+        Assert.False(actual.MoveNext());
         var match = regex.Match(input);
         Assert.True(match.Success);
         Assert.Equal(0, match.IndexInBytes);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]

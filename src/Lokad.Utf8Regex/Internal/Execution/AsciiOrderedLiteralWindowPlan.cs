@@ -1,6 +1,24 @@
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
+
+internal readonly struct AsciiOrderedWindowSeparatorPlan
+{
+    internal AsciiOrderedWindowSeparatorPlan(string runtimeSet, int minimum, bool lazy)
+    {
+        HasValue = runtimeSet.Length > 0;
+        Minimum = minimum;
+        IsLazy = lazy;
+        CharClass = AsciiStructuralIdentifierFamilyPlan.TryCreateAsciiCharClass(runtimeSet, out var projected)
+            ? projected : default;
+    }
+
+    internal bool HasValue { get; }
+    internal int Minimum { get; }
+    internal bool IsLazy { get; }
+    internal AsciiCharClass CharClass { get; }
+}
 
 internal readonly struct AsciiOrderedLiteralWindowPlan
 {
@@ -15,7 +33,8 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
         int maxGap,
         int minGap,
         bool gapSameLine,
-        int gapLeadingSeparatorMinCount,
+        AsciiOrderedWindowSeparatorPlan separator,
+        AsciiOrderedWindowSeparatorPlan[]? branchSeparators,
         bool yieldLeadingLiteralOnly,
         Utf8BoundaryRequirement leadingLiteralLeadingBoundary,
         Utf8BoundaryRequirement leadingLiteralTrailingBoundary,
@@ -29,12 +48,35 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
         MaxGap = maxGap;
         MinGap = minGap;
         GapSameLine = gapSameLine;
-        GapLeadingSeparatorMinCount = gapLeadingSeparatorMinCount;
+        Separator = separator;
+        BranchSeparators = branchSeparators ?? [];
         YieldLeadingLiteralOnly = yieldLeadingLiteralOnly;
         LeadingLiteralLeadingBoundary = leadingLiteralLeadingBoundary;
         LeadingLiteralTrailingBoundary = leadingLiteralTrailingBoundary;
         TrailingLiteralLeadingBoundary = trailingLiteralLeadingBoundary;
         TrailingLiteralTrailingBoundary = trailingLiteralTrailingBoundary;
+        var trailing = HasPairedTrailingLiterals ? TrailingLiteralsUtf8 : [trailingLiteralUtf8];
+        TrailingSearchers = new PreparedSearcher[trailing.Length];
+        RequiresSemanticExecutor = Utf8SearchPlan.GetLiteralOverlap(leadingLiteralsUtf8) != Utf8AlternateLiteralOverlapKind.None;
+        for (var i = 0; i < trailing.Length; i++)
+        {
+            TrailingSearchers[i] = new PreparedSearcher(new PreparedSubstringSearch(trailing[i], false), false);
+            var currentSeparator = BranchSeparators.Length > 0 ? BranchSeparators[i] : separator;
+            var leading = HasPairedTrailingLiterals ? LeadingLiteralsUtf8[i] : leadingLiteralUtf8;
+            RequiresSemanticExecutor |= gapSameLine && trailing[i].AsSpan().Contains((byte)'\n') ||
+                currentSeparator.HasValue && (currentSeparator.Minimum == 0 || currentSeparator.IsLazy && maxGap > 0 ||
+                    currentSeparator.CharClass.Contains(leading[^1]) || currentSeparator.CharClass.Contains(trailing[i][0]));
+            if (currentSeparator.HasValue)
+            {
+                // A family fast path must admit every leading alternative,
+                // including a longer one whose last byte joins the separator run.
+                if (!HasPairedTrailingLiterals)
+                    foreach (var alternative in LeadingLiteralsUtf8)
+                        RequiresSemanticExecutor |= currentSeparator.CharClass.Contains(alternative[^1]);
+                for (var value = 0; value < 128; value++)
+                    RequiresSemanticExecutor |= currentSeparator.CharClass.Contains((byte)value) != Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value);
+            }
+        }
     }
 
     /// <summary>Search anchor literal (shortest, or the only one for single-literal patterns).</summary>
@@ -61,7 +103,16 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
     /// Minimum whitespace characters required between literal1 and the gap (from \s+ or \s*).
     /// Zero means no separator is required.
     /// </summary>
-    public int GapLeadingSeparatorMinCount { get; }
+    public int GapLeadingSeparatorMinCount => Separator.Minimum;
+
+    internal AsciiOrderedWindowSeparatorPlan Separator { get; }
+
+    internal AsciiOrderedWindowSeparatorPlan[] BranchSeparators { get; }
+
+    internal PreparedSearcher[] TrailingSearchers { get; }
+
+    // Old specialized kernels remain only where their semantic envelope holds.
+    internal bool RequiresSemanticExecutor { get; }
 
     /// <summary>
     /// When true, the match length stays on the leading literal and the trailing literal only acts as a lookahead guard.

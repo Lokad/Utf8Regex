@@ -772,8 +772,11 @@ public sealed partial class Utf8Regex
                 return OwnedSliceIsMatchFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
-            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
-                _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out _, out var found);
+            var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
+                ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
+                    _preparedRegex.SearchPlan, 0, ref structuralInvocation, out _, out var found)
+                : Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
+                    _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out _, out found);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return found;
@@ -1069,8 +1072,11 @@ public sealed partial class Utf8Regex
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceCountFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
-            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(_preparedRegex.StructuralSearchPlan,
-                _preparedRegex.StructuralVerifier.AsciiProgram, input, ref structuralInvocation, out var count);
+            var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
+                ? AsciiOrderedLiteralWindowExecutor.TryCount(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
+                    _preparedRegex.SearchPlan, ref structuralInvocation, out var count)
+                : Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(_preparedRegex.StructuralSearchPlan,
+                    _preparedRegex.StructuralVerifier.AsciiProgram, input, ref structuralInvocation, out count);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return count;
@@ -1490,8 +1496,11 @@ public sealed partial class Utf8Regex
                 return OwnedSliceMatchFromUnit(input, _unitSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
                     Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
-            var breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
-                _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out var match, out var found);
+            var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
+                ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
+                    _preparedRegex.SearchPlan, 0, ref structuralInvocation, out var match, out var found)
+                : Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_preparedRegex.StructuralSearchPlan,
+                    _preparedRegex.StructuralVerifier.AsciiProgram, input, 0, ref state, ref structuralInvocation, out match, out found);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Native structural execution exceeded {breach}.");
             return found ? Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly), input,
@@ -2835,6 +2844,7 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
+        if (TryCreateNativeWindowEnumerator(input, CancellationToken.None, out var windowEnumerator)) return windowEnumerator;
         // Anchored prefixes yield at most one match at offset 0 through the
         // anchor-enforcing owned cursor, without BCL construction.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -2947,6 +2957,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (TryCreateNativeWindowEnumerator(input, cancellationToken, out var windowEnumerator)) return windowEnumerator;
         // Single literals now retain one invocation through bounded validation,
         // discovery, confirmation and projection. Other shapes retain the unit VM.
         // A possible non-ASCII folding partner stays in its existing semantic route.

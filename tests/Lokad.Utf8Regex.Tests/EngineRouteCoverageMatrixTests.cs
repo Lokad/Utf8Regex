@@ -11,8 +11,8 @@ namespace Lokad.Utf8Regex.Tests;
 /// projects). BCL dependence of Match/Replace/Split/Enumerate per row is pinned at file level
 /// by EngineDependencyInventoryTests and behaviorally by DiffTests until R03 lands
 /// per-operation owned execution with dedicated counters.
-/// A FallbackRegex row is BCL-constructed; a native row with nonzero verifier invocations is
-/// BCL-verified at runtime (candidate verification) on that input.
+/// Nonzero verifier invocations can include owned native confirmation; BCL execution
+/// must be assessed with the fallback construction flags as well.
 /// The counter records verification attempts; whether BCL executed follows the construction flags (a created anchored fallback witnesses execution: its Lazy is only evaluated inside TryVerify paths).
 /// </summary>
 public sealed class EngineRouteCoverageMatrixTests
@@ -30,7 +30,8 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "case-pair-class-ignorecase", "[Aa][Bb][Cc]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "AsciiLiteralIgnoreCase", null, true, true };
         // Structural and multi-branch ignorecase families: native routes with per-op BCL verifier footprints pinned honestly (structural candidates verify on hits).
         yield return new object?[] { "structural-identifier-family", "\\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\\b", RegexOptions.CultureInvariant, "logger.LogError(\"bad\");", "AsciiStructuralIdentifierFamily", null, false, false };
-        yield return new object?[] { "structural-ordered-window", "Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None, "Holmes and Watson", "AsciiOrderedLiteralWindow", null, true, true };
+        // Greedy Count shares the owned window verifier rather than the old trailing-anchor shortcut.
+        yield return new object?[] { "structural-ordered-window", "Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None, "Holmes and Watson", "AsciiOrderedLiteralWindow", null, true, false };
         yield return new object?[] { "structural-token-window", "[A-Za-z]{10}\\s+[\\s\\S]{0,100}Result[\\s\\S]{0,100}\\s+[A-Za-z]{10}", RegexOptions.None, "abcdefghij Result klmnopqrst", "AsciiStructuralTokenWindow", null, false, false };
         yield return new object?[] { "ignorecase-literals-abd", "a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabdxx", "AsciiLiteralIgnoreCaseLiterals", null, true, true };
         yield return new object?[] { "structural-repeated-segment", "(?:[A-Z][a-z]+\\s*){10,100}", RegexOptions.CultureInvariant, "Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota Kappa ", "AsciiStructuralRepeatedSegment", null, false, false };
@@ -114,5 +115,12 @@ public sealed class EngineRouteCoverageMatrixTests
         Assert.Equal(expectedFallbackReason, regex.Inspection.FallbackReason);
         Assert.Equal(expectIsMatchVerifierFree, regex.CollectIsMatchDiagnostics(input).VerifierInvocations == 0);
         Assert.Equal(expectCountVerifierFree, regex.CollectCountDiagnostics(input).VerifierInvocations == 0);
+        if (name == "structural-ordered-window")
+        {
+            Assert.Equal(Regex.Count(inputText, pattern, options), regex.Count(input));
+            Assert.Equal((0, inputText.Length), (regex.Match(input).IndexInBytes, regex.Match(input).LengthInBytes));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        }
     }
 }

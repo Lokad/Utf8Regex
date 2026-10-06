@@ -4,6 +4,18 @@
 
 ### Owned UTF-16 execution
 
+- Ordered-window value operations and enumeration retain one invocation through
+  UTF-8 validation, bounded leading/trailing search, separator and line checks,
+  and projection. Denied cursor work leaves the previous result and progression
+  intact. Count advances through the same greedy ranges as Match, correcting
+  family overcounts. Separator plans preserve their whitespace set and laziness;
+  separator newlines remain valid before dot begins, trailing newlines belong to
+  the literal, and complete overlapping branches retry
+  at the same start. Mixed subjects retain UTF-16 and Unicode unit semantics under
+  the caller invocation. These fix fork routing defects against .NET 10; aggregate
+  mapping/storage bounds, other native families and public finite policies remain
+  open.
+
 - Metered structural candidates share invocation state through prepared searches,
   fixed-distance guards, start transforms and paired windows. Structural family
   value operations retain the validation deadline and token through candidate

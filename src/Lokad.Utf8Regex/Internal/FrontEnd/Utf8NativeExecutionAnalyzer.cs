@@ -1388,11 +1388,14 @@ internal static class Utf8NativeExecutionAnalyzer
         // Optional whitespace separator before the gap (\s+ or \s*).
         var gapLeadingSeparatorMinCount = 0;
         var hasSeparator = false;
+        var separator = default(AsciiOrderedWindowSeparatorPlan);
         if (index < childCount &&
-            TryGetIdentifierSeparatorLoop(node.Child(index), out _, out var sepMin))
+            TryGetIdentifierSeparatorLoop(node.Child(index), out var separatorSet, out var sepMin))
         {
             gapLeadingSeparatorMinCount = sepMin;
             hasSeparator = true;
+            separator = new AsciiOrderedWindowSeparatorPlan(separatorSet, sepMin,
+                UnwrapRuntimeNode(node.Child(index)).Kind is Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Onelazy);
             index++;
         }
 
@@ -1459,7 +1462,8 @@ internal static class Utf8NativeExecutionAnalyzer
             maxGap,
             minGap,
             gapSameLine,
-            gapLeadingSeparatorMinCount,
+            separator,
+            branchSeparators: null,
             yieldLeadingLiteralOnly: false,
             leadingBoundary1,
             trailingBoundary1,
@@ -1485,7 +1489,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (lookahead.Kind != Utf8TreeNodeKind.PositiveLookaround ||
             (lookahead.Options & RegexOptions.RightToLeft) != 0 ||
             lookahead.ChildCount != 1 ||
-            !TryExtractSeparatorLiteralLookahead(lookahead.Child(0), out var separatorMinCount, out var trailingLiteral))
+            !TryExtractSeparatorLiteralLookahead(lookahead.Child(0), out var separator, out var trailingLiteral))
         {
             return false;
         }
@@ -1498,7 +1502,8 @@ internal static class Utf8NativeExecutionAnalyzer
             maxGap: 0,
             minGap: 0,
             gapSameLine: false,
-            gapLeadingSeparatorMinCount: separatorMinCount,
+            separator,
+            branchSeparators: null,
             yieldLeadingLiteralOnly: true,
             Utf8BoundaryRequirement.None,
             Utf8BoundaryRequirement.None,
@@ -1509,22 +1514,23 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryExtractSeparatorLiteralLookahead(
         Utf8TreeNode node,
-        out int separatorMinCount,
+        out AsciiOrderedWindowSeparatorPlan separator,
         out byte[] trailingLiteralUtf8)
     {
-        separatorMinCount = 0;
+        separator = default;
         trailingLiteralUtf8 = [];
         node = UnwrapRuntimeNode(node);
         if (node.Kind != Utf8TreeNodeKind.Concatenate ||
             node.ChildCount != 2 ||
-            !TryGetIdentifierSeparatorLoop(node.Child(0), out _, out separatorMinCount) ||
+            !TryGetIdentifierSeparatorLoop(node.Child(0), out var separatorSet, out var separatorMinCount) ||
             !TryGetAsciiLiteral(node.Child(1), out trailingLiteralUtf8))
         {
-            separatorMinCount = 0;
             trailingLiteralUtf8 = [];
             return false;
         }
 
+        separator = new AsciiOrderedWindowSeparatorPlan(separatorSet, separatorMinCount,
+            UnwrapRuntimeNode(node.Child(0)).Kind is Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Onelazy);
         return separatorMinCount > 0;
     }
 
@@ -1541,6 +1547,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
         var leadingLiterals = new byte[node.ChildCount][];
         var trailingLiterals = new byte[node.ChildCount][];
+        var separators = new AsciiOrderedWindowSeparatorPlan[node.ChildCount];
         Utf8BoundaryRequirement? leadingBoundary1 = null;
         Utf8BoundaryRequirement? trailingBoundary1 = null;
         Utf8BoundaryRequirement? leadingBoundary2 = null;
@@ -1559,7 +1566,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 out var branchMaxGap,
                 out var branchMinGap,
                 out var branchGapSameLine,
-                out var branchSeparatorMin,
+                out separators[i],
                 out var branchLeadingBoundary1,
                 out var branchTrailingBoundary1,
                 out var branchLeadingBoundary2,
@@ -1572,7 +1579,7 @@ internal static class Utf8NativeExecutionAnalyzer
             trailingBoundary1 ??= branchTrailingBoundary1;
             leadingBoundary2 ??= branchLeadingBoundary2;
             trailingBoundary2 ??= branchTrailingBoundary2;
-            separatorMin ??= branchSeparatorMin;
+            separatorMin ??= separators[i].Minimum;
             maxGap ??= branchMaxGap;
             minGap ??= branchMinGap;
             gapSameLine ??= branchGapSameLine;
@@ -1581,7 +1588,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 trailingBoundary1 != branchTrailingBoundary1 ||
                 leadingBoundary2 != branchLeadingBoundary2 ||
                 trailingBoundary2 != branchTrailingBoundary2 ||
-                separatorMin != branchSeparatorMin ||
+                separatorMin != separators[i].Minimum ||
                 maxGap != branchMaxGap ||
                 minGap != branchMinGap ||
                 gapSameLine != branchGapSameLine)
@@ -1604,7 +1611,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (maxGap is not { } selectedMaxGap ||
             minGap is not { } selectedMinGap ||
             gapSameLine is not { } selectedGapSameLine ||
-            separatorMin is not { } selectedSeparatorMin ||
+            separatorMin is null ||
             leadingBoundary1 is not { } selectedLeadingBoundary1 ||
             trailingBoundary1 is not { } selectedTrailingBoundary1 ||
             leadingBoundary2 is not { } selectedLeadingBoundary2 ||
@@ -1623,7 +1630,8 @@ internal static class Utf8NativeExecutionAnalyzer
             selectedMaxGap,
             selectedMinGap,
             selectedGapSameLine,
-            selectedSeparatorMin,
+            separators[0],
+            separators,
             yieldLeadingLiteralOnly: false,
             selectedLeadingBoundary1,
             selectedTrailingBoundary1,
@@ -1639,7 +1647,7 @@ internal static class Utf8NativeExecutionAnalyzer
         out int maxGap,
         out int minGap,
         out bool gapSameLine,
-        out int gapLeadingSeparatorMinCount,
+        out AsciiOrderedWindowSeparatorPlan separator,
         out Utf8BoundaryRequirement leadingBoundary1,
         out Utf8BoundaryRequirement trailingBoundary1,
         out Utf8BoundaryRequirement leadingBoundary2,
@@ -1650,7 +1658,7 @@ internal static class Utf8NativeExecutionAnalyzer
         maxGap = 0;
         minGap = 0;
         gapSameLine = false;
-        gapLeadingSeparatorMinCount = 0;
+        separator = default;
         leadingBoundary1 = Utf8BoundaryRequirement.None;
         trailingBoundary1 = Utf8BoundaryRequirement.None;
         leadingBoundary2 = Utf8BoundaryRequirement.None;
@@ -1683,9 +1691,10 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         if (index < childCount &&
-            TryGetIdentifierSeparatorLoop(node.Child(index), out _, out var sepMin))
+            TryGetIdentifierSeparatorLoop(node.Child(index), out var separatorSet, out var sepMin))
         {
-            gapLeadingSeparatorMinCount = sepMin;
+            separator = new AsciiOrderedWindowSeparatorPlan(separatorSet, sepMin,
+                UnwrapRuntimeNode(node.Child(index)).Kind is Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Onelazy);
             index++;
         }
 

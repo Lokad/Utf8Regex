@@ -16,8 +16,11 @@ public sealed partial class Utf8Regex
         if (MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
-        if (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily ||
-            !_preparedRegex.StructuralSearchPlan.HasValue || !_preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue ||
+        var eligible = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+            _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue ||
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
+            _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.HasValue;
+        if (!eligible ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
             RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _unitSliceProgram is null ||
             _unitSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true } or

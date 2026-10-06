@@ -7,7 +7,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class AsciiOrderedLiteralWindowExecutor
+internal static partial class AsciiOrderedLiteralWindowExecutor
 {
     public static int FindNext(
         ReadOnlySpan<byte> input,
@@ -30,6 +30,15 @@ internal static class AsciiOrderedLiteralWindowExecutor
         out int matchedLength)
     {
         matchedLength = 0;
+        if (!budget.IsInfinite || Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null ||
+            plan.RequiresSemanticExecutor)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = TryFindNext(input, plan, searchPlan, startIndex, ref invocation, out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window execution exceeded {breach}.");
+            matchedLength = found ? match.Length : 0;
+            return found ? match.Index : -1;
+        }
         var trailingLiteral = plan.TrailingLiteralUtf8.AsSpan();
 
         if (CanUseSeparatorOnlySingleLiteralFastPath(plan))
@@ -91,6 +100,16 @@ internal static class AsciiOrderedLiteralWindowExecutor
         PreparedAsciiFindPlan trailingFindPlan,
         Utf8ExecutionDeadline budget)
     {
+        if (!budget.IsInfinite || Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null ||
+            plan.RequiresSemanticExecutor || plan.IsLiteralFamily && plan.MaxGap > 0)
+        {
+            // Count advances over the same greedy accepted ranges as Match.
+            // The former earliest-trailing family shortcut overcounted them.
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            var breach = TryCount(input, plan, searchPlan, ref invocation, out var boundedCount);
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window execution exceeded {breach}.");
+            return boundedCount;
+        }
         if (CanUseSeparatorOnlySingleLiteralFastPath(plan))
         {
             return CountSeparatorOnlySingleLiteral(input, plan, budget);
@@ -127,7 +146,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
 
     internal static bool CanUseSeparatorOnlySingleLiteralFastPath(AsciiOrderedLiteralWindowPlan plan)
     {
-        return !plan.IsLiteralFamily &&
+        return !plan.RequiresSemanticExecutor && !plan.IsLiteralFamily &&
             plan.MaxGap == 0 &&
             plan.GapLeadingSeparatorMinCount > 0;
     }

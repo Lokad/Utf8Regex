@@ -57,6 +57,7 @@ internal ref struct Utf8OperationMatchCursor
     // Literal discovery and projection use one state; other native families
     // still need scan-wide token/finite-policy routing and accounting.
     private Utf8SliceInvocation _sliceInvocation;
+    private bool _windowExhausted;
     private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
     private int _sliceOriginUnit;
@@ -299,6 +300,12 @@ internal ref struct Utf8OperationMatchCursor
         Utf8BoundaryMap map,
         TimeSpan timeout,
         CancellationToken token)
+        : this(program, input, map, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token))
+    {
+    }
+
+    internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map, Utf8SliceInvocation invocation)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
@@ -324,7 +331,7 @@ internal ref struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = program;
-        _sliceInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token);
+        _sliceInvocation = invocation;
         _sliceSubject = Utf8SliceUnitSubject.Create(input, map, ref _sliceInvocation);
         _sliceUnit = 0;
         _sliceOriginUnit = -1;
@@ -726,20 +733,22 @@ internal ref struct Utf8OperationMatchCursor
             // Search plans include all operation plans (currently several KiB).
             // A cursor borrows the immutable plan rather than copying it per hit.
             ref readonly var windowSearchPlan = ref _plans.SearchPlan;
-            var matchIndex = AsciiOrderedLiteralWindowExecutor.FindNext(
-                _input,
-                windowProgram.OrderedLiteralWindowPlan,
-                in windowSearchPlan,
-                _consumed,
-                _budget,
-                out var matchedLength);
-            if (matchIndex < 0)
+            var breach = _sliceInvocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window cursor exceeded {breach}.");
+            if (_windowExhausted) { _sliceInvocation.Budget.ThrowIfCancellationRequested(); return false; }
+            breach = AsciiOrderedLiteralWindowExecutor.TryFindNext(_input, windowProgram.OrderedLiteralWindowPlan,
+                in windowSearchPlan, _consumed, ref _sliceInvocation, out var match, out var found);
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window cursor exceeded {breach}.");
+            if (!found)
             {
+                _windowExhausted = true;
                 return false;
             }
 
-            _current = new Utf8ValueMatch(true, true, matchIndex, matchedLength, matchIndex, matchedLength);
-            _consumed = matchIndex + matchedLength;
+            var projected = Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly), _input,
+                0, 0, match.Index, match.Length, match.Length, ref _sliceInvocation, out _, out _);
+            _current = projected;
+            _consumed = match.Index + match.Length;
             return true;
         }
 
@@ -823,6 +832,12 @@ internal ref struct Utf8OperationMatchCursor
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8ExecutionDeadline budget)
     {
         this = new Utf8OperationMatchCursor(input, regexPlan, NativeExecutionKind.ExactUtf8Literals, budget);
+    }
+
+    internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation)
+        : this(input, regexPlan, useStructuralLinearProgram: true, invocation.Budget.Deadline, asciiInput: true)
+    {
+        _sliceInvocation = invocation;
     }
 
     // The caller transfers the state already used for whole-subject validation.
