@@ -72,6 +72,13 @@ while another copy or view holds it. After the last holder is collected, cleanup
 queues a release which the synchronous ledger drains before its next read or
 admission. Abandoned cursors require no explicit disposal. Setup failure before
 publication releases its payload loans immediately, preserving borrowed storage.
+Split coordinate maps and prepared decoded text have independent payload loans.
+When a whole-segment getter returns that prepared string, a weak attachment keeps
+its decoded loan alive after the cursor/view disappears; the unused map can still
+be collected. The attachment does not root the text. Empty shared strings carry
+no payload loan. Independent substring results do not retain the prepared subject;
+their result-materialization admission is separate. Alias-registry entry/table
+overhead also remains a retained-metadata admission gate.
 These leases cover exact managed payloads, with no pooled/native cleanup in their
 finalizers. Lazy getter/result bounds, other execution routes and fixed object
 overhead still require admission work; this does not enable the core's unsupported

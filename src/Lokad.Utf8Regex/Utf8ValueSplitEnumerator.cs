@@ -13,6 +13,7 @@ public ref struct Utf8ValueSplitEnumerator
     private readonly SplitSourceKind _sourceKind;
     private readonly ReadOnlySpan<byte> _input;
     private readonly string? _decoded;
+    private readonly Utf8StorageLease? _decodedStorageLease;
     private readonly Utf8BoundaryMap? _boundaryMap;
     private readonly int _totalUtf16Length;
     private Regex.ValueSplitEnumerator _fallbackEnumerator;
@@ -39,6 +40,7 @@ public ref struct Utf8ValueSplitEnumerator
         _sourceKind = emitTailOnly ? SplitSourceKind.NativeMatchCursor : SplitSourceKind.FallbackRegex;
         _input = input;
         _decoded = decoded;
+        _decodedStorageLease = null;
         _boundaryMap = boundaryMap;
         _totalUtf16Length = decoded.Length;
         _fallbackEnumerator = emitTailOnly ? default : regex.EnumerateSplits(decoded, count);
@@ -64,6 +66,7 @@ public ref struct Utf8ValueSplitEnumerator
         _sourceKind = SplitSourceKind.SmallAsciiLiteralFamily;
         _input = input;
         _decoded = null;
+        _decodedStorageLease = null;
         _boundaryMap = null;
         _totalUtf16Length = input.Length;
         _fallbackEnumerator = default;
@@ -88,10 +91,24 @@ public ref struct Utf8ValueSplitEnumerator
         int count,
         int totalUtf16Length,
         bool rightToLeft)
+        : this(input, decoded, matchCursor, map, count, totalUtf16Length, rightToLeft, null)
+    {
+    }
+
+    internal Utf8ValueSplitEnumerator(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8OperationMatchCursor matchCursor,
+        Utf8BoundaryMap map,
+        int count,
+        int totalUtf16Length,
+        bool rightToLeft,
+        Utf8StorageLease? decodedStorageLease)
     {
         _sourceKind = rightToLeft ? SplitSourceKind.OwnedSliceRtl : SplitSourceKind.OwnedSlice;
         _input = input;
         _decoded = decoded;
+        _decodedStorageLease = decodedStorageLease;
         _boundaryMap = map;
         _totalUtf16Length = totalUtf16Length;
         _fallbackEnumerator = default;
@@ -114,6 +131,7 @@ public ref struct Utf8ValueSplitEnumerator
         _sourceKind = SplitSourceKind.NativeMatchCursor;
         _input = input;
         _decoded = null;
+        _decodedStorageLease = null;
         _boundaryMap = null;
         _totalUtf16Length = totalUtf16Length;
         _fallbackEnumerator = default;
@@ -199,7 +217,7 @@ public ref struct Utf8ValueSplitEnumerator
             throw new InvalidOperationException("Fallback split enumeration requires prepared UTF-16 projection.");
         }
 
-        Current = new Utf8ValueSplit(_input, _decoded, start, length, boundaryMap);
+        Current = new Utf8ValueSplit(_input, _decoded, start, length, boundaryMap, _decodedStorageLease);
         return true;
     }
 
@@ -228,7 +246,7 @@ public ref struct Utf8ValueSplitEnumerator
                     _decoded,
                     _segmentStartUtf16,
                     _totalUtf16Length - _segmentStartUtf16,
-                    ownedMap);
+                    ownedMap, _decodedStorageLease);
                 _matchCursor.AbortOwnedSplitMatches();
                 _completed = true;
                 return true;
@@ -241,7 +259,7 @@ public ref struct Utf8ValueSplitEnumerator
                 _decoded,
                 _segmentStartUtf16,
                 ownedMatch.IndexInUtf16 - _segmentStartUtf16,
-                ownedMap);
+                ownedMap, _decodedStorageLease);
             _segmentStartUtf16 = ownedMatch.IndexInUtf16 + ownedMatch.LengthInUtf16;
             _remainingCount--;
             return true;
@@ -265,7 +283,7 @@ public ref struct Utf8ValueSplitEnumerator
                     _decoded,
                     0,
                     _segmentStartUtf16,
-                    rtlMap);
+                    rtlMap, _decodedStorageLease);
                 _matchCursor.AbortOwnedSplitMatches();
                 _completed = true;
                 return true;
@@ -278,7 +296,7 @@ public ref struct Utf8ValueSplitEnumerator
                 _decoded,
                 rtlMatch.IndexInUtf16 + rtlMatch.LengthInUtf16,
                 _segmentStartUtf16 - (rtlMatch.IndexInUtf16 + rtlMatch.LengthInUtf16),
-                rtlMap);
+                rtlMap, _decodedStorageLease);
             _segmentStartUtf16 = rtlMatch.IndexInUtf16;
             _remainingCount--;
             return true;
@@ -367,7 +385,7 @@ public ref struct Utf8ValueSplitEnumerator
                 _decoded,
                 _segmentStartUtf16,
                 _totalUtf16Length - _segmentStartUtf16,
-                map);
+                map, _decodedStorageLease);
             _completed = true;
             return true;
         }
@@ -378,7 +396,7 @@ public ref struct Utf8ValueSplitEnumerator
             _decoded,
             _segmentStartUtf16,
             match.IndexInUtf16 - _segmentStartUtf16,
-            map);
+            map, _decodedStorageLease);
         _segmentStartUtf16 = match.IndexInUtf16 + match.LengthInUtf16;
         _remainingCount--;
         return true;
