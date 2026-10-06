@@ -6,13 +6,15 @@ using System.Threading;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal ref struct Utf8OperationMatchCursor
+internal ref partial struct Utf8OperationMatchCursor
 {
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8OperationMatchCursor>();
 
     internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;
 
     internal ulong DebugInvocationReservedBytes => _sliceInvocation.Ledger.ReservedBytes;
+
+    internal bool DebugIsOwnedSlice => _mode == EnumeratorMode.OwnedSlice;
 
     internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
 
@@ -64,6 +66,7 @@ internal ref struct Utf8OperationMatchCursor
     // still need scan-wide token/finite-policy routing and accounting.
     private Utf8SliceInvocation _sliceInvocation;
     private bool _nativeStructuralExhausted;
+    private bool _preserveOffsetCurrent;
     private Utf8StructuralSearchState _structuralSearchState;
     private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
@@ -353,6 +356,24 @@ internal ref struct Utf8OperationMatchCursor
         }
     }
 
+    internal static Utf8OperationMatchCursor CreateMappedFromUnit(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map, scoped ref Utf8SliceInvocation invocation, ulong reservation, int startUnit)
+    {
+        try
+        {
+            var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
+            cursor._boundaryMapReservedBytes = reservation;
+            cursor._sliceUnit = startUnit;
+            cursor._sliceOriginUnit = startUnit;
+            return cursor;
+        }
+        catch
+        {
+            invocation.Ledger.Release(reservation);
+            throw;
+        }
+    }
+
     internal void ReleaseOwnedBoundaryMap()
     {
         if (_retainBoundaryMapReservation) return;
@@ -616,6 +637,12 @@ internal ref struct Utf8OperationMatchCursor
 
     public bool MoveNext()
     {
+        if (_hasAnchoredLiteralInvocation)
+        {
+            var breach = TryMoveNextAnchoredLiteral(out var found);
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Anchored literal cursor exceeded {breach}.");
+            return found;
+        }
         if (_mode == EnumeratorMode.AnchoredAsciiLiteralPrefix)
         {
             if (_consumed != 0)
@@ -1009,6 +1036,7 @@ internal ref struct Utf8OperationMatchCursor
     // line anchors keep their true left context; at floor zero this is the default state.
     public Utf8OperationMatchCursor WithStartFloor(int startByteOffset, int startUtf16Offset)
     {
+        _preserveOffsetCurrent = true;
         _remaining = _input[startByteOffset..];
         _consumed = startByteOffset;
         _consumedUtf16 = startUtf16Offset;
@@ -1061,10 +1089,15 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextLiteral()
     {
-        var breach = TryMoveNextLiteral(out var found);
-        if (breach != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
-        return found;
+        var previous = _current;
+        try
+        {
+            var breach = TryMoveNextLiteral(out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+            return found;
+        }
+        catch { if (_preserveOffsetCurrent) _current = previous; throw; }
     }
 
     internal Utf8ExecutionLimitKind TryMoveNextLiteral(out bool found)
@@ -1126,10 +1159,15 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextExactUtf8Literals()
     {
-        var breach = TryMoveNextLiteralFamily(out var found);
-        if (breach != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
-        return found;
+        var previous = _current;
+        try
+        {
+            var breach = TryMoveNextLiteralFamily(out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Native literal-family execution exceeded {breach}.");
+            return found;
+        }
+        catch { if (_preserveOffsetCurrent) _current = previous; throw; }
     }
 
     private bool MoveNextAsciiIgnoreCaseLiterals()

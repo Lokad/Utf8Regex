@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class Utf8CompiledOperationCursorFactory
+internal static partial class Utf8CompiledOperationCursorFactory
 {
     public static Utf8ValueMatchEnumerator CreateMatchEnumerator(
         Utf8CompiledEngineRuntime compiledRuntime,

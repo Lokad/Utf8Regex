@@ -3013,6 +3013,7 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
+        if (TryCreateOwnedOffsetEnumerator(input, utf16Offset, CancellationToken.None, out var ownedEnumerator)) return ownedEnumerator;
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var startInUtf16 = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
         // Window boundaries inspect the original subject, including the unit
@@ -3120,13 +3121,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_unitSliceProgram is { } ownedProgram)
-        {
-            var analysis = Utf8InputAnalyzer.Analyze(input);
-            var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-            return OwnedSliceEnumerateMatchesFromUnit(input, ownedProgram, analysis.BoundaryMap, start.Value, cancellationToken)
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
+        if (TryCreateOwnedOffsetEnumerator(input, utf16Offset, cancellationToken, out var ownedEnumerator)) return ownedEnumerator;
         return EnumerateMatchesFromUtf16Offset(input, utf16Offset);
     }
 
