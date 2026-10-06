@@ -10,6 +10,19 @@ internal static class Utf8OwnedCharClass
     // A range predicate retains its negation over the scalar domain. Expanding
     // a complement into positive BMP ranges would discard every other plane.
     internal const char RangePredicateCode = (char)101;
+    internal const char ScalarRangePredicateCode = (char)102;
+    internal const string AnyScalarClass = "\u0000\u0000\u0006\u0066\u0002\u0000\u0000\u0000\u0011";
+
+    internal static void AddScalarRangePredicate(List<char> categories, IReadOnlyList<int> ranges)
+    {
+        categories.Add(ScalarRangePredicateCode);
+        categories.Add((char)ranges.Count);
+        foreach (var endpoint in ranges)
+        {
+            categories.Add((char)endpoint);
+            categories.Add((char)(endpoint >> 16));
+        }
+    }
 
     internal static void AddRangePredicate(List<char> categories, ReadOnlySpan<ushort> ranges, bool negated)
     {
@@ -340,6 +353,20 @@ internal static class Utf8OwnedCharClass
         for (var i = 0; i < categories.Length; i++)
         {
             var current = categories[i];
+            if (current == ScalarRangePredicateCode)
+            {
+                var length = categories[++i];
+                var rangeHit = false;
+                for (var range = 0; range < length; range += 2)
+                {
+                    var low = categories[i + 1 + range * 2] | categories[i + 2 + range * 2] << 16;
+                    var high = categories[i + 3 + range * 2] | categories[i + 4 + range * 2] << 16;
+                    rangeHit |= ch >= low && ch < high;
+                }
+                i += length * 2;
+                if (rangeHit) return true;
+                continue;
+            }
             if (current == RangePredicateCode)
             {
                 var negated = categories[++i] != 0;

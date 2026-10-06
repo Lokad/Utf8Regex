@@ -11,6 +11,16 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// </summary>
 internal static class Utf8SliceCaseEquivalences
 {
+    internal static bool ScalarsEquivalent(Rune left, Rune right)
+    {
+        if (left == right) return true;
+        if (left.Value < 128 && right.Value < 128)
+            return Internal.Search.AsciiSearch.FoldCase((byte)left.Value) == Internal.Search.AsciiSearch.FoldCase((byte)right.Value);
+        if (!left.IsBmp || !right.IsBmp)
+            return Rune.ToUpperInvariant(left) == Rune.ToUpperInvariant(right);
+        return GetInvariantEquivalents((char)left.Value).Contains((char)right.Value);
+    }
+
     /// <summary>Returns the invariant case equivalents of one BMP scalar (the scalar
     /// itself is always included when the table knows it). Dotted and dotless I
     /// take the probed special case below; every other scalar reads its
@@ -4286,11 +4296,8 @@ internal static class Utf8SliceCaseEquivalences
             0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
     ];
 
-    /// <summary>Tests one scalar against half-open block ranges (consecutive
-    /// endpoints form [first, last) pairs, a trailing lone endpoint spans to
-    /// char.MaxValue), mirroring the owned category range walk.
-    /// </summary>
-    internal static bool RangesHit(ushort[] ranges, char scalar)
+    /// <summary>Tests one scalar against explicit half-open endpoint pairs.</summary>
+    internal static bool RangesHit(int[] ranges, int scalar)
     {
         for (var range = 0; range + 1 < ranges.Length; range += 2)
         {
@@ -4300,7 +4307,7 @@ internal static class Utf8SliceCaseEquivalences
             }
         }
 
-        return (ranges.Length & 1) != 0 && scalar >= ranges[ranges.Length - 1];
+        return false;
     }
 
     /// <summary>Scans the invariant equivalents of one scalar for a range hit
@@ -4308,16 +4315,15 @@ internal static class Utf8SliceCaseEquivalences
     /// expansion overlaps the positive test). Empty when the table and the
     /// invariant i-branch know no equivalents, reducing to the direct test.
     /// </summary>
-    internal static bool EquivalentsHitRanges(char scalar, ushort[] ranges, bool miss)
+    internal static bool EquivalentsHitRanges(Rune scalar, int[] ranges, bool miss)
     {
-        foreach (var equivalent in GetInvariantEquivalents(scalar))
+        if (!scalar.IsBmp)
         {
-            if (RangesHit(ranges, equivalent) != miss)
-            {
-                return true;
-            }
+            return RangesHit(ranges, Rune.ToUpperInvariant(scalar).Value) != miss ||
+                RangesHit(ranges, Rune.ToLowerInvariant(scalar).Value) != miss;
         }
-
+        foreach (var equivalent in GetInvariantEquivalents((char)scalar.Value))
+            if (RangesHit(ranges, equivalent) != miss) return true;
         return false;
     }
 }

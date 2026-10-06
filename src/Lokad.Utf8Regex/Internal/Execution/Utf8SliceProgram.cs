@@ -136,15 +136,25 @@ internal enum Utf8SliceInstructionKind : byte
 
 /// <summary>Unicode property table for one owned category atom: a
 /// UnicodeCategory bit mask for general categories/groups plus half-open
-/// range endpoint pairs (with a trailing lone endpoint spanning to char.MaxValue) for
-/// named blocks, or one immutable class subtraction program.</summary>
+/// scalar-valued half-open range endpoint pairs for named blocks/literal ranges,
+/// or one immutable class subtraction program.</summary>
 internal sealed class Utf8SliceCategoryTable
 {
     internal Utf8SliceCategoryTable(uint mask, ushort[] ranges)
     {
         Mask = mask;
+        Ranges = ranges.Length == 0 ? [] : new int[ranges.Length + (ranges.Length & 1)];
+        for (var index = 0; index < ranges.Length; index++) Ranges[index] = ranges[index];
+        if ((ranges.Length & 1) != 0) Ranges[^1] = 0x10000;
+    }
+
+    private Utf8SliceCategoryTable(int[] ranges)
+    {
+        Mask = 0;
         Ranges = ranges;
     }
+
+    internal static Utf8SliceCategoryTable ForScalarRanges(int[] ranges) => new(ranges);
 
     internal Utf8SliceCategoryTable(Utf8SliceClassProgram classProgram)
     {
@@ -155,7 +165,7 @@ internal sealed class Utf8SliceCategoryTable
 
     internal uint Mask { get; }
 
-    internal ushort[] Ranges { get; }
+    internal int[] Ranges { get; }
 
     internal Utf8SliceClassProgram? ClassProgram { get; }
 }

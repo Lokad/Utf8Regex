@@ -36,8 +36,14 @@
   Range complements retain negation above U+FFFF. Removed the surrogate verdict
   helper, half census, astral input fences and whole-loop UTF-16 parity proofs.
   Lookbehind byte bounds include four-byte literals and Unicode class members.
+- Supplementary class literals/ranges, unions, subtraction, invariant folding
+  and paired escapes now use scalar-valued endpoints. Singleline dot has a
+  distinct full-plane payload from an explicit BMP-wide class. Unpaired surrogate
+  atoms cannot match UTF-8 or join across groups/separate classes. Case-insensitive
+  backreferences compare complete scalars in both directions with each side's
+  UTF-8 width, sharing the established invariant relation with literal atoms.
 - Direct scalar operation, capture, replacement, cancellation and scratch-admission
-  regressions replace the retired unit-subject suite. Full-plane literal classes/ranges,
+  regressions replace the retired unit-subject suite. Wider class construction admission,
   PythonRe's UTF-16 compensation patterns, remaining BCL/unit routes and the wider
   parity test migration are unfinished. This is not full scalar qualification.
 

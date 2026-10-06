@@ -22,7 +22,7 @@ internal static class Utf8OwnedTreeParser
 
     // Provider dot payloads probed per Singleline shape; set nodes never carry IgnoreCase.
     private const string DotText = "\u0001\u0002\u0000\u000a\u000b";
-    internal const string SinglelineDotText = "\u0000\u0001\u0000\u0000";
+    internal const string SinglelineDotText = Utf8OwnedCharClass.AnyScalarClass;
 
     // Probe-observed predefined shorthand payloads, verbatim: the six ASCII
     // shorthands land as category payloads, including the complement and
@@ -321,6 +321,24 @@ internal static class Utf8OwnedTreeParser
                         yield break;
                     }
 
+                    if (char.IsSurrogate(escaped))
+                    {
+                        if (char.IsHighSurrogate(escaped) && TryTakeLowSurrogate(ref state, out var low))
+                        {
+                            run.Append(escaped).Append(low);
+                            continue;
+                        }
+                        FlushRun(state, children, run);
+                        var impossible = new Utf8TreeNode(Utf8TreeNodeKind.Nothing, state.Options);
+                        if (!ParseQuantifier(ref state, ref impossible, out _))
+                        {
+                            context.Fail(state);
+                            yield break;
+                        }
+                        children.Add(impossible);
+                        continue;
+                    }
+
                     if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
                         Utf8OwnedCaseFold.TryGetFold(escaped, out var escapeLower, out var escapeUpper))
                     {
@@ -347,6 +365,25 @@ internal static class Utf8OwnedTreeParser
 
                 if (IsLiteralChar(character))
                 {
+                    if (char.IsSurrogate(character))
+                    {
+                        state.Position++;
+                        if (char.IsHighSurrogate(character) && TryTakeLowSurrogate(ref state, out var low))
+                        {
+                            run.Append(character).Append(low);
+                            continue;
+                        }
+                        FlushRun(state, children, run);
+                        var impossible = new Utf8TreeNode(Utf8TreeNodeKind.Nothing, state.Options);
+                        if (!ParseQuantifier(ref state, ref impossible, out _))
+                        {
+                            context.Fail(state);
+                            yield break;
+                        }
+                        children.Add(impossible);
+                        continue;
+                    }
+
                     if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
                         Utf8OwnedCaseFold.TryGetFold(character, out var foldLower, out var foldUpper))
                     {
@@ -536,6 +573,21 @@ internal static class Utf8OwnedTreeParser
 
             children.Add(run.Length == 1 ? One(state, run[0]) : Multi(state, run.ToString()));
             run.Clear();
+        }
+
+        static bool TryTakeLowSurrogate(ref ParserState state, out char value)
+        {
+            value = default;
+            if (state.AtEnd) return false;
+            var probe = state;
+            if (probe.Pattern[probe.Position] == '\\')
+            {
+                if (!DecodeEscape(ref probe, out value)) return false;
+            }
+            else value = probe.Pattern[probe.Position++];
+            if (!char.IsLowSurrogate(value)) return false;
+            state.Position = probe.Position;
+            return true;
         }
 
         static bool DecodeEscape(ref ParserState state, out char value)
@@ -753,7 +805,8 @@ internal static class Utf8OwnedTreeParser
             }
             var units = new List<char>();
             var categories = new List<char>();
-            var pending = (char)0;
+            var scalarRanges = new List<int>();
+            var pending = 0;
             var hasPending = false;
             var pendingIsPlain = false;
             var pendingAdded = false;
@@ -784,7 +837,7 @@ internal static class Utf8OwnedTreeParser
                         }
 
 
-                        if (!TryTakeRangeEnd(ref state, pending, units))
+                        if (!TryTakeRangeEnd(ref state, pending, scalarRanges))
                         {
                             return false;
                         }
@@ -798,17 +851,17 @@ internal static class Utf8OwnedTreeParser
                     if (state.Position + 1 < state.Pattern.Length &&
                         state.Pattern[state.Position + 1] == '[')
                     {
-                        if (hasPending || units.Count + categories.Count > 0)
+                        if (hasPending || units.Count + categories.Count + scalarRanges.Count > 0)
                         {
                             if (hasPending && !pendingAdded)
                             {
-                                if (!AddClassUnit(units, pending))
+                                if (!AddClassScalar(scalarRanges, pending))
                                 {
                                     return false;
                                 }
                             }
 
-                            if (!AppendSegment(wire, negated, units, categories, (state.Options & RegexOptions.IgnoreCase) != 0)) return false;
+                            if (!AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0)) return false;
                             subtracted = true;
                             state.Position++;
                             if (state.AtEnd || state.Pattern[state.Position] != '[')
@@ -837,13 +890,13 @@ internal static class Utf8OwnedTreeParser
                     }
                     if (hasPending && !pendingAdded)
                     {
-                        if (!AddClassUnit(units, pending))
+                        if (!AddClassScalar(scalarRanges, pending))
                         {
                             return false;
                         }
                     }
 
-                    if (!AddClassUnit(units, '-'))
+                    if (!AddClassScalar(scalarRanges, '-'))
                     {
                         return false;
                     }
@@ -855,39 +908,15 @@ internal static class Utf8OwnedTreeParser
                     first = false;
                     continue;
                 }
-                char atom;
-                if (character == '\\')
+                if (character == '\\' && TryTakeShorthandMembers(ref state, units, categories))
                 {
-                    if (TryTakeShorthandMembers(ref state, units, categories))
-                    {
-                        hasPending = false;
-                        pendingIsPlain = false;
-                        pendingAdded = false;
-                        first = false;
-                        continue;
-                    }
-
-                    if (TryTakeClassOctal(ref state, out atom))
-                    {
-                        pendingIsPlain = true;
-                    }
-                    else if (DecodeClassEscape(ref state, out atom, out var atomIsPlain))
-                    {
-                        pendingIsPlain = atomIsPlain;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    hasPending = false;
+                    pendingIsPlain = false;
+                    pendingAdded = false;
+                    first = false;
+                    continue;
                 }
-                else
-                {
-                    atom = character;
-                    state.Position++;
-                    if (atom == '[' && !state.AtEnd && state.Pattern[state.Position] is ':' or '.' or '=')
-                        state.UsesLiteralClassBracketSyntax = true;
-                    pendingIsPlain = true;
-                }
+                if (!TryReadClassScalar(ref state, out var atom, out pendingIsPlain)) return false;
                 if (state.Position < state.Pattern.Length &&
                     state.Pattern[state.Position] == '-' &&
                     IsRangeEndAhead(state, 1))
@@ -898,7 +927,7 @@ internal static class Utf8OwnedTreeParser
                 }
                 else
                 {
-                    if (!AddClassUnit(units, atom))
+                    if (!AddClassScalar(scalarRanges, atom))
                     {
                         return false;
                     }
@@ -908,52 +937,78 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            return AppendSegment(wire, negated, units, categories, (state.Options & RegexOptions.IgnoreCase) != 0);
+            return AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0);
         }
 
-        static bool AppendSegment(StringBuilder wire, bool negated, List<char> units, List<char> categories, bool fold)
+        static bool AppendSegment(StringBuilder wire, bool negated, List<char> units,
+            List<int> scalarRanges, List<char> categories, bool fold)
         {
             var ranges = new List<(int Low, int High)>();
             for (var index = 0; index < units.Count; index += 2)
+                ranges.Add((units[index], units[index + 1] == 0 ? 65536 : units[index + 1]));
+            for (var index = 0; index < scalarRanges.Count; index += 2)
+                ranges.Add((scalarRanges[index], scalarRanges[index + 1]));
+            if (fold)
             {
-                var low = (int)units[index];
-                var high = units[index + 1] == 0 ? 65536 : units[index + 1];
-                ranges.Add((low, high));
-                if (!fold) continue;
-                for (var value = low; value < high; value++)
-                    if (Utf8OwnedCaseFold.TryGetFold((char)value, out var lower, out var upper))
-                    {
-                        ranges.Add((lower, lower + 1));
-                        ranges.Add((upper, upper + 1));
-                    }
-            }
-            ranges.Sort(static (left, right) => left.Low.CompareTo(right.Low));
-            var endpoints = new List<char>();
-            var pendingLow = -1;
-            var pendingHigh = -1;
-            foreach (var range in ranges)
-            {
-                if (pendingLow >= 0 && range.Low < pendingHigh)
-                    pendingHigh = Math.Max(pendingHigh, range.High);
-                else
+                var count = ranges.Count;
+                for (var index = 0; index < count; index++)
                 {
-                    if (pendingLow >= 0)
+                    var range = ranges[index];
+                    for (var value = range.Low; value < range.High; value++)
                     {
-                        endpoints.Add((char)pendingLow);
-                        if (pendingHigh < 65536) endpoints.Add((char)pendingHigh);
+                        if (value < 0x10000)
+                        {
+                            if (!Utf8OwnedCaseFold.TryGetFold((char)value, out var lower, out var upper)) continue;
+                            ranges.Add((lower, lower + 1));
+                            ranges.Add((upper, upper + 1));
+                        }
+                        else
+                        {
+                            var scalar = new Rune(value);
+                            var lower = Rune.ToLowerInvariant(scalar).Value;
+                            var upper = Rune.ToUpperInvariant(scalar).Value;
+                            if (lower != value) ranges.Add((lower, lower + 1));
+                            if (upper != value) ranges.Add((upper, upper + 1));
+                        }
                     }
-                    pendingLow = range.Low;
-                    pendingHigh = range.High;
                 }
             }
-            if (pendingLow >= 0)
+            ranges.Sort(static (left, right) => left.Low.CompareTo(right.Low));
+            var merged = new List<(int Low, int High)>();
+            foreach (var range in ranges)
             {
-                endpoints.Add((char)pendingLow);
-                if (pendingHigh < 65536) endpoints.Add((char)pendingHigh);
+                if (merged.Count != 0 && range.Low < merged[^1].High)
+                    merged[^1] = (merged[^1].Low, Math.Max(merged[^1].High, range.High));
+                else merged.Add(range);
             }
-            // This wire's lengths remain 16-bit. Over-format classes retain
-            // construction behavior through the residual route until admission
-            // and the remaining representation limits migrate together.
+            var endpoints = new List<char>();
+            var wideEndpoints = new List<int>();
+            foreach (var range in merged)
+            {
+                if (range.Low >= 0xD800 && range.High <= 0xE000)
+                {
+                    wideEndpoints.Add(range.Low);
+                    wideEndpoints.Add(range.High);
+                    continue;
+                }
+                if (range.Low < 0x10000)
+                {
+                    endpoints.Add((char)range.Low);
+                    if (range.High < 0x10000) endpoints.Add((char)range.High);
+                }
+                if (range.High > 0x10000)
+                {
+                    wideEndpoints.Add(Math.Max(range.Low, 0x10000));
+                    wideEndpoints.Add(range.High);
+                }
+            }
+            if (wideEndpoints.Count != 0)
+            {
+                if (wideEndpoints.Count > char.MaxValue) return false;
+                Utf8OwnedCharClass.AddScalarRangePredicate(categories, wideEndpoints);
+            }
+            // Existing payload lengths remain bounded construction admission
+            // debt; endpoint values themselves now span the full scalar domain.
             if (endpoints.Count > char.MaxValue || categories.Count > char.MaxValue) return false;
             wire.Append(negated ? (char)1 : (char)0);
             wire.Append((char)endpoints.Count);
@@ -962,6 +1017,7 @@ internal static class Utf8OwnedTreeParser
             foreach (var category in categories) wire.Append(category);
             return true;
         }
+
         static bool ShorthandRangeEndAhead(ref ParserState state)
         {
             // state.Position is at '-'; true when a set or category escape
@@ -977,63 +1033,55 @@ internal static class Utf8OwnedTreeParser
         }
 
 
-        static bool TryTakeRangeEnd(ref ParserState state, char start, List<char> units)
+        static bool TryTakeRangeEnd(ref ParserState state, int start, List<int> ranges)
         {
-            if (state.Position + 1 >= state.Pattern.Length)
-            {
-                return false;
-            }
-            var next = state.Pattern[state.Position + 1];
-            if (next == ']' || next == '[')
-            {
-                return false;
-            }
-            char end;
-            int consumed;
-            if (next == '\\')
-            {
-                var probe = state;
-                probe.Position++;
-                if (!DecodeClassEscape(ref probe, out end, out _))
-                {
-                    return false;
-                }
-                consumed = probe.Position - state.Position;
-            }
-            else
-            {
-                end = next;
-                consumed = 2;
-            }
+            if (!IsRangeEndAhead(state, 1)) return false;
+            var probe = state;
+            probe.Position++;
+            if (!TryReadClassScalar(ref probe, out var end, out _)) return false;
             if (end < start)
             {
+                if (start >= 0x10000 || end >= 0x10000)
+                    throw new ArgumentException("Character-class range endpoints must be in ascending Unicode scalar order.", "pattern");
                 return false;
             }
-            units.Add(start);
-            units.Add((char)(end + 1));
-            state.Position += consumed;
+            ranges.Add(start);
+            ranges.Add(end + 1);
+            state.Position = probe.Position;
             return true;
         }
+
         static bool IsRangeEndAhead(ParserState state, int offset)
         {
             var index = state.Position + offset;
-            if (index >= state.Pattern.Length)
+            if (index >= state.Pattern.Length || state.Pattern[index] is ']' or '[') return false;
+            if (state.Pattern[index] != '\\') return true;
+            state.Position = index;
+            return TryReadClassScalar(ref state, out _, out _);
+        }
+
+        static bool TryReadClassScalar(ref ParserState state, out int value, out bool isPlain)
+        {
+            value = 0;
+            isPlain = true;
+            if (state.AtEnd) return false;
+            char first;
+            if (state.Pattern[state.Position] == '\\')
             {
-                return false;
+                if (!DecodeClassEscape(ref state, out first, out isPlain)) return false;
             }
-            var candidate = state.Pattern[index];
-            if (candidate == ']' || candidate == '[')
+            else
             {
-                return false;
+                first = state.Pattern[state.Position++];
+                if (first == '[' && !state.AtEnd && state.Pattern[state.Position] is ':' or '.' or '=')
+                    state.UsesLiteralClassBracketSyntax = true;
             }
-            if (candidate == '\\')
-            {
-                var probe = state;
-                probe.Position = index;
-                return DecodeClassEscape(ref probe, out _, out _);
-            }
+            value = first;
+            if (char.IsHighSurrogate(first) && TryTakeLowSurrogate(ref state, out var second))
+                value = char.ConvertToUtf32(first, second);
             return true;
         }
+
         static bool TryTakeClassOctal(ref ParserState state, out char value)
         {
             value = (char)0;
@@ -2442,10 +2490,10 @@ internal static class Utf8OwnedTreeParser
             yield break;
         }
 
-        static bool AddClassUnit(List<char> units, char value)
+        static bool AddClassScalar(List<int> ranges, int value)
         {
-            units.Add(value);
-            units.Add((char)(value + 1));
+            ranges.Add(value);
+            ranges.Add(value + 1);
             return true;
         }
         static bool TryTakeToggle(ref ParserState state, int depth)

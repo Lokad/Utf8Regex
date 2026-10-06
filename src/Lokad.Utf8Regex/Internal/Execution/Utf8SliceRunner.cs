@@ -214,57 +214,6 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    // BMP folding remains shared by ASCII set and reference interoperability.
-    private static bool TryFoldBmpScalarForCaseInsensitiveMatch(char scalar, out char folded)
-    {
-        if (scalar == '\u0130')
-        {
-            folded = scalar;
-            return false;
-        }
-
-        folded = char.ToLowerInvariant(scalar);
-        return true;
-    }
-
-    // Callers pass validated scalar starts; the guards keep byte-stepping
-    // attempts fail-closed without revalidating the input.
-    private static bool TryDecodeBmpScalar(ReadOnlySpan<byte> input, int index, out char scalar)
-    {
-        scalar = default;
-        if ((uint)index >= (uint)input.Length)
-        {
-            return false;
-        }
-
-        var lead = input[index];
-        if (lead < 0x80 || (lead & 0xC0) == 0x80 || lead < 0xC2 || lead >= 0xF0)
-        {
-            return false;
-        }
-
-        if (lead < 0xE0)
-        {
-            if (index + 1 >= input.Length)
-            {
-                return false;
-            }
-
-            scalar = (char)(((lead & 0x1F) << 6) | (input[index + 1] & 0x3F));
-        }
-        else
-        {
-            if (index + 2 >= input.Length)
-            {
-                return false;
-            }
-
-            scalar = (char)(((lead & 0x0F) << 12) | ((input[index + 1] & 0x3F) << 6) | (input[index + 2] & 0x3F));
-        }
-
-        return true;
-    }
-
     // Width of the scalar ending at rightEdge (validated input): ASCII is
     // one byte, longer scalars measure back from their lead. Mid-scalar
     // edges and out-of-range positions fail closed so mirrored right-to-left
@@ -927,11 +876,8 @@ internal static partial class Utf8SliceRunner
                         literalMatches = literalScalar.Value == instruction.A;
                         if (!literalMatches && instruction.B != 0)
                         {
-                            literalMatches = literalScalar.IsBmp && instruction.A <= char.MaxValue
-                                ? Utf8SliceCaseEquivalences.GetInvariantEquivalents((char)literalScalar.Value)
-                                    .Contains((char)instruction.A)
-                                : Rune.IsValid(instruction.A) && Rune.ToUpperInvariant(literalScalar) ==
-                                    Rune.ToUpperInvariant(new Rune(instruction.A));
+                            literalMatches = Rune.IsValid(instruction.A) &&
+                                Utf8SliceCaseEquivalences.ScalarsEquivalent(literalScalar, new Rune(instruction.A));
                         }
                     }
 
@@ -946,106 +892,15 @@ internal static partial class Utf8SliceRunner
                     }
                     break;
                 case Utf8SliceInstructionKind.Set:
-                    // Mirrored classes test the scalar ending at the attempt edge with
-                    // the same mask and fold rules as the forward arm.
-                    if (program.RightToLeft)
+                    if (TryReadScalar(input, inputIndex, program.RightToLeft, out var setScalar, out var setWidth) &&
+                        Utf8SliceScalarClasses.MatchesMask(setScalar, program.SetMasks[instruction.A], instruction.C != 0) != (instruction.B != 0))
                     {
-                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlSetWidth))
-                        {
-                            var setCandidate = input[inputIndex - rtlSetWidth];
-                            var setInMask = false;
-                            if (setCandidate < 0x80)
-                            {
-                                var setTest = instruction.C != 0 ? Internal.Search.AsciiSearch.FoldCase(setCandidate) : setCandidate;
-                                setInMask = (program.SetMasks[instruction.A][setTest >> 3] & (byte)(1 << (setTest & 7))) != 0;
-                            }
-                            else if (instruction.C != 0 &&
-                                setCandidate < 0xF0 &&
-                                TryDecodeBmpScalar(input, inputIndex - rtlSetWidth, out var rtlSetScalar) &&
-                                TryFoldBmpScalarForCaseInsensitiveMatch(rtlSetScalar, out var rtlSetFolded) &&
-                                rtlSetFolded < 0x80)
-                            {
-                                setInMask = (program.SetMasks[instruction.A][rtlSetFolded >> 3] & (byte)(1 << (rtlSetFolded & 7))) != 0;
-                            }
-
-                            if (setInMask != (instruction.B != 0))
-                            {
-                                inputIndex -= rtlSetWidth;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-
-                        break;
+                        inputIndex += program.RightToLeft ? -setWidth : setWidth;
+                        programIndex++;
                     }
-
-                    // Positive classes match one ASCII member byte. Negated
-                    // classes match one ASCII non-member byte or one whole
-                    // non-ASCII scalar (BMP units agree; astral inputs are
-                    // declined at routing). Continuation bytes fail, so
-                    // byte-stepping drivers cannot report unaligned starts.
-                    // Inputs are validated before execution, hence lead
-                    // widths stay in bounds without revalidation here.
-                    if (inputIndex < input.Length &&
-                        (input[inputIndex] & 0xC0) != 0x80)
-                    {
-                        var candidate = input[inputIndex];
-                        // Case-insensitive classes fold the candidate before the mask
-                        // test, so non-ASCII scalars with ASCII folds (U+212A) hit exactly
-                        // like the BCL oracle; anything else keeps the raw membership.
-                        var inMask = false;
-                        if (candidate < 0x80)
-                        {
-                            var test = instruction.C != 0 ? Internal.Search.AsciiSearch.FoldCase(candidate) : candidate;
-                            inMask = (program.SetMasks[instruction.A][test >> 3] & (byte)(1 << (test & 7))) != 0;
-                        }
-                        else if (instruction.C != 0 &&
-                            candidate < 0xF0 &&
-                            TryDecodeBmpScalar(input, inputIndex, out var setScalar) &&
-                            TryFoldBmpScalarForCaseInsensitiveMatch(setScalar, out var foldedSet) &&
-                            foldedSet < 0x80)
-                        {
-                            inMask = (program.SetMasks[instruction.A][foldedSet >> 3] & (byte)(1 << (foldedSet & 7))) != 0;
-                        }
-                        if (inMask != (instruction.B != 0))
-                        {
-                            if (candidate < 0x80)
-                            {
-                                inputIndex++;
-                            }
-                            else if (candidate < 0xE0)
-                            {
-                                inputIndex += 2;
-                            }
-                            else if (candidate < 0xF0)
-                            {
-                                inputIndex += 3;
-                            }
-                            else
-                            {
-                                inputIndex += 4;
-                            }
-
-                            programIndex++;
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-                    }
-                    else
-                    {
-                        failed = true;
-                    }
-
+                    else failed = true;
                     break;
+
                 case Utf8SliceInstructionKind.Fork:
                     if (!stacks.PushFrame(
                         new Utf8SliceFrame
@@ -1242,9 +1097,7 @@ internal static partial class Utf8SliceRunner
                     // Continuation bytes fail the attempt, so byte-stepping
                     // drivers cannot report unaligned starts. Inputs are
                     // validated before execution, hence lead widths stay
-                    // in bounds without revalidation here. Unit-exact
-                    // consumers decline astral inputs at routing, where
-                    // scalar and unit semantics diverge.
+                    // in bounds without revalidation here.
                     if (inputIndex < input.Length &&
                         (instruction.A != 0 || input[inputIndex] != (byte)'\n') &&
                         (input[inputIndex] & 0xC0) != 0x80)
@@ -1288,9 +1141,7 @@ internal static partial class Utf8SliceRunner
                     bool anchorHolds;
                     if (instruction.A == 0)
                     {
-                        // Origin assertions additionally require a
-                        // scalar-aligned attempt: a low-surrogate unit maps
-                        // to byte zero, where the oracle never matches `^`.
+                        // Origin assertions require a scalar-aligned attempt.
                         anchorHolds = (inputIndex == 0 && startIsScalarBoundary) ||
                             (anchorMultiline && inputIndex > 0 && input[inputIndex - 1] == (byte)'\n');
                     }
@@ -1473,86 +1324,16 @@ internal static partial class Utf8SliceRunner
                                     break;
                                 }
 
-                                var rtlCapEndByte = input[rtlCapIndex - 1];
-                                var rtlBackEndByte = input[rtlBackIndex - 1];
-                                int rtlCapStep;
-                                int rtlInStep;
-                                bool rtlBackEqual;
-                                if (rtlCapEndByte < 0x80 && rtlBackEndByte < 0x80)
-                                {
-                                    rtlBackEqual = Internal.Search.AsciiSearch.FoldCase(rtlCapEndByte) == Internal.Search.AsciiSearch.FoldCase(rtlBackEndByte);
-                                    rtlCapStep = 1;
-                                    rtlInStep = 1;
-                                }
-                                else if (!TryGetScalarWidthEndingAt(input, rtlCapIndex, out var rtlCapWidth) ||
-                                    !TryGetScalarWidthEndingAt(input, rtlBackIndex, out var rtlInWidth))
+                                if (!TryReadScalar(input, rtlCapIndex, true, out var rtlCaptureScalar, out var rtlCapWidth) ||
+                                    rtlCapIndex - rtlCapWidth < rtlReferStart ||
+                                    !TryReadScalar(input, rtlBackIndex, true, out var rtlInputScalar, out var rtlInWidth) ||
+                                    !Utf8SliceCaseEquivalences.ScalarsEquivalent(rtlCaptureScalar, rtlInputScalar))
                                 {
                                     rtlBackFailed = true;
                                     break;
                                 }
-                                else if ((input[rtlCapIndex - rtlCapWidth] & 0xC0) == 0x80 || (input[rtlBackIndex - rtlInWidth] & 0xC0) == 0x80 || input[rtlCapIndex - rtlCapWidth] >= 0xF0 || input[rtlBackIndex - rtlInWidth] >= 0xF0)
-                                {
-                                    // Continuation bytes and astral leads compare raw
-                                    // byte-by-byte exactly like the forward arm.
-                                    rtlBackEqual = rtlCapEndByte == rtlBackEndByte;
-                                    rtlCapStep = 1;
-                                    rtlInStep = 1;
-                                }
-                                else
-                                {
-                                    var rtlCaptureLead = input[rtlCapIndex - rtlCapWidth];
-                                    var rtlInputLead = input[rtlBackIndex - rtlInWidth];
-                                    char rtlCaptureScalar;
-                                    if (rtlCaptureLead < 0x80)
-                                    {
-                                        rtlCaptureScalar = (char)Internal.Search.AsciiSearch.FoldCase(rtlCaptureLead);
-                                    }
-                                    else if (!TryDecodeBmpScalar(input, rtlCapIndex - rtlCapWidth, out var rtlDecodedCapture))
-                                    {
-                                        rtlBackFailed = true;
-                                        break;
-                                    }
-                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(rtlDecodedCapture, out var rtlFoldedCapture))
-                                    {
-                                        rtlCaptureScalar = rtlDecodedCapture;
-                                    }
-                                    else
-                                    {
-                                        rtlCaptureScalar = rtlFoldedCapture;
-                                    }
-
-                                    char rtlInputScalar;
-                                    if (rtlInputLead < 0x80)
-                                    {
-                                        rtlInputScalar = (char)Internal.Search.AsciiSearch.FoldCase(rtlInputLead);
-                                    }
-                                    else if (!TryDecodeBmpScalar(input, rtlBackIndex - rtlInWidth, out var rtlDecodedInput))
-                                    {
-                                        rtlBackFailed = true;
-                                        break;
-                                    }
-                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(rtlDecodedInput, out var rtlFoldedInput))
-                                    {
-                                        rtlInputScalar = rtlDecodedInput;
-                                    }
-                                    else
-                                    {
-                                        rtlInputScalar = rtlFoldedInput;
-                                    }
-
-                                    rtlBackEqual = rtlCaptureScalar == rtlInputScalar;
-                                    rtlCapStep = rtlCapWidth;
-                                    rtlInStep = rtlInWidth;
-                                }
-
-                                if (!rtlBackEqual)
-                                {
-                                    rtlBackFailed = true;
-                                    break;
-                                }
-
-                                rtlCapIndex -= rtlCapStep;
-                                rtlBackIndex -= rtlInStep;
+                                rtlCapIndex -= rtlCapWidth;
+                                rtlBackIndex -= rtlInWidth;
                             }
 
                             if (rtlBackFailed)
@@ -1606,9 +1387,8 @@ internal static partial class Utf8SliceRunner
 
                     // Ordinal backreference: an unmatched (or in-progress)
                     // group fails, otherwise the captured bytes must repeat
-                    // verbatim at the current position. Byte comparison is
-                    // encoding-indifferent (captures never hold astral
-                    // scalars on served programs). Each compared byte
+                    // verbatim at the current position. Scalar-aligned captures
+                    // have a unique strict UTF-8 encoding. Each compared byte
                     // charges work so long captures stay bounded and
                     // cancellable like the rest of the engine.
                     if (captureStarts[instruction.A] < 0 ||
@@ -1624,11 +1404,9 @@ internal static partial class Utf8SliceRunner
                         var referLength = referEnd - referStart;
                         if (instruction.B != 0)
                         {
-                            // Case-insensitive backreferences compare per-scalar BCL-invariant
-                            // folds (ASCII pairs plus single-char ToLowerInvariant; U+0130 and
-                            // astral halves compare raw and only ever equal themselves). The input
-                            // advances by its own scalar widths, which may differ from the
-                            // captured widths on fold hits (k versus U+212A).
+                            // Compare complete captured/input scalars using the same
+                            // invariant equivalence as literal atoms. Each side advances
+                            // by its own UTF-8 width (for example k versus Kelvin).
                             var capIndex = referStart;
                             var backIndex = inputIndex;
                             var backFailed = false;
@@ -1646,79 +1424,14 @@ internal static partial class Utf8SliceRunner
                                     break;
                                 }
 
-                                var captureLead = input[capIndex];
-                                var inputLead = input[backIndex];
-                                int capWidth;
-                                int inWidth;
-                                bool backEqual;
-                                if (captureLead < 0x80 && inputLead < 0x80)
-                                {
-                                    backEqual = Internal.Search.AsciiSearch.FoldCase(captureLead) == Internal.Search.AsciiSearch.FoldCase(inputLead);
-                                    capWidth = 1;
-                                    inWidth = 1;
-                                }
-                                else if ((captureLead & 0xC0) == 0x80 || (inputLead & 0xC0) == 0x80 || captureLead >= 0xF0 || inputLead >= 0xF0)
-                                {
-                                    // Continuation bytes (mid-astral walks) and astral
-                                    // leads (halves never fold) compare raw.
-                                    backEqual = captureLead == inputLead;
-                                    capWidth = 1;
-                                    inWidth = 1;
-                                }
-                                else
-                                {
-                                    // Both sides fold (ASCII pairs inline, BMP via
-                                    // ToLowerInvariant with U+0130 comparing raw);
-                                    // undecodable leads fail closed.
-                                    char captureScalar;
-                                    if (captureLead < 0x80)
-                                    {
-                                        captureScalar = (char)Internal.Search.AsciiSearch.FoldCase(captureLead);
-                                    }
-                                    else if (!TryDecodeBmpScalar(input, capIndex, out var decodedCapture))
-                                    {
-                                        backFailed = true;
-                                        break;
-                                    }
-                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(decodedCapture, out var foldedCapture))
-                                    {
-                                        captureScalar = decodedCapture;
-                                    }
-                                    else
-                                    {
-                                        captureScalar = foldedCapture;
-                                    }
-
-                                    char inputScalar;
-                                    if (inputLead < 0x80)
-                                    {
-                                        inputScalar = (char)Internal.Search.AsciiSearch.FoldCase(inputLead);
-                                    }
-                                    else if (!TryDecodeBmpScalar(input, backIndex, out var decodedInput))
-                                    {
-                                        backFailed = true;
-                                        break;
-                                    }
-                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(decodedInput, out var foldedInput))
-                                    {
-                                        inputScalar = decodedInput;
-                                    }
-                                    else
-                                    {
-                                        inputScalar = foldedInput;
-                                    }
-
-                                    backEqual = captureScalar == inputScalar;
-                                    capWidth = captureLead < 0x80 ? 1 : captureLead < 0xE0 ? 2 : 3;
-                                    inWidth = inputLead < 0x80 ? 1 : inputLead < 0xE0 ? 2 : 3;
-                                }
-
-                                if (!backEqual)
+                                if (!TryReadScalar(input, capIndex, false, out var captureScalar, out var capWidth) ||
+                                    capIndex + capWidth > referEnd ||
+                                    !TryReadScalar(input, backIndex, false, out var inputScalar, out var inWidth) ||
+                                    !Utf8SliceCaseEquivalences.ScalarsEquivalent(captureScalar, inputScalar))
                                 {
                                     backFailed = true;
                                     break;
                                 }
-
                                 capIndex += capWidth;
                                 backIndex += inWidth;
                             }

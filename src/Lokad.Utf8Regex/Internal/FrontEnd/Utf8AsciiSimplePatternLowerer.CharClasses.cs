@@ -19,7 +19,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         // A dot token matches any byte including newlines, so only singleline dots lower
         // to it; other dots become exact newline-excluding classes through the projector.
-        if (singleline && set == Utf8OwnedCharClass.NotNewLineClass)
+        if (set == Utf8OwnedCharClass.AnyScalarClass || singleline && set == Utf8OwnedCharClass.NotNewLineClass)
         {
             token = AsciiSimplePatternToken.Dot;
             return true;

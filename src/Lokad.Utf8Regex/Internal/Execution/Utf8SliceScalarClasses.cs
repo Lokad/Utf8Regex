@@ -42,12 +42,9 @@ internal static class Utf8SliceScalarClasses
             ? (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0
             : ((table.Mask >> (int)category) & 1u) != 0;
         if (maskHit) return !negated;
-        // A trailing BMP endpoint extends to U+FFFF, never into another plane.
-        if (!scalar.IsBmp) return negated;
-        var value = (char)scalar.Value;
-        var rangeHit = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, value);
+        var rangeHit = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar.Value);
         return rangeHit != negated || fold && table.Ranges.Length != 0 &&
-            Utf8SliceCaseEquivalences.EquivalentsHitRanges(value, table.Ranges, negated);
+            Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, negated);
     }
 
     internal static bool MatchesMask(Rune scalar, byte[] mask, bool fold)

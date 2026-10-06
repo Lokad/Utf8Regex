@@ -219,7 +219,7 @@ internal static class Utf8OwnedTreeSliceLowerer
 
         static Utf8SliceNode? DecodeClass(string wire, bool foldCase)
         {
-            if (wire == Utf8OwnedCharClass.AnyClass) return new Utf8SliceNode.DotNode(true);
+            if (wire == Utf8OwnedCharClass.AnyScalarClass) return new Utf8SliceNode.DotNode(true);
             if (wire == "\u0001\u0002\u0000\n\v") return new Utf8SliceNode.DotNode(false);
             var position = 0;
             var segments = new List<Utf8SliceNode>();
@@ -299,6 +299,22 @@ internal static class Utf8OwnedTreeSliceLowerer
         {
             for (var index = 0; index < encoded.Length; index++)
             {
+                if (encoded[index] == Utf8OwnedCharClass.ScalarRangePredicateCode)
+                {
+                    if (++index >= encoded.Length) return false;
+                    var length = encoded[index];
+                    if ((length & 1) != 0 || length > (encoded.Length - index - 1) / 2) return false;
+                    var ranges = new int[length];
+                    for (var range = 0; range < length; range++)
+                    {
+                        var low = encoded[++index];
+                        ranges[range] = low | encoded[++index] << 16;
+                    }
+                    for (var range = 0; range < length; range += 2)
+                        if (ranges[range] < 0 || ranges[range] >= ranges[range + 1] || ranges[range + 1] > 0x110000) return false;
+                    categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarRanges(ranges), false));
+                    continue;
+                }
                 if (encoded[index] == Utf8OwnedCharClass.RangePredicateCode)
                 {
                     if (index + 2 >= encoded.Length) return false;
