@@ -533,6 +533,9 @@ internal static partial class Utf8SliceRunner
                         // Retain the byte-only ASCII fast path.
                         literalMatches = instruction.B == 0
                             ? literalLead == instruction.A
+                            : program.CaseBehavior == Utf8ScalarCaseBehavior.Turkic &&
+                                ((literalLead | 0x20) == 'i' || (instruction.A | 0x20) == 'i')
+                                ? literalLead == instruction.A
                             : Internal.Search.AsciiSearch.FoldCase(literalLead) ==
                                 Internal.Search.AsciiSearch.FoldCase((byte)instruction.A);
                     }
@@ -548,7 +551,7 @@ internal static partial class Utf8SliceRunner
                         if (!literalMatches && instruction.B != 0)
                         {
                             literalMatches = Rune.IsValid(instruction.A) &&
-                                Utf8SliceCaseEquivalences.ScalarsEquivalent(literalScalar, new Rune(instruction.A));
+                                Utf8SliceCaseEquivalences.ScalarsEquivalent(literalScalar, new Rune(instruction.A), program.CaseBehavior);
                         }
                     }
 
@@ -564,7 +567,7 @@ internal static partial class Utf8SliceRunner
                     break;
                 case Utf8SliceInstructionKind.Set:
                     if (TryReadScalar(input, inputIndex, program.RightToLeft, out var setScalar, out var setWidth) &&
-                        Utf8SliceScalarClasses.MatchesMask(setScalar, program.SetMasks[instruction.A], instruction.C != 0) != (instruction.B != 0))
+                        Utf8SliceScalarClasses.MatchesMask(setScalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0))
                     {
                         inputIndex += program.RightToLeft ? -setWidth : setWidth;
                         programIndex++;
@@ -908,7 +911,7 @@ internal static partial class Utf8SliceRunner
                         else if (instruction.Kind == Utf8SliceInstructionKind.Category)
                         {
                             classHit = Utf8SliceScalarClasses.MatchesTable(classScalar, program.CategoryTables[instruction.A],
-                                (instruction.B & 2) != 0, (instruction.B & 1) != 0);
+                                (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior);
                         }
                         else
                         {
@@ -916,20 +919,20 @@ internal static partial class Utf8SliceRunner
                             var classMembers = categorySet ? program.CategorySetMembers[instruction.D] : null;
                             if (classMembers is { Length: 1 } && classMembers[0].Table.ClassProgram is { } classProgram)
                             {
-                                classHit = classProgram.TryMatch(classScalar, ref invocation, out var classBreach);
+                                classHit = classProgram.TryMatch(classScalar, program.CaseBehavior, ref invocation, out var classBreach);
                                 if (classBreach != Utf8ExecutionLimitKind.None)
                                     return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
                             }
                             else
                             {
                                 var fold = categorySet ? (instruction.B & 2) != 0 : instruction.D != 0;
-                                var memberHit = Utf8SliceScalarClasses.MatchesMask(classScalar, program.SetMasks[instruction.A], fold) ||
+                                var memberHit = Utf8SliceScalarClasses.MatchesMask(classScalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
                                     Utf8SliceScalarClasses.MatchesMembers(classScalar, instruction.C);
                                 if (!memberHit && classMembers is not null)
                                 {
                                     foreach (var member in classMembers)
                                     {
-                                        if (Utf8SliceScalarClasses.MatchesTable(classScalar, member.Table, fold, member.Negated))
+                                        if (Utf8SliceScalarClasses.MatchesTable(classScalar, member.Table, fold, member.Negated, program.CaseBehavior))
                                         {
                                             memberHit = true;
                                             break;
@@ -1845,7 +1848,7 @@ internal static partial class Utf8SliceRunner
     private static bool BackreferenceScalarsEqual(Utf8SliceProgram program,
         Utf8SliceInstruction instruction, Rune captured, Rune input)
     {
-        if (instruction.D == 0) return Utf8SliceCaseEquivalences.ScalarsEquivalent(captured, input);
+        if (instruction.D == 0) return Utf8SliceCaseEquivalences.ScalarsEquivalent(captured, input, program.CaseBehavior);
         var lower = program.BackreferenceLowerings[instruction.D - 1];
         return lower(captured.Value) == lower(input.Value);
     }

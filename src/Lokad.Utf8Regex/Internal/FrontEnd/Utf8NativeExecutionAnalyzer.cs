@@ -11,6 +11,14 @@ internal static class Utf8NativeExecutionAnalyzer
         RegexOptions executionOptions,
         out Utf8RegexAnalysis analyzedRegex)
     {
+        if (semanticRegex.RuntimeTree is { UsesIgnoreCase: true } foldedTree &&
+            Utf8SliceCaseEquivalences.GetBehavior(foldedTree.Culture, executionOptions) != Utf8ScalarCaseBehavior.Invariant)
+        {
+            // Native invariant byte folds cannot stand in for construction-
+            // culture scalar equivalence, including scoped inline options.
+            analyzedRegex = default;
+            return false;
+        }
         if (semanticRegex.RuntimeTree is { } tree && ContainsImpossibleAtom(tree.Root))
         {
             // Native byte plans must never encode an impossible literal as

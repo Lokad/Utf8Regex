@@ -24,6 +24,13 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Admitted culture-sensitive and scoped IgnoreCase patterns now use the owned
+  scalar program, with the construction-time I equivalence groups retained in
+  classes, assertions and backreferences. Supplementary matches and captures
+  remain complete scalars after ambient culture changes. Removed the culture-only
+  BCL routing flag and its facade dispatch; prepared adapter operations use the
+  same owned program. Invariant native kernels remain where eligible. Unserved
+  grammar/admissions, general NonBacktracking and other BCL consumers stay open.
 - Flat NonBacktracking graphs now construct and execute through the owned scalar
   program without creating a BCL regex. Native literal discovery remains where
   eligible; loops, shared capture declarations and unsupported constructs retain

@@ -48,6 +48,13 @@ Encode each replacement literal and each string evaluator return independently a
 
 `IgnoreCase` compares complete scalars using qualified Unicode case-equivalence rules; pin the Unicode data and culture behavior as those owned paths migrate. `CultureInvariant` selects invariant behavior. Culture-sensitive options retain the construction culture and include it in cache identity, including scoped inline folds. BCL behavior can qualify overlapping cases but cannot supply the production engine or justify folding surrogate halves. Supplementary casing and Turkish-I need direct scalar fixtures.
 
+For the I cluster, invariant folding pairs `I` with `i`, leaving `İ` and `ı`
+distinct. Non-Turkic culture folding groups `I`, `i` and `İ`, leaving `ı`
+distinct; Turkic folding pairs `I` with `ı` and `İ` with `i`. The owned program
+retains this construction-time choice through classes, assertions and references,
+including scoped options. Changing the ambient culture during matching cannot
+change its case behavior. Supplementary comparisons operate on complete Runes.
+
 ### 3.4 Timeout behavior
 
 Timeout behavior must mirror .NET’s model: the timeout is **approximate**, and the engine throws `RegexMatchTimeoutException` at its next timing check after the interval elapses. Timeouts exist to prevent excessive backtracking from monopolizing the process. ([Microsoft Learn][4])

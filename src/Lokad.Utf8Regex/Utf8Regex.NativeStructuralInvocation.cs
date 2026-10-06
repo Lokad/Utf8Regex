@@ -22,7 +22,7 @@ public sealed partial class Utf8Regex
             _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.HasValue;
         if (!eligible ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
-            RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _ownedSliceProgram is null ||
+            _requiresKelvinSignFallback || _ownedSliceProgram is null ||
             _ownedSliceProgram is { IgnoreCase: true } or { HasBalancing: true } or
                 { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true })
             return false;

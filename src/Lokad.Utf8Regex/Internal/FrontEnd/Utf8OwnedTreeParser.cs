@@ -107,9 +107,7 @@ internal static class Utf8OwnedTreeParser
         tree.N = -1;
         tree.Children = root;
         root.Parent = tree;
-        var culture = (options & RegexOptions.CultureInvariant) != 0
-            ? Utf8OwnedOptionPrelude.GetTargetCulture(options)
-            : null;
+        var culture = state.ConstructionCulture;
         return new Utf8OwnedRegexTree(
             tree,
             captureCount,
@@ -340,7 +338,7 @@ internal static class Utf8OwnedTreeParser
                     }
 
                     if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                        Utf8OwnedCaseFold.TryGetFold(escaped, out var escapeLower, out var escapeUpper))
+                        Utf8OwnedCaseFold.TryGetFold(escaped, state.CaseBehavior, out var escapeLower, out var escapeUpper))
                     {
                         FlushRun(state, children, run);
                         var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
@@ -385,7 +383,7 @@ internal static class Utf8OwnedTreeParser
                     }
 
                     if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                        Utf8OwnedCaseFold.TryGetFold(character, out var foldLower, out var foldUpper))
+                        Utf8OwnedCaseFold.TryGetFold(character, state.CaseBehavior, out var foldLower, out var foldUpper))
                     {
                         FlushRun(state, children, run);
                         state.Position++;
@@ -861,7 +859,7 @@ internal static class Utf8OwnedTreeParser
                                 }
                             }
 
-                            if (!AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0)) return false;
+                            if (!AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior)) return false;
                             subtracted = true;
                             state.Position++;
                             if (state.AtEnd || state.Pattern[state.Position] != '[')
@@ -937,11 +935,11 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            return AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0);
+            return AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
         }
 
         static bool AppendSegment(StringBuilder wire, bool negated, List<char> units,
-            List<int> scalarRanges, List<char> categories, bool fold)
+            List<int> scalarRanges, List<char> categories, bool fold, Utf8ScalarCaseBehavior behavior)
         {
             var ranges = new List<(int Low, int High)>();
             for (var index = 0; index < units.Count; index += 2)
@@ -958,7 +956,14 @@ internal static class Utf8OwnedTreeParser
                     {
                         if (value < 0x10000)
                         {
-                            if (!Utf8OwnedCaseFold.TryGetFold((char)value, out var lower, out var upper)) continue;
+                            if (behavior != Utf8ScalarCaseBehavior.Invariant &&
+                                ((value | 0x20) == 'i' || (value | 0x01) == '\u0131'))
+                            {
+                                foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, behavior))
+                                    ranges.Add((equivalent, equivalent + 1));
+                                continue;
+                            }
+                            if (!Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var lower, out var upper)) continue;
                             ranges.Add((lower, lower + 1));
                             ranges.Add((upper, upper + 1));
                         }
@@ -1767,7 +1772,7 @@ internal static class Utf8OwnedTreeParser
             var morphed = false;
             foreach (var fixup in state.BackrefFixups)
             {
-                if (!ResolveFixup(fixup, slots, slotByName, state.CapturePositions, ref root, ref morphed))
+                if (!ResolveFixup(fixup, slots, slotByName, state.CapturePositions, ref root, ref morphed, state.CaseBehavior))
                 {
                     return false;
                 }
@@ -1779,7 +1784,7 @@ internal static class Utf8OwnedTreeParser
         }
 
         static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName,
-            Dictionary<int, int> capturePositions, ref Utf8TreeNode root, ref bool morphed)
+            Dictionary<int, int> capturePositions, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
         {
             if (fixup.Digits is not null && !fixup.IsConditional && !fixup.IsPop &&
                 (fixup.Node.Options & RegexOptions.ECMAScript) != 0)
@@ -1787,7 +1792,7 @@ internal static class Utf8OwnedTreeParser
                     slots.Max == int.MaxValue ? int.MaxValue : slots.Max + 1, ref root, ref morphed);
             if (fixup.Node.Kind == Utf8TreeNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
             {
-                return ResolveEmptyFixup(fixup, slots, slotByName, ref root, ref morphed);
+                return ResolveEmptyFixup(fixup, slots, slotByName, ref root, ref morphed, behavior);
             }
 
             if (fixup.IsPop)
@@ -1881,10 +1886,10 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            return ResolveOctalFallback(fixup, ref root, ref morphed);
+            return ResolveOctalFallback(fixup, ref root, ref morphed, behavior);
         }
 
-        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root, ref bool morphed)
+        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
         {
             if (fixup.Name is not null)
             {
@@ -1939,7 +1944,7 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
-            return ResolveOctalRest(fixup, ref root, ref morphed, length, value);
+            return ResolveOctalRest(fixup, ref root, ref morphed, length, value, behavior);
         }
 
         static void StripEmptyOptions(ref Utf8TreeNode root, Utf8TreeNode node)
@@ -1999,7 +2004,7 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed)
+        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
         {
             // Single non-zero digits never spell octal; longer runs without a
             // matching slot fall back to up to three octal digits with no rest.
@@ -2015,14 +2020,14 @@ internal static class Utf8OwnedTreeParser
 
             if (length != fixup.Digits.Length)
             {
-                return ResolveOctalRest(fixup, ref root, ref morphed, length, value);
+                return ResolveOctalRest(fixup, ref root, ref morphed, length, value, behavior);
             }
 
             morphed = true;
             if (fixup.Wrapper is null)
             {
                 if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
-                    Utf8OwnedCaseFold.TryGetFold((char)value, out var octalLower, out var octalUpper))
+                    Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var octalLower, out var octalUpper))
                 {
                     ReplaceNodeInParent(ref root, fixup.Node, FoldedSet(fixup.Node.Options, octalLower, octalUpper));
                     return true;
@@ -2052,7 +2057,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             if ((wrapper.Options & RegexOptions.IgnoreCase) != 0 &&
-                Utf8OwnedCaseFold.TryGetFold((char)value, out var wrapperLower, out var wrapperUpper))
+                Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var wrapperLower, out var wrapperUpper))
             {
                 var foldedLoop = FoldedSet(wrapper.Options, wrapperLower, wrapperUpper);
                 foldedLoop.Kind = wrapper.Kind == Utf8TreeNodeKind.Lazyloop
@@ -2087,11 +2092,11 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ResolveOctalRest(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed, int prefixLength, int value)
+        static bool ResolveOctalRest(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed, int prefixLength, int value, Utf8ScalarCaseBehavior behavior)
         {
             Utf8TreeNode morphedLeaf;
             if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
-                Utf8OwnedCaseFold.TryGetFold((char)value, out var restLower, out var restUpper))
+                Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var restLower, out var restUpper))
             {
                 morphedLeaf = FoldedSet(fixup.Node.Options, restLower, restUpper);
             }
@@ -3333,6 +3338,8 @@ internal static class Utf8OwnedTreeParser
     {
         public string Pattern;
         public RegexOptions Options;
+        public CultureInfo ConstructionCulture;
+        public Utf8ScalarCaseBehavior CaseBehavior;
         public int Position;
         public int Groups;
         public int ExecutionGroups;
@@ -3356,6 +3363,8 @@ internal static class Utf8OwnedTreeParser
         {
             Pattern = pattern;
             Options = options;
+            ConstructionCulture = Utf8OwnedOptionPrelude.GetTargetCulture(options);
+            CaseBehavior = Utf8SliceCaseEquivalences.GetBehavior(ConstructionCulture, options);
             Position = 0;
             Groups = 0;
             ExecutionGroups = 0;

@@ -35,22 +35,22 @@ internal sealed class Utf8SliceClassProgram
             [new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(program), false)], false);
     }
 
-    internal bool TryMatch(Rune scalar, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+    internal bool TryMatch(Rune scalar, Utf8ScalarCaseBehavior behavior, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
         var matched = false;
         for (var segment = _segments.Length - 1; segment >= 0; segment--)
         {
             breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return false;
-            matched = SegmentMatches(scalar, _segments[segment]) && !matched;
+            matched = SegmentMatches(scalar, _segments[segment], behavior) && !matched;
         }
         breach = Utf8ExecutionLimitKind.None;
         return matched;
     }
 
-    private static bool SegmentMatches(Rune scalar, Segment segment)
+    private static bool SegmentMatches(Rune scalar, Segment segment, Utf8ScalarCaseBehavior behavior)
     {
-        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, segment.Mask16, segment.FoldCase);
+        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, segment.Mask16, segment.FoldCase, behavior);
 
         if (!hit)
         {
@@ -64,7 +64,7 @@ internal sealed class Utf8SliceClassProgram
         {
             foreach (var member in segment.Categories)
             {
-                if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, segment.FoldCase, member.Negated))
+                if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, segment.FoldCase, member.Negated, behavior))
                 { hit = true; break; }
             }
         }

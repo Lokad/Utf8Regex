@@ -1,36 +1,59 @@
+using System.Globalization;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Invariant case-equivalence lookup for owned Unicode block matching.
+internal enum Utf8ScalarCaseBehavior : byte
+{
+    Invariant,
+    NonTurkic,
+    Turkic,
+}
+
+/// <summary>Construction-bound case-equivalence lookup for owned scalar matching.
 /// Fibers of Unicode 16.0 simple lowercase (each scalar grouped with the
 /// scalars sharing its lowercase form), stored once in first-seen order with
 /// a direct per-scalar index; the slice tests the candidate plus its
 /// equivalents against the owned block ranges instead of expanding every
 /// range at parse. Dotted and dotless I keep their probed special case.
-/// Only the invariant branch applies: slice IgnoreCase folds invariantly and
-/// Turkic-style cultures stay on legacy routing (RequiresCultureSensitiveFallback).
+/// The I fibers depend on the construction culture; supplementary comparisons
+/// use complete Runes. No invocation consults the ambient current culture.
 /// </summary>
 internal static class Utf8SliceCaseEquivalences
 {
-    internal static bool ScalarsEquivalent(Rune left, Rune right)
+    internal static Utf8ScalarCaseBehavior GetBehavior(CultureInfo? culture, RegexOptions options)
+    {
+        if ((options & RegexOptions.CultureInvariant) != 0 || culture is null || culture.Name.Length == 0)
+            return Utf8ScalarCaseBehavior.Invariant;
+        return culture.TextInfo.ToLower('I') == '\u0131'
+            ? Utf8ScalarCaseBehavior.Turkic : Utf8ScalarCaseBehavior.NonTurkic;
+    }
+
+    internal static bool ScalarsEquivalent(Rune left, Rune right, Utf8ScalarCaseBehavior behavior)
     {
         if (left == right) return true;
-        if (left.Value < 128 && right.Value < 128)
+        if (left.Value < 128 && right.Value < 128 &&
+            (behavior != Utf8ScalarCaseBehavior.Turkic || (left.Value | 0x20) != 'i' && (right.Value | 0x20) != 'i'))
             return Internal.Search.AsciiSearch.FoldCase((byte)left.Value) == Internal.Search.AsciiSearch.FoldCase((byte)right.Value);
         if (!left.IsBmp || !right.IsBmp)
             return Rune.ToUpperInvariant(left) == Rune.ToUpperInvariant(right);
-        return GetInvariantEquivalents((char)left.Value).Contains((char)right.Value);
+        return GetEquivalents((char)left.Value, behavior).Contains((char)right.Value);
     }
 
-    /// <summary>Returns the invariant case equivalents of one BMP scalar (the scalar
+    /// <summary>Returns the case equivalents of one BMP scalar (the scalar
     /// itself is always included when the table knows it). Dotted and dotless I
     /// take the probed special case below; every other scalar reads its
     /// precomputed fiber.
     /// </summary>
-    internal static ReadOnlySpan<char> GetInvariantEquivalents(char value)
+    internal static ReadOnlySpan<char> GetEquivalents(char value, Utf8ScalarCaseBehavior behavior)
     {
         if ((value | 0x20) == 'i' || (value | 0x01) == '\u0131')
         {
-            return value is 'i' or 'I' ? "Ii" : default;
+            return behavior switch
+            {
+                Utf8ScalarCaseBehavior.Turkic => value is 'I' or '\u0131' ? "I\u0131" : "\u0130i",
+                Utf8ScalarCaseBehavior.NonTurkic => value is 'I' or 'i' or '\u0130' ? "Ii\u0130" : default,
+                _ => value is 'i' or 'I' ? "Ii" : default,
+            };
         }
 
         ushort entry = InvariantFiberIndex[value];
@@ -4315,14 +4338,14 @@ internal static class Utf8SliceCaseEquivalences
     /// expansion overlaps the positive test). Empty when the table and the
     /// invariant i-branch know no equivalents, reducing to the direct test.
     /// </summary>
-    internal static bool EquivalentsHitRanges(Rune scalar, int[] ranges, bool miss)
+    internal static bool EquivalentsHitRanges(Rune scalar, int[] ranges, bool miss, Utf8ScalarCaseBehavior behavior)
     {
         if (!scalar.IsBmp)
         {
             return RangesHit(ranges, Rune.ToUpperInvariant(scalar).Value) != miss ||
                 RangesHit(ranges, Rune.ToLowerInvariant(scalar).Value) != miss;
         }
-        foreach (var equivalent in GetInvariantEquivalents((char)scalar.Value))
+        foreach (var equivalent in GetEquivalents((char)scalar.Value, behavior))
             if (RangesHit(ranges, equivalent) != miss) return true;
         return false;
     }

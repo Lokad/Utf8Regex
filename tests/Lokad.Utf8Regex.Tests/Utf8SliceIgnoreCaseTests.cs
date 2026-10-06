@@ -4,12 +4,9 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 case-insensitive slice: IgnoreCase folds per-scalar BCL-invariant case
-// (ASCII pairs plus single-char ToLowerInvariant; U+0130 never folds to one
-// char, astral halves never fold) across literals, classes (fold-then-test,
-// so U+212A hits), and backreferences (scalar walk with per-side widths).
-// Bare shapes keep native precedence; Turkic construction cultures keep
-// legacy routing through the existing culture gate.
+// IgnoreCase compares complete scalars across literals, classes and references,
+// with independent UTF-8 widths. Invariant native kernels keep precedence where
+// eligible; culture-sensitive shapes use construction-bound scalar folding.
 public sealed class Utf8SliceIgnoreCaseTests
 {
     // Bare shapes keep native precedence (IgnoreCase-aware kernels with Kelvin
@@ -168,7 +165,7 @@ public sealed class Utf8SliceIgnoreCaseTests
     }
 
     [Fact]
-    public void TurkicCultureKeepsLegacyRouting()
+    public void TurkicCultureUsesOwnedScalarRouting()
     {
         var savedCulture = CultureInfo.CurrentCulture;
         try
@@ -177,8 +174,9 @@ public sealed class Utf8SliceIgnoreCaseTests
             var oracle = new Regex("i", RegexOptions.IgnoreCase, Regex.InfiniteMatchTimeout);
             Assert.False(oracle.IsMatch("I"));
             var regex = new Utf8Regex("i", RegexOptions.IgnoreCase);
-            Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             Assert.Equal(oracle.IsMatch("I"), regex.IsMatch(Encoding.UTF8.GetBytes("I")));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         }
         finally
         {

@@ -658,7 +658,6 @@ public sealed partial class Utf8Regex
         !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored &&
         !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored &&
         (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored) &&
-        !RequiresCultureSensitiveFallback &&
         !UsesRightToLeft() &&
         !ShouldUseKelvinSignFallback(input);
 
@@ -816,7 +815,7 @@ public sealed partial class Utf8Regex
         if (MatchTimeout == Regex.InfiniteMatchTimeout &&
             _caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } &&
             _groupedLiteralSpanTable is not null &&
-            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            !ShouldUseKelvinSignFallback(input))
         {
             return false;
         }
@@ -852,7 +851,6 @@ public sealed partial class Utf8Regex
         }
 
         if ((_groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null) &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             return true;
@@ -862,7 +860,6 @@ public sealed partial class Utf8Regex
         // worker arm, under the same culture and Kelvin fences as the maps.
         if (_groupNumbers.Length == 2 &&
             GetSingleWrapCaptureNumber() == 1 &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             return true;
@@ -870,7 +867,6 @@ public sealed partial class Utf8Regex
 
         // Remaining admitted captures/templates use the shared scalar VM.
         return _ownedSliceProgram is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input);
     }
 

@@ -12,7 +12,6 @@ internal sealed class Utf8RegexProgram
         Utf8VerifierRuntime verifierRuntime,
         Utf8CompiledEngineRuntime compiledEngineRuntime,
         Utf8AsciiCultureInvariantStrategy? asciiCultureInvariantStrategy,
-        bool requiresCultureSensitiveFallback,
         Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher,
         Lazy<int[]> groupNumbers,
         Lazy<string[]> groupNames,
@@ -23,7 +22,6 @@ internal sealed class Utf8RegexProgram
         VerifierRuntime = verifierRuntime;
         CompiledEngineRuntime = compiledEngineRuntime;
         AsciiCultureInvariantStrategy = asciiCultureInvariantStrategy;
-        RequiresCultureSensitiveFallback = requiresCultureSensitiveFallback;
         DirectStructuralFamilyKernelMatcher = directStructuralFamilyKernelMatcher;
         GroupNumbers = groupNumbers;
         GroupNames = groupNames;
@@ -39,8 +37,6 @@ internal sealed class Utf8RegexProgram
     public Utf8CompiledEngineRuntime CompiledEngineRuntime { get; }
 
     public Utf8AsciiCultureInvariantStrategy? AsciiCultureInvariantStrategy { get; }
-
-    public bool RequiresCultureSensitiveFallback { get; }
 
     public Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher { get; }
 
@@ -109,9 +105,8 @@ internal sealed class Utf8RegexProgram
         var isCultureSensitiveIgnoreCase =
             (effectiveOptions & RegexOptions.IgnoreCase) != 0 &&
             (effectiveOptions & RegexOptions.CultureInvariant) == 0;
-        var requiresCultureSensitiveFallback = isCultureSensitiveIgnoreCase &&
-            !FoldsAsciiCaseInvariantly(Utf8OwnedOptionPrelude.GetTargetCulture(effectiveOptions));
-        var asciiCultureInvariantStrategy = isCultureSensitiveIgnoreCase && !requiresCultureSensitiveFallback
+        var asciiCultureInvariantStrategy = isCultureSensitiveIgnoreCase &&
+            FoldsAsciiCaseInvariantly(Utf8OwnedOptionPrelude.GetTargetCulture(effectiveOptions))
                 ? new Utf8AsciiCultureInvariantStrategy(
                     pattern,
                     options,
@@ -133,7 +128,6 @@ internal sealed class Utf8RegexProgram
             verifierRuntime,
             compiledEngineRuntime,
             asciiCultureInvariantStrategy,
-            requiresCultureSensitiveFallback,
             directStructuralFamilyKernelMatcher,
             groupNumbers,
             groupNames,

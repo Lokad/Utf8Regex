@@ -239,7 +239,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
         Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
         Assert.Equal((RegexOptions)options, actual.Options);
-        Assert.Equal((options & (int)RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture.Name : null, actual.Culture?.Name);
+        Assert.Equal((options & (int)RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture.Name : CultureInfo.CurrentCulture.Name, actual.Culture?.Name);
         AssertGroupNameMapping(oracle, actual.CaptureNameToNumberMapping);
         AssertGroupNumberMapping(oracle, actual.CaptureNumberSparseMapping);
     }
@@ -254,7 +254,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         Assert.Equal(3, actual.CaptureCount);
         Assert.Equal(new[] { "0", "1", "2" }, actual.CaptureNames ?? []);
         Assert.Equal(RegexOptions.NonBacktracking | RegexOptions.RightToLeft, actual.Options);
-        Assert.Null(actual.Culture);
+        Assert.Equal(CultureInfo.CurrentCulture.Name, actual.Culture?.Name);
         Assert.Null(actual.CaptureNameToNumberMapping);
         Assert.Null(actual.CaptureNumberSparseMapping);
     }

@@ -29,7 +29,7 @@ internal static class Utf8OwnedTreeSliceLowerer
             hasBalancing, tree.UsesIgnoreCase || (options & RegexOptions.IgnoreCase) != 0,
             (options & RegexOptions.RightToLeft) != 0, catalog,
             (options & RegexOptions.Compiled) != 0 && hasCaptureWritingLazyRange,
-            tree.UsesLiteralClassBracketSyntax);
+            tree.UsesLiteralClassBracketSyntax, Utf8SliceCaseEquivalences.GetBehavior(tree.Culture, options));
 
     }
 

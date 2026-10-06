@@ -18,7 +18,7 @@ public sealed partial class Utf8Regex
         if (MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
-        if (RequiresCultureSensitiveFallback || _requiresKelvinSignFallback ||
+        if (_requiresKelvinSignFallback ||
             _ownedSliceProgram is { HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true } ||
             _ownedSliceProgram is { IgnoreCase: true } && _preparedRegex.ExecutionKind is not
                 (NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||

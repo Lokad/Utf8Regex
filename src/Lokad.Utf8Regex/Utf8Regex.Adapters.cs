@@ -198,7 +198,7 @@ public sealed partial class Utf8Regex
         if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            if (!ShouldUseKelvinSignFallback(input.Bytes))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var foldedSuffixAdapterMatch) &&
@@ -230,7 +230,7 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            if (!ShouldUseKelvinSignFallback(input.Bytes))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 if (start.Value == 0 &&
@@ -429,7 +429,7 @@ public sealed partial class Utf8Regex
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         var remaining = input.Bytes[start.Value..];
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(remaining))
+        if (_sliceProgram is not null || ShouldUseKelvinSignFallback(remaining))
         {
             return CountAtByteOffset(input, start);
         }
@@ -504,7 +504,7 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedAdapterEnumerateLiteral)
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            if (!ShouldUseKelvinSignFallback(input.Bytes))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 if (start.Value != 0)
@@ -526,7 +526,7 @@ public sealed partial class Utf8Regex
         if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input.Bytes))
+            if (!ShouldUseKelvinSignFallback(input.Bytes))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var foldedSuffixAdapterEnumerate) &&
@@ -586,7 +586,6 @@ public sealed partial class Utf8Regex
             literal is { Length: > 0 } &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
-            !RequiresCultureSensitiveFallback &&
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input.Bytes)))
         {
             var rtlCursor = new Utf8OperationMatchCursor(input.Bytes, _preparedRegex, literal, _preparedRegex.ExecutionKind, budget, Utf8InputAnalyzer.IsAscii(input.Bytes), rightToLeft: true);
@@ -594,7 +593,7 @@ public sealed partial class Utf8Regex
         }
 
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            !RequiresCultureSensitiveFallback && !UsesRightToLeft() &&
+            !UsesRightToLeft() &&
             Utf8InputAnalyzer.IsAscii(input.Bytes))
         {
             return new Utf8ValueMatchEnumerator(
@@ -605,7 +604,7 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
-        if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
+        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {
             var startInUtf16 = input.Project(start);
@@ -671,6 +670,12 @@ public sealed partial class Utf8Regex
             {
                 isMatch = false;
                 return false;
+            }
+
+            if (_owner._sliceProgram is not null)
+            {
+                isMatch = _owner.IsMatchAtByteOffset(input, start);
+                return true;
             }
 
             var bytes = input.Bytes;

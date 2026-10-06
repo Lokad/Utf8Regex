@@ -214,7 +214,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -232,6 +232,7 @@ internal sealed class Utf8SliceProgram
         HasMixedNamedGroups = hasMixedNamedGroups;
         HasBalancing = hasBalancing;
         IgnoreCase = ignoreCase;
+        CaseBehavior = caseBehavior;
         HasContiguousAnchor = hasContiguousAnchor;
         HasConditionalTest = hasConditionalTest;
         RightToLeft = rightToLeft;
@@ -289,6 +290,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasSharedCaptureDeclarations => CaptureCatalog is { HasSharedCaptureDeclarations: true };
     internal bool HasBalancing { get; }
     internal bool IgnoreCase { get; }
+    internal Utf8ScalarCaseBehavior CaseBehavior { get; }
     internal bool HasContiguousAnchor { get; }
     internal bool HasConditionalTest { get; }
     internal bool SawLookaround { get; }
@@ -408,12 +410,12 @@ internal static class Utf8SliceLowerer
     }
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog)
-        => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, captureCatalog, false, false);
+        => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, captureCatalog, false, false, Utf8ScalarCaseBehavior.Invariant);
 
-    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior)
     {
         var facts = AnalyzeNodes(root);
-        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts);
+        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior);
         lowerer.CaptureCatalog = captureCatalog;
         var frames = new Stack<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>();
         frames.Push((lowerer, root, lowerer.EmitSteps(root).GetEnumerator(), true));
@@ -428,7 +430,7 @@ internal static class Utf8SliceLowerer
                     var owner = frame.Owner;
                     if (request.Program)
                     {
-                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts);
+                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts, owner.CaseBehavior);
                         owner.CaptureCatalog = frame.Owner.CaptureCatalog;
                     }
                     frames.Push((owner, request.Node, owner.EmitSteps(request.Node).GetEnumerator(), request.Program));
@@ -680,7 +682,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax)
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior)
         { BackreferenceLowerings = lowerer.BackreferenceLowerings.ToArray() };
     }
 
@@ -702,16 +704,18 @@ internal static class Utf8SliceLowerer
         internal Utf8CaptureCatalog? CaptureCatalog;
         internal readonly bool MaintainBalance;
         internal readonly bool MatchCaseInsensitive;
+        internal readonly Utf8ScalarCaseBehavior CaseBehavior;
         internal readonly bool MirrorExecute;
         internal readonly Dictionary<Utf8SliceNode, NodeFacts> Facts;
         internal Utf8SliceProgram? LastSubprogram;
         internal bool Failed;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior)
         {
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
+            CaseBehavior = caseBehavior;
             MirrorExecute = mirrorExecute;
             Facts = facts;
             // RTL references can precede their captures. Every program starts

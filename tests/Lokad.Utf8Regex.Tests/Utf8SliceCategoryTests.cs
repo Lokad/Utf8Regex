@@ -607,7 +607,7 @@ public sealed class Utf8SliceCategoryTests
         foreach (var (value, expected) in cases)
         {
             var actual = new StringBuilder();
-            foreach (var equivalent in Utf8SliceCaseEquivalences.GetInvariantEquivalents((char)value))
+            foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, Utf8ScalarCaseBehavior.Invariant))
             {
                 actual.Append(((int)equivalent).ToString("X4"));
                 actual.Append(",");

@@ -25,7 +25,7 @@ public sealed partial class Utf8Regex
                 throw new ArgumentOutOfRangeException(nameof(utf16Offset), utf16Offset,
                     "The requested UTF-16 offset is not aligned to a UTF-8 scalar boundary.");
             var eligible = boundary.IsScalarBoundary && !UsesRightToLeft() &&
-                (Options & RegexOptions.NonBacktracking) == 0 && !RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
+                (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor;
             var anchored = eligible && _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&

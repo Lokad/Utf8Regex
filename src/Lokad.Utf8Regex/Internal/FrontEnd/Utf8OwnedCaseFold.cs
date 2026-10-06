@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Execution;
+
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned case-fold table for the IgnoreCase parser stage. Each entry packs one
@@ -607,7 +609,22 @@ internal static class Utf8OwnedCaseFold
     ];
 
     internal static bool TryGetFold(char value, out char lower, out char upper)
+        => TryGetFold(value, Utf8ScalarCaseBehavior.Invariant, out lower, out upper);
+
+    internal static bool TryGetFold(char value, Utf8ScalarCaseBehavior behavior, out char lower, out char upper)
     {
+        if ((value | 0x20) == 'i' || (value | 0x01) == '\u0131')
+        {
+            var equivalents = Utf8SliceCaseEquivalences.GetEquivalents(value, behavior);
+            if (equivalents.Length > 1)
+            {
+                upper = equivalents[0];
+                lower = equivalents[1];
+                return true;
+            }
+            lower = upper = (char)0;
+            return false;
+        }
         var lo = 0;
         var hi = FoldEntries.Length - 1;
         while (lo <= hi)

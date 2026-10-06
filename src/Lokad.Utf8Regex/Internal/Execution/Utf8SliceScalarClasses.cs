@@ -35,7 +35,7 @@ internal static class Utf8SliceScalarClasses
         return hit != (((int)shorthand & 1) != 0);
     }
 
-    internal static bool MatchesTable(Rune scalar, Utf8SliceCategoryTable table, bool fold, bool negated)
+    internal static bool MatchesTable(Rune scalar, Utf8SliceCategoryTable table, bool fold, bool negated, Utf8ScalarCaseBehavior behavior)
     {
         var category = Rune.GetUnicodeCategory(scalar);
         var maskHit = fold && category is UnicodeCategory.LowercaseLetter or UnicodeCategory.UppercaseLetter or UnicodeCategory.TitlecaseLetter
@@ -44,15 +44,15 @@ internal static class Utf8SliceScalarClasses
         if (maskHit) return !negated;
         var rangeHit = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar.Value);
         return rangeHit != negated || fold && table.Ranges.Length != 0 &&
-            Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, negated);
+            Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, negated, behavior);
     }
 
-    internal static bool MatchesMask(Rune scalar, byte[] mask, bool fold)
+    internal static bool MatchesMask(Rune scalar, byte[] mask, bool fold, Utf8ScalarCaseBehavior behavior)
     {
         var value = scalar.Value;
         if (value < 128 && (mask[value >> 3] & (1 << (value & 7))) != 0) return true;
         if (!fold || !scalar.IsBmp) return false;
-        foreach (var equivalent in Utf8SliceCaseEquivalences.GetInvariantEquivalents((char)value))
+        foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, behavior))
             if (equivalent < 128 && (mask[equivalent >> 3] & (1 << (equivalent & 7))) != 0) return true;
         return false;
     }

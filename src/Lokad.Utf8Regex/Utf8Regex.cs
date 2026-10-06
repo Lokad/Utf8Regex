@@ -148,7 +148,7 @@ public sealed partial class Utf8Regex
         // or shared capture declarations. Their cached scalar program supplies
         // complete-scalar offsets without an input-dependent backtracking search.
         // Other NonBacktracking graphs still require owned admission/execution.
-        var ownedSliceProgram = RequiresCultureSensitiveFallback ? null :
+        var ownedSliceProgram =
             (options & RegexOptions.NonBacktracking) != 0
                 ? Utf8SliceParser.TryParseNonBacktrackingFlatGraph(options, preparedRegex.SemanticRegex.RuntimeTree)
                 : Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
@@ -306,10 +306,6 @@ public sealed partial class Utf8Regex
 
     private Utf8AsciiCultureInvariantStrategy? _asciiCultureInvariantStrategy =>
         _program.AsciiCultureInvariantStrategy;
-
-    // PLAN.md C02: true when the construction culture folds ASCII case-sensitively
-    // (Turkic dotted/dotless I). No invariant-folding native kernel may answer then.
-    private bool RequiresCultureSensitiveFallback => _program.RequiresCultureSensitiveFallback;
 
     private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
         _program.DirectStructuralFamilyKernelMatcher;
@@ -643,14 +639,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
         }
 
-        // PLAN.md C02: Turkic-style instances bypass every invariant-folding
-        // native kernel and answer from the construction-culture oracle.
-        if (RequiresCultureSensitiveFallback)
-        {
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
-                Utf8Validation.DecodeStrict(input));
-        }
-
         if (TryIsMatchPrioritizedBooleanFamilyWithoutValidation(input, out var prioritizedIsMatch))
         {
             return prioritizedIsMatch;
@@ -922,14 +910,6 @@ public sealed partial class Utf8Regex
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceCount(input, ownedProgram, cancellationToken);
-        }
-
-        // PLAN.md C02: Turkic-style instances bypass every invariant-folding
-        // native kernel and answer from the construction-culture oracle.
-        if (RequiresCultureSensitiveFallback)
-        {
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
-                Utf8Validation.DecodeStrict(input));
         }
 
         if (_fusedAsciiLiteralCountAnchorOffset >= 0 &&
@@ -1331,13 +1311,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
         }
 
-        // PLAN.md C02: Turkic-style instances bypass every invariant-folding
-        // native kernel and answer from the construction-culture oracle.
-        if (RequiresCultureSensitiveFallback)
-        {
-            return MatchSemanticFallback(input);
-        }
-
         if (ShouldUseKelvinSignFallback(input))
         {
             return MatchSemanticFallback(input);
@@ -1497,7 +1470,7 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            if (!ShouldUseKelvinSignFallback(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 if (start.Value == 0 &&
@@ -1529,7 +1502,7 @@ public sealed partial class Utf8Regex
         if ((_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            if (!ShouldUseKelvinSignFallback(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var foldedSuffixDirect) &&
@@ -1687,7 +1660,6 @@ public sealed partial class Utf8Regex
         }
 
         if (_groupedLiteralSpanTable is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             // R05: grouped single-literal shapes discover through the shared value path
@@ -1716,7 +1688,6 @@ public sealed partial class Utf8Regex
         }
 
         if (_alternationBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             // R05: divergent single-alternation shapes discover through the shared
@@ -1777,8 +1748,7 @@ public sealed partial class Utf8Regex
         // Native discovery may lack a complete capture-history projection.
         // Keep its qualified shapers above; the cached scalar program owns the
         // remaining admitted detailed result instead of constructing BCL.
-        if (_ownedSliceProgram is not null && !RequiresCultureSensitiveFallback &&
-            !ShouldUseKelvinSignFallback(input))
+        if (_ownedSliceProgram is not null && !ShouldUseKelvinSignFallback(input))
             return OwnedSliceMatchDetailed(input, _ownedSliceProgram, cancellationToken);
 
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
@@ -1925,7 +1895,6 @@ public sealed partial class Utf8Regex
         }
 
         if (_groupedLiteralSpanTable is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             // R05: grouped single-literal shapes keep origin semantics through
@@ -1952,7 +1921,6 @@ public sealed partial class Utf8Regex
         }
 
         if (_alternationBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             // R05: divergent single-alternation shapes keep origin semantics through
@@ -2343,7 +2311,6 @@ public sealed partial class Utf8Regex
         if (_literalFamilyCaptureMap is null ||
             _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
             _groupNumbers.Length <= 2 ||
-            RequiresCultureSensitiveFallback ||
             UsesRightToLeft())
         {
             return false;
@@ -2362,7 +2329,6 @@ public sealed partial class Utf8Regex
         map = null;
         if (_literalFamilyCaptureMap is null ||
             _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
-            RequiresCultureSensitiveFallback ||
             UsesRightToLeft() ||
             ShouldUseKelvinSignFallback(input))
         {
@@ -2392,7 +2358,7 @@ public sealed partial class Utf8Regex
         out Utf8MatchContext detailed)
     {
         detailed = default;
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        if (ShouldUseKelvinSignFallback(input))
         {
             return false;
         }
@@ -2506,7 +2472,7 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedPrefixLiteral)
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            if (!ShouldUseKelvinSignFallback(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 return new Utf8ValueMatchEnumerator(
@@ -2520,7 +2486,7 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedSuffixLiteral)
         {
-            if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            if (!ShouldUseKelvinSignFallback(input))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 return new Utf8ValueMatchEnumerator(
@@ -2533,22 +2499,22 @@ public sealed partial class Utf8Regex
         // through the anchor-enforcing prefix cursor (group-agnostic value spans;
         // shaping reuses the span table). Kelvin stays fenced like the direct arms.
         if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretEnumeratePrefix &&
-            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            !ShouldUseKelvinSignFallback(input))
         {
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input, caretEnumeratePrefix, CreateExecutionBudget()))
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
-        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
-        {
-            return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
-
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatches(input, ownedProgram, CancellationToken.None)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
+        if (TryGetAsciiCultureInvariantTwin(input, out var twin))
+        {
+            return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
         var subject = Utf8ValidatedInput.Create(input);
@@ -2597,7 +2563,7 @@ public sealed partial class Utf8Regex
         // Single literals now retain one invocation through bounded validation,
         // discovery, confirmation and projection. Other shapes retain the scalar VM.
         // A possible non-ASCII folding partner stays in its existing semantic route.
-        if (!RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
+        if (!_requiresKelvinSignFallback &&
             (_ownedSliceProgram is not { IgnoreCase: true } ||
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase) &&
             _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
@@ -2615,7 +2581,7 @@ public sealed partial class Utf8Regex
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }
 
-        if (!UsesRightToLeft() && !RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
+        if (!UsesRightToLeft() && !_requiresKelvinSignFallback &&
             _ownedSliceProgram is not ({ HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true }) &&
             (_ownedSliceProgram is not { IgnoreCase: true } ||
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
@@ -2649,7 +2615,7 @@ public sealed partial class Utf8Regex
         // Window boundaries inspect the original subject, including the unit
         // before startat. Slicing the suffix would invent a word boundary there.
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            !RequiresCultureSensitiveFallback && !UsesRightToLeft() &&
+            !UsesRightToLeft() &&
             Utf8InputAnalyzer.IsAscii(input))
         {
             return new Utf8ValueMatchEnumerator(
@@ -2774,7 +2740,7 @@ public sealed partial class Utf8Regex
         // piece first). Culture, Kelvin, and unserved shapes keep the legacy routing
         // below; count 1 keeps the BCL tail while count 0 means unlimited here.
         if ((count == 0 || count > 1) &&
-            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
+            !ShouldUseKelvinSignFallback(input) &&
             _sliceProgram is not null && _sliceProgram.RightToLeft)
         {
             var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
@@ -2800,7 +2766,6 @@ public sealed partial class Utf8Regex
             _preparedRegex.LiteralUtf8 is { Length: > 0 } rtlSplitLiteral &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
             !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
-            !RequiresCultureSensitiveFallback &&
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input)))
         {
             var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
@@ -2817,7 +2782,7 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
+        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
             if (count >= 0 && _ownedSliceProgram is { } resumedProgram)
                 return OwnedSliceEnumerateSplits(input, resumedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
@@ -2865,7 +2830,7 @@ public sealed partial class Utf8Regex
         // keep the BCL tail like the cursor arms around it.
         if (count > 1 &&
             _caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretSplitPrefix &&
-            !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input))
+            !ShouldUseKelvinSignFallback(input))
         {
             return new Utf8ValueSplitEnumerator(
                 input,
@@ -2887,7 +2852,6 @@ public sealed partial class Utf8Regex
             _preparedRegex.SimplePatternPlan.IsFixedLength &&
             _preparedRegex.SimplePatternPlan.MinLength > 0 &&
             (Utf8InputAnalyzer.IsAscii(input) || _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe) &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
@@ -3066,7 +3030,7 @@ public sealed partial class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
         _ = Utf8Validation.Validate(replacementPatternUtf8);
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
+        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -3135,8 +3099,7 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
-        if (!RequiresCultureSensitiveFallback &&
-            (_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
+        if ((_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
         {
             try { return OwnedSliceReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
@@ -3197,7 +3160,6 @@ public sealed partial class Utf8Regex
         // project every group from fixed literal-relative spans. The first hit validates
         // the projection channel before any output, mirroring the branched contract.
         if (_groupedLiteralSpanTable is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             var groupedDeclined = false;
@@ -3245,7 +3207,6 @@ public sealed partial class Utf8Regex
         // callback argument from owned spans. The first hit validates the branch channel;
         // no output is produced before it, so an unknown branch still declines cleanly.
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             var budget = CreateExecutionBudget();
@@ -3301,7 +3262,6 @@ public sealed partial class Utf8Regex
         // project the winning branch spans identified by ordinal text comparison, with
         // the same first-hit decline contract as the arms above.
         if (_alternationBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             var alternationDeclined = false;
@@ -3426,8 +3386,7 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
-        if (!RequiresCultureSensitiveFallback &&
-            (_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
+        if ((_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
         {
             try
             {
@@ -3482,7 +3441,6 @@ public sealed partial class Utf8Regex
         // project every group from fixed literal-relative spans, with the same
         // first-hit decline contract as the arms around it.
         if (_groupedLiteralSpanTable is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             var groupedBuilder = new StringBuilder(decoded.Length);
@@ -3520,7 +3478,6 @@ public sealed partial class Utf8Regex
         // callback argument from owned spans, with the same first-hit decline contract as
         // the byte-wise evaluator overload.
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             var budget = CreateExecutionBudget();
@@ -3573,7 +3530,6 @@ public sealed partial class Utf8Regex
         // project the winning branch spans identified by ordinal text comparison, with
         // the same first-hit decline contract as the arms above.
         if (_alternationBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
         {
             var alternationBuilder = new StringBuilder(decoded.Length);
@@ -3678,7 +3634,7 @@ public sealed partial class Utf8Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
-        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
+        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -3903,7 +3859,7 @@ public sealed partial class Utf8Regex
         ReadOnlySpan<byte> input,
         [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy)
     {
-        if (_asciiCultureInvariantStrategy is not null &&
+        if (_ownedSliceProgram is null && _asciiCultureInvariantStrategy is not null &&
             Utf8InputAnalyzer.IsAscii(input))
         {
             strategy = _asciiCultureInvariantStrategy;
