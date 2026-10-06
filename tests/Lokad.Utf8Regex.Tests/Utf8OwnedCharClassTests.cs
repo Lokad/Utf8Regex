@@ -30,7 +30,6 @@ public sealed class Utf8OwnedCharClassTests
         yield return new object?[] { "\\p{Lu}", 512 };
         yield return new object?[] { "\\p{IsGreek}", 512 };
         yield return new object?[] { ".", 512 };
-        yield return new object?[] { "(?s:.)", 512 };
         yield return new object?[] { "[a-[b]]", 512 };
         yield return new object?[] { "[\\da-z]", 512 };
         yield return new object?[] { "[a\\w]", 512 };
@@ -76,6 +75,25 @@ public sealed class Utf8OwnedCharClassTests
         AssertWireQueriesEqualPinned("a");
         AssertWireQueriesEqualPinned(new string((char)0, 3));
         AssertWireQueriesEqualPinned(new string((char)0, 4));
+    }
+
+    [Fact]
+    public void SinglelineDotUsesExplicitScalarRangePayload()
+    {
+        var tree = Utf8OwnedTreeParser.TryParse("(?s:.)", RegexOptions.CultureInvariant);
+        Assert.NotNull(tree);
+        var payload = Assert.Single(HarvestSetPayloads(tree.Root));
+        Assert.Equal("\u0000\u0000\u0006\u0066\u0002\u0000\u0000\u0000\u0011", payload);
+        Assert.False(Utf8OwnedCharClass.IsNegated(payload));
+        Assert.False(Utf8OwnedCharClass.IsSubtraction(payload));
+        Assert.False(Utf8OwnedCharClass.IsEmpty(payload));
+        Assert.False(Utf8OwnedCharClass.IsSingleton(payload));
+        Assert.False(Utf8OwnedCharClass.IsAscii(payload));
+        Assert.False(Utf8OwnedCharClass.CanEasilyEnumerateSetContents(payload));
+        Assert.True(Utf8OwnedCharClass.TryGetOnlyCategories(payload, out var categories));
+        Assert.Equal(payload[3..], categories);
+        foreach (var value in new[] { '\0', '\n', 'a', '\uffff' })
+            Assert.True(Utf8OwnedCharClass.CharInClass(value, payload));
     }
 
     private static System.Collections.Generic.List<string> HarvestSetPayloads(Utf8TreeNode root)

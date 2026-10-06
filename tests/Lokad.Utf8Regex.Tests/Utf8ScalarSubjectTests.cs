@@ -75,6 +75,50 @@ public sealed class Utf8ScalarSubjectTests
             (@"(?<=[\p{Lu}0])x", "\U00010400x", [4, 1]),
             ("(?<=\U0001f600)x", "\U0001f600x", [4, 1]),
             ("(?i)(?<=\U00010400)x", "\U00010428x", [4, 1]),
+            ("^[\U0001f600]$", "\U0001f600", [0, 4]),
+            ("^[\U0001f600]$", "\U0001f601", []),
+            ("[a\U0001f600]", "a\U0001f600\U0001f601", [0, 1, 1, 4]),
+            ("^[^\U0001f600]$", "\U0001f600", []),
+            ("^[^\U0001f600]$", "\U00010400", [0, 4]),
+            ("^[\U0001f600-\U0001f64f]$", "\U0001f64f", [0, 4]),
+            ("^[\U0001f600-\U0001f64f]$", "\U0001f650", []),
+            ("^[\U0001f600-\U0001f64f-[\U0001f601-\U0001f602]]$", "\U0001f600", [0, 4]),
+            ("^[\U0001f600-\U0001f64f-[\U0001f601-\U0001f602]]$", "\U0001f601", []),
+            ("[\U0001f600\\p{Lu}]+", "\U0001f600\U00010400\U00010428", [0, 8]),
+            ("(?i)^[\U00010400-\U00010401]$", "\U00010428", [0, 4]),
+            ("(?i)^[\U00010400-\U00010401]$", "\U0001042a", []),
+            ("(?i)[\U00010400-\U00010402-[\U00010401]]", "\U00010428\U00010429\U0001042a", [0, 4, 8, 4]),
+            ("^[\uffff-\U00010001]$", "\U00010000", [0, 4]),
+            ("^[\uffff-\U00010001]$", "\U00010002", []),
+            ("^[\U0010ffff]$", "\U0010ffff", [0, 4]),
+            ("^[\u0000-\U0010ffff]$", "\U0001f600", [0, 4]),
+            (@"^[\u0000-\uffff]$", "\U0001f600", []),
+            (@"^[\u0000-\uffff]$", "\uffff", [0, 3]),
+            ("(?<=([\U0001f600-\U0001f64f]))x", "\U0001f600x", [4, 1]),
+            (@"^[\uD83D\uDE00-\uD83D\uDE01]$", "\U0001f600", [0, 4]),
+            (@"^[\uD83D\uDE00-\uD83D\uDE01]$", "\U0001f602", []),
+            (@"^\uD83D\uDE00+$", "\U0001f600\U0001f600", [0, 8]),
+            (@"^\uD800$", "\U0001f600", []),
+            (@"^[\uD800]$", "\U0001f600", []),
+            (@"^[^\uD800]$", "\U0001f600", [0, 4]),
+            (@"\uD800*", "\U0001f600", [0, 0, 4, 0]),
+            ("(?s)^.$", "\U0001f600", [0, 4]),
+            (@"(?i)^([\s\S])\1$", "\U00010400\U00010428", [0, 8]),
+            (@"(?i)^([\s\S])\1$", "\U00010400\U00010429", []),
+            (@"(?i)^([\s\S])\1$", "\U0001f600\U0001f600", [0, 8]),
+            (@"(?i)^([\s\S])\1$", "k\u212a", [0, 4]),
+            (@"(?i)^([\s\S])\1$", "\u212ak", [0, 4]),
+            (@"(?i)^([\s\S])\1$", "\u03c2\u03c3", []),
+            (@"(?i)^([\s\S]{2})\1$", "\U00010400\u212a\U00010428k", [0, 12]),
+            (@"(?i)^s$", "\u017f", []),
+            (@"(?i)^[s]$", "\u017f", []),
+            (@"(?i)^[^s]$", "\u017f", [0, 2]),
+            (@"^\uD83D(?:)\uDE00$", "\U0001f600", []),
+            (@"^(\uD83D)\uDE00$", "\U0001f600", []),
+            (@"^[\uD83D][\uDE00]$", "\U0001f600", []),
+            (@"^[\uD83D](?:)[\uDE00]$", "\U0001f600", []),
+            (@"^[\uD83D\uDE00]$", "\U0001f600", [0, 4]),
+            (@"(?i)^\uD800*$", "", [0, 0]),
         ];
         foreach (var item in cases)
         foreach (var compiled in new[] { false, true })
@@ -82,7 +126,13 @@ public sealed class Utf8ScalarSubjectTests
         {
             // In RTL, the capture must execute before the reference, as in LTR.
             // Keeping the same spelling would intentionally test an unset group.
-            var pattern = rtl && item.Pattern == @"^(.)\1$" ? @"^\1(.)$" : item.Pattern;
+            var pattern = item.Pattern;
+            if (rtl && pattern.EndsWith(@"\1$", StringComparison.Ordinal))
+            {
+                var groupStart = pattern.IndexOf("^(", StringComparison.Ordinal) + 1;
+                var referenceStart = pattern.Length - 3;
+                pattern = pattern[..groupStart] + @"\1" + pattern[groupStart..referenceStart] + "$";
+            }
             yield return [pattern, item.Text, item.Ranges,
                 RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None)];
