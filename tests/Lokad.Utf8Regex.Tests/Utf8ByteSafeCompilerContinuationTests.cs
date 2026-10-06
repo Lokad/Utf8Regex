@@ -78,7 +78,6 @@ public sealed class Utf8ByteSafeCompilerContinuationTests
         Assert.True(result.Succeeded);
         Assert.Equal(baseline.FailureKind, result.FailureKind);
         Assert.Equal(Describe(baseline.Program.Steps), Describe(result.Program.Steps));
-        if (shape == 2) return; // Nested runtime program calls remain separate work.
         var oracle = new Regex(Patterns[family], options);
         foreach (var subject in new[] { "", "ab12", "ab00x", "abcd", "abefgh", "abgh", "abcdcd", "abcd1cd2", "abxxxy", "abxxx", "zab12", "ab1x", "\nab12" })
         {
