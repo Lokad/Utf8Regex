@@ -128,12 +128,9 @@ public sealed class PythonUnicodeClassRegressionTests
         Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).FullMatch(Encoding.UTF8.GetBytes(input)).Success);
     }
 
-    // Supplementary-plane disposition (see SPEC-PYTHONRE "Deliberate boundaries"):
-    // the UTF-16 execution engines cannot match supplementary categories, and
-    // word boundaries around supplementary scalars follow UTF-16 units. These
-    // witnesses pin the CPython 3.13.2 expectations until a scalar execution
-    // layer exists. They stay skipped rather than failing the suite.
-    [Fact(Skip = "Supplementary category matching needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    // Supplementary category and boundary witnesses exercise the owned scalar
+    // renderer. UTF-16 fields below are derived interoperability coordinates.
+    [Fact]
     public void AstralWordClassStaysPinnedToCpython()
     {
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400));
@@ -143,7 +140,7 @@ public sealed class PythonUnicodeClassRegressionTests
         Assert.Equal(2, match.EndOffsetInUtf16);
     }
 
-    [Fact(Skip = "Supplementary category matching needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralBracketedWordClassStaysPinnedToCpython()
     {
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400));
@@ -153,13 +150,13 @@ public sealed class PythonUnicodeClassRegressionTests
         Assert.Equal(2, match.EndOffsetInUtf16);
     }
 
-    [Fact(Skip = "Supplementary category matching needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralWordFullMatchStaysPinnedToCpython()
     {
         Assert.True(new Utf8PythonRegex(@"\w").FullMatch(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400))).Success);
     }
 
-    [Fact(Skip = "Supplementary category matching needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralDigitClassStaysPinnedToCpython()
     {
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x1D7CE));
@@ -169,13 +166,13 @@ public sealed class PythonUnicodeClassRegressionTests
         Assert.Equal(2, match.EndOffsetInUtf16);
     }
 
-    [Fact(Skip = "Supplementary word boundaries follow UTF-16 units; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralTrailingBoundaryStaysPinnedToCpython()
     {
         Assert.False(new Utf8PythonRegex(@"x\b").Search(Encoding.UTF8.GetBytes("x" + char.ConvertFromUtf32(0x10400))).Success);
     }
 
-    [Fact(Skip = "Supplementary word boundaries follow UTF-16 units; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralLeadingBoundaryStaysPinnedToCpython()
     {
         Assert.False(new Utf8PythonRegex(@"\bx").Search(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400) + "x")).Success);

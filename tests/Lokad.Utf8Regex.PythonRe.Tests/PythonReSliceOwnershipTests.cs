@@ -104,12 +104,13 @@ public sealed class PythonReSliceOwnershipTests
     }
 
     [Fact]
-    public void FullMatchStaysManagedForSliceShapes()
+    public void FullMatchOwnsScalarProgram()
     {
         var regex = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None);
-        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFullMatchBackend);
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFullMatchBackend);
         Assert.True(regex.FullMatch(Utf8("aaabb")).Success);
         Assert.False(regex.FullMatch(Utf8("xxaaabbyy")).Success);
+        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
     }
 
     [Theory]
@@ -205,7 +206,7 @@ public sealed class PythonReSliceOwnershipTests
     public void DottedAndSimpleAnchorsKeepTheirQualifiedRoutes(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(pattern.Contains('.'), regex.DebugUsesOwnedSlice);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> AnchorSearchCases()
@@ -411,10 +412,10 @@ public sealed class PythonReSliceOwnershipTests
     [Theory]
     [InlineData("\\Aab")]
     [InlineData("ab\\Z")]
-    public void BoundaryShapesDeclineOwnedSlice(string pattern)
+    public void BoundaryShapesExposeOwnedScalarProgram(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> BoundarySearchCases()
@@ -542,7 +543,7 @@ public sealed class PythonReSliceOwnershipTests
     public void BareShorthandShapesRouteOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(pattern != "[\\d]", regex.DebugUsesOwnedSlice);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> ShorthandSearchCases()
@@ -966,7 +967,7 @@ public sealed class PythonReSliceOwnershipTests
     public void HybridShapesRouteOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(pattern == "[^\\da]", regex.DebugUsesOwnedSlice);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     // Bare word hybrids route owned too: the translator splits [\w-]

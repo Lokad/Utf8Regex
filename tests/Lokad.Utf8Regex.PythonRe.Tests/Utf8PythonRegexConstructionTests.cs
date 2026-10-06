@@ -2,24 +2,23 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md D01: the constructor built the FullMatch-only managed Regex eagerly
-// alongside the universal one. The full form is now created on first FullMatch
-// use; the eager normal-form construction still validates the same pattern
-// and options up front, so construction-time failures are preserved.
+// Full match wrappers are lazy and reuse admitted core scalar programs.
+// Constructing or using them must not create the managed full-match engine.
 public sealed class Utf8PythonRegexConstructionTests
 {
     [Fact]
-    public void ManagedFullRegexIsCreatedOnFirstManagedFullMatchUse()
+    public void ScalarFullRegexIsCreatedLazilyWithoutManagedFullEngine()
     {
         var regex = new Utf8PythonRegex("(?<=ab)c");
 
         Assert.False(regex.DebugIsManagedFullRegexValueCreated);
         Assert.False(regex.FullMatch("abc"u8).Success);
-        Assert.True(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugIsUtf8FullRegexValueCreated);
     }
 
     [Fact]
-    public void ManagedFullMatchResultAgreesWithCpython()
+    public void ScalarFullMatchResultAgreesWithCpython()
     {
         var regex = new Utf8PythonRegex("(?<=a)a");
 

@@ -200,35 +200,33 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.Equal(input, search.GetValueString());
     }
 
-    // Delimited astral membership (see SPEC-PYTHONRE): BMP-only guards cannot see
-    // astral word/digit membership, so complements over-match astral members while
-    // double negations under-match them. These pin the CPython 3.13.2 expectations
-    // until a scalar execution layer exists.
-    [Fact(Skip = "Astral word membership needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    // These formerly skipped witnesses now pin complementary supplementary
+    // membership through the owned scalar renderer.
+    [Fact]
     public void AstralLetterComplementStaysPinnedToCpython()
     {
         Assert.False(new Utf8PythonRegex("\\W").Search(Utf8(char.ConvertFromUtf32(0x10400))).Success);
     }
 
-    [Fact(Skip = "Astral word membership needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralBracketedComplementStaysPinnedToCpython()
     {
         Assert.False(new Utf8PythonRegex("[\\W]").Search(Utf8(char.ConvertFromUtf32(0x10400))).Success);
     }
 
-    [Fact(Skip = "Astral digit membership needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralDigitComplementStaysPinnedToCpython()
     {
         Assert.False(new Utf8PythonRegex("\\D").Search(Utf8(char.ConvertFromUtf32(0x1D7CE))).Success);
     }
 
-    [Fact(Skip = "Astral word membership needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralDoubleNegationStaysPinnedToCpython()
     {
         Assert.True(new Utf8PythonRegex("[^\\W]").Search(Utf8(char.ConvertFromUtf32(0x10400))).Success);
     }
 
-    [Fact(Skip = "Astral digit membership needs a scalar execution layer; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AstralDigitDoubleNegationStaysPinnedToCpython()
     {
         Assert.True(new Utf8PythonRegex("[^\\D]").Search(Utf8(char.ConvertFromUtf32(0x1D7CE))).Success);

@@ -230,7 +230,7 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex(@"(?m)^foo$", PythonReCompileOptions.Multiline);
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
-        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=ManagedRegex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.Search("bar\nfoo\nbaz"u8).Success);
     }
 
@@ -303,13 +303,12 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
-        Assert.False(conditional.DebugHasUtf8FullRegex);
-        Assert.False(conditional.DebugIsUtf8FullRegexValueCreated);
+        Assert.True(conditional.DebugHasUtf8FullRegex);
+        Assert.True(conditional.DebugIsUtf8FullRegexValueCreated);
         Assert.False(lookahead.DebugIsUtf8FullRegexValueCreated);
-        // PLAN.md C13: the fullmatch wrapper adds anchors around the lookahead,
-        // so the translated full pattern leaves the core literal route for the
-        // managed fallback (search still uses the core backend above).
-        Assert.False(lookahead.DebugHasUtf8FullRegex);
+        // The anchored wrapper reuses its admitted scalar program even when
+        // the core classifier has no native full-match plan.
+        Assert.True(lookahead.DebugHasUtf8FullRegex);
         Assert.True(lookahead.DebugIsUtf8FullRegexValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
@@ -319,7 +318,7 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void LazyUtf8FullMatcherSupportsConcurrentFirstUseAndCachesFallback()
+    public void LazyUtf8FullMatcherSupportsConcurrentNativeAndScalarFirstUse()
     {
         var native = new Utf8PythonRegex("ab[0-9]{2}");
         Assert.False(native.DebugIsUtf8FullRegexValueCreated);
@@ -343,14 +342,14 @@ public sealed class Utf8PythonRegexTests
         Assert.True(native.DebugIsUtf8FullRegexValueCreated);
         Assert.True(native.DebugHasUtf8FullRegex);
 
-        // `^ab[0-9]{2}` keeps a native search route while its anchored full
-        // pattern stays on the managed fallback, so the lazy full matcher is
-        // created once and caches the fallback outcome.
+        // The anchored search shape shares a lazily created scalar full
+        // matcher across concurrent callers.
         var managed = new Utf8PythonRegex(@"^ab[0-9]{2}");
         Assert.False(managed.DebugIsUtf8FullRegexValueCreated);
         Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
         Assert.True(managed.DebugIsUtf8FullRegexValueCreated);
-        Assert.False(managed.DebugHasUtf8FullRegex);
+        Assert.True(managed.DebugHasUtf8FullRegex);
+        Assert.False(managed.DebugIsManagedFullRegexValueCreated);
     }
 
     [Fact]
@@ -445,14 +444,14 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void FullMatchUsesManagedRegexWhenCoreWouldFallBack()
+    public void FullMatchUsesOwnedProgramForFallbackClassifiedPattern()
     {
         var regex = new Utf8PythonRegex("(?:Шерлок )+");
         var input = "xxШерлок Шерлок "u8.ToArray();
 
         var match = regex.FullMatch(input, startOffsetInBytes: 2);
 
-        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=ManagedRegex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(match.Success);
         Assert.True(match.HasContiguousByteRange);
         Assert.Equal(2, match.StartOffsetInBytes);
@@ -464,7 +463,7 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void ManagedFallbackFullMatchPreservesDetailedCapturesAndInputContracts()
+    public void OwnedFullMatchPreservesDetailedCapturesAndInputContracts()
     {
         var regex = new Utf8PythonRegex("(?P<word>Шерлок )+");
         var input = "xxШерлок Шерлок "u8.ToArray();
@@ -472,7 +471,7 @@ public sealed class Utf8PythonRegexTests
         var detailed = regex.FullMatchDetailed(input, startOffsetInBytes: 2);
         var data = regex.FullMatchDetailedData(input, startOffsetInBytes: 2);
 
-        Assert.Contains("FullMatch=ManagedRegex", regex.DebugDescribeExecutionPlan());
+        Assert.Contains("FullMatch=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(detailed.Success);
         Assert.Equal("Шерлок Шерлок ", detailed.Value.GetValueString());
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
@@ -485,12 +484,12 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void ManagedFallbackFullMatchHonorsTimeout()
+    public void OwnedFullMatchHonorsTimeout()
     {
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
 
-        Assert.Contains("FullMatch=ManagedRegex", regex.DebugDescribeExecutionPlan());
+        Assert.Contains("FullMatch=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatch(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatchDetailedData(input));
     }
