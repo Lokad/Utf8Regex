@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Compiles the shared UTF-16 VM from the authoritative owned tree.
+/// <summary>Compiles the scalar UTF-8 VM from the authoritative owned tree.
 /// Raw-pattern callers use the same front end as production preparation;
 /// prepared callers reuse their tree and resolved capture catalog. Remaining
 /// admission limits decline to residual routing without changing construction

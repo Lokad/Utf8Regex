@@ -145,7 +145,7 @@ public sealed partial class Utf8Regex
         // R03 balancing: adapter byte-offset entries serve the owned slice
         // exactly like the UTF-16-offset drivers; the BCL fallback below
         // keeps shapes the slice declines.
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        if (_sliceProgram is not null)
         {
             try
             {
@@ -243,7 +243,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        if (_sliceProgram is not null)
         {
             try
             {
@@ -315,7 +315,7 @@ public sealed partial class Utf8Regex
             return Utf8MatchContext.Unsuccessful(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames);
         }
 
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        if (_sliceProgram is not null)
         {
             try
             {
@@ -388,7 +388,7 @@ public sealed partial class Utf8Regex
                 : 0;
         }
 
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        if (_sliceProgram is not null)
         {
             try
             {
@@ -565,7 +565,7 @@ public sealed partial class Utf8Regex
         // full input (anchors keep true left context and \\G pins to the scan
         // start exactly like BCL startat, unlike suffix slicing); anything
         // unserved keeps the routing below.
-        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        if (_sliceProgram is not null)
         {
             return OwnedSliceEnumerateMatchesFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);

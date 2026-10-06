@@ -214,34 +214,7 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    // 16 bytes covering chars 0 through 127 with a set bit where the
-    // char is a word char ([0-9A-Z_a-z]), mirroring the pinned runtime
-    // boundary bitmap.
-    private static ReadOnlySpan<byte> WordAsciiMask => [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-        0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07,
-    ];
-
-    private const int WordUnicodeCategoriesMask =
-        (1 << (int)UnicodeCategory.UppercaseLetter) |
-        (1 << (int)UnicodeCategory.LowercaseLetter) |
-        (1 << (int)UnicodeCategory.TitlecaseLetter) |
-        (1 << (int)UnicodeCategory.ModifierLetter) |
-        (1 << (int)UnicodeCategory.OtherLetter) |
-        (1 << (int)UnicodeCategory.NonSpacingMark) |
-        (1 << (int)UnicodeCategory.DecimalDigitNumber) |
-        (1 << (int)UnicodeCategory.ConnectorPunctuation);
-
-    // Classifies the scalar starting at index for word purposes,
-    // mirroring the pinned definitions: ASCII by bitmap, BMP by Unicode
-    // category, astral and continuation bytes as non-word (the oracle sees
-    // surrogate halves, which are never word chars). Zero-width joiners
-    // count only when requested (boundaries, not the word class). Total on
-    // any index, so unaligned byte-stepping attempts stay fail-closed.
-    // Decodes the BMP scalar starting at index: ASCII, continuation,
-    // invalid, astral, truncated, and out-of-range positions fail closed.
-    // BCL-invariant case folding is per-scalar ToLowerInvariant, except U+0130
-    // whose lowercase expands to two chars and never equals a single scalar.
+    // BMP folding remains shared by ASCII set and reference interoperability.
     private static bool TryFoldBmpScalarForCaseInsensitiveMatch(char scalar, out char folded)
     {
         if (scalar == '\u0130')
@@ -334,31 +307,25 @@ internal static partial class Utf8SliceRunner
         return leadIndex + width == rightEdge;
     }
 
-    private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, bool includeJoiners)
-        => IsWordScalarStartingAt(input, index, includeJoiners, false);
+    private static bool TryReadScalar(ReadOnlySpan<byte> input, int edge, bool rightToLeft, out Rune scalar, out int width)
+    {
+        scalar = default;
+        width = 0;
+        if (rightToLeft)
+        {
+            if (!TryGetScalarWidthEndingAt(input, edge, out width)) return false;
+            edge -= width;
+        }
+        if ((uint)edge >= (uint)input.Length) return false;
+        if (Rune.DecodeFromUtf8(input.Slice(edge), out scalar, out var decodedWidth) != OperationStatus.Done) return false;
+        if (rightToLeft && decodedWidth != width) return false;
+        width = decodedWidth;
+        return true;
+    }
 
     private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, bool includeJoiners, bool ecma)
-    {
-        if ((uint)index >= (uint)input.Length)
-        {
-            return false;
-        }
-
-        var lead = input[index];
-        if (lead < 0x80)
-        {
-            return (WordAsciiMask[lead >> 3] & (byte)(1 << (lead & 7))) != 0;
-        }
-
-        if (!TryDecodeBmpScalar(input, index, out var scalar))
-        {
-            return false;
-        }
-
-        if (ecma) return scalar == (char)0x0130;
-        return (WordUnicodeCategoriesMask & (1 << (int)char.GetUnicodeCategory(scalar))) != 0 ||
-            (includeJoiners && (scalar == (char)0x200C || scalar == (char)0x200D));
-    }
+        => TryReadScalar(input, index, false, out var scalar, out _) &&
+            Utf8SliceScalarClasses.IsWord(scalar, includeJoiners, ecma);
 
     internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
@@ -424,6 +391,10 @@ internal static partial class Utf8SliceRunner
         bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation)
     {
+        if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
+            start < input.Length && (input[start] & 0xC0) == 0x80)
+            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
+
         var counts = RentIntArray(program.RepeatCount, ref invocation, out var breach);
         if (breach != Utf8ExecutionLimitKind.None)
         {
@@ -1359,24 +1330,11 @@ internal static partial class Utf8SliceRunner
                     break;
                 case Utf8SliceInstructionKind.Boundary:
                     // Zero-width word edges: `\b` holds on a word/non-word
-                    // transition, `\B` where both sides agree. Only
-                    // scalar-aligned attempts evaluate: mid-scalar bytes
-                    // admit no BCL position, so both fail there, while a
-                    // low-surrogate unit (scalar start, unaligned attempt)
-                    // reproduces the oracle halves position, where both
-                    // halves are non-word and `\B` holds.
+                    // transition, `\B` where both sides agree. Both require
+                    // scalar-aligned positions and classify complete neighbors.
                     if (!startIsScalarBoundary)
                     {
-                        // Between surrogate halves both sides are non-word
-                        // by construction, so `\B` holds and `\b` fails.
-                        if (inputIndex < input.Length && (input[inputIndex] & 0xC0) != 0x80 && instruction.A == 0)
-                        {
-                            programIndex++;
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
+                        failed = true;
                     }
                     else if (inputIndex <= input.Length &&
                         (inputIndex == input.Length || (input[inputIndex] & 0xC0) != 0x80))
@@ -1410,685 +1368,65 @@ internal static partial class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Shorthand:
-                    // Mirrored shorthands test the scalar ending at the attempt edge
-                    // with the same category rules as the forward arm.
-                    if (program.RightToLeft)
-                    {
-                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlShortWidth))
-                        {
-                            var shortCandidate = input[inputIndex - rtlShortWidth];
-                            var shortNegated = (instruction.A & 1) != 0;
-                            bool shortPositive;
-                            bool shortInClass;
-                            if (shortCandidate < 0x80)
-                            {
-                                shortPositive = instruction.A switch
-                                {
-                                    0 or 1 => shortCandidate >= (byte)'0' && shortCandidate <= (byte)'9',
-                                    2 or 3 => IsWordScalarStartingAt(input, inputIndex - rtlShortWidth, false),
-                                    _ => shortCandidate == (byte)'\t' || shortCandidate == (byte)'\n' || shortCandidate == (byte)'\v' ||
-                                        shortCandidate == (byte)'\f' || shortCandidate == (byte)'\r' || shortCandidate == (byte)' ',
-                                };
-                                shortInClass = shortPositive != shortNegated;
-                            }
-                            else if (shortCandidate < 0xF0 &&
-                                TryDecodeBmpScalar(input, inputIndex - rtlShortWidth, out var rtlShortMember))
-                            {
-                                var shortCategory = char.GetUnicodeCategory(rtlShortMember);
-                                shortPositive = instruction.A switch
-                                {
-                                    0 or 1 => shortCategory == UnicodeCategory.DecimalDigitNumber,
-                                    2 or 3 => (WordUnicodeCategoriesMask & (1 << (int)shortCategory)) != 0,
-                                    _ => rtlShortMember == '\u0085' || shortCategory == UnicodeCategory.SpaceSeparator ||
-                                        shortCategory == UnicodeCategory.LineSeparator ||
-                                        shortCategory == UnicodeCategory.ParagraphSeparator,
-                                };
-                                shortInClass = shortPositive != shortNegated;
-                            }
-                            else
-                            {
-                                shortInClass = shortNegated && shortCandidate >= 0xF0;
-                            }
-
-                            if (shortInClass)
-                            {
-                                inputIndex -= rtlShortWidth;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-
-                        break;
-                    }
-
-                    // Unicode shorthand classes: positive members match one
-                    // scalar (astral leads fail, as the oracle tests halves
-                    // that never match). Negated members match one ASCII
-                    // complement byte or one whole non-ASCII scalar (BMP
-                    // units agree; astral inputs are declined at routing).
-                    // Continuation bytes fail, so byte-stepping drivers
-                    // cannot report unaligned starts. Inputs are validated
-                    // before execution, hence lead widths stay in bounds
-                    // without revalidation here.
-                    if (inputIndex < input.Length &&
-                        (input[inputIndex] & 0xC0) != 0x80)
-                    {
-                        var candidate = input[inputIndex];
-                        var negated = (instruction.A & 1) != 0;
-                        bool positive;
-                        bool inClass;
-                        if (candidate < 0x80)
-                        {
-                            positive = instruction.A switch
-                            {
-                                0 or 1 => candidate >= (byte)'0' && candidate <= (byte)'9',
-                                2 or 3 => IsWordScalarStartingAt(input, inputIndex, false),
-                                _ => candidate == (byte)'\t' || candidate == (byte)'\n' || candidate == (byte)'\v' ||
-                                    candidate == (byte)'\f' || candidate == (byte)'\r' || candidate == (byte)' ',
-                            };
-                            inClass = positive != negated;
-                        }
-                        else if (candidate < 0xF0 &&
-                            TryDecodeBmpScalar(input, inputIndex, out var member))
-                        {
-                            var category = char.GetUnicodeCategory(member);
-                            positive = instruction.A switch
-                            {
-                                0 or 1 => category == UnicodeCategory.DecimalDigitNumber,
-                                2 or 3 => (WordUnicodeCategoriesMask & (1 << (int)category)) != 0,
-                                _ => member == '\u0085' || category == UnicodeCategory.SpaceSeparator ||
-                                    category == UnicodeCategory.LineSeparator ||
-                                    category == UnicodeCategory.ParagraphSeparator,
-                            };
-                            inClass = positive != negated;
-                        }
-                        else
-                        {
-                            inClass = negated && candidate >= 0xF0;
-                        }
-
-                        if (inClass)
-                        {
-                            if (candidate < 0x80)
-                            {
-                                inputIndex++;
-                            }
-                            else if (candidate < 0xE0)
-                            {
-                                inputIndex += 2;
-                            }
-                            else if (candidate < 0xF0)
-                            {
-                                inputIndex += 3;
-                            }
-                            else
-                            {
-                                inputIndex += 4;
-                            }
-
-                            programIndex++;
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-                    }
-                    else
-                    {
-                        failed = true;
-                    }
-
-                    break;
                 case Utf8SliceInstructionKind.Category:
+                case Utf8SliceInstructionKind.CategorySet:
+                case Utf8SliceInstructionKind.Hybrid:
                     {
-                        // Unicode property atoms test one BMP scalar against
-                        // the table mask (general categories/groups) or the
-                        // half-open block ranges. The IgnoreCase fold bit
-                        // widens Ll/Lu/Lt to their cased union (every other
-                        // category is already case-complete) and matches block
-                        // ranges through invariant case equivalents. Astral
-                        // leads use the shared surrogate-half verdict; uniform
-                        // tables consume the scalar exactly when both halves
-                        // match. This includes Cs and its complement for the
-                        // greedy UTF-16 minimum counter. Split-half tables
-                        // remain outside whole-loop admission.
-                        // Anything else keeps routing-declined astral inputs
-                        // away, so failing there keeps byte-stepping drivers
-                        // aligned.
-                        // Continuation bytes fail like every consuming arm.
-                        // Inputs are validated before execution, hence lead
-                        // widths stay in bounds without revalidation here.
-                        static bool MatchesCategory(Utf8SliceCategoryTable table, char scalar, bool fold, bool negated)
+                        if (!TryReadScalar(input, inputIndex, program.RightToLeft, out var classScalar, out var classWidth))
                         {
-                            var category = char.GetUnicodeCategory(scalar);
-                            bool maskHit;
-                            if (fold &&
-                                (category == UnicodeCategory.LowercaseLetter ||
-                                 category == UnicodeCategory.UppercaseLetter ||
-                                 category == UnicodeCategory.TitlecaseLetter))
-                            {
-                                maskHit = (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
-                            }
-                            else
-                            {
-                                maskHit = ((table.Mask >> (int)category) & 1u) != 0;
-                            }
-
-                            if (maskHit)
-                            {
-                                return !negated;
-                            }
-
-                            var inRanges = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar);
-                            if (!fold || table.Ranges.Length == 0)
-                            {
-                                return inRanges != negated;
-                            }
-
-                            if (!negated)
-                            {
-                                return inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: false);
-                            }
-
-                            return !inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: true);
-                        }
-
-                        // Mirrored categories test the scalar ending at the
-                        // attempt edge with the same table rules.
-                        if (program.RightToLeft)
-                        {
-                            if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlCategoryWidth))
-                            {
-                                var rtlCategoryLead = input[inputIndex - rtlCategoryWidth];
-                                var rtlCategoryTable = program.CategoryTables[instruction.A];
-                                var rtlCategoryFold = (instruction.B & 2) != 0;
-                                var rtlCategoryNegated = (instruction.B & 1) != 0;
-                                bool rtlInClass;
-                                if (rtlCategoryLead < 0x80)
-                                {
-                                    rtlInClass = MatchesCategory(rtlCategoryTable, (char)rtlCategoryLead, rtlCategoryFold, rtlCategoryNegated);
-                                }
-                                else if (rtlCategoryLead < 0xF0 &&
-                                    TryDecodeBmpScalar(input, inputIndex - rtlCategoryWidth, out var rtlCategoryScalar))
-                                {
-                                    rtlInClass = MatchesCategory(rtlCategoryTable, rtlCategoryScalar, rtlCategoryFold, rtlCategoryNegated);
-                                }
-                                else
-                                {
-                                    rtlInClass = false;
-                                }
-
-                                if (rtlInClass)
-                                {
-                                    inputIndex -= rtlCategoryWidth;
-                                    programIndex++;
-                                }
-                                else
-                                {
-                                    failed = true;
-                                }
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-
+                            failed = true;
                             break;
                         }
 
-                        if (inputIndex < input.Length &&
-                            (input[inputIndex] & 0xC0) != 0x80)
+                        bool classHit;
+                        if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
                         {
-                            var categoryTable = program.CategoryTables[instruction.A];
-                            var categoryFold = (instruction.B & 2) != 0;
-                            var categoryNegated = (instruction.B & 1) != 0;
-                            var candidate = input[inputIndex];
-                            bool inClass;
-                            if (candidate < 0x80)
-                            {
-                                inClass = MatchesCategory(categoryTable, (char)candidate, categoryFold, categoryNegated);
-                            }
-                            else if (candidate < 0xF0 &&
-                                TryDecodeBmpScalar(input, inputIndex, out var scalar))
-                            {
-                                inClass = MatchesCategory(categoryTable, scalar, categoryFold, categoryNegated);
-                            }
-                            else
-                            {
-                                var halfVerdict = Utf8SliceHalvesMirror.TableHalvesVerdict(categoryTable.Mask, categoryTable.Ranges);
-                                inClass = halfVerdict != 2 && (halfVerdict == 1) != categoryNegated;
-                            }
-
-                            if (inClass)
-                            {
-                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : candidate < 0xF0 ? 3 : 4;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
+                            classHit = Utf8SliceScalarClasses.MatchesShorthand(classScalar, (Utf8SliceShorthand)instruction.A);
+                        }
+                        else if (instruction.Kind == Utf8SliceInstructionKind.Category)
+                        {
+                            classHit = Utf8SliceScalarClasses.MatchesTable(classScalar, program.CategoryTables[instruction.A],
+                                (instruction.B & 2) != 0, (instruction.B & 1) != 0);
                         }
                         else
                         {
-                            failed = true;
-                        }
-
-                        break;
-                    }
-
-                case Utf8SliceInstructionKind.CategorySet:
-                    {
-                        var classMembers = program.CategorySetMembers[instruction.D];
-                        if (classMembers.Length == 1 && classMembers[0].Table.ClassProgram is { } classProgram)
-                        {
-                            var classIndex = inputIndex;
-                            var classWidth = 0;
-                            if (program.RightToLeft)
+                            var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
+                            var classMembers = categorySet ? program.CategorySetMembers[instruction.D] : null;
+                            if (classMembers is { Length: 1 } && classMembers[0].Table.ClassProgram is { } classProgram)
                             {
-                                if (TryGetScalarWidthEndingAt(input, inputIndex, out classWidth))
-                                    classIndex -= classWidth;
-                            }
-                            else if (inputIndex < input.Length && (input[inputIndex] & 0xC0) != 0x80)
-                            {
-                                classWidth = input[inputIndex] < 0x80 ? 1 : input[inputIndex] < 0xE0 ? 2 : input[inputIndex] < 0xF0 ? 3 : 4;
-                            }
-
-                            var classHit = false;
-                            if (classWidth == 4)
-                            {
-                                // Only uniform-half whole loops serve public astral
-                                // scalars here. Other shapes use the private unit subject.
-                                classHit = classProgram.HalvesVerdict == 1;
-                            }
-                            else if (classWidth != 0)
-                            {
-                                var classUnit = (char)input[classIndex];
-                                if (classWidth == 1 || TryDecodeBmpScalar(input, classIndex, out classUnit))
-                                {
-                                    classHit = classProgram.TryMatch(classUnit, ref invocation, out var classBreach);
-                                    if (classBreach != Utf8ExecutionLimitKind.None)
-                                        return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
-                                }
-                            }
-
-                            if (classHit)
-                            {
-                                inputIndex += program.RightToLeft ? -classWidth : classWidth;
-                                programIndex++;
-                            }
-                            else failed = true;
-                            break;
-                        }
-
-                        // Mixed category classes: ASCII bytes decide by mask
-                        // plus recorded category members (shorthand ASCII
-                        // parts ride the mask exactly like hybrids, so only
-                        // categories need member tests here); BMP scalars
-                        // consult shorthand members with full Unicode
-                        // categories plus category members with the same
-                        // fold rule as single categories (cased-union masks,
-                        // invariant equivalents for block ranges).
-                        // BMP units agree with the oracle; astral follows the
-                        // halves mirror (routing declines astral inputs for
-                        // every category-set program) and continuation bytes
-                        // fail, so byte-stepping drivers cannot report
-                        // unaligned starts. Inputs are validated before
-                        // execution, hence lead widths stay in bounds without
-                        // revalidation here.
-                        static bool MatchesCategorySetShorthand(char scalar, Utf8SliceShorthand shorthand)
-                        {
-                            var category = char.GetUnicodeCategory(scalar);
-                            return ((int)shorthand) switch
-                            {
-                                0 => category == UnicodeCategory.DecimalDigitNumber,
-                                1 => category != UnicodeCategory.DecimalDigitNumber,
-                                2 => (WordUnicodeCategoriesMask & (1 << (int)category)) != 0,
-                                3 => (WordUnicodeCategoriesMask & (1 << (int)category)) == 0,
-                                4 => scalar == '\u0085' || category == UnicodeCategory.SpaceSeparator ||
-                                    category == UnicodeCategory.LineSeparator ||
-                                    category == UnicodeCategory.ParagraphSeparator,
-                                _ => scalar != '\u0085' && category != UnicodeCategory.SpaceSeparator &&
-                                    category != UnicodeCategory.LineSeparator &&
-                                    category != UnicodeCategory.ParagraphSeparator,
-                            };
-                        }
-
-                        static bool MatchesCategorySetTable(Utf8SliceCategoryTable table, char scalar, bool fold, bool negated)
-                        {
-                            var category = char.GetUnicodeCategory(scalar);
-                            bool maskHit;
-                            if (fold &&
-                                (category == UnicodeCategory.LowercaseLetter ||
-                                 category == UnicodeCategory.UppercaseLetter ||
-                                 category == UnicodeCategory.TitlecaseLetter))
-                            {
-                                maskHit = (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
+                                classHit = classProgram.TryMatch(classScalar, ref invocation, out var classBreach);
+                                if (classBreach != Utf8ExecutionLimitKind.None)
+                                    return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
                             }
                             else
                             {
-                                maskHit = ((table.Mask >> (int)category) & 1u) != 0;
-                            }
-
-                            if (maskHit)
-                            {
-                                return !negated;
-                            }
-
-                            var inRanges = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar);
-                            if (!fold || table.Ranges.Length == 0)
-                            {
-                                return inRanges != negated;
-                            }
-
-                            if (!negated)
-                            {
-                                return inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: false);
-                            }
-
-                            return !inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: true);
-                        }
-
-                        static bool CategorySetBmpMatches(Utf8SliceProgram program, Utf8SliceInstruction instruction, char scalar)
-                        {
-                            var fold = (instruction.B & 2) != 0;
-                            var negated = (instruction.B & 1) != 0;
-                            if (fold &&
-                                TryFoldBmpScalarForCaseInsensitiveMatch(scalar, out var folded) &&
-                                folded < 0x80 &&
-                                (program.SetMasks[instruction.A][folded >> 3] & (byte)(1 << (folded & 7))) != 0)
-                            {
-                                return !negated;
-                            }
-
-                            for (var bit = 0; bit < 6; bit++)
-                            {
-                                if ((instruction.C & (1 << bit)) != 0 &&
-                                    MatchesCategorySetShorthand(scalar, (Utf8SliceShorthand)bit))
+                                var fold = categorySet ? (instruction.B & 2) != 0 : instruction.D != 0;
+                                var memberHit = Utf8SliceScalarClasses.MatchesMask(classScalar, program.SetMasks[instruction.A], fold) ||
+                                    Utf8SliceScalarClasses.MatchesMembers(classScalar, instruction.C);
+                                if (!memberHit && classMembers is not null)
                                 {
-                                    return !negated;
-                                }
-                            }
-
-                            foreach (var member in program.CategorySetMembers[instruction.D])
-                            {
-                                if (MatchesCategorySetTable(member.Table, scalar, fold, member.Negated))
-                                {
-                                    return !negated;
-                                }
-                            }
-
-                            return negated;
-                        }
-
-                        // Mirrored category sets test the scalar ending at
-                        // the attempt edge with the same mask and member
-                        // rules as the forward arm.
-                        if (program.RightToLeft)
-                        {
-                            if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlCategorySetWidth))
-                            {
-                                var rtlCategorySetLead = input[inputIndex - rtlCategorySetWidth];
-                                bool rtlInClass;
-                                if (rtlCategorySetLead < 0x80)
-                                {
-                                    var rtlMaskHit = (program.SetMasks[instruction.A][rtlCategorySetLead >> 3] & (byte)(1 << (rtlCategorySetLead & 7))) != 0;
-                                    var rtlMemberHit = false;
-                                    foreach (var member in program.CategorySetMembers[instruction.D])
+                                    foreach (var member in classMembers)
                                     {
-                                        if (MatchesCategorySetTable(member.Table, (char)rtlCategorySetLead, (instruction.B & 2) != 0, member.Negated))
+                                        if (Utf8SliceScalarClasses.MatchesTable(classScalar, member.Table, fold, member.Negated))
                                         {
-                                            rtlMemberHit = true;
+                                            memberHit = true;
                                             break;
                                         }
                                     }
-
-                                    rtlInClass = (rtlMaskHit || rtlMemberHit) != ((instruction.B & 1) != 0);
                                 }
-                                else if (rtlCategorySetLead < 0xF0 &&
-                                    TryDecodeBmpScalar(input, inputIndex - rtlCategorySetWidth, out var rtlCategorySetScalar))
-                                {
-                                    rtlInClass = CategorySetBmpMatches(program, instruction, rtlCategorySetScalar);
-                                }
-                                else
-                                {
-                                    rtlInClass = false;
-                                }
-
-                                if (rtlInClass)
-                                {
-                                    inputIndex -= rtlCategorySetWidth;
-                                    programIndex++;
-                                }
-                                else
-                                {
-                                    failed = true;
-                                }
+                                classHit = memberHit != ((instruction.B & 1) != 0);
                             }
-                            else
-                            {
-                                failed = true;
-                            }
-
-                            break;
                         }
 
-                        if (inputIndex < input.Length &&
-                            (input[inputIndex] & 0xC0) != 0x80)
+                        if (classHit)
                         {
-                            var candidate = input[inputIndex];
-                            bool inClass;
-                            if (candidate < 0x80)
-                            {
-                                var maskHit = (program.SetMasks[instruction.A][candidate >> 3] & (byte)(1 << (candidate & 7))) != 0;
-                                var memberHit = false;
-                                foreach (var member in program.CategorySetMembers[instruction.D])
-                                {
-                                    if (MatchesCategorySetTable(member.Table, (char)candidate, (instruction.B & 2) != 0, member.Negated))
-                                    {
-                                        memberHit = true;
-                                        break;
-                                    }
-                                }
-
-                                inClass = (maskHit || memberHit) != ((instruction.B & 1) != 0);
-                            }
-                            else if (candidate < 0xF0 &&
-                                TryDecodeBmpScalar(input, inputIndex, out var scalar))
-                            {
-                                inClass = CategorySetBmpMatches(program, instruction, scalar);
-                            }
-                            else
-                            {
-                                // Astral leads mirror halves exactly like the whole-loop fence
-                                // admits them (match both halves to consume, split halves stay
-                                // routing-declined and fail here); admitted shapes never split.
-                                inClass = Utf8SliceHalvesMirror.CategorySetHalvesVerdict(instruction.C, program.CategorySetMembers[instruction.D]) == ((instruction.B & 1) != 0 ? 0 : 1);
-                            }
-
-                            if (inClass)
-                            {
-                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : candidate < 0xF0 ? 3 : 4;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
+                            inputIndex += program.RightToLeft ? -classWidth : classWidth;
+                            programIndex++;
                         }
-                        else
-                        {
-                            failed = true;
-                        }
-
+                        else failed = true;
                         break;
                     }
 
-                case Utf8SliceInstructionKind.Hybrid:
-                    {
-                        // Mixed ASCII/Unicode classes: ASCII bytes decide by
-                        // mask (shorthand ASCII parts folded in at lowering);
-                        // non-ASCII leads consult the recorded shorthand
-                        // members with full Unicode categories. BMP units
-                        // agree with the oracle; astral follows the halves
-                        // mirror (positive members miss, negated members
-                        // hit) and routing admits astral only when nothing
-                        // can diverge. Continuation bytes fail, so
-                        // byte-stepping drivers cannot report unaligned
-                        // starts. Inputs are validated before execution,
-                        // hence lead widths stay in bounds without
-                        // revalidation here.
-                        static bool MatchesMember(char scalar, Utf8SliceShorthand shorthand)
-                        {
-                            var category = char.GetUnicodeCategory(scalar);
-                            return ((int)shorthand) switch
-                            {
-                                0 => category == UnicodeCategory.DecimalDigitNumber,
-                                1 => category != UnicodeCategory.DecimalDigitNumber,
-                                2 => (WordUnicodeCategoriesMask & (1 << (int)category)) != 0,
-                                3 => (WordUnicodeCategoriesMask & (1 << (int)category)) == 0,
-                                4 => scalar == '\u0085' || category == UnicodeCategory.SpaceSeparator ||
-                                    category == UnicodeCategory.LineSeparator ||
-                                    category == UnicodeCategory.ParagraphSeparator,
-                                _ => scalar != '\u0085' && category != UnicodeCategory.SpaceSeparator &&
-                                    category != UnicodeCategory.LineSeparator &&
-                                    category != UnicodeCategory.ParagraphSeparator,
-                            };
-                        }
-
-                        // Mirrored hybrids test the scalar ending at the attempt edge
-                        // with the same mask and member rules as the forward arm.
-                        if (program.RightToLeft)
-                        {
-                            if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlHybridWidth))
-                            {
-                                var hybridCandidate = input[inputIndex - rtlHybridWidth];
-                                bool hybridInClass;
-                                if (hybridCandidate < 0x80)
-                                {
-                                    var hybridInMask = (program.SetMasks[instruction.A][hybridCandidate >> 3] & (byte)(1 << (hybridCandidate & 7))) != 0;
-                                    hybridInClass = hybridInMask != (instruction.B != 0);
-                                }
-                                else if (hybridCandidate < 0xF0 &&
-                                    TryDecodeBmpScalar(input, inputIndex - rtlHybridWidth, out var rtlHybridScalar))
-                                {
-                                    var hybridHit = false;
-                                    if (instruction.D != 0 &&
-                                        TryFoldBmpScalarForCaseInsensitiveMatch(rtlHybridScalar, out var rtlHybridFolded) &&
-                                        rtlHybridFolded < 0x80)
-                                    {
-                                        hybridHit = (program.SetMasks[instruction.A][rtlHybridFolded >> 3] & (byte)(1 << (rtlHybridFolded & 7))) != 0;
-                                    }
-                                    else
-                                    {
-                                        for (var bit = 0; bit < 6; bit++)
-                                        {
-                                            if ((instruction.C & (1 << bit)) != 0 &&
-                                                MatchesMember(rtlHybridScalar, (Utf8SliceShorthand)bit))
-                                            {
-                                                hybridHit = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    hybridInClass = hybridHit != (instruction.B != 0);
-                                }
-                                else
-                                {
-                                    var hybridHit = hybridCandidate >= 0xF0 && (instruction.C & Utf8SliceHybridMembers.NegatedBits) != 0;
-                                    hybridInClass = hybridHit != (instruction.B != 0);
-                                }
-
-                                if (hybridInClass)
-                                {
-                                    inputIndex -= rtlHybridWidth;
-                                    programIndex++;
-                                }
-                                else
-                                {
-                                    failed = true;
-                                }
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-
-                            break;
-                        }
-
-                        if (inputIndex < input.Length &&
-                            (input[inputIndex] & 0xC0) != 0x80)
-                        {
-                            var candidate = input[inputIndex];
-                            bool inClass;
-                            var width = 1;
-                            if (candidate < 0x80)
-                            {
-                                var inMask = (program.SetMasks[instruction.A][candidate >> 3] & (byte)(1 << (candidate & 7))) != 0;
-                                inClass = inMask != (instruction.B != 0);
-                            }
-                            else if (candidate < 0xF0 &&
-                                TryDecodeBmpScalar(input, inputIndex, out var scalar))
-                            {
-                                width = candidate < 0xE0 ? 2 : 3;
-                                var hit = false;
-                                // Case-insensitive hybrids test folded ASCII scalars
-                                // against the mask (shorthand members stay
-                                // case-irrelevant); anything else consults categories.
-                                if (instruction.D != 0 &&
-                                    TryFoldBmpScalarForCaseInsensitiveMatch(scalar, out var foldedMember) &&
-                                    foldedMember < 0x80)
-                                {
-                                    hit = (program.SetMasks[instruction.A][foldedMember >> 3] & (byte)(1 << (foldedMember & 7))) != 0;
-                                }
-                                else
-                                {
-                                for (var bit = 0; bit < 6; bit++)
-                                {
-                                    if ((instruction.C & (1 << bit)) != 0 &&
-                                        MatchesMember(scalar, (Utf8SliceShorthand)bit))
-                                    {
-                                        hit = true;
-                                        break;
-                                    }
-                                }
-                                }
-
-                                inClass = hit != (instruction.B != 0);
-                            }
-                            else
-                            {
-                                width = 4;
-                                var hit = candidate >= 0xF0 && (instruction.C & Utf8SliceHybridMembers.NegatedBits) != 0;
-                                inClass = hit != (instruction.B != 0);
-                            }
-
-                            if (inClass)
-                            {
-                                inputIndex += width;
-                                programIndex++;
-                            }
-                            else
-                            {
-                                failed = true;
-                            }
-                        }
-                        else
-                        {
-                            failed = true;
-                        }
-                    }
-
-                    break;
                 case Utf8SliceInstructionKind.Backref:
                     // ECMAScript permits a defined group that has not completed
                     // a capture yet to match an empty reference.

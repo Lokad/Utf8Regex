@@ -7,6 +7,18 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // likewise mean 65536. Wire facts and .NET matching are qualified separately.
 internal static class Utf8OwnedCharClass
 {
+    // A range predicate retains its negation over the scalar domain. Expanding
+    // a complement into positive BMP ranges would discard every other plane.
+    internal const char RangePredicateCode = (char)101;
+
+    internal static void AddRangePredicate(List<char> categories, ReadOnlySpan<ushort> ranges, bool negated)
+    {
+        categories.Add(RangePredicateCode);
+        categories.Add(negated ? (char)1 : (char)0);
+        categories.Add((char)ranges.Length);
+        foreach (var endpoint in ranges) categories.Add((char)endpoint);
+    }
+
     public const int FlagsIndex = 0;
 
     public const int SetLengthIndex = 1;
@@ -328,6 +340,19 @@ internal static class Utf8OwnedCharClass
         for (var i = 0; i < categories.Length; i++)
         {
             var current = categories[i];
+            if (current == RangePredicateCode)
+            {
+                var negated = categories[++i] != 0;
+                var length = categories[++i];
+                var ranges = categories.Slice(i + 1, length);
+                var rangeHit = false;
+                for (var range = 0; range + 1 < ranges.Length; range += 2)
+                    rangeHit |= ch >= ranges[range] && ch < ranges[range + 1];
+                rangeHit |= (ranges.Length & 1) != 0 && ch >= ranges[^1];
+                i += length;
+                if (rangeHit != negated) return true;
+                continue;
+            }
             // A trailing 0xFFFF is a lone complemented code (such as exclude-Lu),
             // not an inverted group: only a non-final 0xFFFF opens one.
             if (current == 0 || (current == char.MaxValue && i + 1 < categories.Length))

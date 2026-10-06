@@ -134,12 +134,6 @@ internal enum Utf8SliceInstructionKind : byte
     BalanceStart = 27,
 }
 
-/// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
-internal static class Utf8SliceHybridMembers
-{
-    internal const int NegatedBits = 42;
-}
-
 /// <summary>Unicode property table for one owned category atom: a
 /// UnicodeCategory bit mask for general categories/groups plus half-open
 /// range endpoint pairs (with a trailing lone endpoint spanning to char.MaxValue) for
@@ -207,7 +201,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, bool halvesClosedEmptyLoop, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -215,7 +209,6 @@ internal sealed class Utf8SliceProgram
         CategorySetMembers = categorySetMembers;
         RepeatCount = repeatCount;
         GroupCount = groupCount;
-        RequiresAstralFreeInput = requiresAstralFreeInput;
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
         RequiresUnicodeCategory = requiresUnicodeCategory;
@@ -232,7 +225,6 @@ internal sealed class Utf8SliceProgram
         SawLookaround = sawLookaround;
         SawCapturingLookbehind = sawCapturingLookbehind;
         CanMatchEmpty = canMatchEmpty;
-        HalvesClosedEmptyLoop = halvesClosedEmptyLoop;
         UsesInterpretedLazyLoopSemantics = usesInterpretedLazyLoopSemantics;
         UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
         UsesCaptureOpeningJournal = HasSharedCaptureDeclarations;
@@ -294,21 +286,14 @@ internal sealed class Utf8SliceProgram
     internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
-    // Native scalar literal plans cannot represent a lone pattern half. Keep
-    // their qualified lanes for BMP patterns; half literals always use units.
+    // Lone-surrogate pattern admission still needs an explicit contract; these
+    // atoms cannot consume any scalar in a strict UTF-8 subject.
     internal bool HasSurrogateLiteral { get; }
     internal bool HasUnicodePatternAtoms { get; }
 
     // The compiled .NET 10 lazy-loop defect is excluded from our semantics.
     // Route these programs through the owned VM even when a native plan exists.
     internal bool UsesInterpretedLazyLoopSemantics { get; }
-
-    // R05: whole-pattern greedy minimum-zero loops over halves-closed atoms
-    // (dots and member-free unfolded negated sets). The unit-space runner tiles
-    // these unit-for-unit with the oracle (empties only ever arise at ASCII
-    // positions), so string-space splicing serves them exactly like the byte
-    // cores. Every other empty-capable shape keeps the string-core BCL route.
-    internal bool HalvesClosedEmptyLoop { get; }
 
     // Legacy fallback taxonomy, probed: backreference outranks conditional,
     // conditional outranks lookaround, lookaround outranks atomic, atomic outranks
@@ -381,18 +366,6 @@ internal sealed class Utf8SliceProgram
     }
     internal int[] GroupNumbers { get; }
     internal string[] GroupNames { get; }
-    // R03 astral-divergence marker: the shared runner consumes one whole
-    // scalar per dot while the .NET oracle matches one UTF-16 unit per dot,
-    // and negated ASCII classes consume whole non-ASCII scalars while the
-    // oracle matches astral halves. Programs containing a dot or a negated
-    // class set this marker; routing declines astral inputs for them so
-    // unit-exact shapes keep oracle parity. ASCII and BMP inputs stay owned:
-    // their units are scalars, so both semantics agree. Other shapes never
-    // set this: literals, positive classes, concatenation, alternation,
-    // repeats, captures, and anchors are encoding-indifferent, so their
-    // routes skip the input scan below entirely.
-    internal bool RequiresAstralFreeInput { get; }
-
     // R03 word-boundary marker: the shared runner applies Unicode word
     // semantics (BCL-exact, including zero-width joiners). Consumers whose
     // native boundary is ASCII-scoped decline marked programs.
@@ -410,13 +383,7 @@ internal sealed class Utf8SliceProgram
     // decline marked programs.
     internal bool RequiresUnicodeCategory { get; }
 
-    // Routing gate: true unless this program needs astral-free input and
-    // the subject carries astral lead bytes (which validated inputs hold only
-    // as four-byte scalar starts). Vector-scanned; BMP and ASCII pass through.
-    internal bool ServesInput(ReadOnlySpan<byte> input)
-    {
-        return !RequiresAstralFreeInput || input.IndexOfAnyInRange((byte)0xF0, byte.MaxValue) < 0;
-    }
+
 }
 
 /// <summary>Lowers immutable slice trees to flat programs with patched jumps.</summary>
@@ -558,12 +525,11 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode:
                     return (0, 0);
                 case Utf8SliceNode.LiteralNode literal:
-                    var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : 3;
-                    return literal.FoldCase ? (1, 3) : (width, width);
-                case Utf8SliceNode.SetNode set: return set.Negated ? (1, 4) : (1, 1);
+                    var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : literal.Value < 0x10000 ? 3 : 4;
+                    return literal.FoldCase ? (1, 4) : (width, width);
+                case Utf8SliceNode.SetNode set: return set.Negated || set.FoldCase || set.Members.Length != 0 ? (1, 4) : (1, 1);
                 case Utf8SliceNode.DotNode: return (1, 4);
-                case Utf8SliceNode.ShorthandNode shorthand: return (int)shorthand.Shorthand % 2 == 1 ? (1, 4) : (1, 3);
-                case Utf8SliceNode.CategoryNode or Utf8SliceNode.CategorySetNode: return (1, 3);
+                case Utf8SliceNode.ShorthandNode or Utf8SliceNode.CategoryNode or Utf8SliceNode.CategorySetNode: return (1, 4);
                 case Utf8SliceNode.BackrefNode: return (0, int.MaxValue);
                 case Utf8SliceNode.CaptureNode capture: return (facts[capture.Body].Minimum, facts[capture.Body].Maximum);
                 case Utf8SliceNode.BalanceNode balance: return (facts[balance.Body].Minimum, facts[balance.Body].Maximum);
@@ -610,25 +576,15 @@ internal static class Utf8SliceLowerer
     private static Utf8SliceProgram FinishLowering(Lowering lowerer, Utf8SliceNode root, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
-        var requiresAstralFreeInput = false;
         var requiresUnicodeWordBoundary = false;
         var requiresUnicodeShorthand = false;
         var requiresUnicodeCategory = false;
         static void Classify(
             Utf8SliceInstruction instruction,
-            ref bool astral,
             ref bool word,
             ref bool shorthand,
             ref bool category)
         {
-            if (instruction.Kind == Utf8SliceInstructionKind.Dot ||
-                (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A is >= 0xD800 and <= 0xDFFF) ||
-                (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0) ||
-                (instruction.Kind == Utf8SliceInstructionKind.Shorthand && instruction.A % 2 == 1))
-            {
-                astral = true;
-            }
-
             if (instruction.Kind == Utf8SliceInstructionKind.Boundary)
             {
                 word = true;
@@ -639,57 +595,23 @@ internal static class Utf8SliceLowerer
                 shorthand = true;
             }
 
-            // Mixed classes always carry Unicode shorthand semantics (even
-            // digit-only mixes match non-ASCII digits), so they decline
-            // ASCII-scoped consumers. Astral inputs decline when the class
-            // can match astral scalars whole while the oracle matches
-            // halves: negated hybrids, or any negated-shorthand member.
-            if (instruction.Kind == Utf8SliceInstructionKind.Hybrid)
-            {
-                shorthand = true;
-                if (instruction.B != 0 || (instruction.C & Utf8SliceHybridMembers.NegatedBits) != 0)
-                {
-                    astral = true;
-                }
-            }
-
-            // Categories always carry Unicode property semantics (even ASCII
-            // members match through categories), so they decline
-            // ASCII-scoped consumers. The shared runner tests BMP scalars
-            // while the oracle tests astral halves, so every category
-            // program needs astral-free input.
-            if (instruction.Kind == Utf8SliceInstructionKind.Category)
-            {
-                astral = true;
-                category = true;
-            }
-
-            // Mixed category classes always carry Unicode property semantics
-            // (even ASCII-only mixes match non-ASCII members), so they
-            // decline ASCII-scoped consumers exactly like hybrids. The
-            // shared runner tests BMP scalars while the oracle tests astral
-            // halves, so every category-set program needs astral-free input.
-            if (instruction.Kind == Utf8SliceInstructionKind.CategorySet)
-            {
-                astral = true;
-                shorthand = true;
-            }
+            // These flags describe language features for consumers whose own
+            // predicates are ASCII-scoped; scalar execution needs no input fence.
+            shorthand |= instruction.Kind is Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet;
+            category |= instruction.Kind is Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet;
         }
 
         foreach (var instruction in lowerer.Instructions)
         {
-            Classify(instruction, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand, ref requiresUnicodeCategory);
-            if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand && requiresUnicodeCategory)
+            Classify(instruction, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand, ref requiresUnicodeCategory);
+            if (requiresUnicodeWordBoundary && requiresUnicodeShorthand && requiresUnicodeCategory)
             {
                 break;
             }
         }
 
-        // Lookbehind bodies run on the same bytes through the shared runner,
-        // so their markers hoist: a dot, negated class, or negated shorthand
-        // inside a body needs astral-free input exactly like the main stream.
-        // Bodies whose byte length is not fixed are also recorded for
-        // consumers whose native lookbehind is fixed-length only.
+        // Hoist nested language features and variable byte-length lookbehind
+        // facts for consumers with narrower native admission.
         var assertions = lowerer.Assertions.ToArray();
         var hasNonFixedLookbehind = false;
         foreach (var assertion in assertions)
@@ -700,7 +622,6 @@ internal static class Utf8SliceLowerer
             }
 
             // Hoist complete nested facts, including assertions below this body.
-            requiresAstralFreeInput |= assertion.Body.RequiresAstralFreeInput;
             requiresUnicodeWordBoundary |= assertion.Body.RequiresUnicodeWordBoundary;
             requiresUnicodeShorthand |= assertion.Body.RequiresUnicodeShorthand;
             requiresUnicodeCategory |= assertion.Body.RequiresUnicodeCategory;
@@ -741,12 +662,6 @@ internal static class Utf8SliceLowerer
             }
         }
 
-        // Whole-pattern greedy or lazy unbounded loops over unit-closed atoms
-        // run scalarwise exactly like BCL units on astral input, so they clear
-        // the astral-free requirement the instruction scan above may have set.
-        requiresAstralFreeInput = requiresAstralFreeInput && !IsAstralIndifferentWholeLoop(root, lowerer.MirrorExecute);
-        var halvesClosedEmptyLoop = IsHalvesClosedEmptyWholeLoop(root, lowerer.MirrorExecute);
-
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
             lowerer.SetMasks.ToArray(),
@@ -754,521 +669,11 @@ internal static class Utf8SliceLowerer
             lowerer.CategorySetMembers.ToArray(),
             lowerer.RepeatCount,
             lowerer.GroupCount,
-            requiresAstralFreeInput,
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, halvesClosedEmptyLoop, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
-    }
-
-    // R05: recognizes whole-pattern greedy or lazy unbounded loops whose scalar
-    // stepping matches BCL unit stepping on every input, making astral-free
-    // routing unnecessary. BCL can only start such a loop at a scalar boundary (a
-    // mid-scalar start needs the lead half to fail every branch while the trail
-    // half matches one, impossible when every branch is a single atom: positive
-    // atoms fail both halves while dots and negations match both), and the loop
-    // only stops at scalar boundaries (dots never fail; negations fail ASCII-only;
-    // ASCII atoms fail identically in both). Multi-atom branches with a divergent
-    // atom desynchronize mid-iteration (probed: ([^x]b)+ splits astral scalars in
-    // BCL but not in the runner), so only single atoms or fully indifferent
-    // branches qualify; nested captures would record different last-iteration spans
-    // and stay out, as do empty-capable bounds and right-to-left. Lazy loops
-    // transfer the same argument through first stops: minimum one is fenced
-    // above, so the first expansion leaves an indifferent head by one unit
-    // (BCL) or one scalar (runner), and both stop at the first scalar
-    // boundary where the indifferent tail meets, since tails only ever meet
-    // ASCII bytes while halves miss them exactly like BCL; wider expansions
-    // stay boundary-locked for the same reason, so every reachable success
-    // span is boundary-to-boundary on both sides and enumeration order
-    // agrees. Tailless lazy loops stay out: with no tail forcing a boundary
-    // stop, BCL succeeds minimally after one half (probed: `(.+?)` on astral
-    // input replaces four times for BCL against three whole-scalar runner
-    // matches), which scalar stepping cannot reproduce. Folding needs no
-    // fence: it only refines which BMP scalars
-    // meet ASCII atoms through the invariant pair (Kelvin included, still one
-    // scalar per BCL unit), while admitted atoms stay byte/mask-based or
-    // fold-neutral, the runner fold arms fail astral leads closed, and BCL
-    // halves miss positives while meeting negations, so the boundary argument
-    // holds folded exactly as unfolded. ASCII head/tail runs around the loop
-    // stay byte-aligned in both semantics for the same reason, so one checked
-    // loop with indifferent runs keeps the argument. Anything unmodeled fails
-    // closed to existing routing.
-    // R05: recognizes bare whole-pattern greedy star loops over halves-closed
-    // atoms for the string-core empty-capable arm (see HalvesClosedEmptyLoop).
-    // Only the shapes the indifference gate already clears for the byte cores
-    // qualify: captures, atomics, and flag-prefix single-survivor alternations
-    // unwrap transparently, and the surviving repeat must be greedy, unbounded,
-    // minimum-zero, body-safe, and halves-closed. Head/tail runs, lazy loops,
-    // higher minimums, and divergent bodies stay out exactly like the byte-side
-    // gate; anything unmodeled fails closed.
-    private static bool IsHalvesClosedEmptyWholeLoop(Utf8SliceNode root, bool rightToLeft)
-    {
-        if (rightToLeft)
-        {
-            return false;
-        }
-
-        var node = root;
-        while (true)
-        {
-            while (node is Utf8SliceNode.CaptureNode capture)
-            {
-                node = capture.Body;
-            }
-
-            while (node is Utf8SliceNode.AtomicNode atomic)
-            {
-                node = atomic.Body;
-            }
-
-            if (node is not Utf8SliceNode.AlternationNode alternation ||
-                alternation.Branches.Length != 1)
-            {
-                break;
-            }
-
-            Utf8SliceNode? survivor = null;
-            foreach (var member in alternation.Branches[0])
-            {
-                if (member is Utf8SliceNode.EmptyNode)
-                {
-                    continue;
-                }
-
-                if (survivor is not null)
-                {
-                    return false;
-                }
-
-                survivor = member;
-            }
-
-            if (survivor is null)
-            {
-                return false;
-            }
-
-            node = survivor;
-        }
-
-        return node is Utf8SliceNode.RepeatNode repeat &&
-            repeat.Minimum == 0 && repeat.Maximum == int.MaxValue && !repeat.Lazy &&
-            WholeLoopBodyIsSafe(repeat.Body) && WholeLoopBodyMatchesHalves(repeat.Body);
-    }
-
-    private static bool IsAstralIndifferentWholeLoop(Utf8SliceNode root, bool rightToLeft)
-    {
-        if (rightToLeft)
-        {
-            return false;
-        }
-
-        var node = root;
-        var lazySawTailAtom = false;
-        while (true)
-        {
-            // Lazy loops additionally need a real tail atom after the loop:
-            // literals, empty positive sets, and non-contiguous anchors force
-            // boundary stops, while a bare loop or a head-only loop lets BCL
-            // stop after one half. The flag is never reset: levels without a
-            // tail scan only unwrap transparent captures, atomics, or
-            // single-survivor sequences, so a scanned tail stays after the
-            // loop; a level with its own scan overwrites it. Greedy loops
-            // never need it (maximal swallowing stays boundary-safe) and the
-            // all-indifferent early return below has no loop at all.
-            // Captures and atomics are transparent to the stepping argument:
-            // captures only record spans while atomicity only prunes
-            // backtracking, which whole-pattern greedy loops never need on
-            // either side, so both unwrap exactly like the bare shape.
-            while (true)
-            {
-                if (node is Utf8SliceNode.CaptureNode capture)
-                {
-                    node = capture.Body;
-                    continue;
-                }
-
-                if (node is Utf8SliceNode.AtomicNode atomic)
-                {
-                    node = atomic.Body;
-                    continue;
-                }
-
-                break;
-            }
-
-            // A bare flag prefix like (?i) parses to a leading EmptyNode, so
-            // flag-prefixed shapes root at a single-branch alternation whose
-            // members form the real sequence (the parser keeps concatenations
-            // as flat branch arrays). One surviving node continues descent
-            // below; several survivors take the head/tail rule instead.
-            if (node is not Utf8SliceNode.AlternationNode alternation ||
-                alternation.Branches.Length != 1)
-            {
-                break;
-            }
-
-            var survivors = 0;
-            foreach (var member in alternation.Branches[0])
-            {
-                if (member is not Utf8SliceNode.EmptyNode)
-                {
-                    survivors++;
-                }
-            }
-
-            if (survivors == 0)
-            {
-                return false;
-            }
-
-            if (survivors == 1)
-            {
-                foreach (var member in alternation.Branches[0])
-                {
-                    if (member is not Utf8SliceNode.EmptyNode)
-                    {
-                        node = member;
-                        break;
-                    }
-                }
-
-                continue;
-            }
-
-            // Head/tail runs around one loop: leading and trailing indifferent
-            // atoms (ASCII literals or empty positive sets, folded or not)
-            // only ever meet ASCII bytes in both semantics while halves miss
-            // them exactly like BCL, and line/absolute/contiguous anchors only
-            // ever meet ASCII-determined positions (starts, ends, newline edges,
-            // chained origins) in both semantics, so the loop keeps its
-            // scalar-boundary start/stop argument and the runs stay aligned
-            // throughout (origins are scan starts and prior match ends, hence
-            // boundaries for indifferent shapes on every lane including
-            // FromOffset). Word boundaries join as head/tail atoms: BCL meets
-            // them only at scalar boundaries (a hold needs a full-scalar word
-            // neighbor, never a half), where the runner evaluates the same
-            // transition, so the loop keeps its argument and lazy tails stay
-            // pinned. Negated edges stay out: both halves are non-word, so BCL
-            // meets them mid-scalar where scalar stepping cannot follow.
-            // Anything but one checked loop left standing fails closed.
-            var members = alternation.Branches[0];
-            var head = 0;
-            while (head < members.Length &&
-                (members[head] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[head]) ||
-                members[head] is Utf8SliceNode.AnchorNode ||
-                (members[head] is Utf8SliceNode.BoundaryNode headEdge && headEdge.IsWordBoundary)))
-            {
-                head++;
-            }
-
-            var tail = members.Length - 1;
-            while (tail >= head &&
-                (members[tail] is Utf8SliceNode.EmptyNode || WholeLoopAtomIsIndifferent(members[tail]) ||
-                members[tail] is Utf8SliceNode.AnchorNode ||
-                (members[tail] is Utf8SliceNode.BoundaryNode tailEdge && tailEdge.IsWordBoundary)))
-            {
-                if (members[tail] is not Utf8SliceNode.EmptyNode)
-                {
-                    lazySawTailAtom = true;
-                }
-
-                tail--;
-            }
-
-            if (tail < head)
-            {
-                return true;
-            }
-
-            if (tail != head)
-            {
-                return false;
-            }
-
-            // One node left standing (a loop, or a capture around the
-            // remaining sequence like ^(a[^x]+b)$): descend and let the loop
-            // above unwrap it; anything else fails closed at the Repeat gate
-            // below exactly like the bare shape.
-            node = members[head];
-            continue;
-        }
-
-        // Minimum one stays exact under the boundary argument above. Higher
-        // greedy minimums over one halves-closed atom use a UTF-16 counter:
-        // consuming an astral scalar contributes two units. The unbounded
-        // greedy stop and indifferent head/tail keep every span aligned;
-        // bodies with iteration captures, multiple atoms, and lazy stops
-        // still need actual half-unit execution and stay out.
-        if (node is not Utf8SliceNode.RepeatNode repeat || repeat.Maximum != int.MaxValue ||
-            (repeat.Lazy && !lazySawTailAtom))
-        {
-            return false;
-        }
-
-        if (repeat.Minimum == 1)
-        {
-            return WholeLoopBodyIsSafe(repeat.Body);
-        }
-
-        if (repeat.Minimum > 1 && !repeat.Lazy && CanCountWholeLoopUtf16Units(repeat.Body))
-        {
-            return true;
-        }
-
-        // R05: greedy minimum-zero loops over halves-closed atoms (dots and
-        // member-free unfolded negated sets, which meet every surrogate half in
-        // both semantics) stay boundary-locked exactly like minimum-one loops:
-        // empties only ever arise at ASCII positions (halves always match the
-        // first iteration), non-empty matches end at scalar boundaries on both
-        // sides, and the one-unit/one-scalar empty advance coincides there, so
-        // global tiling agrees unit-for-unit. Lazy minimum-zero loops stay out
-        // (BCL stops minimally after one half with no tail forcing a boundary
-        // stop, exactly like tailless lazy plus), as does every other
-        // body (positive sets, shorthands, categories, and hybrids can all meet
-        // empty mid-scalar where scalar stepping cannot follow).
-        if (repeat.Minimum == 0 && !repeat.Lazy &&
-            WholeLoopBodyIsSafe(repeat.Body) && WholeLoopBodyMatchesHalves(repeat.Body))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    // One atom per iteration, with no captures inside the body. The existing
-    // atom qualifier proves uniform surrogate-half behavior for its scalar
-    // arm: admitted astral scalars contribute two units; atoms missing both
-    // halves never consume them. Transparent singleton sequences preserve
-    // that argument. Captures surrounding the whole loop stay exact.
-    private static bool CanCountWholeLoopUtf16Units(Utf8SliceNode node)
-    {
-        while (true)
-        {
-            switch (node)
-            {
-                case Utf8SliceNode.AlternationNode { Branches.Length: 1 } alternation when alternation.Branches[0].Length == 1:
-                    node = alternation.Branches[0][0];
-                    continue;
-                case Utf8SliceNode.ConcatNode { Children.Length: 1 } concat:
-                    node = concat.Children[0];
-                    continue;
-                case Utf8SliceNode.LiteralNode literal:
-                    return literal.Value is < 0xD800 or > 0xDFFF;
-                case Utf8SliceNode.DotNode:
-                case Utf8SliceNode.SetNode:
-                case Utf8SliceNode.ShorthandNode:
-                    // ASCII masks miss both halves; every shorthand member
-                    // has the same truth value on lead and trail surrogates.
-                    return true;
-                case Utf8SliceNode.CategoryNode category:
-                    return Utf8SliceHalvesMirror.TableHalvesVerdict(category.Mask, category.Ranges) != 2;
-                default:
-                    return WholeLoopAtomIsSafe(node);
-            }
-        }
-    }
-
-    private static bool WholeLoopBodyIsSafe(Utf8SliceNode node)
-    {
-        if (node is Utf8SliceNode.AlternationNode alternation)
-        {
-            if (alternation.Branches.Length == 0)
-            {
-                return false;
-            }
-
-            foreach (var branch in alternation.Branches)
-            {
-                if (!WholeLoopBranchIsSafe(branch))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        return WholeLoopBranchIsSafe([node]);
-    }
-
-    private static bool WholeLoopBranchIsSafe(Utf8SliceNode[] branch)
-    {
-        if (branch.Length == 0)
-        {
-            return false;
-        }
-
-        if (branch.Length == 1)
-        {
-            return WholeLoopAtomIsSafe(branch[0]);
-        }
-
-        foreach (var atom in branch)
-        {
-            if (!WholeLoopAtomIsIndifferent(atom))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Halves-closed bodies for greedy minimum-zero loops: every atom meets
-    // every surrogate half in both semantics (dots fail ASCII-only newlines;
-    // member-free unfolded negated sets exclude ASCII-only positives, which
-    // halves never meet), so the first iteration can never fail mid-scalar.
-    // Shorthands, hybrids, categories, positive sets, and folded sets stay out:
-    // their runner arms may fail astral leads the oracle halves would meet
-    // (or vice versa), which desynchronizes empty-match tiling.
-    private static bool WholeLoopBodyMatchesHalves(Utf8SliceNode node)
-    {
-        if (node is Utf8SliceNode.AlternationNode alternation)
-        {
-            if (alternation.Branches.Length == 0)
-            {
-                return false;
-            }
-
-            foreach (var branch in alternation.Branches)
-            {
-                if (!WholeLoopBranchMatchesHalves(branch))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        return WholeLoopBranchMatchesHalves([node]);
-    }
-
-    private static bool WholeLoopBranchMatchesHalves(Utf8SliceNode[] branch)
-    {
-        if (branch.Length == 0)
-        {
-            return false;
-        }
-
-        foreach (var atom in branch)
-        {
-            if (!WholeLoopAtomMatchesHalves(atom))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool WholeLoopAtomMatchesHalves(Utf8SliceNode node)
-    {
-        switch (node)
-        {
-            case Utf8SliceNode.DotNode:
-                return true;
-            case Utf8SliceNode.SetNode set:
-                return set.Negated && !set.FoldCase && (set.Members is null || set.Members.Length == 0);
-            default:
-                return false;
-        }
-    }
-
-    private static bool WholeLoopAtomIsSafe(Utf8SliceNode node)
-    {
-        switch (node)
-        {
-            case Utf8SliceNode.LiteralNode literal:
-                return literal.Value is < 0xD800 or > 0xDFFF;
-            case Utf8SliceNode.DotNode:
-                return true;
-            case Utf8SliceNode.SetNode set:
-                if (set.Negated)
-                {
-                    return true;
-                }
-
-                if (set.Members is null)
-                {
-                    return false;
-                }
-
-                foreach (var member in set.Members)
-                {
-                    if ((int)member % 2 == 0)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            case Utf8SliceNode.ShorthandNode shorthand:
-                return (int)shorthand.Shorthand % 2 == 1;
-            // Category sets mirror halves through the shared verdict: the runner
-            // consumes exactly when halves match, so the first-stop argument
-            // transfers for every uniform set (miss-both or match-both members
-            // alike, either parity). Split members stay out since lead and trail
-            // halves would desynchronize iteration like divergent branches.
-            case Utf8SliceNode.CategorySetNode categorySet:
-                if (categorySet.Members is null || categorySet.Categories is null)
-                {
-                    return false;
-                }
-
-                var categorySetMemberBits = 0;
-                foreach (var shorthandMember in categorySet.Members)
-                {
-                    categorySetMemberBits |= 1 << (int)shorthandMember;
-                }
-
-                return Utf8SliceHalvesMirror.CategorySetHalvesVerdict(categorySetMemberBits, categorySet.Categories) != 2;
-            // The standing minimum-one qualifier admits tables whose positive
-            // side misses both halves. The higher-minimum qualifier above
-            // additionally admits uniformly matching tables such as Cs through
-            // the runner's shared half verdict. Split surrogate blocks remain
-            // outside both aligned-loop qualifiers.
-            case Utf8SliceNode.CategoryNode category:
-                return PositiveTableMissesHalves(category.Mask, category.Ranges);
-            default:
-                return false;
-        }
-    }
-
-    // Positive tables miss halves unless they cover surrogates (the Cs mask
-    // bit, or a block range overlapping U+D800-U+DFFF). Keep the conservative
-    // minimum-one gate separate from the higher-minimum uniform-half proof.
-    private static bool PositiveTableMissesHalves(uint mask, ushort[] ranges)
-    {
-        if ((mask & (1u << (int)System.Globalization.UnicodeCategory.Surrogate)) != 0)
-        {
-            return false;
-        }
-
-        for (var range = 0; range + 1 < ranges.Length; range += 2)
-        {
-            if (ranges[range] < 0xE000 && ranges[range + 1] > 0xD800)
-            {
-                return false;
-            }
-        }
-
-        return (ranges.Length & 1) == 0 || ranges[ranges.Length - 1] > 0xDFFF;
-    }
-
-    private static bool WholeLoopAtomIsIndifferent(Utf8SliceNode node)
-    {
-        switch (node)
-        {
-            case Utf8SliceNode.LiteralNode literal:
-                return literal.Value is < 0xD800 or > 0xDFFF;
-            case Utf8SliceNode.SetNode set:
-                return !set.Negated && (set.Members is null || set.Members.Length == 0);
-            default:
-                return false;
-        }
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
     }
 
     private sealed class Lowering

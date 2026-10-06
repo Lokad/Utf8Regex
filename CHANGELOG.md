@@ -31,8 +31,13 @@
   literal runs and their quantifiers lower to scalar instructions, including RTL.
 - Explicit UTF-16 start APIs reject positions inside a supplementary scalar.
   UTF-16 result coordinates remain derived interoperability data.
+- Owned categories, shorthands, class unions/subtraction and word boundaries
+  classify complete Unicode scalars, including supplementary letters and digits.
+  Range complements retain negation above U+FFFF. Removed the surrogate verdict
+  helper, half census, astral input fences and whole-loop UTF-16 parity proofs.
+  Lookbehind byte bounds include four-byte literals and Unicode class members.
 - Direct scalar operation, capture, replacement, cancellation and scratch-admission
-  regressions replace the retired unit-subject suite. Character classes/categories,
+  regressions replace the retired unit-subject suite. Full-plane literal classes/ranges,
   PythonRe's UTF-16 compensation patterns, remaining BCL/unit routes and the wider
   parity test migration are unfinished. This is not full scalar qualification.
 

@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-// Authoritative owned grammar for planning and shared UTF-16 VM lowering.
+// Authoritative owned grammar for planning and scalar UTF-8 VM lowering.
 // Lexical options, class subtraction, captures and references are resolved
 // once. The VM consumes this tree and its capture catalog without reparsing.
 // Unadmitted syntax, excessive nesting and unrepresentable class payloads
@@ -1165,7 +1165,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             if ((state.Options & RegexOptions.ECMAScript) != 0 &&
-                TryEcmaShorthand(state.Pattern[state.Position + 1], units))
+                TryEcmaShorthand(state.Pattern[state.Position + 1], units, categories))
             {
                 state.Position += 2;
                 return true;
@@ -1206,9 +1206,9 @@ internal static class Utf8OwnedTreeParser
             }
         }
 
-        static bool TryEcmaShorthand(char head, List<char> units)
+        static bool TryEcmaShorthand(char head, List<char> units, List<char> categories)
         {
-            char[] ranges = head switch
+            ushort[] ranges = head switch
             {
                 'd' or 'D' => ['0', ':'],
                 's' or 'S' => ['\t', '\x0e', ' ', '!'],
@@ -1216,18 +1216,9 @@ internal static class Utf8OwnedTreeParser
                 _ => [],
             };
             if (ranges.Length == 0) return false;
-            if (head is 'd' or 's' or 'w') units.AddRange(ranges);
-            else
-            {
-                var low = (char)0;
-                for (var index = 0; index < ranges.Length; index += 2)
-                {
-                    if (low < ranges[index]) { units.Add(low); units.Add(ranges[index]); }
-                    low = ranges[index + 1];
-                }
-                units.Add(low);
-                units.Add((char)0);
-            }
+            if (head is 'd' or 's' or 'w')
+                foreach (var endpoint in ranges) units.Add((char)endpoint);
+            else Utf8OwnedCharClass.AddRangePredicate(categories, ranges, true);
             return true;
         }
 
@@ -1282,7 +1273,8 @@ internal static class Utf8OwnedTreeParser
 
             if (Utf8SliceCategories.TryResolve(name, out _, out var blockRanges, out var isBlock) && isBlock)
             {
-                AddBlockRanges(units, blockRanges, invert);
+                if (invert) Utf8OwnedCharClass.AddRangePredicate(categories, blockRanges, true);
+                else AddBlockRanges(units, blockRanges);
                 return true;
             }
 
@@ -1368,39 +1360,12 @@ internal static class Utf8OwnedTreeParser
             }
         }
 
-        static void AddBlockRanges(List<char> units, ushort[] blockRanges, bool invert)
+        static void AddBlockRanges(List<char> units, ushort[] blockRanges)
         {
-            if (!invert)
-            {
-                for (var i = 0; i < blockRanges.Length; i += 2)
-                {
-                    var first = blockRanges[i];
-                    var last = i + 1 < blockRanges.Length ? blockRanges[i + 1] - 1 : 0xFFFF;
-                    units.Add((char)first);
-                    units.Add((char)(last + 1));
-                }
-
-                return;
-            }
-
-            var uncovered = 0;
             for (var i = 0; i < blockRanges.Length; i += 2)
             {
-                var first = blockRanges[i];
-                var last = i + 1 < blockRanges.Length ? blockRanges[i + 1] - 1 : 0xFFFF;
-                if (uncovered < first)
-                {
-                    units.Add((char)uncovered);
-                    units.Add((char)first);
-                }
-
-                uncovered = last + 1;
-            }
-
-            if (uncovered <= 0xFFFF)
-            {
-                units.Add((char)uncovered);
-                units.Add(unchecked((char)(0xFFFF + 1)));
+                units.Add((char)blockRanges[i]);
+                units.Add(i + 1 < blockRanges.Length ? (char)blockRanges[i + 1] : (char)0);
             }
         }
         static IEnumerable<OwnedParseRequest> ParseNamedGroup(OwnedParseContext context, int depth)

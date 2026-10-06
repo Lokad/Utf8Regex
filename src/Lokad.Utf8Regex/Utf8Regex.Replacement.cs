@@ -198,16 +198,11 @@ public sealed partial class Utf8Regex
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
         }
 
-        // R05: owned replacement advances scalar-wise, so astral inputs need shapes
-        // whose matches start at scalar boundaries (see OwnedMatchStartsAreScalarAligned);
-        // unit-servable literal templates replace unit-aware past this gate below, as do
-        // slice-served shapes through the slice arm (empty-capable ones only when
-        // halves-closed: other empty loops tile half-gap empties unit-wise in BCL
-        // but scalar-wise in the runner, so only halves-closed shapes agree);
-        // everything else replaces through the BCL fallback exactly.
+        // Remaining native replacement routes require scalar-aligned endpoints.
+        // Every owned slice already supplies them, including empty matches.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || _sliceProgram.HalvesClosedEmptyLoop))))
+              (_sliceProgram is not null)))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -292,7 +287,7 @@ public sealed partial class Utf8Regex
         // slice arm; everything else keeps BCL routing below.
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
+              (_sliceProgram is not null && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),

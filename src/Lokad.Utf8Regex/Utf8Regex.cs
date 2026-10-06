@@ -551,13 +551,14 @@ public sealed partial class Utf8Regex
              _ownedSliceProgram.IgnoreCase &&
                 (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
                  ShouldUseKelvinSignFallback(input)) ||
-             _ownedSliceProgram.IgnoreCase && (Options & RegexOptions.IgnoreCase) == 0 && !Utf8InputAnalyzer.IsAscii(input) ||
              _hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
-             // ASCII structural kernels cannot apply Unicode whitespace or
-             // project UTF-16 coordinates from byte offsets on mixed subjects.
-             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily && !Utf8InputAnalyzer.IsAscii(input) ||
-             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !Utf8InputAnalyzer.IsAscii(input) ||
-             !_ownedSliceProgram.ServesInput(input)))
+             // Exact byte literals already preserve scalar endpoints. Native
+             // boundary/class predicates need scalar qualification before they
+             // can serve mixed subjects without the shared owned VM.
+             !Utf8InputAnalyzer.IsAscii(input) &&
+                (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
+                    NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals) ||
+                 _preparedRegex.SearchPlan.HasBoundaryRequirements)))
             return _ownedSliceProgram;
         return null;
     }
@@ -3149,7 +3150,7 @@ public sealed partial class Utf8Regex
         // below; count 1 keeps the BCL tail while count 0 means unlimited here.
         if ((count == 0 || count > 1) &&
             !RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) &&
-            _sliceProgram is not null && _sliceProgram.RightToLeft && _sliceProgram.ServesInput(input))
+            _sliceProgram is not null && _sliceProgram.RightToLeft)
         {
             var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
             var rtlDecoded = rtlAnalysis.GetDecodedString();
@@ -3281,7 +3282,7 @@ public sealed partial class Utf8Regex
         // while count 1 throws inside its first MoveNext). Right-to-left splits keep
         // legacy routing until the enumerator stages buffered right-to-left ranges
         // (segments stay positional while discovery runs right-to-left).
-        if (count > 1 && _sliceProgram is not null && !_sliceProgram.RightToLeft && _sliceProgram.ServesInput(input))
+        if (count > 1 && _sliceProgram is not null && !_sliceProgram.RightToLeft)
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             var decoded = analysis.GetDecodedString();
@@ -3461,7 +3462,7 @@ public sealed partial class Utf8Regex
         if (!OwnedMatchStartsAreScalarAligned(input) &&
             !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) &&
               (GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (_sliceProgram is not null && _sliceProgram.ServesInput(input) && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
+              (_sliceProgram is not null && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),

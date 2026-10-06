@@ -299,6 +299,17 @@ internal static class Utf8OwnedTreeSliceLowerer
         {
             for (var index = 0; index < encoded.Length; index++)
             {
+                if (encoded[index] == Utf8OwnedCharClass.RangePredicateCode)
+                {
+                    if (index + 2 >= encoded.Length) return false;
+                    var negated = encoded[++index] != 0;
+                    var length = encoded[++index];
+                    if (length > encoded.Length - index - 1) return false;
+                    var ranges = new ushort[length];
+                    for (var range = 0; range < length; range++) ranges[range] = encoded[++index];
+                    categories.Add(new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(0, ranges), negated));
+                    continue;
+                }
                 var code = (short)encoded[index];
                 if (code is 100 or -100)
                 {
