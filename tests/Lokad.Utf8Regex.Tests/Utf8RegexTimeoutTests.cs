@@ -150,9 +150,12 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
     }
     [Fact]
-    public void FiniteTimeoutNeverBreaksFastPaths()
+    public void FiniteTimeoutPreservesFastPathResultsWithinBudget()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        // This checks finite-policy route compatibility. Cold JIT and scheduler
+        // time can exceed1ms, and projection now checks that original deadline.
+        // Explicit expiration is covered by the timeout and projection witnesses.
+        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
         var input = Encoding.UTF8.GetBytes("xxabcxx");
 
         Assert.True(regex.IsMatch(input));
