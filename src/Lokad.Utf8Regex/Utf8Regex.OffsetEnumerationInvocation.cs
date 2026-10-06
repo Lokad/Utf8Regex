@@ -45,7 +45,7 @@ public sealed partial class Utf8Regex
             {
                 var ownedReservation = reservation;
                 reservation = 0;
-                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, map, ref invocation, ownedReservation, start.Value);
+                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, start.Value);
             }
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
             return true;

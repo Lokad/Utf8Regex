@@ -328,7 +328,17 @@ internal ref partial struct Utf8OperationMatchCursor
         _baseUtf16Offset = 0;
         _sliceProgram = program;
         _sliceInvocation = invocation;
-        _sliceSubject = Utf8SliceUnitSubject.Create(input, map, ref _sliceInvocation);
+        _sliceInvocation.ShareStorageForCursor();
+        try
+        {
+            _sliceSubject = Utf8SliceUnitSubject.Create(input, map, ref _sliceInvocation);
+            _sliceSubject.ShareStorageForCursor(ref _sliceInvocation);
+        }
+        catch
+        {
+            _sliceSubject.AbortBeforePublication(ref _sliceInvocation);
+            throw;
+        }
         _sliceUnit = 0;
         _sliceOriginUnit = -1;
         _mode = EnumeratorMode.OwnedSlice;
@@ -340,9 +350,11 @@ internal ref partial struct Utf8OperationMatchCursor
         Utf8ValidationResult validation, scoped ref Utf8SliceInvocation invocation, bool retainMap,
         out Utf8BoundaryMap map)
     {
+        invocation.ShareStorageForCursor();
         map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var reservation);
         try
         {
+            map = map.WithStorageLease(invocation.Ledger.CreateLease(reservation));
             var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
             cursor._boundaryMapReservedBytes = reservation;
             cursor._retainBoundaryMapReservation = retainMap;
@@ -350,17 +362,20 @@ internal ref partial struct Utf8OperationMatchCursor
         }
         catch
         {
+            if (map.StorageLease is { } lease) lease.AbortBeforePublication();
+            else invocation.Ledger.Release(reservation);
             map = default;
-            invocation.Ledger.Release(reservation);
             throw;
         }
     }
 
     internal static Utf8OperationMatchCursor CreateMappedFromUnit(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map, scoped ref Utf8SliceInvocation invocation, ulong reservation, int startUnit)
+        scoped ref Utf8BoundaryMap map, scoped ref Utf8SliceInvocation invocation, ulong reservation, int startUnit)
     {
+        invocation.ShareStorageForCursor();
         try
         {
+            map = map.WithStorageLease(invocation.Ledger.CreateLease(reservation));
             var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
             cursor._boundaryMapReservedBytes = reservation;
             cursor._sliceUnit = startUnit;
@@ -369,7 +384,9 @@ internal ref partial struct Utf8OperationMatchCursor
         }
         catch
         {
-            invocation.Ledger.Release(reservation);
+            if (map.StorageLease is { } lease) lease.AbortBeforePublication();
+            else invocation.Ledger.Release(reservation);
+            map = default;
             throw;
         }
     }
@@ -377,8 +394,9 @@ internal ref partial struct Utf8OperationMatchCursor
     internal void ReleaseOwnedBoundaryMap()
     {
         if (_retainBoundaryMapReservation) return;
+        if (_boundaryMap?.StorageLease is null)
+            _sliceInvocation.Ledger.Release(_boundaryMapReservedBytes);
         _boundaryMap = null;
-        _sliceInvocation.Ledger.Release(_boundaryMapReservedBytes);
         _boundaryMapReservedBytes = 0;
     }
 
@@ -403,6 +421,7 @@ internal ref partial struct Utf8OperationMatchCursor
     private bool MoveNextOwnedSlice()
     {
         var slots = new Utf8SliceSlots([], []);
+        var subjectLease = _sliceSubject.StorageLease;
         try
         {
             // A new MoveNext and result publication are operation boundaries,
@@ -519,6 +538,9 @@ internal ref partial struct Utf8OperationMatchCursor
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
+            // The VM receives the private byte span separately from its lease.
+            // Keep the descriptor rooted through the last span read and cleanup.
+            GC.KeepAlive(subjectLease);
         }
     }
 

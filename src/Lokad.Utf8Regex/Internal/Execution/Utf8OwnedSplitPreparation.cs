@@ -14,11 +14,14 @@ internal static class Utf8OwnedSplitPreparation
         var cursor = default(Utf8OperationMatchCursor);
         var cursorCreated = false;
         var transferred = false;
+        var map = default(Utf8BoundaryMap);
         try
         {
+            invocation.ShareStorageForCursor();
             var validation = Utf8Validation.Validate(input, ref invocation);
-            var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapBytes);
+            map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapBytes);
             var decoded = Utf8DecodedInput.Create(input, validation, ref invocation, out decodedBytes);
+            map = map.WithStorageLease(invocation.Ledger.CreateLease(checked(mapBytes + decodedBytes)));
             cursor = Utf8OperationMatchCursor.CreateSplitCursor(program, input, map, invocation,
                 mapBytes, decodedBytes, effectiveCount == 1);
             cursorCreated = true;
@@ -32,9 +35,13 @@ internal static class Utf8OwnedSplitPreparation
         {
             if (!transferred)
             {
-                if (cursorCreated) cursor.AbortOwnedSplitMatches();
-                invocation.Ledger.Release(decodedBytes);
-                invocation.Ledger.Release(mapBytes);
+                if (cursorCreated) cursor.AbortOwnedSplitSetup();
+                else if (map.StorageLease is { } lease) lease.AbortBeforePublication();
+                else
+                {
+                    invocation.Ledger.Release(decodedBytes);
+                    invocation.Ledger.Release(mapBytes);
+                }
             }
         }
     }

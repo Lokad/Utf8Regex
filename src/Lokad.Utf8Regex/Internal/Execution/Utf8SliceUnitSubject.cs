@@ -10,6 +10,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal ref struct Utf8SliceUnitSubject
 {
     private ulong _reservedBytes;
+    private Utf8StorageLease? _storageLease;
+    internal readonly Utf8StorageLease? StorageLease => _storageLease;
     internal ReadOnlySpan<byte> Input;
     internal Utf8BoundaryMap Map;
 
@@ -153,5 +155,20 @@ internal ref struct Utf8SliceUnitSubject
         }
         Input = default;
         Map = default;
+        // Dropping one holder cannot release a loan still used by its copy.
+        _storageLease = null;
+    }
+
+    internal void ShareStorageForCursor(ref Utf8SliceInvocation invocation)
+    {
+        if (_reservedBytes == 0) return;
+        _storageLease = invocation.Ledger.CreateLease(_reservedBytes);
+        _reservedBytes = 0;
+    }
+
+    internal void AbortBeforePublication(ref Utf8SliceInvocation invocation)
+    {
+        _storageLease?.AbortBeforePublication();
+        Release(ref invocation);
     }
 }

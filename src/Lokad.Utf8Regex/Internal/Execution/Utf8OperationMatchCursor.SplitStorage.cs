@@ -36,4 +36,14 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceSubject.Release(ref _sliceInvocation);
         _sliceProgram = null;
     }
+
+    internal void AbortOwnedSplitSetup()
+    {
+        _sliceSubject.AbortBeforePublication(ref _sliceInvocation);
+        _boundaryMap?.StorageLease?.AbortBeforePublication();
+        _boundaryMap = null;
+        _boundaryMapReservedBytes = 0;
+        _splitDecodedReservedBytes = 0;
+        _sliceProgram = null;
+    }
 }

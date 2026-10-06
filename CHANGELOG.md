@@ -1,6 +1,8 @@
 # Changelog
 
-- Metered invocation copies now share cumulative work/depth counters from operation entry through lazy cursor advances. Copying a value match or split enumerator keeps its position independent without restarting the work allowance or deterministic cancellation cadence. Infinite `CancellationToken.None` calls without diagnostics retain inline counters. Shared storage leases, object-overhead admission, getter/result bounds and public finite core/Python policies remain open.
+- Owned mapped match cursors and split views now share payload leases. Ending one cursor copy leaves another copy's prepared subject and coordinate map charged and usable; abandoned holders release their loans through collection. Split views retain coordinate and decoded payloads after EOF or cancellation. Failed setup releases its own loans immediately. Controlled invocation copies share one aggregate storage ledger. Fixed object overhead, getter/result bounds, other routes and public finite core/Python policies remain open.
+
+- Metered invocation copies now share cumulative work/depth counters from operation entry through lazy cursor advances. Copying a value match or split enumerator keeps its position independent without restarting the work allowance or deterministic cancellation cadence. Infinite `CancellationToken.None` calls without diagnostics retain inline counters unless a forkable cursor needs a shared storage owner. Object-overhead admission, getter/result bounds and public finite core/Python policies remain open.
 
 - The PCRE2 profile rejects capture definitions whose names start with a decimal digit before selecting an execution backend. This corrects accidental .NET-style numeric capture admission and lost sparse capture results in 0.3.0. Ordinary numeric slots and backreferences retain PCRE2 semantics; the core .NET profile continues to support explicit numeric definitions.
 

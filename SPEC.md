@@ -64,10 +64,18 @@ copying a value enumerator preserves its independent position without restarting
 that work allowance or the diagnostic polling cadence. Separate operations create
 separate counter owners. This synchronous internal owner is not a public shared
 meter and does not support concurrent advancement of copies. Infinite None-token
-calls without diagnostics retain inline counters. Storage ledgers/leases,
-copied/abandoned storage ownership, lazy getter/result bounds and fixed metadata
-overhead still require their own admission work; counter sharing does not establish
-those guarantees or enable the core's unsupported finite public policies.
+calls without diagnostics retain inline counters unless a forkable cursor needs
+a shared storage owner. Controlled invocation copies share their aggregate ledger.
+Owned mapped cursors and split views retain shared leases for coordinate, decoded
+and private unit payloads. EOF or failure drops one holder; payload remains charged
+while another copy or view holds it. After the last holder is collected, cleanup
+queues a release which the synchronous ledger drains before its next read or
+admission. Abandoned cursors require no explicit disposal. Setup failure before
+publication releases its payload loans immediately, preserving borrowed storage.
+These leases cover exact managed payloads, with no pooled/native cleanup in their
+finalizers. Lazy getter/result bounds, other execution routes and fixed object
+overhead still require admission work; this does not enable the core's unsupported
+finite public policies or establish a complete memory cap.
 
 The core library defines no work, depth, or memory budgets; the only configured cap is the instance `MatchTimeout` (default `Regex.InfiniteMatchTimeout`, i.e. unlimited). The shared `Utf8ResourcePolicy` (nullable work-steps, depth, working-bytes, and result-bytes budgets plus an `Unlimited` singleton) is accepted by an explicit constructor overload for forward compatibility, but any finite budget is rejected loudly with `NotSupportedException`: this profile enforces only match timeouts. Finite behavior beyond timeouts is opt-in future API, never silent and never safe-by-default without evidence.
 
