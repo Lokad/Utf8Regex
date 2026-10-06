@@ -116,7 +116,7 @@ public sealed partial class Utf8PythonRegex
         out byte[] resultBytes,
         out int replacementCount)
     {
-        if (count < 0 ||
+        if (_canMatchEmpty || count < 0 ||
             startOffsetInBytes != 0 ||
             !_canUseZeroOffsetUtf8ValueFastPath ||
             _utf8Regex is null ||
