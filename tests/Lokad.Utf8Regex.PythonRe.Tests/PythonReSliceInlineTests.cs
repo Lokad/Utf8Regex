@@ -22,21 +22,18 @@ public sealed class PythonReSliceInlineTests
         return new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
     }
 
-    // R03 inline options for the Python profile: the translator passes
-    // scoped i/m/s/x flags through verbatim onto the owned core slice
-    // (dots are rewritten scalar-exact first and decline, like bare dots;
-    // a leading toggle is hoisted into the translation options instead).
-    // Ground truths are CPython 3.13.2 with UTF-16 offsets.
+    // Resolve folding into scalar classes before lowering; preserve other
+    // lexical options and CPython 3.13.2 operation/coordinate assertions.
     [Theory]
-    [InlineData("(?m:^a)+")]
-    [InlineData("(?i:ab)+")]
-    [InlineData("(a)(?i:b)+")]
-    [InlineData("(?im:ab)+")]
-    [InlineData("(?-i:ab)+")]
-    public void InlineShapesRouteOwned(string pattern)
+    [InlineData("(?m:^a)+", "(?m:^a)+")]
+    [InlineData("(?i:ab)+", "(?i:[Aa][Bb])+")]
+    [InlineData("(a)(?i:b)+", "(a)(?i:[Bb])+")]
+    [InlineData("(?im:ab)+", "(?im:[Aa][Bb])+")]
+    [InlineData("(?-i:ab)+", "(?-i:ab)+")]
+    public void InlineShapesRouteOwned(string pattern, string translated)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(pattern, regex.DebugTranslatedPattern);
+        Assert.Equal(translated, regex.DebugTranslatedPattern);
         AssertOwnedBackends(regex);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
@@ -49,15 +46,17 @@ public sealed class PythonReSliceInlineTests
     public void RewrittenAndHoistedShapesKeepTheirQualifiedRoutes(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(pattern.Contains('.') || pattern.Contains("(?x:", StringComparison.Ordinal), regex.DebugUsesOwnedSlice);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
     public void LeadingToggleHoistsIntoTranslationOptions()
     {
         var regex = new Utf8PythonRegex("(?i)a+", PythonReCompileOptions.None);
-        Assert.Equal("a+", regex.DebugTranslatedPattern);
-        Assert.False(regex.DebugUsesOwnedSlice);
+        Assert.Equal("(?:[Aa])+", regex.DebugTranslatedPattern);
+        Assert.True(regex.DebugUsesOwnedSlice);
+        Assert.True(regex.FullMatch("aA"u8).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
 
     [Fact]

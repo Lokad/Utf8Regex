@@ -14,8 +14,8 @@ The implementation is parser-first:
 
 1. parse Python-style source into a PythonRe AST
 2. validate Python-specific semantic constraints
-3. render owned scalar atoms/ranges for `Utf8Regex`, including newline scopes and Python-specific case expansions
-4. reuse admitted core scalar programs even where its default route chooses a native plan
+3. resolve lexical case rules and capture identities in the Python AST, then lower it to the shared scalar VM
+4. render exact scalar atoms/ranges for retained native `Utf8Regex` controls; reuse the owned class decoder for profile atoms
 5. retain the separate managed-compatible rendering only for remaining managed callers during migration; remove their execution and compensation code under PLAN.md R04/R05. The semantic authority remains the pinned CPython 3.13.2 `str`-pattern oracle
 
 The native rendering consumes complete scalars. Supplementary class members and ranges use numeric scalar endpoints, rather than separate surrogate classes. Python's separate `\uD800`/`\uDC00` escapes denote separate surrogate atoms and cannot combine into a scalar; they cannot match strict UTF-8. A raw supplementary character or `\U00010000` escape denotes one scalar. A surrogate-only class contains no valid scalar, and its negation admits valid scalars. Captures retain primary byte ranges and derived UTF-16 coordinates. This describes native admission, not completion of every managed caller or resource gate.
@@ -91,19 +91,18 @@ This profile is still incomplete. In particular:
 * `LOCALE` semantics are intentionally unsupported; this profile is culture-invariant by construction
 * `\N{...}` named Unicode escapes are intentionally unsupported; a faithful resolver would require embedding a large Unicode-name table, which is out of scope under the package-size constraint
 * the execution classifier for `Utf8Regex` is conservative by design
-* case-insensitive backreference comparison follows BCL invariant folding, which
-  agrees with CPython `TOLOWER` comparison everywhere except U+0130
-  participation: `(i)\1` against `i\u0130` and `(\u0130)\1` against
-  `\u0130i` do not match here while CPython matches. All other BMP backreference
-  shapes compare identically; astral scalars agree completely
-* scoped `(?a:...)` regions under a case-insensitive Unicode pattern use backend
-  folding and cannot exclude non-ASCII fold partners: `(?a:k)` matches U+212A
-  here while CPython rejects it. Top-level ASCII runs the backend
-  case-sensitively with fully explicit expansions and is exact, except
-  backreferences over multi-character groups, which compare exactly instead of
-  ASCII-folding (single-ASCII-character groups name both variants explicitly)
-* Unicode-scoped backreferences under top-level ASCII compare exactly instead of
-  folding: `(?u:(i)\1)` against `iI` misses here while CPython matches
+* admitted scalar programs use owned CPython 3.13.2 / Unicode 15.1.0 case data.
+  Unicode literals and classes include simple-lower inverses and the extra
+  literal partners. Backreferences compare the captured/input scalars using
+  simple lowercase only; they do not apply the literal-only partners. ASCII
+  scopes fold ASCII letters only, and references follow the flags at the
+  reference rather than the capture. Supplementary case pairs consume one
+  scalar on each side even when their byte widths differ. The former Turkic,
+  scoped-ASCII, Unicode-under-ASCII and complex ASCII-reference regressions
+  now execute and pass. See the [CPython compiler](https://github.com/python/cpython/blob/v3.13.2/Lib/re/_compiler.py)
+  for the profile distinction; the shipped code owns its implementation and
+  derived data. `python tools/generate-pythonre-scalar-case-data.py --check`
+  verifies the pinned data with CPython 3.13.2; no Python runtime is shipped.
 * native direct matching, detailed discovery and Count now classify supplementary
   word/digit members and scalar-adjacent boundaries through the owned core. The
   existing CPython category spellings remain `[\p{L}\p{N}_]` for `\w`,
@@ -112,8 +111,11 @@ This profile is still incomplete. In particular:
   now serve captured/global iteration, empty-capable result shaping, substitution
   and split with Python's same-position nonempty retry. Capture snapshots preserve
   Python numbering and normalized scalar byte ranges, including lookbehind.
-  Remaining case-folding/unserved managed callers and their compensation are
-  R04/R05 debt; Unicode-data version reconciliation and finite/result/output
+  One-shot search/match/fullmatch and detailed data likewise use the profile
+  scalar program, with byte starts and the original assertion context. FullMatch
+  adds an end assertion before discovery so alternatives can backtrack to a
+  complete result. Unserved managed callers and their compensation remain
+  R04/R05 debt; category-version reconciliation and finite/result/output
   resource bounds remain separate gates.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch

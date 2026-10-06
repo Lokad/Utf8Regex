@@ -130,29 +130,28 @@ public sealed class PythonIgnoreCaseRegressionTests
         Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase).FullMatch(Encoding.UTF8.GetBytes(input)).Success);
     }
 
-    // Dispositioned edges (see SPEC-PYTHONRE "Deliberate boundaries"): engine-internal
-    // backreference comparison and scoped-ASCII regions under a folding backend
-    // cannot distinguish fold partners. These pin the CPython expectations.
-    [Fact(Skip = "Engine backreference comparison cannot see U+0130; see SPEC-PYTHONRE.")]
+    // Previously managed-folding gaps: owned scalar classes and lexical
+    // reference lowercase policies must preserve these CPython expectations.
+    [Fact]
     public void TurkicBackreferenceStaysPinnedToCpython()
     {
         Assert.True(new Utf8PythonRegex("(i)\\1", PythonReCompileOptions.IgnoreCase).Search(Encoding.UTF8.GetBytes("i\u0130")).Success);
         Assert.True(new Utf8PythonRegex("(\u0130)\\1", PythonReCompileOptions.IgnoreCase).Search(Encoding.UTF8.GetBytes("\u0130i")).Success);
     }
 
-    [Fact(Skip = "Scoped ASCII under a folding backend cannot exclude U+212A; see SPEC-PYTHONRE.")]
+    [Fact]
     public void ScopedAsciiKelvinStaysPinnedToCpython()
     {
         Assert.False(new Utf8PythonRegex("(?a:k)", PythonReCompileOptions.IgnoreCase).Search(Encoding.UTF8.GetBytes("\u212A")).Success);
     }
 
-    [Fact(Skip = "Unicode-scoped backreferences under ASCII-top-level compare exactly; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AsciiTopUnicodeScopedBackreferenceStaysPinnedToCpython()
     {
         Assert.True(new Utf8PythonRegex("(?u:(i)\\1)", PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase).Search(Encoding.UTF8.GetBytes("iI")).Success);
     }
 
-    [Fact(Skip = "ASCII-top-level backreferences need capture-independent classes; see SPEC-PYTHONRE.")]
+    [Fact]
     public void AsciiComplexBackreferenceStaysPinnedToCpython()
     {
         Assert.True(new Utf8PythonRegex("([kj])\\1", PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase).Search(Encoding.UTF8.GetBytes("kK")).Success);

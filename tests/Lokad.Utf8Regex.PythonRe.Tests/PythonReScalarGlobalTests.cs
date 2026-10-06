@@ -12,6 +12,10 @@ public sealed partial class PythonReScalarGlobalTests
     [MemberData(nameof(GlobalCases))]
     public void ScalarGlobalsMatchCpython(string pattern, string subject, int start, int limit,
         string replacement, string expectedJson)
+        => AssertFrozenGlobalControls(pattern, subject, start, limit, replacement, expectedJson, PythonReCompileOptions.None);
+
+    internal static void AssertFrozenGlobalControls(string pattern, string subject,
+        int start, int limit, string replacement, string expectedJson, PythonReCompileOptions options)
     {
         using var expected = JsonDocument.Parse(expectedJson);
         var e = expected.RootElement;
@@ -20,7 +24,7 @@ public sealed partial class PythonReScalarGlobalTests
         {
             using var source = new CancellationTokenSource();
             var token = live ? source.Token : CancellationToken.None;
-            var regex = new Utf8PythonRegex(pattern);
+            var regex = new Utf8PythonRegex(pattern, options);
             var detailed = regex.FindIterDetailed(input, start, token);
             var values = e.GetProperty("matches").Deserialize<string[]>() ?? [];
             Assert.Equal(values, detailed.Select(static m => m.Value.ValueText));

@@ -15,10 +15,43 @@ public sealed partial class Utf8PythonRegex
         cursor = default;
         if (ScalarProgram is not { } program)
             return false;
-        ValidateStartOffset(input, startOffsetInBytes);
+        ValidateScalarStartOffset(input, startOffsetInBytes);
         cursor = new PythonReScalarMatchCursor(input, program, _managedGroupNumbersByPythonGroup,
             startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
         return true;
+    }
+
+    private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        if ((uint)startOffsetInBytes > (uint)input.Length ||
+            startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
+            throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
+        // The cursor validates the whole subject inside the owning invocation.
+    }
+
+    private bool TryMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, bool materializeValues, CancellationToken cancellationToken,
+        out PythonReGroupData[] groups, out Utf8PythonDetailedMatchData detailed)
+    {
+        groups = [];
+        detailed = default;
+        var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
+        if (program is null) return false;
+        ValidateScalarStartOffset(input, startOffsetInBytes);
+        var cursor = new PythonReScalarMatchCursor(input, program,
+            _managedGroupNumbersByPythonGroup, startOffsetInBytes, MatchTimeout,
+            _translation.Pattern, cancellationToken);
+        try
+        {
+            if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
+            {
+                if (materializeValues) detailed = cursor.SnapshotDetailed(_nameEntries);
+                else groups = cursor.SnapshotGroups();
+            }
+            cursor.Checkpoint();
+            return true;
+        }
+        finally { cursor.Dispose(); }
     }
 
     private bool TryFindIterScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,

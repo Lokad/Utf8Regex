@@ -43,6 +43,10 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        if (!(_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan) &&
+            TryMatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var scalarGroups, out _))
+            return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
+
         // PLAN.md C08: native value paths skip positive-lookbehind verification (core literal plans drop the assertion while detailed paths verify); keep lookbehind patterns on verified routes.
         if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
         {
@@ -81,7 +85,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null)
+        if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
         {
             var end = PythonReAsciiPrefixDigitMatcher.MatchValidated(
                 input,
@@ -98,6 +103,10 @@ public sealed partial class Utf8PythonRegex
                     EndOffsetInUtf16 = end,
                 });
         }
+
+        if (!(_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan) &&
+            TryMatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var scalarGroups, out _))
+            return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
 
         if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
         {
@@ -143,7 +152,8 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch FullMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null)
+        if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
+            !cancellationToken.CanBeCanceled)
         {
             var validation = Utf8InputAnalyzer.ValidateOnly(input);
             var tail = input[startOffsetInBytes..];
@@ -168,6 +178,9 @@ public sealed partial class Utf8PythonRegex
                 EndOffsetInUtf16 = validation.Utf16Length,
             });
         }
+
+        if (TryMatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _))
+            return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
 
         var utf8FullRegex = GetUtf8FullRegex();
         if (utf8FullRegex is not null && (!_hasLookbehind || utf8FullRegex.Inspection.DebugUsesOwnedSliceProgram))
@@ -211,19 +224,13 @@ public sealed partial class Utf8PythonRegex
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_canCountAsciiWordBoundariesDirectly && MatchTimeout == Timeout.InfiniteTimeSpan && !cancellationToken.CanBeCanceled)
-        {
-            var decoded = Decode(input);
-            return CountAsciiWordBoundaries(decoded, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-        }
-
-        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && !_canMatchEmpty && !_hasLookbehind && startOffsetInBytes == 0 &&
-            !_utf8Regex.Inspection.DebugUsesOwnedSliceProgram)
-        {
+        // The native rendering intentionally has exact references. Only the
+        // proven exact-literal control can bypass lexical profile comparison.
+        if (_canUseZeroOffsetUtf8SearchValueFastPath && !_canMatchEmpty && startOffsetInBytes == 0 &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.Count(input, cancellationToken);
-        }
 
-        if (_utf8Regex?.Inspection.AvailableOwnedSliceProgram is { } ownedProgram)
+        if (ScalarProgram is { } ownedProgram)
             return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ownedProgram, cancellationToken);
 
         var subject = Decode(input);

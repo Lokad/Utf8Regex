@@ -446,6 +446,7 @@ internal static class PythonReTranslator
             translatedPattern,
             nativePattern,
             ToRegexOptions(parseResult.Options),
+            ToRegexOptions(parseResult.Options) & ~RegexOptions.IgnoreCase,
             parseResult.CaptureGroupCount,
             emittedGroupNames,
             managedNumbersByPython);
@@ -588,6 +589,13 @@ internal static class PythonReTranslator
 
                 break;
         }
+    }
+
+    internal static string RenderNativeAtom(PythonReNode node)
+    {
+        var builder = new StringBuilder();
+        AppendNode(node, builder, new Dictionary<string, string>(), [], true);
+        return builder.ToString();
     }
 
     private static void AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
@@ -772,11 +780,12 @@ internal static class PythonReTranslator
 
             case PythonReGroupKind.ScopedFlags:
                 builder.Append("(?");
-                AppendInlineFlags(node.AddOptions, builder);
-                if (node.RemoveOptions != PythonReCompileOptions.None)
+                AppendInlineFlags(native ? node.AddOptions & ~PythonReCompileOptions.IgnoreCase : node.AddOptions, builder);
+                var removedFlags = native ? node.RemoveOptions & ~PythonReCompileOptions.IgnoreCase : node.RemoveOptions;
+                if (removedFlags != PythonReCompileOptions.None)
                 {
                     builder.Append('-');
-                    AppendInlineFlags(node.RemoveOptions, builder);
+                    AppendInlineFlags(removedFlags, builder);
                 }
 
                 builder.Append(':');
@@ -1472,6 +1481,7 @@ internal readonly record struct PythonReTranslation(
     string Pattern,
     string NativePattern,
     RegexOptions RegexOptions,
+    RegexOptions NativeRegexOptions,
     int CaptureGroupCount,
     IReadOnlyDictionary<string, string> EmittedGroupNames,
     int[] ManagedNumbersByPython);

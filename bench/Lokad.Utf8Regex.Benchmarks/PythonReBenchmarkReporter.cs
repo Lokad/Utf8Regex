@@ -1265,7 +1265,7 @@ internal static partial class PythonReBenchmarkReporter
         var managedMiss = managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length));
         if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length ||
             pythonDetailedMiss.Success || !managedResult || managedMiss ||
-            pythonRegex.DebugHasUtf8FullRegex)
+            !pythonRegex.DebugHasScalarFullProgram || pythonRegex.DebugIsManagedFullRegexValueCreated)
         {
             throw new InvalidOperationException("PythonRe start-offset FullMatch diagnostic failed its parity or backend precondition.");
         }
@@ -2459,12 +2459,14 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugSearchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "detailed capture projection"),
-        PythonReBenchmarkOperation.Count when _pythonRegex.DebugUsesAsciiWordBoundaryCount =>
-            "strict UTF-8 decode; adapter ASCII-boundary loop; scalar result",
+        PythonReBenchmarkOperation.Count when _pythonRegex.DebugUsesOwnedSlice && !_pythonRegex.DebugUsesZeroOffsetUtf8SearchValueFastPath =>
+            "owned scalar VM; byte-driven Python count progression",
         PythonReBenchmarkOperation.Count => DescribeBackend(
             _pythonRegex.DebugCountBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "Python-style count progression"),
+        PythonReBenchmarkOperation.CountFromOffset when _pythonRegex.DebugUsesOwnedSlice =>
+            "owned scalar VM; byte-driven Python count from a nonzero offset",
         PythonReBenchmarkOperation.CountFromOffset => DescribeBackend(
             _pythonRegex.DebugCountBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
@@ -2533,8 +2535,6 @@ internal sealed class PythonReBenchmarkContext
             "strict UTF-8 decode; .NET Regex callback replacement; string shaping without count",
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
             "strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping",
-        PythonReBenchmarkOperation.SplitStrings when _pythonRegex.DebugUsesAsciiWordBoundarySplit =>
-            "strict UTF-8 decode; adapter ASCII-boundary split; string shaping",
         PythonReBenchmarkOperation.SplitStrings =>
             "strict UTF-8 decode; .NET Regex split; string shaping",
         PythonReBenchmarkOperation.SplitStringsLimited =>

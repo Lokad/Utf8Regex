@@ -84,6 +84,8 @@ public sealed partial class Utf8PythonRegex
 
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
+    private readonly Utf8SliceProgram? _scalarProgram;
+    private readonly Lazy<Utf8SliceProgram?> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
     private readonly Lazy<Utf8Regex?>? _lazyUtf8FullRegex;
     private readonly Lazy<Regex>? _lazyManagedNonEmptyAtSamePositionRegex;
@@ -110,7 +112,6 @@ public sealed partial class Utf8PythonRegex
     private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchSuffix;
-    private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
@@ -276,8 +277,9 @@ public sealed partial class Utf8PythonRegex
         _asciiDotAllFullMatchPrefix = asciiDotAllFullMatchPrefix;
         _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
-        _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
+        _scalarProgram = PythonReScalarCompiler.Compile(parseResult, _translation, false);
+        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram?>(() => PythonReScalarCompiler.Compile(parseResult, _translation, true), LazyThreadSafetyMode.ExecutionAndPublication);
         _hasLookbehind = parseResult.HasLookbehind;
         // R04: the translator precomputes the Python-slot to managed-number permutation, so the
         // BCL group query (and its engine construction) is gone; the managed engine itself
@@ -309,7 +311,7 @@ public sealed partial class Utf8PythonRegex
 
         try
         {
-            _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.RegexOptions, MatchTimeout);
+            _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.NativeRegexOptions, MatchTimeout);
             if (_utf8Regex.Inspection.AvailableOwnedSliceProgram is not null ||
                 _utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
             {
@@ -382,27 +384,6 @@ public sealed partial class Utf8PythonRegex
     // PLAN.md C09: returned arrays are caller-owned; never expose the compiled backing storage. Empty entry arrays stay shared: they have no slots to mutate.
     public string[] GetGroupNames() => (string[])_groupNames.Clone();
 
-    private static int CountAsciiWordBoundaries(string subject, int startOffsetInUtf16)
-    {
-        var count = 0;
-        var leftIsWord = startOffsetInUtf16 > 0 && IsAsciiWord(subject[startOffsetInUtf16 - 1]);
-        for (var position = startOffsetInUtf16; position <= subject.Length; position++)
-        {
-            var rightIsWord = position < subject.Length && IsAsciiWord(subject[position]);
-            if (leftIsWord != rightIsWord)
-            {
-                count++;
-            }
-
-            leftIsWord = rightIsWord;
-        }
-
-        return count;
-    }
-
-    private static bool IsAsciiWord(char value) =>
-        char.IsAsciiLetterOrDigit(value) || value == '_';
-
     // PLAN.md D02: single owner for the nonempty same-position retry guard; shapers and the managed progression cursor share it.
     internal static bool TryMatchNonEmptyAtSamePosition(
         Lazy<Regex>? nonEmptyMatcher,
@@ -423,9 +404,9 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
-    internal PythonReDirectBackendKind DebugSearchBackend => _searchBackend;
+    internal PythonReDirectBackendKind DebugSearchBackend => Utf8SliceExecutionApplies ? PythonReDirectBackendKind.Utf8Regex : _searchBackend;
 
-    internal PythonReDirectBackendKind DebugMatchBackend => _matchBackend;
+    internal PythonReDirectBackendKind DebugMatchBackend => Utf8SliceExecutionApplies ? PythonReDirectBackendKind.Utf8Regex : _matchBackend;
 
     internal PythonReDirectBackendKind DebugFullMatchBackend => GetUtf8FullRegex() is not null
         ? PythonReDirectBackendKind.Utf8Regex
@@ -433,23 +414,15 @@ public sealed partial class Utf8PythonRegex
 
     internal PythonReDirectBackendKind DebugCountBackend => _countBackend;
 
-    internal bool DebugUsesAsciiWordBoundaryCount => _canCountAsciiWordBoundariesDirectly;
-
-    internal bool DebugUsesAsciiWordBoundarySplit => _canCountAsciiWordBoundariesDirectly && !Utf8SliceExecutionApplies;
-
     internal bool DebugUsesManagedEmptyReplacementFastPath => _canUseManagedEmptyReplacementFastPath;
 
     internal int DebugReplacementPlanCacheEntryCount => _replacementPlanCache.Count;
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 
-    // CPython IGNORECASE folds sigma/final-sigma and dotted-I where BCL-invariant
-    // folding does not, so translated IGNORECASE shapes keep managed execution even
-    // when the core slice would serve them (ASCII-scope shapes forward no flag and
-    // stay eligible).
-    private Utf8SliceProgram? ScalarProgram =>
-        (_translation.RegexOptions & RegexOptions.IgnoreCase) == 0
-            ? _utf8Regex?.Inspection.AvailableOwnedSliceProgram : null;
+    // Exact profile classes and lexical reference lowerings come from the Python
+    // AST, independently of residual native selectors or BCL case flags.
+    private Utf8SliceProgram? ScalarProgram => _scalarProgram;
 
     private bool Utf8SliceExecutionApplies => ScalarProgram is not null;
 
@@ -463,7 +436,7 @@ public sealed partial class Utf8PythonRegex
     internal string? DebugUtf8FullMatchExecutionKind =>
         GetUtf8FullRegex()?.Inspection.ExecutionKind.ToString();
 
-    internal bool DebugIsUtf8FullRegexValueCreated => _lazyUtf8FullRegex?.IsValueCreated ?? false;
+    internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
 
     internal bool DebugIsManagedNonEmptyAtSamePositionRegexValueCreated =>
         _lazyManagedNonEmptyAtSamePositionRegex?.IsValueCreated ?? false;
@@ -474,7 +447,7 @@ public sealed partial class Utf8PythonRegex
     internal bool DebugIsManagedRegexValueCreated =>
         _managedRegex.IsValueCreated;
 
-    internal bool DebugHasUtf8FullRegex => GetUtf8FullRegex() is not null;
+    internal bool DebugHasScalarFullProgram => _lazyScalarFullProgram.Value is not null;
 
     internal string DebugTranslatedPattern => _translation.Pattern;
 
@@ -541,7 +514,7 @@ public sealed partial class Utf8PythonRegex
         return s_strictUtf8Encoding.GetCharCount(input[..startOffsetInBytes]);
     }
 
-    private static void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    private void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if ((uint)startOffsetInBytes > (uint)input.Length)
         {
@@ -556,6 +529,8 @@ public sealed partial class Utf8PythonRegex
                 startOffsetInBytes,
                 "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
         }
+
+        if (ScalarProgram is not null) return;
 
         try
         {

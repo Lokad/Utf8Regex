@@ -10,7 +10,8 @@ It is intended for workloads where the input already exists as UTF-8 bytes and y
 - Implementation model: parser-first translation. Python-style patterns are parsed into a dedicated AST before any backend is selected.
 - Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
 - Global operations: admitted scalar programs serve captured iteration, Python empty-match retry, substitution and split over the original UTF-8 bytes, with one operation deadline/token and owned capture snapshots.
-- Migration state: separate managed-compatible rendering still serves unqualified case-folding/unserved routes. Those BCL callers and their compensation code are temporary R04/R05 cleanup debt; finite result/output bounds and full engine independence remain unfinished.
+- Case folding: admitted Python ASTs lower to the shared UTF-8 scalar VM with owned CPython 3.13.2 / Unicode 15.1.0 data. Literal classes include extra fold partners; references use lexical simple lowercase, with ASCII scopes restricted to ASCII letters. The four formerly skipped case-folding regressions are active.
+- Migration state: unserved routes still retain managed-compatible rendering and compensation as temporary R04/R05 debt. Category-version reconciliation, finite result/output bounds and full engine independence remain unfinished.
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.

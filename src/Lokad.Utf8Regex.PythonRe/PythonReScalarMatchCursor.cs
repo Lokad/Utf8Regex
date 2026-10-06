@@ -74,7 +74,11 @@ internal ref struct PythonReScalarMatchCursor
         }
     }
 
-    internal bool MoveNext()
+    internal bool MoveNext() => MoveNextCore(true);
+
+    internal bool MatchAtCurrentPosition() => MoveNextCore(false);
+
+    private bool MoveNextCore(bool search)
     {
         while (!_finished)
         {
@@ -101,6 +105,7 @@ internal ref struct PythonReScalarMatchCursor
                 return true;
             }
             _retryNonEmpty = false;
+            if (!search) { _finished = true; return false; }
             if (_position == _input.Length)
             {
                 _finished = true;

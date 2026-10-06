@@ -27,13 +27,6 @@ public sealed partial class Utf8PythonRegex
         if (TrySplitScalar(input, maxSplit, startOffsetInBytes, cancellationToken, true, out _, out var scalarValues)) return scalarValues;
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
-        if (_canCountAsciiWordBoundariesDirectly &&
-            MatchTimeout == Timeout.InfiniteTimeSpan &&
-            startOffsetInBytes == 0 &&
-            maxSplit >= 0)
-        {
-            return SplitAsciiWordBoundaries(subject, maxSplit);
-        }
         if (TrySplitToOwnedItems(input, subject, maxSplit, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes), out var ownedItems))
         {
             var values = new string?[ownedItems.Length];
@@ -156,33 +149,6 @@ public sealed partial class Utf8PythonRegex
         return true;
     }
 
-    private static string?[] SplitAsciiWordBoundaries(string subject, int maxSplit)
-    {
-        var parts = new List<string?>();
-        var lastIndex = 0;
-        var splitCount = 0;
-        var leftIsWord = false;
-        for (var position = 0; position <= subject.Length; position++)
-        {
-            var rightIsWord = position < subject.Length && IsAsciiWord(subject[position]);
-            if (leftIsWord != rightIsWord)
-            {
-                parts.Add(subject[lastIndex..position]);
-                lastIndex = position;
-                splitCount++;
-                if (maxSplit > 0 && splitCount >= maxSplit)
-                {
-                    break;
-                }
-            }
-
-            leftIsWord = rightIsWord;
-        }
-
-        parts.Add(subject[lastIndex..]);
-        return parts.ToArray();
-    }
-
     /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures, observing cancellation before matching begins.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="maxSplit">The maximum number of splits to perform.</param>
@@ -210,25 +176,6 @@ public sealed partial class Utf8PythonRegex
         if (TrySplitScalar(input, maxSplit, startOffsetInBytes, cancellationToken, false, out var scalarItems, out _)) return scalarItems;
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
-        if (_canCountAsciiWordBoundariesDirectly &&
-            MatchTimeout == Timeout.InfiniteTimeSpan &&
-            startOffsetInBytes == 0 &&
-            maxSplit >= 0)
-        {
-            var values = SplitAsciiWordBoundaries(subject, maxSplit);
-            var items = new Utf8PythonSplitItem[values.Length];
-            for (var index = 0; index < items.Length; index++)
-            {
-                items[index] = new Utf8PythonSplitItem
-                {
-                    ValueText = values[index],
-                    IsCapture = false,
-                    CaptureGroupNumber = 0,
-                };
-            }
-
-            return items;
-        }
         if (TrySplitToOwnedItems(input, subject, maxSplit, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes), out var ownedItems))
         {
             return ownedItems;

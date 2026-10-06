@@ -51,11 +51,21 @@
   boundaries use the owned core; quantified dots keep newline scope on every
   scalar, and separate Python surrogate escapes cannot combine into an atom.
   Empty-capable Count uses Python's scalar retry/advance rule.
+- PythonRe now lowers lexical scalar classes and reference policies from its own
+  AST to the shared UTF-8 VM. Owned CPython 3.13.2 / Unicode 15.1.0 case data
+  separates extra literal partners from simple-lower reference comparisons.
+  Reactivated all four case-folding regressions. Byte-start one-shot discovery,
+  detailed snapshots and full-match backtracking retain the original subject,
+  deadline and token. Deleted the capture-specific ASCII reference expansion,
+  host/BMP casing compensation and decoded ASCII-boundary Count/Split drivers.
+  Valid native literal/prefix/dot-all controls remain; unserved BCL callers and
+  complete finite/result/output policies remain migration work.
+
 - Admitted PythonRe scalar programs now discover captured/global results,
   substitute and split over the original UTF-8 bytes. One invocation preserves
   the timeout/token across discovery and callback boundaries; captures retain
   Python numbering, last-capture semantics and normalized lookbehind ranges.
-  Deleted Count's UTF-16 scan/map driver. Remaining case-folding/unserved BCL
+  Deleted Count's UTF-16 scan/map driver. Remaining unserved BCL
   routes, finite/result/output policies and compensation cleanup stay open.
 
 ### Historical UTF-16 parity work (superseded)

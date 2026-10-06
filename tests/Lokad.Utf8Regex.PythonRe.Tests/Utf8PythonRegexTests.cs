@@ -56,9 +56,9 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
-        Assert.False(regex.DebugIsUtf8FullRegexValueCreated);
-        Assert.True(regex.DebugHasUtf8FullRegex);
-        Assert.True(regex.DebugIsUtf8FullRegexValueCreated);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
+        Assert.True(regex.DebugHasScalarFullProgram);
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal("foo", regex.DebugTranslatedPattern);
         Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxfooyy"u8));
@@ -203,7 +203,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?i:foo)");
 
-        Assert.Equal(@"(?i:foo)", regex.DebugTranslatedPattern);
+        Assert.Equal(@"(?i:[Ff][Oo][Oo])", regex.DebugTranslatedPattern);
         Assert.True(regex.IsMatch("FOO"u8));
     }
 
@@ -303,13 +303,13 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
-        Assert.True(conditional.DebugHasUtf8FullRegex);
-        Assert.True(conditional.DebugIsUtf8FullRegexValueCreated);
-        Assert.False(lookahead.DebugIsUtf8FullRegexValueCreated);
+        Assert.True(conditional.DebugHasScalarFullProgram);
+        Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
+        Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
         // The anchored wrapper reuses its admitted scalar program even when
         // the core classifier has no native full-match plan.
-        Assert.True(lookahead.DebugHasUtf8FullRegex);
-        Assert.True(lookahead.DebugIsUtf8FullRegexValueCreated);
+        Assert.True(lookahead.DebugHasScalarFullProgram);
+        Assert.True(lookahead.DebugIsScalarFullProgramValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
         Assert.True(conditional.FullMatch("foobar"u8).Success);
@@ -321,7 +321,7 @@ public sealed class Utf8PythonRegexTests
     public void LazyUtf8FullMatcherSupportsConcurrentNativeAndScalarFirstUse()
     {
         var native = new Utf8PythonRegex("ab[0-9]{2}");
-        Assert.False(native.DebugIsUtf8FullRegexValueCreated);
+        Assert.False(native.DebugIsScalarFullProgramValueCreated);
 
         Parallel.For(0, 32, iteration =>
         {
@@ -339,16 +339,16 @@ public sealed class Utf8PythonRegexTests
             }
         });
 
-        Assert.True(native.DebugIsUtf8FullRegexValueCreated);
-        Assert.True(native.DebugHasUtf8FullRegex);
+        Assert.True(native.DebugIsScalarFullProgramValueCreated);
+        Assert.True(native.DebugHasScalarFullProgram);
 
         // The anchored search shape shares a lazily created scalar full
         // matcher across concurrent callers.
         var managed = new Utf8PythonRegex(@"^ab[0-9]{2}");
-        Assert.False(managed.DebugIsUtf8FullRegexValueCreated);
+        Assert.False(managed.DebugIsScalarFullProgramValueCreated);
         Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
-        Assert.True(managed.DebugIsUtf8FullRegexValueCreated);
-        Assert.True(managed.DebugHasUtf8FullRegex);
+        Assert.True(managed.DebugIsScalarFullProgramValueCreated);
+        Assert.True(managed.DebugHasScalarFullProgram);
         Assert.False(managed.DebugIsManagedFullRegexValueCreated);
     }
 
@@ -1808,7 +1808,7 @@ public sealed class Utf8PythonRegexTests
         Assert.False(new Utf8PythonRegex("x*|y").DebugUsesManagedSplitFastPath);
 
         var asciiBoundary = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
-        Assert.False(asciiBoundary.DebugUsesAsciiWordBoundarySplit);
+        Assert.True(asciiBoundary.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], asciiBoundary.SplitToStrings("alpha beta"u8));
         Assert.Equal<string?[]>(["", "alpha beta"], asciiBoundary.SplitToStrings("alpha beta"u8, maxSplit: 1));
         Assert.Equal<string?[]>(["π", "alpha", " 𝒜", "beta", ""], asciiBoundary.SplitToStrings("πalpha 𝒜beta"u8));

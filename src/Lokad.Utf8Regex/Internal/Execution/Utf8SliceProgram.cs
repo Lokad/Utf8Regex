@@ -91,6 +91,9 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record BackrefNode(int Slot, bool FoldCase, bool AllowUnmatched) : Utf8SliceNode(Utf8SliceNodeKind.Backref)
     {
         internal BackrefNode(int slot, bool foldCase) : this(slot, foldCase, false) { }
+
+        // An owned profile may supply a bounded simple-scalar lowercase table.
+        internal Func<int, int>? LowerScalar { get; init; }
     }
     internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
@@ -268,6 +271,8 @@ internal sealed class Utf8SliceProgram
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
+    internal Func<int, int>[] BackreferenceLowerings { get; init; } = [];
+
     internal byte[][] SetMasks { get; }
 
     internal Utf8SliceCategoryTable[] CategoryTables { get; }
@@ -683,12 +688,14 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax)
+        { BackreferenceLowerings = lowerer.BackreferenceLowerings.ToArray() };
     }
 
     private sealed class Lowering
     {
         internal readonly List<Utf8SliceInstruction> Instructions = new();
+        internal readonly List<Func<int, int>> BackreferenceLowerings = new();
         internal readonly List<byte[]> SetMasks = new();
         internal readonly List<Utf8SliceNode.CategorySetMember[]> CategorySetMembers = new();
         internal readonly List<Utf8SliceCategoryTable> CategoryTables = new();
@@ -886,7 +893,14 @@ internal static class Utf8SliceLowerer
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice backreferences require a defined group.");
                     }
 
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, backref.AllowUnmatched ? 1 : 0, 0));
+                    var loweringIndex = 0;
+                    if (backref.LowerScalar is { } lowerScalar)
+                    {
+                        var index = BackreferenceLowerings.IndexOf(lowerScalar);
+                        if (index < 0) { index = BackreferenceLowerings.Count; BackreferenceLowerings.Add(lowerScalar); }
+                        loweringIndex = index + 1;
+                    }
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, backref.AllowUnmatched ? 1 : 0, loweringIndex));
                     break;
                 case Utf8SliceNode.BalanceNode balance:
                     if (balance.PopSlot < 0 || (balance.CaptureSlot < -1))

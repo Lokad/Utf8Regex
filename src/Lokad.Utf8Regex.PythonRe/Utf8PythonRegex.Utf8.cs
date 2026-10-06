@@ -20,7 +20,7 @@ public sealed partial class Utf8PythonRegex
         {
             var regex = new Utf8Regex(
                 @"\G(?:" + _translation.NativePattern + @")\z",
-                _translation.RegexOptions,
+                _translation.NativeRegexOptions,
                 MatchTimeout);
             return regex.Inspection.AvailableOwnedSliceProgram is not null ||
                 regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;

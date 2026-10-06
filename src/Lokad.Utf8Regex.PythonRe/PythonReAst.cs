@@ -27,6 +27,8 @@ internal sealed record PythonReGroupNode(
     PythonReCompileOptions AddOptions,
     PythonReCompileOptions RemoveOptions) : PythonReNode
 {
+    internal int GroupNumber { get; init; }
+
     internal PythonReGroupNode(PythonReGroupKind kind, PythonReNode inner)
         : this(kind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None)
     {
@@ -38,9 +40,15 @@ internal sealed record PythonReGroupNode(
     }
 }
 
-internal sealed record PythonReNamedBackreferenceNode(string Name) : PythonReNode;
+internal sealed record PythonReNamedBackreferenceNode(string Name) : PythonReNode
+{
+    internal Func<int, int>? LowerScalar { get; init; }
+}
 
-internal sealed record PythonReNumericBackreferenceNode(int GroupNumber) : PythonReNode;
+internal sealed record PythonReNumericBackreferenceNode(int GroupNumber) : PythonReNode
+{
+    internal Func<int, int>? LowerScalar { get; init; }
+}
 
 internal sealed record PythonReConditionalNode(
     PythonReConditionalReference Reference,

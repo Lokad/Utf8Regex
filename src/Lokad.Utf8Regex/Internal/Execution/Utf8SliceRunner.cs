@@ -1299,7 +1299,7 @@ internal static partial class Utf8SliceRunner
                                 if (!TryReadScalar(input, rtlCapIndex, true, out var rtlCaptureScalar, out var rtlCapWidth) ||
                                     rtlCapIndex - rtlCapWidth < rtlReferStart ||
                                     !TryReadScalar(input, rtlBackIndex, true, out var rtlInputScalar, out var rtlInWidth) ||
-                                    !Utf8SliceCaseEquivalences.ScalarsEquivalent(rtlCaptureScalar, rtlInputScalar))
+                                    !BackreferenceScalarsEqual(program, instruction, rtlCaptureScalar, rtlInputScalar))
                                 {
                                     rtlBackFailed = true;
                                     break;
@@ -1399,7 +1399,7 @@ internal static partial class Utf8SliceRunner
                                 if (!TryReadScalar(input, capIndex, false, out var captureScalar, out var capWidth) ||
                                     capIndex + capWidth > referEnd ||
                                     !TryReadScalar(input, backIndex, false, out var inputScalar, out var inWidth) ||
-                                    !Utf8SliceCaseEquivalences.ScalarsEquivalent(captureScalar, inputScalar))
+                                    !BackreferenceScalarsEqual(program, instruction, captureScalar, inputScalar))
                                 {
                                     backFailed = true;
                                     break;
@@ -2132,4 +2132,13 @@ internal static partial class Utf8SliceRunner
             return true;
         }
     }
+
+    private static bool BackreferenceScalarsEqual(Utf8SliceProgram program,
+        Utf8SliceInstruction instruction, Rune captured, Rune input)
+    {
+        if (instruction.D == 0) return Utf8SliceCaseEquivalences.ScalarsEquivalent(captured, input);
+        var lower = program.BackreferenceLowerings[instruction.D - 1];
+        return lower(captured.Value) == lower(input.Value);
+    }
+
 }

@@ -14,7 +14,7 @@ public sealed class Utf8PythonRegexConstructionTests
         Assert.False(regex.DebugIsManagedFullRegexValueCreated);
         Assert.False(regex.FullMatch("abc"u8).Success);
         Assert.False(regex.DebugIsManagedFullRegexValueCreated);
-        Assert.True(regex.DebugIsUtf8FullRegexValueCreated);
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
