@@ -49,9 +49,12 @@ public sealed class PythonReTimeoutTests
         Assert.Equal("aaab-", regex.SubnToString(input, "-").ResultText);
     }
     [Fact]
-    public void FiniteTimeoutNeverBreaksFastPaths()
+    public void FiniteTimeoutSupportsFastPaths()
     {
-        var regex = new Utf8PythonRegex("abc", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        // This is a finite-policy success smoke, including cold core discovery
+        // and projection. Their deadline now includes startup; a 1 ms ceiling
+        // can correctly expire there. Explicit expiry tests keep tight budgets.
+        var regex = new Utf8PythonRegex("abc", PythonReCompileOptions.None, TimeSpan.FromSeconds(1));
         var input = Encoding.UTF8.GetBytes("xxabcxx");
 
         Assert.True(regex.Search(input).Success);
