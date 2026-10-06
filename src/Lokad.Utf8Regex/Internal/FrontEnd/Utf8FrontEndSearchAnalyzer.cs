@@ -374,26 +374,20 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool IsQuoteNode(Utf8TreeNode node)
     {
-        node = UnwrapStructuralNode(node) ?? node;
-        if (TryGetLiteralText(node, out var literal))
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(node);
+        while (pending.TryPop(out var current))
         {
-            return literal is "\"" or "'";
-        }
-
-        if (node.Kind == Utf8TreeNodeKind.Alternate)
-        {
-            for (var i = 0; i < node.ChildCount; i++)
+            current = UnwrapStructuralNode(current) ?? current;
+            if (TryGetLiteralText(current, out var literal))
             {
-                if (!IsQuoteNode(node.Child(i)))
-                {
-                    return false;
-                }
+                if (literal is not ("\"" or "'")) return false;
             }
-
-            return node.ChildCount > 0;
+            else if (current.Kind == Utf8TreeNodeKind.Alternate && current.ChildCount > 0)
+                for (var index = current.ChildCount - 1; index >= 0; index--) pending.Push(current.Child(index));
+            else return false;
         }
-
-        return false;
+        return true;
     }
 
     private static bool TryGetExactAsciiSetLength(Utf8TreeNode node, out string? asciiSet, out int runLength)

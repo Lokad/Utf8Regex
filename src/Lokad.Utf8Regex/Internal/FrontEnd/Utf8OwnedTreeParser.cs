@@ -7,17 +7,13 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // Authoritative owned grammar for planning and scalar UTF-8 VM lowering.
 // Lexical options, class subtraction, captures and references are resolved
 // once. The VM consumes this tree and its capture catalog without reparsing.
-// Unadmitted syntax, excessive nesting and unrepresentable class payloads
+// Unadmitted syntax and unrepresentable class payloads
 // still decline to transitional construction/execution routing; those limits
 // remain ownership work, rather than new public pattern rejections.
 // Parsing lives in static locals over an explicit state record, so the debt
 // ceiling sees a single entry point.
 internal static class Utf8OwnedTreeParser
 {
-    // Continuations no longer consume the call stack, but downstream search
-    // facts and VM compilation still recurse. Retain their existing admission
-    // boundary until the complete preparation/execution pipeline is iterative.
-    private const int MaxNestingDepth = 64;
     private const int Infinite = 2147483647;
 
     // Provider dot payloads probed per Singleline shape; set nodes never carry IgnoreCase.
@@ -124,12 +120,6 @@ internal static class Utf8OwnedTreeParser
         {
             var state = context.State;
             Utf8TreeNode? root = null;
-            if (depth > MaxNestingDepth)
-            {
-                context.Fail(state);
-                yield break;
-            }
-
             var branches = new List<Utf8TreeNode>();
             var alternationEntryOptions = state.Options;
             while (true)

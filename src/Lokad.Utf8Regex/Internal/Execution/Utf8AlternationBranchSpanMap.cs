@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -515,165 +517,195 @@ internal sealed class Utf8AlternationBranchSpanMap
 
     private static List<NestedEntry>? TryExpandNested(Utf8ExecutionNode node, bool inLoop)
     {
-        switch (node.Kind)
+        var results = new Dictionary<Utf8ExecutionNode, List<NestedEntry>>(ReferenceEqualityComparer.Instance);
+        return Utf8PreparationStep.TryRun(Expand(node, inLoop)) ? results[node] : null;
+
+        IEnumerable<Utf8PreparationStep> Expand(Utf8ExecutionNode node, bool inLoop)
         {
-            case Utf8ExecutionNodeKind.One:
+            switch (node.Kind)
             {
-                return new List<NestedEntry> { new NestedEntry { Text = new string(node.Ch, 1) } };
-            }
-            case Utf8ExecutionNodeKind.Multi:
-            {
-                if (node.Text is null)
-                {
-                    return null;
-                }
-
-                return new List<NestedEntry> { new NestedEntry { Text = node.Text } };
-            }
-            case Utf8ExecutionNodeKind.Concatenate:
-            {
-                if (node.Children.Count == 0)
-                {
-                    return null;
-                }
-
-                var combined = new List<NestedEntry> { new NestedEntry() };
-                for (var child = 0; child < node.Children.Count; child++)
-                {
-                    var part = TryExpandNested(node.Children[child], inLoop);
-                    if (part is null || part.Count == 0)
+                case Utf8ExecutionNodeKind.One:
                     {
-                        return null;
+                        results[node] = new List<NestedEntry> { new NestedEntry { Text = new string(node.Ch, 1) } };
+                        yield break;
                     }
-
-                    var next = new List<NestedEntry>(combined.Count * part.Count);
-                    for (var left = 0; left < combined.Count; left++)
+                case Utf8ExecutionNodeKind.Multi:
                     {
-                        for (var right = 0; right < part.Count; right++)
+                        if (node.Text is null)
                         {
-                            var entry = new NestedEntry
-                            {
-                                Text = combined[left].Text + part[right].Text,
-                            };
-                            entry.Groups.AddRange(combined[left].Groups);
-                            entry.Starts.AddRange(combined[left].Starts);
-                            entry.Lengths.AddRange(combined[left].Lengths);
-                            for (var span = 0; span < part[right].Groups.Count; span++)
-                            {
-                                if (combined[left].Groups.Contains(part[right].Groups[span]))
-                                {
-                                    return null;
-                                }
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                                entry.Groups.Add(part[right].Groups[span]);
-                                entry.Starts.Add(combined[left].Text.Length + part[right].Starts[span]);
-                                entry.Lengths.Add(part[right].Lengths[span]);
+                        results[node] = new List<NestedEntry> { new NestedEntry { Text = node.Text } };
+                        yield break;
+                    }
+                case Utf8ExecutionNodeKind.Concatenate:
+                    {
+                        if (node.Children.Count == 0)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        var combined = new List<NestedEntry> { new NestedEntry() };
+                        for (var child = 0; child < node.Children.Count; child++)
+                        {
+                            yield return new Utf8PreparationStep(Expand(node.Children[child], inLoop), false);
+                            var part = results[node.Children[child]];
+                            if (part.Count == 0)
+                            {
+                                yield return Utf8PreparationStep.Decline;
+                                yield break;
                             }
 
-                            next.Add(entry);
-                            if (next.Count > 64)
+                            var next = new List<NestedEntry>(combined.Count * part.Count);
+                            for (var left = 0; left < combined.Count; left++)
                             {
-                                return null;
+                                for (var right = 0; right < part.Count; right++)
+                                {
+                                    var entry = new NestedEntry
+                                    {
+                                        Text = combined[left].Text + part[right].Text,
+                                    };
+                                    entry.Groups.AddRange(combined[left].Groups);
+                                    entry.Starts.AddRange(combined[left].Starts);
+                                    entry.Lengths.AddRange(combined[left].Lengths);
+                                    for (var span = 0; span < part[right].Groups.Count; span++)
+                                    {
+                                        if (combined[left].Groups.Contains(part[right].Groups[span]))
+                                        {
+                                            yield return Utf8PreparationStep.Decline;
+                                            yield break;
+                                        }
+
+                                        entry.Groups.Add(part[right].Groups[span]);
+                                        entry.Starts.Add(combined[left].Text.Length + part[right].Starts[span]);
+                                        entry.Lengths.Add(part[right].Lengths[span]);
+                                    }
+
+                                    next.Add(entry);
+                                    if (next.Count > 64)
+                                    {
+                                        yield return Utf8PreparationStep.Decline;
+                                        yield break;
+                                    }
+                                }
+                            }
+
+                            combined = next;
+                        }
+
+                        results[node] = combined;
+                        yield break;
+                    }
+                case Utf8ExecutionNodeKind.Group:
+                    {
+                        if (node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        yield return new Utf8PreparationStep(Expand(node.Children[0], inLoop), false);
+                        results[node] = results[node.Children[0]];
+                        yield break;
+                    }
+                case Utf8ExecutionNodeKind.Capture:
+                    {
+                        if (node.CaptureNumber <= 0 || node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        yield return new Utf8PreparationStep(Expand(node.Children[0], inLoop), false);
+                        var expanded = results[node.Children[0]];
+
+
+                        foreach (var entry in expanded)
+                        {
+                            if (entry.Groups.Contains(node.CaptureNumber))
+                            {
+                                yield return Utf8PreparationStep.Decline;
+                                yield break;
+                            }
+
+                            entry.Groups.Add(node.CaptureNumber);
+                            entry.Starts.Add(0);
+                            entry.Lengths.Add(entry.Text.Length);
+                        }
+
+                        results[node] = expanded;
+                        yield break;
+                    }
+                case Utf8ExecutionNodeKind.Alternate:
+                    {
+                        if (node.Children.Count == 0)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        var branches = new List<NestedEntry>();
+                        for (var branch = 0; branch < node.Children.Count; branch++)
+                        {
+                            yield return new Utf8PreparationStep(Expand(node.Children[branch], inLoop), false);
+                            var expanded = results[node.Children[branch]];
+                            if (expanded.Count == 0)
+                            {
+                                yield return Utf8PreparationStep.Decline;
+                                yield break;
+                            }
+
+                            branches.AddRange(expanded);
+                            if (branches.Count > 64)
+                            {
+                                yield return Utf8PreparationStep.Decline;
+                                yield break;
                             }
                         }
+
+                        results[node] = branches;
+                        yield break;
                     }
-
-                    combined = next;
-                }
-
-                return combined;
-            }
-            case Utf8ExecutionNodeKind.Group:
-            {
-                if (node.Children.Count != 1)
-                {
-                    return null;
-                }
-
-                return TryExpandNested(node.Children[0], inLoop);
-            }
-            case Utf8ExecutionNodeKind.Capture:
-            {
-                if (node.CaptureNumber <= 0 || node.Children.Count != 1)
-                {
-                    return null;
-                }
-
-                var expanded = TryExpandNested(node.Children[0], inLoop);
-                if (expanded is null)
-                {
-                    return null;
-                }
-
-                foreach (var entry in expanded)
-                {
-                    if (entry.Groups.Contains(node.CaptureNumber))
+                case Utf8ExecutionNodeKind.Loop:
+                case Utf8ExecutionNodeKind.LazyLoop:
                     {
-                        return null;
+                        if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        yield return new Utf8PreparationStep(Expand(node.Children[0], true), false);
+                        var expanded = results[node.Children[0]];
+                        if (expanded.Count == 0)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        var options = new List<NestedEntry>(expanded.Count + 1);
+                        if (node.Kind == Utf8ExecutionNodeKind.Loop)
+                        {
+                            options.AddRange(expanded);
+                            options.Add(new NestedEntry());
+                        }
+                        else
+                        {
+                            options.Add(new NestedEntry());
+                            options.AddRange(expanded);
+                        }
+
+                        results[node] = options;
+                        yield break;
                     }
-
-                    entry.Groups.Add(node.CaptureNumber);
-                    entry.Starts.Add(0);
-                    entry.Lengths.Add(entry.Text.Length);
-                }
-
-                return expanded;
+                default:
+                    yield return Utf8PreparationStep.Decline;
+                    yield break;
             }
-            case Utf8ExecutionNodeKind.Alternate:
-            {
-                if (node.Children.Count == 0)
-                {
-                    return null;
-                }
 
-                var branches = new List<NestedEntry>();
-                for (var branch = 0; branch < node.Children.Count; branch++)
-                {
-                    var expanded = TryExpandNested(node.Children[branch], inLoop);
-                    if (expanded is null || expanded.Count == 0)
-                    {
-                        return null;
-                    }
-
-                    branches.AddRange(expanded);
-                    if (branches.Count > 64)
-                    {
-                        return null;
-                    }
-                }
-
-                return branches;
-            }
-            case Utf8ExecutionNodeKind.Loop:
-            case Utf8ExecutionNodeKind.LazyLoop:
-            {
-                if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
-                {
-                    return null;
-                }
-
-                var expanded = TryExpandNested(node.Children[0], true);
-                if (expanded is null || expanded.Count == 0)
-                {
-                    return null;
-                }
-
-                var options = new List<NestedEntry>(expanded.Count + 1);
-                if (node.Kind == Utf8ExecutionNodeKind.Loop)
-                {
-                    options.AddRange(expanded);
-                    options.Add(new NestedEntry());
-                }
-                else
-                {
-                    options.Add(new NestedEntry());
-                    options.AddRange(expanded);
-                }
-
-                return options;
-            }
-            default:
-                return null;
         }
     }
 
@@ -761,25 +793,17 @@ internal sealed class Utf8AlternationBranchSpanMap
 
     private static bool TryCollectLoops(Utf8ExecutionNode node, List<bool> greedy)
     {
-        switch (node.Kind)
+        var pending = new Stack<Utf8ExecutionNode>();
+        pending.Push(node);
+        while (pending.TryPop(out var current))
         {
-            case Utf8ExecutionNodeKind.Loop:
-            case Utf8ExecutionNodeKind.LazyLoop:
-                greedy.Add(node.Kind == Utf8ExecutionNodeKind.Loop);
-                return true;
-            case Utf8ExecutionNodeKind.Alternate:
-                return false;
-            default:
-                for (var i = 0; i < node.Children.Count; i++)
-                {
-                    if (!TryCollectLoops(node.Children[i], greedy))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+            if (current.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
+                greedy.Add(current.Kind == Utf8ExecutionNodeKind.Loop);
+            else if (current.Kind == Utf8ExecutionNodeKind.Alternate) return false;
+            else for (var index = current.Children.Count - 1; index >= 0; index--)
+                pending.Push(current.Children[index]);
         }
+        return true;
     }
 
     private static int[] BuildPatternOrder(List<bool> greedy)
@@ -830,93 +854,100 @@ internal sealed class Utf8AlternationBranchSpanMap
 
         internal bool TryWalk(Utf8ExecutionNode node, bool inLoop)
         {
-            switch (node.Kind)
+            return Utf8PreparationStep.TryRun(Walk(this, node, inLoop));
+
+            static IEnumerable<Utf8PreparationStep> Walk(PatternWalker walker, Utf8ExecutionNode node, bool inLoop)
             {
-                case Utf8ExecutionNodeKind.One:
-                    Position += 1;
-                    Expansion.Append(node.Ch);
-                    return true;
-                case Utf8ExecutionNodeKind.Multi:
-                    if (node.Text is null)
-                    {
-                        return false;
-                    }
-
-                    Position += node.Text.Length;
-                    Expansion.Append(node.Text);
-                    return true;
-                case Utf8ExecutionNodeKind.Concatenate:
-                    for (var i = 0; i < node.Children.Count; i++)
-                    {
-                        if (!TryWalk(node.Children[i], inLoop))
+                switch (node.Kind)
+                {
+                    case Utf8ExecutionNodeKind.One:
+                        walker.Position += 1;
+                        walker.Expansion.Append(node.Ch);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Multi:
+                        if (node.Text is null)
                         {
-                            return false;
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
                         }
-                    }
 
-                    return true;
-                case Utf8ExecutionNodeKind.Group:
-                    if (node.Children.Count != 1)
-                    {
-                        return false;
-                    }
+                        walker.Position += node.Text.Length;
+                        walker.Expansion.Append(node.Text);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Concatenate:
+                        for (var i = 0; i < node.Children.Count; i++)
+                        {
+                            yield return new Utf8PreparationStep(Walk(walker, node.Children[i], inLoop), false);
+                        }
 
-                    return TryWalk(node.Children[0], inLoop);
-                case Utf8ExecutionNodeKind.Capture:
-                    if (node.CaptureNumber <= 0 || node.Children.Count != 1 || Groups.Contains(node.CaptureNumber))
-                    {
-                        return false;
-                    }
+                        yield break;
+                    case Utf8ExecutionNodeKind.Group:
+                        if (node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    var start = Position;
-                    if (!TryWalk(node.Children[0], inLoop))
-                    {
-                        return false;
-                    }
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop), false);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Capture:
+                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.Contains(node.CaptureNumber))
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    Groups.Add(node.CaptureNumber);
-                    Starts.Add(start);
-                    Lengths.Add(Position - start);
-                    return true;
-                case Utf8ExecutionNodeKind.Loop:
-                case Utf8ExecutionNodeKind.LazyLoop:
-                    if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
-                    {
-                        return false;
-                    }
+                        var start = walker.Position;
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop), false);
 
-                    var index = _cursor++;
-                    if ((uint)index >= (uint)_present.Length)
-                    {
-                        return false;
-                    }
+                        walker.Groups.Add(node.CaptureNumber);
+                        walker.Starts.Add(start);
+                        walker.Lengths.Add(walker.Position - start);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Loop:
+                    case Utf8ExecutionNodeKind.LazyLoop:
+                        if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    if (!_present[index])
-                    {
-                        return true;
-                    }
+                        var index = walker._cursor++;
+                        if ((uint)index >= (uint)walker._present.Length)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    return TryWalk(node.Children[0], inLoop: true);
-                default:
-                    return false;
+                        if (!walker._present[index])
+                        {
+                            yield break;
+                        }
+
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop: true), false);
+                        yield break;
+                    default:
+                        yield return Utf8PreparationStep.Decline;
+                        yield break;
+                }
+
             }
         }
     }
 
     private static void CountAlternates(Utf8ExecutionNode node, ref Utf8ExecutionNode? found, ref int count)
     {
-        if (node.Kind == Utf8ExecutionNodeKind.Alternate)
+        var pending = new Stack<Utf8ExecutionNode>();
+        pending.Push(node);
+        while (pending.TryPop(out var current))
         {
-            count++;
-            if (found is null)
+            if (current.Kind == Utf8ExecutionNodeKind.Alternate)
             {
-                found = node;
+                count++;
+                found ??= current;
             }
-        }
-
-        for (var i = 0; i < node.Children.Count; i++)
-        {
-            CountAlternates(node.Children[i], ref found, ref count);
+            for (var index = current.Children.Count - 1; index >= 0; index--)
+                pending.Push(current.Children[index]);
         }
     }
 
@@ -938,63 +969,70 @@ internal sealed class Utf8AlternationBranchSpanMap
 
         internal bool TryWalk(Utf8ExecutionNode node)
         {
-            switch (node.Kind)
+            return Utf8PreparationStep.TryRun(Walk(this, node));
+
+            static IEnumerable<Utf8PreparationStep> Walk(BranchWalker walker, Utf8ExecutionNode node)
             {
-                case Utf8ExecutionNodeKind.One:
-                    Position += 1;
-                    Expansion.Append(node.Ch);
-                    return true;
-                case Utf8ExecutionNodeKind.Multi:
-                    if (node.Text is null)
-                    {
-                        return false;
-                    }
-
-                    Position += node.Text.Length;
-                    Expansion.Append(node.Text);
-                    return true;
-                case Utf8ExecutionNodeKind.Concatenate:
-                    for (var i = 0; i < node.Children.Count; i++)
-                    {
-                        if (!TryWalk(node.Children[i]))
+                switch (node.Kind)
+                {
+                    case Utf8ExecutionNodeKind.One:
+                        walker.Position += 1;
+                        walker.Expansion.Append(node.Ch);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Multi:
+                        if (node.Text is null)
                         {
-                            return false;
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
                         }
-                    }
 
-                    return true;
-                case Utf8ExecutionNodeKind.Group:
-                    if (node.Children.Count != 1)
-                    {
-                        return false;
-                    }
+                        walker.Position += node.Text.Length;
+                        walker.Expansion.Append(node.Text);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Concatenate:
+                        for (var i = 0; i < node.Children.Count; i++)
+                        {
+                            yield return new Utf8PreparationStep(Walk(walker, node.Children[i]), false);
+                        }
 
-                    return TryWalk(node.Children[0]);
-                case Utf8ExecutionNodeKind.Capture:
-                    if (node.CaptureNumber <= 0 || node.Children.Count != 1 || Groups.Contains(node.CaptureNumber))
-                    {
-                        return false;
-                    }
+                        yield break;
+                    case Utf8ExecutionNodeKind.Group:
+                        if (node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    var start = Position;
-                    if (!TryWalk(node.Children[0]))
-                    {
-                        return false;
-                    }
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0]), false);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Capture:
+                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.Contains(node.CaptureNumber))
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    Groups.Add(node.CaptureNumber);
-                    Starts.Add(start);
-                    Lengths.Add(Position - start);
-                    return true;
-                case Utf8ExecutionNodeKind.Alternate:
-                    if (!ReferenceEquals(node, _alternate) || _branch < 0 || _branch >= node.Children.Count)
-                    {
-                        return false;
-                    }
+                        var start = walker.Position;
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0]), false);
 
-                    return TryWalk(node.Children[_branch]);
-                default:
-                    return false;
+                        walker.Groups.Add(node.CaptureNumber);
+                        walker.Starts.Add(start);
+                        walker.Lengths.Add(walker.Position - start);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Alternate:
+                        if (!ReferenceEquals(node, walker._alternate) || walker._branch < 0 || walker._branch >= node.Children.Count)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[walker._branch]), false);
+                        yield break;
+                    default:
+                        yield return Utf8PreparationStep.Decline;
+                        yield break;
+                }
+
             }
         }
     }

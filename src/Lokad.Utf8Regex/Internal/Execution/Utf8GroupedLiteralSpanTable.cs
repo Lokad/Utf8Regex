@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 // R05: fixed-span capture map for single exact literals whose captures partition the
@@ -169,161 +171,165 @@ internal sealed class Utf8GroupedLiteralSpanTable
 
         internal bool TryWalk(Utf8ExecutionNode node, bool inLoop, bool inAlternate)
         {
-            switch (node.Kind)
+            return Utf8PreparationStep.TryRun(Walk(this, node, inLoop, inAlternate));
+
+            static IEnumerable<Utf8PreparationStep> Walk(SpanWalker walker, Utf8ExecutionNode node, bool inLoop, bool inAlternate)
             {
-                case Utf8ExecutionNodeKind.One:
-                    Position += 1;
-                    return true;
-                case Utf8ExecutionNodeKind.Multi:
-                    if (node.Text is null)
-                    {
-                        return false;
-                    }
-
-                    Position += node.Text.Length;
-                    return true;
-                case Utf8ExecutionNodeKind.Set:
-                    // Folded literals lower to per-character fold sets; shaping only
-                    // needs widths, and a character class always matches exactly one
-                    // UTF-16 unit when every member is a BMP scalar. Surrogate halves
-                    // decline so astral widths can never collapse to one, and any
-                    // residual width error fails closed on the hit-length check.
-                    // Negations, subtractions, and categories decline in the wire
-                    // decoder. Bare sets match exactly once by construction
-                    // (quantified sets lower to loops).
-                    if (node.Text is not { Length: > 0 } set)
-                    {
-                        return false;
-                    }
-
-                    char[] setChars;
-                    try
-                    {
-                        setChars = Internal.FrontEnd.Utf8OwnedCharClass.GetSetChars(set);
-                    }
-                    catch (ArgumentException)
-                    {
-                        return false;
-                    }
-
-                    if (setChars.Length == 0)
-                    {
-                        return false;
-                    }
-
-                    foreach (var setChar in setChars)
-                    {
-                        if (char.IsSurrogate(setChar))
+                switch (node.Kind)
+                {
+                    case Utf8ExecutionNodeKind.One:
+                        walker.Position += 1;
+                        yield break;
+                    case Utf8ExecutionNodeKind.Multi:
+                        if (node.Text is null)
                         {
-                            return false;
-                        }
-                    }
-
-                    Position += 1;
-                    return true;
-                case Utf8ExecutionNodeKind.Concatenate:
-                    for (var i = 0; i < node.Children.Count; i++)
-                    {
-                        if (!TryWalk(node.Children[i], inLoop, inAlternate))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                case Utf8ExecutionNodeKind.Group:
-                    if (node.Children.Count != 1)
-                    {
-                        return false;
-                    }
-
-                    return TryWalk(node.Children[0], inLoop, inAlternate);
-                case Utf8ExecutionNodeKind.Capture:
-                    if (node.CaptureNumber <= 0 || node.Children.Count != 1 || Groups.Contains(node.CaptureNumber))
-                    {
-                        return false;
-                    }
-
-                    var start = Position;
-                    if (!TryWalk(node.Children[0], inLoop, inAlternate))
-                    {
-                        return false;
-                    }
-
-                    Groups.Add(node.CaptureNumber);
-                    Starts.Add(start);
-                    Lengths.Add(Position - start);
-                    InLoop.Add(inLoop);
-                    return true;
-                case Utf8ExecutionNodeKind.Alternate:
-                    if (node.Children.Count == 0 || LoopSeen)
-                    {
-                        // Loops and alternations combine only through the BCL routes:
-                        // joint present/absent by branch selection is future work.
-                        return false;
-                    }
-
-                    // Branch-invariant alternations: the first branch walks into the
-                    // shared lists while the rest walk scratch copies that must agree
-                    // group for group and end at the same position. Divergence keeps
-                    // the BCL routes.
-                    var branchBase = Position;
-                    var branchCountBase = Groups.Count;
-                    if (!TryWalk(node.Children[0], inLoop, inAlternate: true))
-                    {
-                        return false;
-                    }
-
-                    var branchEnd = Position;
-                    for (var branch = 1; branch < node.Children.Count; branch++)
-                    {
-                        var scratch = new SpanWalker { Position = branchBase };
-                        if (!scratch.TryWalk(node.Children[branch], inLoop, inAlternate: true))
-                        {
-                            return false;
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
                         }
 
-                        if (scratch.Position != branchEnd || !BranchMatches(scratch, branchCountBase))
+                        walker.Position += node.Text.Length;
+                        yield break;
+                    case Utf8ExecutionNodeKind.Set:
+                        // Folded literals lower to per-character fold sets; shaping only
+                        // needs widths, and a character class always matches exactly one
+                        // UTF-16 unit when every member is a BMP scalar. Surrogate halves
+                        // decline so astral widths can never collapse to one, and any
+                        // residual width error fails closed on the hit-length check.
+                        // Negations, subtractions, and categories decline in the wire
+                        // decoder. Bare sets match exactly once by construction
+                        // (quantified sets lower to loops).
+                        if (node.Text is not { Length: > 0 } set)
                         {
-                            return false;
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
                         }
-                    }
 
-                    return true;
-                case Utf8ExecutionNodeKind.Loop:
-                case Utf8ExecutionNodeKind.LazyLoop:
-                    if (LoopSeen || inLoop || inAlternate || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
-                    {
-                        return false;
-                    }
+                        char[] setChars;
+                        try
+                        {
+                            setChars = Internal.FrontEnd.Utf8OwnedCharClass.GetSetChars(set);
+                        }
+                        catch (ArgumentException)
+                        {
+                            setChars = Array.Empty<char>();
+                        }
 
-                    LoopSeen = true;
-                    LoopStart = Position;
-                    if (!TryWalk(node.Children[0], inLoop: true, inAlternate: false))
-                    {
-                        return false;
-                    }
+                        if (setChars.Length == 0)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
 
-                    LoopLength = Position - LoopStart;
-                    if (LoopLength == 0)
-                    {
-                        return false;
-                    }
+                        foreach (var setChar in setChars)
+                        {
+                            if (char.IsSurrogate(setChar))
+                            {
+                                yield return Utf8PreparationStep.Decline;
+                                yield break;
+                            }
+                        }
 
-                    return true;
-                case Utf8ExecutionNodeKind.Bol:
-                case Utf8ExecutionNodeKind.Eol:
-                case Utf8ExecutionNodeKind.Beginning:
-                case Utf8ExecutionNodeKind.Start:
-                case Utf8ExecutionNodeKind.EndZ:
-                case Utf8ExecutionNodeKind.End:
-                    // Zero-width anchors constrain where owned discovery may place the hit
-                    // but never advance within it, so literal-relative group spans are
-                    // unaffected. Boundary kinds stay declining (position-dependent
-                    // widths are out of scope for this table).
-                    return true;
-                default:
-                    return false;
+                        walker.Position += 1;
+                        yield break;
+                    case Utf8ExecutionNodeKind.Concatenate:
+                        for (var i = 0; i < node.Children.Count; i++)
+                        {
+                            yield return new Utf8PreparationStep(Walk(walker, node.Children[i], inLoop, inAlternate), false);
+                        }
+
+                        yield break;
+                    case Utf8ExecutionNodeKind.Group:
+                        if (node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop, inAlternate), false);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Capture:
+                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.Contains(node.CaptureNumber))
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        var start = walker.Position;
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop, inAlternate), false);
+
+                        walker.Groups.Add(node.CaptureNumber);
+                        walker.Starts.Add(start);
+                        walker.Lengths.Add(walker.Position - start);
+                        walker.InLoop.Add(inLoop);
+                        yield break;
+                    case Utf8ExecutionNodeKind.Alternate:
+                        if (node.Children.Count == 0 || walker.LoopSeen)
+                        {
+                            // Loops and alternations combine only through the BCL routes:
+                            // joint present/absent by branch selection is future work.
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        // Branch-invariant alternations: the first branch walks into the
+                        // shared lists while the rest walk scratch copies that must agree
+                        // group for group and end at the same position. Divergence keeps
+                        // the BCL routes.
+                        var branchBase = walker.Position;
+                        var branchCountBase = walker.Groups.Count;
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop, inAlternate: true), false);
+
+                        var branchEnd = walker.Position;
+                        for (var branch = 1; branch < node.Children.Count; branch++)
+                        {
+                            var scratch = new SpanWalker();
+                            scratch.Position = branchBase;
+                            yield return new Utf8PreparationStep(Walk(scratch, node.Children[branch], inLoop, inAlternate: true), false);
+
+                            if (scratch.Position != branchEnd || !walker.BranchMatches(scratch, branchCountBase))
+                            {
+                                yield return Utf8PreparationStep.Decline;
+                                yield break;
+                            }
+                        }
+
+                        yield break;
+                    case Utf8ExecutionNodeKind.Loop:
+                    case Utf8ExecutionNodeKind.LazyLoop:
+                        if (walker.LoopSeen || inLoop || inAlternate || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        walker.LoopSeen = true;
+                        walker.LoopStart = walker.Position;
+                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop: true, inAlternate: false), false);
+
+                        walker.LoopLength = walker.Position - walker.LoopStart;
+                        if (walker.LoopLength == 0)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+
+                        yield break;
+                    case Utf8ExecutionNodeKind.Bol:
+                    case Utf8ExecutionNodeKind.Eol:
+                    case Utf8ExecutionNodeKind.Beginning:
+                    case Utf8ExecutionNodeKind.Start:
+                    case Utf8ExecutionNodeKind.EndZ:
+                    case Utf8ExecutionNodeKind.End:
+                        // Zero-width anchors constrain where owned discovery may place the hit
+                        // but never advance within it, so literal-relative group spans are
+                        // unaffected. Boundary kinds stay declining (position-dependent
+                        // widths are out of scope for this table).
+                        yield break;
+                    default:
+                        yield return Utf8PreparationStep.Decline;
+                        yield break;
+                }
+
             }
         }
 

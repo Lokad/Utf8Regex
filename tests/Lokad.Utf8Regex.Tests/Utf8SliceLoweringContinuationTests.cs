@@ -35,7 +35,7 @@ public sealed class Utf8SliceLoweringContinuationTests
     [MemberData(nameof(Cases))]
     public void DeepConstructionKeepsInstructionCountsEmptyFactsAndAssertionDirections(int depth, int shape, bool rtl, bool empty)
     {
-        // Build trees directly: the retained public grammar bound is separate.
+        // Build trees directly to exercise lowering independently of parsing.
         // Record nodes must never require recursive structural hashing here.
         Utf8SliceNode leaf = empty ? new Utf8SliceNode.EmptyNode() : new Utf8SliceNode.LiteralNode('é', false);
         var program = Utf8SliceLowerer.Lower(Deep(depth, shape, leaf), null, false, false, rtl);

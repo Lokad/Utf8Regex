@@ -26,7 +26,7 @@ public sealed class Utf8OwnedTreeContinuationTests
 
     public static IEnumerable<object[]> DeepGrammarCases()
     {
-        foreach (var depth in new[] { 8, 16, 31 })
+        foreach (var depth in new[] { 8, 16, 31, 129 })
         foreach (var family in new[] { "capture", "scope", "assertion", "atomic", "expression", "reference", "balance", "octal" })
         foreach (var compiled in new[] { false, true })
         foreach (var rtl in new[] { false, true })
@@ -60,8 +60,8 @@ public sealed class Utf8OwnedTreeContinuationTests
     {
         const int depth = 16385;
         var kind = (Utf8TreeNodeKind)nodeKind;
-        // Analyze an independently built tree while raw-pattern admission keeps
-        // its downstream preparation/VM boundary. No recursive test walker or
+        // Analyze an independently built tree beyond normal pattern sizes.
+        // No recursive test walker or
         // .NET construction is required to exercise the owned analysis stack.
         var tree = Utf8OwnedTreeParser.TryParse("(?<x>a|b)+c", RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
@@ -196,7 +196,7 @@ public sealed class Utf8OwnedTreeContinuationTests
     [InlineData(true)]
     public void NestedCapturesRespectLimitsCancellationAndRecovery(bool compiled)
     {
-        var pattern = Nested(63, "(", "a");
+        var pattern = Nested(257, "(", "a");
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var program = Utf8SliceParser.TryParse(pattern, options);
         Assert.NotNull(program);

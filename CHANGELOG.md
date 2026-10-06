@@ -24,6 +24,13 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Deep core patterns now retain owned capture metadata and scalar execution
+  beyond the former 64-level parser limit. Preparation walks native capture
+  projections and Python scalar trees with explicit frames; the old shared
+  nesting fallback gate is removed. Instruction-count admission, Python parsing
+  and rendering recursion, general NonBacktracking, remaining BCL consumers and
+  public finite construction policies remain migration work.
+
 - Removed the separate ASCII invariant culture plan/runtime and replacement
   implementation, their cached state, facade dispatch and benchmark inspection
   hooks. Culture-sensitive construction now prepares one program. Admitted

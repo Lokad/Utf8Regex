@@ -142,8 +142,8 @@ public sealed partial class Utf8Regex
         _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
-        // slice (R03 adds dots). Remaining group-depth and lowered-instruction
-        // admission limits still decline to transitional routing.
+        // scalar slice. The instruction-count admission still declines to
+        // transitional routing; pattern nesting does not select a BCL engine.
         // The admitted NonBacktracking flat graphs have no loops, balancing,
         // or shared capture declarations. Their cached scalar program supplies
         // complete-scalar offsets without an input-dependent backtracking search.
@@ -154,12 +154,10 @@ public sealed partial class Utf8Regex
                 : Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
-        // R03 lookbehind: the owned front end leaves no runtime tree for
-        // captures in lookbehind, which defers group metadata to first use.
-        // Invalid patterns must still fail construction exactly like the
-        // BCL-backed route, so when neither the tree nor the slice serves
-        // the pattern, resolve group numbers now (BCL-invalid shapes throw
-        // here; BCL-valid legacy shapes keep current eager behavior).
+        // Captured lookbehind has an owned tree and scalar program. Declined
+        // grammar still needs construction validation until its owned admission
+        // lands. Resolve metadata now when neither the tree nor the slice serves
+        // the pattern; this residual BCL construction is migration debt.
         if (_sliceProgram is null && preparedRegex.SemanticRegex.RuntimeTree is null)
         {
             _ = _program.GroupNumbers.Value;

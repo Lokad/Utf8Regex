@@ -110,24 +110,16 @@ internal sealed class Utf8LiteralFamilyCaptureMap
 
     private static bool IsLiteralRun(Utf8ExecutionNode node)
     {
-        if (node.Kind is Utf8ExecutionNodeKind.One or Utf8ExecutionNodeKind.Multi or Utf8ExecutionNodeKind.Set)
+        var pending = new Stack<Utf8ExecutionNode>();
+        pending.Push(node);
+        while (pending.TryPop(out var current))
         {
-            return true;
+            if (current.Kind is Utf8ExecutionNodeKind.One or Utf8ExecutionNodeKind.Multi or Utf8ExecutionNodeKind.Set)
+                continue;
+            if (current.Kind != Utf8ExecutionNodeKind.Concatenate || current.Children.Count == 0) return false;
+            for (var index = current.Children.Count - 1; index >= 0; index--)
+                pending.Push(current.Children[index]);
         }
-
-        if (node.Kind == Utf8ExecutionNodeKind.Concatenate)
-        {
-            for (var i = 0; i < node.Children.Count; i++)
-            {
-                if (!IsLiteralRun(node.Children[i]))
-                {
-                    return false;
-                }
-            }
-
-            return node.Children.Count > 0;
-        }
-
-        return false;
+        return true;
     }
 }

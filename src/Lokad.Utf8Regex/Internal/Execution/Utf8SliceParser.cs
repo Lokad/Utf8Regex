@@ -9,8 +9,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// behavior.</summary>
 internal static class Utf8SliceParser
 {
-    internal const int MaxNestingDepth = 64;
-
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
         if (pattern is null || (options & RegexOptions.NonBacktracking) != 0) return null;

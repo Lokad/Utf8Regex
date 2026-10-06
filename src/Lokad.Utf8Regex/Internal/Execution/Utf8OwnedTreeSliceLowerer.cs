@@ -42,9 +42,6 @@ internal static class Utf8OwnedTreeSliceLowerer
         frames.Push((root, 0, 0));
         while (frames.TryPop(out var frame))
         {
-            // Retain the existing structural admission while other native
-            // preparation/runtime consumers are still being converted.
-            if (frame.Depth > 2 * Utf8SliceParser.MaxNestingDepth + 2) return null;
             var node = frame.Node;
             if (frame.NextChild < node.ChildCount)
             {

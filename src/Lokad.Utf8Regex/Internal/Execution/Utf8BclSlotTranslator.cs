@@ -79,14 +79,14 @@ internal static class Utf8BclSlotTranslator
 
     private static void CollectCaptures(Utf8ExecutionNode node, List<(int Number, string? Name)> opener)
     {
-        if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0)
+        var pending = new Stack<Utf8ExecutionNode>();
+        pending.Push(node);
+        while (pending.TryPop(out var current))
         {
-            opener.Add((node.CaptureNumber, string.IsNullOrEmpty(node.Text) ? null : node.Text));
-        }
-
-        for (var i = 0; i < node.Children.Count; i++)
-        {
-            CollectCaptures(node.Children[i], opener);
+            if (current.Kind == Utf8ExecutionNodeKind.Capture && current.CaptureNumber > 0)
+                opener.Add((current.CaptureNumber, string.IsNullOrEmpty(current.Text) ? null : current.Text));
+            for (var index = current.Children.Count - 1; index >= 0; index--)
+                pending.Push(current.Children[index]);
         }
     }
 }

@@ -12,8 +12,9 @@ internal static class PythonReScalarCompiler
     internal static Utf8SliceProgram? Compile(PythonReParseResult parse,
         PythonReTranslation translation, bool fullMatch)
     {
-        var root = Convert(parse.Root, parse.Options, false, 0);
-        if (root is null) return null;
+        var nodes = new Dictionary<PythonReNode, Utf8SliceNode>(ReferenceEqualityComparer.Instance);
+        if (!Utf8PreparationStep.TryRun(Convert(parse.Root, parse.Options, false))) return null;
+        var root = nodes[parse.Root];
         if (fullMatch) root = new Utf8SliceNode.ConcatNode(
             [root, new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.VeryEnd, false)]);
         var names = new string[parse.CaptureGroupCount + 1];
@@ -23,102 +24,121 @@ internal static class PythonReScalarCompiler
             names[translation.ManagedNumbersByPython[named.Value]] = translation.EmittedGroupNames[named.Key];
         return Utf8SliceLowerer.Lower(root, names, false, false, false);
 
-        Utf8SliceNode? Convert(PythonReNode node, PythonReCompileOptions options, bool reversed, int depth)
+        IEnumerable<Utf8PreparationStep> Convert(PythonReNode node, PythonReCompileOptions options, bool reversed)
         {
-            if (depth > 2 * Utf8SliceParser.MaxNestingDepth) return null;
             switch (node)
             {
                 case PythonReSequenceNode sequence:
-                {
-                    var children = new Utf8SliceNode[sequence.Elements.Count];
-                    for (var index = 0; index < children.Length; index++)
                     {
-                        var child = Convert(sequence.Elements[reversed ? children.Length - 1 - index : index], options, reversed, depth + 1);
-                        if (child is null) return null;
-                        children[index] = child;
+                        var children = new Utf8SliceNode[sequence.Elements.Count];
+                        for (var index = 0; index < children.Length; index++)
+                        {
+                            yield return new Utf8PreparationStep(Convert(sequence.Elements[reversed ? children.Length - 1 - index : index], options, reversed), false);
+                            var child = nodes[sequence.Elements[reversed ? children.Length - 1 - index : index]];
+                            children[index] = child;
+                        }
+                        nodes[node] = new Utf8SliceNode.ConcatNode(children);
+                        yield break;
                     }
-                    return new Utf8SliceNode.ConcatNode(children);
-                }
                 case PythonReAlternationNode alternation:
-                {
-                    var branches = new Utf8SliceNode[alternation.Branches.Count][];
-                    for (var index = 0; index < branches.Length; index++)
                     {
-                        var child = Convert(alternation.Branches[index], options, reversed, depth + 1);
-                        if (child is null) return null;
-                        branches[index] = [child];
+                        var branches = new Utf8SliceNode[alternation.Branches.Count][];
+                        for (var index = 0; index < branches.Length; index++)
+                        {
+                            yield return new Utf8PreparationStep(Convert(alternation.Branches[index], options, reversed), false);
+                            var child = nodes[alternation.Branches[index]];
+                            branches[index] = [child];
+                        }
+                        nodes[node] = new Utf8SliceNode.AlternationNode(branches);
+                        yield break;
                     }
-                    return new Utf8SliceNode.AlternationNode(branches);
-                }
                 case PythonReQuantifierNode repeat:
-                {
-                    var body = Convert(repeat.Inner, options, reversed, depth + 1);
-                    if (body is null) return null;
-                    var result = new Utf8SliceNode.RepeatNode(body, repeat.Min,
-                        repeat.Max ?? int.MaxValue, repeat.Flavor == PythonReQuantifierFlavor.Reluctant);
-                    return repeat.Flavor == PythonReQuantifierFlavor.Possessive
-                        ? new Utf8SliceNode.AtomicNode(result) : result;
-                }
-                case PythonReGroupNode group:
-                {
-                    var scope = options;
-                    if (group.Kind == PythonReGroupKind.ScopedFlags)
                     {
-                        if ((group.AddOptions & PythonReCompileOptions.Ascii) != 0) scope &= ~PythonReCompileOptions.Unicode;
-                        if ((group.AddOptions & PythonReCompileOptions.Unicode) != 0) scope &= ~PythonReCompileOptions.Ascii;
-                        scope = (scope | group.AddOptions) & ~group.RemoveOptions;
+                        yield return new Utf8PreparationStep(Convert(repeat.Inner, options, reversed), false);
+                        var body = nodes[repeat.Inner];
+                        var result = new Utf8SliceNode.RepeatNode(body, repeat.Min,
+                            repeat.Max ?? int.MaxValue, repeat.Flavor == PythonReQuantifierFlavor.Reluctant);
+                        nodes[node] = repeat.Flavor == PythonReQuantifierFlavor.Possessive
+                            ? new Utf8SliceNode.AtomicNode(result) : result;
+                        yield break;
                     }
-                    var direction = group.Kind switch
+                case PythonReGroupNode group:
                     {
-                        PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind => true,
-                        PythonReGroupKind.PositiveLookahead or PythonReGroupKind.NegativeLookahead => false,
-                        _ => reversed,
-                    };
-                    var body = Convert(group.Inner, scope, direction, depth + 1);
-                    if (body is null) return null;
-                    return group.Kind switch
-                    {
-                        PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing =>
-                            new Utf8SliceNode.CaptureNode(translation.ManagedNumbersByPython[group.GroupNumber] - 1, body),
-                        PythonReGroupKind.PositiveLookbehind => new Utf8SliceNode.LookbehindNode(body, true),
-                        PythonReGroupKind.NegativeLookbehind => new Utf8SliceNode.LookbehindNode(body, false),
-                        PythonReGroupKind.PositiveLookahead => new Utf8SliceNode.LookaheadNode(body, true),
-                        PythonReGroupKind.NegativeLookahead => new Utf8SliceNode.LookaheadNode(body, false),
-                        PythonReGroupKind.Atomic => new Utf8SliceNode.AtomicNode(body),
-                        _ => body,
-                    };
-                }
+                        var scope = options;
+                        if (group.Kind == PythonReGroupKind.ScopedFlags)
+                        {
+                            if ((group.AddOptions & PythonReCompileOptions.Ascii) != 0) scope &= ~PythonReCompileOptions.Unicode;
+                            if ((group.AddOptions & PythonReCompileOptions.Unicode) != 0) scope &= ~PythonReCompileOptions.Ascii;
+                            scope = (scope | group.AddOptions) & ~group.RemoveOptions;
+                        }
+                        var direction = group.Kind switch
+                        {
+                            PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind => true,
+                            PythonReGroupKind.PositiveLookahead or PythonReGroupKind.NegativeLookahead => false,
+                            _ => reversed,
+                        };
+                        yield return new Utf8PreparationStep(Convert(group.Inner, scope, direction), false);
+                        var body = nodes[group.Inner];
+                        nodes[node] = group.Kind switch
+                        {
+                            PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing =>
+                                new Utf8SliceNode.CaptureNode(translation.ManagedNumbersByPython[group.GroupNumber] - 1, body),
+                            PythonReGroupKind.PositiveLookbehind => new Utf8SliceNode.LookbehindNode(body, true),
+                            PythonReGroupKind.NegativeLookbehind => new Utf8SliceNode.LookbehindNode(body, false),
+                            PythonReGroupKind.PositiveLookahead => new Utf8SliceNode.LookaheadNode(body, true),
+                            PythonReGroupKind.NegativeLookahead => new Utf8SliceNode.LookaheadNode(body, false),
+                            PythonReGroupKind.Atomic => new Utf8SliceNode.AtomicNode(body),
+                            _ => body,
+                        };
+                        yield break;
+                    }
                 case PythonReNumericBackreferenceNode reference:
-                    return new Utf8SliceNode.BackrefNode(translation.ManagedNumbersByPython[reference.GroupNumber] - 1,
-                        reference.LowerScalar is not null) { LowerScalar = reference.LowerScalar };
+                    nodes[node] = new Utf8SliceNode.BackrefNode(translation.ManagedNumbersByPython[reference.GroupNumber] - 1,
+                        reference.LowerScalar is not null)
+                    { LowerScalar = reference.LowerScalar };
+                    yield break;
                 case PythonReNamedBackreferenceNode reference:
-                    return new Utf8SliceNode.BackrefNode(translation.ManagedNumbersByPython[parse.NamedGroups[reference.Name]] - 1,
-                        reference.LowerScalar is not null) { LowerScalar = reference.LowerScalar };
+                    nodes[node] = new Utf8SliceNode.BackrefNode(translation.ManagedNumbersByPython[parse.NamedGroups[reference.Name]] - 1,
+                        reference.LowerScalar is not null)
+                    { LowerScalar = reference.LowerScalar };
+                    yield break;
                 case PythonReConditionalNode conditional:
-                {
-                    var yes = Convert(conditional.YesBranch, options, reversed, depth + 1);
-                    var no = conditional.NoBranch is null ? new Utf8SliceNode.EmptyNode()
-                        : Convert(conditional.NoBranch, options, reversed, depth + 1);
-                    if (yes is null || no is null) return null;
-                    var number = conditional.Reference.Kind == PythonReConditionalReferenceKind.GroupNumber
-                        ? conditional.Reference.GroupNumber
-                        : parse.NamedGroups[conditional.Reference.GroupName ?? throw new InvalidOperationException("Conditional name missing.")];
-                    return new Utf8SliceNode.ConditionalNode(translation.ManagedNumbersByPython[number] - 1, yes, no, null);
-                }
+                    {
+                        yield return new Utf8PreparationStep(Convert(conditional.YesBranch, options, reversed), false);
+                        var yes = nodes[conditional.YesBranch];
+                        if (conditional.NoBranch is { } noBranch)
+                            yield return new Utf8PreparationStep(Convert(noBranch, options, reversed), false);
+                        var no = conditional.NoBranch is { } branch ? nodes[branch] : new Utf8SliceNode.EmptyNode();
+                        var number = conditional.Reference.Kind == PythonReConditionalReferenceKind.GroupNumber
+                            ? conditional.Reference.GroupNumber
+                            : parse.NamedGroups[conditional.Reference.GroupName ?? throw new InvalidOperationException("Conditional name missing.")];
+                        nodes[node] = new Utf8SliceNode.ConditionalNode(translation.ManagedNumbersByPython[number] - 1, yes, no, null);
+                        yield break;
+                    }
                 default:
-                {
-                    // Scalar classes and profile shorthands reuse the owned
-                    // front end's class decoder. This fragment contains no
-                    // captures/references or profile case flags.
-                    var fragment = PythonReTranslator.RenderNativeAtom(node);
-                    var atomOptions = RegexOptions.CultureInvariant
-                        | ((options & PythonReCompileOptions.Multiline) != 0 ? RegexOptions.Multiline : RegexOptions.None);
-                    var tree = Utf8OwnedTreeParser.TryParse(fragment, atomOptions);
-                    if (tree?.CaptureCatalog is not { } catalog) return null;
-                    var balancing = false;
-                    var lazyCaptures = false;
-                    return Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, ref balancing, ref lazyCaptures);
-                }
+                    {
+                        // Scalar classes and profile shorthands reuse the owned
+                        // front end's class decoder. This fragment contains no
+                        // captures/references or profile case flags.
+                        var fragment = PythonReTranslator.RenderNativeAtom(node);
+                        var atomOptions = RegexOptions.CultureInvariant
+                            | ((options & PythonReCompileOptions.Multiline) != 0 ? RegexOptions.Multiline : RegexOptions.None);
+                        var tree = Utf8OwnedTreeParser.TryParse(fragment, atomOptions);
+                        if (tree?.CaptureCatalog is not { } catalog)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+                        var balancing = false;
+                        var lazyCaptures = false;
+                        if (Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, ref balancing, ref lazyCaptures) is not { } atom)
+                        {
+                            yield return Utf8PreparationStep.Decline;
+                            yield break;
+                        }
+                        nodes[node] = atom;
+                        yield break;
+                    }
             }
         }
     }

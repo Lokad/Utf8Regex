@@ -50,7 +50,31 @@ public sealed class Utf8OwnedTreeSliceLoweringTests
         var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(tree);
         Assert.NotNull(Utf8OwnedTreeSliceLowerer.TryLower(tree, options));
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, Texts, options);
+        var scalarUniversalClass = pattern == @"(?x:[\s\S]{2,5})";
+        // The BCL comparator overlaps on BMP here. On the supplementary control
+        // it counts surrogate halves; the scalar contract consumes all four Runes.
+        var comparisonTexts = scalarUniversalClass
+            ? Texts.Where(static text => !text.Any(char.IsSurrogate)).ToArray() : Texts;
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, comparisonTexts, options);
+        if (scalarUniversalClass)
+        {
+            var regex = new Utf8Regex(pattern, options);
+            var input = "\U0001f600ab\U0001f600"u8.ToArray();
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(1, regex.Count(input));
+            Assert.Equal((0, 10), (regex.Match(input).IndexInBytes, regex.Match(input).LengthInBytes));
+            var detailed = regex.MatchDetailed(input);
+            Assert.Equal("\U0001f600ab\U0001f600", detailed.GetValueString());
+            Assert.Equal(6, detailed.LengthInUtf16);
+            Assert.Equal("<\U0001f600ab\U0001f600>", regex.ReplaceToString(input, "<$&>"));
+            var positions = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(new[] { (0, 10) }, positions);
+            var splits = new List<string>();
+            foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
+            Assert.Equal(new[] { "", "" }, splits);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
     }
 
     [Theory]

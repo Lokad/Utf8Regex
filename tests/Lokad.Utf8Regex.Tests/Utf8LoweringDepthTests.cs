@@ -1,14 +1,11 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R02 extraction 5: pattern-nesting depth is bounded in lowering and validation;
-/// deeper trees decline to the BCL fallback route with correct results instead of
-/// overflowing the CLR stack. The BCL oracle survives the same inputs, so fallback
-/// (not rejection) is the compatible mechanics.
+/// Deep patterns retain owned parsing, capture metadata and scalar execution.
+/// Preparation uses explicit frames; nesting does not select BCL execution.
 /// </summary>
 public sealed class Utf8LoweringDepthTests
 {
@@ -16,13 +13,14 @@ public sealed class Utf8LoweringDepthTests
     [InlineData(2000)]
     [InlineData(5000)]
     [InlineData(20000)]
-    public void DeepNestingFallsBackWithCorrectResults(int depth)
+    public void DeepNestingKeepsOwnedExecutionAndCorrectResults(int depth)
     {
         var pattern = new string('(', depth) + "abc" + new string(')', depth);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxabxx")));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -59,5 +57,6 @@ public sealed class Utf8LoweringDepthTests
         Assert.Equal(runtime.GroupNumberFromName("word"), utf8.GroupNumberFromName("word"));
         Assert.Equal("word", utf8.GroupNameFromNumber(utf8.GroupNumberFromName("word")));
         Assert.True(utf8.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));
+        Assert.False(utf8.Inspection.DebugFallbackRegexIsCreated);
     }
 }
