@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -10,6 +11,15 @@ public sealed class Utf8SplitDecodeInvocationTests
 {
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
         (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_matchCursor")]
+    private static extern ref Utf8OperationMatchCursor MatchCursor(ref Utf8ValueSplitEnumerator cursor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_sliceInvocation")]
+    private static extern ref Utf8SliceInvocation Invocation(ref Utf8OperationMatchCursor cursor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_startTickCount64")]
+    private static extern ref long StartedAt(Utf8ExecutionDeadline deadline);
 
     public static IEnumerable<object[]> Texts()
     {
@@ -190,12 +200,16 @@ public sealed class Utf8SplitDecodeInvocationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀 abab ab");
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(30));
         var cursor = regex.EnumerateSplits(input, count);
         if (count == 2) Assert.True(cursor.MoveNext());
         if (count == 0) while (cursor.MoveNext()) { }
         var prior = (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16);
-        Thread.Sleep(250);
+        // Expire the actual deadline retained by the public factory after its
+        // successful advances, without depending on scheduler or GC latency.
+        var deadline = Invocation(ref MatchCursor(ref cursor)).Budget.Deadline;
+        Assert.False(deadline.IsInfinite);
+        StartedAt(deadline) = Environment.TickCount64 - 30_001;
         var expired = false;
         try { _ = cursor.MoveNext(); }
         catch (RegexMatchTimeoutException exception)
@@ -236,11 +250,11 @@ public sealed class Utf8SplitDecodeInvocationTests
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var cursor = Utf8OwnedSplitPreparation.Create(Program(regex), input, count, ref invocation);
-        Assert.True(cursor.MoveNext());
-        var view = cursor.Current;
+        var view = FinishSplit(regex, input, count, ref invocation, out var cursor);
         var value = view.GetValueString();
-        while (cursor.MoveNext()) { }
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
         var held = 7 + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4 + ((ulong)validation.Utf16Length + 1) * 2;
         Assert.Equal(held, cursor.DebugInvocationReservedBytes);
         Assert.Equal(value, view.GetValueString());
@@ -251,5 +265,16 @@ public sealed class Utf8SplitDecodeInvocationTests
         Assert.True(canceled);
         Assert.Equal(held, cursor.DebugInvocationReservedBytes);
         Assert.Equal(value, view.GetValueString());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8ValueSplit FinishSplit(Utf8Regex regex, byte[] input, int count,
+        ref Utf8SliceInvocation invocation, out Utf8ValueSplitEnumerator cursor)
+    {
+        cursor = Utf8OwnedSplitPreparation.Create(Program(regex), input, count, ref invocation);
+        Assert.True(cursor.MoveNext());
+        var view = cursor.Current;
+        while (cursor.MoveNext()) { }
+        return view;
     }
 }
