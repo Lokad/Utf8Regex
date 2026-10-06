@@ -250,9 +250,11 @@ public sealed class Utf8MappedEntryInvocationTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀ab", 1100)));
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var entrySteps = baseline.Budget.Steps;
         var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref baseline, false, out _);
         var totalSteps = cursor.DebugInvocationSteps;
-        Assert.True(totalSteps > baseline.Budget.Steps);
+        Assert.True(totalSteps > entrySteps);
+        Assert.Equal(totalSteps, baseline.Budget.Steps);
         for (ulong cap = 1; cap < totalSteps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
