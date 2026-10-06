@@ -200,9 +200,7 @@ public sealed partial class Utf8Regex
 
         // Remaining native replacement routes require scalar-aligned endpoints.
         // Every owned slice already supplies them, including empty matches.
-        if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (_sliceProgram is not null)))
+        if (!OwnedMatchStartsAreScalarAligned(input))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -231,13 +229,6 @@ public sealed partial class Utf8Regex
             return ownedTemplate;
         }
 
-        // R05: astral literal templates splice unit-aware in string space (lone surrogates
-        // survive here; the byte cores below would substitute them through encoding).
-        if (replacement.IsLiteral &&
-            Utf8AstralUnitVerifier.TryReplaceLiteral(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, replacement.LiteralUtf8, budget, out var unitTemplateString, out _))
-        {
-            return unitTemplateString;
-        }
 
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
@@ -282,12 +273,9 @@ public sealed partial class Utf8Regex
             return result.Status;
         }
 
-        // R05: unit-servable literal templates replace unit-aware past scalar-start
-        // alignment (unit matches cover halves), as do slice-served shapes through the
-        // slice arm; everything else keeps BCL routing below.
-        if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) && (replacement.IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (_sliceProgram is not null && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
+        // Admitted scalar programs returned above; remaining native splicers
+        // require complete scalar endpoints.
+        if (!OwnedMatchStartsAreScalarAligned(input))
         {
             var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -372,13 +360,6 @@ public sealed partial class Utf8Regex
             return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
         }
 
-        // R05: astral inputs replace literal templates unit-aware through the unit splice,
-        // since half-involving matches have no byte ranges for the cursor engine above.
-        if (Utf8AstralUnitVerifier.TryReplaceLiteral(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, replacementBytes, budget, out var unitReplacedString, out var unitReplacementCount))
-        {
-            replacementCount = unitReplacementCount;
-            return Encoding.UTF8.GetBytes(unitReplacedString);
-        }
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
@@ -463,20 +444,6 @@ public sealed partial class Utf8Regex
             return scalarSuccess ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
         }
 
-        // R05: same unit-aware route as the byte core above.
-        if (Utf8AstralUnitVerifier.TryReplaceLiteral(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, replacementBytes, budget, out var unitDestinationString, out _))
-        {
-            var unitDestinationBytes = Encoding.UTF8.GetBytes(unitDestinationString);
-            if (unitDestinationBytes.Length > destination.Length)
-            {
-                bytesWritten = 0;
-                return OperationStatus.DestinationTooSmall;
-            }
-
-            unitDestinationBytes.CopyTo(destination);
-            bytesWritten = unitDestinationBytes.Length;
-            return OperationStatus.Done;
-        }
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
@@ -552,7 +519,7 @@ public sealed partial class Utf8Regex
             return false;
         }
         var hasMaps = _groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null;
-        if (!hasMaps && _unitBranchSpanMap is null && _hasCaptures &&
+        if (!hasMaps && _hasCaptures &&
             !(_groupNumbers.Length == 2 && GetSingleWrapCaptureNumber() == 1))
         {
             return false;
@@ -568,7 +535,6 @@ public sealed partial class Utf8Regex
         var builder = new StringBuilder(decoded.Length);
         var sourcePosition = 0;
         var first = true;
-        var unitBudget = CreateExecutionBudget();
         foreach (var valueMatch in EnumerateMatches(input))
         {
             Utf8MatchContext context;
@@ -591,11 +557,6 @@ public sealed partial class Utf8Regex
                 wrapGroups > 1)
             {
                 context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
-            }
-            else if (_unitBranchSpanMap is not null &&
-                TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, unitBudget, out var unitShaped))
-            {
-                context = unitShaped;
             }
             else if (!first)
             {

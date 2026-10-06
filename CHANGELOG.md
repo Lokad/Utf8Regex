@@ -24,6 +24,15 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Removed decoded surrogate-half discovery/verification, unit branch-span maps,
+  their projection/evaluator bridges and the unit simple-pattern cursor mode.
+  Captured simple patterns now use the cached scalar VM; native literal lanes
+  remain available. Search and Count retain admitted attempt scratch within one
+  call instead of reallocating it for each candidate, reset capture/repeat state
+  between attempts and release it on success, failure or cancellation.
+  Supplementary operation tests compare complete scalars and reject interior
+  UTF-16 starts. Other BCL consumers, template output staging, unserved admissions
+  and common public finite/result policies remain migration work.
 - Owned boolean, value, detailed, cursor and replacement discovery share one
   scalar-aligned byte scan in both directions. Removed the separate UTF-16 scan
   drivers, unit outcomes/origins and duplicate capture conversion helpers.

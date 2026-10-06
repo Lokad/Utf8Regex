@@ -27,8 +27,8 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     AsciiIpv4Token = 10,
 }
 
-/// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
-/// <remarks>Patterns and coordinates use .NET UTF-16 semantics; value APIs additionally expose scalar-aligned ranges in the original bytes.</remarks>
+/// <summary>Matches Unicode scalars directly over well-formed UTF-8 input.</summary>
+/// <remarks>Byte ranges are primary; UTF-16 coordinates are derived interoperability values.</remarks>
 public sealed partial class Utf8Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
@@ -48,7 +48,6 @@ public sealed partial class Utf8Regex
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
     private readonly byte[]? _caretAnchoredGroupedLiteralUtf8;
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
-    private readonly Utf8UnitBranchSpanMap? _unitBranchSpanMap;
     private readonly Utf8SliceProgram? _sliceProgram;
     private readonly Utf8SliceProgram? _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
@@ -142,14 +141,13 @@ public sealed partial class Utf8Regex
         _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
         _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
-        _unitBranchSpanMap = UsesRightToLeft() ? null : Utf8UnitBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, preparedRegex.SimplePatternPlan);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). Remaining group-depth and lowered-instruction
         // admission limits still decline to transitional routing.
         // The admitted NonBacktracking literal graphs have no loops, balancing,
-        // or shared capture declarations. Their bounded unit verifier supplies
-        // half-unit offsets and result projection without an input-dependent
-        // backtracking search. Other NonBacktracking graphs retain their route.
+        // or shared capture declarations. Their cached scalar program supplies
+        // complete-scalar offsets without an input-dependent backtracking search.
+        // Other NonBacktracking graphs still require owned admission/execution.
         var sliceOptions = (options & RegexOptions.NonBacktracking) != 0 &&
             preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral
                 ? options & ~RegexOptions.NonBacktracking : options;
@@ -552,7 +550,10 @@ public sealed partial class Utf8Regex
              _ownedSliceProgram.IgnoreCase &&
                 (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
                  ShouldUseKelvinSignFallback(input)) ||
-             _hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
+             _hasCaptures && (_ownedSliceProgram.HasUnicodePatternAtoms ||
+                // Fixed unit-span branch maps cannot project variable UTF-8 widths
+                // or preserve full capture histories. Use the authoritative VM.
+                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern) ||
              // Exact byte literals already preserve scalar endpoints. Native
              // boundary/class predicates need scalar qualification before they
              // can serve mixed subjects without the shared owned VM.
@@ -822,18 +823,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceIsMatchFromByte(input, ownedProgram, subject.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
-        // R05: unit-served shapes verify unit-aware from the start unit on astral
-        // input; misses are definitive without BCL verification, and anything else
-        // keeps the BCL verification below.
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
-            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            var unitOffsetBudget = CreateExecutionBudget();
-            if (Utf8AstralUnitVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, start.Value, unitOffsetBudget, out var unitOffsetIsMatch))
-            {
-                return unitOffsetIsMatch;
-            }
-        }
 
                 // R05: line-anchored ASCII discovery from the start unit runs owned through the
         // shared interpreter; misses are definitive without BCL verification.
@@ -1231,17 +1220,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceCountFromByte(input, ownedProgram, subject.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
-        // R05: unit-served shapes count unit-aware from the start unit on astral
-        // input with BCL start-at tiling; anything else keeps the BCL count below.
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
-            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            var unitOffsetCountBudget = CreateExecutionBudget();
-            if (Utf8AstralUnitVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, start.Value, unitOffsetCountBudget, out var unitOffsetCount))
-            {
-                return unitOffsetCount;
-            }
-        }
 
                 // R05: line-anchored ASCII counting from the start unit runs the shared
         // interpreter loop; anchors still see the whole input.
@@ -1503,18 +1481,6 @@ public sealed partial class Utf8Regex
         }
     }
 
-    // R05: projects a unit-space first-match hit like the zero-offset unit route:
-    // scalar-aligned hits carry byte ranges while half-involving hits shape without
-    // them, exactly like the BCL projector.
-    private static Utf8ValueMatch ProjectUnitFirstMatch(Utf8BoundaryMap boundaryMap, int startUnit, int matchedLength)
-    {
-        if (boundaryMap.TryGetByteRange(startUnit, matchedLength, out var byteIndex, out var byteLength))
-        {
-            return new Utf8ValueMatch(true, true, startUnit, matchedLength, byteIndex, byteLength);
-        }
-
-        return new Utf8ValueMatch(true, false, startUnit, matchedLength);
-    }
 
     private Utf8ValueMatch MatchFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
@@ -1589,21 +1555,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatchFromByte(input, ownedProgram, subject.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
-        // R05: unit-served first-matches project owned from unit coordinates through
-        // the boundary map; misses answer definitively, and anything else keeps the
-        // BCL verification below.
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
-            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            var unitOffsetMatchBudget = CreateExecutionBudget();
-            var unitOffsetStart = Utf8AstralUnitVerifier.FindNextUnit(subject.GetDecodedString(), _preparedRegex.SimplePatternPlan, unitOffsetMatchBudget, start.Value, out var unitOffsetLength);
-            if (unitOffsetStart < 0)
-            {
-                return Utf8ValueMatch.NoMatch;
-            }
-
-            return ProjectUnitFirstMatch(subject.BoundaryMap, unitOffsetStart, unitOffsetLength);
-        }
 
                 // R05: line-anchored ASCII first-match from the start unit projects owned through
         // the shared interpreter with whole-input anchor checks.
@@ -1795,34 +1746,6 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (_unitBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            // R05: nested divergent simple patterns discover through the shared value
-            // path and project static unit-space group spans valid for every expanded
-            // branch. A hit-width disagreement declines to the routes below.
-            Utf8ValueMatch unitFirst;
-            try
-            {
-                unitFirst = MatchCore(input, cancellationToken);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!unitFirst.Success)
-            {
-                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
-            }
-
-            var unitBudget = CreateExecutionBudget();
-            if (TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, unitFirst, unitBudget, out var unitDetailed))
-            {
-                return unitDetailed;
-            }
-        }
 
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
             TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, 0, out var branched))
@@ -1954,34 +1877,6 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatchDetailedFromByte(input, ownedProgram, analysis.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
-        // R05: unit-served detailed matches shape owned from the start-unit hit:
-        // misses are definitive, groupless and single-wrap shapes project from the
-        // owned value, and unit branch-span shapes project static spans; anything
-        // else falls through to the routes below.
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
-            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            var unitOffsetDetailBudget = CreateExecutionBudget();
-            var unitOffsetDetailStart = Utf8AstralUnitVerifier.FindNextUnit(decoded, _preparedRegex.SimplePatternPlan, unitOffsetDetailBudget, start.Value, out var unitOffsetDetailLength);
-            if (unitOffsetDetailStart < 0)
-            {
-                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
-            }
-
-            var unitOffsetHit = ProjectUnitFirstMatch(analysis.BoundaryMap, unitOffsetDetailStart, unitOffsetDetailLength);
-            if (_unitBranchSpanMap is not null &&
-                TryShapeUnitBranchDetailedMatch(input, decoded, analysis.BoundaryMap, unitOffsetHit, unitOffsetDetailBudget, out var unitOffsetDetailed))
-            {
-                return unitOffsetDetailed;
-            }
-
-            if (TryGetOwnedDetailedGroupCount(out var unitOffsetGroupCount))
-            {
-                return unitOffsetGroupCount > 1
-                    ? new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, unitOffsetHit.IndexInUtf16, unitOffsetHit.LengthInUtf16, unitOffsetGroupCount)
-                    : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, unitOffsetHit.IndexInUtf16, unitOffsetHit.LengthInUtf16);
-            }
-        }
 
         if (TryGetOwnedDetailedGroupCount(out var ownedOffsetGroupCount) &&
             CanServeLineAnchoredOwned(input) && Utf8InputAnalyzer.IsAscii(input))
@@ -2206,89 +2101,6 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private bool TryShapeUnitBranchDetailedMatch(
-        ReadOnlySpan<byte> input,
-        string decoded,
-        Utf8BoundaryMap boundaryMap,
-        Utf8ValueMatch hit,
-        Utf8ExecutionDeadline budget,
-        out Utf8MatchContext detailed)
-    {
-        // R05: re-verifies every lowered branch at the owned discovery hit start in plan
-        // order and projects the first full-span verifier's recorded unit spans.
-        // Plan order replicates BCL backtracking choice order (source-order alternation,
-        // left-major concatenation), and verification replays the exact lowered tokens,
-        // so the first verifier is the BCL winner; disagreement declines to the BCL
-        // routes instead of shaping blindly. Whole-match
-        // wrappers take the hit span; every other group takes its recorded unit
-        // offset. Half-involving spans project in string space exactly like BCL:
-        // values survive as lone halves while byte ranges stay unavailable.
-        detailed = default;
-        var map = _unitBranchSpanMap;
-        var plan = _preparedRegex.SimplePatternPlan;
-        if (map is null || plan.Branches is null || plan.Branches.Length != map.BranchWidths.Length)
-        {
-            return false;
-        }
-
-        var selected = -1;
-        for (var branch = 0; branch < plan.Branches.Length; branch++)
-        {
-            if (plan.Branches[branch].Length != hit.LengthInUtf16)
-            {
-                continue;
-            }
-
-            if (!Utf8AstralUnitVerifier.TryVerifyBranchUnits(decoded, plan.Branches[branch], hit.IndexInUtf16, plan.IgnoreCase, budget, out var matchedLength) ||
-                matchedLength != hit.LengthInUtf16)
-            {
-                continue;
-            }
-
-            selected = branch;
-            break;
-        }
-
-        if (selected < 0 || map.BranchWidths[selected] != hit.LengthInUtf16)
-        {
-            return false;
-        }
-
-        var groupCount = _groupNumbers.Length;
-        var starts = new int[groupCount];
-        var lengths = new int[groupCount];
-        Array.Fill(starts, -1);
-        starts[0] = hit.IndexInUtf16;
-        lengths[0] = hit.LengthInUtf16;
-        foreach (var whole in map.WholeMatchGroups)
-        {
-            if ((uint)whole >= (uint)groupCount)
-            {
-                return false;
-            }
-
-            starts[whole] = hit.IndexInUtf16;
-            lengths[whole] = hit.LengthInUtf16;
-        }
-
-        var selectedGroups = map.BranchGroups[selected];
-        var selectedStarts = map.BranchStarts[selected];
-        var selectedLengths = map.BranchLengths[selected];
-        for (var i = 0; i < selectedGroups.Length; i++)
-        {
-            var number = selectedGroups[i];
-            if ((uint)number >= (uint)groupCount)
-            {
-                return false;
-            }
-
-            starts[number] = hit.IndexInUtf16 + selectedStarts[i];
-            lengths[number] = selectedLengths[i];
-        }
-
-        detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
-        return true;
-    }
 
     private bool TryShapeAlternationBranchDetailedMatch(
         ReadOnlySpan<byte> input,
@@ -2891,24 +2703,11 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
-        // R05: unit-served shapes enumerate unit-aware from the start unit on astral
-        // input, bypassing the byte-offset routing whose base-offset projection
-        // throws on half-involving hits; anything else keeps existing routing below.
-        if (!RequiresCultureSensitiveFallback && !ShouldUseKelvinSignFallback(input) && !UsesRightToLeft() &&
-            Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            var unitEnumBudget = CreateExecutionBudget();
-            var unitEnumDecoded = analysis.GetDecodedString();
-            return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, unitEnumDecoded, unitEnumBudget, startInUtf16.Value))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
 
         // R05: slice shapes enumerate from the start unit on full input through
         // the owned cursor above (anchors keep true left context and \\G pins to
-        // the scan start exactly like BCL startat, unlike suffix slicing); the
-        // half-start scan mirrors BCL units, and anything unserved keeps the
-        // routing below.
+        // the scan start with the original context, unlike suffix slicing).
+        // Derived starts must resolve to a complete scalar boundary.
         if (_ownedSliceProgram is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatchesFromUnit(input, ownedProgram, analysis.BoundaryMap, startInUtf16.Value, CancellationToken.None)
@@ -3060,7 +2859,7 @@ public sealed partial class Utf8Regex
         // Count zero requests an unlimited split. Window cursors can serve it
         // through the same advancing scan as the default (int.MaxValue) count.
         if ((count > 0 || count == 0 && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow) &&
-            (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily || CanServeLineAnchoredOwned(input) || Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input)))
+            (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily || CanServeLineAnchoredOwned(input)))
         {
             return CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count == 0 ? int.MaxValue : count, budget)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
@@ -3287,18 +3086,6 @@ public sealed partial class Utf8Regex
                 GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
         }
 
-        // R05: unit-servable literal templates replace unit-aware past scalar-start
-        // alignment (unit matches cover halves), as do slice-served shapes through the
-        // slice arm; parsed here once, cached after.
-        if (!OwnedMatchStartsAreScalarAligned(input) &&
-            !(Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input) &&
-              (GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)).IsLiteral || TryGetOwnedDetailedGroupCount(out _) || _unitBranchSpanMap is not null) ||
-              (_sliceProgram is not null && (!_sliceProgram.CanMatchEmpty || !UsesRightToLeft()))))
-        {
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                Encoding.UTF8.GetString(replacementPatternUtf8)));
-        }
 
         if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
@@ -3563,54 +3350,6 @@ public sealed partial class Utf8Regex
             }
         }
 
-        // R05: nested divergent unit shapes enumerate like groupless shapes and
-        // project the winning branch spans via ordered unit re-verification, with
-        // the same first-hit decline contract as the arms above.
-        if (_unitBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var unitDeclined = false;
-            var unitFirst = true;
-            var unitBudget = CreateExecutionBudget();
-            try
-            {
-                foreach (var valueMatch in EnumerateMatches(input))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (!valueMatch.IsByteAligned)
-                    {
-                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                    }
-
-                    if (!TryShapeUnitBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, unitBudget, out var unitContext))
-                    {
-                        if (!unitFirst)
-                        {
-                            throw new InvalidOperationException("The unit branch projection failed after matching began.");
-                        }
-
-                        unitDeclined = true;
-                        break;
-                    }
-
-                    unitFirst = false;
-                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
-                    evaluator(in unitContext, ref writer, ref state);
-                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!unitDeclined)
-            {
-                writer.Append(input[sourcePosition..]);
-                return writer.GetValidatedBytes().ToArray();
-            }
-        }
 
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         while (match.Success)
@@ -3873,44 +3612,6 @@ public sealed partial class Utf8Regex
             }
         }
 
-        // R05: nested divergent unit shapes enumerate like groupless shapes and
-        // project the winning branch spans via ordered unit re-verification, with
-        // the same first-hit decline contract as the arms above.
-        if (_unitBranchSpanMap is not null &&
-            !RequiresCultureSensitiveFallback &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var unitBuilder = new StringBuilder(decoded.Length);
-            var unitPosition = 0;
-            var unitDeclined = false;
-            var unitFirst = true;
-            var unitBudget = CreateExecutionBudget();
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryShapeUnitBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, unitBudget, out var unitContext))
-                {
-                    if (!unitFirst)
-                    {
-                        throw new InvalidOperationException("The unit branch projection failed after matching began.");
-                    }
-
-                    unitDeclined = true;
-                    break;
-                }
-
-                unitFirst = false;
-                unitBuilder.Append(decoded, unitPosition, valueMatch.IndexInUtf16 - unitPosition);
-                unitBuilder.Append(evaluator(in unitContext, ref state));
-                unitPosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-            }
-
-            if (!unitDeclined)
-            {
-                unitBuilder.Append(decoded, unitPosition, decoded.Length - unitPosition);
-                return unitBuilder.ToString();
-            }
-        }
 
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
             decoded,

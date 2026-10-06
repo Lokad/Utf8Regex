@@ -131,12 +131,6 @@ public sealed partial class Utf8Regex
                 return scalarIsMatch;
             }
 
-            // R05: astral inputs verify unit-aware over decoded units (dots and negated
-            // classes consume halves exactly like BCL); anything else keeps BCL below.
-            if (Utf8AstralUnitVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, 0, budget, out var unitIsMatch))
-            {
-                return unitIsMatch;
-            }
 
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
         }
@@ -208,11 +202,6 @@ public sealed partial class Utf8Regex
                 return scalarCount;
             }
 
-            // R05: same unit-aware route as IsMatch above.
-            if (Utf8AstralUnitVerifier.TryCount(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, 0, budget, out var unitCount))
-            {
-                return unitCount;
-            }
 
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
         }
@@ -257,25 +246,6 @@ public sealed partial class Utf8Regex
                 }
             }
 
-            // R05: astral first-matches project owned from unit coordinates through the
-            // boundary map; misses answer definitively, and half-involving hits shape
-            if (Utf8AstralUnitVerifier.TryFindFirst(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var unitStart, out var unitLength))
-            {
-                if (unitStart < 0)
-                {
-                    return Utf8ValueMatch.NoMatch;
-                }
-
-                // Half-involving hits carry unit coordinates without byte ranges,
-                // exactly like the BCL projector below.
-                var unitAnalysis = Utf8InputAnalyzer.Analyze(input);
-                if (unitAnalysis.BoundaryMap.TryGetByteRange(unitStart, unitLength, out var unitByteIndex, out var unitByteLength))
-                {
-                    return new Utf8ValueMatch(true, true, unitStart, unitLength, unitByteIndex, unitByteLength);
-                }
-
-                return new Utf8ValueMatch(true, false, unitStart, unitLength);
-            }
 
             return MatchFallback(input);
         }
@@ -305,14 +275,6 @@ public sealed partial class Utf8Regex
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
 
-            // R05: astral inputs enumerate unit-aware through the unit cursor (dots and
-            // negations consume halves exactly like BCL); anything else keeps BCL below.
-            if (Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-            {
-                return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, analysis.GetDecodedString(), budget, 0))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
-            }
 
             return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.Utf16ProjectionMap);
         }
@@ -372,21 +334,6 @@ public sealed partial class Utf8Regex
                 totalUtf16Length);
         }
 
-        // R05: astral inputs split unit-aware through the unit match cursor with
-        // unit-space shaping; anything else keeps BCL verification below.
-        if (Utf8AstralUnitVerifier.CanServeUnit(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
-        {
-            var unitSplitAnalysis = Utf8InputAnalyzer.Analyze(input);
-            var unitSplitDecoded = unitSplitAnalysis.GetDecodedString();
-            return new Utf8ValueSplitEnumerator(
-                input,
-                unitSplitDecoded,
-                new Utf8OperationMatchCursor(input, _preparedRegex, unitSplitAnalysis.BoundaryMap, unitSplitDecoded, budget, 0),
-                unitSplitAnalysis.BoundaryMap,
-                count,
-                totalUtf16Length,
-                rightToLeft: false);
-        }
 
         // Line-anchored shapes fall through to the owned cursors below; absolute
         // anchors and non-ASCII input keep BCL verification here.

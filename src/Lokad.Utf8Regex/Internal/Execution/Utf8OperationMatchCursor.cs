@@ -71,8 +71,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private Utf8StructuralSearchState _structuralSearchState;
     private int _slicePositionByte;
     private int _sliceOriginByte;
-    private string? _decodedUnits;
-    private int _unitPosition;
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool asciiInput)
     {
@@ -527,25 +525,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.AsciiSimplePatternScalar;
     }
 
-    // R05: astral unit enumeration walks decoded units (halves included) with unit
-    // positions from the start unit; construction sites qualify up front via the
-    // unit verifier. A nonzero floor keeps origin semantics for FromOffset calls:
-    // unit shapes carry no left context, so matches at or after the floor are
-    // identical to a scan from zero.
-    public Utf8OperationMatchCursor(
-        ReadOnlySpan<byte> input,
-        Utf8PreparedRegex regexPlan,
-        Utf8BoundaryMap boundaryMap,
-        string decodedUnits,
-        Utf8ExecutionDeadline budget,
-        int startUnit)
-        : this(input, regexPlan, boundaryMap, budget)
-    {
-        _decodedUnits = decodedUnits;
-        _unitPosition = startUnit;
-        _mode = EnumeratorMode.AsciiSimplePatternUnit;
-    }
-
     // Anchored ASCII literal suffix enumeration: at most one match at the input
     // end (or right before a single trailing line feed for the lax kind). The
     // kind-based constructor below is public (not a counted private helper) and
@@ -760,7 +739,6 @@ internal ref partial struct Utf8OperationMatchCursor
             EnumeratorMode.RtlExactUtf8Literal => MoveNextLiteral(),
             EnumeratorMode.AsciiSimplePattern => MoveNextAsciiSimplePattern(),
             EnumeratorMode.AsciiSimplePatternScalar => MoveNextScalarSimplePattern(),
-            EnumeratorMode.AsciiSimplePatternUnit => MoveNextUnitSimplePattern(),
             EnumeratorMode.AsciiFixedTokenPattern or EnumeratorMode.AsciiDeterministicPattern => MoveNextAsciiDeterministicPattern(),
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
             EnumeratorMode.EmittedKernelPattern => MoveNextEmittedKernelPattern(),
@@ -1279,38 +1257,6 @@ internal ref partial struct Utf8OperationMatchCursor
         return true;
     }
 
-    // R05: astral unit enumeration steps every UTF-16 unit (halves included) through
-    // the shared unit verifier and projects through the boundary map; half-involving
-    // hits shape without byte ranges exactly like the BCL projector.
-    public bool MoveNextUnitSimplePattern()
-    {
-        if (_decodedUnits is null || _boundaryMap is null)
-        {
-            return false;
-        }
-
-        var decoded = _decodedUnits;
-        var map = _boundaryMap.Value;
-        ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
-        _budget.Step();
-        var unitStart = Utf8AstralUnitVerifier.FindNextUnit(decoded, in simplePatternPlan, _budget, _unitPosition, out var unitLength);
-        if (unitStart < 0)
-        {
-            return false;
-        }
-
-        if (map.TryGetByteRange(unitStart, unitLength, out var unitByteIndex, out var unitByteLength))
-        {
-            _current = new Utf8ValueMatch(true, true, unitStart, unitLength, unitByteIndex, unitByteLength);
-        }
-        else
-        {
-            _current = new Utf8ValueMatch(true, false, unitStart, unitLength);
-        }
-
-        _unitPosition = unitStart + Math.Max(unitLength, 1);
-        return true;
-    }
 
     private bool MoveNextAsciiDeterministicPattern()
     {
@@ -1440,7 +1386,6 @@ internal ref partial struct Utf8OperationMatchCursor
         AnchoredFoldedAsciiLiteralSuffix = 19,
         AnchoredFoldedAsciiLiteralSuffixStrictEnd = 20,
         AsciiSimplePatternScalar = 21,
-        AsciiSimplePatternUnit = 25,
         RtlExactAsciiLiteral = 22,
         RtlAsciiLiteralIgnoreCase = 23,
         RtlExactUtf8Literal = 24,

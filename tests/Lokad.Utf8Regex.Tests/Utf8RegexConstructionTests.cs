@@ -1550,14 +1550,18 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledFallbackUnicodeLetterBoundedRepeatFallsBackForSupplementaryScalars()
+    public void CompiledOwnedUnicodeLetterBoundedRepeatConsumesSupplementaryScalars()
     {
         const string pattern = "\\p{L}{8,13}";
         const string input = "𐐀𐐁𐐂𐐃𐐄𐐅𐐆𐐇 tail";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
+        Assert.Equal(1, compiled.Count(bytes));
+        Assert.True(compiled.IsMatch(bytes));
+        var match = compiled.Match(bytes);
+        Assert.Equal((0, 32, 0, 16), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+        Assert.False(compiled.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]

@@ -46,7 +46,15 @@ public sealed class Utf8SliceSparseGroupTests
     [MemberData(nameof(Cases))]
     public void SparseNumbersRetainOperationsHistoriesAndPublicIdentity(int patternId, RegexOptions options)
     {
-        AssertOwnedOperations(Patterns[patternId], options, Texts, options);
+        var pattern = Patterns[patternId];
+        // These two patterns put the halves in separate capture atoms. Neither
+        // atom denotes a valid scalar; preserve every declaration and public
+        // operation through an explicitly impossible comparator with the same slots.
+        var oraclePattern = patternId is 38 or 39
+            ? pattern.Replace("\ud83d", "(?!)", StringComparison.Ordinal)
+                .Replace("\ude00", "(?!)", StringComparison.Ordinal)
+            : pattern;
+        AssertOwnedOperations(pattern, options, Texts, oraclePattern, options);
     }
 
     internal static void AssertOwnedOperations(string pattern, RegexOptions options, string[] texts, RegexOptions oracleOptions)
@@ -76,7 +84,7 @@ public sealed class Utf8SliceSparseGroupTests
     }
 
     // Reuse complete public-operation qualification for native engines that do
-    // not lower through the unit VM. The caller must establish its route guard.
+    // not lower through the scalar VM. The caller must establish its route guard.
     internal static void AssertOwnedOperations(Utf8Regex regex, Regex oracle, string[] texts)
     {
         var numbers = oracle.GetGroupNumbers();

@@ -8,6 +8,50 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [Theory]
     [InlineData(false, false)] [InlineData(true, false)]
     [InlineData(false, true)] [InlineData(true, true)]
+    public void FailedCapturedCandidatesResetTrailsRepeatsAndHeads(bool reverse, bool histories)
+    {
+        var regex = new Utf8Regex(reverse ? "(?<y>b)(?<x>a+)" : "(?<x>a+)(?<y>b)",
+            RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
+        AssertCutoffs(program, reverse ? "baa😀aa"u8.ToArray() : "aa😀aab"u8.ToArray(), histories,
+            reverse ? 0 : 6, reverse ? 3 : 9, reverse ? [0] : [6], reverse ? [1] : [2]);
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void CapturedCandidateCancellationReleasesReusedStorage(bool reverse, bool count)
+    {
+        var regex = new Utf8Regex("(a(.)c)", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 4096));
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var seenAfterMultipleCandidates = false;
+        invocation.CheckpointHook = steps =>
+        {
+            if (steps < 256) return;
+            seenAfterMultipleCandidates = true;
+            source.Cancel();
+        };
+        var starts = new int[program.GroupCount];
+        var ends = new int[program.GroupCount];
+        var error = Assert.Throws<OperationCanceledException>(() =>
+        {
+            if (count) _ = Utf8SliceRunner.CountFromBytes(program, input, reverse ? input.Length : 0, starts, ends, ref invocation);
+            else _ = Utf8SliceRunner.TryFindFirst(program, input, reverse ? input.Length : 0, starts, ends, true, ref invocation);
+        });
+        Assert.True(seenAfterMultipleCandidates);
+        Assert.Equal(source.Token, error.CancellationToken);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        Assert.All(starts, value => Assert.Equal(-1, value));
+        Assert.All(ends, value => Assert.Equal(-1, value));
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
     public void EveryWorkAndScratchCutoffPreservesBorrowedStorage(bool reverse, bool histories)
     {
         var regex = new Utf8Regex("(.)b", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
@@ -55,7 +99,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
         int start, int end, int[] captureStarts, int[] captureLengths, ref Utf8SliceInvocation invocation)
     {
         var outcome = Utf8SliceRunner.TryFindFirst(program, input, program.RightToLeft ? input.Length : 0,
-            new int[1], new int[1], histories, ref invocation);
+            new int[program.GroupCount], new int[program.GroupCount], histories, ref invocation);
         try
         {
             if (outcome.Breach == Utf8ExecutionLimitKind.None)

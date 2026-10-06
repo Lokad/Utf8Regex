@@ -2790,7 +2790,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(evaluatorRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(evaluatorRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitDiscoveryOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarDiscoveryOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -2813,15 +2813,12 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitDiscoveryOwnedCases))]
-    public void AstralUnitDiscoveryOwnsInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SupplementaryScalarDiscoveryOwnedCases))]
+    public void SupplementaryScalarDiscoveryOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // R05: astral inputs verify unit-aware over decoded units (dots and negations
-        // consume halves exactly like BCL), so IsMatch and Count never construct the
-        // fallback engine. Match projection, IgnoreCase plans, and anchored plans keep
-        // their existing routes.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
@@ -2831,7 +2828,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitDiscoveryDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarDiscoveryDeclineCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -2844,13 +2841,12 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitDiscoveryDeclineCases))]
-    public void AstralUnitDiscoveryMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SupplementaryScalarDiscoveryDeclineCases))]
+    public void SupplementaryScalarDiscoveryMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text)
     {
-        // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
@@ -2858,7 +2854,7 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitMatchOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarMatchOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -2879,15 +2875,12 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitMatchOwnedCases))]
-    public void AstralUnitMatchOwnsInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SupplementaryScalarMatchOwnedCases))]
+    public void SupplementaryScalarMatchOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // R05: astral first-matches project owned from unit coordinates through the
-        // boundary map (half-involving hits shape without byte ranges, exactly like BCL),
-        // and groupless detailed matches shape from the owned value. Match-form projection beyond light
-        // matches stays on existing routes.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
@@ -2910,7 +2903,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitEnumerationOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarEnumerationOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -2931,14 +2924,12 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitEnumerationOwnedCases))]
-    public void AstralUnitEnumerationOwnsInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SupplementaryScalarEnumerationOwnedCases))]
+    public void SupplementaryScalarEnumerationOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // R05: astral enumeration steps every unit through the shared unit verifier and
-        // projects through the boundary map, so full sequences match BCL with zero fallback
-        // construction on both lanes.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var regex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -2954,7 +2945,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitSplitOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarSplitOwnedCases()
     {
         (string pattern, string text, int count)[] rows =
         [
@@ -2976,13 +2967,12 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitSplitOwnedCases))]
-    public void AstralUnitSplitOwnsInput(string pattern, RegexOptions options, string text, int count)
+    [MemberData(nameof(SupplementaryScalarSplitOwnedCases))]
+    public void SupplementaryScalarSplitOwnsInput(string pattern, RegexOptions options, string text, int count)
     {
-        // R05: astral splits shape unit-space through the unit match cursor, so full
-        // split sequences match BCL with zero fallback construction on both lanes.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var regex = new Utf8Regex(pattern, options);
         var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, count))
@@ -3000,7 +2990,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitLiteralTemplateOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarLiteralTemplateOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
         [
@@ -3023,13 +3013,12 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitLiteralTemplateOwnedCases))]
-    public void AstralUnitLiteralTemplateOwnsInput(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(SupplementaryScalarLiteralTemplateOwnedCases))]
+    public void SupplementaryScalarLiteralTemplateOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: astral literal templates splice unit-aware over decoded units, so byte,
-        // string, and destination cores never construct the fallback engine here.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var expected = oracle.Replace(text, template);
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
@@ -3049,7 +3038,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitLiteralTemplateDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarLiteralTemplateDeclineCases()
     {
         (string pattern, string text, string template)[] rows =
         [
@@ -3062,20 +3051,20 @@ public sealed class AsciiSimplePatternTests
         }
     }
     [Theory]
-    [MemberData(nameof(AstralUnitLiteralTemplateDeclineCases))]
-    public void AstralUnitLiteralTemplateReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(SupplementaryScalarLiteralTemplateDeclineCases))]
+    public void SupplementaryScalarLiteralTemplateReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
     {
         // The owned unit driver preserves template fragments and gaps in UTF-16
         // through expansion, then encodes the completed byte result.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var expected = oracle.Replace(text, template);
         var bytesRegex = new Utf8Regex(pattern, options);
         Assert.Equal(expected, Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitGroupTemplateOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarGroupTemplateOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -3093,14 +3082,12 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitGroupTemplateOwnedCases))]
-    public void AstralUnitGroupTemplateOwnsInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SupplementaryScalarGroupTemplateOwnedCases))]
+    public void SupplementaryScalarGroupTemplateOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // R05: astral group templates shape single-wrap and groupless groups from owned
-        // unit discovery, so byte, string, destination, and detailed paths never construct
-        // the fallback engine here.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var expected = oracle.Replace(text, "<$1>");
         var bytesRegex = new Utf8Regex(pattern, options);
         // Byte-level oracle: lone surrogates cannot exist in well-formed UTF-8 bytes,
@@ -3135,7 +3122,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarBranchOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
         [
@@ -3171,16 +3158,12 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitBranchOwnedCases))]
-    public void AstralUnitBranchOwnsInput(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(SupplementaryScalarBranchOwnedCases))]
+    public void SupplementaryScalarBranchOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        // R05: nested divergent simple patterns with branch-invariant unit spans shape
-        // every group from static offsets onto the owned unit-space hit, so light Match,
-        // Detailed, enumeration, and all three replacement cores never construct the
-        // fallback engine here. Byte-level lanes compare encoded bytes because lone
-        // halves substitute identically through the encoder on both sides.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
@@ -3249,7 +3232,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarBranchDeclineCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
         [
@@ -3263,19 +3246,19 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitBranchDeclineCases))]
-    public void AstralUnitBranchReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(SupplementaryScalarBranchDeclineCases))]
+    public void SupplementaryScalarBranchReplacementIsOwned(string pattern, RegexOptions options, string text, string template)
     {
         // The owned unit driver preserves template fragments and gaps in UTF-16
         // through expansion, then encodes the completed byte result.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var stringRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Replace(text, template), stringRegex.ReplaceToString(input, template));
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitBranchEvaluatorOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarBranchEvaluatorOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -3292,17 +3275,12 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitBranchEvaluatorOwnedCases))]
-    public void AstralUnitBranchEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(SupplementaryScalarBranchEvaluatorOwnedCases))]
+    public void SupplementaryScalarBranchEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
     {
-        // R05: nested divergent unit shapes project evaluator arguments from ordered
-        // unit re-verification (first verifying branch wins), so string evaluator
-        // replacement never constructs the fallback engine here. Half-involving spans
-        // project in string space exactly like BCL; byte-splicing evaluators keep
-        // their alignment contract on such hits and are covered by the template
-        // battery above for those inputs.
+        // Compare complete scalars through explicit overlapping BCL atoms.
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var evaluatorRegex = new Utf8Regex(pattern, options);
         var evaluatorActual = evaluatorRegex.ReplaceToString(input, 0, (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(1).GetValueString() + ">");
         Assert.Equal(oracle.Replace(text, static match => "<" + match.Groups[1].Value + ">"), evaluatorActual);
@@ -3310,7 +3288,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(evaluatorRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarFromOffsetOwnedCases()
     {
         (string pattern, string text, int offset)[] rows =
         [
@@ -3337,15 +3315,13 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitFromOffsetOwnedCases))]
-    public void AstralUnitFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    [MemberData(nameof(SupplementaryScalarFromOffsetOwnedCases))]
+    public void SupplementaryScalarFromOffsetOwnsInput(string pattern, RegexOptions options, string text, int offset)
     {
-        // R05: unit-served discovery and shaping run unit-aware from the start unit
-        // on astral input, so IsMatch, Count, Match, and Detailed from a UTF-16 offset
-        // never construct the fallback engine here. Counts compare against BCL
-        // start-at semantics, and Detailed checks every group including halves.
+        // Compare complete scalars through explicit overlapping BCL atoms.
+        if (AssertInteriorSupplementaryStartRejected(pattern, options, text, offset)) return;
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text, offset), isMatchRegex.IsMatchFromUtf16Offset(input, offset));
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
@@ -3394,7 +3370,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarFromOffsetDeclineCases()
     {
         (string pattern, RegexOptions options, string text, int offset)[] rows =
         [
@@ -3409,13 +3385,13 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitFromOffsetDeclineCases))]
-    public void AstralUnitFromOffsetMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, int offset)
+    [MemberData(nameof(SupplementaryScalarFromOffsetDeclineCases))]
+    public void SupplementaryScalarFromOffsetMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, int offset)
     {
-        // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // Compare complete scalars through explicit overlapping BCL atoms.
+        if (AssertInteriorSupplementaryStartRejected(pattern, options, text, offset)) return;
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text, offset), isMatchRegex.IsMatchFromUtf16Offset(input, offset));
         Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
@@ -3449,7 +3425,7 @@ public sealed class AsciiSimplePatternTests
     }
 
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetEnumOwnedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarFromOffsetEnumOwnedCases()
     {
         (string pattern, string text, int offset)[] rows =
         [
@@ -3475,15 +3451,13 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitFromOffsetEnumOwnedCases))]
-    public void AstralUnitFromOffsetEnumOwnsInput(string pattern, RegexOptions options, string text, int offset)
+    [MemberData(nameof(SupplementaryScalarFromOffsetEnumOwnedCases))]
+    public void SupplementaryScalarFromOffsetEnumOwnsInput(string pattern, RegexOptions options, string text, int offset)
     {
-        // R05: unit-served shapes enumerate unit-aware from the start unit on
-        // astral input, bypassing the byte-offset routing whose base-offset
-        // projection throws on half-involving hits; full start-at sequences match
-        // BCL with zero fallback construction on both lanes.
+        // Compare complete scalars through explicit overlapping BCL atoms.
+        if (AssertInteriorSupplementaryStartRejected(pattern, options, text, offset)) return;
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var regex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text, offset))
@@ -3500,7 +3474,7 @@ public sealed class AsciiSimplePatternTests
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AstralUnitFromOffsetEnumDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarFromOffsetEnumDeclineCases()
     {
         (string pattern, RegexOptions options, string text, int offset)[] rows =
         [
@@ -3514,13 +3488,13 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(AstralUnitFromOffsetEnumDeclineCases))]
-    public void AstralUnitFromOffsetEnumMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, int offset)
+    [MemberData(nameof(SupplementaryScalarFromOffsetEnumDeclineCases))]
+    public void SupplementaryScalarFromOffsetEnumMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, int offset)
     {
-        // R05 unit subject: matching and split projection own admitted UTF-16
-        // units. The separate replacement route retains its existing contract.
+        // Compare complete scalars through explicit overlapping BCL atoms.
+        if (AssertInteriorSupplementaryStartRejected(pattern, options, text, offset)) return;
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var regex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text, offset))
@@ -3534,6 +3508,42 @@ public sealed class AsciiSimplePatternTests
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.Equal(text == "xabcxabc", regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    // This portfolio contains ordinary unescaped dots and the ASCII [^x]
+    // class. Spell those two atoms as complete scalars in the comparator;
+    // noncapturing wrappers preserve numbering, branch priority and repetition.
+    // This deliberately is not a general regex translator or semantic oracle.
+    private static Regex CreateSupplementaryScalarOverlapOracle(string pattern, RegexOptions options)
+    {
+        var dot = (options & RegexOptions.Singleline) != 0
+            ? @"(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF])"
+            : @"(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF\n])";
+        var translated = pattern.Replace(".", dot, StringComparison.Ordinal)
+            .Replace("[^x]", @"(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^x\uD800-\uDFFF])", StringComparison.Ordinal);
+        return new Regex(translated, options, Regex.InfiniteMatchTimeout);
+    }
+
+    private static bool AssertInteriorSupplementaryStartRejected(string pattern, RegexOptions options, string text, int offset)
+    {
+        if (offset <= 0 || offset >= text.Length || !char.IsHighSurrogate(text[offset - 1]) || !char.IsLowSurrogate(text[offset]))
+            return false;
+        var regex = new Utf8Regex(pattern, options);
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, offset));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset));
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchFromUtf16Offset(input, offset); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, offset); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset(input, offset); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, offset, source.Token));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset, source.Token));
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchFromUtf16Offset(input, offset, source.Token); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, offset, source.Token); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset(input, offset, source.Token); });
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        return true;
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AstralWholeLoopOwnedCases()

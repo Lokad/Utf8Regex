@@ -288,40 +288,50 @@ internal static partial class Utf8SliceRunner
         bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation)
     {
+        var workspace = new AttemptWorkspace();
+        try
+        {
+            return TryMatchAt(program, input, start, captureStarts, captureEnds,
+                collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace, ref invocation);
+        }
+        finally { workspace.Release(ref invocation); }
+    }
+
+    private static Utf8SliceMatchOutcome TryMatchAt(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        int start,
+        int[] captureStarts,
+        int[] captureEnds,
+        bool collectHistory,
+        bool requireNonEmpty,
+        bool startIsScalarBoundary,
+        ref AttemptWorkspace workspace,
+        ref Utf8SliceInvocation invocation)
+    {
         if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
             start < input.Length && (input[start] & 0xC0) == 0x80)
             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
 
-        var counts = RentIntArray(program.RepeatCount, ref invocation, out var breach);
-        if (breach != Utf8ExecutionLimitKind.None)
+        if (!workspace.Initialized)
         {
-            return new Utf8SliceMatchOutcome(false, -1, breach, null, null);
+            var breach = workspace.Initialize(program, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None)
+                return new(false, -1, breach, null, null);
         }
-
-        var positions = RentIntArray(program.RepeatCount, ref invocation, out breach);
-        if (breach != Utf8ExecutionLimitKind.None)
-        {
-            ReleaseIntArray(counts, ref invocation);
-            return new Utf8SliceMatchOutcome(false, -1, breach, null, null);
-        }
-
+        var counts = workspace.Counts;
+        var positions = workspace.Positions;
+        var heads = workspace.Heads;
         Array.Fill(counts, -1);
+        Array.Clear(positions);
         Array.Fill(captureStarts, -1);
         Array.Fill(captureEnds, -1);
-        var heads = RentIntArray(program.GroupCount, ref invocation, out breach);
-        if (breach != Utf8ExecutionLimitKind.None)
-        {
-            ReleaseIntArray(positions, ref invocation);
-            ReleaseIntArray(counts, ref invocation);
-            return new Utf8SliceMatchOutcome(false, -1, breach, null, null);
-        }
-
         Array.Fill(heads, -1);
-        var stacks = new ChunkedStacks();
+        workspace.Stacks.ResetAttempt();
         var completed = false;
         try
         {
-            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
+            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
@@ -350,10 +360,6 @@ internal static partial class Utf8SliceRunner
                 Array.Fill(captureStarts, -1);
                 Array.Fill(captureEnds, -1);
             }
-            stacks.ReleaseAll(ref invocation);
-            ReleaseIntArray(heads, ref invocation);
-            ReleaseIntArray(positions, ref invocation);
-            ReleaseIntArray(counts, ref invocation);
         }
     }
 
@@ -368,20 +374,25 @@ internal static partial class Utf8SliceRunner
         if ((uint)fromByte > (uint)input.Length ||
             fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
             return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
-        for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
+        var workspace = new AttemptWorkspace();
+        try
         {
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, -1, null, null, breach);
-            invocation.Budget.ThrowIfCancellationRequested();
-            var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, true, ref invocation);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, -1, null, null, outcome.Breach);
-            if (outcome.IsMatch)
-                return new(true, Math.Min(position, outcome.EndIndex), Math.Max(position, outcome.EndIndex),
-                    outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None);
+            for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, breach);
+                invocation.Budget.ThrowIfCancellationRequested();
+                var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, false, true, ref workspace, ref invocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, outcome.Breach);
+                if (outcome.IsMatch)
+                    return new(true, Math.Min(position, outcome.EndIndex), Math.Max(position, outcome.EndIndex),
+                        outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None);
+            }
+            return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
         }
-        return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+        finally { workspace.Release(ref invocation); }
     }
 
     // -1 is the exhausted sentinel in either direction; avoid Length + 1 overflow.
@@ -416,32 +427,38 @@ internal static partial class Utf8SliceRunner
         var count = 0;
         var position = fromByte;
         invocation.AnchorOriginByte = fromByte;
-        while (true)
+        var workspace = new AttemptWorkspace();
+        try
         {
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None)
-                return new Utf8SliceCountOutcome(count, breach);
-            invocation.Budget.ThrowIfCancellationRequested();
-            var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, true, ref invocation);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                return new Utf8SliceCountOutcome(count, outcome.Breach);
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (outcome.IsMatch)
+            while (true)
             {
-                count++;
-                invocation.AnchorOriginByte = outcome.EndIndex;
-                if (outcome.EndIndex != position)
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None)
+                    return new Utf8SliceCountOutcome(count, breach);
+                invocation.Budget.ThrowIfCancellationRequested();
+                var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true, ref workspace, ref invocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                    return new Utf8SliceCountOutcome(count, outcome.Breach);
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (outcome.IsMatch)
                 {
-                    position = outcome.EndIndex;
-                    continue;
+                    count++;
+                    invocation.AnchorOriginByte = outcome.EndIndex;
+                    if (outcome.EndIndex != position)
+                    {
+                        position = outcome.EndIndex;
+                        continue;
+                    }
                 }
+                else if (program.RightToLeft && program.HasContiguousAnchor)
+                    break;
+                position = AdvancePastScalar(input, position, program.RightToLeft);
+                if (position < 0) break;
             }
-            else if (program.RightToLeft && program.HasContiguousAnchor)
-                break;
-            position = AdvancePastScalar(input, position, program.RightToLeft);
-            if (position < 0) break;
+            return new Utf8SliceCountOutcome(count, Utf8ExecutionLimitKind.None);
         }
-        return new Utf8SliceCountOutcome(count, Utf8ExecutionLimitKind.None);
+
+        finally { workspace.Release(ref invocation); }
     }
 
     internal static Utf8SliceCountOutcome Count(
@@ -1421,6 +1438,49 @@ internal static partial class Utf8SliceRunner
         }
     }
 
+    // One search/Count call retains its admitted scratch between candidates.
+    // State is reset for each attempt; no workspace escapes or crosses invocations.
+    private struct AttemptWorkspace
+    {
+        internal int[] Counts;
+        internal int[] Positions;
+        internal int[] Heads;
+        internal ChunkedStacks Stacks;
+        internal bool Initialized;
+
+        public AttemptWorkspace()
+        {
+            Counts = [];
+            Positions = [];
+            Heads = [];
+            Stacks = default;
+            Initialized = false;
+        }
+
+        internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
+        {
+            Counts = RentIntArray(program.RepeatCount, ref invocation, out var breach);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            Positions = RentIntArray(program.RepeatCount, ref invocation, out breach);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            Heads = RentIntArray(program.GroupCount, ref invocation, out breach);
+            if (breach == Utf8ExecutionLimitKind.None) Initialized = true;
+            return breach;
+        }
+
+        internal void Release(ref Utf8SliceInvocation invocation)
+        {
+            Stacks.ReleaseAll(ref invocation);
+            ReleaseIntArray(Heads, ref invocation);
+            ReleaseIntArray(Positions, ref invocation);
+            ReleaseIntArray(Counts, ref invocation);
+            Heads = [];
+            Positions = [];
+            Counts = [];
+            Initialized = false;
+        }
+    }
+
     private struct ChunkedStacks
     {
         private Utf8SliceFrame[][] _frameTables;
@@ -1678,6 +1738,14 @@ internal static partial class Utf8SliceRunner
                     captureLengths = [];
                 }
             }
+        }
+
+        internal void ResetAttempt()
+        {
+            _frameCount = 0;
+            _trailCount = 0;
+            _journalCount = 0;
+            _balanceCount = 0;
         }
 
         internal void ReleaseAll(ref Utf8SliceInvocation invocation)

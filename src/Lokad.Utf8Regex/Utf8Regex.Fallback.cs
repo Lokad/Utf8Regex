@@ -868,9 +868,8 @@ public sealed partial class Utf8Regex
             return true;
         }
 
-        // R05: unit branch-span shapes project static branch-invariant unit spans
-        // through the worker arm, under the same culture and Kelvin fences.
-        return _unitBranchSpanMap is not null &&
+        // Remaining admitted captures/templates use the shared scalar VM.
+        return _ownedSliceProgram is not null &&
             !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input);
     }
