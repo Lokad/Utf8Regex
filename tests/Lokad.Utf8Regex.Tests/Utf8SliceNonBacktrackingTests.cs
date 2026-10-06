@@ -4,10 +4,10 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 NonBacktracking execution contract: only BCL's symbolic engine honors
-// linear-time execution, so every NonBacktracking shape declines the owned
-// backtracking slice to legacy-exact routing (fallback reason
-// "unsupported_options"). The contract pinned here is construction validation
+// R03 NonBacktracking execution contract: loopless literal graphs now use native
+// execution plus a bounded unit verifier for offsets/results. Loops and general
+// symbolic graphs retain legacy routing (fallback reason "unsupported_options").
+// The contract pinned here is construction validation
 // (NotSupportedException for backreferences, lookarounds, balancing,
 // conditionals, atomics, and \G; RegexParseException for malformed patterns),
 // result parity with the backtracking oracle on supported shapes, linear-time
@@ -43,8 +43,16 @@ public sealed class Utf8SliceNonBacktrackingTests
         {
             var regex = new Utf8Regex(pattern, options);
             Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
-            Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-            Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
+            if (pattern is "abc" or "a|ab" or "\\bword\\b")
+            {
+                Assert.NotEqual(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+                Assert.Null(regex.Inspection.FallbackReason);
+            }
+            else
+            {
+                Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+                Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
+            }
             Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "NonBacktracking validates eagerly like BCL");
             var legacyInput = Encoding.UTF8.GetBytes("xxaaxx");
             Assert.Equal(new Regex(pattern, options, Regex.InfiniteMatchTimeout).IsMatch("xxaaxx"), regex.IsMatch(legacyInput));

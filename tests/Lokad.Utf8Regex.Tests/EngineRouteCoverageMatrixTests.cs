@@ -67,7 +67,9 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "whitespace-mode", "a b c", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "abc", "FallbackRegex", "unsupported_pattern", true, true };
         yield return new object?[] { "singleline-dot", "a.*b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "ecmascript", "abc", RegexOptions.ECMAScript, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
-        yield return new object?[] { "nonbacktracking", "abc", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
+        // Literal operations now run native; eager NonBacktracking constructor
+        // validation remains separately recorded in the dependency inventory.
+        yield return new object?[] { "nonbacktracking", "abc", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
         // Empty-match and astral edge cases (owner R03).
         yield return new object?[] { "empty-star", "a*", RegexOptions.CultureInvariant, "bbb", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "astral-literal", "\U0001F600", RegexOptions.CultureInvariant, "\U0001F600", "ExactUtf8Literal", null, true, true };

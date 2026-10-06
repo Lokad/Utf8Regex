@@ -72,6 +72,14 @@ public sealed class Utf8SliceSparseGroupTests
         var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, program.GroupNumbers);
         Assert.Equal(numbers.Length - 1, program.GroupCount);
+        AssertOwnedOperations(regex, oracle, texts);
+    }
+
+    // Reuse complete public-operation qualification for native engines that do
+    // not lower through the unit VM. The caller must establish its route guard.
+    internal static void AssertOwnedOperations(Utf8Regex regex, Regex oracle, string[] texts)
+    {
+        var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, regex.GetGroupNumbers());
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
         foreach (var number in numbers.Concat(new[] { -1, 0, 1, 2, 5, 7, 12, 13, int.MaxValue }).Distinct())
