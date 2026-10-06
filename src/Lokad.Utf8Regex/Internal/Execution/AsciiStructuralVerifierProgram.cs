@@ -157,6 +157,14 @@ internal readonly struct AsciiStructuralVerifierProgram
     {
         return LinearProgram.TryMatch(input, matchIndex, prefixLength, out matchedLength);
     }
+
+    internal bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength,
+        Utf8ExecutionDeadline deadline, out int matchedLength)
+        => LinearProgram.TryMatch(input, matchIndex, prefixLength, deadline, out matchedLength);
+
+    internal bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength,
+        ref Utf8SliceInvocation invocation, out int matchedLength, out Utf8ExecutionLimitKind breach)
+        => LinearProgram.TryMatch(input, matchIndex, prefixLength, ref invocation, out matchedLength, out breach);
 }
 
 internal enum AsciiStructuralLinearVerifierInstructionKind : byte
@@ -277,8 +285,26 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
     }
 
     public bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, out int matchedLength)
+        => TryMatch(input, matchIndex, prefixLength, Utf8ExecutionDeadline.Infinite, out matchedLength);
+
+    internal bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength,
+        Utf8ExecutionDeadline deadline, out int matchedLength)
+    {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, CancellationToken.None);
+        var found = TryMatch(input, matchIndex, prefixLength, ref invocation, out matchedLength, out var breach);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("An unlimited ASCII structural invocation exceeded its representable state extent.");
+        return found;
+    }
+
+    internal bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength,
+        ref Utf8SliceInvocation invocation, out int matchedLength, out Utf8ExecutionLimitKind breach)
     {
         matchedLength = 0;
+        breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return false;
+        breach = invocation.Budget.TryNoteDepth(1);
+        if (breach != Utf8ExecutionLimitKind.None) return false;
         if (!HasValue)
         {
             return false;
@@ -289,10 +315,12 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         var tailEnd = -1;
         foreach (var instruction in Instructions)
         {
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return false;
             switch (instruction.Kind)
             {
                 case AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop:
-                    if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, instruction.Set, instruction.CharClass, instruction.MinCount))
+                    if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, instruction.Set, instruction.CharClass, instruction.MinCount, ref invocation, out breach))
                     {
                         return false;
                     }
@@ -315,6 +343,11 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                            AsciiStructuralSuffixMatcher.MatchesSet(input[index], instruction.Set, instruction.CharClass) &&
                            consumed < instruction.MaxCount)
                     {
+                        if ((consumed & 2047) == 0)
+                        {
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return false;
+                        }
                         index++;
                         consumed++;
                     }
@@ -327,7 +360,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAtCurrent:
-                    if (!AsciiStructuralSuffixMatcher.TryMatch(input, index, instruction.SuffixParts, out index))
+                    if (!AsciiStructuralSuffixMatcher.TryMatch(input, index, instruction.SuffixParts, ref invocation, out index, out breach))
                     {
                         return false;
                     }
@@ -339,7 +372,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                         return false;
                     }
 
-                    if (!AsciiStructuralSuffixMatcher.TryMatchAfterTail(input, tailStart + instruction.MinCount, tailEnd, instruction.SuffixParts, out index))
+                    if (!AsciiStructuralSuffixMatcher.TryMatchAfterTail(input, tailStart + instruction.MinCount, tailEnd, instruction.SuffixParts, ref invocation, out index, out breach))
                     {
                         return false;
                     }
@@ -353,6 +386,8 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.Accept:
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return false;
                     matchedLength = index - matchIndex;
                     return true;
             }

@@ -41,7 +41,7 @@ internal sealed class Utf8AsciiStructuralVerifierRuntime : Utf8StructuralVerifie
 
     public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength)
     {
-        return Plan.AsciiProgram.TryMatch(input, matchIndex, prefixLength, out matchedLength);
+        return Plan.AsciiProgram.TryMatch(input, matchIndex, prefixLength, budget, out matchedLength);
     }
 }
 

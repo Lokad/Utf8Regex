@@ -4,6 +4,12 @@
 
 ### Owned UTF-16 execution
 
+- ASCII structural verification retains the caller deadline and shares its
+  invocation through suffix helpers. Long separators, identifier tails, literal
+  comparisons and suffix candidate scans poll work, cancellation and expiry;
+  final acceptance checks before publishing its length. The verifier borrows
+  prepared storage. Other native callers and common finite policies remain open.
+
 - External lookaround programs run on explicit assertion continuations instead
   of recursive calls. Child repeat arrays and continuation growth share the
   invocation ledger; positive captures commit and other exits roll them back.

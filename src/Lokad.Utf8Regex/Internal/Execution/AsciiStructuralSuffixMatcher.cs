@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>
 /// Owns the shared structural-suffix semantics used by both verifier programs and specialized family matchers.
 /// </summary>
-internal static class AsciiStructuralSuffixMatcher
+internal static partial class AsciiStructuralSuffixMatcher
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryConsumeSetLoop(
