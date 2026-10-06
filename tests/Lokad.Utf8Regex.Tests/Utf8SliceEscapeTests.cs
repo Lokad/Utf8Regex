@@ -354,15 +354,14 @@ public sealed class Utf8SliceEscapeTests
 
     public static IEnumerable<object?[]> TurkicControlShapes()
     {
-        // Slice IgnoreCase folds invariantly, so Turkic-style construction
-        // cultures stay on legacy routing with oracle-exact behavior.
+        // Control literals retain owned scalar execution under Turkic folding.
         yield return new object?[] { "\\t+", "\tA\t" };
         yield return new object?[] { "\\cA+", "\u0001A" };
     }
 
     [Theory]
     [MemberData(nameof(TurkicControlShapes))]
-    public void TurkicControlShapesDeclineToLegacy(string pattern, string inputText)
+    public void TurkicControlShapesUseOwnedScalarExecution(string pattern, string inputText)
     {
         var savedCulture = CultureInfo.CurrentCulture;
         try
@@ -372,9 +371,11 @@ public sealed class Utf8SliceEscapeTests
             var input = Encoding.UTF8.GetBytes(inputText);
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var regex = new Utf8Regex(pattern, options);
-            Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
             Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         }
         finally
         {

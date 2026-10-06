@@ -77,8 +77,7 @@ public sealed class Utf8SliceCategoryTests
 
     public static IEnumerable<object?[]> TurkicCategoryShapes()
     {
-        // Slice IgnoreCase folds invariantly, so Turkic-style construction
-        // cultures stay on legacy routing with oracle-exact behavior.
+        // Category predicates use the program's construction-bound scalar folds.
         yield return new object?[] { "\\p{Ll}+", "ABC" };
         yield return new object?[] { "\\p{L}+", "ABC" };
         yield return new object?[] { "[\\p{L}a]+", "ABC" };
@@ -87,7 +86,7 @@ public sealed class Utf8SliceCategoryTests
 
     [Theory]
     [MemberData(nameof(TurkicCategoryShapes))]
-    public void TurkicCategoryShapesDeclineToLegacy(string pattern, string inputText)
+    public void TurkicCategoryShapesUseOwnedScalarExecution(string pattern, string inputText)
     {
         var savedCulture = CultureInfo.CurrentCulture;
         try
@@ -97,9 +96,11 @@ public sealed class Utf8SliceCategoryTests
             var input = Encoding.UTF8.GetBytes(inputText);
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var regex = new Utf8Regex(pattern, options);
-            Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
             Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         }
         finally
         {

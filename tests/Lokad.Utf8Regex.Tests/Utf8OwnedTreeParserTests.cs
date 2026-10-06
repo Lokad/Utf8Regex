@@ -317,7 +317,7 @@ public sealed class Utf8OwnedTreeParserTests
         Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
         Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
         Assert.Equal((RegexOptions)expectedOptions, actual.Options);
-        Assert.Equal((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture.Name : null, actual.Culture?.Name);
+        Assert.Equal((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture.Name : CultureInfo.CurrentCulture.Name, actual.Culture?.Name);
     }
 
 }
