@@ -852,9 +852,6 @@ internal static class Pcre2CompiledProgramOverlay
             (program.Request.Options & SliceIncompatibleOptions) != 0 ||
             (program.Request.Settings.Newline is not Pcre2NewlineConvention.Default &&
              program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
-            // PCRE2 literals bind supplementary scalars, unlike the core's
-            // newly admitted literal halves. Keep their scalar-owned program.
-            sliceProgram.HasSurrogateLiteral ||
             sliceProgram.RequiresUnicodeWordBoundary ||
             sliceProgram.RequiresUnicodeShorthand ||
             sliceProgram.RequiresUnicodeCategory ||

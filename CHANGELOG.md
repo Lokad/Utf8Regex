@@ -24,6 +24,13 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Flat NonBacktracking graphs now construct and execute through the owned scalar
+  program without creating a BCL regex. Native literal discovery remains where
+  eligible; loops, shared capture declarations and unsupported constructs retain
+  their transitional admission. Native planning now honors impossible atoms from
+  the owned parser, so raw lone surrogates cannot become U+FFFD byte literals.
+  Removed the obsolete surrogate-literal census and its core/PCRE2 selectors.
+  General owned NonBacktracking execution and remaining BCL consumers stay open.
 - Owned replacement templates now splice original UTF-8 capture/context ranges
   without a whole-subject UTF-16 map or decoded staging. String evaluators decode
   requested values lazily and encode each returned fragment independently;

@@ -22,4 +22,30 @@ internal static class Utf8SliceParser
         if (tree is null) return null;
         return Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
     }
+
+    internal static Utf8SliceProgram? TryParseNonBacktrackingFlatGraph(RegexOptions options, Utf8OwnedRegexTree? tree)
+    {
+        if (tree is null) return null;
+        // No consuming loop, assertion recursion, reference, conditional or
+        // atomic choice enters this admission. Candidate work is bounded by
+        // the cached finite graph, independent of subject length. General
+        // NonBacktracking graphs require a separate owned linear engine.
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(tree.Root);
+        while (pending.TryPop(out var node))
+        {
+            if (node.Kind is not (Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set or
+                Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty or Utf8TreeNodeKind.Nothing or
+                Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
+                Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End or
+                Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.ECMABoundary or Utf8TreeNodeKind.NonECMABoundary))
+                return null;
+            if (node.Kind == Utf8TreeNodeKind.Capture && node.N >= 0) return null;
+            for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
+        }
+        var program = TryParse(options & ~RegexOptions.NonBacktracking, tree);
+        // Aliased declarations can write a public slot more than once even
+        // without loops. Their NonBacktracking capture-history rule is separate.
+        return program is { HasSharedCaptureDeclarations: false, HasBalancing: false } ? program : null;
+    }
 }

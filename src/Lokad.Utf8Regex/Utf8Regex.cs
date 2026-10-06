@@ -144,16 +144,14 @@ public sealed partial class Utf8Regex
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). Remaining group-depth and lowered-instruction
         // admission limits still decline to transitional routing.
-        // The admitted NonBacktracking literal graphs have no loops, balancing,
+        // The admitted NonBacktracking flat graphs have no loops, balancing,
         // or shared capture declarations. Their cached scalar program supplies
         // complete-scalar offsets without an input-dependent backtracking search.
         // Other NonBacktracking graphs still require owned admission/execution.
-        var sliceOptions = (options & RegexOptions.NonBacktracking) != 0 &&
-            preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral
-                ? options & ~RegexOptions.NonBacktracking : options;
-        var ownedSliceProgram = !RequiresCultureSensitiveFallback
-            ? Utf8SliceParser.TryParse(sliceOptions, preparedRegex.SemanticRegex.RuntimeTree)
-            : null;
+        var ownedSliceProgram = RequiresCultureSensitiveFallback ? null :
+            (options & RegexOptions.NonBacktracking) != 0
+                ? Utf8SliceParser.TryParseNonBacktrackingFlatGraph(options, preparedRegex.SemanticRegex.RuntimeTree)
+                : Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
         // R03 lookbehind: the owned front end leaves no runtime tree for
@@ -167,13 +165,11 @@ public sealed partial class Utf8Regex
             _ = _program.GroupNumbers.Value;
         }
 
-        // NonBacktracking construction validates through the fallback engine: BCL
-        // throws NotSupportedException at construction for unsupported features
-        // (backreferences, lookarounds, balancing, conditionals, atomics, \G),
-        // so the fallback regex builds eagerly here to preserve failure timing.
-        // Supported shapes pay one early build they would incur on first use;
-        // malformed patterns already failed above through the front end.
-        if ((options & RegexOptions.NonBacktracking) != 0)
+        // Flat NonBacktracking graphs have an owned structural admission proof
+        // and no input-dependent repetition. Construction needs no BCL engine.
+        // General/unserved graphs and unsupported constructs remain migration
+        // debt; retain their existing construction validation until replaced.
+        if ((options & RegexOptions.NonBacktracking) != 0 && ownedSliceProgram is null)
         {
             _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
         }
@@ -529,7 +525,6 @@ public sealed partial class Utf8Regex
         if (_sliceProgram is not null) return _sliceProgram;
         if (_ownedSliceProgram is not null &&
             (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
-             _ownedSliceProgram.HasSurrogateLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _ownedSliceProgram.HasSharedCaptureDeclarations ||
              _ownedSliceProgram.HasExplicitCaptureNumbers ||
@@ -2603,7 +2598,6 @@ public sealed partial class Utf8Regex
         // discovery, confirmation and projection. Other shapes retain the scalar VM.
         // A possible non-ASCII folding partner stays in its existing semantic route.
         if (!RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
-            _ownedSliceProgram is not { HasSurrogateLiteral: true } &&
             (_ownedSliceProgram is not { IgnoreCase: true } ||
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase) &&
             _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
@@ -2622,7 +2616,6 @@ public sealed partial class Utf8Regex
         }
 
         if (!UsesRightToLeft() && !RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
-            _ownedSliceProgram is not { HasSurrogateLiteral: true } &&
             _ownedSliceProgram is not ({ HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true }) &&
             (_ownedSliceProgram is not { IgnoreCase: true } ||
                 _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&

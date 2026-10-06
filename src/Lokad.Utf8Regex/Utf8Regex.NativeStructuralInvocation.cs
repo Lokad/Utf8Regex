@@ -23,7 +23,7 @@ public sealed partial class Utf8Regex
         if (!eligible ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
             RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _ownedSliceProgram is null ||
-            _ownedSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true } or
+            _ownedSliceProgram is { IgnoreCase: true } or { HasBalancing: true } or
                 { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true })
             return false;
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);

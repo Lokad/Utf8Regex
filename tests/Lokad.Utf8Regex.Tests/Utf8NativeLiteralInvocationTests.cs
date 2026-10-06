@@ -182,10 +182,9 @@ public sealed class Utf8NativeLiteralInvocationTests
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
         Assert.Equal(Utf8ExecutionBackend.NativeLiteral, Prepared(regex).ExecutionBackend);
-        // Construction validation remains a recorded BCL dependency. Replace its
-        // already-built engine accessors with fail-fast sentinels so this proves
-        // execution ownership without misrepresenting constructor independence.
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        // Owned graph admission validates construction without creating BCL.
+        // Poison lazy accessors too, so every operation proves that independence.
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         ForbidFallbackExecution(regex);
         if (pattern.Length == 0)
             Utf8ScalarCountTests.AssertEmptyScalarOperations(regex, false);

@@ -246,16 +246,10 @@ internal sealed class Utf8SliceProgram
             UsesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
             HasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
-            if (instruction.Kind == Utf8SliceInstructionKind.Literal &&
-                instruction.A is >= 0xD800 and <= 0xDFFF)
-            {
-                HasSurrogateLiteral = true;
-            }
         }
         foreach (var assertion in assertions)
         {
             UsesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
-            HasSurrogateLiteral |= assertion.Body.HasSurrogateLiteral;
             HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
             HasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
             UsesLiteralClassBracketSyntax |= assertion.Body.UsesLiteralClassBracketSyntax;
@@ -301,9 +295,6 @@ internal sealed class Utf8SliceProgram
     internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
-    // Lone-surrogate pattern admission still needs an explicit contract; these
-    // atoms cannot consume any scalar in a strict UTF-8 subject.
-    internal bool HasSurrogateLiteral { get; }
     internal bool HasUnicodePatternAtoms { get; }
 
     // The compiled .NET 10 lazy-loop defect is excluded from our semantics.
@@ -540,6 +531,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode:
                     return (0, 0);
                 case Utf8SliceNode.LiteralNode literal:
+                    if (!System.Text.Rune.IsValid(literal.Value)) return (0, 0);
                     var width = literal.Value < 0x80 ? 1 : literal.Value < 0x800 ? 2 : literal.Value < 0x10000 ? 3 : 4;
                     return literal.FoldCase ? (1, 4) : (width, width);
                 case Utf8SliceNode.SetNode set: return set.Negated || set.FoldCase || set.Members.Length != 0 ? (1, 4) : (1, 1);
@@ -748,7 +740,12 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.LiteralNode literal:
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value, literal.FoldCase ? 1 : 0, 0, 0));
+                    // An invalid scalar is an impossible atom, not a three-byte
+                    // literal or a code-unit special mode. Repetition still
+                    // controls whether the atom must execute.
+                    Emit(System.Text.Rune.IsValid(literal.Value)
+                        ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value, literal.FoldCase ? 1 : 0, 0, 0)
+                        : new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.SetNode set:
                     if (set.Mask16.Length != 16)

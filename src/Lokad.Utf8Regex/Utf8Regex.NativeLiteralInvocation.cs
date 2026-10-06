@@ -19,7 +19,6 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
         if (RequiresCultureSensitiveFallback || _requiresKelvinSignFallback ||
-            _ownedSliceProgram is { HasSurrogateLiteral: true } ||
             _ownedSliceProgram is { HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true } ||
             _ownedSliceProgram is { IgnoreCase: true } && _preparedRegex.ExecutionKind is not
                 (NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||

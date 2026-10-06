@@ -4,8 +4,8 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 NonBacktracking execution contract: loopless literal graphs now use native
-// execution plus a bounded unit verifier for offsets/results. Loops and general
+// R03 NonBacktracking execution contract: flat graphs use the owned scalar
+// program, preserving native literal discovery where available. Loops and general
 // symbolic graphs retain legacy routing (fallback reason "unsupported_options").
 // The contract pinned here is construction validation
 // (NotSupportedException for backreferences, lookarounds, balancing,
@@ -33,7 +33,7 @@ public sealed class Utf8SliceNonBacktrackingTests
 
     [Theory]
     [MemberData(nameof(LegacyShapes))]
-    public void NonBacktrackingShapesRouteLegacy(string pattern)
+    public void NonBacktrackingShapesSelectOwnedFlatOrLegacyLoop(string pattern)
     {
         foreach (var options in new[]
         {
@@ -42,7 +42,8 @@ public sealed class Utf8SliceNonBacktrackingTests
         })
         {
             var regex = new Utf8Regex(pattern, options);
-            Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
+            var flat = pattern is "abc" or "a|ab" or "^a$" or "\\bword\\b";
+            Assert.Equal(flat, regex.Inspection.AvailableOwnedSliceProgram is not null);
             if (pattern is "abc" or "a|ab" or "\\bword\\b")
             {
                 Assert.NotEqual(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
@@ -53,10 +54,10 @@ public sealed class Utf8SliceNonBacktrackingTests
                 Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
                 Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
             }
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "NonBacktracking validates eagerly like BCL");
+            Assert.Equal(!flat, regex.Inspection.DebugFallbackRegexIsCreated);
             var legacyInput = Encoding.UTF8.GetBytes("xxaaxx");
             Assert.Equal(new Regex(pattern, options, Regex.InfiniteMatchTimeout).IsMatch("xxaaxx"), regex.IsMatch(legacyInput));
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+            Assert.Equal(!flat, regex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 
@@ -129,11 +130,12 @@ public sealed class Utf8SliceNonBacktrackingTests
         var backtracking = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, backtracking.IsMatch(inputText));
         var regex = new Utf8Regex(pattern, options);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var flat = pattern is "abc" or "a|ab" or "ab|a" or "^a$" or "^|b$" or "\\b" or "\\Aabc\\z";
+        Assert.Equal(flat, regex.Inspection.AvailableOwnedSliceProgram is not null);
         Assert.Equal(expected, regex.IsMatch(input));
         using var source = new CancellationTokenSource();
         Assert.Equal(expected, regex.IsMatch(input, source.Token));
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.Equal(!flat, regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -150,7 +152,8 @@ public sealed class Utf8SliceNonBacktrackingTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var flat = pattern is "^a" or "a.c" or "a b" or "(a)(b)";
+        Assert.Equal(flat, regex.Inspection.AvailableOwnedSliceProgram is not null);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
         var expected = oracle.Match(inputText);
@@ -162,7 +165,7 @@ public sealed class Utf8SliceNonBacktrackingTests
             Assert.Equal(expected.Length, found.LengthInUtf16);
         }
 
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.Equal(!flat, regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]
@@ -267,11 +270,10 @@ public sealed class Utf8SliceNonBacktrackingTests
     [MemberData(nameof(NonBacktrackingLaneParityCases))]
     public void NonBacktrackingLanesMatchOracle(string pattern, string text, string template)
     {
-        // R03 NonBacktracking execution contract: every lane rides legacy-exact
-        // BCL routing (only BCL symbolic engine honors linear-time execution),
-        // so Count, Match, Detailed, enumeration, splits, and all three
-        // replacement cores construct the fallback engine with oracle parity on
-        // both lanes. IsMatch-only parity lives in NonBacktrackingIsMatchMatchesOracle.
+        // These ASCII rows overlap the comparator. Flat graphs must keep every
+        // public lane owned; looped graphs retain the transitional symbolic
+        // engine until general owned NonBacktracking execution is qualified.
+        var flat = pattern is "ab" or "(a)(b)" or "(ab|cd)ef";
         var input = Encoding.UTF8.GetBytes(text);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         foreach (var options in new[] { RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, RegexOptions.NonBacktracking | RegexOptions.Compiled | RegexOptions.CultureInvariant })
@@ -279,10 +281,10 @@ public sealed class Utf8SliceNonBacktrackingTests
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var isMatchRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.True(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
             var countRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.True(countRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, countRegex.Inspection.DebugFallbackRegexIsCreated);
             var matchRegex = new Utf8Regex(pattern, options);
             var expectedMatch = oracle.Match(text);
             var actualMatch = matchRegex.Match(input);
@@ -292,7 +294,7 @@ public sealed class Utf8SliceNonBacktrackingTests
                 Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
                 Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
             }
-            Assert.True(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, matchRegex.Inspection.DebugFallbackRegexIsCreated);
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedDetailed = oracle.Match(text);
             var actualDetailed = detailedRegex.MatchDetailed(input);
@@ -301,7 +303,7 @@ public sealed class Utf8SliceNonBacktrackingTests
             {
                 Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
             }
-            Assert.True(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, detailedRegex.Inspection.DebugFallbackRegexIsCreated);
             var enumerateRegex = new Utf8Regex(pattern, options);
             var expectedPositions = new System.Collections.Generic.List<string>();
             foreach (Match m in oracle.Matches(text))
@@ -314,7 +316,7 @@ public sealed class Utf8SliceNonBacktrackingTests
                 actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
             }
             Assert.Equal(expectedPositions, actualPositions);
-            Assert.True(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
             var splitRegex = new Utf8Regex(pattern, options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
@@ -329,22 +331,22 @@ public sealed class Utf8SliceNonBacktrackingTests
                 actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
             }
             Assert.Equal(expectedSplits, actualSplits);
-            Assert.True(splitRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, splitRegex.Inspection.DebugFallbackRegexIsCreated);
             var expected = oracle.Replace(text, template);
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
             var bytesRegex = new Utf8Regex(pattern, options);
             var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
             Assert.Equal(expectedBytes, bytesActual);
-            Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, bytesRegex.Inspection.DebugFallbackRegexIsCreated);
             var stringRegex = new Utf8Regex(pattern, options);
             var stringActual = stringRegex.ReplaceToString(input, template);
             Assert.Equal(expected, stringActual);
-            Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, stringRegex.Inspection.DebugFallbackRegexIsCreated);
             var destinationRegex = new Utf8Regex(pattern, options);
             var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
             Assert.Equal(System.Buffers.OperationStatus.Done, status);
             Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-            Assert.True(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(!flat, destinationRegex.Inspection.DebugFallbackRegexIsCreated);
         }
     }
 }

@@ -11,6 +11,14 @@ internal static class Utf8NativeExecutionAnalyzer
         RegexOptions executionOptions,
         out Utf8RegexAnalysis analyzedRegex)
     {
+        if (semanticRegex.RuntimeTree is { } tree && ContainsImpossibleAtom(tree.Root))
+        {
+            // Native byte plans must never encode an impossible literal as
+            // U+FFFD. The owned scalar lowerer emits failure for these atoms,
+            // including under zero repetition and alternative/assertion bodies.
+            analyzedRegex = default;
+            return false;
+        }
         if (TryAnalyzeAsciiStructuralIdentifierFamilyTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
@@ -55,6 +63,33 @@ internal static class Utf8NativeExecutionAnalyzer
         return false;
     }
 
+    private static bool ContainsImpossibleAtom(Utf8TreeNode root)
+    {
+        var pending = new Stack<Utf8TreeNode>();
+        pending.Push(root);
+        while (pending.TryPop(out var node))
+        {
+            // The parser already resolves raw and escaped lone surrogates to
+            // Nothing. Raw-pattern shortcuts must honor that authoritative tree.
+            if (node.Kind == Utf8TreeNodeKind.Nothing) return true;
+            if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic)
+            {
+                if (char.IsSurrogate(node.Ch)) return true;
+            }
+            else if (node.Kind == Utf8TreeNodeKind.Multi && node.Str is { } text)
+            {
+                for (var offset = 0; offset < text.Length;)
+                {
+                    if (System.Text.Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
+                        return true;
+                    offset += width;
+                }
+            }
+            for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
+        }
+        return false;
+    }
+
     private static bool TryAnalyzeLiteralTree(
         Utf8SemanticRegex semanticRegex,
         string executionPattern,
@@ -74,7 +109,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
         // Named capture wrappers retain the same literal discovery. The
         // NonBacktracking admission proof separately excludes shared declarations
-        // and scoped folding; offsets/results retain the owned unit verifier.
+        // and scoped folding; offsets/results retain the owned scalar program.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
             (executionOptions & RegexOptions.IgnoreCase) == 0 &&
             semanticRegex.RuntimeTree is { Root.ChildCount: 1 } literalTree &&

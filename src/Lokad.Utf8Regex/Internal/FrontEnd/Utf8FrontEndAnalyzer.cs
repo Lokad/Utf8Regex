@@ -8,14 +8,14 @@ internal static class Utf8FrontEndAnalyzer
         RegexOptions executionOptions)
     {
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
-        // The native analyzer admits NonBacktracking only for literal shapes.
-        // Other shapes retain their existing unsupported-options migration route.
+        // Native discovery remains limited to admitted literal shapes. Other
+        // flat graphs receive their owned scalar program at construction;
+        // general graphs retain the unsupported-options migration route.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
-            !features.HasLoops && !features.HasLookarounds && !features.HasAtomicGroups && !features.HasBackreferences && !features.HasConditionals &&
+            Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.TryParseNonBacktrackingFlatGraph(executionOptions,
+                semanticRegex.RuntimeTree) is { } nativeScalarProof &&
             Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, executionPattern, executionOptions, out var nativeNonBacktracking) &&
-            Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.TryParse(executionOptions & ~RegexOptions.NonBacktracking,
-                semanticRegex.RuntimeTree) is { HasSharedCaptureDeclarations: false, HasBalancing: false } nativeUnitProof &&
-            nativeUnitProof.IgnoreCase == ((executionOptions & RegexOptions.IgnoreCase) != 0))
+            nativeScalarProof.IgnoreCase == ((executionOptions & RegexOptions.IgnoreCase) != 0))
         {
             return nativeNonBacktracking;
         }

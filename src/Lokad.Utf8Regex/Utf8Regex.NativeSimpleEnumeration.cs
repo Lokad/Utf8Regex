@@ -18,7 +18,7 @@ public sealed partial class Utf8Regex
             _preparedRegex.SimplePatternPlan.Branches is not { Length: > 0 } ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
             RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _ownedSliceProgram is null ||
-            _ownedSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true })
+            _ownedSliceProgram is { IgnoreCase: true } or { HasBalancing: true })
             return false;
         try
         {
