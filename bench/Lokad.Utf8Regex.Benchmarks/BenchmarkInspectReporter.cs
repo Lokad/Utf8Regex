@@ -3736,9 +3736,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
-        Console.WriteLine($"ActiveScalarPlan  : {regex.Inspection.DebugUsesOwnedSliceProgram}");
-        Console.WriteLine($"BclRegexCreated   : {regex.Inspection.DebugFallbackRegexIsCreated}");
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
         return 0;
     }
@@ -5440,6 +5437,9 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
         Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
+        Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
+        Console.WriteLine($"ActiveScalarPlan  : {regex.Inspection.DebugUsesOwnedSliceProgram}");
+        Console.WriteLine($"BclRegexCreated   : {regex.Inspection.DebugFallbackRegexIsCreated}");
         Console.WriteLine($"SearchKind        : {regex.Inspection.SearchPlan.Kind}");
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
