@@ -100,13 +100,12 @@ public sealed class Utf8SliceFiniteLazyTests
         var program = Utf8SliceParser.TryParse(pattern, options);
         Assert.NotNull(program);
         var input = Encoding.ASCII.GetBytes(new string('a', 24) + "c");
-        var map = Utf8BoundaryMap.Create(input);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.False(Utf8SliceRunner.IsMatch(program, input, map, starts, ends, ref baseline).IsMatch);
+        Assert.False(Utf8SliceRunner.IsMatch(program, input, starts, ends, ref baseline).IsMatch);
         Assert.True(baseline.Budget.Steps > 128);
         Assert.True(baseline.Budget.PeakDepth > 1);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
@@ -115,7 +114,7 @@ public sealed class Utf8SliceFiniteLazyTests
             Array.Fill(starts, -1);
             Array.Fill(ends, -1);
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var outcome = Utf8SliceRunner.IsMatch(program, input, map, starts, ends, ref invocation);
+            var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
             Assert.False(outcome.IsMatch);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -126,7 +125,7 @@ public sealed class Utf8SliceFiniteLazyTests
             Array.Fill(ends, -1);
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, depth, 0),
                 Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var outcome = Utf8SliceRunner.IsMatch(program, input, map, starts, ends, ref invocation);
+            var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.Depth, outcome.Breach);
             Assert.False(outcome.IsMatch);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -136,7 +135,7 @@ public sealed class Utf8SliceFiniteLazyTests
         var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
-            Utf8SliceRunner.IsMatch(program, input, map, starts, ends, ref storage).Breach);
+            Utf8SliceRunner.IsMatch(program, input, starts, ends, ref storage).Breach);
         Assert.Equal(0UL, storage.Ledger.ReservedBytes);
         Array.Fill(starts, -1);
         Array.Fill(ends, -1);
@@ -144,7 +143,7 @@ public sealed class Utf8SliceFiniteLazyTests
         var canceled = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         canceled.CheckpointHook = steps => { if (steps >= 64) source.Cancel(); };
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            Utf8SliceRunner.IsMatch(program, input, map, starts, ends, ref canceled));
+            Utf8SliceRunner.IsMatch(program, input, starts, ends, ref canceled));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options);

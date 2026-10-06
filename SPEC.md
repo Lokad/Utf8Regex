@@ -75,8 +75,8 @@ separate counter owners. This synchronous internal owner is not a public shared
 meter and does not support concurrent advancement of copies. Infinite None-token
 calls without diagnostics retain inline counters unless a forkable cursor needs
 a shared storage owner. Controlled invocation copies share their aggregate ledger.
-Owned mapped cursors and split views retain shared leases for coordinate, decoded
-and private unit payloads. EOF or failure drops one holder; payload remains charged
+Owned mapped cursors and split views retain shared leases for coordinate and decoded
+payloads. EOF or failure drops one holder; payload remains charged
 while another copy or view holds it. After the last holder is collected, cleanup
 queues a release which the synchronous ledger drains before its next read or
 admission. Abandoned cursors require no explicit disposal. Setup failure before

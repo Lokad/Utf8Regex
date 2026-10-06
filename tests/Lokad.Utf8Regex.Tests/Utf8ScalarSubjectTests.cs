@@ -292,11 +292,10 @@ public sealed class Utf8ScalarSubjectTests
     public void FailedScalarVmStorageAdmissionReleasesScratch()
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U0001f600", 1024)));
-        var map = Utf8BoundaryMap.Create(input);
         var program = Utf8SliceParser.TryParse("^(.)+$", RegexOptions.CultureInvariant)!;
         var invocation = new Utf8SliceInvocation(new(0, 0, 128), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, 0,
-            new int[program.GroupCount], new int[program.GroupCount], ref invocation);
+        var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0,
+            new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }

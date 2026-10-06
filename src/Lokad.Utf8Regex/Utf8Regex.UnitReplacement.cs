@@ -46,9 +46,9 @@ public sealed partial class Utf8Regex
         Span<byte> destination, CancellationToken token)
         where TExpansion : struct, IUtf8SliceUtf16Expansion<TState>
     {
-        var validation = Utf8Validation.Validate(input);
-        var map = Utf8BoundaryMap.Create(input, validation);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        var validation = Utf8Validation.Validate(input, ref invocation);
+        var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var mapReservation);
         var slots = new Utf8SliceSlots([], []);
         var writer = new Utf8SliceUtf16OutputWriter();
         var decodedReservation = (ulong)map.Utf16Length * 2;
@@ -60,14 +60,14 @@ public sealed partial class Utf8Regex
             decodedAdmitted = true;
             var decoded = Utf8SliceBufferWork.DecodeUtf8(input, map.Utf16Length, ref invocation);
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var unit = program.RightToLeft ? map.Utf16Length : 0;
-            var edge = unit;
-            var anchor = unit;
-            while (unit >= 0 && unit <= map.Utf16Length)
+            var position = program.RightToLeft ? input.Length : 0;
+            var edge = program.RightToLeft ? map.Utf16Length : 0;
+            var anchor = position;
+            while (position >= 0)
             {
-                invocation.AnchorOriginByte = map.Resolve(anchor).ByteOffset;
-                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map,
-                    unit, slots.Starts, slots.Ends, ref invocation);
+                invocation.AnchorOriginByte = anchor;
+                var outcome = Utf8SliceRunner.TryFindFirst(program, input,
+                    position, slots.Starts, slots.Ends, true, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -75,22 +75,24 @@ public sealed partial class Utf8Regex
                     if (!outcome.Found) break;
                     if (outcome.CaptureStarts is null || outcome.CaptureLengths is null)
                         throw new InvalidOperationException("Owned replacement match is missing capture histories.");
+                    var startUnit = map.GetUtf16OffsetForByteOffset(outcome.StartByte);
+                    var endUnit = map.GetUtf16OffsetForByteOffset(outcome.EndByte);
                     if (!program.RightToLeft)
-                        writer.Append(decoded.AsSpan(edge, outcome.StartUnit - edge), ref invocation);
+                        writer.Append(decoded.AsSpan(edge, startUnit - edge), ref invocation);
                     expansion.Append(input, decoded, map, map, outcome, ref writer, ref state, ref invocation);
                     if (program.RightToLeft)
                     {
-                        writer.Append(decoded.AsSpan(outcome.EndUnit, edge - outcome.EndUnit), ref invocation);
+                        writer.Append(decoded.AsSpan(endUnit, edge - endUnit), ref invocation);
                         writer.MarkPiece(ref invocation);
-                        edge = outcome.StartUnit;
-                        unit = outcome.EndUnit > outcome.StartUnit ? outcome.StartUnit : outcome.EndUnit - 1;
+                        edge = startUnit;
                     }
                     else
                     {
-                        edge = outcome.EndUnit;
-                        unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+                        edge = endUnit;
                     }
-                    if (outcome.EndUnit > outcome.StartUnit) anchor = edge;
+                    var closingEdge = program.RightToLeft ? outcome.StartByte : outcome.EndByte;
+                    position = outcome.EndByte > outcome.StartByte ? closingEdge : Utf8SliceRunner.AdvancePastScalar(input, closingEdge, program.RightToLeft);
+                    if (outcome.EndByte > outcome.StartByte) anchor = closingEdge;
                 }
                 finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
             }
@@ -119,49 +121,41 @@ public sealed partial class Utf8Regex
             writer.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
             if (decodedAdmitted) invocation.Ledger.Release(decodedReservation);
+            invocation.Ledger.Release(mapReservation);
         }
     }
 
     private byte[] OwnedUnitReplaceEvaluator<TState>(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken token)
     {
-        var validation = Utf8Validation.Validate(input);
-        var map = Utf8BoundaryMap.Create(input, validation);
         var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
-        var decodedReservation = (ulong)map.Utf16Length * 2;
-        var decodedAdmitted = false;
+        ulong mapReservation = 0;
         try
         {
-            if (!invocation.Ledger.TryReserve(decodedReservation))
-                throw new InvalidOperationException("Owned replacement input exceeded the invocation storage budget.");
-            decodedAdmitted = true;
-            var decoded = Utf8SliceBufferWork.DecodeUtf8(input, map.Utf16Length, ref invocation);
+            var validation = Utf8Validation.Validate(input, ref invocation);
+            var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var writer = new Utf8ReplacementWriter(scope.CreateBuffer());
-            var unit = program.RightToLeft ? map.Utf16Length : 0;
-            var edgeByte = program.RightToLeft ? input.Length : 0;
-            var anchor = unit;
-            while (unit >= 0 && unit <= map.Utf16Length)
+            var position = program.RightToLeft ? input.Length : 0;
+            var edgeByte = position;
+            var anchor = position;
+            while (position >= 0)
             {
-                invocation.AnchorOriginByte = map.Resolve(anchor).ByteOffset;
-                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map,
-                    unit, slots.Starts, slots.Ends, ref invocation);
+                invocation.AnchorOriginByte = anchor;
+                var outcome = Utf8SliceRunner.TryFindFirst(program, input,
+                    position, slots.Starts, slots.Ends, true, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
                         throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
                     if (!outcome.Found) break;
-                    var start = map.Resolve(outcome.StartUnit);
-                    var end = map.Resolve(outcome.EndUnit);
-                    if (!start.IsScalarBoundary || !end.IsScalarBoundary)
-                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                    if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, start.ByteOffset - edgeByte));
+                    if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
                     var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
                     try
                     {
-                        var context = projection.CreateContext(input, decoded, map, program, outcome);
+                        var context = projection.CreateContext(input, null, map, program);
                         evaluator(in context, ref writer, ref state);
                         Utf8SliceBufferWork.Checkpoint(ref invocation);
                     }
@@ -169,17 +163,16 @@ public sealed partial class Utf8Regex
                     scope.Retain(writer.OwnedOutput);
                     if (program.RightToLeft)
                     {
-                        writer.Append(input.Slice(end.ByteOffset, edgeByte - end.ByteOffset));
+                        writer.Append(input.Slice(outcome.EndByte, edgeByte - outcome.EndByte));
                         writer.GetOwnedOutput(scope).MarkPiece();
-                        edgeByte = start.ByteOffset;
-                        unit = outcome.EndUnit > outcome.StartUnit ? outcome.StartUnit : outcome.EndUnit - 1;
+                        edgeByte = outcome.StartByte;
                     }
                     else
                     {
-                        edgeByte = end.ByteOffset;
-                        unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+                        edgeByte = outcome.EndByte;
                     }
-                    if (outcome.EndUnit > outcome.StartUnit) anchor = program.RightToLeft ? outcome.StartUnit : outcome.EndUnit;
+                    position = outcome.EndByte > outcome.StartByte ? edgeByte : Utf8SliceRunner.AdvancePastScalar(input, edgeByte, program.RightToLeft);
+                    if (outcome.EndByte > outcome.StartByte) anchor = edgeByte;
                 }
                 finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
             }
@@ -195,7 +188,7 @@ public sealed partial class Utf8Regex
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            if (decodedAdmitted) invocation.Ledger.Release(decodedReservation);
+            invocation.Ledger.Release(mapReservation);
             scope.Release();
         }
     }

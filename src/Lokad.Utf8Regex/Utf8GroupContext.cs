@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex;
 public readonly ref struct Utf8GroupContext
 {
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string _decoded;
+    private readonly string? _decoded;
     private readonly Group? _group;
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly bool _ownedHasValue;
@@ -15,7 +15,7 @@ public readonly ref struct Utf8GroupContext
     private readonly int[]? _ownedCaptureStarts;
     private readonly int[]? _ownedCaptureLengths;
 
-    internal Utf8GroupContext(ReadOnlySpan<byte> input, string decoded, Group? group, Utf8BoundaryMap boundaryMap)
+    internal Utf8GroupContext(ReadOnlySpan<byte> input, string? decoded, Group? group, Utf8BoundaryMap boundaryMap)
     {
         _input = input;
         _decoded = decoded;
@@ -23,7 +23,7 @@ public readonly ref struct Utf8GroupContext
         _boundaryMap = boundaryMap;
     }
 
-    internal Utf8GroupContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
+    internal Utf8GroupContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
     {
         _input = input;
         _decoded = decoded;
@@ -35,7 +35,7 @@ public readonly ref struct Utf8GroupContext
 
     internal Utf8GroupContext(
         ReadOnlySpan<byte> input,
-        string decoded,
+        string? decoded,
         Utf8BoundaryMap boundaryMap,
         int indexInUtf16,
         int lengthInUtf16,
@@ -140,7 +140,7 @@ public readonly ref struct Utf8GroupContext
     /// <summary>Gets the group value as a UTF-16 string, or an empty string when the group is absent.</summary>
     public string GetValueString()
     {
-        return _group?.Value ?? (_ownedHasValue ? _decoded.Substring(_ownedIndex, _ownedLength) : string.Empty);
+        return _group?.Value ?? (_ownedHasValue ? (_decoded is { } decoded ? decoded.Substring(_ownedIndex, _ownedLength) : Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes))) : string.Empty);
     }
 
     /// <summary>Gets a capture by its zero-based index within this group.</summary>

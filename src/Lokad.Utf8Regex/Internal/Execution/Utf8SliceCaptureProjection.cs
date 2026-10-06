@@ -13,7 +13,7 @@ internal struct Utf8SliceCaptureProjection
     internal int[][] CaptureStarts;
     internal int[][] CaptureLengths;
 
-    internal static Utf8SliceCaptureProjection Create(Utf8SliceDetailedOutcome outcome, Utf8BoundaryMap executionMap, scoped ref Utf8SliceInvocation invocation)
+    internal static Utf8SliceCaptureProjection Create(Utf8SliceSearchOutcome outcome, Utf8BoundaryMap executionMap, scoped ref Utf8SliceInvocation invocation)
     {
         if (outcome.CaptureStarts is not { } byteStarts || outcome.CaptureLengths is not { } byteLengths)
             throw new InvalidOperationException("Owned detailed match is missing its capture histories.");
@@ -34,10 +34,12 @@ internal struct Utf8SliceCaptureProjection
                 CaptureStarts = new int[groups][], CaptureLengths = new int[groups][],
                 _reservedBytes = reservation,
             };
-            projection.Starts[0] = outcome.StartUnit;
-            projection.Lengths[0] = outcome.EndUnit - outcome.StartUnit;
-            projection.CaptureStarts[0] = [outcome.StartUnit];
-            projection.CaptureLengths[0] = [outcome.EndUnit - outcome.StartUnit];
+            var startUnit = executionMap.GetUtf16OffsetForByteOffset(outcome.StartByte);
+            var endUnit = executionMap.GetUtf16OffsetForByteOffset(outcome.EndByte);
+            projection.Starts[0] = startUnit;
+            projection.Lengths[0] = endUnit - startUnit;
+            projection.CaptureStarts[0] = [startUnit];
+            projection.CaptureLengths[0] = [endUnit - startUnit];
             var converted = 0;
             for (var group = 1; group < groups; group++)
             {
@@ -62,8 +64,8 @@ internal struct Utf8SliceCaptureProjection
         }
     }
 
-    internal readonly Utf8MatchContext CreateContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap originalMap, Utf8SliceProgram program, Utf8SliceDetailedOutcome outcome)
-        => new(input, decoded, originalMap, program.GroupNames, outcome.StartUnit, outcome.EndUnit - outcome.StartUnit, Starts, Lengths, CaptureStarts, CaptureLengths, program.CaptureCatalog);
+    internal readonly Utf8MatchContext CreateContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap originalMap, Utf8SliceProgram program)
+        => new(input, decoded, originalMap, program.GroupNames, Starts[0], Lengths[0], Starts, Lengths, CaptureStarts, CaptureLengths, program.CaptureCatalog);
 
     internal void Release(ref Utf8SliceInvocation invocation)
     {

@@ -6,14 +6,14 @@ namespace Lokad.Utf8Regex;
 public readonly ref struct Utf8CaptureContext
 {
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string _decoded;
+    private readonly string? _decoded;
     private readonly Capture? _capture;
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly bool _ownedHasValue;
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
 
-    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string decoded, Capture? capture, Utf8BoundaryMap boundaryMap)
+    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string? decoded, Capture? capture, Utf8BoundaryMap boundaryMap)
     {
         _input = input;
         _decoded = decoded;
@@ -21,7 +21,7 @@ public readonly ref struct Utf8CaptureContext
         _boundaryMap = boundaryMap;
     }
 
-    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
+    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
     {
         _input = input;
         _decoded = decoded;
@@ -121,7 +121,7 @@ public readonly ref struct Utf8CaptureContext
     /// <summary>Gets the capture value as a UTF-16 string, or an empty string when no capture exists.</summary>
     public string GetValueString()
     {
-        return _capture?.Value ?? (_ownedHasValue ? _decoded.Substring(_ownedIndex, _ownedLength) : string.Empty);
+        return _capture?.Value ?? (_ownedHasValue ? (_decoded is { } decoded ? decoded.Substring(_ownedIndex, _ownedLength) : Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes))) : string.Empty);
     }
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)

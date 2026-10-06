@@ -517,7 +517,7 @@ public sealed partial class Utf8Regex
     }
 
     // Preserve qualified native lanes; the shared owned VM traverses the original
-    // UTF-8 subject and projects derived UTF-16 coordinates through its boundary map.
+    // UTF-8 subject. Coordinate conversion belongs to result interoperability.
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input, CancellationToken token)
     {
         // Native loops do not yet carry this token through every checkpoint.
@@ -565,192 +565,49 @@ public sealed partial class Utf8Regex
     }
 
     private bool OwnedSliceIsMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
-    {
-        var map = Utf8BoundaryMap.Create(input);
-        return OwnedSliceIsMatchFromUnit(input, program, map, program.RightToLeft ? map.Utf16Length : 0, token);
-    }
+        => OwnedSliceIsMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, token);
 
     private Utf8ValueMatch OwnedSliceMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
-    {
-        var map = Utf8BoundaryMap.Create(input);
-        return OwnedSliceMatchFromUnit(input, program, map, program.RightToLeft ? map.Utf16Length : 0, token);
-    }
+        => OwnedSliceMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, token);
 
     private Utf8MatchContext OwnedSliceMatchDetailed(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
-    {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return OwnedSliceMatchDetailedFromUnit(input, program, analysis.GetDecodedString(), analysis.BoundaryMap, program.RightToLeft ? analysis.BoundaryMap.Utf16Length : 0, token);
-    }
+        => OwnedSliceMatchDetailedFromByte(input, program, program.RightToLeft ? input.Length : 0, token);
 
-    private Utf8MatchContext OwnedSliceMatchDetailedFromUnit(
-        ReadOnlySpan<byte> input,
-        Utf8SliceProgram program,
-        string decoded,
-        Utf8BoundaryMap map,
-        int fromUnit,
-        CancellationToken token)
+    private Utf8MatchContext OwnedSliceMatchDetailedFromByte(ReadOnlySpan<byte> input,
+        Utf8SliceProgram program, int fromByte, CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        var validation = Utf8Validation.Validate(input, ref invocation);
+        invocation.AnchorOriginByte = fromByte;
         var slots = new Utf8SliceSlots([], []);
-        if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
-        {
-            invocation.AnchorOriginByte = map.Resolve(fromUnit).ByteOffset;
-        }
-
-        int[][]? byteStarts = null;
-        int[][]? byteLengths = null;
-        int[]? groupStarts = null;
-        int[]? groupLengths = null;
-        int[][]? historyStarts = null;
-        int[][]? historyLengths = null;
+        var outcome = default(Utf8SliceSearchOutcome);
+        var projection = default(Utf8SliceCaptureProjection);
+        ulong mapReservation = 0;
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, fromUnit, slots.Starts, slots.Ends, ref invocation);
+            outcome = Utf8SliceRunner.TryFindFirst(program, input, fromByte, slots.Starts, slots.Ends, true, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-            }
-
-            if (!outcome.Found || outcome.CaptureStarts is null || outcome.CaptureLengths is null)
-            {
-                if (outcome.Found)
-                {
-                    throw new InvalidOperationException("Owned slice detailed match is missing capture history.");
-                }
-
-                return Utf8MatchContext.Unsuccessful(input, decoded, map, _groupNames);
-            }
-
-            byteStarts = outcome.CaptureStarts;
-            byteLengths = outcome.CaptureLengths;
-            groupStarts = RentGroupArray(program.GroupCount + 1, ref invocation);
-            groupLengths = RentGroupArray(program.GroupCount + 1, ref invocation);
-            historyStarts = RentHistoryOuters(program.GroupCount + 1, ref invocation);
-            historyLengths = RentHistoryOuters(program.GroupCount + 1, ref invocation);
-            groupStarts[0] = outcome.StartUnit;
-            groupLengths[0] = outcome.EndUnit - outcome.StartUnit;
-            historyStarts[0] = RentSingle(outcome.StartUnit, ref invocation);
-            historyLengths[0] = RentSingle(outcome.EndUnit - outcome.StartUnit, ref invocation);
-            for (var group = 1; group <= program.GroupCount; group++)
-            {
-                ConvertHistory(
-                    map,
-                    byteStarts[group - 1],
-                    byteLengths[group - 1],
-                    ref invocation,
-                    out historyStarts[group],
-                    out historyLengths[group]);
-                if (historyStarts[group].Length == 0)
-                {
-                    groupStarts[group] = -1;
-                    groupLengths[group] = 0;
-                }
-                else
-                {
-                    groupStarts[group] = historyStarts[group][^1];
-                    groupLengths[group] = historyLengths[group][^1];
-                }
-            }
-
-            return new Utf8MatchContext(
-                input, decoded, map, _groupNames,
-                outcome.StartUnit, outcome.EndUnit - outcome.StartUnit,
-                groupStarts, groupLengths, historyStarts, historyLengths, program.CaptureCatalog);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (!outcome.Found)
+                return Utf8MatchContext.Unsuccessful(input, null, Utf8BoundaryMap.Create([]), _groupNames);
+            // The current context stores derived UTF-16 capture coordinates.
+            // Its admitted map is result interoperability, never discovery state.
+            var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
+            projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
+            invocation.Budget.ThrowIfCancellationRequested();
+            return projection.CreateContext(input, null, map, program);
         }
         finally
         {
-            // The context retains the converted arrays; their reservations transfer
-            // to the caller-owned result while working storage balances to zero.
-            if (historyStarts is not null && historyLengths is not null)
-            {
-                for (var group = 0; group < historyStarts.Length; group++)
-                {
-                    if (historyStarts[group] is not null)
-                    {
-                        ReleaseGroupArray(historyStarts[group], ref invocation);
-                    }
-
-                    if (historyLengths[group] is not null)
-                    {
-                        ReleaseGroupArray(historyLengths[group], ref invocation);
-                    }
-                }
-
-                ReleaseHistoryOuters(historyStarts, ref invocation);
-                ReleaseHistoryOuters(historyLengths, ref invocation);
-            }
-
-            if (groupStarts is not null)
-            {
-                ReleaseGroupArray(groupStarts, ref invocation);
-            }
-
-            if (groupLengths is not null)
-            {
-                ReleaseGroupArray(groupLengths, ref invocation);
-            }
-
-            Utf8SliceRunner.ReleaseHistory(byteStarts, byteLengths, ref invocation);
+            // Result arrays/maps transfer to the caller. Common retained-result
+            // policy is still open; release this invocation's working reservation.
+            projection.Release(ref invocation);
+            invocation.Ledger.Release(mapReservation);
+            Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }
-    }
-
-    private static int[][] RentHistoryOuters(int length, ref Utf8SliceInvocation invocation)
-    {
-        if (!invocation.Ledger.TryReserve((ulong)length * 8))
-        {
-            throw new InvalidOperationException("Owned slice group storage breached an unlimited invocation budget.");
-        }
-
-        return new int[length][];
-    }
-
-    private static void ReleaseHistoryOuters(int[][] arrays, ref Utf8SliceInvocation invocation)
-    {
-        invocation.Ledger.Release((ulong)arrays.Length * 8);
-    }
-
-    private static int[] RentSingle(int value, ref Utf8SliceInvocation invocation)
-    {
-        if (!invocation.Ledger.TryReserve(4))
-        {
-            throw new InvalidOperationException("Owned slice group storage breached an unlimited invocation budget.");
-        }
-
-        return [value];
-    }
-
-    private static void ConvertHistory(
-        Utf8BoundaryMap map,
-        int[] startsBytes,
-        int[] lengthsBytes,
-        ref Utf8SliceInvocation invocation,
-        out int[] startsUnits,
-        out int[] lengthsUnits)
-    {
-        startsUnits = RentGroupArray(startsBytes.Length, ref invocation);
-        lengthsUnits = RentGroupArray(lengthsBytes.Length, ref invocation);
-        for (var capture = 0; capture < startsBytes.Length; capture++)
-        {
-            startsUnits[capture] = map.GetUtf16OffsetForByteOffset(startsBytes[capture]);
-            lengthsUnits[capture] = map.GetUtf16OffsetForByteOffset(startsBytes[capture] + lengthsBytes[capture]) - startsUnits[capture];
-        }
-    }
-
-    private static int[] RentGroupArray(int length, ref Utf8SliceInvocation invocation)
-    {
-        if (!invocation.Ledger.TryReserve((ulong)length * 4))
-        {
-            throw new InvalidOperationException("Owned slice group storage breached an unlimited invocation budget.");
-        }
-
-        return new int[length];
-    }
-
-    private static void ReleaseGroupArray(int[] array, ref Utf8SliceInvocation invocation)
-    {
-        invocation.Ledger.Release((ulong)array.Length * 4);
     }
 
     private int OwnedSliceCount(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
@@ -762,13 +619,13 @@ public sealed partial class Utf8Regex
     {
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
-            // Non-ASCII subjects and overlapping prefixes retain the unit semantic
-            // verifier and this same deadline; map acquisition still needs bounds.
+            // Mixed subjects and overlapping prefixes use shared scalar
+            // verification under the same invocation.
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceIsMatchFromUnit(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
-                    Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
+                return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural scalar program is required."),
+                    0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
                 ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -957,12 +814,12 @@ public sealed partial class Utf8Regex
                 start.Value <= suffixDirect.IndexInUtf16;
         }
 
-        // Admitted UTF-16 starts use the cached owned unit program for ASCII
+        // Admitted UTF-16 starts use the cached owned scalar program for ASCII
         // and Unicode atoms alike. Ordinary byte-oriented discovery retains
         // its native choices through GetOwnedSliceProgram.
         if (_ownedSliceProgram is { } ownedProgram)
         {
-            return OwnedSliceIsMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
+            return OwnedSliceIsMatchFromByte(input, ownedProgram, subject.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
         // R05: unit-served shapes verify unit-aware from the start unit on astral
@@ -991,42 +848,29 @@ public sealed partial class Utf8Regex
             start.Value);
     }
 
-    /// <summary>Owned slice boolean search from a UTF-16 start unit.</summary>
-    private bool OwnedSliceIsMatchFromUnit(
-        ReadOnlySpan<byte> input,
-        Utf8SliceProgram program,
-        Utf8BoundaryMap map,
-        int startUnit,
-        CancellationToken token)
+    private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int startByte, CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        return OwnedSliceIsMatchFromUnit(input, program, map, startUnit, ref invocation);
+        _ = Utf8Validation.Validate(input, ref invocation);
+        return OwnedSliceIsMatchFromByte(input, program, startByte, ref invocation);
     }
 
-    private bool OwnedSliceIsMatchFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
-        int startUnit, ref Utf8SliceInvocation invocation)
+    private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int startByte, ref Utf8SliceInvocation invocation)
     {
+        invocation.AnchorOriginByte = startByte;
         var slots = new Utf8SliceSlots([], []);
-        if (startUnit >= 0 && startUnit <= map.Utf16Length)
-        {
-            invocation.AnchorOriginByte = map.Resolve(startUnit).ByteOffset;
-        }
-
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends, false, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-            }
-
+            invocation.Budget.ThrowIfCancellationRequested();
             return outcome.Found;
         }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
     /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input.</summary>
@@ -1488,8 +1332,8 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceMatchFromUnit(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
-                    Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
+                return OwnedSliceMatchFromByte(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural scalar program is required."),
+                    0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
                 ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -1742,7 +1586,7 @@ public sealed partial class Utf8Regex
 
         if (_ownedSliceProgram is { } ownedProgram)
         {
-            return OwnedSliceMatchFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
+            return OwnedSliceMatchFromByte(input, ownedProgram, subject.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
         // R05: unit-served first-matches project owned from unit coordinates through
@@ -1781,47 +1625,33 @@ public sealed partial class Utf8Regex
         return CreateValueMatch(input, subject.BoundaryMap, match);
     }
 
-    /// <summary>Owned slice first-match from a UTF-16 start unit.</summary>
-    private Utf8ValueMatch OwnedSliceMatchFromUnit(
-        ReadOnlySpan<byte> input,
-        Utf8SliceProgram program,
-        Utf8BoundaryMap map,
-        int startUnit,
-        CancellationToken token)
+    private Utf8ValueMatch OwnedSliceMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int startByte, CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        return OwnedSliceMatchFromUnit(input, program, map, startUnit, ref invocation);
+        _ = Utf8Validation.Validate(input, ref invocation);
+        return OwnedSliceMatchFromByte(input, program, startByte, ref invocation);
     }
 
-    private Utf8ValueMatch OwnedSliceMatchFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
-        int startUnit, ref Utf8SliceInvocation invocation)
+    private Utf8ValueMatch OwnedSliceMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int startByte, ref Utf8SliceInvocation invocation)
     {
+        invocation.AnchorOriginByte = startByte;
         var slots = new Utf8SliceSlots([], []);
-        if (startUnit >= 0 && startUnit <= map.Utf16Length)
-        {
-            invocation.AnchorOriginByte = map.Resolve(startUnit).ByteOffset;
-        }
-
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends, false, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-            }
-
-            if (!outcome.Found)
-            {
-                return Utf8ValueMatch.NoMatch;
-            }
-
-            return Utf8SliceRunner.ProjectMatch(map, outcome);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (!outcome.Found) return Utf8ValueMatch.NoMatch;
+            var length = outcome.EndByte - outcome.StartByte;
+            var utf16Length = Utf8Validation.Validate(input.Slice(outcome.StartByte, length), ref invocation).Utf16Length;
+            return Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                input, 0, 0, outcome.StartByte, length, utf16Length, ref invocation, out _, out _);
         }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
@@ -2025,7 +1855,7 @@ public sealed partial class Utf8Regex
         }
 
         // Native discovery may lack a complete capture-history projection.
-        // Keep its qualified shapers above; the cached unit program owns the
+        // Keep its qualified shapers above; the cached scalar program owns the
         // remaining admitted detailed result instead of constructing BCL.
         if (_ownedSliceProgram is not null && !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input))
@@ -2121,7 +1951,7 @@ public sealed partial class Utf8Regex
 
         if (_ownedSliceProgram is { } ownedProgram)
         {
-            return OwnedSliceMatchDetailedFromUnit(input, ownedProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
+            return OwnedSliceMatchDetailedFromByte(input, ownedProgram, analysis.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
         // R05: unit-served detailed matches shape owned from the start-unit hit:
@@ -2956,7 +2786,7 @@ public sealed partial class Utf8Regex
         if (TryCreateNativeSimpleEnumerator(input, cancellationToken, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, cancellationToken, out var structuralEnumerator)) return structuralEnumerator;
         // Single literals now retain one invocation through bounded validation,
-        // discovery, confirmation and projection. Other shapes retain the unit VM.
+        // discovery, confirmation and projection. Other shapes retain the scalar VM.
         // A possible non-ASCII folding partner stays in its existing semantic route.
         if (!RequiresCultureSensitiveFallback && !_requiresKelvinSignFallback &&
             _ownedSliceProgram is not { HasSurrogateLiteral: true } &&
@@ -3316,7 +3146,7 @@ public sealed partial class Utf8Regex
         }
 
         // Native split cursors above retain their discovery paths. Count zero
-        // and any other admitted shape use the owned unit cursor before BCL.
+        // and any other admitted shape use the owned scalar cursor before BCL.
         if (count >= 0 && _ownedSliceProgram is { } splitProgram)
             return OwnedSliceEnumerateSplits(input, splitProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
         var fallbackSubject = Utf8InputAnalyzer.Analyze(input);

@@ -24,6 +24,16 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Owned boolean, value, detailed, cursor and replacement discovery share one
+  scalar-aligned byte scan in both directions. Removed the separate UTF-16 scan
+  drivers, unit outcomes/origins and duplicate capture conversion helpers.
+  Boolean/value discovery avoids whole-subject coordinate maps. Detailed results
+  and byte evaluator contexts decode requested values instead of the full subject;
+  derived capture coordinates retain an admitted interoperability map. Capture
+  history materialization now admits both scratch arrays and shrink-copy overlap,
+  records the actual peak and releases unpublished storage on failure/cancellation.
+  Decoded verifiers, UTF-16 template staging, other admissions and common public
+  finite/result/getter policies remain migration work.
 - Owned core Count scans scalar-aligned byte positions without a whole-subject
   UTF-16 coordinate map. Validation and discovery share its token/deadline.
   Empty-literal counters and cursors publish one match per scalar boundary;

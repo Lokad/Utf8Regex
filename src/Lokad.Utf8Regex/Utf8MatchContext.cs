@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex;
 public readonly ref struct Utf8MatchContext
 {
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string _decoded;
+    private readonly string? _decoded;
     private readonly Match? _match;
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly string[]? _groupNames;
@@ -22,7 +22,7 @@ public readonly ref struct Utf8MatchContext
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Match? match, Utf8BoundaryMap boundaryMap, string[]? groupNames)
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Match? match, Utf8BoundaryMap boundaryMap, string[]? groupNames)
     {
         _input = input;
         _decoded = decoded;
@@ -31,23 +31,23 @@ public readonly ref struct Utf8MatchContext
         _groupNames = groupNames;
     }
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16)
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16)
         : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: 1)
     {
     }
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int groupCount)
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int groupCount)
         : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount)
     {
     }
 
-    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames)
+    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames)
     {
         // R03: a failed BCL match still reports a single group; owned misses mirror it.
         return new Utf8MatchContext(input, decoded, boundaryMap, groupNames, hasValue: false, indexInUtf16: 0, lengthInUtf16: 0, groupCount: 1);
     }
 
-    private Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, bool hasValue, int indexInUtf16, int lengthInUtf16, int groupCount)
+    private Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, bool hasValue, int indexInUtf16, int lengthInUtf16, int groupCount)
     {
         _input = input;
         _decoded = decoded;
@@ -72,7 +72,7 @@ public readonly ref struct Utf8MatchContext
             }
         }
     }
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths)
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths)
         : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: groupStarts.Length)
     {
         _ownedGroupStarts = groupStarts;
@@ -81,7 +81,7 @@ public readonly ref struct Utf8MatchContext
 
     internal Utf8MatchContext(
         ReadOnlySpan<byte> input,
-        string decoded,
+        string? decoded,
         Utf8BoundaryMap boundaryMap,
         string[]? groupNames,
         int indexInUtf16,
@@ -96,7 +96,7 @@ public readonly ref struct Utf8MatchContext
         _ownedCaptureLengths = captureLengths;
     }
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap,
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap,
         string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths,
         int[][] captureStarts, int[][] captureLengths, Utf8CaptureCatalog? captureCatalog)
         : this(input, decoded, boundaryMap, groupNames, indexInUtf16, lengthInUtf16, groupStarts, groupLengths, captureStarts, captureLengths)
@@ -398,7 +398,7 @@ public readonly ref struct Utf8MatchContext
             return match.Value;
         }
 
-        return _ownedHasValue ? _decoded.Substring(_ownedIndex, _ownedLength) : string.Empty;
+        return _ownedHasValue ? (_decoded is { } decoded ? decoded.Substring(_ownedIndex, _ownedLength) : Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes))) : string.Empty;
     }
 
     /// <summary>Attempts to get the match value from the original UTF-8 input.</summary>

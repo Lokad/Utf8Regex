@@ -69,8 +69,8 @@ internal ref partial struct Utf8OperationMatchCursor
     private bool _nativeStructuralExhausted;
     private bool _preserveOffsetCurrent;
     private Utf8StructuralSearchState _structuralSearchState;
-    private int _sliceUnit;
-    private int _sliceOriginUnit;
+    private int _slicePositionByte;
+    private int _sliceOriginByte;
     private string? _decodedUnits;
     private int _unitPosition;
 
@@ -329,8 +329,8 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = program;
         _sliceInvocation = invocation;
         _sliceInvocation.ShareStorageForCursor();
-        _sliceUnit = 0;
-        _sliceOriginUnit = -1;
+        _slicePositionByte = program.RightToLeft ? input.Length : 0;
+        _sliceOriginByte = _slicePositionByte;
         _mode = EnumeratorMode.OwnedSlice;
     }
 
@@ -368,8 +368,8 @@ internal ref partial struct Utf8OperationMatchCursor
             map = map.WithStorageLease(invocation.Ledger.CreateLease(reservation));
             var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
             cursor._boundaryMapReservedBytes = reservation;
-            cursor._sliceUnit = startUnit;
-            cursor._sliceOriginUnit = startUnit;
+            cursor._slicePositionByte = map.Resolve(startUnit).ByteOffset;
+            cursor._sliceOriginByte = cursor._slicePositionByte;
             return cursor;
         }
         catch
@@ -390,11 +390,8 @@ internal ref partial struct Utf8OperationMatchCursor
         _boundaryMapReservedBytes = 0;
     }
 
-    // From-unit slice enumeration starts the scan at the caller's start unit
-    // on full input (anchors keep true left context, \G pins to the scan
-    // start like BCL startat); the origin pin takes the scan start up front so
-    // right-to-left scans descend from the caller bound (matches ending at or
-    // below it, rightmost first) instead of resetting to the input end.
+    // Explicit UTF-16 interoperability starts resolve once to the original byte
+    // boundary. Matching and empty progress then use complete scalars only.
     internal Utf8OperationMatchCursor(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
@@ -404,8 +401,8 @@ internal ref partial struct Utf8OperationMatchCursor
         int startUnit)
         : this(program, input, map, timeout, token)
     {
-        _sliceUnit = startUnit;
-        _sliceOriginUnit = startUnit;
+        _slicePositionByte = map.Resolve(startUnit).ByteOffset;
+        _sliceOriginByte = _slicePositionByte;
     }
 
     private bool MoveNextOwnedSlice()
@@ -418,95 +415,27 @@ internal ref partial struct Utf8OperationMatchCursor
             CheckOwnedSliceCursorBoundary();
             if (_sliceProgram is null || _boundaryMap is null) return false;
             var projectionMap = _boundaryMap.Value;
-            var map = projectionMap;
             slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
-            // Right-to-left enumeration descends closing edges from the search
-            // bound (BCL runtextstart): non-empty matches chain the bound to
-            // their start while empty matches step one unit left, mirroring the
-            // ascending advance above. The pin only moves on non-empty matches,
-            // so an empty match ends a contiguous chain exactly like forward.
-            if (_sliceProgram.RightToLeft)
+            _sliceInvocation.AnchorOriginByte = _sliceOriginByte;
+            var outcome = Utf8SliceRunner.TryFindFirst(_sliceProgram, _input, _slicePositionByte,
+                slots.Starts, slots.Ends, false, ref _sliceInvocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+            if (outcome.Found)
             {
-                if (_sliceOriginUnit < 0)
-                {
-                    _sliceUnit = map.Utf16Length;
-                    _sliceOriginUnit = _sliceUnit;
-                }
-
-                if (_sliceOriginUnit >= 0 && _sliceOriginUnit <= map.Utf16Length)
-                {
-                    _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
-                }
-
-                while (_sliceUnit >= 0)
-                {
-                    var rtlOutcome = Utf8SliceRunner.TryMatchAtRightEdgeUnit(
-                        _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
-                    if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
-                    {
-                        throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-                    }
-
-                    if (!rtlOutcome.Found)
-                    {
-                        _sliceUnit--;
-                        continue;
-                    }
-
-                    var projected = Utf8SliceRunner.ProjectMatch(projectionMap, rtlOutcome);
-                    CheckOwnedSliceCursorBoundary();
-                    _current = projected;
-                    _sliceUnit = rtlOutcome.EndUnit > rtlOutcome.StartUnit ? rtlOutcome.StartUnit : rtlOutcome.EndUnit - 1;
-                    if (rtlOutcome.EndUnit > rtlOutcome.StartUnit)
-                    {
-                        _sliceOriginUnit = rtlOutcome.StartUnit;
-                    }
-
-                    return true;
-                }
-
-                CheckOwnedSliceCursorBoundary();
-                ReleaseOwnedBoundaryMap();
-                _sliceProgram = null;
-                return false;
-            }
-            // Contiguous matches chain BCL startat: a fresh scan pins \\G to its
-            // start, a non-empty match advances the pin to its end, and an empty
-            // match keeps the pin (later positions all miss it, ending the chain).
-            if (_sliceOriginUnit < 0)
-            {
-                _sliceOriginUnit = _sliceUnit;
-            }
-
-            if (_sliceOriginUnit >= 0 && _sliceOriginUnit <= map.Utf16Length)
-            {
-                _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
-            }
-
-            while (_sliceUnit <= map.Utf16Length)
-            {
-                var outcome = Utf8SliceRunner.TryMatchFromUnit(
-                    _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
-                if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                {
-                    throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-                }
-
-                if (!outcome.Found)
-                {
-                    _sliceUnit++;
-                    continue;
-                }
-
-                var projected = Utf8SliceRunner.ProjectMatch(projectionMap, outcome);
+                var startUnit = projectionMap.GetUtf16OffsetForByteOffset(outcome.StartByte);
+                var endUnit = projectionMap.GetUtf16OffsetForByteOffset(outcome.EndByte);
+                var projected = new Utf8ValueMatch(true, true, startUnit, endUnit - startUnit,
+                    outcome.StartByte, outcome.EndByte - outcome.StartByte);
                 CheckOwnedSliceCursorBoundary();
                 _current = projected;
-                _sliceUnit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
-                if (outcome.EndUnit > outcome.StartUnit)
+                var edge = _sliceProgram.RightToLeft ? outcome.StartByte : outcome.EndByte;
+                if (outcome.EndByte > outcome.StartByte)
                 {
-                    _sliceOriginUnit = outcome.EndUnit;
+                    _slicePositionByte = edge;
+                    _sliceOriginByte = edge;
                 }
-
+                else _slicePositionByte = Utf8SliceRunner.AdvancePastScalar(_input, edge, _sliceProgram.RightToLeft);
                 return true;
             }
 
@@ -556,8 +485,8 @@ internal ref partial struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = null;
-        _sliceUnit = 0;
-        _sliceOriginUnit = 0;
+        _slicePositionByte = 0;
+        _sliceOriginByte = 0;
         _emittedKernelMatcher = null;
         _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
@@ -592,8 +521,8 @@ internal ref partial struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = null;
-        _sliceUnit = 0;
-        _sliceOriginUnit = 0;
+        _slicePositionByte = 0;
+        _sliceOriginByte = 0;
         _emittedKernelMatcher = null;
         _mode = EnumeratorMode.AsciiSimplePatternScalar;
     }

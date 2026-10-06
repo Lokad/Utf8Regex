@@ -149,7 +149,7 @@ public sealed partial class Utf8Regex
         {
             try
             {
-                return OwnedSliceIsMatchFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+                return OwnedSliceIsMatchFromByte(input.Bytes, _sliceProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -247,7 +247,7 @@ public sealed partial class Utf8Regex
         {
             try
             {
-                return OwnedSliceMatchFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+                return OwnedSliceMatchFromByte(input.Bytes, _sliceProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -319,7 +319,7 @@ public sealed partial class Utf8Regex
         {
             try
             {
-                return OwnedSliceMatchDetailedFromUnit(input.Bytes, _sliceProgram, input.GetDecodedString(), input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+                return OwnedSliceMatchDetailedFromByte(input.Bytes, _sliceProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {

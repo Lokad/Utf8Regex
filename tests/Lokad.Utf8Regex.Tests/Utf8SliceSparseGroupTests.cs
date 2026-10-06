@@ -292,14 +292,14 @@ public sealed class Utf8SliceSparseGroupTests
         }
     }
 
-    private static void AssertValue(Match expected, Utf8ValueMatch actual)
+    internal static void AssertValue(Match expected, Utf8ValueMatch actual)
     {
         Assert.Equal(expected.Success, actual.Success);
         Assert.Equal(expected.Index, actual.IndexInUtf16);
         Assert.Equal(expected.Length, actual.LengthInUtf16);
     }
 
-    private static void AssertDetailed(Regex oracle, Match expected, Utf8MatchContext actual)
+    internal static void AssertDetailed(Regex oracle, Match expected, Utf8MatchContext actual)
     {
         Assert.Equal(expected.Success, actual.Success);
         Assert.Equal(expected.Index, actual.IndexInUtf16);
