@@ -187,8 +187,11 @@ public sealed class Utf8NativeLiteralInvocationTests
         // execution ownership without misrepresenting constructor independence.
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
         ForbidFallbackExecution(regex);
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle,
-            ["", "target target", "a ab aba", "aaa a", "é中\U0001f600 target 中"]);
+        if (pattern.Length == 0)
+            Utf8ScalarCountTests.AssertEmptyScalarOperations(regex, false);
+        else
+            Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle,
+                ["", "target target", "a ab aba", "aaa a", "é中\U0001f600 target 中"]);
     }
 
     private static void ForbidFallbackExecution(Utf8Regex regex)
@@ -238,7 +241,7 @@ public sealed class Utf8NativeLiteralInvocationTests
 
     [Theory]
     [MemberData(nameof(SemanticExclusionCases))]
-    public void NativeSelectionKeepsUnitFoldingAndOptionSemantics(int patternId, string pattern, RegexOptions options)
+    public void NativeSelectionKeepsScalarFoldingAndOptionSemantics(int patternId, string pattern, RegexOptions options)
     {
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(pattern, options);
@@ -247,12 +250,20 @@ public sealed class Utf8NativeLiteralInvocationTests
         {
             var input = Encoding.UTF8.GetBytes(text);
             var actual = regex.EnumerateMatches(input, source.Token);
-            foreach (Match expected in new Regex(pattern, options).Matches(text))
+            // A lone surrogate denotes no scalar on strict UTF-8 subjects.
+            // Keep its syntax/owned-route controls; half matches are superseded.
+            if (patternId <= 3)
             {
-                Assert.True(actual.MoveNext());
-                Assert.Equal(expected.Index, actual.Current.IndexInUtf16);
-                Assert.Equal(expected.Length, actual.Current.LengthInUtf16);
+                Assert.Equal(0, regex.Count(input, source.Token));
+                Assert.False(regex.Match(input, source.Token).Success);
             }
+            else
+                foreach (Match expected in new Regex(pattern, options).Matches(text))
+                {
+                    Assert.True(actual.MoveNext());
+                    Assert.Equal(expected.Index, actual.Current.IndexInUtf16);
+                    Assert.Equal(expected.Length, actual.Current.LengthInUtf16);
+                }
             Assert.False(actual.MoveNext());
         }
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, $"Semantic exclusion {patternId}");
@@ -269,12 +280,8 @@ public sealed class Utf8NativeLiteralInvocationTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public void EmptyLiteralReplacementPreservesSurrogateHalfFragments(bool compiled, bool reverse)
-    {
-        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
-            (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
-        Utf8SliceSparseGroupTests.AssertOwnedOperations("", options, ["", "ab", "é中\U0001f600"], options);
-    }
+    public void EmptyLiteralOperationsPreserveCompleteScalars(bool compiled, bool reverse)
+        => Utf8ScalarCountTests.AssertEmptyScalarOperations(compiled, reverse);
 
     [Theory]
     [InlineData(false, false)]

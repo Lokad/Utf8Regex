@@ -55,7 +55,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.ExactAsciiLiteral or
             NativeExecutionKind.ExactUtf8Literal or
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: 0 }
-                => new Utf8OperationMatchCursor(input, Utf8InputAnalyzer.Analyze(input).BoundaryMap, budget),
+                => new Utf8OperationMatchCursor(input, validation, budget),
             NativeExecutionKind.ExactAsciiLiteral or
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
                 => new Utf8OperationMatchCursor(input, regexPlan, literal, regexPlan.ExecutionKind, budget, validation.IsAscii),

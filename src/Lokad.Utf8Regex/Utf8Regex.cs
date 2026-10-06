@@ -530,7 +530,8 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null) return _sliceProgram;
         if (_ownedSliceProgram is not null &&
-            (_ownedSliceProgram.HasSurrogateLiteral ||
+            (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
+             _ownedSliceProgram.HasSurrogateLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _ownedSliceProgram.HasSharedCaptureDeclarations ||
              _ownedSliceProgram.HasExplicitCaptureNumbers ||
@@ -754,8 +755,7 @@ public sealed partial class Utf8Regex
 
     private int OwnedSliceCount(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
-        var map = Utf8BoundaryMap.Create(input);
-        return OwnedSliceCountFromUnit(input, program, map, program.RightToLeft ? map.Utf16Length : 0, token);
+        return OwnedSliceCountFromByte(input, program, program.RightToLeft ? input.Length : 0, token);
     }
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
@@ -1066,8 +1066,8 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceCountFromUnit(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
-                    Utf8BoundaryMap.Create(input, structuralValidation), 0, ref structuralInvocation);
+                return OwnedSliceCountFromByte(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural scalar program is required."),
+                    0, ref structuralInvocation);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
                 ? AsciiOrderedLiteralWindowExecutor.TryCount(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
                     _preparedRegex.SearchPlan, ref structuralInvocation, out var count)
@@ -1087,7 +1087,8 @@ public sealed partial class Utf8Regex
         }
         // Retain the qualified Unicode literal Count kernel. Other operations
         // can now use the newly admitted owned program for the same pattern.
-        if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
+        if (!cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
+            _invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
@@ -1383,7 +1384,7 @@ public sealed partial class Utf8Regex
 
         if (_ownedSliceProgram is { } ownedProgram)
         {
-            return OwnedSliceCountFromUnit(input, ownedProgram, subject.BoundaryMap, start.Value, cancellationToken);
+            return OwnedSliceCountFromByte(input, ownedProgram, subject.BoundaryMap.Resolve(start.Value).ByteOffset, cancellationToken);
         }
 
         // R05: unit-served shapes count unit-aware from the start unit on astral
@@ -1417,26 +1418,26 @@ public sealed partial class Utf8Regex
             start.Value);
     }
 
-    /// <summary>Owned slice count from a UTF-16 start unit.</summary>
-    private int OwnedSliceCountFromUnit(
+    /// <summary>Owned scalar count from an admitted byte boundary.</summary>
+    private int OwnedSliceCountFromByte(
         ReadOnlySpan<byte> input,
         Utf8SliceProgram program,
-        Utf8BoundaryMap map,
-        int startUnit,
+        int startByte,
         CancellationToken token)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        return OwnedSliceCountFromUnit(input, program, map, startUnit, ref invocation);
+        _ = Utf8Validation.Validate(input, ref invocation);
+        return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
     }
 
-    private int OwnedSliceCountFromUnit(ReadOnlySpan<byte> input, Utf8SliceProgram program, Utf8BoundaryMap map,
-        int startUnit, ref Utf8SliceInvocation invocation)
+    private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int startByte, ref Utf8SliceInvocation invocation)
     {
         var slots = new Utf8SliceSlots([], []);
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.CountFrom(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.CountFromBytes(program, input, startByte, slots.Starts, slots.Ends, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");

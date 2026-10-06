@@ -527,157 +527,60 @@ internal static partial class Utf8SliceRunner
             : new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
     }
 
-    internal static Utf8SliceCountOutcome CountFrom(
+    // The caller validates the complete subject. Count needs no coordinate map:
+    // attempts, successful endpoints and empty progress are all byte boundaries.
+    internal static Utf8SliceCountOutcome CountFromBytes(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        int fromUnit,
+        int fromByte,
         int[] captureStarts,
         int[] captureEnds,
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
-        // Right-to-left counting chains closing edges down from the search
-        // bound; contiguous matches pin \\G to each scan start, stop at the
-        // first scan miss, and step past empty matches by one unit (later edges
-        // all miss the pin, so an empty match ends the chain).
-        if (program.RightToLeft)
+        if ((uint)fromByte > (uint)input.Length ||
+            fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
+            return new Utf8SliceCountOutcome(0, Utf8ExecutionLimitKind.None);
+        var count = 0;
+        var position = fromByte;
+        invocation.AnchorOriginByte = fromByte;
+        while (true)
         {
-            if (program.HasContiguousAnchor)
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+                return new Utf8SliceCountOutcome(count, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, true, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                return new Utf8SliceCountOutcome(count, outcome.Breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (outcome.IsMatch)
             {
-                var contiguousCount = 0;
-                var contiguousUnit = Math.Min(fromUnit, map.Utf16Length);
-                var contiguousPin = contiguousUnit >= 0 && contiguousUnit <= map.Utf16Length ? map.Resolve(contiguousUnit).ByteOffset : -1;
-                while (contiguousUnit >= 0)
+                count++;
+                invocation.AnchorOriginByte = outcome.EndIndex;
+                if (outcome.EndIndex != position)
                 {
-                    invocation.AnchorOriginByte = contiguousPin;
-                    var contiguousScan = TryMatchAtRightEdgeUnit(program, input, map, contiguousUnit, captureStarts, captureEnds, ref invocation);
-                    if (contiguousScan.Breach != Utf8ExecutionLimitKind.None)
-                    {
-                        return new Utf8SliceCountOutcome(contiguousCount, contiguousScan.Breach);
-                    }
-
-                    if (!contiguousScan.Found)
-                    {
-                        break;
-                    }
-
-                    contiguousCount++;
-                    contiguousPin = contiguousScan.StartByte;
-                    contiguousUnit = contiguousScan.EndUnit > contiguousScan.StartUnit ? contiguousScan.StartUnit : contiguousScan.StartUnit - 1;
-                }
-
-                return new Utf8SliceCountOutcome(contiguousCount, Utf8ExecutionLimitKind.None);
-            }
-
-            if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
-            {
-                invocation.AnchorOriginByte = map.Resolve(Math.Min(fromUnit, map.Utf16Length)).ByteOffset;
-            }
-
-            var rtlCount = 0;
-            var rtlUnit = Math.Min(fromUnit, map.Utf16Length);
-            while (rtlUnit >= 0)
-            {
-                var rtlOutcome = TryMatchAtRightEdgeUnit(program, input, map, rtlUnit, captureStarts, captureEnds, ref invocation);
-                if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
-                {
-                    return new Utf8SliceCountOutcome(rtlCount, rtlOutcome.Breach);
-                }
-
-                if (!rtlOutcome.Found)
-                {
-                    rtlUnit--;
+                    position = outcome.EndIndex;
                     continue;
                 }
-
-                rtlCount++;
-                rtlUnit = rtlOutcome.EndUnit > rtlOutcome.StartUnit ? rtlOutcome.StartUnit : rtlOutcome.EndUnit - 1;
-                // Contiguous chains read the advanced origin on nested runs;
-                // misses keep their scan start.
-                if (rtlOutcome.StartUnit >= 0 && rtlOutcome.StartUnit <= map.Utf16Length)
-                {
-                    invocation.AnchorOriginByte = map.Resolve(rtlOutcome.StartUnit).ByteOffset;
-                }
             }
-
-            return new Utf8SliceCountOutcome(rtlCount, Utf8ExecutionLimitKind.None);
+            else if (program.RightToLeft && program.HasContiguousAnchor)
+                break;
+            if (!TryReadScalar(input, position, program.RightToLeft, out _, out var width))
+                break;
+            position += program.RightToLeft ? -width : width;
         }
-
-        if (program.HasContiguousAnchor)
-        {
-            // Contiguous matches chain from the search start: each scan pins
-            // \\G to its own start (BCL startat), stops at the first scan miss, and
-            // advances past empty matches by one unit (later positions all miss
-            // the pin, so an empty match ends the chain).
-            var scanCount = 0;
-            var scanUnit = fromUnit;
-            var pinByte = fromUnit >= 0 && fromUnit <= map.Utf16Length ? map.Resolve(fromUnit).ByteOffset : -1;
-            while (true)
-            {
-                invocation.AnchorOriginByte = pinByte;
-                var scan = TryFindFirst(program, input, map, scanUnit, captureStarts, captureEnds, ref invocation);
-                if (scan.Breach != Utf8ExecutionLimitKind.None)
-                {
-                    return new Utf8SliceCountOutcome(scanCount, scan.Breach);
-                }
-
-                if (!scan.Found)
-                {
-                    break;
-                }
-
-                scanCount++;
-                pinByte = scan.EndByte;
-                scanUnit = scan.EndUnit > scan.StartUnit ? scan.EndUnit : scan.StartUnit + 1;
-            }
-
-            return new Utf8SliceCountOutcome(scanCount, Utf8ExecutionLimitKind.None);
-        }
-
-        if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
-        {
-            invocation.AnchorOriginByte = map.Resolve(fromUnit).ByteOffset;
-        }
-
-        var count = 0;
-        var unit = fromUnit;
-        while (unit <= map.Utf16Length)
-        {
-            var outcome = TryMatchFromUnit(program, input, map, unit, captureStarts, captureEnds, ref invocation);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
-                return new Utf8SliceCountOutcome(count, outcome.Breach);
-            }
-
-            if (!outcome.Found)
-            {
-                unit++;
-                continue;
-            }
-
-            count++;
-            unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
-            // Contiguous matches chain BCL startat (nested lookbehind \\G reads
-            // the advanced origin); misses keep their scan start.
-            if (outcome.EndUnit >= 0 && outcome.EndUnit <= map.Utf16Length)
-            {
-                invocation.AnchorOriginByte = map.Resolve(outcome.EndUnit).ByteOffset;
-            }
-        }
-
         return new Utf8SliceCountOutcome(count, Utf8ExecutionLimitKind.None);
     }
 
     internal static Utf8SliceCountOutcome Count(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
         int[] captureStarts,
         int[] captureEnds,
         ref Utf8SliceInvocation invocation)
     {
-        return CountFrom(program, input, map, 0, captureStarts, captureEnds, ref invocation);
+        return CountFromBytes(program, input, program.RightToLeft ? input.Length : 0, captureStarts, captureEnds, ref invocation);
     }
 
     internal static Utf8SliceDetailedOutcome TryFindFirstDetailed(

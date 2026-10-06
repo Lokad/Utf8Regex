@@ -158,6 +158,14 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.LiteralUtf8 is { Length: 0 } &&
+            !_regexPlan.SearchPlan.HasBoundaryRequirements && !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+        {
+            var emptyCursor = new Utf8OperationMatchCursor(input, GetProbeValidation(input, validation), budget);
+            var emptyCount = 0;
+            while (emptyCursor.MoveNext()) emptyCount++;
+            return emptyCount;
+        }
         if (TryStartSingleLiteralInvocation(budget, out var invocation))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_regexPlan.SearchPlan,
@@ -932,11 +940,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
-        if (literal.Length == 0)
-        {
-            return Utf8Validation.Validate(input).Utf16Length + 1;
-        }
-
         if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             CanUseFusedValidatedBmpThreeByteLiteralCount(literal))

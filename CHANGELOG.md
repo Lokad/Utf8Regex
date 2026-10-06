@@ -24,6 +24,14 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Owned core Count scans scalar-aligned byte positions without a whole-subject
+  UTF-16 coordinate map. Validation and discovery share its token/deadline.
+  Empty-literal counters and cursors publish one match per scalar boundary;
+  pure empty literals select the native runtime instead of a BCL counter.
+  Removed the old unit Count driver, its map argument and the superseded Python
+  empty-count exclusion. Unicode native literal controls remain for infinite,
+  no-token calls; live tokens use the shared scalar runner. Other BCL consumers,
+  UTF-16-offset entry costs and complete common resource policies remain open.
 - Owned matching now traverses the original strict UTF-8 subject. Removed the
   private surrogate-half conversion buffer, its alternate boundary map and cursor
   storage loan, and the `RepeatGreedyUtf16` instruction. Repeats count atom

@@ -226,7 +226,7 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         // The native rendering intentionally has exact references. Only the
         // proven exact-literal control can bypass lexical profile comparison.
-        if (_canUseZeroOffsetUtf8SearchValueFastPath && !_canMatchEmpty && startOffsetInBytes == 0 &&
+        if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.Count(input, cancellationToken);
 

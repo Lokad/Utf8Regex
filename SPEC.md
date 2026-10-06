@@ -31,6 +31,13 @@ Retain the supported regex grammar and option model, including inline options, `
 
 Adjacent high/low surrogate spellings, raw or escaped, form one scalar within a literal run or one character-class member. Classes order range endpoints by numeric scalar value, including bounds above U+FFFF; descending supplementary bounds throw `ArgumentException`. An unpaired surrogate atom denotes no scalar and cannot match strict UTF-8. It can be repeated zero times, and negating a singleton class containing it admits every valid scalar. Groups, assertions and separate classes cannot join two such atoms into a scalar. Numeric intervals may span the surrogate gap, but matching considers only valid scalars. An explicit `[\u0000-\uffff]` includes BMP scalars; singleline dot includes every scalar plane.
 
+An empty pattern has one match at every scalar boundary, including both ends:
+Count on `😀` is two, and Count on `a😀b` is four. Non-overlapping discovery
+advances past an empty result by one complete scalar in the selected direction.
+Count has no coordinate result, so primary Count must not construct a whole-
+subject UTF-16 map just to enumerate positions. Explicit UTF-16 start APIs may
+resolve their scalar-aligned starting boundary as admitted interoperability work.
+
 ### 3.2 Replacement semantics
 
 Retain the .NET-style replacement language (`$1`, `${name}`, `$&`, `$```, `$'`, `$+`, `$_`, `$$`) and numeric-group parsing rules, expanding captures discovered under scalar matching. Invoke replacement evaluators once per match. Right-to-left replacement discovers matches from the end and assembles output in subject order. UTF-8 output remains well formed; string-returning APIs materialize the same scalar result as a .NET string. They are not surrogate-half compatibility escape hatches.

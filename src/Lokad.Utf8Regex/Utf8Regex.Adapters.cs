@@ -388,11 +388,11 @@ public sealed partial class Utf8Regex
                 : 0;
         }
 
-        if (_sliceProgram is not null)
+        if (_ownedSliceProgram is { } countProgram)
         {
             try
             {
-                return OwnedSliceCountFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+                return OwnedSliceCountFromByte(input.Bytes, countProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {

@@ -6,18 +6,17 @@ namespace Lokad.Utf8Regex.Tests;
 // R05 right-to-left enumeration: exact literals (plain or folded) enumerate
 // through the reverse-search cursor, finding the last occurrence in the
 // shrinking prefix on every move and truncating the bound to its start, which
-// matches BCL runtextstart advancement exactly (overlaps and adjacent hits
-// included). Reverse byte search never meets multibyte scalars, and ASCII
-// lengths equal UTF-16 lengths, so coordinates project like the forward cursor.
-// Slice-served shapes (alternations here) ride the owned slice program instead.
-// Other families, boundaries, empty literals, and Kelvin-fenced folded shapes
-// keep the BCL enumerator below.
+// preserves nonoverlapping and adjacent literal hits. Derived coordinates
+// remain comparable with BCL on the overlapping subjects below. Slice-served
+// shapes, including empty literals, use the owned scalar program instead.
+// Unserved boundary shapes retain the BCL enumerator as migration debt.
 public sealed class Utf8RtlEnumerationTests
 {
     public static System.Collections.Generic.IEnumerable<object?[]> RtlLiteralEnumerationOwnedCases()
     {
         (string pattern, string text)[] rows =
         [
+            ("", "abc"),
             ("abc", "xxabcxxabc"),
             ("abc", "abcabc"),
             ("abc", "abc"),
@@ -81,7 +80,6 @@ public sealed class Utf8RtlEnumerationTests
         (string pattern, string text)[] rows =
         [
             ("\\babc", "xabc"),
-            ("", "abc"),
         ];
         foreach (var row in rows)
         {
@@ -94,9 +92,8 @@ public sealed class Utf8RtlEnumerationTests
     [MemberData(nameof(RtlLiteralEnumerationDeclineCases))]
     public void RtlLiteralEnumerationDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
     {
-        // Declared R05 debt: literal families, boundary requirements, empty
-        // literals, and Kelvin-fenced folded shapes keep BCL enumeration on the
-        // right-to-left lane. Parity holds; construction is pinned.
+        // This unserved right-to-left boundary shape remains R05 debt.
+        // Retain its result comparison and construction pin until replaced.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);

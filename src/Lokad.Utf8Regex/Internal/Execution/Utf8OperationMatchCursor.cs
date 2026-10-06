@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -966,6 +967,12 @@ internal ref partial struct Utf8OperationMatchCursor
             : EnumeratorMode.ExactUtf8Literals;
     }
 
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+        : this(input, (Utf8BoundaryMap?)null, budget)
+    {
+        _totalUtf16Length = validation.Utf16Length;
+    }
+
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap, Utf8ExecutionDeadline budget)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
@@ -1420,20 +1427,32 @@ internal ref partial struct Utf8OperationMatchCursor
 
     private bool MoveNextEmptyLiteral()
     {
-        if (_consumedUtf16 > _totalUtf16Length)
+        var breach = _sliceInvocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Empty scalar cursor exceeded {breach}.");
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        if (_consumed < 0)
         {
+            _current = Utf8ValueMatch.NoMatch;
             return false;
         }
 
-        var boundary = ResolveBoundary(_consumedUtf16);
         _current = new Utf8ValueMatch(
             success: true,
-            isByteAligned: boundary.IsScalarBoundary,
+            isByteAligned: true,
             indexInUtf16: _consumedUtf16,
             lengthInUtf16: 0,
-            indexInBytes: boundary.ByteOffset,
+            indexInBytes: _consumed,
             lengthInBytes: 0);
-        _consumedUtf16++;
+        if (_consumed == _input.Length)
+            _consumed = -1;
+        else
+        {
+            if (Rune.DecodeFromUtf8(_input[_consumed..], out var scalar, out var width) != OperationStatus.Done)
+                throw Utf8Validation.CreateInvalidUtf8Exception(_consumed);
+            _consumed += width;
+            _consumedUtf16 += scalar.Utf16SequenceLength;
+        }
         return true;
     }
 

@@ -57,6 +57,13 @@ internal static class Utf8CompiledPatternBackendPolicy
 
     public static bool SupportsLiteralCompiledAnalysis(Utf8PreparedRegex regexPlan, Utf8SearchOperationPlan countPipeline)
     {
+        // A pure empty literal has no search candidate. Its scalar cursor still
+        // owns discovery/counting; absence of a searcher does not require BCL.
+        if (regexPlan.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral &&
+            regexPlan.LiteralUtf8 is { Length: 0 } &&
+            !regexPlan.SearchPlan.HasBoundaryRequirements && !regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
+            regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
+            return true;
         return regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.Literal &&
             ((regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
               Utf8CompiledSearchAnalysisPolicy.IsExactLiteralPipeline(countPipeline)) ||

@@ -82,7 +82,7 @@ public sealed class Utf8SliceRunnerTests
         Assert.Equal(oracle.IsMatch(inputText), Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).IsMatch);
         invocation = Unmetered();
         (starts, ends) = Slots(program);
-        Assert.Equal(oracle.Matches(inputText).Count, Utf8SliceRunner.Count(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).Count);
+        Assert.Equal(oracle.Matches(inputText).Count, Utf8SliceRunner.Count(program, input, starts, ends, ref invocation).Count);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
@@ -212,7 +212,7 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.Count(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation);
+        var outcome = Utf8SliceRunner.Count(program, input, starts, ends, ref invocation);
         Assert.Equal(new Regex("a*", RegexOptions.CultureInvariant).Matches(inputText).Count, outcome.Count);
         Assert.Equal(expectedCount, outcome.Count);
     }

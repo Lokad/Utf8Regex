@@ -27,8 +27,7 @@ public sealed partial class Utf8Regex
                 NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
             _preparedRegex.LiteralUtf8 is { Length: 0 })
             return false;
-        // Empty literals progress through UTF-16 positions, including between
-        // surrogate halves, and must retain their owned unit execution route.
+        // Empty literals use the shared scalar program and its boundary progression.
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         _ = Utf8Validation.Validate(input, ref invocation);
         return true;

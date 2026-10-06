@@ -118,7 +118,7 @@ internal abstract class Utf8CompiledEngineRuntime
     public abstract bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget);
 
     /// <summary>
-    /// Counts nonoverlapping matches using .NET global-progression semantics.
+    /// Counts nonoverlapping matches, progressing through complete scalars.
     /// Validation is caller-owned, every scan charges the deadline, and the
     /// returned count is complete rather than a lower bound.
     /// </summary>

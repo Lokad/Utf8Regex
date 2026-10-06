@@ -170,7 +170,7 @@ public sealed class Utf8SliceBoundsTests
         Assert.True(Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).IsMatch);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         (starts, ends) = Slots(program);
-        Assert.Equal(1, Utf8SliceRunner.Count(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).Count);
+        Assert.Equal(1, Utf8SliceRunner.Count(program, input, starts, ends, ref invocation).Count);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 }
