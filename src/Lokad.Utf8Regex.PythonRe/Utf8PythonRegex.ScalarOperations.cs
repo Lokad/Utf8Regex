@@ -13,7 +13,7 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken, out PythonReScalarMatchCursor cursor)
     {
         cursor = default;
-        if (!Utf8SliceExecutionApplies || _utf8Regex?.Inspection.AvailableOwnedSliceProgram is not { } program)
+        if (ScalarProgram is not { } program)
             return false;
         ValidateStartOffset(input, startOffsetInBytes);
         cursor = new PythonReScalarMatchCursor(input, program, _managedGroupNumbersByPythonGroup,

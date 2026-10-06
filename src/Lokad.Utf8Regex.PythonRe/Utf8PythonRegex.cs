@@ -447,9 +447,11 @@ public sealed partial class Utf8PythonRegex
     // folding does not, so translated IGNORECASE shapes keep managed execution even
     // when the core slice would serve them (ASCII-scope shapes forward no flag and
     // stay eligible).
-    private bool Utf8SliceExecutionApplies =>
-        _utf8Regex?.Inspection.AvailableOwnedSliceProgram is not null &&
-        (_translation.RegexOptions & RegexOptions.IgnoreCase) == 0;
+    private Utf8SliceProgram? ScalarProgram =>
+        (_translation.RegexOptions & RegexOptions.IgnoreCase) == 0
+            ? _utf8Regex?.Inspection.AvailableOwnedSliceProgram : null;
+
+    private bool Utf8SliceExecutionApplies => ScalarProgram is not null;
 
     internal bool DebugUsesOwnedSlice => Utf8SliceExecutionApplies;
 
