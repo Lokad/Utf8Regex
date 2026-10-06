@@ -562,6 +562,10 @@ public sealed partial class Utf8Regex
 
         internal Utf8SliceProgram? OwnedSliceProgram => _owner._sliceProgram;
 
+        // Profile adapters can use the admitted scalar program even when the
+        // core's default route selects a native plan for this pattern.
+        internal Utf8SliceProgram? AvailableOwnedSliceProgram => _owner._ownedSliceProgram;
+
         public Utf8PreparedRegex PreparedRegex => _owner.PreparedRegex;
 
         public Utf8SearchPlan SearchPlan => _owner.SearchPlan;

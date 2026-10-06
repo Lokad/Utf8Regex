@@ -46,6 +46,12 @@
   regressions replace the retired unit-subject suite. Wider class construction admission,
   PythonRe's UTF-16 compensation patterns, remaining BCL/unit routes and the wider
   parity test migration are unfinished. This is not full scalar qualification.
+- PythonRe now renders native scalar atoms/ranges separately from its remaining
+  managed callers. Direct supplementary classes, category complements and word
+  boundaries use the owned core; quantified dots keep newline scope on every
+  scalar, and separate Python surrogate escapes cannot combine into an atom.
+  Empty-capable Count uses Python's scalar retry/advance rule. Managed global
+  capture, substitution and split routes remain migration debt.
 
 ### Historical UTF-16 parity work (superseded)
 

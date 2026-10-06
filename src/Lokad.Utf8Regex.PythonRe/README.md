@@ -8,8 +8,8 @@ It is intended for workloads where the input already exists as UTF-8 bytes and y
 
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.
 - Implementation model: parser-first translation. Python-style patterns are parsed into a dedicated AST before any backend is selected.
-- Translation-first execution: when a Python-style pattern can be translated without semantic drift, execution is delegated to `Utf8Regex`.
-- Fallback execution: if UTF-8 native execution cannot be created, the package falls back to managed `.NET Regex` on the translated pattern.
+- Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
+- Migration state: separate managed-compatible rendering still serves remaining global/capture/output routes. Those BCL callers and their compensation code are temporary R04/R05 cleanup debt; native admission does not establish full engine independence.
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.

@@ -19,10 +19,11 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var regex = new Utf8Regex(
-                @"\G(?:" + _translation.Pattern + @")\z",
+                @"\G(?:" + _translation.NativePattern + @")\z",
                 _translation.RegexOptions,
                 MatchTimeout);
-            return regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;
+            return regex.Inspection.AvailableOwnedSliceProgram is not null ||
+                regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;
         }
         catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
         {

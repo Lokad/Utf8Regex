@@ -4,7 +4,7 @@
 
 ## Intent
 
-The package exists to model Python `re` semantics as a separate profile from base `Utf8Regex`, whose semantic oracle is `.NET Regex`.
+The package exists to model Python `re` semantics as a separate profile from base `Utf8Regex`, whose matching unit is one Unicode scalar over strict UTF-8. The Python profile retains its own grammar, case rules, numbering and global empty-match progression; .NET is a comparator only where behavior overlaps.
 
 Like the base `Utf8Regex` library, this profile is culture-invariant by construction. Python `re.LOCALE` is intentionally out of scope. Python `re` bytes-pattern semantics are also intentionally out of scope in the current profile.
 
@@ -14,9 +14,11 @@ The implementation is parser-first:
 
 1. parse Python-style source into a PythonRe AST
 2. validate Python-specific semantic constraints
-3. translate to a `.NET Regex`-compatible pattern when semantics are preserved
-4. use `Utf8Regex` as an optimization backend only for a safe translated subset
-5. use managed `.NET Regex` as an execution backend for capture-aware APIs; the semantic authority remains the pinned CPython 3.13.2 `str`-pattern oracle
+3. render owned scalar atoms/ranges for `Utf8Regex`, including newline scopes and Python-specific case expansions
+4. reuse admitted core scalar programs even where its default route chooses a native plan
+5. retain the separate managed-compatible rendering only for remaining managed callers during migration; remove their execution and compensation code under PLAN.md R04/R05. The semantic authority remains the pinned CPython 3.13.2 `str`-pattern oracle
+
+The native rendering consumes complete scalars. Supplementary class members and ranges use numeric scalar endpoints, rather than separate surrogate classes. Python's separate `\uD800`/`\uDC00` escapes denote separate surrogate atoms and cannot combine into a scalar; they cannot match strict UTF-8. A raw supplementary character or `\U00010000` escape denotes one scalar. A surrogate-only class contains no valid scalar, and its negation admits valid scalars. Captures retain primary byte ranges and derived UTF-16 coordinates. This describes native admission, not completion of every managed caller or resource gate.
 
 ## Current scope
 
@@ -102,19 +104,15 @@ This profile is still incomplete. In particular:
   ASCII-folding (single-ASCII-character groups name both variants explicitly)
 * Unicode-scoped backreferences under top-level ASCII compare exactly instead of
   folding: `(?u:(i)\1)` against `iI` misses here while CPython matches
-* supplementary-plane category matching and astral-adjacent word boundaries are
-  bounded by the UTF-16 execution engines (managed `.NET Regex` and the native
-  `Utf8Regex` kernels operate per UTF-16 unit): `\w`/`\d` and their positive bracket forms
-  do not match supplementary letters/numbers, and `\b`/`\B` around supplementary
-  scalars follow UTF-16 units rather than scalar boundaries. Dots, astral literals
-  (including case-insensitive folding), and negated classes consume whole supplementary
-  scalars; complements consume whole supplementary scalars too, so `\W`/`\D` match
-  astral letters/digits that CPython excludes while `[^\W]`/`[^\D]` miss them. BMP
-  behavior is CPython-faithful, established by a full-scalar census against CPython 3.13.2
-  (`[\p{L}\p{N}_]` for `\w`, `[\s\x1c-\x1f]` for `\s`, pass-through `\d`). Matching
-  supplementary categories would need a scalar execution layer calling the BCL category
-  facilities at match time; embedding the required Unicode property data as shipped
-  tables is out of scope under the package-size constraint
+* native direct matching, detailed discovery and Count now classify supplementary
+  word/digit members and scalar-adjacent boundaries through the owned core. The
+  existing CPython category spellings remain `[\p{L}\p{N}_]` for `\w`,
+  `[\s\x1c-\x1f]` for `\s`, and decimal digits for `\d`. Their complements
+  and bracketed forms retain the whole scalar domain. Global captured iteration,
+  empty-capable result shaping, substitution and split still have managed callers;
+  their supplementary categories, case comparisons and output costs require
+  separate qualification and owned replacements. A native success does not prove
+  those remaining operations. Unicode-data version reconciliation remains a gate.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
   find the whole scalar. Search, Match, and FullMatch here stay mutually consistent

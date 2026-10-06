@@ -11,7 +11,8 @@ internal static class PythonReTranslator
     // class used for \w. Must stay in IsZeroWidthEscape below.
     private const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
     private const string UnicodeNonWordBoundary = @"(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
-    private const string AnyUnicodeScalarPattern = @"(?:[\u0000-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])";
+    private const string AnyUnicodeScalarPattern = PythonReParser.ManagedUnicodeScalarPattern;
+    private const string NativeScalarPattern = "(?s:.)";
 
     public static bool CanMatchEmpty(PythonReNode node, PythonReParseResult parseResult)
     {
@@ -427,18 +428,23 @@ internal static class PythonReTranslator
             }
         }
 
-        AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython);
+        AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, false);
         var translatedPattern = builder.ToString();
+        builder.Clear();
+        AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, true);
+        var nativePattern = builder.ToString();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
             // Regex.Escape protects spaces for IgnorePatternWhitespace. Outside
             // verbose mode a raw space is equivalent and keeps exact literals
             // visible to the UTF-8 planner instead of forcing fallback.
             translatedPattern = translatedPattern.Replace(@"\ ", " ", StringComparison.Ordinal);
+            nativePattern = nativePattern.Replace(@"\ ", " ", StringComparison.Ordinal);
         }
 
         return new PythonReTranslation(
             translatedPattern,
+            nativePattern,
             ToRegexOptions(parseResult.Options),
             parseResult.CaptureGroupCount,
             emittedGroupNames,
@@ -584,7 +590,7 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
+    private static void AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         switch (node)
         {
@@ -596,27 +602,34 @@ internal static class PythonReTranslator
                         builder.Append('|');
                     }
 
-                    AppendNode(alternation.Branches[i], builder, emittedGroupNames, managedNumbersByPython);
+                    AppendNode(alternation.Branches[i], builder, emittedGroupNames, managedNumbersByPython, native);
                 }
                 break;
 
             case PythonReSequenceNode sequence:
                 foreach (var element in sequence.Elements)
                 {
-                    AppendNode(element, builder, emittedGroupNames, managedNumbersByPython);
+                    AppendNode(element, builder, emittedGroupNames, managedNumbersByPython, native);
                 }
                 break;
 
             case PythonReLiteralNode literal:
-                builder.Append(Regex.Escape(literal.Value.ToString()));
+                // Python's separate \uD800/\uDC00 atoms cannot combine into a
+                // scalar merely because the core accepts adjacent pair spellings.
+                builder.Append(native && char.IsSurrogate(literal.Value)
+                    ? "(?!)" : Regex.Escape(literal.Value.ToString()));
                 break;
 
             case PythonReCharacterClassNode characterClass:
-                AppendCharacterClass(characterClass, builder);
+                AppendCharacterClass(characterClass, builder, native);
                 break;
 
             case PythonReRawNode raw:
-                builder.Append(raw.Text);
+                builder.Append(native
+                    ? raw.Kind == PythonReRawKind.Dot
+                        ? raw.Text == AnyUnicodeScalarPattern ? NativeScalarPattern : "(?-s:.)"
+                        : RenderScalarFragment(raw.Text)
+                    : raw.Text);
                 break;
 
             case PythonReNamedBackreferenceNode namedBackreference:
@@ -632,15 +645,15 @@ internal static class PythonReTranslator
                 break;
 
             case PythonReConditionalNode conditional:
-                AppendConditional(conditional, builder, emittedGroupNames, managedNumbersByPython);
+                AppendConditional(conditional, builder, emittedGroupNames, managedNumbersByPython, native);
                 break;
 
             case PythonReQuantifierNode quantifier:
-                AppendQuantifier(quantifier, builder, emittedGroupNames, managedNumbersByPython);
+                AppendQuantifier(quantifier, builder, emittedGroupNames, managedNumbersByPython, native);
                 break;
 
             case PythonReGroupNode group:
-                AppendGroup(group, builder, emittedGroupNames, managedNumbersByPython);
+                AppendGroup(group, builder, emittedGroupNames, managedNumbersByPython, native);
                 break;
 
             default:
@@ -648,22 +661,22 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendQuantifier(PythonReQuantifierNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
+    private static void AppendQuantifier(PythonReQuantifierNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         if (node.Flavor == PythonReQuantifierFlavor.Possessive)
         {
             builder.Append("(?>");
-            AppendQuantifierCore(node, builder, PythonReQuantifierFlavor.Greedy, emittedGroupNames, managedNumbersByPython);
+            AppendQuantifierCore(node, builder, PythonReQuantifierFlavor.Greedy, emittedGroupNames, managedNumbersByPython, native);
             builder.Append(')');
             return;
         }
 
-        AppendQuantifierCore(node, builder, node.Flavor, emittedGroupNames, managedNumbersByPython);
+        AppendQuantifierCore(node, builder, node.Flavor, emittedGroupNames, managedNumbersByPython, native);
     }
 
-    private static void AppendQuantifierCore(PythonReQuantifierNode node, StringBuilder builder, PythonReQuantifierFlavor flavor, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
+    private static void AppendQuantifierCore(PythonReQuantifierNode node, StringBuilder builder, PythonReQuantifierFlavor flavor, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
-        AppendInnerAsAtom(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+        AppendInnerAsAtom(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
         if (node.Min == 0 && node.Max is null)
         {
             builder.Append('*');
@@ -700,13 +713,13 @@ internal static class PythonReTranslator
         });
     }
 
-    private static void AppendGroup(PythonReGroupNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
+    private static void AppendGroup(PythonReGroupNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         switch (node.Kind)
         {
             case PythonReGroupKind.Capturing:
                 builder.Append('(');
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
@@ -717,43 +730,43 @@ internal static class PythonReTranslator
                 }
 
                 builder.Append("(?<").Append(emittedGroupNames[groupName]).Append('>');
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NonCapturing:
                 builder.Append("(?:");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.PositiveLookahead:
                 builder.Append("(?=");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NegativeLookahead:
                 builder.Append("(?!");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.PositiveLookbehind:
                 builder.Append("(?<=");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NegativeLookbehind:
                 builder.Append("(?<!");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.Atomic:
                 builder.Append("(?>");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
@@ -767,7 +780,7 @@ internal static class PythonReTranslator
                 }
 
                 builder.Append(':');
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 return;
 
@@ -776,7 +789,7 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendConditional(PythonReConditionalNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
+    private static void AppendConditional(PythonReConditionalNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         builder.Append("(?(");
         switch (node.Reference.Kind)
@@ -797,11 +810,11 @@ internal static class PythonReTranslator
         }
 
         builder.Append(')');
-        AppendNode(node.YesBranch, builder, emittedGroupNames, managedNumbersByPython);
+        AppendNode(node.YesBranch, builder, emittedGroupNames, managedNumbersByPython, native);
         if (node.NoBranch is not null)
         {
             builder.Append('|');
-            AppendNode(node.NoBranch, builder, emittedGroupNames, managedNumbersByPython);
+            AppendNode(node.NoBranch, builder, emittedGroupNames, managedNumbersByPython, native);
         }
 
         builder.Append(')');
@@ -830,7 +843,7 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendInnerAsAtom(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
+    private static void AppendInnerAsAtom(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         switch (node)
         {
@@ -840,12 +853,12 @@ internal static class PythonReTranslator
             case PythonReNamedBackreferenceNode:
             case PythonReNumericBackreferenceNode:
             case PythonReGroupNode:
-                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython, native);
                 break;
 
             default:
                 builder.Append("(?:");
-                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython);
+                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython, native);
                 builder.Append(')');
                 break;
         }
@@ -1184,16 +1197,58 @@ internal static class PythonReTranslator
     private static bool IsAsciiWordCharacter(int value) =>
         value is >= '0' and <= '9' or >= 'A' and <= 'Z' or '_' or >= 'a' and <= 'z';
 
-    private static void AppendCharacterClass(PythonReCharacterClassNode node, StringBuilder builder)
+    private static void AppendCharacterClass(PythonReCharacterClassNode node, StringBuilder builder, bool native)
     {
-        var positiveAtom = BuildPositiveCharacterClassAtom(node.Items);
+        var positiveAtom = native ? BuildScalarCharacterClassAtom(node.Items) : BuildPositiveCharacterClassAtom(node.Items);
         if (!node.IsNegated)
         {
             builder.Append(positiveAtom);
             return;
         }
 
-        builder.Append("(?:(?!").Append(positiveAtom).Append(')').Append(AnyUnicodeScalarPattern).Append(')');
+        builder.Append("(?:(?!").Append(positiveAtom).Append(')').Append(native ? NativeScalarPattern : AnyUnicodeScalarPattern).Append(')');
+    }
+
+    // Only parser-generated raw/predefined fragments contain this internal atom.
+    // User literals and class endpoints are emitted from their AST values.
+    private static string RenderScalarFragment(string fragment) =>
+        fragment.Replace(AnyUnicodeScalarPattern, NativeScalarPattern, StringComparison.Ordinal);
+
+    private static string BuildScalarCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items)
+    {
+        var ranges = new List<(int Start, int End)>();
+        var fragments = new List<string>();
+        var branches = new List<string>();
+        foreach (var item in items)
+        {
+            switch (item)
+            {
+                case PythonReCharacterClassLiteralItem literal:
+                    AddScalarRange(ranges, literal.Scalar, literal.Scalar);
+                    break;
+                case PythonReCharacterClassRangeItem range:
+                    AddScalarRange(ranges, range.StartScalar, range.EndScalar);
+                    break;
+                case PythonReCharacterClassPredefinedItem predefined:
+                    if (predefined.IsStandaloneAtom) branches.Add(RenderScalarFragment(predefined.RegexClassFragment));
+                    else fragments.Add(predefined.RegexClassFragment);
+                    break;
+            }
+        }
+        var rangeClass = BuildRangeCharacterClass(ranges, fragments);
+        if (rangeClass.Length != 0) branches.Insert(0, rangeClass);
+        return branches.Count switch
+        {
+            0 => "(?!)",
+            1 => branches[0],
+            _ => "(?:" + string.Join("|", branches) + ")",
+        };
+    }
+
+    private static void AddScalarRange(List<(int Start, int End)> ranges, int start, int end)
+    {
+        if (start <= 0xD7FF) ranges.Add((start, Math.Min(end, 0xD7FF)));
+        if (end >= 0xE000) ranges.Add((Math.Max(start, 0xE000), end));
     }
 
     private static string BuildPositiveCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items)
@@ -1252,7 +1307,7 @@ internal static class PythonReTranslator
         }
 
         var branches = new List<string>();
-        var bmpClass = BuildBmpCharacterClass(bmpRanges, bmpFragments);
+        var bmpClass = BuildRangeCharacterClass(bmpRanges, bmpFragments);
         if (bmpClass.Length != 0)
         {
             branches.Add(bmpClass);
@@ -1268,7 +1323,7 @@ internal static class PythonReTranslator
         };
     }
 
-    private static string BuildBmpCharacterClass(List<(int Start, int End)> ranges, List<string> fragments)
+    private static string BuildRangeCharacterClass(List<(int Start, int End)> ranges, List<string> fragments)
     {
         if (ranges.Count == 0 && fragments.Count == 0)
         {
@@ -1284,7 +1339,7 @@ internal static class PythonReTranslator
 
         foreach (var (start, end) in MergeRanges(ranges))
         {
-            AppendBmpRange(builder, start, end);
+            AppendClassRange(builder, start, end);
         }
 
         builder.Append(']');
@@ -1331,21 +1386,26 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendBmpRange(StringBuilder builder, int start, int end)
+    private static void AppendClassRange(StringBuilder builder, int start, int end)
     {
         if (start == end)
         {
-            AppendBmpClassChar(builder, start);
+            AppendClassChar(builder, start);
             return;
         }
 
-        AppendBmpClassChar(builder, start);
+        AppendClassChar(builder, start);
         builder.Append('-');
-        AppendBmpClassChar(builder, end);
+        AppendClassChar(builder, end);
     }
 
-    private static void AppendBmpClassChar(StringBuilder builder, int scalar)
+    private static void AppendClassChar(StringBuilder builder, int scalar)
     {
+        if (scalar > 0xFFFF)
+        {
+            builder.Append(char.ConvertFromUtf32(scalar));
+            return;
+        }
         var ch = (char)scalar;
         if (ch is '\\' or '-' or ']' or '^')
         {
@@ -1410,6 +1470,7 @@ internal static class PythonReTranslator
 
 internal readonly record struct PythonReTranslation(
     string Pattern,
+    string NativePattern,
     RegexOptions RegexOptions,
     int CaptureGroupCount,
     IReadOnlyDictionary<string, string> EmittedGroupNames,

@@ -309,8 +309,9 @@ public sealed partial class Utf8PythonRegex
 
         try
         {
-            _utf8Regex = new Utf8Regex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
-            if (_utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
+            _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.RegexOptions, MatchTimeout);
+            if (_utf8Regex.Inspection.AvailableOwnedSliceProgram is not null ||
+                _utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
             {
                 _lazyUtf8FullRegex = new Lazy<Utf8Regex?>(
                     CreateUtf8FullRegex,
@@ -332,7 +333,7 @@ public sealed partial class Utf8PythonRegex
         _searchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
         _matchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
         var utf8ServesCount = _utf8Regex is not null &&
-            (!_canMatchEmpty || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram);
+            (!_canMatchEmpty || _utf8Regex.Inspection.AvailableOwnedSliceProgram is not null);
         _countBackend = utf8ServesCount
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
@@ -447,7 +448,7 @@ public sealed partial class Utf8PythonRegex
     // when the core slice would serve them (ASCII-scope shapes forward no flag and
     // stay eligible).
     private bool Utf8SliceExecutionApplies =>
-        _utf8Regex?.Inspection.DebugUsesOwnedSliceProgram == true &&
+        _utf8Regex?.Inspection.AvailableOwnedSliceProgram is not null &&
         (_translation.RegexOptions & RegexOptions.IgnoreCase) == 0;
 
     internal bool DebugUsesOwnedSlice => Utf8SliceExecutionApplies;
@@ -474,6 +475,8 @@ public sealed partial class Utf8PythonRegex
     internal bool DebugHasUtf8FullRegex => GetUtf8FullRegex() is not null;
 
     internal string DebugTranslatedPattern => _translation.Pattern;
+
+    internal string DebugNativePattern => _translation.NativePattern;
 
     internal string DebugDescribeExecutionPlan()
     {

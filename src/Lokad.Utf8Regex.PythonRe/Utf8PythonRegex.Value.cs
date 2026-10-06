@@ -217,7 +217,7 @@ public sealed partial class Utf8PythonRegex
             return CountAsciiWordBoundaries(decoded, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
         }
 
-        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && !_hasLookbehind && startOffsetInBytes == 0 &&
+        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && !_canMatchEmpty && !_hasLookbehind && startOffsetInBytes == 0 &&
             !_utf8Regex.Inspection.DebugUsesOwnedSliceProgram)
         {
             return _utf8Regex.Count(input, cancellationToken);
@@ -225,9 +225,7 @@ public sealed partial class Utf8PythonRegex
 
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        if ((!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram) && _utf8Regex is not null &&
-            _utf8Regex.Inspection.DebugUsesOwnedSliceProgram &&
-            _utf8Regex.Inspection.OwnedSliceProgram is { } ownedProgram)
+        if (_utf8Regex?.Inspection.AvailableOwnedSliceProgram is { } ownedProgram)
         {
             try
             {
