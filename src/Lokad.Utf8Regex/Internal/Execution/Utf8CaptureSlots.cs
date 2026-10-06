@@ -11,6 +11,8 @@ internal sealed class Utf8CaptureSlots
     private Utf8CaptureMutation[]? _journal;
     private int _journalCount;
     private bool _journaling;
+    private bool _journalExact;
+    private ulong _journalReservedBytes;
 
     public Utf8CaptureSlots(int slotCount)
     {
@@ -106,6 +108,77 @@ internal sealed class Utf8CaptureSlots
         return false;
     }
 
+    internal Utf8ExecutionLimitKind TrySet(int slot, int start, int length, ref Utf8SliceInvocation invocation)
+    {
+        if ((uint)slot >= (uint)_starts.Length) return Utf8ExecutionLimitKind.None;
+        if (!_journaling) throw new InvalidOperationException("Capture journaling is not active.");
+        var breach = TryEnsureInvocationJournalCapacity(ref invocation);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var journal = _journal ?? throw new InvalidOperationException("The capture journal could not be allocated.");
+        journal[_journalCount++] = new Utf8CaptureMutation(slot, _starts[slot], _lengths[slot]);
+        _starts[slot] = start;
+        _lengths[slot] = length;
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    internal Utf8ExecutionLimitKind TryRollback(Utf8CaptureCheckpoint checkpoint, ref Utf8SliceInvocation invocation)
+    {
+        if (!_journaling || (uint)checkpoint.JournalCount > (uint)_journalCount)
+            throw new InvalidOperationException("The capture checkpoint does not belong to the active invocation.");
+        while (_journalCount > checkpoint.JournalCount)
+        {
+            var breach = invocation.TryChargeStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var journal = _journal ?? throw new InvalidOperationException("The active capture journal is unavailable.");
+            var mutation = journal[--_journalCount];
+            _starts[mutation.Slot] = mutation.PreviousStart;
+            _lengths[mutation.Slot] = mutation.PreviousLength;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private Utf8ExecutionLimitKind TryEnsureInvocationJournalCapacity(ref Utf8SliceInvocation invocation)
+    {
+        var old = _journal;
+        if (old is not null && !_journalExact)
+            throw new InvalidOperationException("An existing capture journal belongs to another invocation owner.");
+        if (old is not null && _journalCount < old.Length) return Utf8ExecutionLimitKind.None;
+        var capacity = old is null ? Math.Max(16, _starts.Length)
+            : old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength;
+        if (capacity <= _journalCount) return Utf8ExecutionLimitKind.WorkingBytes;
+        var bytes = (ulong)(uint)capacity * (ulong)(uint)Unsafe.SizeOf<Utf8CaptureMutation>();
+        if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+        var adopted = false;
+        try
+        {
+            var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var grown = Utf8ExactStatePool<Utf8CaptureMutation>.Rent(capacity, invocation.Ledger.IsUnlimited);
+            try
+            {
+                for (var offset = 0; offset < _journalCount;)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    var count = Math.Min(2048, _journalCount - offset);
+                    if (old is not null) old.AsSpan(offset, count).CopyTo(grown.AsSpan(offset, count));
+                    offset += count;
+                }
+                _journal = grown;
+                _journalExact = true;
+                invocation.Ledger.Release(_journalReservedBytes);
+                _journalReservedBytes = bytes;
+                adopted = true;
+                if (old is not null) Utf8ExactStatePool<Utf8CaptureMutation>.Return(old, invocation.Ledger.IsUnlimited);
+            }
+            finally { if (!adopted) Utf8ExactStatePool<Utf8CaptureMutation>.Return(grown, invocation.Ledger.IsUnlimited); }
+            return Utf8ExecutionLimitKind.None;
+        }
+        finally { if (!adopted) invocation.Ledger.Release(bytes); }
+    }
+
     public void BeginInvocation()
     {
         if (_journaling)
@@ -151,6 +224,8 @@ internal sealed class Utf8CaptureSlots
 
     public void EndInvocation()
     {
+        if (_journalReservedBytes != 0)
+            throw new InvalidOperationException("A metered capture journal must return through its invocation.");
         if (!_journaling)
         {
             return;
@@ -160,10 +235,21 @@ internal sealed class Utf8CaptureSlots
         _journalCount = 0;
         var journal = _journal;
         _journal = null;
-        if (journal is not null)
+        if (journal is not null && !_journalExact)
         {
             ArrayPool<Utf8CaptureMutation>.Shared.Return(journal);
         }
+        _journalExact = false;
+    }
+
+    internal void EndInvocation(ref Utf8SliceInvocation invocation)
+    {
+        var journal = _journal;
+        if (journal is not null && _journalExact)
+            Utf8ExactStatePool<Utf8CaptureMutation>.Return(journal, invocation.Ledger.IsUnlimited);
+        invocation.Ledger.Release(_journalReservedBytes);
+        _journalReservedBytes = 0;
+        EndInvocation();
     }
 
     public Utf8CaptureSlots Clone()
@@ -185,6 +271,7 @@ internal sealed class Utf8CaptureSlots
 
     private bool TryEnsureJournalCapacity(ref Utf8ExecutionBudget budget)
     {
+        if (_journalExact) throw new InvalidOperationException("A metered capture journal requires its invocation budget.");
         var journal = _journal;
         if (journal is not null && _journalCount < journal.Length)
         {

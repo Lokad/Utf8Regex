@@ -4,6 +4,20 @@
 
 ### Owned UTF-16 execution
 
+- General byte-safe prefix matching now walks paired instructions with explicit
+  active-node versions and saved choices. Enclosing suffixes can reconsider
+  group-internal alternatives and repeats; lazy capture growth no longer reuses
+  rolled-back future checkpoints. Absolute, contiguous and final-newline anchors
+  retain their individual .NET meanings under multiline options.
+
+- General matching accounts continuation versions, choices and capture mutations
+  in one invocation ledger, admitting exact extents and growth overlap before
+  allocation. Buffer work and rollback poll the shared token/deadline. Exact
+  small-buffer pools cap retained data/table bytes at 16 KiB per thread and type;
+  finite-storage calls do not add retained pool storage. Failure returns every
+  loan and clears captures. The remaining native, construction, result and
+  common finite-policy work is still open; public depth admission is unchanged.
+
 - Fixed deterministic capture programs cache their final capture layout during
   preparation and match paired instructions iteratively. Matching borrows the
   prepared layout and caller slots without a runtime continuation stack or

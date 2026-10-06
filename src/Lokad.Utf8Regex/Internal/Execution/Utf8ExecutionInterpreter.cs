@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 
-internal static class Utf8ExecutionInterpreter
+internal static partial class Utf8ExecutionInterpreter
 {
     public static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
@@ -402,7 +402,11 @@ internal static class Utf8ExecutionInterpreter
         Utf8ExecutionDeadline budget,
         out int endIndex)
     {
-        return TryMatchProgramNode(input, program, instructionIndex, startIndex, captures, budget, out endIndex);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        var matched = TryMatchProgram(input, program, instructionIndex, startIndex, captures, ref invocation, out endIndex, out var breach);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Owned byte-safe matching breached an unlimited invocation budget.");
+        return matched;
     }
 
     private static bool IsDeterministicCaptureProgram(Utf8ExecutionProgram program)
@@ -519,9 +523,12 @@ internal static class Utf8ExecutionInterpreter
                 {
                     Utf8ExecutionNodeKind.One => TryMatchOne(input, instruction, index, out index),
                     Utf8ExecutionNodeKind.Set => TryMatchSet(input, instruction, index, out index),
-                    Utf8ExecutionNodeKind.Multi => MatchText(input, instruction, ref index, ref invocation, out breach),
-                    Utf8ExecutionNodeKind.Bol or Utf8ExecutionNodeKind.Beginning or Utf8ExecutionNodeKind.Start => IsBeginningOfLine(input, index, instruction.Options),
-                    Utf8ExecutionNodeKind.Eol or Utf8ExecutionNodeKind.EndZ => IsEndAnchorMatch(input, index, instruction.Options),
+                    Utf8ExecutionNodeKind.Multi => TryMatchProgramText(input, instruction, index, ref invocation, out index, out breach),
+                    Utf8ExecutionNodeKind.Bol => IsBeginningOfLine(input, index, instruction.Options),
+                    Utf8ExecutionNodeKind.Beginning => index == 0,
+                    Utf8ExecutionNodeKind.Start => index == (invocation.AnchorOriginByte < 0 ? startIndex : invocation.AnchorOriginByte),
+                    Utf8ExecutionNodeKind.Eol => IsEndAnchorMatch(input, index, instruction.Options),
+                    Utf8ExecutionNodeKind.EndZ => index == input.Length || index == input.Length - 1 && input[index] == (byte)'\n',
                     Utf8ExecutionNodeKind.End => index == input.Length,
                     _ => false,
                 };
@@ -543,33 +550,6 @@ internal static class Utf8ExecutionInterpreter
             if (!successful) captures.Clear();
         }
 
-        static bool MatchText(ReadOnlySpan<byte> input, Utf8ExecutionInstruction instruction, ref int index,
-            ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
-        {
-            breach = Utf8ExecutionLimitKind.None;
-            var text = instruction.Text;
-            if (text is null || text.Length > input.Length - index) return false;
-            var ignoreCase = (instruction.Options & RegexOptions.IgnoreCase) != 0;
-            for (var offset = 0; offset < text.Length;)
-            {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return false;
-                var end = offset + Math.Min(2048, text.Length - offset);
-                for (; offset < end; offset++)
-                {
-                    var actual = input[index + offset];
-                    var expected = (byte)text[offset];
-                    if (ignoreCase)
-                    {
-                        actual = Internal.Search.AsciiSearch.FoldCase(actual);
-                        expected = Internal.Search.AsciiSearch.FoldCase(expected);
-                    }
-                    if (actual != expected) return false;
-                }
-            }
-            index += text.Length;
-            return true;
-        }
     }
 
     private static bool MatchesFixedLiterals(ReadOnlySpan<byte> input, int candidateStart, AsciiSimplePatternPlan plan)
@@ -806,364 +786,6 @@ internal static class Utf8ExecutionInterpreter
         return true;
     }
 
-    private static bool TryMatchProgramNode(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int enterIndex,
-        int index,
-        Utf8CaptureSlots? captures,
-        Utf8ExecutionDeadline budget,
-        out int endIndex)
-    {
-        budget.Step();
-
-        var instruction = program.Instructions[enterIndex];
-        if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
-        {
-            endIndex = 0;
-            return false;
-        }
-
-        switch (instruction.NodeKind)
-        {
-            case Utf8ExecutionNodeKind.Empty:
-                endIndex = index;
-                return true;
-
-            case Utf8ExecutionNodeKind.Capture:
-                var captureCheckpoint = captures?.CreateCheckpoint() ?? default;
-                if (TryMatchProgramSequence(input, program, enterIndex + 1, instruction.PartnerIndex, index, captures, budget, out endIndex))
-                {
-                    captures?.Set(instruction.CaptureNumber, index, endIndex - index);
-                    return true;
-                }
-
-                captures?.Rollback(captureCheckpoint);
-
-                endIndex = 0;
-                return false;
-
-            case Utf8ExecutionNodeKind.Group:
-            case Utf8ExecutionNodeKind.Concatenate:
-                return TryMatchProgramSequence(input, program, enterIndex + 1, instruction.PartnerIndex, index, captures, budget, out endIndex);
-
-            case Utf8ExecutionNodeKind.Alternate:
-                for (var childIndex = enterIndex + 1; childIndex < instruction.PartnerIndex; childIndex = program.Instructions[childIndex].PartnerIndex + 1)
-                {
-                    var alternateCheckpoint = captures?.CreateCheckpoint() ?? default;
-                    if (TryMatchProgramNode(input, program, childIndex, index, captures, budget, out endIndex))
-                    {
-                        return true;
-                    }
-
-                    captures?.Rollback(alternateCheckpoint);
-                }
-
-                endIndex = 0;
-                return false;
-
-            case Utf8ExecutionNodeKind.One:
-                return TryMatchOne(input, instruction, index, out endIndex);
-
-            case Utf8ExecutionNodeKind.Multi:
-                return TryMatchMulti(input, instruction, index, out endIndex);
-
-            case Utf8ExecutionNodeKind.Set:
-                return TryMatchSet(input, instruction, index, out endIndex);
-
-            case Utf8ExecutionNodeKind.Bol:
-            case Utf8ExecutionNodeKind.Beginning:
-            case Utf8ExecutionNodeKind.Start:
-                endIndex = index;
-                return IsBeginningOfLine(input, index, instruction.Options);
-
-            case Utf8ExecutionNodeKind.Eol:
-            case Utf8ExecutionNodeKind.EndZ:
-                endIndex = index;
-                return IsEndAnchorMatch(input, index, instruction.Options);
-
-            case Utf8ExecutionNodeKind.End:
-                endIndex = index;
-                return index == input.Length;
-
-            case Utf8ExecutionNodeKind.Loop:
-            case Utf8ExecutionNodeKind.LazyLoop:
-                return TryMatchStandaloneProgramLoop(input, program, enterIndex, instruction, index, captures, budget, out endIndex);
-
-            default:
-                endIndex = 0;
-                return false;
-        }
-    }
-
-    private static bool TryMatchProgramSequence(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int currentIndex,
-        int exitIndex,
-        int index,
-        Utf8CaptureSlots? captures,
-        Utf8ExecutionDeadline budget,
-        out int endIndex)
-    {
-        if (currentIndex >= exitIndex)
-        {
-            endIndex = index;
-            return true;
-        }
-
-        var instruction = program.Instructions[currentIndex];
-        if (instruction.NodeKind == Utf8ExecutionNodeKind.Alternate)
-        {
-            for (var branchIndex = currentIndex + 1; branchIndex < instruction.PartnerIndex; branchIndex = program.Instructions[branchIndex].PartnerIndex + 1)
-            {
-                var branchCheckpoint = captures?.CreateCheckpoint() ?? default;
-                if (TryMatchProgramNode(input, program, branchIndex, index, captures, budget, out var branchEnd) &&
-                    TryMatchProgramSequence(input, program, instruction.PartnerIndex + 1, exitIndex, branchEnd, captures, budget, out endIndex))
-                {
-                    return true;
-                }
-
-                captures?.Rollback(branchCheckpoint);
-            }
-
-            endIndex = 0;
-            return false;
-        }
-
-        if (instruction.NodeKind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
-        {
-            return TryMatchProgramLoopInSequence(input, program, currentIndex, exitIndex, index, captures, budget, out endIndex);
-        }
-
-        var sequenceCheckpoint = captures?.CreateCheckpoint() ?? default;
-        if (!TryMatchProgramNode(input, program, currentIndex, index, captures, budget, out var nextIndex))
-        {
-            captures?.Rollback(sequenceCheckpoint);
-
-            endIndex = 0;
-            return false;
-        }
-
-        if (TryMatchProgramSequence(input, program, instruction.PartnerIndex + 1, exitIndex, nextIndex, captures, budget, out endIndex))
-        {
-            return true;
-        }
-
-        captures?.Rollback(sequenceCheckpoint);
-
-        endIndex = 0;
-        return false;
-    }
-
-    private static bool TryMatchProgramLoopInSequence(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int enterIndex,
-        int exitIndex,
-        int index,
-        Utf8CaptureSlots? captures,
-        Utf8ExecutionDeadline budget,
-        out int endIndex)
-    {
-        var loop = program.Instructions[enterIndex];
-        if (loop.Max < loop.Min)
-        {
-            endIndex = 0;
-            return false;
-        }
-
-        var maximumRepeats = Math.Min(loop.Max, input.Length - index);
-        if (loop.Min > maximumRepeats)
-        {
-            endIndex = 0;
-            return false;
-        }
-
-        var stateCount = checked(maximumRepeats + 1);
-        var positions = new Utf8PooledStateStack<int>(stateCount);
-        var captureCheckpoints = new Utf8PooledStateStack<Utf8CaptureCheckpoint>(captures is null ? 0 : stateCount);
-        try
-        {
-            PushState(ref positions, index);
-            if (captures is not null)
-            {
-                PushState(ref captureCheckpoints, captures.CreateCheckpoint());
-            }
-
-            var count = 0;
-            while (count < maximumRepeats &&
-                TryMatchProgramLoopBody(input, program, enterIndex, loop, positions[count], captures, budget, out var nextIndex) &&
-                nextIndex > positions[count])
-            {
-                count++;
-                PushState(ref positions, nextIndex);
-                if (captures is not null)
-                {
-                    PushState(ref captureCheckpoints, captures.CreateCheckpoint());
-                }
-            }
-
-            if (count < loop.Min)
-            {
-                RollbackCapture(captures, captureCheckpoints, 0);
-                endIndex = 0;
-                return false;
-            }
-
-            if (loop.NodeKind == Utf8ExecutionNodeKind.LazyLoop)
-            {
-                for (var repeats = loop.Min; repeats <= count; repeats++)
-                {
-                    RollbackCapture(captures, captureCheckpoints, repeats);
-
-                    if (TryMatchProgramSequence(input, program, loop.PartnerIndex + 1, exitIndex, positions[repeats], captures, budget, out endIndex))
-                    {
-                        return true;
-                    }
-                }
-            }
-            else
-            {
-                for (var repeats = count; repeats >= loop.Min; repeats--)
-                {
-                    RollbackCapture(captures, captureCheckpoints, repeats);
-
-                    if (TryMatchProgramSequence(input, program, loop.PartnerIndex + 1, exitIndex, positions[repeats], captures, budget, out endIndex))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            RollbackCapture(captures, captureCheckpoints, 0);
-            endIndex = 0;
-            return false;
-        }
-        finally
-        {
-            captureCheckpoints.Dispose();
-            positions.Dispose();
-        }
-    }
-
-    private static bool TryMatchStandaloneProgramLoop(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int enterIndex,
-        Utf8ExecutionInstruction loop,
-        int index,
-        Utf8CaptureSlots? captures,
-        Utf8ExecutionDeadline budget,
-        out int endIndex)
-    {
-        if (loop.Max < loop.Min)
-        {
-            endIndex = 0;
-            return false;
-        }
-
-        var maximumRepeats = Math.Min(loop.Max, input.Length - index);
-        var initialCheckpoint = captures?.CreateCheckpoint() ?? default;
-        if (loop.Min > maximumRepeats)
-        {
-            endIndex = 0;
-            return false;
-        }
-
-        var stateCount = checked(maximumRepeats + 1);
-        var captureCheckpoints = new Utf8PooledStateStack<Utf8CaptureCheckpoint>(captures is null ? 0 : stateCount);
-        try
-        {
-            endIndex = index;
-            if (captures is not null)
-            {
-                PushState(ref captureCheckpoints, initialCheckpoint);
-            }
-
-            for (var i = 0; i < loop.Min; i++)
-            {
-                if (!TryMatchProgramLoopBody(input, program, enterIndex, loop, endIndex, captures, budget, out var nextIndex) || nextIndex <= endIndex)
-                {
-                    captures?.Rollback(initialCheckpoint);
-                    endIndex = 0;
-                    return false;
-                }
-
-                endIndex = nextIndex;
-                if (captures is not null)
-                {
-                    PushState(ref captureCheckpoints, captures.CreateCheckpoint());
-                }
-            }
-
-            var repeats = loop.Min;
-            for (var i = loop.Min; i < maximumRepeats; i++)
-            {
-                if (!TryMatchProgramLoopBody(input, program, enterIndex, loop, endIndex, captures, budget, out var nextIndex) || nextIndex <= endIndex)
-                {
-                    break;
-                }
-
-                endIndex = nextIndex;
-                repeats++;
-                if (captures is not null)
-                {
-                    PushState(ref captureCheckpoints, captures.CreateCheckpoint());
-                }
-            }
-
-            RollbackCapture(captures, captureCheckpoints, repeats);
-            return true;
-        }
-        finally
-        {
-            captureCheckpoints.Dispose();
-        }
-    }
-
-    private static void PushState<T>(ref Utf8PooledStateStack<T> states, T value) where T : struct
-    {
-        if (!states.TryPush(value))
-        {
-            throw new InvalidOperationException("The bounded backtracking state stack is full.");
-        }
-    }
-
-    private static void RollbackCapture(
-        Utf8CaptureSlots? captures,
-        Utf8PooledStateStack<Utf8CaptureCheckpoint> checkpoints,
-        int index)
-    {
-        if (captures is not null)
-        {
-            captures.Rollback(checkpoints[index]);
-        }
-    }
-
-    private static bool TryMatchProgramLoopBody(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram program,
-        int enterIndex,
-        Utf8ExecutionInstruction loop,
-        int index,
-        Utf8CaptureSlots? captures,
-        Utf8ExecutionDeadline budget,
-        out int endIndex)
-    {
-        if (enterIndex + 1 < loop.PartnerIndex)
-        {
-            return TryMatchProgramSequence(input, program, enterIndex + 1, loop.PartnerIndex, index, captures, budget, out endIndex);
-        }
-
-        if (loop.Text is { Length: > 0 })
-        {
-            return TryMatchSet(input, loop, index, out endIndex);
-        }
-
-        return TryMatchOne(input, loop, index, out endIndex);
-    }
-
     private static bool TryMatchOne(
         ReadOnlySpan<byte> input,
         Utf8ExecutionInstruction instruction,
@@ -1193,19 +815,33 @@ internal static class Utf8ExecutionInterpreter
         return true;
     }
 
-    private static bool TryMatchMulti(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionInstruction instruction,
-        int index,
-        out int endIndex)
+    private static bool TryMatchProgramText(
+        ReadOnlySpan<byte> input, Utf8ExecutionInstruction instruction, int index,
+        ref Utf8SliceInvocation invocation, out int endIndex, out Utf8ExecutionLimitKind breach)
     {
         endIndex = 0;
-        if (instruction.Text is null || !TryMatchLiteralText(input, index, instruction.Text, (instruction.Options & RegexOptions.IgnoreCase) != 0))
+        breach = Utf8ExecutionLimitKind.None;
+        var text = instruction.Text;
+        if (text is null || text.Length > input.Length - index) return false;
+        var ignoreCase = (instruction.Options & RegexOptions.IgnoreCase) != 0;
+        for (var offset = 0; offset < text.Length;)
         {
-            return false;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            var end = offset + Math.Min(2048, text.Length - offset);
+            for (; offset < end; offset++)
+            {
+                var actual = input[index + offset];
+                var expected = (byte)text[offset];
+                if (ignoreCase)
+                {
+                    actual = Internal.Search.AsciiSearch.FoldCase(actual);
+                    expected = Internal.Search.AsciiSearch.FoldCase(expected);
+                }
+                if (actual != expected) return false;
+            }
         }
-
-        endIndex = index + instruction.Text.Length;
+        endIndex = index + text.Length;
         return true;
     }
 

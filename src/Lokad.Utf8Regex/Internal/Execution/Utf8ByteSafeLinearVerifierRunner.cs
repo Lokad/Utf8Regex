@@ -11,34 +11,15 @@ internal static class Utf8ByteSafeLinearVerifierRunner
         out int matchedLength)
     {
         matchedLength = 0;
-        captures?.Clear();
-        budget.Step();
-
         if (program is null || program.Instructions.Count == 0 || (uint)startIndex > (uint)input.Length)
         {
+            captures?.Clear();
+            budget.Step();
             return false;
         }
-
-        captures?.BeginInvocation();
-        var initialCheckpoint = captures?.CreateCheckpoint() ?? default;
-        try
-        {
-            if (!Utf8ExecutionInterpreter.TryMatchProgramAt(input, program, 0, startIndex, captures, budget, out var endIndex))
-            {
-                return false;
-            }
-
-            matchedLength = endIndex - startIndex;
-            return true;
-        }
-        catch
-        {
-            captures?.Rollback(initialCheckpoint);
-            throw;
-        }
-        finally
-        {
-            captures?.EndInvocation();
-        }
+        if (!Utf8ExecutionInterpreter.TryMatchProgramAt(input, program, 0, startIndex, captures, budget, out var endIndex))
+            return false;
+        matchedLength = endIndex - startIndex;
+        return true;
     }
 }
