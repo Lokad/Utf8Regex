@@ -20,8 +20,11 @@ public sealed partial class Utf8PythonRegex
         SplitToStrings(input, maxSplit, 0);
 
     /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures.</summary>
-    public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes)
+    public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes) => SplitToStringsCore(input, maxSplit, startOffsetInBytes, CancellationToken.None);
+
+    private string?[] SplitToStringsCore(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        if (TrySplitScalar(input, maxSplit, startOffsetInBytes, cancellationToken, true, out _, out var scalarValues)) return scalarValues;
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         if (_canCountAsciiWordBoundariesDirectly &&
@@ -189,7 +192,7 @@ public sealed partial class Utf8PythonRegex
     public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SplitToStrings(input, maxSplit, startOffsetInBytes);
+        return SplitToStringsCore(input, maxSplit, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Splits the complete input and describes values and captured separators.</summary>
@@ -200,8 +203,11 @@ public sealed partial class Utf8PythonRegex
         SplitDetailed(input, maxSplit, 0);
 
     /// <summary>Performs a detailed split after a zero-based UTF-8 byte offset.</summary>
-    public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes)
+    public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes) => SplitDetailedCore(input, maxSplit, startOffsetInBytes, CancellationToken.None);
+
+    private Utf8PythonSplitItem[] SplitDetailedCore(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        if (TrySplitScalar(input, maxSplit, startOffsetInBytes, cancellationToken, false, out var scalarItems, out _)) return scalarItems;
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         if (_canCountAsciiWordBoundariesDirectly &&
@@ -257,7 +263,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SplitDetailed(input, maxSplit, startOffsetInBytes);
+        return SplitDetailedCore(input, maxSplit, startOffsetInBytes, cancellationToken);
     }
 
 }

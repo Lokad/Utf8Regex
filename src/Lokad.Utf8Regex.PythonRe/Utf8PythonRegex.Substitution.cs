@@ -29,6 +29,11 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
+        if (Utf8SliceExecutionApplies)
+        {
+            var scalarResult = SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None);
+            return scalarResult.ResultBytes;
+        }
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             ValidateStartOffset(input, startOffsetInBytes);
@@ -67,7 +72,7 @@ public sealed partial class Utf8PythonRegex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, replacement, count, startOffsetInBytes);
+        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken).ResultBytes;
     }
 
     /// <summary>Replaces all matches and returns a string.</summary>
@@ -81,6 +86,11 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Replaces matches after a byte offset and returns a string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
+        if (Utf8SliceExecutionApplies)
+        {
+            var scalarResult = SubnToStringTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None);
+            return scalarResult.ResultText;
+        }
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             ValidateStartOffset(input, startOffsetInBytes);
@@ -194,7 +204,7 @@ public sealed partial class Utf8PythonRegex
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToString(input, replacement, count, startOffsetInBytes);
+        return SubnToStringTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken).ResultText;
     }
 
     /// <summary>Replaces all matches and returns the string plus replacement count.</summary>
@@ -211,8 +221,25 @@ public sealed partial class Utf8PythonRegex
         ReadOnlySpan<byte> input,
         string replacement,
         int count,
-        int startOffsetInBytes)
+        int startOffsetInBytes) => SubnToStringTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None);
+
+    private Utf8PythonSubnResult SubnToStringTemplateCore(
+        ReadOnlySpan<byte> input,
+        string replacement,
+        int count,
+        int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        ValidateStartOffset(input, startOffsetInBytes);
+        var scalarPlan = GetReplacementPlan(replacement);
+        if (!cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
+            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, out var literalBytes, out var literalCount))
+            return new Utf8PythonSubnResult { ResultText = Encoding.UTF8.GetString(literalBytes), ReplacementCount = literalCount };
+        if (TrySubstituteScalar(input, scalarPlan,
+                static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor) => plan.ExpandToUtf8(source, cursor.SnapshotGroups()),
+                count, startOffsetInBytes, cancellationToken, out var scalarResult))
+        {
+            return new Utf8PythonSubnResult { ResultText = Encoding.UTF8.GetString(scalarResult.ResultBytes), ReplacementCount = scalarResult.ReplacementCount };
+        }
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = GetReplacementPlan(replacement);
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
@@ -289,7 +316,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SubnToString(input, replacement, count, startOffsetInBytes);
+        return SubnToStringTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Replaces all matches and returns UTF-8 bytes plus replacement count.</summary>
@@ -305,8 +332,25 @@ public sealed partial class Utf8PythonRegex
         ReadOnlySpan<byte> input,
         string replacement,
         int count,
-        int startOffsetInBytes)
+        int startOffsetInBytes) => SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None);
+
+    private Utf8PythonSubnUtf8Result SubnTemplateCore(
+        ReadOnlySpan<byte> input,
+        string replacement,
+        int count,
+        int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        ValidateStartOffset(input, startOffsetInBytes);
+        var scalarPlan = GetReplacementPlan(replacement);
+        if (!cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
+            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, out var literalBytes, out var literalCount))
+            return new Utf8PythonSubnUtf8Result { ResultBytes = literalBytes, ReplacementCount = literalCount };
+        if (TrySubstituteScalar(input, scalarPlan,
+                static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor) => plan.ExpandToUtf8(source, cursor.SnapshotGroups()),
+                count, startOffsetInBytes, cancellationToken, out var scalarResult))
+        {
+            return scalarResult;
+        }
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = GetReplacementPlan(replacement);
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
@@ -364,7 +408,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Subn(input, replacement, count, startOffsetInBytes);
+        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Replaces all matches with a stateful string evaluator and returns UTF-8 bytes.</summary>
@@ -403,7 +447,7 @@ public sealed partial class Utf8PythonRegex
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, state, evaluator, count, startOffsetInBytes);
+        return SubnEvaluatorCore(input, state, evaluator, count, startOffsetInBytes, cancellationToken).ResultBytes;
     }
 
     /// <summary>Replaces all matches with a stateful evaluator and returns a string.</summary>
@@ -524,7 +568,7 @@ public sealed partial class Utf8PythonRegex
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToString(input, state, evaluator, count, startOffsetInBytes);
+        return SubnToStringEvaluatorCore(input, state, evaluator, count, startOffsetInBytes, cancellationToken).ResultText;
     }
 
     /// <summary>Evaluates all replacements and returns the string plus replacement count.</summary>
@@ -559,6 +603,12 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        if (TrySubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor) => Encoding.UTF8.GetBytes(s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+                count, startOffsetInBytes, cancellationToken, out var scalarResult))
+        {
+            return new Utf8PythonSubnResult { ResultText = Encoding.UTF8.GetString(scalarResult.ResultBytes), ReplacementCount = scalarResult.ReplacementCount };
+        }
         ValidateStartOffset(input, startOffsetInBytes);
 
         var subject = Decode(input);
@@ -652,6 +702,12 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        if (TrySubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor) => Encoding.UTF8.GetBytes(s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+                count, startOffsetInBytes, cancellationToken, out var scalarResult))
+        {
+            return scalarResult;
+        }
         if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount, cancellationToken))
         {
             return new Utf8PythonSubnUtf8Result
@@ -723,7 +779,7 @@ public sealed partial class Utf8PythonRegex
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, state, evaluator, count, startOffsetInBytes);
+        return SubnUtf8EvaluatorCore(input, state, evaluator, count, startOffsetInBytes, cancellationToken).ResultBytes;
     }
 
     /// <summary>Evaluates all UTF-8 replacements and returns bytes plus replacement count.</summary>
@@ -758,6 +814,12 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        if (TrySubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor) => s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names)),
+                count, startOffsetInBytes, cancellationToken, out var scalarResult))
+        {
+            return scalarResult;
+        }
         if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => evaluator(s, m), count, startOffsetInBytes, out var ownedBytes, out var ownedCount, cancellationToken))
         {
             return new Utf8PythonSubnUtf8Result

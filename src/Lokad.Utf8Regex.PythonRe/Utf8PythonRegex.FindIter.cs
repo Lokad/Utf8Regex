@@ -16,8 +16,11 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input) => FindIterDetailed(input, 0);
 
     /// <summary>Materializes detailed matches after a zero-based UTF-8 byte offset.</summary>
-    public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes) => FindIterDetailedCore(input, startOffsetInBytes, CancellationToken.None);
+
+    private Utf8PythonDetailedMatchData[] FindIterDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        if (TryFindIterScalar(input, startOffsetInBytes, cancellationToken, out var scalarResult)) return scalarResult;
         ValidateStartOffset(input, startOffsetInBytes);
         if (!_canMatchEmpty)
         {
@@ -141,7 +144,6 @@ public sealed partial class Utf8PythonRegex
     {
         var groups = CreateOwnedPythonGroups(indexMap, match, map, branch);
         return CreateDetailedMatchData(input, groups, _nameEntries);
-        return CreateDetailedMatchData(input, groups, _nameEntries);
     }
 
     private static PythonReGroupData OwnedSpanGroupData(PythonReUtf8IndexMap indexMap, int number, int startOffsetInUtf16, int lengthInUtf16)
@@ -186,7 +188,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return FindIterDetailed(input, startOffsetInBytes);
+        return FindIterDetailedCore(input, startOffsetInBytes, cancellationToken);
     }
 
 }

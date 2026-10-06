@@ -1,0 +1,237 @@
+using System.Buffers;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
+
+namespace Lokad.Utf8Regex.PythonRe;
+
+// One operation owns this cursor and its invocation. Search positions and empty
+// advancement are bytes; the lazy map serves only returned UTF-16 coordinates.
+// Python retains the last capture, so discovery does not collect capture history.
+internal ref struct PythonReScalarMatchCursor
+{
+    private readonly ReadOnlySpan<byte> _input;
+    private readonly Utf8SliceProgram _program;
+    private readonly int[] _numbersByPython;
+    private readonly string _pattern;
+    private readonly TimeSpan _timeout;
+    private Utf8SliceInvocation _invocation;
+    private Utf8SliceSlots _slots;
+    private Utf8ValidationResult _validation;
+    private Utf8BoundaryMap _map;
+    private ulong _mapReservation;
+    private bool _hasMap;
+    private bool _retryNonEmpty;
+    private bool _finished;
+    private int _position;
+
+    internal PythonReScalarMatchCursor(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout,
+        string pattern, CancellationToken cancellationToken)
+    {
+        this = default;
+        _input = input;
+        _program = program;
+        _numbersByPython = numbersByPython;
+        _pattern = pattern;
+        _timeout = timeout;
+        _position = startOffsetInBytes;
+        _slots = new Utf8SliceSlots([], []);
+        _invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, cancellationToken);
+        try
+        {
+            _validation = Utf8Validation.Validate(input, ref _invocation);
+            _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            Dispose();
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), pattern, timeout);
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+    }
+
+    internal int StartOffsetInBytes { get; private set; }
+    internal int EndOffsetInBytes { get; private set; }
+    internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
+
+    internal void Checkpoint()
+    {
+        try
+        {
+            if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
+            _invocation.Budget.ThrowIfCancellationRequested();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
+        }
+    }
+
+    internal bool MoveNext()
+    {
+        while (!_finished)
+        {
+            Checkpoint();
+            _invocation.AnchorOriginByte = _position;
+            Utf8SliceMatchOutcome outcome;
+            try
+            {
+                outcome = Utf8SliceRunner.TryMatchAt(_program, _input, _position,
+                    _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _invocation);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
+            }
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
+            if (outcome.IsMatch)
+            {
+                StartOffsetInBytes = _position;
+                EndOffsetInBytes = outcome.EndIndex;
+                _retryNonEmpty = outcome.EndIndex == _position;
+                _position = outcome.EndIndex;
+                return true;
+            }
+            _retryNonEmpty = false;
+            if (_position == _input.Length)
+            {
+                _finished = true;
+                return false;
+            }
+            if (Rune.DecodeFromUtf8(_input[_position..], out _, out var width) != OperationStatus.Done)
+                throw Utf8Validation.CreateInvalidUtf8Exception(_position);
+            _position += width;
+        }
+        return false;
+    }
+
+    internal PythonReGroupData[] SnapshotGroups()
+    {
+        Checkpoint();
+        EnsureMap();
+        var groups = new PythonReGroupData[_numbersByPython.Length];
+        for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
+        {
+            if ((pythonGroup & 255) == 0) Checkpoint();
+            var slot = Array.BinarySearch(_program.GroupNumbers, _numbersByPython[pythonGroup]) - 1;
+            var start = pythonGroup == 0 ? StartOffsetInBytes : slot >= 0 ? _slots.Starts[slot] : -1;
+            var end = pythonGroup == 0 ? EndOffsetInBytes : slot >= 0 ? _slots.Ends[slot] : -1;
+            // Reverse lookbehind bodies publish raw edges even inside an LTR
+            // outer program. Public capture ranges are always normalized bytes.
+            if (start >= 0 && end >= 0 && end < start) (start, end) = (end, start);
+            groups[pythonGroup] = start < 0 || end < 0
+                ? new PythonReGroupData { Number = pythonGroup, Success = false }
+                : new PythonReGroupData
+                {
+                    Number = pythonGroup, Success = true,
+                    StartOffsetInBytes = start, EndOffsetInBytes = end,
+                    StartOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(start),
+                    EndOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(end),
+                };
+        }
+        Checkpoint();
+        return groups;
+    }
+
+    internal void EnsureMap()
+    {
+        if (!_hasMap)
+        {
+            try
+            {
+                _map = Utf8BoundaryMap.Create(_input, _validation, ref _invocation, out _mapReservation);
+                _hasMap = true;
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
+            }
+        }
+    }
+
+    internal Utf8PythonDetailedMatchData SnapshotDetailed(PythonReNameEntry[] names)
+    {
+        var groups = SnapshotGroups();
+        var projected = new Utf8PythonGroupMatchData[groups.Length];
+        for (var i = 0; i < groups.Length; i++)
+        {
+            Checkpoint();
+            var group = groups[i];
+            projected[i] = new Utf8PythonGroupMatchData
+            {
+                Number = group.Number, Success = group.Success,
+                StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
+                StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
+                HasContiguousByteRange = group.HasContiguousByteRange,
+                ValueText = group.Success ? GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty,
+            };
+        }
+        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = (PythonReNameEntry[])names.Clone() };
+        Checkpoint();
+        return result;
+    }
+
+    internal string GetText(int start, int end)
+    {
+        Checkpoint();
+        EnsureMap();
+        try
+        {
+            var text = Utf8SliceBufferWork.DecodeUtf8(_input[start..end],
+                _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start), ref _invocation);
+            Checkpoint();
+            return text;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
+        }
+    }
+
+    internal byte[] GetBytes(int start, int end)
+    {
+        Checkpoint();
+        var bytes = new byte[end - start];
+        CopyBytes(_input[start..end], bytes);
+        return bytes;
+    }
+
+    internal void AppendBytes(ArrayBufferWriter<byte> writer, ReadOnlySpan<byte> bytes)
+    {
+        Checkpoint();
+        CopyBytes(bytes, writer.GetSpan(bytes.Length));
+        writer.Advance(bytes.Length);
+    }
+
+    internal void CopyBytes(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        try
+        {
+            Utf8SliceBufferWork.Copy(source, destination, ref _invocation);
+            Checkpoint();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
+        }
+    }
+
+    internal void Dispose()
+    {
+        Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
+        _slots = new Utf8SliceSlots([], []);
+        _invocation.Ledger.Release(_mapReservation);
+        _mapReservation = 0;
+        _map = default;
+        _hasMap = false;
+        _finished = true;
+    }
+}

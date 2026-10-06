@@ -211,7 +211,7 @@ public sealed partial class Utf8PythonRegex
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_canCountAsciiWordBoundariesDirectly && MatchTimeout == Timeout.InfiniteTimeSpan)
+        if (_canCountAsciiWordBoundariesDirectly && MatchTimeout == Timeout.InfiniteTimeSpan && !cancellationToken.CanBeCanceled)
         {
             var decoded = Decode(input);
             return CountAsciiWordBoundaries(decoded, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
@@ -223,24 +223,14 @@ public sealed partial class Utf8PythonRegex
             return _utf8Regex.Count(input, cancellationToken);
         }
 
+        if (_utf8Regex?.Inspection.AvailableOwnedSliceProgram is { } ownedProgram)
+            return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ownedProgram, cancellationToken);
+
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        if (_utf8Regex?.Inspection.AvailableOwnedSliceProgram is { } ownedProgram)
-        {
-            try
-            {
-                return CountOwnedSlicePythonStyle(
-                    input, startOffsetInUtf16, ownedProgram, cancellationToken);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
-            }
-        }
-
         if (!_canMatchEmpty)
         {
-            if ((!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram) && _utf8Regex is not null && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
+            if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram) && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
             {
                 var ownedCount = 0;
                 var ownedCountFirst = true;
@@ -286,102 +276,18 @@ public sealed partial class Utf8PythonRegex
         return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16);
     }
 
-    private int CountOwnedSlicePythonStyle(
-        ReadOnlySpan<byte> input,
-        int startOffsetInUtf16,
-        Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram program,
-        CancellationToken cancellationToken)
+    private int CountOwnedSlicePythonStyle(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        Utf8SliceProgram program, CancellationToken cancellationToken)
     {
-        // Mirrors PythonReManagedMatchCursor: after an empty match the same
-        // position is retried requiring a non-empty match before advancing
-        // past the scalar, reproducing CPython finditer adjacency.
-        var map = Lokad.Utf8Regex.Internal.Input.Utf8BoundaryMap.Create(input);
-        var invocation = new Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation(
-            Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimits.Unlimited,
-            MatchTimeout,
-            cancellationToken);
-        var slots = new Lokad.Utf8Regex.Internal.Execution.Utf8SliceSlots([], []);
+        var cursor = new PythonReScalarMatchCursor(input, program, _managedGroupNumbersByPythonGroup,
+            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
         try
         {
-            slots = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var count = 0;
-            var unit = startOffsetInUtf16;
-            var retryPending = false;
-            var retryUnit = 0;
-            while (true)
-            {
-                Lokad.Utf8Regex.Internal.Execution.Utf8SliceUnitOutcome outcome;
-                if (retryPending)
-                {
-                    retryPending = false;
-                    if (retryUnit >= map.Utf16Length)
-                    {
-                        break;
-                    }
-
-                    outcome = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.TryMatchFromUnitNonEmpty(
-                        program, input, map, retryUnit, slots.Starts, slots.Ends, ref invocation);
-                    if (outcome.Breach != Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind.None)
-                    {
-                        throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-                    }
-
-                    if (outcome.Found)
-                    {
-                        count++;
-                        unit = outcome.EndUnit;
-                        continue;
-                    }
-
-                    if (!map.TryAdvanceScalar(retryUnit, out var advanced))
-                    {
-                        break;
-                    }
-
-                    unit = advanced.Utf16Offset;
-                    continue;
-                }
-
-                if (unit > map.Utf16Length)
-                {
-                    break;
-                }
-
-                outcome = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.TryMatchFromUnit(
-                    program, input, map, unit, slots.Starts, slots.Ends, ref invocation);
-                if (outcome.Breach != Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind.None)
-                {
-                    throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-                }
-
-                if (!outcome.Found)
-                {
-                    if (!map.TryAdvanceScalar(unit, out var advanced)) break;
-                    unit = advanced.Utf16Offset;
-                    continue;
-                }
-
-                count++;
-                if (outcome.EndUnit == outcome.StartUnit)
-                {
-                    retryPending = true;
-                    retryUnit = outcome.StartUnit;
-                    continue;
-                }
-
-                unit = outcome.EndUnit;
-            }
-
+            while (cursor.MoveNext()) count++;
             return count;
         }
-        catch (Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new RegexMatchTimeoutException(Decode(input), _translation.Pattern, MatchTimeout);
-        }
-        finally
-        {
-            Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        finally { cursor.Dispose(); }
     }
 
     /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>

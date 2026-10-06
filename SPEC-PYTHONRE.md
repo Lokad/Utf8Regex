@@ -108,11 +108,13 @@ This profile is still incomplete. In particular:
   word/digit members and scalar-adjacent boundaries through the owned core. The
   existing CPython category spellings remain `[\p{L}\p{N}_]` for `\w`,
   `[\s\x1c-\x1f]` for `\s`, and decimal digits for `\d`. Their complements
-  and bracketed forms retain the whole scalar domain. Global captured iteration,
-  empty-capable result shaping, substitution and split still have managed callers;
-  their supplementary categories, case comparisons and output costs require
-  separate qualification and owned replacements. A native success does not prove
-  those remaining operations. Unicode-data version reconciliation remains a gate.
+  and bracketed forms retain the whole scalar domain. Admitted scalar programs
+  now serve captured/global iteration, empty-capable result shaping, substitution
+  and split with Python's same-position nonempty retry. Capture snapshots preserve
+  Python numbering and normalized scalar byte ranges, including lookbehind.
+  Remaining case-folding/unserved managed callers and their compensation are
+  R04/R05 debt; Unicode-data version reconciliation and finite/result/output
+  resource bounds remain separate gates.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
   find the whole scalar. Search, Match, and FullMatch here stay mutually consistent
@@ -122,7 +124,7 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 
 ## Cancellation and resource contract
 
-Same entry contract as the core library: every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. Lazy `FindIterDetailed` observes the token at creation. Evaluator-driven substitution additionally observes the token on every match iteration across owned and managed paths, so canceling from inside the callback aborts deterministically.
+Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Admitted scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code. Remaining managed routes still require the full R06 migration.
 
 Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe defines no work, depth, or memory budgets; defaults are unlimited everywhere. The shared `Utf8ResourcePolicy` is accepted like the core library (unlimited only; finite budgets are rejected loudly).
 

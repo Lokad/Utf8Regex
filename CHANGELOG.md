@@ -50,8 +50,13 @@
   managed callers. Direct supplementary classes, category complements and word
   boundaries use the owned core; quantified dots keep newline scope on every
   scalar, and separate Python surrogate escapes cannot combine into an atom.
-  Empty-capable Count uses Python's scalar retry/advance rule. Managed global
-  capture, substitution and split routes remain migration debt.
+  Empty-capable Count uses Python's scalar retry/advance rule.
+- Admitted PythonRe scalar programs now discover captured/global results,
+  substitute and split over the original UTF-8 bytes. One invocation preserves
+  the timeout/token across discovery and callback boundaries; captures retain
+  Python numbering, last-capture semantics and normalized lookbehind ranges.
+  Deleted Count's UTF-16 scan/map driver. Remaining case-folding/unserved BCL
+  routes, finite/result/output policies and compensation cleanup stay open.
 
 ### Historical UTF-16 parity work (superseded)
 

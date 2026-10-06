@@ -337,10 +337,10 @@ public sealed partial class Utf8PythonRegex
         _countBackend = utf8ServesCount
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
-        _findAllBackend = _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
+        _findAllBackend = Utf8SliceExecutionApplies || _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
-        _replaceBackend = _canUseZeroOffsetUtf8ValueFastPath
+        _replaceBackend = Utf8SliceExecutionApplies || _canUseZeroOffsetUtf8ValueFastPath
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
 
@@ -435,7 +435,7 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugUsesAsciiWordBoundaryCount => _canCountAsciiWordBoundariesDirectly;
 
-    internal bool DebugUsesAsciiWordBoundarySplit => _canCountAsciiWordBoundariesDirectly;
+    internal bool DebugUsesAsciiWordBoundarySplit => _canCountAsciiWordBoundariesDirectly && !Utf8SliceExecutionApplies;
 
     internal bool DebugUsesManagedEmptyReplacementFastPath => _canUseManagedEmptyReplacementFastPath;
 
@@ -488,9 +488,10 @@ public sealed partial class Utf8PythonRegex
 
     internal PythonReDirectBackendKind DebugReplaceBackend => _replaceBackend;
 
-    internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.ManagedRegex;
+    internal PythonReDirectBackendKind DebugSplitBackend => Utf8SliceExecutionApplies
+        ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
 
-    internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath;
+    internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath && !Utf8SliceExecutionApplies;
 
     internal bool DebugUsesSingleTrailingCaptureFindAllFastPath => _singleTrailingCapturePrefixLength >= 0;
 
