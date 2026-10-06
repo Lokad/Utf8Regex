@@ -9,7 +9,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     private const int MaxLiteralCharClassExpansion = 4;
     private const int MaxPreparationWork = 4096;
     private const int MaxPreparationOutput = 4096;
-    // Bounds CLR recursion in tree lowering; deeper trees decline to the fallback route.
+    // Keep the optimizer's existing admission boundary after removing CLR recursion.
+    // Declining this speculative plan leaves the other owned execution routes available.
     private const int MaxLoweringDepth = 256;
 
     public static bool TryCreatePlan(
@@ -140,26 +141,26 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             _ => Utf8SearchFacts.Create(Utf8SearchKind.None),
         };
 
-        static bool HasCaseClearingGroup(Utf8TreeNode node)
-        {
-            if (node.Kind == Utf8TreeNodeKind.Group &&
-                (node.Options & RegexOptions.IgnoreCase) == 0)
-            {
-                return true;
-            }
-
-            for (var i = 0; i < node.ChildCount; i++)
-            {
-                if (HasCaseClearingGroup(node.Child(i)))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         return true;
+    }
+
+    private static bool HasCaseClearingGroup(Utf8TreeNode node)
+    {
+        var pending = new Stack<(Utf8TreeNode Node, int Child)>();
+        while (true)
+        {
+            if (node.Kind == Utf8TreeNodeKind.Group && (node.Options & RegexOptions.IgnoreCase) == 0)
+                return true;
+            if (node.ChildCount != 0)
+            {
+                if (node.ChildCount > 1) pending.Push((node, 1));
+                node = node.Child(0);
+                continue;
+            }
+            if (!pending.TryPop(out var next)) return false;
+            if (next.Child + 1 < next.Node.ChildCount) pending.Push((next.Node, next.Child + 1));
+            node = next.Node.Child(next.Child);
+        }
     }
 
     // Non-literal simple patterns carry no per-branch folding flag, so a sensitive top
@@ -246,25 +247,21 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerLiteralText(string? text, out List<AsciiSimplePatternToken> tokens)
+    private static bool TryLowerLiteralText(string? text, Utf8PreparationBudget budget, out List<AsciiSimplePatternToken> tokens)
     {
         tokens = [];
-        if (text is null)
+        if (text is null || !budget.TryReserve(text.Length, text.Length))
         {
             return false;
         }
 
-        tokens = new List<AsciiSimplePatternToken>(text.Length);
         foreach (var ch in text)
         {
-            if (!TryLowerLiteral(ch, out var token))
-            {
-                tokens = [];
-                return false;
-            }
-
-            tokens.Add(token);
+            if (ch > 0x7F) return false;
         }
+
+        tokens = new List<AsciiSimplePatternToken>(text.Length);
+        foreach (var ch in text) tokens.Add(new AsciiSimplePatternToken((byte)ch));
 
         return true;
     }

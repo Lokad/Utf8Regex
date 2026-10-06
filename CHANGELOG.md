@@ -4,6 +4,12 @@
 
 ### Owned UTF-16 execution
 
+- ASCII branch lowering uses explicit continuations while preserving its existing
+  depth boundary, branch order, finite-repeat greediness and assertion offsets.
+  Literal materialization and branch payload copies obey the speculative work
+  and output budgets before acquisition. Declined optimizations retain other
+  owned execution routes; full constructor storage accounting remains open.
+
 - ASCII structural verification retains the caller deadline and shares its
   invocation through suffix helpers. Long separators, identifier tails, literal
   comparisons and suffix candidate scans poll work, cancellation and expiry;

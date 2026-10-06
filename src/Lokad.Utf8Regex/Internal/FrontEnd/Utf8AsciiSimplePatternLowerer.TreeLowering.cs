@@ -1,246 +1,46 @@
 using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
     private static bool TryLowerBranches(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
-    {
-        if (depth > MaxLoweringDepth)
-        {
-            branches = [];
-            return false;
-        }
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                if (node.ChildCount != 1)
-                {
-                    branches = [];
-                    return false;
-                }
-
-                return TryLowerBranches(node.Child(0), budget, depth + 1, out branches);
-
-            case Utf8TreeNodeKind.Empty:
-                branches = [new LoweredBranch([], [], false, false, false, false)];
-                return true;
-
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Start:
-                // Only absolute anchors (`Beginning` for `^`, `Start` for `\A`) pin
-                // the match at offset 0; line anchors (`Bol` for multiline `^`)
-                // legitimately match after `\n` and stay relative downstream.
-                branches = [new LoweredBranch([], [], true, false, node.Kind is Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start, false)];
-                return true;
-
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.End:
-                // Only absolute end anchors (`EndZ` for `$`/`\Z`, `End` for `\z`) pin
-                // the match at the input end; line anchors (`Eol` for multiline `$`)
-                // legitimately end right before a line feed.
-                branches = [new LoweredBranch([], [], false, true, false, node.Kind is Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End)];
-                return true;
-
-            case Utf8TreeNodeKind.One:
-                if (!TryLowerLiteral(node.Ch, out var literalToken))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                branches = [new LoweredBranch([literalToken], [], false, false, false, false)];
-                return true;
-
-            case Utf8TreeNodeKind.Multi:
-                if (!TryLowerLiteralText(node.Str, out var literalTokens))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                branches = [new LoweredBranch(literalTokens, [], false, false, false, false)];
-                return true;
-
-            case Utf8TreeNodeKind.Set:
-                if (!TryLowerSet(node.Str, (node.Options & RegexOptions.Singleline) != 0, out var setToken))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                branches = [new LoweredBranch([setToken], [], false, false, false, false)];
-                return true;
-
-            case Utf8TreeNodeKind.PositiveLookaround:
-                return TryLowerPositiveLookaround(node, budget, depth + 1, out branches);
-
-            case Utf8TreeNodeKind.Concatenate:
-                return TryLowerConcatenation(node, budget, depth + 1, out branches);
-
-            case Utf8TreeNodeKind.Alternate:
-                return TryLowerAlternation(node, budget, depth + 1, out branches);
-
-            case Utf8TreeNodeKind.Oneloop:
-                if (!TryLowerLiteral(node.Ch, out var repeatedLiteral))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                return TryExpandFiniteRepeat(
-                    [new LoweredBranch([repeatedLiteral], [], false, false, false, false)],
-                    node.M,
-                    node.N,
-                    budget,
-                    out branches);
-
-            case Utf8TreeNodeKind.Setloop:
-                if (!TryLowerSet(node.Str, (node.Options & RegexOptions.Singleline) != 0, out var repeatedSet))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                return TryExpandFiniteRepeat(
-                    [new LoweredBranch([repeatedSet], [], false, false, false, false)],
-                    node.M,
-                    node.N,
-                    budget,
-                    out branches);
-
-            case Utf8TreeNodeKind.Loop:
-                if (node.ChildCount != 1 || node.N == int.MaxValue || node.N < node.M)
-                {
-                    branches = [];
-                    return false;
-                }
-
-                if (!TryLowerBranches(node.Child(0), budget, depth + 1, out var loopBranches))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                return TryExpandFiniteRepeat(loopBranches, node.M, node.N, budget, out branches);
-
-            default:
-                branches = [];
-                return false;
-        }
-    }
+        => new BranchLowerer(budget).TryLower(node, depth, out branches);
 
     private static bool AllowsTrailingNewlineBeforeEnd(Utf8TreeNode node)
     {
-        switch (node.Kind)
+        var pending = new Stack<(Utf8TreeNode Node, int Child)>();
+        while (true)
         {
-            case Utf8TreeNodeKind.Eol:
-            case Utf8TreeNodeKind.EndZ:
-                return true;
-
-            case Utf8TreeNodeKind.Capture:
-            case Utf8TreeNodeKind.Group:
-                return node.ChildCount == 1 && AllowsTrailingNewlineBeforeEnd(node.Child(0));
-
-            case Utf8TreeNodeKind.Concatenate:
-                return node.ChildCount > 0 && AllowsTrailingNewlineBeforeEnd(node.Child(node.ChildCount - 1));
-
-            case Utf8TreeNodeKind.Alternate:
-                if (node.ChildCount == 0)
-                {
+            switch (node.Kind)
+            {
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.EndZ:
+                    break;
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                    if (node.ChildCount != 1) return false;
+                    node = node.Child(0);
+                    continue;
+                case Utf8TreeNodeKind.Concatenate:
+                    if (node.ChildCount == 0) return false;
+                    node = node.Child(node.ChildCount - 1);
+                    continue;
+                case Utf8TreeNodeKind.Alternate:
+                    if (node.ChildCount == 0) return false;
+                    if (node.ChildCount > 1) pending.Push((node, 1));
+                    node = node.Child(0);
+                    continue;
+                default:
                     return false;
-                }
-
-                for (var i = 0; i < node.ChildCount; i++)
-                {
-                    if (!AllowsTrailingNewlineBeforeEnd(node.Child(i)))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-
-            default:
-                return false;
+            }
+            if (!pending.TryPop(out var next)) return true;
+            if (next.Child + 1 < next.Node.ChildCount) pending.Push((next.Node, next.Child + 1));
+            node = next.Node.Child(next.Child);
         }
     }
 
-    private static bool TryLowerConcatenation(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
-    {
-        if (depth > MaxLoweringDepth)
-        {
-            branches = [];
-            return false;
-        }
-        var accumulated = new List<LoweredBranch> { new([], [], false, false, false, false) };
-
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            if (!TryLowerBranches(node.Child(i), budget, depth + 1, out var childBranches))
-            {
-                branches = [];
-                return false;
-            }
-
-            if (accumulated.Count == 1 &&
-                childBranches.Length == 1 &&
-                !accumulated[0].IsStartAnchored &&
-                !accumulated[0].IsEndAnchored &&
-                !childBranches[0].IsStartAnchored &&
-                !childBranches[0].IsEndAnchored)
-            {
-                if (!TryAppendBranch(accumulated[0], childBranches[0]))
-                {
-                    branches = [];
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (!TryConcatenate(accumulated, childBranches, budget, out accumulated))
-            {
-                branches = [];
-                return false;
-            }
-        }
-
-        branches = [.. accumulated];
-        return true;
-    }
-
-    private static bool TryLowerAlternation(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
-    {
-        if (depth > MaxLoweringDepth)
-        {
-            branches = [];
-            return false;
-        }
-        var alternates = new List<LoweredBranch>(node.ChildCount);
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            if (!TryLowerBranches(node.Child(i), budget, depth + 1, out var childBranches) ||
-                !budget.TryReserve(childBranches.Length, childBranches.Length))
-            {
-                branches = [];
-                return false;
-            }
-
-            alternates.AddRange(childBranches);
-            if (alternates.Count > MaxExpandedBranches)
-            {
-                branches = [];
-                return false;
-            }
-        }
-
-        branches = [.. alternates];
-        return true;
-    }
+    private static bool TryReserveBranchCells(Utf8PreparationBudget budget, long count)
+        => count <= int.MaxValue && budget.TryReserve((int)count, (int)count);
 
     private static bool TryConcatenate(
         List<LoweredBranch> leftBranches,
@@ -265,7 +65,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         {
             foreach (var right in rightBranches)
             {
-                if (!TryCombineBranches(left, right, out var branch))
+                if (!TryCombineBranches(left, right, budget, out var branch))
                 {
                     return false;
                 }
@@ -277,8 +77,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryAppendBranch(LoweredBranch left, LoweredBranch right)
+    private static bool TryAppendBranch(LoweredBranch left, LoweredBranch right, Utf8PreparationBudget budget)
     {
+        if (!TryReserveBranchCells(budget, (long)right.Tokens.Count + right.FixedChecks.Count)) return false;
         var leftLength = left.Tokens.Count;
         left.Tokens.AddRange(right.Tokens);
         foreach (var check in right.FixedChecks)
@@ -289,7 +90,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryCombineBranches(LoweredBranch left, LoweredBranch right, out LoweredBranch branch)
+    private static bool TryCombineBranches(LoweredBranch left, LoweredBranch right, Utf8PreparationBudget budget, out LoweredBranch branch)
     {
         if (right.IsStartAnchored && (left.IsStartAnchored || left.IsEndAnchored || left.Tokens.Count != 0))
         {
@@ -298,6 +99,12 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
 
         if (left.IsEndAnchored && (right.IsStartAnchored || right.IsEndAnchored || right.Tokens.Count != 0))
+        {
+            branch = default;
+            return false;
+        }
+
+        if (!TryReserveBranchCells(budget, (long)left.Tokens.Count + right.Tokens.Count + left.FixedChecks.Count + right.FixedChecks.Count))
         {
             branch = default;
             return false;
@@ -356,46 +163,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 }
             }
 
-            variants.AddRange(expanded);
-            if (variants.Count > MaxExpandedBranches)
+            if (expanded.Count > MaxExpandedBranches - variants.Count)
             {
                 return false;
             }
+            variants.AddRange(expanded);
         }
 
         branches = [.. variants];
         return true;
     }
 
-    private static bool TryLowerPositiveLookaround(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
-    {
-        if (depth > MaxLoweringDepth)
-        {
-            branches = [];
-            return false;
-        }
-        branches = [];
-        if ((node.Options & RegexOptions.RightToLeft) != 0 ||
-            node.ChildCount != 1 ||
-            !TryLowerBranches(node.Child(0), budget, depth + 1, out var childBranches) ||
-            childBranches.Length != 1)
-        {
-            return false;
-        }
-
-        var child = childBranches[0];
-        if (child.IsStartAnchored || child.IsEndAnchored || child.FixedChecks.Count != 0)
-        {
-            return false;
-        }
-
-        var literal = ExtractFullLiteral(child.Tokens);
-        if (literal.Length == 0)
-        {
-            return false;
-        }
-
-        branches = [new LoweredBranch([], [new AsciiFixedLiteralCheck(0, literal)], false, false, false, false)];
-        return true;
-    }
 }
