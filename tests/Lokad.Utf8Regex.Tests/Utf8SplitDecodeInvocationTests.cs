@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SplitDecodeInvocationTests
 {
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
-        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_matchCursor")]
     private static extern ref Utf8OperationMatchCursor MatchCursor(ref Utf8ValueSplitEnumerator cursor);
@@ -159,7 +159,7 @@ public sealed class Utf8SplitDecodeInvocationTests
         var decoded = ((ulong)validation.Utf16Length + 1) * 2;
         Assert.Equal(decoded, prepared.DebugDecodedReservedBytes);
         Assert.Equal(total, prepared.DebugPeakWorkingBytes);
-        Assert.Equal(count == 1, total == map + decoded + 7);
+        Assert.Equal(map + decoded + 7, total);
         for (ulong cap = 1; cap < steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);

@@ -100,6 +100,16 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Detailed");
             for (var offset = 0; offset <= text.Length; offset++)
             {
+                if (offset > 0 && offset < text.Length && char.IsHighSurrogate(text[offset - 1]) &&
+                    char.IsLowSurrogate(text[offset]))
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, offset, source.Token));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset, source.Token));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, offset, source.Token));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset, source.Token));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatchesFromUtf16Offset(input, offset));
+                    continue;
+                }
                 Assert.Equal(oracle.IsMatch(text.AsSpan(), offset), regex.IsMatchFromUtf16Offset(input, offset, source.Token));
                 Assert.Equal(oracle.Count(text.AsSpan(), offset), regex.CountFromUtf16Offset(input, offset, source.Token));
                 AssertValue(oracle.Match(text, offset), regex.MatchFromUtf16Offset(input, offset, source.Token));

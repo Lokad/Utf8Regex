@@ -14,7 +14,7 @@ public sealed class Utf8CursorCopyWorkTests
         (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
-        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
     public static IEnumerable<object[]> Routes()
     {
@@ -89,8 +89,11 @@ public sealed class Utf8CursorCopyWorkTests
         var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), source.Token);
         var copy = original.GetEnumerator();
         var entrySteps = copy.DebugInvocationSteps;
-        var expected = new Regex(pattern, Options(compiled, rtl)).Matches(text);
-        Assert.NotEmpty(expected.Cast<Match>());
+        var expected = new Regex(pattern, Options(compiled, rtl)).Matches(text).Cast<Match>()
+            .Where(match => (match.Index == 0 || match.Index == text.Length || !char.IsLowSurrogate(text[match.Index])) &&
+                (match.Index + match.Length == 0 || match.Index + match.Length == text.Length ||
+                 !char.IsLowSurrogate(text[match.Index + match.Length]))).ToArray();
+        Assert.NotEmpty(expected);
         Assert.True(original.MoveNext());
         Assert.True(original.DebugInvocationSteps > entrySteps);
         Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
@@ -107,7 +110,7 @@ public sealed class Utf8CursorCopyWorkTests
             Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
             index++;
         }
-        Assert.Equal(expected.Count, index);
+        Assert.Equal(expected.Length, index);
         index = 1;
         // The first copy's EOF must not change the other copy's position.
         while (copy.MoveNext())
@@ -117,7 +120,7 @@ public sealed class Utf8CursorCopyWorkTests
             Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
             index++;
         }
-        Assert.Equal(expected.Count, index);
+        Assert.Equal(expected.Length, index);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 

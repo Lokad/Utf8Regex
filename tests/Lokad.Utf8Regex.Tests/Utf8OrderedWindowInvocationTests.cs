@@ -203,7 +203,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
         Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
-        Assert.NotNull(typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex));
+        Assert.NotNull(typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex));
         var text = phase == "confirmation" ? "a" + new string(separator ? ' ' : 'x', 160000) + "b" : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);

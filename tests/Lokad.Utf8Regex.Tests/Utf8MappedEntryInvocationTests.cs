@@ -161,7 +161,7 @@ public sealed class Utf8MappedEntryInvocationTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public void LastHolderCollectionReleasesUnitStorageWhileRetainedMapsKeepTheirLoan(bool rtl, bool retain)
+    public void LastHolderCollectionReleasesOnlyUnretainedCoordinateStorage(bool rtl, bool retain)
     {
         var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0));
         var input = Encoding.UTF8.GetBytes("é😀 abab 中abab");
@@ -181,11 +181,11 @@ public sealed class Utf8MappedEntryInvocationTests
     private static Utf8BoundaryMap FinishMappedCursor(Utf8Regex regex, byte[] input, Utf8ValidationResult validation,
         bool retain, ref Utf8SliceInvocation invocation)
     {
-        var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
         var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retain, out var map);
         var mapBytes = (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
         Assert.True(cursor.DebugInvocationSteps >= invocation.Budget.Steps);
-        Assert.True(cursor.DebugInvocationReservedBytes > mapBytes + 7); // supplementary unit alphabet
+        Assert.Equal(mapBytes + 7, cursor.DebugInvocationReservedBytes);
         var expected = new Regex(regex.Pattern, regex.Options).Matches("é😀 abab 中abab");
         Assert.Equal(4, expected.Count);
         foreach (Match match in expected)
@@ -260,7 +260,7 @@ public sealed class Utf8MappedEntryInvocationTests
     public void EveryConstructorWorkCutoffRestoresTheCallersBorrowedAggregate()
     {
         var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant);
-        var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀ab", 1100)));
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
@@ -307,7 +307,7 @@ public sealed class Utf8MappedEntryInvocationTests
     private static Utf8BoundaryMap InterruptMappedCursor(Utf8Regex regex, byte[] input, Utf8ValidationResult validation,
         bool retain, CancellationTokenSource source, ref Utf8SliceInvocation invocation)
     {
-        var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
         var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retain, out var map);
         Assert.True(cursor.MoveNext());
         var previous = cursor.CurrentValueMatch;

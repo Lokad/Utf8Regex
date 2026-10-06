@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CursorStorageLeaseTests
 {
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
-        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
     private static void CollectLeases()
     {
@@ -105,8 +105,8 @@ public sealed class Utf8CursorStorageLeaseTests
         CollectLeases();
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         Assert.Equal(held, original.DebugInvocationReservedBytes);
-        // Snapshot bytes remain the ones prepared at entry. EOF of the copy
-        // must not switch the remaining cursor to a newly decoded subject.
+        // Each copy keeps the original borrowed input and coordinate map after
+        // another copy reaches EOF.
         foreach (Match expected in new Regex(regex.Pattern, regex.Options).Matches(text))
         {
             Assert.True(original.MoveNext());
@@ -187,18 +187,18 @@ public sealed class Utf8CursorStorageLeaseTests
     }
 
     [Fact]
-    public void ACopyRetainsTheExistingPrivateUnitSnapshotAfterTheOtherCopyEnds()
+    public void ACopyRetainsTheScalarCoordinateLoanAfterTheOtherCopyEnds()
     {
-        var regex = new Utf8Regex(@"[\uDC00-\uDFFF]", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(.)", RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("😀");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
         var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out _);
         FinishCopy(ref cursor);
-        "abcd"u8.CopyTo(input);
         Assert.True(cursor.MoveNext());
-        Assert.Equal((1, 1), (cursor.CurrentValueMatch.IndexInUtf16, cursor.CurrentValueMatch.LengthInUtf16));
-        Assert.False(cursor.CurrentValueMatch.IsByteAligned);
+        Assert.Equal((0, 2), (cursor.CurrentValueMatch.IndexInUtf16, cursor.CurrentValueMatch.LengthInUtf16));
+        Assert.True(cursor.CurrentValueMatch.IsByteAligned);
+        Assert.Equal((0, 4), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
         Assert.False(cursor.MoveNext());
     }
 }

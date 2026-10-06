@@ -12,7 +12,7 @@ public sealed class Utf8SplitStringAliasTests
     private const ulong Capacity = 65536;
 
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
-        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_unitSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_boundaryMap")]
     private static extern ref Utf8BoundaryMap? BoundaryMap(ref Utf8ValueSplitEnumerator cursor);
