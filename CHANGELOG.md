@@ -4,6 +4,17 @@
 
 ### Owned UTF-16 execution
 
+- ASCII structural-family enumeration, offset cursors and capture-free splits use
+  the shared owned candidate/verifier cursor. It retains the validation invocation,
+  pending search state and deadline across matches; failed moves publish neither
+  progress nor a new result, and terminal replay keeps checking the same token and
+  deadline. Overlapping candidate starts retain native progress; shared leading
+  prefixes and mixed subjects retain the owned unit VM under the caller invocation.
+  Unit cursors also guard each move and final publication, including short attempts
+  and terminal calls that do not reach the VM's regular polling cadence.
+  Boundary-map acquisition, output/result storage and other
+  native families still need their complete resource and cancellation gates.
+
 - Ordered-window value operations and enumeration retain one invocation through
   UTF-8 validation, bounded leading/trailing search, separator and line checks,
   and projection. Denied cursor work leaves the previous result and progression

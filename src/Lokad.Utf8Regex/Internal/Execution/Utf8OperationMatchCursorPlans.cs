@@ -8,24 +8,32 @@ internal sealed class Utf8OperationMatchCursorPlans
     private readonly Utf8SearchPlan _searchPlan;
     private readonly Utf8StructuralLinearProgram _structuralLinearProgram;
     private readonly AsciiSimplePatternPlan _simplePatternPlan;
+    private readonly Utf8StructuralSearchPlan _structuralSearchPlan;
+    private readonly AsciiStructuralVerifierProgram _structuralVerifier;
 
     public Utf8OperationMatchCursorPlans(
         Utf8ExecutionProgram? executionProgram,
         Utf8SearchPlan searchPlan,
         Utf8StructuralLinearProgram structuralLinearProgram,
-        AsciiSimplePatternPlan simplePatternPlan)
+        AsciiSimplePatternPlan simplePatternPlan,
+        Utf8StructuralSearchPlan structuralSearchPlan,
+        AsciiStructuralVerifierProgram structuralVerifier)
     {
         ExecutionProgram = executionProgram;
         _searchPlan = searchPlan;
         _structuralLinearProgram = structuralLinearProgram;
         _simplePatternPlan = simplePatternPlan;
+        _structuralSearchPlan = structuralSearchPlan;
+        _structuralVerifier = structuralVerifier;
     }
 
     public static Utf8OperationMatchCursorPlans Empty { get; } = new(
         executionProgram: null,
         searchPlan: default,
         structuralLinearProgram: default,
-        simplePatternPlan: default);
+        simplePatternPlan: default,
+        structuralSearchPlan: default,
+        structuralVerifier: default);
 
     public Utf8ExecutionProgram? ExecutionProgram { get; }
 
@@ -34,4 +42,8 @@ internal sealed class Utf8OperationMatchCursorPlans
     public ref readonly Utf8StructuralLinearProgram StructuralLinearProgram => ref _structuralLinearProgram;
 
     public ref readonly AsciiSimplePatternPlan SimplePatternPlan => ref _simplePatternPlan;
+
+    public ref readonly Utf8StructuralSearchPlan StructuralSearchPlan => ref _structuralSearchPlan;
+
+    public ref readonly AsciiStructuralVerifierProgram StructuralVerifier => ref _structuralVerifier;
 }

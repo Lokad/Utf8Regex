@@ -762,7 +762,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, out var structuralInvocation, out var structuralValidation))
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             // Non-ASCII subjects and overlapping prefixes retain the unit semantic
             // verifier and this same deadline; map acquisition still needs bounds.
@@ -1065,7 +1065,7 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, out var structuralInvocation, out var structuralValidation))
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
@@ -1488,7 +1488,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, out var structuralInvocation, out var structuralValidation))
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
@@ -2844,7 +2844,7 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
-        if (TryCreateNativeWindowEnumerator(input, CancellationToken.None, out var windowEnumerator)) return windowEnumerator;
+        if (TryCreateNativeStructuralEnumerator(input, CancellationToken.None, out var structuralEnumerator)) return structuralEnumerator;
         // Anchored prefixes yield at most one match at offset 0 through the
         // anchor-enforcing owned cursor, without BCL construction.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -2957,7 +2957,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (TryCreateNativeWindowEnumerator(input, cancellationToken, out var windowEnumerator)) return windowEnumerator;
+        if (TryCreateNativeStructuralEnumerator(input, cancellationToken, out var structuralEnumerator)) return structuralEnumerator;
         // Single literals now retain one invocation through bounded validation,
         // discovery, confirmation and projection. Other shapes retain the unit VM.
         // A possible non-ASCII folding partner stays in its existing semantic route.

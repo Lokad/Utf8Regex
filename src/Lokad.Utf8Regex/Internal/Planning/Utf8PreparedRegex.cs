@@ -50,7 +50,9 @@ internal sealed class Utf8PreparedRegex
             executionProgram,
             searchPlan,
             structuralLinearProgram,
-            simplePatternPlan);
+            simplePatternPlan,
+            structuralSearchPlan,
+            structuralVerifier.AsciiProgram);
         StructuralSearchPlan = structuralSearchPlan;
         DeterministicAnchor = deterministicAnchor;
         DeterministicGuards = deterministicGuards;

@@ -77,6 +77,9 @@ internal static class Utf8CompiledOperationCursorFactory
                     budget),
             NativeExecutionKind.AsciiOrderedLiteralWindow when validation.IsAscii || Utf8InputAnalyzer.IsAscii(input)
                 => new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, asciiInput: true),
+            NativeExecutionKind.AsciiStructuralIdentifierFamily when CanUseStructuralFamilyCursor(regexPlan, validation)
+                => new Utf8OperationMatchCursor(input, regexPlan,
+                    new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
@@ -140,6 +143,10 @@ internal static class Utf8CompiledOperationCursorFactory
                     new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget, asciiInput: true),
                     count,
                     totalUtf16Length),
+            NativeExecutionKind.AsciiStructuralIdentifierFamily when regexPlan.Features.CaptureCount <= 1 &&
+                CanUseStructuralFamilyCursor(regexPlan, validation)
+                => new Utf8ValueSplitEnumerator(input, new Utf8OperationMatchCursor(input, regexPlan,
+                    new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)), count, totalUtf16Length),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
@@ -157,6 +164,14 @@ internal static class Utf8CompiledOperationCursorFactory
             _ => CreateFallbackSplitEnumerator(verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."), input, count),
         };
     }
+
+    private static bool CanUseStructuralFamilyCursor(Utf8PreparedRegex regexPlan, Utf8ValidationResult validation)
+        => validation.IsAscii && regexPlan.StructuralSearchPlan.HasValue &&
+            regexPlan.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
+            !regexPlan.StructuralIdentifierFamilyPlan.HasPrefixOverlap &&
+            !regexPlan.SearchPlan.HasAlternateLiteralPrefixOverlap &&
+            (regexPlan.SemanticRegex.Options & (System.Text.RegularExpressions.RegexOptions.RightToLeft |
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.NonBacktracking)) == 0;
 
     private static Utf8OperationMatchCursor CreateFallbackMatchEnumerator(
         Utf8VerifierRuntime verifierRuntime,

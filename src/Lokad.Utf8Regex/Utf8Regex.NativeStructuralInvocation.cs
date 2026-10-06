@@ -5,15 +5,15 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Supplies the caller invocation to metered native structural values.</summary>
+/// <summary>Supplies the caller invocation to native structural values and cursors.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryStartNativeStructuralInvocation(ReadOnlySpan<byte> input, CancellationToken token,
+    private bool TryStartNativeStructuralInvocation(ReadOnlySpan<byte> input, CancellationToken token, bool allowUnmetered,
         out Utf8SliceInvocation invocation, out Utf8ValidationResult validation)
     {
         invocation = default;
         validation = default;
-        if (MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
+        if (!allowUnmetered && MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
         var eligible = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&

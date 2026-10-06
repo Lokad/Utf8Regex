@@ -18,7 +18,9 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
         Utf8BoundaryRequirement trailingBoundary)
     {
         Prefixes = prefixes;
-        HasOverlappingPrefixes = Utf8SearchPlan.GetLiteralOverlap(prefixes) != Utf8AlternateLiteralOverlapKind.None;
+        var overlap = Utf8SearchPlan.GetLiteralOverlap(prefixes);
+        HasOverlappingPrefixes = overlap != Utf8AlternateLiteralOverlapKind.None;
+        HasPrefixOverlap = (overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) != 0;
         SeparatorSet = separatorSet;
         SeparatorMinCount = separatorMinCount;
         IdentifierStartSet = identifierStartSet;
@@ -59,6 +61,8 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
     public byte[][] Prefixes { get; }
 
     public bool HasOverlappingPrefixes { get; }
+
+    public bool HasPrefixOverlap { get; }
 
     public string? SeparatorSet { get; }
 

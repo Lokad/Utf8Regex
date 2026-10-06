@@ -14,6 +14,8 @@ internal ref struct Utf8OperationMatchCursor
 
     internal ulong DebugInvocationReservedBytes => _sliceInvocation.Ledger.ReservedBytes;
 
+    internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
+
     internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
 
     internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
@@ -57,7 +59,8 @@ internal ref struct Utf8OperationMatchCursor
     // Literal discovery and projection use one state; other native families
     // still need scan-wide token/finite-policy routing and accounting.
     private Utf8SliceInvocation _sliceInvocation;
-    private bool _windowExhausted;
+    private bool _nativeStructuralExhausted;
+    private Utf8StructuralSearchState _structuralSearchState;
     private Utf8SliceUnitSubject _sliceSubject;
     private int _sliceUnit;
     private int _sliceOriginUnit;
@@ -358,16 +361,16 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextOwnedSlice()
     {
-        if (_sliceProgram is null || _boundaryMap is null)
-        {
-            return false;
-        }
-
-        var projectionMap = _boundaryMap.Value;
-        var map = _sliceSubject.Map;
-        var slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
+        var slots = new Utf8SliceSlots([], []);
         try
         {
+            // A new MoveNext and result publication are operation boundaries,
+            // even when a short VM attempt never reaches its polling cadence.
+            CheckOwnedSliceCursorBoundary();
+            if (_sliceProgram is null || _boundaryMap is null) return false;
+            var projectionMap = _boundaryMap.Value;
+            var map = _sliceSubject.Map;
+            slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
             // Right-to-left enumeration descends closing edges from the search
             // bound (BCL runtextstart): non-empty matches chain the bound to
             // their start while empty matches step one unit left, mirroring the
@@ -401,7 +404,9 @@ internal ref struct Utf8OperationMatchCursor
                         continue;
                     }
 
-                    _current = Utf8SliceRunner.ProjectMatch(projectionMap, rtlOutcome);
+                    var projected = Utf8SliceRunner.ProjectMatch(projectionMap, rtlOutcome);
+                    CheckOwnedSliceCursorBoundary();
+                    _current = projected;
                     _sliceUnit = rtlOutcome.EndUnit > rtlOutcome.StartUnit ? rtlOutcome.StartUnit : rtlOutcome.EndUnit - 1;
                     if (rtlOutcome.EndUnit > rtlOutcome.StartUnit)
                     {
@@ -411,6 +416,7 @@ internal ref struct Utf8OperationMatchCursor
                     return true;
                 }
 
+                CheckOwnedSliceCursorBoundary();
                 _sliceSubject.Release(ref _sliceInvocation);
                 _sliceProgram = null;
                 return false;
@@ -443,7 +449,9 @@ internal ref struct Utf8OperationMatchCursor
                     continue;
                 }
 
-                _current = Utf8SliceRunner.ProjectMatch(projectionMap, outcome);
+                var projected = Utf8SliceRunner.ProjectMatch(projectionMap, outcome);
+                CheckOwnedSliceCursorBoundary();
+                _current = projected;
                 _sliceUnit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
                 if (outcome.EndUnit > outcome.StartUnit)
                 {
@@ -453,6 +461,7 @@ internal ref struct Utf8OperationMatchCursor
                 return true;
             }
 
+            CheckOwnedSliceCursorBoundary();
             _sliceSubject.Release(ref _sliceInvocation);
             _sliceProgram = null;
             return false;
@@ -735,13 +744,13 @@ internal ref struct Utf8OperationMatchCursor
             ref readonly var windowSearchPlan = ref _plans.SearchPlan;
             var breach = _sliceInvocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window cursor exceeded {breach}.");
-            if (_windowExhausted) { _sliceInvocation.Budget.ThrowIfCancellationRequested(); return false; }
+            if (_nativeStructuralExhausted) { _sliceInvocation.Budget.ThrowIfCancellationRequested(); return false; }
             breach = AsciiOrderedLiteralWindowExecutor.TryFindNext(_input, windowProgram.OrderedLiteralWindowPlan,
                 in windowSearchPlan, _consumed, ref _sliceInvocation, out var match, out var found);
             if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native window cursor exceeded {breach}.");
             if (!found)
             {
-                _windowExhausted = true;
+                _nativeStructuralExhausted = true;
                 return false;
             }
 
@@ -750,6 +759,13 @@ internal ref struct Utf8OperationMatchCursor
             _current = projected;
             _consumed = match.Index + match.Length;
             return true;
+        }
+
+        if (_mode == EnumeratorMode.AsciiStructuralIdentifierFamily)
+        {
+            var breach = TryMoveNextStructuralFamily(out var found);
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native structural cursor exceeded {breach}.");
+            return found;
         }
 
         return _mode switch
@@ -834,10 +850,19 @@ internal ref struct Utf8OperationMatchCursor
         this = new Utf8OperationMatchCursor(input, regexPlan, NativeExecutionKind.ExactUtf8Literals, budget);
     }
 
+    private void CheckOwnedSliceCursorBoundary()
+    {
+        var breach = _sliceInvocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned slice cursor exceeded {breach}.");
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+    }
+
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation)
         : this(input, regexPlan, useStructuralLinearProgram: true, invocation.Budget.Deadline, asciiInput: true)
     {
         _sliceInvocation = invocation;
+        if (regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
+            _mode = EnumeratorMode.AsciiStructuralIdentifierFamily;
     }
 
     // The caller transfers the state already used for whole-subject validation.
@@ -980,7 +1005,42 @@ internal ref struct Utf8OperationMatchCursor
         _consumedUtf16 = startUtf16Offset;
         _deterministicScanState = new Utf8AsciiDeterministicScanState(startByteOffset, startByteOffset);
         _multiLiteralScanState = new PreparedMultiLiteralScanState(startByteOffset, startByteOffset, 0);
+        _structuralSearchState = new Utf8StructuralSearchState(new PreparedSearchScanState(startByteOffset, default), default);
+        _nativeStructuralExhausted = false;
         return this;
+    }
+
+    internal Utf8ExecutionLimitKind TryMoveNextStructuralFamily(out bool found)
+    {
+        found = false;
+        var breach = _sliceInvocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
+        // Candidate progress is tentative until its confirmation and projection
+        // both succeed. A denied move retains the previous public result.
+        var pending = _structuralSearchState;
+        breach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryFindNext(_plans.StructuralSearchPlan,
+            _plans.StructuralVerifier, _input, _consumed, ref pending, ref _sliceInvocation, out var match, out var discovered);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (!discovered)
+        {
+            breach = _sliceInvocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            _sliceInvocation.Budget.ThrowIfCancellationRequested();
+            _structuralSearchState = pending;
+            _nativeStructuralExhausted = true;
+            return Utf8ExecutionLimitKind.None;
+        }
+        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly), _input,
+            0, 0, match.Index, match.Length, match.Length, ref _sliceInvocation, out var projected, out _, out _);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        _structuralSearchState = pending;
+        _current = projected;
+        _consumed = match.Index + Math.Max(1, match.Length);
+        found = true;
+        return Utf8ExecutionLimitKind.None;
     }
 
     public Utf8OperationMatchCursor WithBaseOffsets(int byteOffset, int utf16Offset)
@@ -1433,5 +1493,6 @@ internal ref struct Utf8OperationMatchCursor
         RtlAsciiLiteralIgnoreCase = 23,
         RtlExactUtf8Literal = 24,
         AsciiOrderedLiteralWindow = 26,
+        AsciiStructuralIdentifierFamily = 27,
     }
 }
