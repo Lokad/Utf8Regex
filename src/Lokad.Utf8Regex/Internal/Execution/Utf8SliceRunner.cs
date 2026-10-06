@@ -288,34 +288,6 @@ internal static partial class Utf8SliceRunner
         return TryMatchAt(program, input, start, captureStarts, captureEnds, false, startIsScalarBoundary, ref invocation);
     }
 
-    internal static Utf8SliceUnitOutcome TryMatchFromUnitNonEmpty(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        int unit,
-        int[] captureStarts,
-        int[] captureEnds,
-        ref Utf8SliceInvocation invocation)
-    {
-        if (unit < 0 || unit > map.Utf16Length)
-        {
-            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
-        }
-
-        var startBoundary = map.Resolve(unit);
-        if (!startBoundary.IsScalarBoundary)
-            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
-        var startByte = startBoundary.ByteOffset;
-        var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, false, true, startBoundary.IsScalarBoundary, ref invocation);
-        if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
-        {
-            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, outcome.Breach);
-        }
-
-        var endUnit = map.GetUtf16OffsetForByteOffset(outcome.EndIndex);
-        return new Utf8SliceUnitOutcome(true, unit, endUnit, startByte, outcome.EndIndex, Utf8ExecutionLimitKind.None);
-    }
-
     internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
