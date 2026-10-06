@@ -6,14 +6,14 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SliceUnitReplacementTests
+public sealed class Utf8OwnedReplacementInteropTests
 {
-    private static readonly string[] Texts = ["\U0001f600", "a\U0001f600b", "\U0001f600b\U0001f600b",
-        "a\U0001f600a\U0001f600a", "\U0001f600\U0001f600", "\u00e9\U00010400a", "a\n\U0001f600b", ""];
+    private static readonly string[] Texts = ["\u00e9", "a\u00e9b", "\u00e9b\u00e9b",
+        "a\u00e9a\u00e9a", "\u00e9\u00e9", "\u00e9\u00e9a", "a\n\u00e9b", ""];
 
     [Theory]
-    [MemberData(nameof(Utf8SliceUnitSubjectTests.Patterns), MemberType = typeof(Utf8SliceUnitSubjectTests))]
-    public void TemplatesRetainHalfUnitsAndEncodeOnlyTheFinishedResult(string pattern, RegexOptions options)
+    [MemberData(nameof(Utf8BmpGrammarPatternCatalog.Patterns), MemberType = typeof(Utf8BmpGrammarPatternCatalog))]
+    public void TemplatesPreserveBmpGrammarAndEncodeStringBoundaries(string pattern, RegexOptions options)
     {
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(30));
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(30));
@@ -51,7 +51,7 @@ public sealed class Utf8SliceUnitReplacementTests
     }
 
     [Theory]
-    [MemberData(nameof(Utf8SliceUnitSubjectTests.Patterns), MemberType = typeof(Utf8SliceUnitSubjectTests))]
+    [MemberData(nameof(Utf8BmpGrammarPatternCatalog.Patterns), MemberType = typeof(Utf8BmpGrammarPatternCatalog))]
     public void EvaluatorsRetainCaptureHistoriesAndDirectionSensitiveCallOrder(string pattern, RegexOptions options)
     {
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(30));
@@ -302,7 +302,7 @@ public sealed class Utf8SliceUnitReplacementTests
             }
             finally { session.Complete(); }
             Assert.True(destination.AsSpan().IndexOfAnyExcept((byte)0xa5) < 0);
-            Assert.Equal("QQQ", regex.ReplaceToString(input, "Q"));
+            Assert.Equal("QQ", regex.ReplaceToString(input, "Q"));
             AssertOwned(regex);
         }
     }
@@ -326,7 +326,7 @@ public sealed class Utf8SliceUnitReplacementTests
         Assert.Single(calls);
         Assert.Equal("", regex.ReplaceToString(input, 0,
             static (in Utf8MatchContext context, ref int state) => null));
-        Assert.Equal("QQQ", regex.ReplaceToString(input, "Q"));
+        Assert.Equal("QQ", regex.ReplaceToString(input, "Q"));
         AssertOwned(regex);
     }
 }

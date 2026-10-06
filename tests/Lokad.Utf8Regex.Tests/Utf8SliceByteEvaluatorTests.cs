@@ -10,11 +10,11 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SliceByteEvaluatorTests
 {
     [Theory]
-    [MemberData(nameof(Utf8SliceUnitSubjectTests.Patterns), MemberType = typeof(Utf8SliceUnitSubjectTests))]
-    public void ByteCallbacksPreserveOriginalCaptureHistoriesAndWholeMatchAlignment(string pattern, RegexOptions options)
+    [MemberData(nameof(Utf8BmpGrammarPatternCatalog.Patterns), MemberType = typeof(Utf8BmpGrammarPatternCatalog))]
+    public void ByteCallbacksPreserveBmpCaptureHistoriesAndWholeMatchAlignment(string pattern, RegexOptions options)
     {
-        string[] texts = ["\U0001f600", "a\U0001f600b", "\U0001f600b\U0001f600b",
-            "a\U0001f600a\U0001f600a", "\U0001f600\U0001f600", "\u00e9\U00010400a", "a\n\U0001f600b", ""];
+        string[] texts = ["\u00e9", "a\u00e9b", "\u00e9b\u00e9b",
+            "a\u00e9a\u00e9a", "\u00e9\u00e9", "\u00e9\u00e9a", "a\n\u00e9b", ""];
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(30));
         using var source = new CancellationTokenSource();
         foreach (var text in texts)

@@ -20,7 +20,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         AssertGroup(match.GetGroup(0), "é😀", 1, 7, 1, 4);
         AssertGroup(match.GetGroup(1), "é", 1, 3, 1, 2);
         AssertGroup(match.GetGroup(2), "😀", 3, 7, 2, 4);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Fact]
