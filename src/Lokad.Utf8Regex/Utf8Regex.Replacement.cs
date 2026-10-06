@@ -31,7 +31,7 @@ public sealed partial class Utf8Regex
 
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
-            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
+            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
         }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
@@ -195,7 +195,7 @@ public sealed partial class Utf8Regex
 
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
-            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
+            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
         }
 
         // Remaining native replacement routes require scalar-aligned endpoints.
@@ -268,7 +268,7 @@ public sealed partial class Utf8Regex
 
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
-            var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceUtf16ResultKind.Destination, destination, cancellationToken);
+            var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Destination, destination, cancellationToken);
             bytesWritten = result.BytesWritten;
             return result.Status;
         }
@@ -467,7 +467,7 @@ public sealed partial class Utf8Regex
         // Qualified native splice routes have already had their opportunity.
         // Admitted remaining templates use the cached VM with the operation token.
         if (_ownedSliceProgram is { } program)
-            return OwnedSliceReplace(input, program, replacement, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
+            return OwnedSliceReplace(input, program, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
         var decoded = Encoding.UTF8.GetString(input);
         if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var owned))
         {

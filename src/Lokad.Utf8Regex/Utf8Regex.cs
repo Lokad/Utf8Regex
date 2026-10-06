@@ -3085,7 +3085,7 @@ public sealed partial class Utf8Regex
                 _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _ownedSliceProgram : null)) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram,
-                GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
+                GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
         }
 
 
@@ -3098,7 +3098,7 @@ public sealed partial class Utf8Regex
         var replacementPattern = GetParsedReplacement(replacementText);
         if (GetOwnedReplacementProgram(input, replacementPattern, cancellationToken) is { } requiredProgram)
             return OwnedSliceReplace(input, requiredProgram, replacementPattern,
-                Utf8SliceUtf16ResultKind.Bytes, default, cancellationToken).Bytes;
+                Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
         var budget = CreateExecutionBudget();
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, replacementPattern, out var ownedTemplate))
@@ -3145,7 +3145,7 @@ public sealed partial class Utf8Regex
         if (!RequiresCultureSensitiveFallback &&
             (_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
         {
-            try { return OwnedUnitReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
+            try { return OwnedSliceReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }
         var validation = Utf8Validation.Validate(input);
@@ -3438,8 +3438,8 @@ public sealed partial class Utf8Regex
         {
             try
             {
-                return OwnedUnitReplace(input, ownedProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, ownedProgram),
-                    ref state, Utf8SliceUtf16ResultKind.Text, default, cancellationToken).Text;
+                return OwnedSliceReplace(input, ownedProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, ownedProgram),
+                    ref state, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
             }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }

@@ -20,6 +20,8 @@ public delegate void Utf8MatchEvaluator<TState>(
 /// <param name="match">The current match over the original UTF-8 input.</param>
 /// <param name="state">The caller-defined mutable state.</param>
 /// <returns>The replacement value for the current match.</returns>
+/// <remarks>Each returned string is encoded independently as UTF-8. Unpaired
+/// surrogates become U+FFFD; valid pairs within that string remain one scalar.</remarks>
 public delegate string Utf16MatchEvaluator<TState>(
     in Utf8MatchContext match,
     ref TState state);

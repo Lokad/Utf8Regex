@@ -29,8 +29,13 @@ internal readonly struct Utf8ReplacementInstruction
     public static Utf8ReplacementInstruction Literal(byte[] literalUtf8) =>
         new(Utf8ReplacementInstructionKind.Literal, literalUtf8, Encoding.UTF8.GetString(literalUtf8), -1, isBraceEnclosed: false);
 
-    public static Utf8ReplacementInstruction Literal(string literalText) =>
-        new(Utf8ReplacementInstructionKind.Literal, Encoding.UTF8.GetBytes(literalText), literalText, -1, isBraceEnclosed: false);
+    public static Utf8ReplacementInstruction Literal(string literalText)
+    {
+        // A template literal is one encoding boundary. String-based consumers
+        // use the same scalar text as byte consumers, including U+FFFD for an
+        // unpaired surrogate; later captures cannot complete that surrogate.
+        return Literal(Encoding.UTF8.GetBytes(literalText));
+    }
 
     public static Utf8ReplacementInstruction Group(int groupNumber, bool isBraceEnclosed) =>
         new(Utf8ReplacementInstructionKind.Group, [], string.Empty, groupNumber, isBraceEnclosed);

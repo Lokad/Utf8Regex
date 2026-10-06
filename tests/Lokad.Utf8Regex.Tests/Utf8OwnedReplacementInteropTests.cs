@@ -22,7 +22,7 @@ public sealed class Utf8OwnedReplacementInteropTests
         foreach (var template in new[] { "", "Q", "$&", "<$1>|$2|$3", "$`|$&|$'|$_|$+", "$1$2$&",
             "\ud83d$1\ude00", "$&\ude00", "\ud83d$&", "$$${missing}" })
         {
-            var expected = oracle.Replace(text, template);
+            var expected = oracle.Replace(text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template)));
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
@@ -41,7 +41,6 @@ public sealed class Utf8OwnedReplacementInteropTests
                 Assert.All(shortDestination, b => Assert.Equal((byte)0xa5, b));
             }
             var templateBytes = Encoding.UTF8.GetBytes(template);
-            if (Encoding.UTF8.GetString(templateBytes) != template) continue;
             Assert.Equal(expectedBytes, regex.Replace(input, templateBytes, source.Token));
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, templateBytes, destination, out written, source.Token));
             Assert.Equal(expectedBytes.Length, written);
@@ -70,7 +69,7 @@ public sealed class Utf8OwnedReplacementInteropTests
                     signature.Append('|');
                 }
                 expectedCalls.Add(signature.ToString());
-                return match.Groups[^1].Value + "\ud83d" + match.Value + "\ude00";
+                return Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(match.Groups[^1].Value + "\ud83d" + match.Value + "\ude00"));
             });
             var calls = new List<string>();
             var actual = regex.ReplaceToString(Encoding.UTF8.GetBytes(text), calls,
@@ -106,7 +105,7 @@ public sealed class Utf8OwnedReplacementInteropTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Utf16LiteralHalvesCanPairAcrossNativeMatchesAndOriginalGaps(bool rtl)
+    public void StringLiteralsEncodeIndependentlyAcrossNativeMatchesAndOriginalGaps(bool rtl)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         foreach (var pattern in new[] { "a", "(a)", "(?<x>a)", "a|b" })
@@ -116,7 +115,7 @@ public sealed class Utf8OwnedReplacementInteropTests
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options);
             var input = Encoding.UTF8.GetBytes(text);
-            var expected = oracle.Replace(text, template);
+            var expected = oracle.Replace(text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template)));
             Assert.Equal(expected, regex.ReplaceToString(input, template));
             Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template));
             AssertOwned(regex);
@@ -126,87 +125,119 @@ public sealed class Utf8OwnedReplacementInteropTests
     [Fact]
     public void OutputGrowthAndFinalMaterializationAdmitOverlapAndBalanceAfterDenial()
     {
-        var invocation = new Utf8SliceInvocation(new(0, 0, 95), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var writer = new Utf8SliceUtf16OutputWriter();
-        writer.Append("abcdefghijklmnop", ref invocation);
-        Assert.Equal(32UL, invocation.Ledger.ReservedBytes);
-        Assert.Throws<InvalidOperationException>(() => writer.Append("q", ref invocation));
-        Assert.Equal(32UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal("abcdefghijklmnop", writer.ToString(ref invocation));
-        Assert.Equal(32UL, invocation.Ledger.ReservedBytes);
-        writer.Release(ref invocation);
-        writer.Release(ref invocation);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        const ulong controls = 2 * Utf8SliceByteOutputScope.ControlBytes;
+        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 47), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var writer = scope.CreateBuffer();
+        try
+        {
+            writer.Append("abcdefghijklmnop"u8);
+            Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+            Assert.Throws<InvalidOperationException>(() => writer.Append("q"u8));
+            Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+            Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToArray());
+            Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+            writer.Release();
+            writer.Release();
+            Assert.Equal(Utf8SliceByteOutputScope.ControlBytes, scope.Invocation.Ledger.ReservedBytes);
+        }
+        finally { scope.Release(); }
+        Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
 
         foreach (var encode in new[] { false, true })
+        foreach (var exact in new[] { false, true })
         {
             var finalBytes = encode ? 16UL : 32UL;
-            foreach (var exact in new[] { false, true })
+            scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 16 + finalBytes - (exact ? 0UL : 1UL)),
+                Regex.InfiniteMatchTimeout, CancellationToken.None);
+            writer = scope.CreateBuffer();
+            try
             {
-                invocation = new(new(0, 0, 32 + finalBytes - (exact ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None);
-                writer.Append("abcdefghijklmnop", ref invocation);
+                writer.Append("abcdefghijklmnop"u8);
                 if (exact)
                 {
-                    if (encode) Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToUtf8(ref invocation));
-                    else Assert.Equal("abcdefghijklmnop", writer.ToString(ref invocation));
+                    if (encode) Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToArray());
+                    else Assert.Equal("abcdefghijklmnop", writer.ToValidatedString());
                 }
                 else Assert.Throws<InvalidOperationException>(() =>
                 {
-                    if (encode) _ = writer.ToUtf8(ref invocation);
-                    else _ = writer.ToString(ref invocation);
+                    if (encode) _ = writer.ToArray();
+                    else _ = writer.ToValidatedString();
                 });
-                Assert.Equal(32UL, invocation.Ledger.ReservedBytes);
-                writer.Release(ref invocation);
-                Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+                Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
             }
+            finally { scope.Release(); }
+            Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
         }
     }
 
     [Fact]
-    public void ReversePiecesAndEncodingBlockBoundariesPreserveSurrogatePairs()
+    public void ReversePiecesAndEncodingBlockBoundariesPreserveCompleteScalars()
     {
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var writer = new Utf8SliceUtf16OutputWriter();
-        writer.Append("\ude00", ref invocation);
-        writer.MarkPiece(ref invocation);
-        writer.Append("\ud83d", ref invocation);
-        writer.MarkPiece(ref invocation);
-        writer.ReversePieces(ref invocation);
-        Assert.Equal("\U0001f600", writer.ToString(ref invocation));
-        Assert.Equal("\U0001f600"u8.ToArray(), writer.ToUtf8(ref invocation));
-        writer.Release(ref invocation);
-        var text = new string('x', 2047) + "\U0001f600" + new string('y', 2047) + "\ud83d";
-        writer.Append(text, ref invocation);
-        Assert.Equal(text, writer.ToString(ref invocation));
-        Assert.Equal(Encoding.UTF8.GetBytes(text), writer.ToUtf8(ref invocation));
-        writer.Release(ref invocation);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var writer = scope.CreateBuffer();
+        try
+        {
+            writer.Append("\ude00".AsSpan());
+            writer.MarkPiece();
+            writer.Append("\ud83d".AsSpan());
+            writer.MarkPiece();
+            writer.ReversePieces();
+            Assert.Equal("\ufffd\ufffd", writer.ToValidatedString());
+            Assert.Equal("\ufffd\ufffd"u8.ToArray(), writer.ToArray());
+            writer.Release();
+            writer = scope.CreateBuffer();
+            var text = new string('x', 2047) + "\U0001f600" + new string('y', 2047) + "\ud83d";
+            writer.Append(text.AsSpan());
+            Assert.Equal(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text)), writer.ToValidatedString());
+            Assert.Equal(Encoding.UTF8.GetBytes(text), writer.ToArray());
+            writer.Release();
+            writer = scope.CreateBuffer();
+            writer.Append("\U0001f600"u8);
+            writer.MarkPiece();
+            writer.Append("\u00e9"u8);
+            writer.MarkPiece();
+            writer.ReversePieces();
+            Assert.Equal("\u00e9\U0001f600", writer.ToValidatedString());
+        }
+        finally { scope.Release(); }
+        Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
     }
 
     [Fact]
-    public void DestinationCopyRetainsItsEncodedReservationAndChecksCancellationBetweenBlocks()
+    public void DestinationCopyRetainsItsByteBufferAndChecksCancellationBetweenBlocks()
     {
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
-        var writer = new Utf8SliceUtf16OutputWriter();
-        writer.Append(new string('x', 300000), ref invocation);
-        var held = invocation.Ledger.ReservedBytes;
-        // Append uses 147 blocks; byte sizing and encoding use 147 each.
-        // The step-448 checkpoint is inside the final destination copy.
-        var entered = false;
-        invocation.CheckpointHook = steps => { if (steps == 448) { entered = true; source.Cancel(); } };
+        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
+        var writer = scope.CreateBuffer();
         var destination = new byte[300000];
         Array.Fill(destination, (byte)0xa5);
         var written = -1;
-        var exception = Assert.Throws<OperationCanceledException>(() => writer.CopyUtf8(destination, out written, ref invocation));
-        Assert.True(entered);
-        Assert.Equal(source.Token, exception.CancellationToken);
-        Assert.Equal(0, written);
-        Assert.Equal(held, invocation.Ledger.ReservedBytes);
-        Assert.True(destination.AsSpan(0, 7 * 4096).IndexOfAnyExcept((byte)'x') < 0);
-        Assert.True(destination.AsSpan(7 * 4096).IndexOfAnyExcept((byte)0xa5) < 0);
-        writer.Release(ref invocation);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        try
+        {
+            writer.Append(new string('x', destination.Length).AsSpan());
+            var held = scope.Invocation.Ledger.ReservedBytes;
+            var entered = false;
+            // Cancel only after destination copying has begun, not during the
+            // preceding validation; this does not pin an implementation trip count.
+            scope.Invocation.CheckpointHook = _ =>
+            {
+                if (destination[0] != (byte)'x') return;
+                entered = true;
+                source.Cancel();
+            };
+            var exception = Assert.Throws<OperationCanceledException>(() => writer.CopyUtf8(destination, out written));
+            Assert.True(entered);
+            Assert.Equal(source.Token, exception.CancellationToken);
+            Assert.Equal(0, written);
+            Assert.Equal(held, scope.Invocation.Ledger.ReservedBytes);
+            var copied = destination.AsSpan().IndexOf((byte)0xa5);
+            Assert.InRange(copied, 4096, destination.Length - 1);
+            Assert.Equal(0, copied % 4096);
+            Assert.True(destination.AsSpan(0, copied).IndexOfAnyExcept((byte)'x') < 0);
+            Assert.True(destination.AsSpan(copied).IndexOfAnyExcept((byte)0xa5) < 0);
+        }
+        finally { scope.Release(); }
+        Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
     }
 
     [Theory]
@@ -217,29 +248,32 @@ public sealed class Utf8OwnedReplacementInteropTests
     public void OutputWorkObservesCancellationAndReleasesTemporaryReservations(string operation)
     {
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
-        var writer = new Utf8SliceUtf16OutputWriter();
-        var text = new string('x', 300000);
-        if (operation != "append") writer.Append(text, ref invocation);
-        if (operation == "reverse") writer.MarkPiece(ref invocation);
-        var held = invocation.Ledger.ReservedBytes;
-        var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; source.Cancel(); };
-        var exception = Assert.Throws<OperationCanceledException>(() =>
+        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
+        var writer = scope.CreateBuffer();
+        try
         {
-            switch (operation)
+            var text = new string('x', 300000);
+            if (operation != "append") writer.Append(text.AsSpan());
+            if (operation == "reverse") writer.MarkPiece();
+            var held = scope.Invocation.Ledger.ReservedBytes;
+            var entered = false;
+            scope.Invocation.CheckpointHook = _ => { entered = true; source.Cancel(); };
+            var exception = Assert.Throws<OperationCanceledException>(() =>
             {
-                case "append": writer.Append(text, ref invocation); break;
-                case "string": _ = writer.ToString(ref invocation); break;
-                case "bytes": _ = writer.ToUtf8(ref invocation); break;
-                case "reverse": writer.ReversePieces(ref invocation); break;
-            }
-        });
-        Assert.True(entered);
-        Assert.Equal(source.Token, exception.CancellationToken);
-        if (operation != "append") Assert.Equal(held, invocation.Ledger.ReservedBytes);
-        writer.Release(ref invocation);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+                switch (operation)
+                {
+                    case "append": writer.Append(text.AsSpan()); break;
+                    case "string": _ = writer.ToValidatedString(); break;
+                    case "bytes": _ = writer.ToArray(); break;
+                    case "reverse": writer.ReversePieces(); break;
+                }
+            });
+            Assert.True(entered);
+            Assert.Equal(source.Token, exception.CancellationToken);
+            if (operation != "append") Assert.Equal(held, scope.Invocation.Ledger.ReservedBytes);
+        }
+        finally { scope.Release(); }
+        Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
     }
 
     [Fact]

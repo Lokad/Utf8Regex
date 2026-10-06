@@ -165,7 +165,9 @@ public sealed class Utf8SliceSparseGroupTests
             foreach (var template in new[] { "Q", "$&", "<$1>|$" + "{5}|$12|$" + "{12}|$" + "{x}|$2147483647",
                 "$00|$01|$" + "{012}|$+", "$" + (char)96 + "|$'|$_", "\ud83d$" + "{12}\ude00" })
             {
-                var expected = oracle.Replace(text, template);
+                // The comparator receives the scalar form of each literal;
+                // string APIs no longer retain halves across substitutions.
+                var expected = oracle.Replace(text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template)));
                 Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
                 Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Text template " + template);
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
@@ -198,38 +200,22 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.Equal(expectedCalls, state.Calls);
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "String callback");
             var expectedByteCalls = new List<string>();
-            string? expectedByteText = null;
-            var unaligned = false;
-            try
+            var expectedByteText = oracle.Replace(text, match =>
             {
-                expectedByteText = oracle.Replace(text, match =>
-                {
-                    if (!IsBoundary(text, match.Index) || !IsBoundary(text, match.Index + match.Length))
-                        throw new InvalidOperationException("Oracle match splits a scalar.");
-                    expectedByteCalls.Add(Signature(oracle, match));
-                    return "[" + match.Groups[numbers[^1]].Value + "]";
-                });
-            }
-            catch (InvalidOperationException) { unaligned = true; }
+                Assert.True(IsBoundary(text, match.Index) && IsBoundary(text, match.Index + match.Length),
+                    "The caller must provide a comparator whose match boundaries overlap scalar semantics.");
+                expectedByteCalls.Add(Signature(oracle, match));
+                return "[" + match.Groups[numbers[^1]].Value + "]";
+            });
             var byteState = (Numbers: numbers, Calls: new List<string>());
-            byte[]? actualBytes = null;
-            var byteFailure = Record.Exception(() => actualBytes = regex.Replace(input, byteState,
+            var actualBytes = regex.Replace(input, byteState,
                 static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer,
                     ref (int[] Numbers, List<string> Calls) callback) =>
                 {
                     callback.Calls.Add(Signature(in context, callback.Numbers));
                     writer.Append(("[" + context.GetGroup(callback.Numbers[^1]).GetValueString() + "]").AsSpan());
-                }, source.Token));
-            if (unaligned)
-            {
-                var failure = Assert.IsType<InvalidOperationException>(byteFailure);
-                Assert.Equal("The evaluator match is not aligned to UTF-8 scalar boundaries.", failure.Message);
-            }
-            else
-            {
-                Assert.Null(byteFailure);
-                Assert.Equal(Encoding.UTF8.GetBytes(expectedByteText ?? ""), actualBytes);
-            }
+                }, source.Token);
+            Assert.Equal(Encoding.UTF8.GetBytes(expectedByteText), actualBytes);
             Assert.Equal(expectedByteCalls, byteState.Calls);
             Assert.Null(Utf8SliceByteOutputScope.Current);
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);

@@ -24,6 +24,15 @@
 
 ### UTF-8 scalar migration (in progress)
 
+- Owned replacement templates now splice original UTF-8 capture/context ranges
+  without a whole-subject UTF-16 map or decoded staging. String evaluators decode
+  requested values lazily and encode each returned fragment independently;
+  unpaired surrogates become U+FFFD, with no joining across substitutions or
+  matches. String and byte results share the scalar output. Removed the separate
+  UTF-16 output writer/expansion and half-literal route selector. Destination
+  output copies the admitted byte buffer directly after sizing, retaining bounded
+  cancellation and unchanged short destinations. Other BCL consumers, admissions
+  and common public finite/output/result policies remain open.
 - Removed decoded surrogate-half discovery/verification, unit branch-span maps,
   their projection/evaluator bridges and the unit simple-pattern cursor mode.
   Captured simple detailed results and contiguous-origin discovery now use the

@@ -243,6 +243,18 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         finally { scope.Invocation.Ledger.Release(reservation); }
     }
 
+    internal System.Buffers.OperationStatus CopyUtf8(Span<byte> destination, out int written)
+    {
+        written = 0;
+        var bytes = GetValidatedBytes();
+        if (destination.Length < bytes.Length) return System.Buffers.OperationStatus.DestinationTooSmall;
+        // The assembled buffer already owns the bytes. Retain it throughout the
+        // bounded copy; destination sizing needs no second encoded allocation.
+        Utf8SliceBufferWork.Copy(bytes, destination, ref scope.Invocation);
+        written = bytes.Length;
+        return System.Buffers.OperationStatus.Done;
+    }
+
     internal string ToValidatedString()
     {
         var bytes = GetValidatedBytes();
