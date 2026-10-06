@@ -11,6 +11,7 @@ public ref struct Utf8ValueMatchEnumerator
 {
     private Utf8OperationMatchCursor _cursor;
     internal bool DebugIsOwnedSlice => _cursor.DebugIsOwnedSlice;
+    internal ulong DebugInvocationSteps => _cursor.DebugInvocationSteps;
     private ReadOnlySpan<byte> _timeoutInput;
     private string? _timeoutPattern;
     private TimeSpan _timeout;

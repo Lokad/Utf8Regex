@@ -57,6 +57,18 @@ Every execution operation has an explicit `CancellationToken` twin. The token is
 
 Lazy enumerators (`EnumerateMatches`, `EnumerateSplits`) observe the token when enumeration begins, not during enumeration. Evaluator-driven replacement (`Replace`/`ReplaceToString` with a callback) additionally observes the token on every match iteration, including the BCL fallback loop, so canceling from inside the callback aborts deterministically. Other in-scan cancellation polling is future work, not a current promise. Timeouts stay approximate per 3.4 and keep `RegexMatchTimeoutException`.
 
+Development owned execution additionally retains its invocation token/deadline
+through qualified validation, search, projection and lazy advances. Metered
+invocation transfers and copies share cumulative work/depth counters from entry;
+copying a value enumerator preserves its independent position without restarting
+that work allowance or the diagnostic polling cadence. Separate operations create
+separate counter owners. This synchronous internal owner is not a public shared
+meter and does not support concurrent advancement of copies. Infinite None-token
+calls without diagnostics retain inline counters. Storage ledgers/leases,
+copied/abandoned storage ownership, lazy getter/result bounds and fixed metadata
+overhead still require their own admission work; counter sharing does not establish
+those guarantees or enable the core's unsupported finite public policies.
+
 The core library defines no work, depth, or memory budgets; the only configured cap is the instance `MatchTimeout` (default `Regex.InfiniteMatchTimeout`, i.e. unlimited). The shared `Utf8ResourcePolicy` (nullable work-steps, depth, working-bytes, and result-bytes budgets plus an `Unlimited` singleton) is accepted by an explicit constructor overload for forward compatibility, but any finite budget is rejected loudly with `NotSupportedException`: this profile enforces only match timeouts. Finite behavior beyond timeouts is opt-in future API, never silent and never safe-by-default without evidence.
 
 ```csharp
