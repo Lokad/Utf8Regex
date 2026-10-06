@@ -4,6 +4,18 @@
 
 ### Owned UTF-16 execution
 
+- Nested byte-safe linear programs now execute with explicit loop frames and
+  aggregate storage admission. Failed body trials discard their partial input;
+  projected Unicode compatibility requests propagate through optional parents.
+  Long atoms and continuations poll the shared work/token/deadline, and structural
+  calls retain the original deadline. Reference-bearing small loans clear their
+  slots before bounded retention. Public depth admission remains unchanged;
+  full call-wide accounting and the other remaining engines are still open.
+
+- Expanded ASCII branch verification retains the prepared final-newline fact
+  for absolute `$`/`\Z`, so native replacement finds anchored hits before a
+  final LF. Strict `\z` and multiline line-end semantics remain distinct.
+
 - General byte-safe prefix matching now walks paired instructions with explicit
   active-node versions and saved choices. Enclosing suffixes can reconsider
   group-internal alternatives and repeats; lazy capture growth no longer reuses

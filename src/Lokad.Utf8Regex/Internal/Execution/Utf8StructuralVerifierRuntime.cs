@@ -56,7 +56,7 @@ internal sealed class Utf8ByteSafeLinearVerifierRuntime : Utf8StructuralVerifier
     {
         if (Plan.ByteSafeLinearProgram.HasValue)
         {
-            if (Plan.ByteSafeLinearProgram.TryMatch(input, matchIndex, out matchedLength, out var requiresCompatibilityFallback))
+            if (Plan.ByteSafeLinearProgram.TryMatch(input, matchIndex, budget, out matchedLength, out var requiresCompatibilityFallback))
             {
                 return true;
             }

@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // One thread owns each cache, with a byte cap including its five-slot table.
 // Loans always have the requested extent, known before acquisition. Finite
 // storage invocations may borrow existing loans but cannot grow this cache.
-internal static class Utf8ExactStatePool<T> where T : unmanaged
+internal static class Utf8ExactStatePool<T> where T : struct
 {
     internal const int MaximumRetainedBytes = 16 * 1024;
     [ThreadStatic] private static T[]?[]? t_items;
@@ -44,6 +44,8 @@ internal static class Utf8ExactStatePool<T> where T : unmanaged
             t_retainedBytes -= previous.Length * Unsafe.SizeOf<T>();
         t_items[bucket] = null;
         if (bytes > MaximumRetainedBytes - t_retainedBytes) return;
+        // Only bounded small loans are retained; release graph references first.
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) Array.Clear(items);
         t_items[bucket] = items;
         t_retainedBytes += bytes;
     }

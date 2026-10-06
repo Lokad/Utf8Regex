@@ -3,8 +3,9 @@ using System.Runtime.CompilerServices;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 // Exact extents make aggregate admission authoritative before allocation,
-// including the old/new overlap during growth. Values contain no references.
-internal struct Utf8InvocationStateBuffer<T> where T : unmanaged
+// including the old/new overlap during growth. Reference-bearing frames borrow
+// immutable programs; popped and retained slots release their graph references.
+internal struct Utf8InvocationStateBuffer<T> where T : struct
 {
     private T[]? _items;
     private int _count;
@@ -69,6 +70,7 @@ internal struct Utf8InvocationStateBuffer<T> where T : unmanaged
     {
         if (_count == 0) throw new InvalidOperationException("The invocation state buffer is empty.");
         _count--;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems()[_count] = default;
     }
 
     internal void Release(ref Utf8SliceInvocation invocation)

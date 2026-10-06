@@ -606,10 +606,12 @@ internal static partial class Utf8ExecutionInterpreter
         out int matchedLength)
     {
         matchedLength = 0;
-        // Line end anchors (`(?m:$)`) also accept right before any line feed.
+        // Absolute `$`/`\Z` accept one final LF; line anchors also accept an
+        // internal LF. Keep the prepared newline fact separate from absoluteness.
         var branchEnd = startIndex + branch.Length;
         if (branchEnd > input.Length ||
             (plan.IsEndAnchored && branchEnd != input.Length &&
+                !(plan.AllowsTrailingNewlineBeforeEnd && branchEnd + 1 == input.Length && input[branchEnd] == (byte)'\n') &&
                 !(!plan.IsAbsoluteEndAnchored && (uint)branchEnd < (uint)input.Length && input[branchEnd] == (byte)'\n')))
         {
             return false;
