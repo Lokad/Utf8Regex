@@ -18,6 +18,8 @@ internal ref struct Utf8OperationMatchCursor
 
     internal Utf8AsciiDeterministicScanState DebugDeterministicScanState => _deterministicScanState;
 
+    internal (int Bytes, int Utf16) DebugConsumed => (_consumed, _consumedUtf16);
+
     internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
 
     internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
@@ -265,11 +267,12 @@ internal ref struct Utf8OperationMatchCursor
 
     public Utf8ValueMatch CurrentValueMatch => ApplyBaseOffsets(_current);
 
-    // Transfer the already validated caller invocation into a deterministic
+    // Transfer the already validated caller invocation into a simple-pattern
     // cursor, retaining work counters, deadline, token and borrowed reservations.
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan,
         Utf8SliceInvocation invocation, bool asciiInput)
-        : this(input, regexPlan, true, invocation.Budget.Deadline, asciiInput)
+        : this(input, regexPlan, regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue,
+            invocation.Budget.Deadline, asciiInput)
     {
         _sliceInvocation = invocation;
     }
@@ -1186,57 +1189,45 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextAsciiSimplePattern()
     {
+        var breach = TryMoveNextSimplePattern(out var found);
+        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Native simple cursor exceeded {breach}.");
+        return found;
+    }
+
+    internal Utf8ExecutionLimitKind TryMoveNextSimplePattern(out bool found)
+    {
+        found = false;
+        var breach = _sliceInvocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
         ref readonly var searchPlan = ref _plans.SearchPlan;
         ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
-        // R05: offset enumeration floors the consumed start while anchors still see the full
-        // input; the absolute hit is rebased to the remaining span below (identical at floor zero).
-        var absolute = Utf8ExecutionInterpreter.FindNextSimplePattern(
-            _input,
-            _plans.ExecutionProgram,
-            in searchPlan,
-            in simplePatternPlan,
-            _consumed,
-            captures: null,
-            _budget,
-            out var matchLength);
+        // Anchors see the complete subject, while discovery starts at the
+        // caller's floor. No result or floor is published before projection.
+        breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(_input, _plans.ExecutionProgram,
+            searchPlan, simplePatternPlan, _consumed, ref _sliceInvocation, out var absolute, out var length);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (absolute < 0)
         {
-            return false;
+            breach = _sliceInvocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            _sliceInvocation.Budget.ThrowIfCancellationRequested();
+            _nativeStructuralExhausted = true;
+            return Utf8ExecutionLimitKind.None;
         }
-
-        var relative = absolute - _consumed;
-
-        if (!_asciiInput)
-        {
-            // R05: byte-safe programs match ASCII-only spans, so the match UTF-16
-            // length equals the byte length; only the gap needs decoding.
-            _current = Utf8ProjectionExecutor.ProjectMatch(
-                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
-                _input,
-                _consumed,
-                _consumedUtf16,
-                _consumed + relative,
-                matchLength,
-                matchLength,
-                ref _sliceInvocation,
-                out _consumed,
-                out _consumedUtf16);
-            _remaining = _input[_consumed..];
-            return true;
-        }
-
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: _consumed + relative,
-            lengthInUtf16: matchLength,
-            indexInBytes: _consumed + relative,
-            lengthInBytes: matchLength);
-
-        var advance = relative + Math.Max(matchLength, 1);
-        _remaining = _remaining[advance..];
-        _consumed += advance;
-        return true;
+        breach = Utf8ProjectionExecutor.TryProjectMatch(new Utf8ProjectionPlan(_asciiInput
+                ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental), _input,
+            _consumed, _consumedUtf16, absolute, length, length, ref _sliceInvocation,
+            out var projected, out var consumed, out var consumedUtf16);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        _sliceInvocation.Budget.ThrowIfCancellationRequested();
+        _current = projected;
+        _consumed = consumed;
+        _consumedUtf16 = consumedUtf16;
+        _remaining = _input[_consumed..];
+        found = true;
+        return Utf8ExecutionLimitKind.None;
     }
 
     // Scalar simple-pattern enumeration: every scalar start steps through the shared

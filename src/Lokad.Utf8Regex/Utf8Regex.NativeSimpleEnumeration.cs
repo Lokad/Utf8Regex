@@ -5,17 +5,17 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Transfers the caller invocation into deterministic enumeration.</summary>
+/// <summary>Transfers the caller invocation into simple-pattern enumeration.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryCreateNativeDeterministicEnumerator(ReadOnlySpan<byte> input, CancellationToken token,
+    private bool TryCreateNativeSimpleEnumerator(ReadOnlySpan<byte> input, CancellationToken token,
         out Utf8ValueMatchEnumerator enumerator)
     {
         enumerator = default;
         if (MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
                 Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null ||
             _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
-            !_preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue ||
+            _preparedRegex.SimplePatternPlan.Branches is not { Length: > 0 } ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
             RequiresCultureSensitiveFallback || _requiresKelvinSignFallback || _unitSliceProgram is null ||
             _unitSliceProgram is { HasSurrogateLiteral: true } or { IgnoreCase: true } or { HasBalancing: true })
@@ -26,7 +26,9 @@ public sealed partial class Utf8Regex
             var validation = Utf8Validation.Validate(input, ref invocation);
             // A byte-unsafe program needs UTF-16 units on mixed subjects. Its
             // entry invocation survives this semantic transfer without a reset.
-            var cursor = validation.IsAscii || _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe
+            var byteSafe = _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue
+                ? _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe : _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe;
+            var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, validation.IsAscii)
                 : new Utf8OperationMatchCursor(_unitSliceProgram, input, Utf8BoundaryMap.Create(input, validation), invocation);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);

@@ -2844,7 +2844,7 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
-        if (TryCreateNativeDeterministicEnumerator(input, CancellationToken.None, out var deterministicEnumerator)) return deterministicEnumerator;
+        if (TryCreateNativeSimpleEnumerator(input, CancellationToken.None, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, CancellationToken.None, out var structuralEnumerator)) return structuralEnumerator;
         // Anchored prefixes yield at most one match at offset 0 through the
         // anchor-enforcing owned cursor, without BCL construction.
@@ -2958,7 +2958,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (TryCreateNativeDeterministicEnumerator(input, cancellationToken, out var deterministicEnumerator)) return deterministicEnumerator;
+        if (TryCreateNativeSimpleEnumerator(input, cancellationToken, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, cancellationToken, out var structuralEnumerator)) return structuralEnumerator;
         // Single literals now retain one invocation through bounded validation,
         // discovery, confirmation and projection. Other shapes retain the unit VM.
