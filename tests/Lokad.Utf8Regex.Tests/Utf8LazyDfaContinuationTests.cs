@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -8,6 +9,9 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8LazyDfaContinuationTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_startTickCount64")]
+    private static extern ref long StartedAt(Utf8ExecutionDeadline deadline);
+
     private static object Compiler()
     {
         var type = typeof(Utf8ByteSafeLazyDfaVerifierProgram).GetNestedType("Compiler", BindingFlags.NonPublic);
@@ -117,10 +121,18 @@ public sealed class Utf8LazyDfaContinuationTests
     {
         var compiler = Compiler();
         using var source = new CancellationTokenSource();
+        var deadline = Utf8ExecutionDeadline.Start(expire ? TimeSpan.FromSeconds(30) : Regex.InfiniteMatchTimeout);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
+            deadline, source.Token);
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); };
+        invocation.CheckpointHook = _ =>
+        {
+            entered = true;
+            // Expire the actual compiler deadline after its pending frames
+            // exist, without depending on scheduler or GC timing before entry.
+            if (expire) StartedAt(deadline) = Environment.TickCount64 - 30_001;
+            else source.Cancel();
+        };
         SetInvocation(compiler, invocation);
         object?[] arguments = [Deep(4097), null, false, false];
         var failure = Assert.Throws<TargetInvocationException>(() => Call(compiler, "TryCompileNfa", arguments));
