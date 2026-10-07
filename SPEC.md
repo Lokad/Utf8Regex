@@ -546,6 +546,17 @@ and vectors rather than the legacy predicate's raw buffers. Node/character/query
 product/copy work is metered before execution. Pattern text stays interoperability
 input, not a UTF-16 subject unit. Other native producers and general retained
 policies remain incomplete.
+Native quoted-relation LF counting uses admitted ancestor continuations without
+the former stack/map or copied single-character strings. Its LF bound is distinct
+from front-end CR-or-LF line safety. Shared construction class queries retain
+borrowed plain wires, admit complete subtraction segments once, and meter queries
+before scanning. ASCII structural literal/alternate bytes and suffix-part arrays
+have admitted output loans; failed suffix or parent-family speculation recovers
+all child loans. Quote/separator proofs unwind temporary loans, retain wrapper
+depth and avoid quote-string copies. Prefix comparisons spend work before byte
+scans. Existing local grammar, branch order, zero-minimum separators and checked
+line-count overflow are retained. Other literal/lookahead encoders, structural
+plan containers and complete retained/shared policies remain open.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
 selection work. Literal builders and copied character/run strings share byte
