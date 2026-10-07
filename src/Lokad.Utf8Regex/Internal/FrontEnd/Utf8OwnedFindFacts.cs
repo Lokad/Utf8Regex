@@ -1,21 +1,17 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 
-// Owned find-optimization facts for one runtime tree, computed once per analysis
-// pass from the owned hub. This container replaces the legacy find
-// optimizations instance for search analysis: every property mirrors a legacy
-// member over the same tree, differentially pinned row by row in the hub
-// battery. Trees of either provenance feed it, so analyzer migration lands
-// before the provider cutover instead of with it.
+// Search preparation over borrowed grammar. Keep only facts with search-plan
+// consumers; the caller already owns the tree. Width/distance producers still
+// need their scalar-byte migration, and acquisition of this container and the
+// remaining family/set results is outside the partial construction admission.
 internal sealed class Utf8OwnedFindFacts
 {
     private Utf8OwnedFindFacts(Utf8OwnedRegexTree tree)
     {
-        Root = tree.Root;
         MinRequiredLength = Utf8OwnedFindOptimizations.ComputeMinLength(tree.Root);
         MaxPossibleLength = Utf8OwnedFindOptimizations.ComputeMaxLength(tree.Root);
         IsFixedLength = MaxPossibleLength is int max && max == MinRequiredLength;
-        LeadingAnchor = Utf8OwnedFindOptimizations.FindLeadingAnchor(tree.Root);
         TrailingAnchor = Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root);
         LeadingLiteral = Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root);
         LongestLiteral = Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root);
@@ -34,15 +30,11 @@ internal sealed class Utf8OwnedFindFacts
         return new Utf8OwnedFindFacts(tree);
     }
 
-    public Utf8TreeNode Root { get; }
-
     public bool IsFixedLength { get; }
 
     public int MinRequiredLength { get; }
 
     public int? MaxPossibleLength { get; }
-
-    public Utf8TreeNodeKind LeadingAnchor { get; }
 
     public Utf8TreeNodeKind TrailingAnchor { get; }
 

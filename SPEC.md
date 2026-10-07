@@ -535,6 +535,17 @@ the same owner and rolls back a declined proof's lowered payload as well as
 scan scratch; only an accepted program transfers. The unused lookaround
 eligibility helper is removed rather than given a second implementation.
 These checks gate optimizations, not supported scalar grammar or general policies.
+Find preparation admits trailing-anchor/leading-literal ancestor frames and
+longest-literal postorder frames/maps, with cumulative visits and literal-run
+selection work. Literal builders and copied character/run strings share byte
+admission with their retaining descriptors. Existing pattern strings are
+borrowed. Returned text transfers its loans; pure anchor results and declined
+literal scans restore scratch/descriptors. Frame/map arrays and live depth
+unwind on every exit; acquired successful text/object descriptors remain owned
+until construction closes. The unused leading-anchor fact/producer and redundant
+cached tree root are removed. Width/distance formulas, alternate/set results and
+the facts container still require migration/admission; this is not a complete
+construction bound or proof that legacy search widths are scalar-byte correct.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
 temporary reference maps, copied child arrays, node/tree/program objects and
 their retaining descriptors. Program vectors charge aggregate instruction slots

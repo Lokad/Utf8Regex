@@ -50,11 +50,9 @@ public sealed class Utf8OwnedFindContinuationTests
         var actual = Utf8OwnedFindFacts.FromTree(deep);
         Assert.NotNull(expected);
         Assert.NotNull(actual);
-        Assert.Same(deep.Root, actual.Root);
         Assert.Equal(expected.MinRequiredLength, actual.MinRequiredLength);
         Assert.Equal(expected.MaxPossibleLength, actual.MaxPossibleLength);
         Assert.Equal(expected.IsFixedLength, actual.IsFixedLength);
-        Assert.Equal(expected.LeadingAnchor, actual.LeadingAnchor);
         Assert.Equal(expected.TrailingAnchor, actual.TrailingAnchor);
         Assert.Equal(expected.LeadingLiteral, actual.LeadingLiteral);
         Assert.Equal(expected.LongestLiteral, actual.LongestLiteral);

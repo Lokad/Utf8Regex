@@ -16,7 +16,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return Utf8SearchFacts.Create(Utf8SearchKind.None);
         }
 
-        TrySelectRequiredLiteralPrefilter(findOptimizations.Root, out var requiredPrefilterLiteral, out var requiredPrefilterAlternateLiterals);
+        TrySelectRequiredLiteralPrefilter(runtimeTree.Root, out var requiredPrefilterLiteral, out var requiredPrefilterAlternateLiterals);
         TrySelectQuotedAsciiRunPrefilter(runtimeTree.Root, out var secondaryRequiredPrefilterQuotedAsciiClass, out var secondaryRequiredPrefilterQuotedAsciiLength);
         var secondaryRequiredPrefilterQuotedAsciiSet = CreateAsciiByteSet(secondaryRequiredPrefilterQuotedAsciiClass);
         TrySelectRequiredWindowPrefilters(

@@ -3,14 +3,14 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Text.RegularExpressions;
 // Owned find-optimization facts: lengths, anchors, alternate prefixes and
 // fixed-distance literals and sets. Iterative walks over owned runtime-shaped
-// trees retain the facts independently pinned against the original oracle. Length
-// arithmetic saturates exactly like the pinned formulas: minimums cap at
-// int.MaxValue - 1 past int.MaxValue, maximums turn null, lone bounds stay put.
+// trees. Literal text is pattern interoperability text, not subject matching
+// units. The legacy width/distance producers still require scalar-byte
+// replacements; admitting traversal storage does not make those facts byte-safe.
 internal static class Utf8OwnedFindOptimizations
 {
     public static int ComputeMinLength(Utf8TreeNode node)
     {
-        return MeasurePostOrder<int>(node, Measure);
+        return MeasurePostOrder<int>(node, Measure, false);
 
         static int Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, int> values)
         {
@@ -93,7 +93,7 @@ internal static class Utf8OwnedFindOptimizations
 
     public static int? ComputeMaxLength(Utf8TreeNode node)
     {
-        return MeasurePostOrder<int?>(node, Measure);
+        return MeasurePostOrder<int?>(node, Measure, false);
 
         static int? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, int?> values)
         {
@@ -191,33 +191,19 @@ internal static class Utf8OwnedFindOptimizations
         }
     }
 
-    public static Utf8TreeNodeKind FindLeadingAnchor(Utf8TreeNode node)
-    {
-        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
-        {
-            if (node.ChildCount == 0) return Utf8TreeNodeKind.Unknown;
-            node = node.Child(0);
-        }
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.Beginning:
-            case Utf8TreeNodeKind.Bol:
-            case Utf8TreeNodeKind.Start:
-            case Utf8TreeNodeKind.EndZ:
-            case Utf8TreeNodeKind.End:
-                return node.Kind;
-            default:
-                return Utf8TreeNodeKind.Unknown;
-        }
-    }
-
     public static Utf8TreeNodeKind FindTrailingAnchor(Utf8TreeNode node)
     {
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
         {
+            budget.ChargeWork(1);
             if (node.ChildCount == 0) return Utf8TreeNodeKind.Unknown;
             node = node.Child(node.ChildCount - 1);
+            frames.Push(node);
         }
+        budget.ChargeWork(1);
         switch (node.Kind)
         {
             case Utf8TreeNodeKind.EndZ:
@@ -230,28 +216,34 @@ internal static class Utf8OwnedFindOptimizations
     }
     public static string? TryExtractLeadingLiteral(Utf8TreeNode node)
     {
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group)
         {
+            budget.ChargeWork(1);
             if (node.ChildCount != 1) return null;
             node = node.Child(0);
+            frames.Push(node);
         }
-        switch (node.Kind)
+        budget.ChargeWork(1);
+        var result = node.Kind switch
         {
-            case Utf8TreeNodeKind.One:
-                return node.Ch.ToString();
-            case Utf8TreeNodeKind.Multi:
-                return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-            case Utf8TreeNodeKind.Concatenate:
-                return LeadingRun(node);
-            default:
-                return null;
-        }
+            Utf8TreeNodeKind.One => budget.CopyText([node.Ch]),
+            Utf8TreeNodeKind.Multi => string.IsNullOrEmpty(node.Str) ? null : node.Str,
+            Utf8TreeNodeKind.Concatenate => LeadingRun(node),
+            _ => null,
+        };
+        if (result is not null) construction.Complete();
+        return result;
 
         static string? LeadingRun(Utf8TreeNode parent)
         {
-            var run = new StringBuilder();
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            using var run = Utf8ConstructionText.Create();
             for (var i = 0; i < parent.ChildCount; i++)
             {
+                budget.ChargeWork(1);
                 var child = parent.Child(i);
                 if (child.Kind == Utf8TreeNodeKind.One)
                 {
@@ -276,20 +268,20 @@ internal static class Utf8OwnedFindOptimizations
                 }
             }
 
-            return run.Length == 0 ? null : run.ToString();
+            return run.Length == 0 ? null : run.ToText();
         }
     }
 
     public static string? TryExtractLongestLiteral(Utf8TreeNode node)
     {
-        return MeasurePostOrder<string?>(node, Measure);
+        return MeasurePostOrder<string?>(node, Measure, true);
 
         static string? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, string?> values)
         {
             switch (node.Kind)
             {
                 case Utf8TreeNodeKind.One:
-                    return node.Ch.ToString();
+                    return Utf8ConstructionScope.CurrentBudget.CopyText([node.Ch]);
                 case Utf8TreeNodeKind.Multi:
                     return string.IsNullOrEmpty(node.Str) ? null : node.Str;
                 case Utf8TreeNodeKind.Capture:
@@ -306,9 +298,11 @@ internal static class Utf8OwnedFindOptimizations
             static string? LongestRun(Utf8TreeNode parent)
             {
                 string? best = null;
-                var run = new StringBuilder();
+                var budget = Utf8ConstructionScope.CurrentBudget;
+                using var run = Utf8ConstructionText.Create();
                 for (var i = 0; i < parent.ChildCount; i++)
                 {
+                    budget.ChargeWork(1);
                     var child = parent.Child(i);
                     if (child.Kind == Utf8TreeNodeKind.One)
                     {
@@ -324,12 +318,12 @@ internal static class Utf8OwnedFindOptimizations
                     }
                     else
                     {
-                        best = Longer(best, run.ToString());
+                        best = Longer(best, run.ToText());
                         run.Clear();
                     }
                 }
 
-                return Longer(best, run.ToString());
+                return Longer(best, run.ToText());
             }
 
             string? LongestBranch(Utf8TreeNode parent)
@@ -337,6 +331,7 @@ internal static class Utf8OwnedFindOptimizations
                 string? best = null;
                 for (var i = 0; i < parent.ChildCount; i++)
                 {
+                    Utf8ConstructionScope.CurrentBudget.ChargeWork(1);
                     best = Longer(best, values[parent.Child(i)]);
                 }
 
@@ -1221,8 +1216,9 @@ internal static class Utf8OwnedFindOptimizations
 
     // Static measure delegates borrow their inputs. Root frame admission
     // precedes map acquisition; frames, map arrays and depth unwind together.
+    // Only materialized text results transfer their acquired loans/descriptors.
     private static T MeasurePostOrder<T>(Utf8TreeNode node,
-        Func<Utf8TreeNode, Utf8ConstructionMap<Utf8TreeNode, T>, T> measure)
+        Func<Utf8TreeNode, Utf8ConstructionMap<Utf8TreeNode, T>, T> measure, bool transferResult)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -1246,6 +1242,7 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
         var result = values[node];
+        if (transferResult && result is not null) construction.Complete();
         return result;
     }
 }

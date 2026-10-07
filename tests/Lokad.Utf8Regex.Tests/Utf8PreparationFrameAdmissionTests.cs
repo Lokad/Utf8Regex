@@ -168,15 +168,31 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)]
-    public void SuccessfulPreparationReleasesItsScratchDescriptors(int route)
+    public void SuccessfulPreparationKeepsTextLoansUntilOwnerCloses(int route)
     {
         var find = FindTree(3);
         var execution = Tree(route, 3);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        Assert.NotNull(Prepare(route, find, execution));
-        Assert.True(owner.Budget.PeakBytes > 112);
+        using (var child = Utf8ConstructionScope.Enter())
+        {
+            var result = Prepare(route, find, execution);
+            Assert.NotNull(result);
+            Assert.True(owner.Budget.PeakBytes > 112);
+            if (route == 2)
+            {
+                Assert.Equal("a", Assert.IsType<string>(result));
+                Assert.True(owner.Budget.ReservedBytes > 112);
+                Assert.NotSame(checkpoint, owner.Budget.ObjectCheckpoint);
+            }
+            else
+            {
+                Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            }
+            Assert.Equal(0ul, owner.Budget.Depth);
+        }
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
