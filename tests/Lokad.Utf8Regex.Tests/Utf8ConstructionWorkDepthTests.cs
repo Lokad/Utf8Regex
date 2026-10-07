@@ -11,12 +11,16 @@ public sealed class Utf8ConstructionWorkDepthTests
     [InlineData("(?<x>😀)\\k<x>")] [InlineData("(?i:[é😀-🙏])")]
     public void ParserWorkCutoffsPreserveParentCapacityAndDepth(string pattern)
     {
+        // The admitted frame-buffer descriptor remains in the enclosing owner;
+        // continuation-array scratch is released before capture numbering.
+        var frameDescriptor = Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, Array, int)>()
+            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
         ulong work;
         using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
             work = measured.Budget.WorkSteps;
-            Assert.Equal(0ul, measured.Budget.ReservedBytes);
+            Assert.Equal(frameDescriptor, measured.Budget.ReservedBytes);
             Assert.Equal(0ul, measured.Budget.Depth);
         }
         Assert.InRange(work, 1ul, 2_000_000ul);
@@ -30,7 +34,7 @@ public sealed class Utf8ConstructionWorkDepthTests
             var parent = scope.Budget.AllocateArray<byte>(1, false);
             scope.Budget.EnterDepth();
             var failure = Record.Exception(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-            Assert.Equal(48ul, scope.Budget.ReservedBytes);
+            Assert.Equal(cutoff < work ? 48ul : 48 + frameDescriptor, scope.Budget.ReservedBytes);
             Assert.Equal(1ul, scope.Budget.Depth);
             Assert.True(scope.Budget.WorkSteps <= cutoff + 1);
             if (cutoff < work)

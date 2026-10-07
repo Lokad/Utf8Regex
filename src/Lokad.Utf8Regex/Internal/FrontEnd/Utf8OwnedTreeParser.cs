@@ -34,31 +34,24 @@ internal static class Utf8OwnedTreeParser
     public static Utf8OwnedRegexTree? TryParse(string pattern, RegexOptions options)
     {
         using var construction = Utf8ConstructionScope.Enter();
+        using var frames = Utf8ConstructionFrames<OwnedParseFrame>.Create(construction.Budget,
+            new(OwnedParseProduction.Alternation, 0));
+        // Admit the root before ParserState acquires its remaining collection
+        // storage. Context is a value, rather than a separately acquired object.
         var context = new OwnedParseContext(new ParserState(pattern, options));
-        using var frames = new Utf8ConstructionBuffer<IEnumerator<OwnedParseRequest>>(construction.Budget);
-        Push(frames, ParseAlternation(context, 0), construction.Budget);
-        try
+        while (frames.Count != 0 && !context.Failed)
         {
-            while (frames.Count != 0 && !context.Failed)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                var frame = frames.Peek();
-                if (frame.MoveNext()) Push(frames, frame.Current.Body, construction.Budget);
-                else
-                {
-                    try { frames.Pop().Dispose(); }
-                    finally { construction.Budget.LeaveDepth(); }
-                }
-            }
+            construction.Budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            bool suspended;
+            OwnedParseFrame child;
+            try { suspended = Advance(ref context, ref frame, out child); }
+            finally { frames[index] = frame; }
+            if (suspended) frames.Push(child);
+            else frames.Pop();
         }
-        finally
-        {
-            while (frames.Count != 0)
-            {
-                try { frames.Pop().Dispose(); }
-                finally { construction.Budget.LeaveDepth(); }
-            }
-        }
+        frames.Dispose(); // Release continuation-array scratch before numbering.
         var state = context.State;
         var root = context.Node;
         if (context.Failed || root is null || state.Position != pattern.Length)
@@ -129,435 +122,439 @@ internal static class Utf8OwnedTreeParser
             state.UsesLiteralClassBracketSyntax,
             state.UsesIgnoreCase);
 
-        static void Push(Utf8ConstructionBuffer<IEnumerator<OwnedParseRequest>> frames,
-            IEnumerable<OwnedParseRequest> body, Utf8ConstructionBudget budget)
+        static bool Advance(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
-            var iterator = body.GetEnumerator();
-            try
+            return frame.Production switch
             {
-                budget.EnterDepth();
-                try { frames.Push(iterator); }
-                catch { budget.LeaveDepth(); throw; }
-            }
-            catch { iterator.Dispose(); throw; }
+                OwnedParseProduction.Alternation => ParseAlternation(ref context, ref frame, out child),
+                OwnedParseProduction.Concatenation => ParseConcatenation(ref context, ref frame, out child),
+                OwnedParseProduction.Group => ParseGroup(ref context, ref frame, out child),
+                OwnedParseProduction.NamedGroup => ParseNamedGroup(ref context, ref frame, out child),
+                OwnedParseProduction.Lookaround => ParseLookaround(ref context, ref frame, out child),
+                OwnedParseProduction.Conditional => TryTakeConditional(ref context, ref frame, out child),
+                _ => throw new InvalidOperationException("Unknown owned grammar frame."),
+            };
         }
 
-        static IEnumerable<OwnedParseRequest> ParseAlternation(OwnedParseContext context, int depth)
+        static bool ParseAlternation(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
+            child = default;
             var state = context.State;
-            Utf8TreeNode? root = null;
-            var branches = new List<Utf8TreeNode>();
-            var alternationEntryOptions = state.Options;
-            while (true)
+            if (frame.Nodes is null)
             {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (depth == 0)
-                {
-                    state.Depth0Branch = branches.Count;
-                }
-
-                context.State = state;
-                yield return new OwnedParseRequest(ParseConcatenation(context, depth));
-                state = context.State;
+                frame.Nodes = new List<Utf8TreeNode>();
+                frame.EntryOptions = state.Options;
+            }
+            var branches = frame.Nodes;
+            if (frame.Stage == 1)
+            {
                 var branch = context.Node;
-                if (branch is null)
-                {
-                    context.Fail(state);
-                    yield break;
-                }
-
+                if (branch is null) { context.Fail(state); return false; }
                 branches.Add(branch);
                 if (state.AtEnd || state.Pattern[state.Position] != '|')
                 {
-                    break;
+                    context.Complete(state, branches.Count == 1 ? branches[0] : Alternate(frame.EntryOptions, branches));
+                    return false;
                 }
-
                 state.Position++;
             }
-
-            root = branches.Count == 1 ? branches[0] : Alternate(alternationEntryOptions, branches);
-            context.Complete(state, root);
-            yield break;
+            Utf8ConstructionScope.ChargeWork(1);
+            if (frame.Depth == 0) state.Depth0Branch = branches.Count;
+            context.State = state;
+            frame.Stage = 1;
+            child = new(OwnedParseProduction.Concatenation, frame.Depth);
+            return true;
         }
 
-        static IEnumerable<OwnedParseRequest> ParseConcatenation(OwnedParseContext context, int depth)
+        static bool ParseConcatenation(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
+            child = default;
             var state = context.State;
+            var depth = frame.Depth;
             Utf8TreeNode? node = null;
-            var children = new List<Utf8TreeNode>();
-            var run = new StringBuilder();
-            var concatenationEntryOptions = state.Options;
-            while (!state.AtEnd)
+            if (frame.Nodes is null)
             {
-                Utf8ConstructionScope.ChargeWork(1);
-                var character = state.Pattern[state.Position];
-                if (character == '|' || character == ')')
+                frame.Nodes = new List<Utf8TreeNode>();
+                frame.Run = new StringBuilder();
+                frame.EntryOptions = state.Options;
+            }
+            var children = frame.Nodes;
+            var run = frame.Run ?? throw new InvalidOperationException("Missing concatenation text storage.");
+            var concatenationEntryOptions = frame.EntryOptions;
+            while (frame.Stage == 1 || !state.AtEnd)
+            {
+                Utf8TreeNode atom;
+                if (frame.Stage == 1)
                 {
-                    break;
+                    frame.Stage = 0;
+                    var group = context.Node;
+                    if (group is null) { context.Fail(state); return false; }
+                    atom = group;
                 }
-
-                if ((state.Options & RegexOptions.IgnorePatternWhitespace) != 0)
+                else
                 {
-                    if (character == '#')
+                    Utf8ConstructionScope.ChargeWork(1);
+                    var character = state.Pattern[state.Position];
+                    if (character == '|' || character == ')')
                     {
-                        while (!state.AtEnd && state.Pattern[state.Position] != (char)10)
+                        break;
+                    }
+
+                    if ((state.Options & RegexOptions.IgnorePatternWhitespace) != 0)
+                    {
+                        if (character == '#')
                         {
-                            Utf8ConstructionScope.ChargeWork(1);
+                            while (!state.AtEnd && state.Pattern[state.Position] != (char)10)
+                            {
+                                Utf8ConstructionScope.ChargeWork(1);
+                                state.Position++;
+                            }
+
+                            continue;
+                        }
+
+                        if (IsIgnoredWhitespace(character))
+                        {
                             state.Position++;
+                            continue;
                         }
-
-                        continue;
                     }
 
-                    if (IsIgnoredWhitespace(character))
+                    if (depth == 0)
                     {
-                        state.Position++;
-                        continue;
-                    }
-                }
-
-                if (depth == 0)
-                {
-                    state.Depth0Atom = children.Count + (run.Length > 0 ? 1 : 0);
-                }
-
-                state.UsesIgnoreCase |= (state.Options & RegexOptions.IgnoreCase) != 0;
-
-                if (character == '\\')
-                {
-                    if (TryAnchorEscape(ref state, out var anchor) && anchor is not null)
-                    {
-                        FlushRun(state, children, run);
-                        var anchorAtom = anchor;
-                        if (!ParseQuantifier(ref state, ref anchorAtom, out var decayedAnchor))
-                        {
-                            context.Fail(state);
-                            yield break;
-                        }
-
-                        if (decayedAnchor)
-                        {
-                            run.Append('{');
-                        }
-
-                        children.Add(anchorAtom);
-                        continue;
+                        state.Depth0Atom = children.Count + (run.Length > 0 ? 1 : 0);
                     }
 
-                    if (TryTakeShorthandAtom(ref state, out var shorthand) && shorthand is not null)
+                    state.UsesIgnoreCase |= (state.Options & RegexOptions.IgnoreCase) != 0;
+
+                    if (character == '\\')
                     {
-                        FlushRun(state, children, run);
-                        var shorthandAtom = shorthand;
-                        if (!ParseQuantifier(ref state, ref shorthandAtom, out var decayedShorthand))
+                        if (TryAnchorEscape(ref state, out var anchor) && anchor is not null)
                         {
-                            context.Fail(state);
-                            yield break;
+                            FlushRun(state, children, run);
+                            var anchorAtom = anchor;
+                            if (!ParseQuantifier(ref state, ref anchorAtom, out var decayedAnchor))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+
+                            if (decayedAnchor)
+                            {
+                                run.Append('{');
+                            }
+
+                            children.Add(anchorAtom);
+                            continue;
                         }
 
-                        if (decayedShorthand)
+                        if (TryTakeShorthandAtom(ref state, out var shorthand) && shorthand is not null)
                         {
-                            run.Append('{');
+                            FlushRun(state, children, run);
+                            var shorthandAtom = shorthand;
+                            if (!ParseQuantifier(ref state, ref shorthandAtom, out var decayedShorthand))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+
+                            if (decayedShorthand)
+                            {
+                                run.Append('{');
+                            }
+
+                            children.Add(shorthandAtom);
+                            continue;
                         }
 
-                        children.Add(shorthandAtom);
-                        continue;
-                    }
 
-
-                    var backrefDigits = TryScanBackrefDigits(ref state);
-                    if (backrefDigits is not null)
-                    {
-                        FlushRun(state, children, run);
-                        var tentative = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
-                        tentative.N = -1;
-                        var backrefAtom = tentative;
-                        if (!ParseQuantifier(ref state, ref backrefAtom, out var decayedBackref))
+                        var backrefDigits = TryScanBackrefDigits(ref state);
+                        if (backrefDigits is not null)
                         {
-                            context.Fail(state);
-                            yield break;
+                            FlushRun(state, children, run);
+                            var tentative = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
+                            tentative.N = -1;
+                            var backrefAtom = tentative;
+                            if (!ParseQuantifier(ref state, ref backrefAtom, out var decayedBackref))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+
+                            if (decayedBackref)
+                            {
+                                run.Append('{');
+                            }
+
+                            if (backrefAtom.Kind == Utf8TreeNodeKind.Empty)
+                            {
+                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits, ReferencePosition = state.Position });
+                            }
+                            else if (ReferenceEquals(backrefAtom, tentative))
+                            {
+                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position });
+                            }
+                            else if (backrefAtom.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
+                                backrefAtom.ChildCount == 1 &&
+                                ReferenceEquals(backrefAtom.Child(0), tentative))
+                            {
+                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position, Wrapper = backrefAtom });
+                            }
+
+                            children.Add(backrefAtom);
+                            continue;
                         }
 
-                        if (decayedBackref)
+                        var backrefName = TryScanNamedBackref(ref state);
+                        if (backrefName is not null)
                         {
-                            run.Append('{');
-                        }
+                            FlushRun(state, children, run);
+                            var namedBackref = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
+                            namedBackref.Str = backrefName;
+                            namedBackref.N = 0;
+                            var namedAtom = namedBackref;
+                            if (!ParseQuantifier(ref state, ref namedAtom, out var decayedNamed))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
 
-                        if (backrefAtom.Kind == Utf8TreeNodeKind.Empty)
-                        {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits, ReferencePosition = state.Position });
-                        }
-                        else if (ReferenceEquals(backrefAtom, tentative))
-                        {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position });
-                        }
-                        else if (backrefAtom.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
-                            backrefAtom.ChildCount == 1 &&
-                            ReferenceEquals(backrefAtom.Child(0), tentative))
-                        {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position, Wrapper = backrefAtom });
-                        }
+                            if (decayedNamed)
+                            {
+                                run.Append('{');
+                            }
 
-                        children.Add(backrefAtom);
-                        continue;
-                    }
+                            if (namedAtom.Kind == Utf8TreeNodeKind.Empty)
+                            {
+                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedAtom, Name = backrefName });
+                                children.Add(namedAtom);
+                                continue;
+                            }
 
-                    var backrefName = TryScanNamedBackref(ref state);
-                    if (backrefName is not null)
-                    {
-                        FlushRun(state, children, run);
-                        var namedBackref = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
-                        namedBackref.Str = backrefName;
-                        namedBackref.N = 0;
-                        var namedAtom = namedBackref;
-                        if (!ParseQuantifier(ref state, ref namedAtom, out var decayedNamed))
-                        {
-                            context.Fail(state);
-                            yield break;
-                        }
-
-                        if (decayedNamed)
-                        {
-                            run.Append('{');
-                        }
-
-                        if (namedAtom.Kind == Utf8TreeNodeKind.Empty)
-                        {
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedAtom, Name = backrefName });
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedBackref, Name = backrefName });
                             children.Add(namedAtom);
                             continue;
                         }
 
-                        state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedBackref, Name = backrefName });
-                        children.Add(namedAtom);
-                        continue;
-                    }
-
-                    if (!DecodeEscape(ref state, out var escaped))
-                    {
-                        context.Fail(state);
-                        yield break;
-                    }
-
-                    if (char.IsSurrogate(escaped))
-                    {
-                        if (char.IsHighSurrogate(escaped) && TryTakeLowSurrogate(ref state, out var low))
+                        if (!DecodeEscape(ref state, out var escaped))
                         {
-                            run.Append(escaped).Append(low);
+                            context.Fail(state);
+                            return false;
+                        }
+
+                        if (char.IsSurrogate(escaped))
+                        {
+                            if (char.IsHighSurrogate(escaped) && TryTakeLowSurrogate(ref state, out var low))
+                            {
+                                run.Append(escaped).Append(low);
+                                continue;
+                            }
+                            FlushRun(state, children, run);
+                            var impossible = new Utf8TreeNode(Utf8TreeNodeKind.Nothing, state.Options);
+                            if (!ParseQuantifier(ref state, ref impossible, out _))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+                            children.Add(impossible);
                             continue;
                         }
-                        FlushRun(state, children, run);
-                        var impossible = new Utf8TreeNode(Utf8TreeNodeKind.Nothing, state.Options);
-                        if (!ParseQuantifier(ref state, ref impossible, out _))
+
+                        if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
+                            Utf8OwnedCaseFold.TryGetFold(escaped, state.CaseBehavior, out var escapeLower, out var escapeUpper))
                         {
-                            context.Fail(state);
-                            yield break;
+                            FlushRun(state, children, run);
+                            var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
+                            if (!ParseQuantifier(ref state, ref escapedAtom, out var decayedEscaped))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+
+                            if (decayedEscaped)
+                            {
+                                run.Append('{');
+                            }
+
+                            children.Add(escapedAtom);
+                            continue;
                         }
-                        children.Add(impossible);
+
+                        run.Append(escaped);
                         continue;
                     }
 
-                    if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                        Utf8OwnedCaseFold.TryGetFold(escaped, state.CaseBehavior, out var escapeLower, out var escapeUpper))
+                    if (IsLiteralChar(character))
                     {
-                        FlushRun(state, children, run);
-                        var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
-                        if (!ParseQuantifier(ref state, ref escapedAtom, out var decayedEscaped))
+                        if (char.IsSurrogate(character))
                         {
-                            context.Fail(state);
-                            yield break;
+                            state.Position++;
+                            if (char.IsHighSurrogate(character) && TryTakeLowSurrogate(ref state, out var low))
+                            {
+                                run.Append(character).Append(low);
+                                continue;
+                            }
+                            FlushRun(state, children, run);
+                            var impossible = new Utf8TreeNode(Utf8TreeNodeKind.Nothing, state.Options);
+                            if (!ParseQuantifier(ref state, ref impossible, out _))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+                            children.Add(impossible);
+                            continue;
                         }
 
-                        if (decayedEscaped)
+                        if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
+                            Utf8OwnedCaseFold.TryGetFold(character, state.CaseBehavior, out var foldLower, out var foldUpper))
+                        {
+                            FlushRun(state, children, run);
+                            state.Position++;
+                            var foldedAtom = FoldedSet(state.Options, foldLower, foldUpper);
+                            if (!ParseQuantifier(ref state, ref foldedAtom, out var decayedFolded))
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+
+                            if (decayedFolded)
+                            {
+                                run.Append('{');
+                            }
+
+                            children.Add(foldedAtom);
+                            continue;
+                        }
+
+                        run.Append(character);
+                        state.Position++;
+                        continue;
+                    }
+
+                    if (IsQuantifierStart(character) && run.Length != 0)
+                    {
+                        // A literal supplementary scalar is one quantified atom.
+                        var lastWidth = run.Length >= 2 && char.IsHighSurrogate(run[run.Length - 2]) &&
+                            char.IsLowSurrogate(run[run.Length - 1]) ? 2 : 1;
+                        var last = run[run.Length - 1];
+                        var supplementaryLiteral = lastWidth == 2 ? run.ToString(run.Length - 2, 2) : null;
+                        run.Length -= lastWidth;
+                        FlushRun(state, children, run);
+                        var unit = supplementaryLiteral is not null ? Multi(state, supplementaryLiteral) : One(state, last);
+                        if (!ParseQuantifier(ref state, ref unit, out var decayedUnit))
+                        {
+                            context.Fail(state);
+                            return false;
+                        }
+
+                        if (decayedUnit)
                         {
                             run.Append('{');
                         }
 
-                        children.Add(escapedAtom);
+                        children.Add(unit);
                         continue;
                     }
 
-                    run.Append(escaped);
-                    continue;
-                }
-
-                if (IsLiteralChar(character))
-                {
-                    if (char.IsSurrogate(character))
+                    if (character == '(' && IsCommentAhead(state))
                     {
-                        state.Position++;
-                        if (char.IsHighSurrogate(character) && TryTakeLowSurrogate(ref state, out var low))
+                        if (!SkipComment(ref state))
                         {
-                            run.Append(character).Append(low);
+                            context.Fail(state);
+                            return false;
+                        }
+
+                        continue;
+                    }
+
+                    if (character == '(' &&
+                        state.Position + 2 < state.Pattern.Length &&
+                        state.Pattern[state.Position + 1] == '?'
+                        && (IsScopeFlag(state.Pattern[state.Position + 2]) || state.Pattern[state.Position + 2] is '-' or '+'))
+                    {
+                        if (state.ExpressionBranchDepth == depth)
+                        {
+                            context.Fail(state);
+                            return false;
+                        }
+                        var toggleStart = state.Position;
+                        FlushRun(state, children, run);
+                        if (TryTakeToggle(ref state, depth))
+                        {
                             continue;
                         }
-                        FlushRun(state, children, run);
-                        var impossible = new Utf8TreeNode(Utf8TreeNodeKind.Nothing, state.Options);
-                        if (!ParseQuantifier(ref state, ref impossible, out _))
-                        {
-                            context.Fail(state);
-                            yield break;
-                        }
-                        children.Add(impossible);
-                        continue;
+
+                        state.Position = toggleStart;
                     }
 
-                    if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                        Utf8OwnedCaseFold.TryGetFold(character, state.CaseBehavior, out var foldLower, out var foldUpper))
+                    FlushRun(state, children, run);
+                    if (character == '^')
                     {
-                        FlushRun(state, children, run);
+                        var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
+                            Utf8TreeNodeKind.Beginning :
+                            Utf8TreeNodeKind.Bol;
+                        atom = new Utf8TreeNode(anchorKind, state.Options);
                         state.Position++;
-                        var foldedAtom = FoldedSet(state.Options, foldLower, foldUpper);
-                        if (!ParseQuantifier(ref state, ref foldedAtom, out var decayedFolded))
+                    }
+                    else if (character == '$')
+                    {
+                        var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
+                            Utf8TreeNodeKind.EndZ :
+                            Utf8TreeNodeKind.Eol;
+                        atom = new Utf8TreeNode(anchorKind, state.Options);
+                        state.Position++;
+                    }
+                    else if (character == '.' && (state.Options & RegexOptions.Singleline) == 0)
+                    {
+                        atom = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, DotText);
+                        state.Position++;
+                    }
+                    else if (character == '.')
+                    {
+                        atom = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
+                        state.Position++;
+                    }
+                    else if (character == '[')
+                    {
+                        if (!ParseClass(ref state, out var classNode) || classNode is null)
                         {
                             context.Fail(state);
-                            yield break;
+                            return false;
                         }
 
-                        if (decayedFolded)
+                        atom = classNode;
+                    }
+                    else if (character == '{')
+                    {
+                        // A leading brace that cannot complete decays (BCL shapes like
+                        // brace-a or brace-12); complete or invalid shapes still decline.
+                        if (!ParseBrace(ref state, out _, out _, out var decayedBrace) && decayedBrace)
                         {
                             run.Append('{');
+                            continue;
                         }
 
-                        children.Add(foldedAtom);
-                        continue;
+                        context.Fail(state);
+                        return false;
                     }
-
-                    run.Append(character);
-                    state.Position++;
-                    continue;
-                }
-
-                if (IsQuantifierStart(character) && run.Length != 0)
-                {
-                    // A literal supplementary scalar is one quantified atom.
-                    var lastWidth = run.Length >= 2 && char.IsHighSurrogate(run[run.Length - 2]) &&
-                        char.IsLowSurrogate(run[run.Length - 1]) ? 2 : 1;
-                    var last = run[run.Length - 1];
-                    var supplementaryLiteral = lastWidth == 2 ? run.ToString(run.Length - 2, 2) : null;
-                    run.Length -= lastWidth;
-                    FlushRun(state, children, run);
-                    var unit = supplementaryLiteral is not null ? Multi(state, supplementaryLiteral) : One(state, last);
-                    if (!ParseQuantifier(ref state, ref unit, out var decayedUnit))
+                    else if (character != '(')
                     {
                         context.Fail(state);
-                        yield break;
+                        return false;
                     }
-
-                    if (decayedUnit)
+                    else
                     {
-                        run.Append('{');
+                        context.State = state;
+                        frame.Stage = 1;
+                        child = new(OwnedParseProduction.Group, depth);
+                        return true;
                     }
-
-                    children.Add(unit);
-                    continue;
-                }
-
-                if (character == '(' && IsCommentAhead(state))
-                {
-                    if (!SkipComment(ref state))
-                    {
-                        context.Fail(state);
-                        yield break;
-                    }
-
-                    continue;
-                }
-
-                if (character == '(' &&
-                    state.Position + 2 < state.Pattern.Length &&
-                    state.Pattern[state.Position + 1] == '?'
-                    && (IsScopeFlag(state.Pattern[state.Position + 2]) || state.Pattern[state.Position + 2] is '-' or '+'))
-                {
-                    if (state.ExpressionBranchDepth == depth)
-                    {
-                        context.Fail(state);
-                        yield break;
-                    }
-                    var toggleStart = state.Position;
-                    FlushRun(state, children, run);
-                    if (TryTakeToggle(ref state, depth))
-                    {
-                        continue;
-                    }
-
-                    state.Position = toggleStart;
-                }
-
-                FlushRun(state, children, run);
-                Utf8TreeNode atom;
-                if (character == '^')
-                {
-                    var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
-                        Utf8TreeNodeKind.Beginning :
-                        Utf8TreeNodeKind.Bol;
-                    atom = new Utf8TreeNode(anchorKind, state.Options);
-                    state.Position++;
-                }
-                else if (character == '$')
-                {
-                    var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
-                        Utf8TreeNodeKind.EndZ :
-                        Utf8TreeNodeKind.Eol;
-                    atom = new Utf8TreeNode(anchorKind, state.Options);
-                    state.Position++;
-                }
-                else if (character == '.' && (state.Options & RegexOptions.Singleline) == 0)
-                {
-                    atom = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, DotText);
-                    state.Position++;
-                }
-                else if (character == '.')
-                {
-                    atom = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
-                    state.Position++;
-                }
-                else if (character == '[')
-                {
-                    if (!ParseClass(ref state, out var classNode) || classNode is null)
-                    {
-                        context.Fail(state);
-                        yield break;
-                    }
-
-                    atom = classNode;
-                }
-                else if (character == '{')
-                {
-                    // A leading brace that cannot complete decays (BCL shapes like
-                    // brace-a or brace-12); complete or invalid shapes still decline.
-                    if (!ParseBrace(ref state, out _, out _, out var decayedBrace) && decayedBrace)
-                    {
-                        run.Append('{');
-                        continue;
-                    }
-
-                    context.Fail(state);
-                    yield break;
-                }
-                else if (character != '(')
-                {
-                    context.Fail(state);
-                    yield break;
-                }
-                else
-                {
-                    context.State = state;
-                    yield return new OwnedParseRequest(ParseGroup(context, depth));
-                    state = context.State;
-                    var group = context.Node;
-                    if (group is null)
-                    {
-                        context.Fail(state);
-                        yield break;
-                    }
-
-                    atom = group;
                 }
 
                 if (!ParseQuantifier(ref state, ref atom, out var decayedAtom))
                 {
                     context.Fail(state);
-                    yield break;
+                    return false;
                 }
 
                 if (decayedAtom)
@@ -573,12 +570,12 @@ internal static class Utf8OwnedTreeParser
             {
                 node = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, concatenationEntryOptions);
                 context.Complete(state, node);
-                yield break;
+                return false;
             }
 
             node = children.Count == 1 ? children[0] : Concatenate(concatenationEntryOptions, children);
             context.Complete(state, node);
-            yield break;
+            return false;
         }
 
         static void FlushRun(ParserState state, List<Utf8TreeNode> children, StringBuilder run)
@@ -1474,150 +1471,161 @@ internal static class Utf8OwnedTreeParser
                 units.Add(i + 1 < blockRanges.Length ? (char)blockRanges[i + 1] : (char)0);
             }
         }
-        static IEnumerable<OwnedParseRequest> ParseNamedGroup(OwnedParseContext context, int depth)
+        static bool ParseNamedGroup(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
+            child = default;
             var state = context.State;
             Utf8TreeNode? node = null;
-            var openPosition = state.Position;
-            var open = state.Pattern[state.Position];
-            var close = open == '<' ? '>' : '\'';
-            state.Position++;
-            var contentStart = state.Position;
-            while (!state.AtEnd && state.Pattern[state.Position] != close)
+            if (frame.Stage == 0)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                var openPosition = state.Position;
+                var open = state.Pattern[state.Position];
+                var close = open == '<' ? '>' : '\'';
                 state.Position++;
-            }
+                var contentStart = state.Position;
+                while (!state.AtEnd && state.Pattern[state.Position] != close)
+                {
+                    Utf8ConstructionScope.ChargeWork(1);
+                    state.Position++;
+                }
 
-            if (state.AtEnd)
-            {
-                context.Fail(state);
-                yield break;
-            }
-
-            var content = state.Pattern.Substring(contentStart, state.Position - contentStart);
-            state.Position++;
-
-            var isPop = false;
-            var name = content;
-            string? popName = null;
-            Utf8ConstructionScope.ChargeWork((ulong)content.Length * 3);
-            var separator = content.IndexOf('-');
-            if (separator >= 0)
-            {
-                name = content.Substring(0, separator);
-                popName = content.Substring(separator + 1);
-                isPop = name.Length == 0;
-                if (popName.Length == 0 || popName.Contains('-'))
+                if (state.AtEnd)
                 {
                     context.Fail(state);
-                    yield break;
+                    return false;
                 }
-            }
-            else if (name.Length == 0 || name.Contains('-'))
-            {
-                context.Fail(state);
-                yield break;
-            }
 
-            var namedEntryOptions = state.Options;
+                var content = state.Pattern.Substring(contentStart, state.Position - contentStart);
+                state.Position++;
 
-            context.State = state;
-            yield return new OwnedParseRequest(ParseAlternation(context, depth + 1));
-            state = context.State;
+                var isPop = false;
+                var name = content;
+                string? popName = null;
+                Utf8ConstructionScope.ChargeWork((ulong)content.Length * 3);
+                var separator = content.IndexOf('-');
+                if (separator >= 0)
+                {
+                    name = content.Substring(0, separator);
+                    popName = content.Substring(separator + 1);
+                    isPop = name.Length == 0;
+                    if (popName.Length == 0 || popName.Contains('-'))
+                    {
+                        context.Fail(state);
+                        return false;
+                    }
+                }
+                else if (name.Length == 0 || name.Contains('-'))
+                {
+                    context.Fail(state);
+                    return false;
+                }
+
+                var namedEntryOptions = state.Options;
+
+                frame.OpenPosition = openPosition;
+                frame.Name = name;
+                frame.PopName = popName;
+                frame.IsPop = isPop;
+                frame.EntryOptions = namedEntryOptions;
+                frame.Stage = 1;
+                context.State = state;
+                child = new(OwnedParseProduction.Alternation, frame.Depth + 1);
+                return true;
+            }
             var body = context.Node;
             if (body is null)
             {
                 context.Fail(state);
-                yield break;
+                return false;
             }
 
             if (state.AtEnd || state.Pattern[state.Position] != ')')
             {
                 context.Fail(state);
-                yield break;
+                return false;
             }
 
             state.Position++;
-            state.Options = namedEntryOptions;
-            var group = new Utf8TreeNode(Utf8TreeNodeKind.Capture, namedEntryOptions);
+            state.Options = frame.EntryOptions;
+            var group = new Utf8TreeNode(Utf8TreeNodeKind.Capture, frame.EntryOptions);
             group.Children = body;
             body.Parent = group;
             node = group;
 
-            if (popName is not null)
-                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = group, Name = popName, IsPop = true });
+            if (frame.PopName is not null)
+                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = group, Name = frame.PopName, IsPop = true });
 
-            if (isPop)
+            if (frame.IsPop)
             {
                 group.M = -1;
                 group.N = -1;
                 context.Complete(state, node);
-                yield break;
+                return false;
             }
 
-            if (IsAllAsciiDigits(name) && TryParseGroupNumber(name, out var declared))
+            var groupName = frame.Name ?? throw new InvalidOperationException("Missing capture name.");
+            if (IsAllAsciiDigits(groupName) && TryParseGroupNumber(groupName, out var declared))
             {
                 if (declared == 0)
                 {
                     context.Fail(state);
-                    yield break;
+                    return false;
                 }
 
-                if (name.Length > 1 && name[0] == '0')
+                if (groupName.Length > 1 && groupName[0] == '0')
                 {
                     // A zero-padded spelling does not declare a number during
                     // .NET's capture scan, but captures into it when it is declared
                     // elsewhere. Keep that alias separate from numbered declarations.
-                    group.Str = name;
+                    group.Str = groupName;
                     group.M = declared;
                     group.N = -1;
                     node = group;
                     state.RequiredSlots.Add(declared);
                     context.Complete(state, node);
-                    yield break;
+                    return false;
                 }
 
-                group.Str = name;
+                group.Str = groupName;
                 group.M = declared;
                 group.N = -1;
 
                 if (declared != 0)
                 {
-                    state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = declared, IsAuto = false, Slot = declared, OpenPosition = openPosition });
+                    state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = groupName, Declared = declared, IsAuto = false, Slot = declared, OpenPosition = frame.OpenPosition });
                 }
 
                 context.Complete(state, node);
-                yield break;
+                return false;
             }
 
-            if (IsAllAsciiDigits(name) || IsAsciiDigit(name[0]))
+            if (IsAllAsciiDigits(groupName) || IsAsciiDigit(groupName[0]))
             {
                 // BCL rejects every survivor of this branch: all-digit overflow
                 // fails group-number construction, and digit-start names are
                 // invalid group names. Only (?:)-style transparency above serves.
                 context.Fail(state);
-                yield break;
+                return false;
             }
 
-            if (!IsValidGroupName(name))
+            if (!IsValidGroupName(groupName))
             {
                 // BCL capture-name rule (machine-probed on .NET 10): every name
                 // character is a Unicode word character (letters, decimal digits,
                 // connector punctuation, nonspacing marks, ZWJ/ZWNJ). Anything
                 // else declines to the BCL fallback exactly like the oracle.
                 context.Fail(state);
-                yield break;
+                return false;
             }
 
-            group.Str = name;
+            group.Str = groupName;
             group.M = -1;
             group.N = -1;
 
-            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1, OpenPosition = openPosition });
+            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = groupName, Declared = -1, IsAuto = true, Slot = -1, OpenPosition = frame.OpenPosition });
 
             context.Complete(state, node);
-            yield break;
+            return false;
         }
 
         static bool IsAllAsciiDigits(string value)
@@ -2543,49 +2551,48 @@ internal static class Utf8OwnedTreeParser
             return false;
         }
 
-        static IEnumerable<OwnedParseRequest> ParseLookaround(OwnedParseContext context, int depth, Utf8TreeNodeKind kind, bool isLookbehind)
+        static bool ParseLookaround(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
+            child = default;
             var state = context.State;
             Utf8TreeNode? node = null;
-            // state.Position is at the opener marker after "(?". Lookbehind
-            // consumes its direction marker too and forces RightToLeft below.
-            state.Position += isLookbehind ? 2 : 1;
-
-            var savedOptions = state.Options;
-            var bodyOptions = kind == Utf8TreeNodeKind.Atomic
-                ? savedOptions
-                : isLookbehind
-                    ? savedOptions | RegexOptions.RightToLeft
-                    : savedOptions & ~RegexOptions.RightToLeft;
-            state.Options = bodyOptions;
-
-            context.State = state;
-            yield return new OwnedParseRequest(ParseAlternation(context, depth + 1));
-            state = context.State;
+            if (frame.Stage == 0)
+            {
+                state.Position += frame.IsLookbehind ? 2 : 1;
+                frame.SavedOptions = state.Options;
+                frame.EntryOptions = frame.Kind == Utf8TreeNodeKind.Atomic
+                    ? state.Options
+                    : frame.IsLookbehind ? state.Options | RegexOptions.RightToLeft : state.Options & ~RegexOptions.RightToLeft;
+                state.Options = frame.EntryOptions;
+                context.State = state;
+                frame.Stage = 1;
+                child = new(OwnedParseProduction.Alternation, frame.Depth + 1);
+                return true;
+            }
             var body = context.Node;
             if (body is null)
             {
-                state.Options = savedOptions;
+                state.Options = frame.SavedOptions;
                 context.Fail(state);
-                yield break;
+                return false;
             }
 
             if (state.AtEnd || state.Pattern[state.Position] != ')')
             {
-                state.Options = savedOptions;
+                state.Options = frame.SavedOptions;
                 context.Fail(state);
-                yield break;
+                return false;
             }
 
             state.Position++;
-            var options = bodyOptions;
-            var assertion = new Utf8TreeNode(kind, options);
+            var options = frame.EntryOptions;
+            var assertion = new Utf8TreeNode(frame.Kind, options);
             assertion.Children = body;
             body.Parent = assertion;
             node = assertion;
-            state.Options = savedOptions;
+            state.Options = frame.SavedOptions;
             context.Complete(state, node);
-            yield break;
+            return false;
         }
 
         static bool AddClassScalar(List<int> ranges, int value)
@@ -2849,188 +2856,157 @@ internal static class Utf8OwnedTreeParser
             return node;
         }
 
-        static IEnumerable<OwnedParseRequest> TryTakeConditional(OwnedParseContext context, int depth)
+        static bool TryTakeConditional(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
+            child = default;
             var state = context.State;
-            Utf8TreeNode? node = null;
-            var conditionalOptions = state.Options;
-            var savedExpressionDepth = state.ExpressionBranchDepth;
-            var testParen = state.Position;
-            state.Position++;
-            string? digits = null;
-            string? name = null;
-            Utf8TreeNode? expression = null;
-            if (!state.AtEnd && IsAsciiDigit(state.Pattern[state.Position]))
+            var depth = frame.Depth;
+            if (frame.Stage == 0)
             {
-                var start = state.Position;
-                while (!state.AtEnd && IsAsciiDigit(state.Pattern[state.Position])) {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    state.Position++;
-                }
-                digits = state.Pattern.Substring(start, state.Position - start);
-                if (!TryParseGroupNumber(digits, out _) || state.AtEnd || state.Pattern[state.Position] != ')')
+                frame.EntryOptions = state.Options;
+                frame.SavedExpressionDepth = state.ExpressionBranchDepth;
+                var testParen = state.Position++;
+                if (!state.AtEnd && IsAsciiDigit(state.Pattern[state.Position]))
                 {
-                    context.Fail(state);
-                    yield break;
-                }
-                state.Position++;
-            }
-            else
-            {
-                var start = state.Position;
-                if (!state.AtEnd && IsAsciiConditionNameStart(state.Pattern[state.Position]))
-                    while (!state.AtEnd && IsAsciiConditionNameChar(state.Pattern[state.Position])) {
+                    var start = state.Position;
+                    while (!state.AtEnd && IsAsciiDigit(state.Pattern[state.Position]))
+                    {
                         Utf8ConstructionScope.ChargeWork(1);
                         state.Position++;
                     }
-                if (state.Position > start && !state.AtEnd && state.Pattern[state.Position] == ')')
-                {
-                    name = state.Pattern.Substring(start, state.Position - start);
+                    frame.Digits = state.Pattern.Substring(start, state.Position - start);
+                    if (!TryParseGroupNumber(frame.Digits, out _) || state.AtEnd || state.Pattern[state.Position] != ')')
+                    {
+                        context.Fail(state);
+                        return false;
+                    }
                     state.Position++;
                 }
                 else
                 {
-                    state.Position = start;
-                    if (!state.AtEnd && state.Pattern[state.Position] == '?')
+                    var start = state.Position;
+                    if (!state.AtEnd && IsAsciiConditionNameStart(state.Pattern[state.Position]))
+                        while (!state.AtEnd && IsAsciiConditionNameChar(state.Pattern[state.Position]))
+                        {
+                            Utf8ConstructionScope.ChargeWork(1);
+                            state.Position++;
+                        }
+                    if (state.Position > start && !state.AtEnd && state.Pattern[state.Position] == ')')
                     {
-                        if (state.Position + 1 >= state.Pattern.Length)
-                        {
-                            context.Fail(state);
-                            yield break;
-                        }
-                        var marker = state.Pattern[state.Position + 1];
-                        if (marker is '#' or '\'' || IsScopeFlag(marker) || marker is '-' or '+' ||
-                            marker == '<' && state.Position + 2 < state.Pattern.Length && state.Pattern[state.Position + 2] is not '=' and not '!')
-                        {
-                            context.Fail(state);
-                            yield break;
-                        }
-                        state.Position = testParen;
-                        context.State = state;
-                        yield return new OwnedParseRequest(ParseGroup(context, depth + 1));
-                        state = context.State;
-                        expression = context.Node;
-                        if (expression is null)
-                        {
-                            context.Fail(state);
-                            yield break;
-                        }
-                        if (expression.Kind is not Utf8TreeNodeKind.PositiveLookaround and not Utf8TreeNodeKind.NegativeLookaround)
-                        {
-                            var assertion = new Utf8TreeNode(Utf8TreeNodeKind.PositiveLookaround, conditionalOptions);
-                            assertion.Children = expression;
-                            expression.Parent = assertion;
-                            expression = assertion;
-                        }
-                        // Explicit conditional tests leave the next unnamed
-                        // grouping transparent in .NET 10, even across the
-                        // conditional's close. Its metadata slot still exists.
-                        state.IgnoreNextUnnamedGroup = true;
+                        frame.Name = state.Pattern.Substring(start, state.Position - start);
+                        state.Position++;
                     }
                     else
                     {
-                        context.State = state;
-                        yield return new OwnedParseRequest(ParseAlternation(context, depth + 1));
-                        state = context.State;
-                        var testBody = context.Node;
-                        if (testBody is null ||
-                            state.AtEnd || state.Pattern[state.Position] != ')')
+                        state.Position = start;
+                        if (!state.AtEnd && state.Pattern[state.Position] == '?')
                         {
-                            context.Fail(state);
-                            yield break;
+                            if (state.Position + 1 >= state.Pattern.Length) { context.Fail(state); return false; }
+                            var marker = state.Pattern[state.Position + 1];
+                            if (marker is '#' or '\'' || IsScopeFlag(marker) || marker is '-' or '+' ||
+                                marker == '<' && state.Position + 2 < state.Pattern.Length && state.Pattern[state.Position + 2] is not '=' and not '!')
+                            {
+                                context.Fail(state);
+                                return false;
+                            }
+                            state.Position = testParen;
+                            frame.Stage = 1;
+                            child = new(OwnedParseProduction.Group, depth + 1);
                         }
-                        state.Position++;
-                        expression = new Utf8TreeNode(Utf8TreeNodeKind.PositiveLookaround, conditionalOptions);
-                        expression.Children = testBody;
-                        testBody.Parent = expression;
+                        else
+                        {
+                            frame.Stage = 2;
+                            child = new(OwnedParseProduction.Alternation, depth + 1);
+                        }
+                        context.State = state;
+                        return true;
                     }
-                    state.Options = conditionalOptions;
-                    state.ExpressionBranchDepth = depth + 1;
                 }
+                frame.Stage = 3;
             }
-            var yesIsEmpty = !state.AtEnd && (state.Pattern[state.Position] == '|' || state.Pattern[state.Position] == ')');
-
-            Utf8TreeNode yesBranch;
-            if (yesIsEmpty)
+            if (frame.Stage is 1 or 2)
             {
-                yesBranch = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, conditionalOptions);
-            }
-            else
-            {
-                context.State = state;
-                yield return new OwnedParseRequest(ParseConcatenation(context, depth + 1));
-                state = context.State;
-                var parsedYes = context.Node;
-                if (parsedYes is null)
+                var expression = context.Node;
+                if (expression is null || frame.Stage == 2 && (state.AtEnd || state.Pattern[state.Position] != ')'))
                 {
                     context.Fail(state);
-                    yield break;
+                    return false;
                 }
-
-                yesBranch = parsedYes;
-            }
-
-            List<Utf8TreeNode>? branches = null;
-            if (!state.AtEnd && state.Pattern[state.Position] == '|')
-            {
-                state.Position++;
-                Utf8TreeNode noBranch;
-                if (!state.AtEnd && state.Pattern[state.Position] == ')')
+                if (frame.Stage == 2) state.Position++;
+                if (frame.Stage == 2 || expression.Kind is not Utf8TreeNodeKind.PositiveLookaround and not Utf8TreeNodeKind.NegativeLookaround)
                 {
-                    noBranch = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, conditionalOptions);
+                    var assertion = new Utf8TreeNode(Utf8TreeNodeKind.PositiveLookaround, frame.EntryOptions);
+                    assertion.Children = expression;
+                    expression.Parent = assertion;
+                    expression = assertion;
                 }
+                if (frame.Stage == 1) state.IgnoreNextUnnamedGroup = true;
+                frame.Expression = expression;
+                state.Options = frame.EntryOptions;
+                state.ExpressionBranchDepth = depth + 1;
+                frame.Stage = 3;
+            }
+            if (frame.Stage == 3)
+            {
+                frame.YesIsEmpty = !state.AtEnd && state.Pattern[state.Position] is '|' or ')';
+                if (frame.YesIsEmpty)
+                    frame.YesBranch = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, frame.EntryOptions);
                 else
                 {
                     context.State = state;
-                    yield return new OwnedParseRequest(ParseConcatenation(context, depth + 1));
-                    state = context.State;
-                    var parsedNo = context.Node;
-                    if (parsedNo is null)
-                    {
-                        context.Fail(state);
-                        yield break;
-                    }
-
-                    noBranch = parsedNo;
+                    frame.Stage = 4;
+                    child = new(OwnedParseProduction.Concatenation, depth + 1);
+                    return true;
                 }
-
-                if (state.AtEnd || state.Pattern[state.Position] != ')')
+                frame.Stage = 5;
+            }
+            if (frame.Stage == 4)
+            {
+                frame.YesBranch = context.Node;
+                if (frame.YesBranch is null) { context.Fail(state); return false; }
+                frame.Stage = 5;
+            }
+            var yesBranch = frame.YesBranch;
+            if (yesBranch is null) { context.Fail(state); return false; }
+            if (frame.Stage == 5)
+            {
+                if (!state.AtEnd && state.Pattern[state.Position] == '|')
                 {
-                    context.Fail(state);
-                    yield break;
+                    state.Position++;
+                    if (!state.AtEnd && state.Pattern[state.Position] == ')')
+                        frame.Nodes = new List<Utf8TreeNode> { yesBranch, new(Utf8TreeNodeKind.Concatenate, frame.EntryOptions) };
+                    else
+                    {
+                        context.State = state;
+                        frame.Stage = 6;
+                        child = new(OwnedParseProduction.Concatenation, depth + 1);
+                        return true;
+                    }
                 }
-
-                state.Position++;
-                branches = new List<Utf8TreeNode> { yesBranch, noBranch };
+                else if (!state.AtEnd && state.Pattern[state.Position] == ')')
+                {
+                    frame.Nodes = frame.YesIsEmpty
+                        ? new List<Utf8TreeNode> { yesBranch }
+                        : new List<Utf8TreeNode> { yesBranch, new(Utf8TreeNodeKind.Concatenate, frame.EntryOptions) };
+                }
+                else { context.Fail(state); return false; }
             }
-            else if (!state.AtEnd && state.Pattern[state.Position] == ')')
+            if (frame.Stage == 6)
             {
-                state.Position++;
-                branches = yesIsEmpty
-                    ? new List<Utf8TreeNode> { yesBranch }
-                    : new List<Utf8TreeNode> { yesBranch, new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, conditionalOptions) };
+                var no = context.Node;
+                if (no is null) { context.Fail(state); return false; }
+                frame.Nodes = new List<Utf8TreeNode> { yesBranch, no };
             }
-            else
-            {
-                context.Fail(state);
-                yield break;
-            }
-
-            state.Options = conditionalOptions;
-            state.ExpressionBranchDepth = savedExpressionDepth;
-            if (expression is not null) branches.Insert(0, expression);
-            var conditional = new Utf8TreeNode(expression is null
-                ? Utf8TreeNodeKind.BackreferenceConditional : Utf8TreeNodeKind.ExpressionConditional, conditionalOptions);
-            if (name is not null)
-            {
-                conditional.Str = name;
-                conditional.N = 0;
-            }
-            else
-            {
-                conditional.N = -1;
-            }
-
+            if (state.AtEnd || state.Pattern[state.Position] != ')') { context.Fail(state); return false; }
+            state.Position++;
+            state.Options = frame.EntryOptions;
+            state.ExpressionBranchDepth = frame.SavedExpressionDepth;
+            var branches = frame.Nodes ?? throw new InvalidOperationException("Missing conditional branches.");
+            if (frame.Expression is not null) branches.Insert(0, frame.Expression);
+            var conditional = new Utf8TreeNode(frame.Expression is null
+                ? Utf8TreeNodeKind.BackreferenceConditional : Utf8TreeNodeKind.ExpressionConditional, frame.EntryOptions);
+            if (frame.Name is not null) { conditional.Str = frame.Name; conditional.N = 0; }
+            else conditional.N = -1;
             conditional.M = -1;
             conditional.Children = branches;
             foreach (var branch in branches)
@@ -3038,11 +3014,10 @@ internal static class Utf8OwnedTreeParser
                 Utf8ConstructionScope.ChargeWork(1);
                 branch.Parent = conditional;
             }
-
-            node = conditional;
-            if (expression is null) state.BackrefFixups.Add(new OwnedBackrefFixup { Node = conditional, Digits = digits, Name = name, IsConditional = true });
-            context.Complete(state, node);
-            yield break;
+            if (frame.Expression is null)
+                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = conditional, Digits = frame.Digits, Name = frame.Name, IsConditional = true });
+            context.Complete(state, conditional);
+            return false;
         }
 
         static bool IsAsciiConditionNameStart(char character)
@@ -3057,160 +3032,105 @@ internal static class Utf8OwnedTreeParser
             return IsAsciiConditionNameStart(character) || (character >= '0' && character <= '9');
         }
 
-        static IEnumerable<OwnedParseRequest> ParseGroup(OwnedParseContext context, int depth)
+        static bool ParseGroup(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
+            child = default;
             var state = context.State;
-            Utf8TreeNode? node = null;
-            var openPosition = state.Position;
-            state.Position++;
-            var kind = Utf8TreeNodeKind.Capture;
-            var slot = 0;
+            var depth = frame.Depth;
+            if (frame.Stage == 1)
+            {
+                // Delegated named/assertion/conditional productions already
+                // completed both their state and their node.
+                return false;
+            }
+            if (frame.Stage is 2 or 3)
+            {
+                var body = context.Node;
+                if (body is null || state.AtEnd || state.Pattern[state.Position] != ')')
+                {
+                    context.Fail(state);
+                    return false;
+                }
+                state.Position++;
+                var group = new Utf8TreeNode(frame.Kind, frame.EntryOptions);
+                if (frame.Kind == Utf8TreeNodeKind.Capture) { group.M = frame.Slot; group.N = -1; }
+                group.Children = body;
+                body.Parent = group;
+                if (frame.Stage == 2)
+                {
+                    if (frame.IsLeadingScope && frame.Contribution != RegexOptions.None) state.LeadingGroup = group;
+                    if (frame.EnteredExplicit && state.ExplicitDepth > 0) state.ExplicitDepth--;
+                    state.Options = frame.SavedOptions;
+                }
+                else state.Options = frame.EntryOptions;
+                context.Complete(state, group);
+                return false;
+            }
+
+            frame.OpenPosition = state.Position++;
+            frame.Kind = Utf8TreeNodeKind.Capture;
             if (!state.AtEnd && state.Pattern[state.Position] == '?')
             {
                 state.Position++;
-                if (IsNamedGroupAhead(state))
+                frame.Stage = 1;
+                if (IsNamedGroupAhead(state)) child = new(OwnedParseProduction.NamedGroup, depth);
+                else if (TryTakeLookaroundKind(state, out var kind, out var behind))
+                    child = new(OwnedParseProduction.Lookaround, depth) { Kind = kind, IsLookbehind = behind };
+                else if (!state.AtEnd && state.Pattern[state.Position] == '(')
+                    child = new(OwnedParseProduction.Conditional, depth);
+                else
                 {
-                    context.State = state;
-                    yield return new OwnedParseRequest(ParseNamedGroup(context, depth));
-                    state = context.State;
-                    node = context.Node;
-                    context.Complete(state, node);
-                    yield break;
+                    if (state.ExpressionBranchDepth == depth && !state.AtEnd &&
+                        (IsScopeFlag(state.Pattern[state.Position]) || state.Pattern[state.Position] is '-' or '+'))
+                    {
+                        context.Fail(state);
+                        return false;
+                    }
+                    if (!TryTakeOptionScope(ref state, out var scopedOptions, out var scopeOn, out var scopeOff))
+                    {
+                        context.Fail(state);
+                        return false;
+                    }
+                    frame.IsLeadingScope = depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0;
+                    frame.Contribution = scopeOn & ~scopeOff;
+                    if (frame.IsLeadingScope)
+                    {
+                        state.TreeSeen = (state.TreeSeen | scopeOn) & ~scopeOff;
+                        state.LeadingContribution = frame.Contribution;
+                    }
+                    frame.SavedOptions = state.Options;
+                    state.Options = frame.EntryOptions = scopedOptions;
+                    frame.EnteredExplicit = (scopedOptions & RegexOptions.ExplicitCapture) != 0;
+                    if (frame.EnteredExplicit) state.ExplicitDepth++;
+                    frame.Kind = Utf8TreeNodeKind.Group;
+                    frame.Stage = 2;
+                    child = new(OwnedParseProduction.Alternation, depth + 1);
                 }
-
-                if (TryTakeLookaroundKind(state, out var lookaroundKind, out var isLookbehind))
-                {
-                    context.State = state;
-                    yield return new OwnedParseRequest(ParseLookaround(context, depth, lookaroundKind, isLookbehind));
-                    state = context.State;
-                    node = context.Node;
-                    context.Complete(state, node);
-                    yield break;
-                }
-
-                if (!state.AtEnd && state.Pattern[state.Position] == '(')
-                {
-                    context.State = state;
-                    yield return new OwnedParseRequest(TryTakeConditional(context, depth));
-                    state = context.State;
-                    node = context.Node;
-                    context.Complete(state, node);
-                    yield break;
-                }
-
-                if (state.ExpressionBranchDepth == depth && !state.AtEnd &&
-                    (IsScopeFlag(state.Pattern[state.Position]) || state.Pattern[state.Position] is '-' or '+'))
-                {
-                    context.Fail(state);
-                    yield break;
-                }
-
-                if (!TryTakeOptionScope(ref state, out var scopedOptions, out var scopeOn, out var scopeOff))
-                {
-                    context.Fail(state);
-                    yield break;
-                }
-
-                var isLeadingScope = depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0;
-                if (isLeadingScope)
-                {
-                    state.TreeSeen = (state.TreeSeen | scopeOn) & ~scopeOff;
-                    state.LeadingContribution = scopeOn & ~scopeOff;
-                }
-
-                var savedOptions = state.Options;
-                state.Options = scopedOptions;
-                var scopeEnteredExplicit = (scopedOptions & RegexOptions.ExplicitCapture) != RegexOptions.None;
-                if (scopeEnteredExplicit)
-                {
-                    state.ExplicitDepth++;
-                }
-
-                context.State = state;
-                yield return new OwnedParseRequest(ParseAlternation(context, depth + 1));
-                state = context.State;
-                var scopeBody = context.Node;
-                if (scopeBody is null)
-                {
-                    context.Fail(state);
-                    yield break;
-                }
-
-                if (state.AtEnd || state.Pattern[state.Position] != ')')
-                {
-                    context.Fail(state);
-                    yield break;
-                }
-
-                state.Position++;
-                var scopeGroup = new Utf8TreeNode(Utf8TreeNodeKind.Group, scopedOptions);
-                scopeGroup.Children = scopeBody;
-                scopeBody.Parent = scopeGroup;
-                node = scopeGroup;
-                if (isLeadingScope && (scopeOn & ~scopeOff) != RegexOptions.None)
-                {
-                    state.LeadingGroup = scopeGroup;
-                }
-
-                if (scopeEnteredExplicit && state.ExplicitDepth > 0)
-                {
-                    state.ExplicitDepth--;
-                }
-
-                state.Options = savedOptions;
-                context.Complete(state, node);
-                yield break;
-            }
-            else if (kind == Utf8TreeNodeKind.Capture &&
-                (state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None)
-            {
-                state.IgnoreNextUnnamedGroup = false;
-                kind = Utf8TreeNodeKind.Group;
             }
             else
             {
-                state.Groups++;
-                state.CapturePositions.TryAdd(state.Groups, openPosition);
-                if (state.IgnoreNextUnnamedGroup)
+                if ((state.Options & RegexOptions.ExplicitCapture) != 0)
                 {
-                    kind = Utf8TreeNodeKind.Group;
                     state.IgnoreNextUnnamedGroup = false;
+                    frame.Kind = Utf8TreeNodeKind.Group;
                 }
-                else slot = ++state.ExecutionGroups;
+                else
+                {
+                    state.Groups++;
+                    state.CapturePositions.TryAdd(state.Groups, frame.OpenPosition);
+                    if (state.IgnoreNextUnnamedGroup)
+                    {
+                        frame.Kind = Utf8TreeNodeKind.Group;
+                        state.IgnoreNextUnnamedGroup = false;
+                    }
+                    else frame.Slot = ++state.ExecutionGroups;
+                }
+                frame.EntryOptions = state.Options;
+                frame.Stage = 3;
+                child = new(OwnedParseProduction.Alternation, depth + 1);
             }
-
-            var groupEntryOptions = state.Options;
-
             context.State = state;
-            yield return new OwnedParseRequest(ParseAlternation(context, depth + 1));
-            state = context.State;
-            var body = context.Node;
-            if (body is null)
-            {
-                context.Fail(state);
-                yield break;
-            }
-
-            if (state.AtEnd || state.Pattern[state.Position] != ')')
-            {
-                context.Fail(state);
-                yield break;
-            }
-
-            state.Position++;
-            state.Options = groupEntryOptions;
-            var group = new Utf8TreeNode(kind, groupEntryOptions);
-            if (kind == Utf8TreeNodeKind.Capture)
-            {
-                group.M = slot;
-                group.N = -1;
-            }
-
-            group.Children = body;
-            body.Parent = group;
-            node = group;
-            context.Complete(state, node);
-            yield break;
+            return true;
         }
 
         static bool ParseQuantifier(ref ParserState state, ref Utf8TreeNode atom, out bool decayedBrace)
@@ -3419,12 +3339,26 @@ internal static class Utf8OwnedTreeParser
         }
     }
 
-    // Each suspended grammar production owns one explicit continuation.
-    // Child productions share the parse state only at yield/resume boundaries;
-    // lexical probes retain the existing value-copy state semantics.
-    private readonly record struct OwnedParseRequest(IEnumerable<OwnedParseRequest> Body);
+    private enum OwnedParseProduction { Alternation, Concatenation, Group, NamedGroup, Lookaround, Conditional }
 
-    private sealed class OwnedParseContext
+    // Each suspended production occupies admitted value-array capacity. Payload
+    // references borrow the existing parser's nodes/text/collections, whose
+    // separate acquisition admission remains migration work.
+    private struct OwnedParseFrame(OwnedParseProduction production, int depth)
+    {
+        internal OwnedParseProduction Production = production;
+        internal int Depth = depth;
+        internal int Stage, OpenPosition, Slot, SavedExpressionDepth;
+        internal RegexOptions EntryOptions, SavedOptions, Contribution;
+        internal Utf8TreeNodeKind Kind;
+        internal bool IsLookbehind, IsPop, IsLeadingScope, EnteredExplicit, YesIsEmpty;
+        internal string? Name, PopName, Digits;
+        internal Utf8TreeNode? Expression, YesBranch;
+        internal List<Utf8TreeNode>? Nodes;
+        internal StringBuilder? Run;
+    }
+
+    private struct OwnedParseContext
     {
         internal ParserState State;
         internal Utf8TreeNode? Node;

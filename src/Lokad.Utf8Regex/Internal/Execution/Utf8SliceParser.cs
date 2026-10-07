@@ -13,7 +13,10 @@ internal static class Utf8SliceParser
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
         if (pattern is null) return null;
-        return TryParse(options, Utf8OwnedTreeParser.TryParse(pattern, options));
+        using var construction = Utf8ConstructionScope.Enter();
+        var program = TryParse(options, Utf8OwnedTreeParser.TryParse(pattern, options));
+        if (program is not null) construction.Complete();
+        return program;
     }
 
     internal static Utf8SliceProgram? TryParse(RegexOptions options, Utf8OwnedRegexTree? tree)

@@ -448,6 +448,17 @@ boxing a heap descriptor. Shared value-frame stacks check root/child depth befor
 descriptor/array acquisition and unwind depth on every exit. Other preparation,
 core/conversion/emission iterators, diagnostic text and complete retained/RSS
 policies remain outside this partial construction backstop.
+The shared core grammar parser also uses admitted value frames for alternation,
+concatenation, groups, lookarounds and conditional branches. Its six former yield
+continuations and heap parse context are removed. Root depth and frame storage
+admission precede parser-state acquisition; child growth admits overlapping arrays.
+Failure releases live depth/scratch and restores parent object loans without
+refunding work. Continuation-array scratch releases before capture numbering;
+the admitted buffer descriptor remains owned through construction closure. The
+frame's referenced nodes, text and collections retain separate ownership: their
+acquisition admission, other shared preparation/emission walkers and retained
+facade descriptors remain unfinished.
+
 Python scalar conversion also uses admitted value frames, deleting its captured
 yield continuation. Its arena/map descriptors, direct structural IR nodes and
 retaining descriptors admit before acquisition; node charges include the base
