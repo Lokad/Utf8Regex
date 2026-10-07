@@ -535,6 +535,17 @@ the same owner and rolls back a declined proof's lowered payload as well as
 scan scratch; only an accepted program transfers. The unused lookaround
 eligibility helper is removed rather than given a second implementation.
 These checks gate optimizations, not supported scalar grammar or general policies.
+Native literal-family preparation admits ancestor frames, its local heuristic
+budget, scratch branch/product/reference arrays, copied single-character and
+concatenated/folded text, builders and retaining descriptors. Final reference or
+ASCII byte arrays transfer their loans; scratch and failed speculation recover
+under the shared owner, without refunding work. Folded set-to-literal conversion
+requires a positive whole class; negation/subtraction cannot use exclusion ranges
+as a literal proof. ASCII-whitespace wire subtraction uses admitted segment text
+and vectors rather than the legacy predicate's raw buffers. Node/character/query/
+product/copy work is metered before execution. Pattern text stays interoperability
+input, not a UTF-16 subject unit. Other native producers and general retained
+policies remain incomplete.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
 selection work. Literal builders and copied character/run strings share byte
