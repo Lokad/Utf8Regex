@@ -1,10 +1,12 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-/// <summary>Aggregate admission for scalar-lowering array capacity. Charges
-/// actual element strides plus a conservative 32-byte header and 16-byte payload
-/// rounding. Shared empty arrays and borrowed payloads are excluded. This is
+/// <summary>Aggregate admission for pattern decoding and scalar-lowering capacity. Charges
+/// actual array strides and decoded string text plus its terminator, with a
+/// conservative 32-byte header and 16-byte payload rounding. Shared empties and
+/// borrowed payloads are excluded. This is
 /// defined live buffer capacity, not RSS or cumulative GC allocation traffic.</summary>
 internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
 {
@@ -19,6 +21,28 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         return count == 0 ? 0 : 32 + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15ul);
+    }
+
+    // Decoded pattern text is retained by the regex. Include its terminator;
+    // shared empty text and caller-owned strings require no acquisition.
+    internal static ulong StringBytes(int length)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        return length == 0 ? 0 : 32 + ((2 * ((ulong)length + 1) + 15) & ~15ul);
+    }
+
+    internal string DecodeUtf8(ReadOnlySpan<byte> input, Encoding encoding)
+    {
+        // Count/validate before allocating the output. Parsing starts only after
+        // the decoded string has been admitted into the enclosing owner.
+        var bytes = StringBytes(encoding.GetCharCount(input));
+        ReserveBytes(bytes);
+        try { return encoding.GetString(input); }
+        catch
+        {
+            ReleaseBytes(bytes);
+            throw;
+        }
     }
 
     internal int AvailableArrayCapacity<T>()
@@ -50,14 +74,20 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
         Peak = Math.Max(Peak, Reserved);
     }
 
+    internal void ReserveBytes(ulong bytes)
+    {
+        CheckBytes(bytes);
+        ReservedBytes += bytes;
+        PeakBytes = Math.Max(PeakBytes, ReservedBytes);
+    }
+
     internal T[] AllocateArray<T>(int count, bool instructions)
     {
         var bytes = ArrayBytes<T>(count);
         if (instructions) CheckSlots((ulong)count);
         CheckBytes(bytes);
         if (instructions) Reserve((ulong)count);
-        ReservedBytes += bytes;
-        PeakBytes = Math.Max(PeakBytes, ReservedBytes);
+        ReserveBytes(bytes);
         try { return count == 0 ? [] : new T[count]; }
         catch
         {

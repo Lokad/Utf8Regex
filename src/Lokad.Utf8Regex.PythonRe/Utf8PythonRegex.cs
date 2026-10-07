@@ -146,7 +146,7 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options and timeout.</summary>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout)
-        : this(DecodeUtf8(patternUtf8, nameof(patternUtf8)), options, matchTimeout)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
     {
     }
 
@@ -163,38 +163,41 @@ public sealed partial class Utf8PythonRegex
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(DecodePatternAfterPolicyValidation(patternUtf8, resourcePolicy), options, matchTimeout, resourcePolicy)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
-    }
-
-    private static string DecodePatternAfterPolicyValidation(ReadOnlySpan<byte> patternUtf8, Utf8ResourcePolicy resourcePolicy)
-    {
-        ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
-        return DecodeUtf8(patternUtf8, nameof(patternUtf8));
     }
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
     }
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options and timeout.</summary>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
-        : this(pattern, options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
     {
     }
 
     /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
-    private Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
+    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
     {
         if (checkPolicy)
         {
             ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
         }
         using var construction = Utf8ConstructionScope.Enter();
+        var pattern = patternSource.Text;
+        if (patternSource.IsUtf8)
+        {
+            try { pattern = construction.Budget.DecodeUtf8(patternSource.Utf8, s_strictUtf8Encoding); }
+            catch (DecoderFallbackException exception)
+            {
+                throw new ArgumentException("The input must be valid UTF-8.", "patternUtf8", exception);
+            }
+        }
 
         PythonReCompileValidator.Validate(pattern, options);
         Pattern = pattern;

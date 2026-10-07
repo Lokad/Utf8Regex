@@ -6,6 +6,81 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReConstructionAdmissionTests
 {
     [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    public void EveryBytePatternEntryAdmitsDecodedTextBeforeParsing(int entry)
+    {
+        // Valid UTF-8, deliberately invalid grammar: admission must precede parsing.
+        var encoded = System.Text.Encoding.UTF8.GetBytes(new string('(', 256));
+        var decodedBytes = Utf8ConstructionBudget.StringBytes(256);
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, decodedBytes + 47);
+        var parent = scope.Budget.AllocateArray<byte>(1, false);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            _ = entry switch
+            {
+                0 => new Utf8PythonRegex(encoded),
+                1 => new Utf8PythonRegex(encoded, PythonReCompileOptions.None),
+                2 => new Utf8PythonRegex(encoded, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan),
+                _ => new Utf8PythonRegex(encoded, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited),
+            };
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(decodedBytes + 48, failure.Requested);
+        Assert.Equal(48ul, scope.Budget.ReservedBytes);
+        Assert.Equal(48ul, scope.Budget.PeakBytes);
+        Assert.Equal(0ul, scope.Budget.Peak);
+        scope.Budget.ReleaseArray(parent, false);
+    }
+
+    [Theory]
+    [InlineData("")] [InlineData("cat")] [InlineData("é")]
+    [InlineData("😀")] [InlineData("a😀é中")]
+    public void RetainedDecodedPatternSharesTheCompilationLoanWithoutChargingBorrowedText(string pattern)
+    {
+        ulong held;
+        ulong peak;
+        ulong slots;
+        using (var borrowed = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity))
+        {
+            var regex = new Utf8PythonRegex(pattern);
+            Assert.Same(pattern, regex.Pattern);
+            held = borrowed.Budget.ReservedBytes;
+            peak = borrowed.Budget.PeakBytes;
+            slots = borrowed.Budget.Reserved;
+        }
+        var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
+        using var decoded = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
+        var owned = new Utf8PythonRegex(encoded);
+        Assert.Equal(pattern, owned.Pattern);
+        Assert.True(owned.IsMatch(encoded));
+        Assert.Equal(held + Utf8ConstructionBudget.StringBytes(pattern.Length), decoded.Budget.ReservedBytes);
+        Assert.Equal(peak + Utf8ConstructionBudget.StringBytes(pattern.Length), decoded.Budget.PeakBytes);
+        Assert.Equal(slots, decoded.Budget.Reserved);
+        if (encoded.Length > 0) encoded[0] = (byte)'z';
+        Assert.Equal(pattern, owned.Pattern);
+    }
+
+    [Fact]
+    public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
+    {
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 4096);
+        var parent = scope.Budget.AllocateArray<byte>(1, false);
+        var invalid = new byte[] { 0xed, 0xa0, 0x80 };
+        Assert.Throws<NotSupportedException>(() =>
+            new Utf8PythonRegex(invalid, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+                new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
+        var utf8 = Assert.Throws<ArgumentException>(() => new Utf8PythonRegex(invalid));
+        Assert.Equal("patternUtf8", utf8.ParamName);
+        Assert.IsType<System.Text.DecoderFallbackException>(utf8.InnerException);
+        Assert.Equal(48ul, scope.Budget.PeakBytes);
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("("u8));
+        Assert.Equal(48ul, scope.Budget.ReservedBytes);
+        Assert.Equal(0ul, scope.Budget.Reserved);
+        Assert.True(new Utf8PythonRegex("cat"u8).IsMatch("cat"u8));
+        scope.Budget.ReleaseArray(parent, false);
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void WideScalarIrCannotBypassTheEnclosingByteOwner(bool bytes)
     {

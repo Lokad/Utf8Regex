@@ -2,8 +2,9 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>Shares scalar-program capacity admission across synchronous nested
 /// construction. Scalar tree conversion/lowering arrays share byte admission;
-/// instruction arrays also share instruction-slot admission.
-/// Parser/IR node objects, strings, descriptors, CLR/JIT metadata and lazy retained
+/// instruction arrays also share instruction-slot admission. Adapter byte-pattern
+/// decoding admits its retained text in the same owner before acquisition.
+/// Parser/IR node objects, other strings, descriptors, CLR/JIT metadata and lazy retained
 /// caches remain outside this partial backstop.</summary>
 internal sealed class Utf8ConstructionScope : IDisposable
 {

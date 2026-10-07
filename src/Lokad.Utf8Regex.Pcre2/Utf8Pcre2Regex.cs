@@ -55,8 +55,25 @@ public sealed partial class Utf8Pcre2Regex
         Utf8Pcre2CompileSettings compileSettings,
         Utf8Pcre2ExecutionLimits defaultExecutionLimits,
         TimeSpan matchTimeout)
+        : this(new Utf8ConstructionPattern(pattern), options, compileSettings, defaultExecutionLimits, matchTimeout)
+    {
+    }
+
+    /// <summary>Shares decoding and compilation admission without retaining borrowed pattern bytes.</summary>
+    private Utf8Pcre2Regex(
+        Utf8ConstructionPattern patternSource,
+        Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings,
+        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
+        TimeSpan matchTimeout)
     {
         using var construction = Utf8ConstructionScope.Enter();
+        var pattern = patternSource.Text;
+        if (patternSource.IsUtf8)
+        {
+            _ = Utf8Validation.Validate(patternSource.Utf8);
+            pattern = construction.Budget.DecodeUtf8(patternSource.Utf8, Encoding.UTF8);
+        }
         var request = new Pcre2CompileRequest(
             pattern,
             options,
@@ -163,7 +180,7 @@ public sealed partial class Utf8Pcre2Regex
         TimeSpan matchTimeout)
     {
         var defaultExecutionLimits = ToExecutionLimits(resourcePolicy);
-        return new Utf8Pcre2Regex(DecodeValidatedUtf8(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout);
+        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout);
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
@@ -173,7 +190,7 @@ public sealed partial class Utf8Pcre2Regex
         Utf8Pcre2CompileSettings compileSettings,
         Utf8Pcre2ExecutionLimits defaultExecutionLimits,
         TimeSpan matchTimeout)
-        : this(DecodeValidatedUtf8(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout)
     {
     }
 
@@ -1289,12 +1306,6 @@ public sealed partial class Utf8Pcre2Regex
     {
         var subject = Utf8ValidatedInput.Create(input);
         _ = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-    }
-
-    private static string DecodeValidatedUtf8(ReadOnlySpan<byte> input)
-    {
-        _ = Utf8Validation.Validate(input);
-        return Encoding.UTF8.GetString(input);
     }
 
     private static bool TryCreateUtf8Regex(string pattern, Pcre2CompileOptions options, TimeSpan matchTimeout, out Utf8Regex? regex)

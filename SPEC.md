@@ -393,9 +393,16 @@ Implementation details may evolve, but fast paths must be derived from the same 
 
 Current construction backstop: scalar-lowering arrays share an owned admission
 scope across synchronous nested core/adaptor construction. The provisional
-maximums are 1,048,576 live instruction slots and 64 MiB of lowering-array
+maximums are 1,048,576 live instruction slots and 64 MiB of covered construction
 capacity. The byte model charges actual element strides, a conservative 32-byte
 array header and payload rounded to 16 bytes; shared empty arrays cost zero.
+Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
+Validation/counting precedes decoded-text admission and acquisition. The string
+charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16
+bytes; shared empty text costs zero. That retained loan remains live through
+parsing, nested core compilation and lowering. Caller-owned string patterns are
+borrowed. Profile-specific UTF-8 errors and policy-validation ordering remain.
+Pattern text is parser interoperability; matching consumes Unicode scalars.
 It covers core/PythonRe tree-to-scalar conversion maps/frames, child/literal
 arrays, decoded class/subtraction payloads, instruction vectors, analysis/capture
 maps, lowering/preparation frames, auxiliary vectors, nullable-graph discovery,
@@ -407,11 +414,11 @@ while live. Admission precedes acquisition. Exhaustion throws
 `Utf8ResourceLimitExceededException` with resource kind, maximum and requested
 capacity, and never selects a BCL engine. A failed construction restores its
 parent's admission state. This partial buffer backstop is not the complete
-common construction policy. It excludes pattern conversion, parser/AST/IR
-node objects, strings, independently borrowed payloads, collection/iterator descriptors, independent
+common construction policy. It excludes other pattern conversion, parser/AST/IR
+node objects, other created strings, independently borrowed payloads, collection/iterator descriptors, independent
 PCRE2 programs and lazy retained storage. Work/depth, public construction
 controls and qualified safe defaults remain open. The byte charge bounds the
-defined live array capacity, not process RSS or cumulative GC allocations.
+defined live covered capacity, not process RSS or cumulative GC allocations.
 
 ## 6. Performance and benchmarking
 
