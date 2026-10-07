@@ -17,7 +17,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // backtracks first), with loop-body captures taking their span from the last iteration
 // exactly like BCL. Nested loops, other quantifiers, empty entries, more than 64 entries, sets, anchors,
 // lookarounds, backreferences, and empty nodes decline; a null map means
-// the shape keeps the existing BCL routes. Construction is eager and pure over the owned
+// the dispatcher selects another route. Construction is eager and pure over the owned
 // tree: no fallback engine is built here.
 internal sealed class Utf8AlternationBranchSpanMap
 {
@@ -51,59 +51,68 @@ internal sealed class Utf8AlternationBranchSpanMap
 
     public static Utf8AlternationBranchSpanMap? TryCreate(Utf8ExecutionTree? tree)
     {
-        if (tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
-            root.Children.Count != 1)
-        {
-            return null;
-        }
+        using var construction = Utf8ConstructionScope.Enter();
+        var result = Create(tree);
+        if (result is not null) construction.Complete();
+        return result;
 
-        var wholeMatchGroups = new List<int>();
-        var node = root.Children[0];
-        while (true)
+        static Utf8AlternationBranchSpanMap? Create(Utf8ExecutionTree? tree)
         {
-            if (node.Kind == Utf8ExecutionNodeKind.Group && node.Children.Count == 1)
+            if (tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
+                root.Children.Count != 1)
             {
-                node = node.Children[0];
-                continue;
+                return null;
             }
 
-            if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0 && node.Children.Count == 1 &&
-                !SkipsToCountedLoop(node.Children[0]))
+            var wholeMatchGroups = new List<int>();
+            var node = root.Children[0];
+            while (true)
             {
-                wholeMatchGroups.Add(node.CaptureNumber);
-                node = node.Children[0];
-                continue;
+                if (node.Kind == Utf8ExecutionNodeKind.Group && node.Children.Count == 1)
+                {
+                    node = node.Children[0];
+                    continue;
+                }
+
+                if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0 && node.Children.Count == 1 &&
+                    !SkipsToCountedLoop(node.Children[0]))
+                {
+                    wholeMatchGroups.Add(node.CaptureNumber);
+                    node = node.Children[0];
+                    continue;
+                }
+
+                break;
             }
 
-            break;
-        }
-
-        // Captures wrapping a counted loop take their span from the last iteration
-        // (never the whole match), so they route to the exact-count expander below
-        // instead of the whole-match list above.
-        if (SkipsToCountedLoop(node))
-        {
-            return TryCreateExactCountPatterns(root.Children[0], node, wholeMatchGroups);
-        }
-
-        Utf8ExecutionNode? alternate = null;
-        var alternateCount = 0;
-        CountAlternates(node, ref alternate, ref alternateCount);
-        if (alternateCount == 0)
-        {
-            return TryCreateLoopPatterns(root.Children[0], node, wholeMatchGroups);
-        }
-
-        if (alternateCount == 1 && alternate is not null && alternate.Children.Count > 0)
-        {
-            var single = TryCreateSingleAlternate(root.Children[0], node, alternate, wholeMatchGroups);
-            if (single is not null)
+            // Captures wrapping a counted loop take their span from the last iteration
+            // (never the whole match), so they route to the exact-count expander below
+            // instead of the whole-match list above.
+            if (SkipsToCountedLoop(node))
             {
-                return single;
+                return TryCreateExactCountPatterns(root.Children[0], node, wholeMatchGroups);
             }
-        }
 
-        return TryCreateNestedPatterns(root.Children[0], node, wholeMatchGroups, alternateCount);
+            Utf8ExecutionNode? alternate = null;
+            var alternateCount = 0;
+            CountAlternates(node, ref alternate, ref alternateCount);
+            if (alternateCount == 0)
+            {
+                return TryCreateLoopPatterns(root.Children[0], node, wholeMatchGroups);
+            }
+
+            if (alternateCount == 1 && alternate is not null && alternate.Children.Count > 0)
+            {
+                var single = TryCreateSingleAlternate(root.Children[0], node, alternate, wholeMatchGroups);
+                if (single is not null)
+                {
+                    return single;
+                }
+            }
+
+            return TryCreateNestedPatterns(root.Children[0], node, wholeMatchGroups, alternateCount);
+
+        }
     }
 
     // True when the node reaches a counted loop (Min == Max >= 1) through only
@@ -354,8 +363,8 @@ internal sealed class Utf8AlternationBranchSpanMap
         var anyGroups = wholeMatchGroups.Count > 0;
         for (var branch = 0; branch < alternate.Children.Count; branch++)
         {
-            var walker = new BranchWalker(alternate, branch);
-            if (!walker.TryWalk(node))
+            var walker = new LiteralWalker(null, alternate, branch);
+            if (!walker.TryWalk(node, false))
             {
                 return null;
             }
@@ -515,197 +524,163 @@ internal sealed class Utf8AlternationBranchSpanMap
         internal readonly List<int> Lengths = new();
     }
 
+    private struct ExpansionFrame(Utf8ExecutionNode node, bool inLoop)
+    {
+        internal readonly Utf8ExecutionNode Node = node;
+        internal readonly bool InLoop = inLoop;
+        internal int Stage;
+        internal int Index;
+        internal List<NestedEntry>? Entries;
+    }
+
     private static List<NestedEntry>? TryExpandNested(Utf8ExecutionNode node, bool inLoop)
     {
-        var results = new Dictionary<Utf8ExecutionNode, List<NestedEntry>>(ReferenceEqualityComparer.Instance);
-        return Utf8PreparationStep.TryRun(Expand(node, inLoop)) ? results[node] : null;
-
-        IEnumerable<Utf8PreparationStep> Expand(Utf8ExecutionNode node, bool inLoop)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<ExpansionFrame>.Create(budget, new(node, inLoop));
+        using var results = Utf8ConstructionMap<Utf8ExecutionNode, List<NestedEntry>>.Create(budget, ReferenceEqualityComparer.Instance);
+        while (frames.Count != 0)
         {
-            switch (node.Kind)
-            {
-                case Utf8ExecutionNodeKind.One:
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            ExpansionFrame? child;
+            bool accepted;
+            try { accepted = Expand(ref frame, results, budget, out child); }
+            finally { frames[index] = frame; }
+            if (!accepted) return null;
+            if (child is { } pending) frames.Push(pending);
+            else frames.Pop();
+        }
+        var result = results[node];
+        return result;
+    }
+
+    // Frames borrow expansion lists/text. Their independent storage admission
+    // remains separate from this admitted continuation and result-map storage.
+    private static bool Expand(ref ExpansionFrame frame,
+        Utf8ConstructionMap<Utf8ExecutionNode, List<NestedEntry>> results,
+        Utf8ConstructionBudget budget, out ExpansionFrame? child)
+    {
+        child = null;
+        var node = frame.Node;
+        switch (node.Kind)
+        {
+            case Utf8ExecutionNodeKind.One:
+                results[node] = [new NestedEntry { Text = new string(node.Ch, 1) }];
+                return true;
+            case Utf8ExecutionNodeKind.Multi:
+                if (node.Text is null) return false;
+                results[node] = [new NestedEntry { Text = node.Text }];
+                return true;
+            case Utf8ExecutionNodeKind.Concatenate:
+                if (frame.Stage == 0)
+                {
+                    if (node.Children.Count == 0) return false;
+                    frame.Entries = [new NestedEntry()];
+                    frame.Stage = 1;
+                }
+                else
+                {
+                    var combined = frame.Entries ?? throw new InvalidOperationException();
+                    var part = results[node.Children[frame.Index]];
+                    if (part.Count == 0) return false;
+                    var next = new List<NestedEntry>(combined.Count * part.Count);
+                    for (var left = 0; left < combined.Count; left++)
+                    for (var right = 0; right < part.Count; right++)
                     {
-                        results[node] = new List<NestedEntry> { new NestedEntry { Text = new string(node.Ch, 1) } };
-                        yield break;
+                        budget.ChargeWork(1);
+                        var entry = new NestedEntry { Text = combined[left].Text + part[right].Text };
+                        entry.Groups.AddRange(combined[left].Groups);
+                        entry.Starts.AddRange(combined[left].Starts);
+                        entry.Lengths.AddRange(combined[left].Lengths);
+                        for (var span = 0; span < part[right].Groups.Count; span++)
+                        {
+                            budget.ChargeWork((ulong)combined[left].Groups.Count + 1);
+                            if (combined[left].Groups.Contains(part[right].Groups[span])) return false;
+                            entry.Groups.Add(part[right].Groups[span]);
+                            entry.Starts.Add(combined[left].Text.Length + part[right].Starts[span]);
+                            entry.Lengths.Add(part[right].Lengths[span]);
+                        }
+                        next.Add(entry);
+                        if (next.Count > 64) return false;
                     }
-                case Utf8ExecutionNodeKind.Multi:
+                    frame.Entries = next;
+                    frame.Index++;
+                }
+                if (frame.Index < node.Children.Count)
+                    child = new(node.Children[frame.Index], frame.InLoop);
+                else results[node] = frame.Entries ?? throw new InvalidOperationException();
+                return true;
+            case Utf8ExecutionNodeKind.Group:
+            case Utf8ExecutionNodeKind.Capture:
+                if (frame.Stage == 0)
+                {
+                    if (node.Children.Count != 1 || (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber <= 0)) return false;
+                    frame.Stage = 1;
+                    child = new(node.Children[0], frame.InLoop);
+                    return true;
+                }
+                var captured = results[node.Children[0]];
+                if (node.Kind == Utf8ExecutionNodeKind.Capture)
+                    foreach (var entry in captured)
                     {
-                        if (node.Text is null)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        results[node] = new List<NestedEntry> { new NestedEntry { Text = node.Text } };
-                        yield break;
+                        budget.ChargeWork((ulong)entry.Groups.Count + 1);
+                        if (entry.Groups.Contains(node.CaptureNumber)) return false;
+                        entry.Groups.Add(node.CaptureNumber);
+                        entry.Starts.Add(0);
+                        entry.Lengths.Add(entry.Text.Length);
                     }
-                case Utf8ExecutionNodeKind.Concatenate:
-                    {
-                        if (node.Children.Count == 0)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        var combined = new List<NestedEntry> { new NestedEntry() };
-                        for (var child = 0; child < node.Children.Count; child++)
-                        {
-                            yield return new Utf8PreparationStep(Expand(node.Children[child], inLoop), false);
-                            var part = results[node.Children[child]];
-                            if (part.Count == 0)
-                            {
-                                yield return Utf8PreparationStep.Decline;
-                                yield break;
-                            }
-
-                            var next = new List<NestedEntry>(combined.Count * part.Count);
-                            for (var left = 0; left < combined.Count; left++)
-                            {
-                                for (var right = 0; right < part.Count; right++)
-                                {
-                                    var entry = new NestedEntry
-                                    {
-                                        Text = combined[left].Text + part[right].Text,
-                                    };
-                                    entry.Groups.AddRange(combined[left].Groups);
-                                    entry.Starts.AddRange(combined[left].Starts);
-                                    entry.Lengths.AddRange(combined[left].Lengths);
-                                    for (var span = 0; span < part[right].Groups.Count; span++)
-                                    {
-                                        if (combined[left].Groups.Contains(part[right].Groups[span]))
-                                        {
-                                            yield return Utf8PreparationStep.Decline;
-                                            yield break;
-                                        }
-
-                                        entry.Groups.Add(part[right].Groups[span]);
-                                        entry.Starts.Add(combined[left].Text.Length + part[right].Starts[span]);
-                                        entry.Lengths.Add(part[right].Lengths[span]);
-                                    }
-
-                                    next.Add(entry);
-                                    if (next.Count > 64)
-                                    {
-                                        yield return Utf8PreparationStep.Decline;
-                                        yield break;
-                                    }
-                                }
-                            }
-
-                            combined = next;
-                        }
-
-                        results[node] = combined;
-                        yield break;
-                    }
-                case Utf8ExecutionNodeKind.Group:
-                    {
-                        if (node.Children.Count != 1)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Expand(node.Children[0], inLoop), false);
-                        results[node] = results[node.Children[0]];
-                        yield break;
-                    }
-                case Utf8ExecutionNodeKind.Capture:
-                    {
-                        if (node.CaptureNumber <= 0 || node.Children.Count != 1)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Expand(node.Children[0], inLoop), false);
-                        var expanded = results[node.Children[0]];
-
-
-                        foreach (var entry in expanded)
-                        {
-                            if (entry.Groups.Contains(node.CaptureNumber))
-                            {
-                                yield return Utf8PreparationStep.Decline;
-                                yield break;
-                            }
-
-                            entry.Groups.Add(node.CaptureNumber);
-                            entry.Starts.Add(0);
-                            entry.Lengths.Add(entry.Text.Length);
-                        }
-
-                        results[node] = expanded;
-                        yield break;
-                    }
-                case Utf8ExecutionNodeKind.Alternate:
-                    {
-                        if (node.Children.Count == 0)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        var branches = new List<NestedEntry>();
-                        for (var branch = 0; branch < node.Children.Count; branch++)
-                        {
-                            yield return new Utf8PreparationStep(Expand(node.Children[branch], inLoop), false);
-                            var expanded = results[node.Children[branch]];
-                            if (expanded.Count == 0)
-                            {
-                                yield return Utf8PreparationStep.Decline;
-                                yield break;
-                            }
-
-                            branches.AddRange(expanded);
-                            if (branches.Count > 64)
-                            {
-                                yield return Utf8PreparationStep.Decline;
-                                yield break;
-                            }
-                        }
-
-                        results[node] = branches;
-                        yield break;
-                    }
-                case Utf8ExecutionNodeKind.Loop:
-                case Utf8ExecutionNodeKind.LazyLoop:
-                    {
-                        if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Expand(node.Children[0], true), false);
-                        var expanded = results[node.Children[0]];
-                        if (expanded.Count == 0)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        var options = new List<NestedEntry>(expanded.Count + 1);
-                        if (node.Kind == Utf8ExecutionNodeKind.Loop)
-                        {
-                            options.AddRange(expanded);
-                            options.Add(new NestedEntry());
-                        }
-                        else
-                        {
-                            options.Add(new NestedEntry());
-                            options.AddRange(expanded);
-                        }
-
-                        results[node] = options;
-                        yield break;
-                    }
-                default:
-                    yield return Utf8PreparationStep.Decline;
-                    yield break;
-            }
-
+                results[node] = captured;
+                return true;
+            case Utf8ExecutionNodeKind.Alternate:
+                if (frame.Stage == 0)
+                {
+                    if (node.Children.Count == 0) return false;
+                    frame.Entries = [];
+                    frame.Stage = 1;
+                }
+                else
+                {
+                    var branches = frame.Entries ?? throw new InvalidOperationException();
+                    var expanded = results[node.Children[frame.Index]];
+                    if (expanded.Count == 0) return false;
+                    budget.ChargeWork((ulong)expanded.Count);
+                    branches.AddRange(expanded);
+                    if (branches.Count > 64) return false;
+                    frame.Index++;
+                }
+                if (frame.Index < node.Children.Count)
+                    child = new(node.Children[frame.Index], frame.InLoop);
+                else results[node] = frame.Entries ?? throw new InvalidOperationException();
+                return true;
+            case Utf8ExecutionNodeKind.Loop:
+            case Utf8ExecutionNodeKind.LazyLoop:
+                if (frame.Stage == 0)
+                {
+                    if (frame.InLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1) return false;
+                    frame.Stage = 1;
+                    child = new(node.Children[0], true);
+                    return true;
+                }
+                var choices = results[node.Children[0]];
+                if (choices.Count == 0) return false;
+                var options = new List<NestedEntry>(choices.Count + 1);
+                budget.ChargeWork((ulong)choices.Count);
+                if (node.Kind == Utf8ExecutionNodeKind.Loop)
+                {
+                    options.AddRange(choices);
+                    options.Add(new NestedEntry());
+                }
+                else
+                {
+                    options.Add(new NestedEntry());
+                    options.AddRange(choices);
+                }
+                results[node] = options;
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -735,7 +710,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         var anyGroups = wholeMatchGroups.Count > 0;
         for (var pattern = 0; pattern < order.Length; pattern++)
         {
-            var walker = new PatternWalker(ToPresent(greedy, order[pattern]));
+            var walker = new LiteralWalker(ToPresent(greedy, order[pattern]), null, -1);
             if (!walker.TryWalk(node, inLoop: false))
             {
                 return null;
@@ -837,9 +812,10 @@ internal sealed class Utf8AlternationBranchSpanMap
         return present;
     }
 
-    private sealed class PatternWalker
+    // One continuation for both selected-branch and selected-optional-loop
+    // projections. Builder/list payloads remain separately owned preparation work.
+    private sealed class LiteralWalker(bool[]? present, Utf8ExecutionNode? alternate, int branch)
     {
-        private readonly bool[] _present;
         private int _cursor;
         internal readonly StringBuilder Expansion = new();
         internal int Position;
@@ -847,90 +823,100 @@ internal sealed class Utf8AlternationBranchSpanMap
         internal readonly List<int> Starts = new();
         internal readonly List<int> Lengths = new();
 
-        internal PatternWalker(bool[] present)
+        private struct Frame(Utf8ExecutionNode node, bool inLoop)
         {
-            _present = present;
+            internal readonly Utf8ExecutionNode Node = node;
+            internal readonly bool InLoop = inLoop;
+            internal int Stage;
+            internal int Index;
+            internal int Start;
         }
 
         internal bool TryWalk(Utf8ExecutionNode node, bool inLoop)
         {
-            return Utf8PreparationStep.TryRun(Walk(this, node, inLoop));
-
-            static IEnumerable<Utf8PreparationStep> Walk(PatternWalker walker, Utf8ExecutionNode node, bool inLoop)
+            using var construction = Utf8ConstructionScope.Enter();
+            var budget = construction.Budget;
+            using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, inLoop));
+            while (frames.Count != 0)
             {
-                switch (node.Kind)
-                {
-                    case Utf8ExecutionNodeKind.One:
-                        walker.Position += 1;
-                        walker.Expansion.Append(node.Ch);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Multi:
-                        if (node.Text is null)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
+                budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                Frame? child;
+                bool accepted;
+                try { accepted = Advance(ref frame, budget, out child); }
+                finally { frames[index] = frame; }
+                if (!accepted) return false;
+                if (child is { } pending) frames.Push(pending);
+                else frames.Pop();
+            }
+                return true;
+        }
 
-                        walker.Position += node.Text.Length;
-                        walker.Expansion.Append(node.Text);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Concatenate:
-                        for (var i = 0; i < node.Children.Count; i++)
-                        {
-                            yield return new Utf8PreparationStep(Walk(walker, node.Children[i], inLoop), false);
-                        }
-
-                        yield break;
-                    case Utf8ExecutionNodeKind.Group:
-                        if (node.Children.Count != 1)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop), false);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Capture:
-                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.Contains(node.CaptureNumber))
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        var start = walker.Position;
-                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop), false);
-
-                        walker.Groups.Add(node.CaptureNumber);
-                        walker.Starts.Add(start);
-                        walker.Lengths.Add(walker.Position - start);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Loop:
-                    case Utf8ExecutionNodeKind.LazyLoop:
-                        if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        var index = walker._cursor++;
-                        if ((uint)index >= (uint)walker._present.Length)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        if (!walker._present[index])
-                        {
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0], inLoop: true), false);
-                        yield break;
-                    default:
-                        yield return Utf8PreparationStep.Decline;
-                        yield break;
-                }
-
+        private bool Advance(ref Frame frame, Utf8ConstructionBudget budget, out Frame? child)
+        {
+            child = null;
+            var node = frame.Node;
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.One:
+                    Position++;
+                    Expansion.Append(node.Ch);
+                    return true;
+                case Utf8ExecutionNodeKind.Multi:
+                    if (node.Text is null) return false;
+                    Position += node.Text.Length;
+                    Expansion.Append(node.Text);
+                    return true;
+                case Utf8ExecutionNodeKind.Concatenate:
+                    if (frame.Index < node.Children.Count)
+                        child = new(node.Children[frame.Index++], frame.InLoop);
+                    return true;
+                case Utf8ExecutionNodeKind.Group:
+                    if (frame.Stage == 0)
+                    {
+                        if (node.Children.Count != 1) return false;
+                        frame.Stage = 1;
+                        child = new(node.Children[0], frame.InLoop);
+                    }
+                    return true;
+                case Utf8ExecutionNodeKind.Capture:
+                    if (frame.Stage == 0)
+                    {
+                        budget.ChargeWork((ulong)Groups.Count);
+                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || Groups.Contains(node.CaptureNumber)) return false;
+                        frame.Start = Position;
+                        frame.Stage = 1;
+                        child = new(node.Children[0], frame.InLoop);
+                    }
+                    else
+                    {
+                        Groups.Add(node.CaptureNumber);
+                        Starts.Add(frame.Start);
+                        Lengths.Add(Position - frame.Start);
+                    }
+                    return true;
+                case Utf8ExecutionNodeKind.Alternate:
+                    if (!ReferenceEquals(node, alternate) || branch < 0 || branch >= node.Children.Count) return false;
+                    if (frame.Stage == 0)
+                    {
+                        frame.Stage = 1;
+                        child = new(node.Children[branch], false);
+                    }
+                    return true;
+                case Utf8ExecutionNodeKind.Loop:
+                case Utf8ExecutionNodeKind.LazyLoop:
+                    if (present is null || frame.InLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1) return false;
+                    if (frame.Stage == 0)
+                    {
+                        var index = _cursor++;
+                        if ((uint)index >= (uint)present.Length) return false;
+                        frame.Stage = 1;
+                        if (present[index]) child = new(node.Children[0], true);
+                    }
+                    return true;
+                default:
+                    return false;
             }
         }
     }
@@ -951,89 +937,4 @@ internal sealed class Utf8AlternationBranchSpanMap
         }
     }
 
-    private sealed class BranchWalker
-    {
-        private readonly Utf8ExecutionNode _alternate;
-        private readonly int _branch;
-        internal readonly StringBuilder Expansion = new();
-        internal int Position;
-        internal readonly List<int> Groups = new();
-        internal readonly List<int> Starts = new();
-        internal readonly List<int> Lengths = new();
-
-        internal BranchWalker(Utf8ExecutionNode alternate, int branch)
-        {
-            _alternate = alternate;
-            _branch = branch;
-        }
-
-        internal bool TryWalk(Utf8ExecutionNode node)
-        {
-            return Utf8PreparationStep.TryRun(Walk(this, node));
-
-            static IEnumerable<Utf8PreparationStep> Walk(BranchWalker walker, Utf8ExecutionNode node)
-            {
-                switch (node.Kind)
-                {
-                    case Utf8ExecutionNodeKind.One:
-                        walker.Position += 1;
-                        walker.Expansion.Append(node.Ch);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Multi:
-                        if (node.Text is null)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        walker.Position += node.Text.Length;
-                        walker.Expansion.Append(node.Text);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Concatenate:
-                        for (var i = 0; i < node.Children.Count; i++)
-                        {
-                            yield return new Utf8PreparationStep(Walk(walker, node.Children[i]), false);
-                        }
-
-                        yield break;
-                    case Utf8ExecutionNodeKind.Group:
-                        if (node.Children.Count != 1)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0]), false);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Capture:
-                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.Contains(node.CaptureNumber))
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        var start = walker.Position;
-                        yield return new Utf8PreparationStep(Walk(walker, node.Children[0]), false);
-
-                        walker.Groups.Add(node.CaptureNumber);
-                        walker.Starts.Add(start);
-                        walker.Lengths.Add(walker.Position - start);
-                        yield break;
-                    case Utf8ExecutionNodeKind.Alternate:
-                        if (!ReferenceEquals(node, walker._alternate) || walker._branch < 0 || walker._branch >= node.Children.Count)
-                        {
-                            yield return Utf8PreparationStep.Decline;
-                            yield break;
-                        }
-
-                        yield return new Utf8PreparationStep(Walk(walker, node.Children[walker._branch]), false);
-                        yield break;
-                    default:
-                        yield return Utf8PreparationStep.Decline;
-                        yield break;
-                }
-
-            }
-        }
-    }
 }

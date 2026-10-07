@@ -469,6 +469,18 @@ guards emit directly without synthetic IR nodes/branch arrays. Referenced IR,
 other lowerer descriptors, program objects and numeric names still require their
 separate admission; this does not close all preparation or retained storage.
 
+Shared find min/max/longest-literal postorder facts, grouped-literal spans,
+selected branch/optional-loop projections, nested expansion and the facade
+capture predicate also use admitted value frames. Parent cursors save before
+child admission; branch scratch contexts are acquired after frame admission.
+Temporary fact/result maps use admitted descriptors and arrays. Scratch arrays,
+descriptors and live depth release on successful results as well as decline or
+resource failure, without refunding work. The shared yield-based preparation
+driver and its heap iterator continuations are removed; the two duplicate
+literal walkers share one implementation. These frames borrow existing root
+walkers, strings, builders and result collections, whose separate admission is
+still incomplete. Other find scans and the byte-safe verifier compiler's own
+continuations remain outside this partial backstop.
 Python scalar conversion also uses admitted value frames, deleting its captured
 yield continuation. Its arena/map descriptors, direct structural IR nodes and
 retaining descriptors admit before acquisition; node charges include the base
@@ -492,8 +504,8 @@ one unit per map probe/rehash, sort comparison/swap or preparation resume.
 Core parser bulk delimiter scans and literal copies admit conservative extents.
 The owned in-place heap sort admits each comparison/swap and propagates resource
 failures directly. Core/PythonRe parsers and preparation walkers share live
-explicit-frame depth; denied pushes dispose acquired iterators, and cleanup
-spends no work. Python alternation, sequence and group parsing suspends child
+explicit-frame depth; denied pushes restore their parent and release admitted
+scratch, and cleanup spends no work. Python alternation, sequence and group parsing suspends child
 work on that stack; conditional branches reuse the same sequence parser.
 Python rendering, reference/lookbehind validation, scalar-width analysis and
 capture/iteration/literal fast-path checks also suspend child traversal on that

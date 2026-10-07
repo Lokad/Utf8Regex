@@ -93,16 +93,13 @@ public sealed class Utf8ConstructionWorkDepthTests
     [Theory]
     [InlineData(ulong.MaxValue, 1ul)] [InlineData(0ul, ulong.MaxValue)]
     [InlineData(1ul, ulong.MaxValue)] [InlineData(2ul, ulong.MaxValue)]
-    public void PreparationFrameDenialDisposesEveryAcquiredIteratorWithoutSpendingCleanupWork(ulong work, ulong depth)
+    public void PreparationFrameDenialRestoresOwnedDepthAndStorageWithoutSpendingCleanupWork(ulong work, ulong depth)
     {
+        var leaf = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var root = new Utf8TreeNode(Utf8TreeNodeKind.Group, RegexOptions.None) { Children = leaf };
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, work, depth);
-        var child = new CountingSteps(null);
-        var root = new CountingSteps(child);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PreparationStep.TryRun(root));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeMinLength(root));
         Assert.Equal(depth == 1 ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-        Assert.Equal(1, root.Acquired);
-        Assert.Equal(root.Acquired, root.Disposed);
-        Assert.Equal(child.Acquired, child.Disposed);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.WorkSteps <= work);
@@ -210,22 +207,4 @@ public sealed class Utf8ConstructionWorkDepthTests
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 
-    private sealed class CountingSteps(CountingSteps? child) : IEnumerable<Utf8PreparationStep>, IEnumerator<Utf8PreparationStep>
-    {
-        private bool _moved;
-        internal int Acquired { get; private set; }
-        internal int Disposed { get; private set; }
-        public Utf8PreparationStep Current => new(child is null ? Array.Empty<Utf8PreparationStep>() : child, false);
-        object System.Collections.IEnumerator.Current => Current;
-        public bool MoveNext()
-        {
-            if (_moved || child is null) return false;
-            _moved = true;
-            return true;
-        }
-        public IEnumerator<Utf8PreparationStep> GetEnumerator() { Acquired++; return this; }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-        public void Reset() => throw new NotSupportedException();
-        public void Dispose() => Disposed++;
-    }
 }

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -79,17 +78,15 @@ public sealed class Utf8ScalarIrAdmissionTests
 
     [Theory]
     [InlineData(0ul)] [InlineData(48ul)]
-    public void RejectedPreparationFrameDisposesUnpushedIterator(ulong maximumBytes)
+    public void RejectedPreparationFrameAcquiresNoStorage(ulong maximumBytes)
     {
-        var child = new Steps([]);
-        var body = new Steps([new Utf8PreparationStep(child, false)]);
+        var root = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PreparationStep.TryRun(body));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeMinLength(root));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(1, body.Disposals);
-        Assert.Equal(maximumBytes == 0 ? 0 : 1, child.Disposals);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.PeakBytes <= maximumBytes);
+        Assert.Equal(0ul, scope.Budget.Depth);
     }
 
     internal static ulong CountOwnedConstructionDescriptors(Utf8ConstructionBudget budget)
@@ -145,18 +142,4 @@ public sealed class Utf8ScalarIrAdmissionTests
         return bytes;
     }
 
-    private sealed class Steps(IEnumerable<Utf8PreparationStep> steps) : IEnumerable<Utf8PreparationStep>
-    {
-        internal int Disposals;
-        public IEnumerator<Utf8PreparationStep> GetEnumerator() => new Iterator(steps.GetEnumerator(), this);
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        private sealed class Iterator(IEnumerator<Utf8PreparationStep> inner, Steps owner) : IEnumerator<Utf8PreparationStep>
-        {
-            public Utf8PreparationStep Current => inner.Current;
-            object IEnumerator.Current => Current;
-            public bool MoveNext() => inner.MoveNext();
-            public void Reset() => throw new NotSupportedException();
-            public void Dispose() { owner.Disposals++; inner.Dispose(); }
-        }
-    }
 }

@@ -2114,20 +2114,34 @@ public sealed partial class Utf8Regex
         return ContainsCapture(tree.Root);
     }
 
+    private struct CaptureCheckFrame(Utf8ExecutionNode node)
+    {
+        internal readonly Utf8ExecutionNode Node = node;
+        internal int NextChild;
+    }
+
     private static bool ContainsCapture(Utf8ExecutionNode node)
     {
-        return !Utf8PreparationStep.TryRun(Check(node));
-
-        static IEnumerable<Utf8PreparationStep> Check(Utf8ExecutionNode current)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<CaptureCheckFrame>.Create(budget, new(node));
+        while (frames.Count != 0)
         {
-            if (current.Kind == Utf8ExecutionNodeKind.Capture && current.CaptureNumber > 0)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            if (frame.Node.Kind == Utf8ExecutionNodeKind.Capture && frame.Node.CaptureNumber > 0) return true;
+            if (frame.NextChild < frame.Node.Children.Count)
             {
-                yield return Utf8PreparationStep.Decline;
-                yield break;
+                var child = frame.Node.Children[frame.NextChild++];
+                frames[index] = frame;
+                frames.Push(new(child));
             }
-            foreach (var child in current.Children)
-                yield return new Utf8PreparationStep(Check(child), false);
+            else frames.Pop();
         }
+        // This predicate retains no storage, so its construction scope releases
+        // the frame descriptor as well as its array on either result.
+        return false;
     }
 
     // R05: construction-cached caret-anchored grouped-literal prefix for direct

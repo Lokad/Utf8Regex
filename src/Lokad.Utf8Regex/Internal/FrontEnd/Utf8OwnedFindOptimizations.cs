@@ -10,11 +10,9 @@ internal static class Utf8OwnedFindOptimizations
 {
     public static int ComputeMinLength(Utf8TreeNode node)
     {
-        var values = new Dictionary<Utf8TreeNode, int>();
-        foreach (var current in PostOrder(node)) values[current] = Measure(current, values);
-        return values[node];
+        return MeasurePostOrder<int>(node, Measure);
 
-        static int Measure(Utf8TreeNode node, Dictionary<Utf8TreeNode, int> values)
+        static int Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, int> values)
         {
             switch (node.Kind)
             {
@@ -95,11 +93,9 @@ internal static class Utf8OwnedFindOptimizations
 
     public static int? ComputeMaxLength(Utf8TreeNode node)
     {
-        var values = new Dictionary<Utf8TreeNode, int?>();
-        foreach (var current in PostOrder(node)) values[current] = Measure(current, values);
-        return values[node];
+        return MeasurePostOrder<int?>(node, Measure);
 
-        static int? Measure(Utf8TreeNode node, Dictionary<Utf8TreeNode, int?> values)
+        static int? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, int?> values)
         {
             switch (node.Kind)
             {
@@ -286,11 +282,9 @@ internal static class Utf8OwnedFindOptimizations
 
     public static string? TryExtractLongestLiteral(Utf8TreeNode node)
     {
-        var values = new Dictionary<Utf8TreeNode, string?>();
-        foreach (var current in PostOrder(node)) values[current] = Measure(current, values);
-        return values[node];
+        return MeasurePostOrder<string?>(node, Measure);
 
-        static string? Measure(Utf8TreeNode node, Dictionary<Utf8TreeNode, string?> values)
+        static string? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, string?> values)
         {
             switch (node.Kind)
             {
@@ -1219,20 +1213,39 @@ internal static class Utf8OwnedFindOptimizations
         }
     }
 
-    // One postorder continuation per active ancestor. Scalar facts retain the
-    // pinned formulas while child values are computed without CLR recursion.
-    private static IEnumerable<Utf8TreeNode> PostOrder(Utf8TreeNode node)
+    private struct FactFrame(Utf8TreeNode node)
     {
-        var frames = new Stack<(Utf8TreeNode Node, int NextChild)>();
-        frames.Push((node, 0));
-        while (frames.TryPop(out var frame))
+        internal readonly Utf8TreeNode Node = node;
+        internal int NextChild;
+    }
+
+    // Static measure delegates borrow their inputs. Root frame admission
+    // precedes map acquisition; frames, map arrays and depth unwind together.
+    private static T MeasurePostOrder<T>(Utf8TreeNode node,
+        Func<Utf8TreeNode, Utf8ConstructionMap<Utf8TreeNode, T>, T> measure)
+    {
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
+        using var values = Utf8ConstructionMap<Utf8TreeNode, T>.Create(budget, ReferenceEqualityComparer.Instance);
+        while (frames.Count != 0)
         {
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
             if (frame.NextChild < frame.Node.ChildCount)
             {
-                frames.Push((frame.Node, frame.NextChild + 1));
-                frames.Push((frame.Node.Child(frame.NextChild), 0));
+                var child = frame.Node.Child(frame.NextChild++);
+                frames[index] = frame;
+                frames.Push(new(child));
             }
-            else yield return frame.Node;
+            else
+            {
+                values[frame.Node] = measure(frame.Node, values);
+                frames.Pop();
+            }
         }
+        var result = values[node];
+        return result;
     }
 }
