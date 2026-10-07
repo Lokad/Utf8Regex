@@ -11,6 +11,227 @@ function Invoke-DotNet {
     }
 }
 
+function Read-PackageProvenance {
+    param([string] $PackagePath, [string] $ExpectedAssembly)
+
+    # Inspect metadata without loading or executing a packaged assembly.
+    $package = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
+    try {
+        $nuspecEntries = @($package.Entries | Where-Object FullName -Like "*.nuspec")
+        if ($nuspecEntries.Count -ne 1) {
+            throw "$PackagePath must contain exactly one nuspec."
+        }
+        $textReader = [System.IO.StreamReader]::new($nuspecEntries[0].Open())
+        try { [xml] $nuspec = $textReader.ReadToEnd() }
+        finally { $textReader.Dispose() }
+        $repository = $nuspec.SelectSingleNode("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='repository']")
+
+        $assemblyEntry = $package.GetEntry("lib/net10.0/$ExpectedAssembly")
+        if ($null -eq $assemblyEntry) { throw "$PackagePath does not contain $ExpectedAssembly." }
+        $assemblyStream = [System.IO.MemoryStream]::new()
+        try {
+            $entryStream = $assemblyEntry.Open()
+            try { $entryStream.CopyTo($assemblyStream) }
+            finally { $entryStream.Dispose() }
+            $assemblyHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($assemblyStream.ToArray()))
+            $assemblyStream.Position = 0
+            $pe = [System.Reflection.PortableExecutable.PEReader]::new($assemblyStream)
+            try {
+                $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
+                $versions = @(foreach ($handle in $metadata.GetAssemblyDefinition().GetCustomAttributes()) {
+                    $attribute = $metadata.GetCustomAttribute($handle)
+                    if ($attribute.Constructor.Kind -ne [System.Reflection.Metadata.HandleKind]::MemberReference) { continue }
+                    $row = [System.Reflection.Metadata.Ecma335.MetadataTokens]::GetRowNumber($attribute.Constructor)
+                    $member = $metadata.GetMemberReference([System.Reflection.Metadata.Ecma335.MetadataTokens]::MemberReferenceHandle($row))
+                    if ($member.Parent.Kind -ne [System.Reflection.Metadata.HandleKind]::TypeReference) { continue }
+                    $typeRow = [System.Reflection.Metadata.Ecma335.MetadataTokens]::GetRowNumber($member.Parent)
+                    $type = $metadata.GetTypeReference([System.Reflection.Metadata.Ecma335.MetadataTokens]::TypeReferenceHandle($typeRow))
+                    if ($metadata.GetString($type.Namespace) -eq "System.Reflection" -and
+                        $metadata.GetString($type.Name) -eq "AssemblyInformationalVersionAttribute") {
+                        $blob = $metadata.GetBlobReader($attribute.Value)
+                        if ($blob.ReadUInt16() -ne 1) { throw "$PackagePath has an invalid version attribute." }
+                        $blob.ReadSerializedString()
+                    }
+                })
+                if ($versions.Count -ne 1) { throw "$PackagePath must have exactly one informational version." }
+                $informationalVersion = $versions[0]
+                $assemblyRevision = $null
+                if ($informationalVersion -match '\+(?<Revision>[0-9a-fA-F]{40})$') {
+                    $assemblyRevision = $Matches.Revision.ToLowerInvariant()
+                }
+                $codeViewEntries = @(foreach ($debugEntry in $pe.ReadDebugDirectory()) {
+                    if ($debugEntry.Type -eq [System.Reflection.PortableExecutable.DebugDirectoryEntryType]::CodeView) {
+                        $codeView = $pe.ReadCodeViewDebugDirectoryData($debugEntry)
+                        [ordered]@{ Guid = $codeView.Guid.ToString(); Stamp = $debugEntry.Stamp; Age = $codeView.Age }
+                    }
+                })
+            }
+            finally { $pe.Dispose() }
+        }
+        finally { $assemblyStream.Dispose() }
+    }
+    finally { $package.Dispose() }
+
+    $symbolPackagePath = [System.IO.Path]::ChangeExtension($PackagePath, ".snupkg")
+    $symbolPackagePresent = Test-Path -LiteralPath $symbolPackagePath -PathType Leaf
+    $symbolPackageHash = $null
+    $pdbPresent = $false
+    $pdbHash = $null
+    $pdbGuid = $null
+    $pdbStamp = $null
+    $sourceLinkRecords = @()
+    if ($symbolPackagePresent) {
+        $symbolPackageHash = (Get-FileHash -LiteralPath $symbolPackagePath -Algorithm SHA256).Hash
+        $symbols = [System.IO.Compression.ZipFile]::OpenRead($symbolPackagePath)
+        try {
+            $pdbEntry = $symbols.GetEntry("lib/net10.0/$($ExpectedAssembly -replace '\.dll$', '.pdb')")
+            $pdbPresent = $null -ne $pdbEntry
+            if ($pdbPresent) {
+                $pdbStream = [System.IO.MemoryStream]::new()
+                try {
+                    $entryStream = $pdbEntry.Open()
+                    try { $entryStream.CopyTo($pdbStream) }
+                    finally { $entryStream.Dispose() }
+                    $pdbHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($pdbStream.ToArray()))
+                    $pdbStream.Position = 0
+                    $provider = [System.Reflection.Metadata.MetadataReaderProvider]::FromPortablePdbStream(
+                        $pdbStream, [System.Reflection.Metadata.MetadataStreamOptions]::LeaveOpen, 0)
+                    try {
+                        $pdb = $provider.GetMetadataReader()
+                        [byte[]] $pdbId = @($pdb.DebugMetadataHeader.Id)
+                        if ($pdbId.Length -ne 20) { throw "$symbolPackagePath has an invalid portable PDB identity." }
+                        $pdbGuid = [Guid]::new([byte[]] $pdbId[0..15]).ToString()
+                        $pdbStamp = [BitConverter]::ToUInt32($pdbId, 16)
+                        $sourceLinkRecords = @(foreach ($handle in $pdb.CustomDebugInformation) {
+                            $information = $pdb.GetCustomDebugInformation($handle)
+                            if ($pdb.GetGuid($information.Kind).ToString() -eq "cc110556-a091-4d38-9fec-25ab9a351a6a") {
+                                $sourceLink = [Text.Encoding]::UTF8.GetString($pdb.GetBlobBytes($information.Value)) | ConvertFrom-Json -AsHashtable
+                                $mappings = @(foreach ($mapping in $sourceLink.documents.GetEnumerator()) {
+                                    $revision = $null
+                                    if ($mapping.Value -match '^https://raw\.githubusercontent\.com/Lokad/Utf8Regex/(?<Revision>[0-9a-fA-F]{40})/\*$') {
+                                        $revision = $Matches.Revision.ToLowerInvariant()
+                                    }
+                                    [ordered]@{ Document = $mapping.Key; Url = $mapping.Value; Revision = $revision }
+                                })
+                                [ordered]@{
+                                    IsModuleRecord = $information.Parent.Kind -eq [System.Reflection.Metadata.HandleKind]::ModuleDefinition
+                                    Mappings = $mappings
+                                }
+                            }
+                        })
+                    }
+                    finally { $provider.Dispose() }
+                }
+                finally { $pdbStream.Dispose() }
+            }
+        }
+        finally { $symbols.Dispose() }
+    }
+
+    return [pscustomobject][ordered]@{
+        Package = [System.IO.Path]::GetFileName($PackagePath)
+        PackageSha256 = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash
+        NuSpecRevision = if ($null -ne $repository) { $repository.GetAttribute("commit").ToLowerInvariant() } else { $null }
+        Assembly = $ExpectedAssembly
+        AssemblySha256 = $assemblyHash
+        InformationalVersion = $informationalVersion
+        AssemblyRevision = $assemblyRevision
+        CodeViewEntries = $codeViewEntries
+        SymbolPackage = [System.IO.Path]::GetFileName($symbolPackagePath)
+        SymbolPackagePresent = $symbolPackagePresent
+        SymbolPackageSha256 = $symbolPackageHash
+        PdbPresent = $pdbPresent
+        PdbSha256 = $pdbHash
+        PdbGuid = $pdbGuid
+        PdbStamp = $pdbStamp
+        SourceLinkRecords = $sourceLinkRecords
+    }
+}
+
+function Assert-PackageProvenance {
+    param([object] $Provenance, [string] $SourceRevision)
+
+    if ($SourceRevision -notmatch '^[0-9a-fA-F]{40}$') { throw "Invalid qualification source revision." }
+    if ($Provenance.NuSpecRevision -ne $SourceRevision) {
+        throw "$($Provenance.Package) NuSpec revision does not match $SourceRevision."
+    }
+    if ($Provenance.AssemblyRevision -ne $SourceRevision) {
+        throw "$($Provenance.Package) assembly revision $($Provenance.AssemblyRevision) does not match $SourceRevision; rebuild before packing."
+    }
+    if (!$Provenance.SymbolPackagePresent -or !$Provenance.PdbPresent) {
+        throw "$($Provenance.Package) is missing its symbol package or portable PDB."
+    }
+    if ($Provenance.CodeViewEntries.Count -ne 1 -or $Provenance.CodeViewEntries[0].Age -ne 1 -or
+        $Provenance.CodeViewEntries[0].Guid -ne $Provenance.PdbGuid -or
+        $Provenance.CodeViewEntries[0].Stamp -ne $Provenance.PdbStamp) {
+        throw "$($Provenance.Package) portable PDB identity does not match its assembly."
+    }
+    if ($Provenance.SourceLinkRecords.Count -ne 1 -or !$Provenance.SourceLinkRecords[0].IsModuleRecord -or
+        $Provenance.SourceLinkRecords[0].Mappings.Count -eq 0) {
+        throw "$($Provenance.Package) is missing a unique module SourceLink document map."
+    }
+    foreach ($mapping in $Provenance.SourceLinkRecords[0].Mappings) {
+        if ($mapping.Revision -ne $SourceRevision) {
+            throw "$($Provenance.Package) SourceLink revision does not match ${SourceRevision}: $($mapping.Url)"
+        }
+    }
+}
+
+function Read-PackageQualificationSource {
+    param([string] $RepositoryRoot, [string] $SourceRevision, [bool] $RequireCleanSource)
+
+    $currentRevision = (& git -C $RepositoryRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $currentRevision -ne $SourceRevision) {
+        throw "Source revision changed during package qualification."
+    }
+    $trackedChanges = @(& git -C $RepositoryRoot status --porcelain --untracked-files=no)
+    if ($LASTEXITCODE -ne 0) { throw "Could not inspect package source state." }
+    $untrackedSources = @(& git -C $RepositoryRoot ls-files --others --exclude-standard -- src)
+    if ($LASTEXITCODE -ne 0) { throw "Could not inspect untracked package sources." }
+    $cleanSource = $trackedChanges.Count -eq 0 -and $untrackedSources.Count -eq 0
+    if ($RequireCleanSource -and !$cleanSource) { throw "Archival provenance requires clean tracked files and no untracked package sources." }
+    return [pscustomobject]@{ CleanSource = $cleanSource; TrackedChanges = $trackedChanges; UntrackedSources = $untrackedSources }
+}
+
+function Write-PackageProvenanceEvidence {
+    param(
+        [string] $RepositoryRoot,
+        [string] $QualificationRoot,
+        [string] $SourceRevision,
+        [string] $Configuration,
+        [string[]] $PackagePaths,
+        [string[]] $ExpectedAssemblies,
+        [bool] $RequireCleanSource
+    )
+
+    $source = Read-PackageQualificationSource $RepositoryRoot $SourceRevision $RequireCleanSource
+    if ($PackagePaths.Count -ne $ExpectedAssemblies.Count -or $PackagePaths.Count -eq 0) {
+        throw "Package provenance requires one assembly identity per package."
+    }
+    $records = @(for ($index = 0; $index -lt $PackagePaths.Count; $index++) {
+        $record = Read-PackageProvenance $PackagePaths[$index] $ExpectedAssemblies[$index]
+        Assert-PackageProvenance $record $SourceRevision
+        $record
+    })
+    $report = [ordered]@{
+        SchemaVersion = 1
+        SourceRevision = $SourceRevision
+        Configuration = $Configuration
+        CleanSource = $source.CleanSource
+        TrackedChanges = $source.TrackedChanges
+        UntrackedSources = $source.UntrackedSources
+        Packages = $records
+    }
+    $path = Join-Path $QualificationRoot "package-provenance.json"
+    $report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $path -Encoding utf8
+    # Added artifacts retain manifest schema 1, consumed by existing verifiers.
+    $artifacts = @(foreach ($record in $records) {
+        [ordered]@{ Name = "$($record.Assembly)-symbols"; RelativePath = "packages/$($record.SymbolPackage)"; Sha256 = $record.SymbolPackageSha256 }
+    })
+    $artifacts += [ordered]@{ Name = "package-provenance"; RelativePath = "package-provenance.json"; Sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
+    return [pscustomobject]@{ Path = $path; Artifacts = $artifacts }
+}
+
 function Assert-PackageShape {
     param(
         [string] $PackagePath,
@@ -100,14 +321,7 @@ function New-PackageQualificationRoot {
     $qualificationParent = [System.IO.Path]::GetFullPath((Join-Path $artifactsParent "package-qualification"))
 
     if ($Archive) {
-        $trackedStatus = @(& git -C $RepositoryRoot status --porcelain --untracked-files=no)
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not inspect tracked worktree state before archival qualification."
-        }
-
-        if ($trackedStatus.Count -ne 0) {
-            throw "Archival qualification requires a clean tracked worktree."
-        }
+        [void] (Read-PackageQualificationSource $RepositoryRoot $SourceRevision $true)
 
         $qualificationRoot = [System.IO.Path]::GetFullPath(
             (Join-Path $qualificationParent (Join-Path "archive" $SourceRevision)))

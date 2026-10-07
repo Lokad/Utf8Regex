@@ -51,7 +51,7 @@ are also available as host-friendly conveniences when a runtime needs scalar str
 ## Development Notes
 
 - Benchmarks: [BENCHMARKS.md](./BENCHMARKS.md)
-- Packaged qualification: run `./test-packaged-pythonre.ps1 -Configuration Release` from the repository root to pack a version-coherent core/companion pair and execute the complete PythonRe suite from an isolated NuGet cache.
+- Packaged qualification: run `./test-packaged-pythonre.ps1 -Configuration Release` from the repository root to rebuild a version-coherent core/companion pair, verify NuSpec/assembly/SourceLink revisions and PDB identities, and execute the complete PythonRe suite from an isolated NuGet cache. The output includes `package-provenance.json`; `-Archive` requires a clean source revision and preserves the packages, symbols and report hashes.
 - Project: [Lokad.Utf8Regex.PythonRe.csproj](./Lokad.Utf8Regex.PythonRe.csproj)
 - Main runtime: [Utf8PythonRegex.cs](./Utf8PythonRegex.cs)
 - Core match/result types: [PythonReCoreTypes.cs](./PythonReCoreTypes.cs)

@@ -24,6 +24,34 @@ parenthesized MARK-label structural gaps. Admission tests preserve their lexical
 meaning without claiming those execution shapes work or pinning the gaps as the
 desired semantics. These remain separate profile work, not numeric-capture fixes.
 
+## Package provenance enforcement (development, 2026-10-07)
+
+All three `test-packaged-*.ps1` flows rebuild the selected project graph before
+packing. Before detached tests, they require the NuSpec commit, embedded assembly
+revision and portable-PDB SourceLink mappings to agree with the captured HEAD;
+the PDB identity must also match the assembly. Metadata inspection does not load
+or execute package assemblies. `package-provenance.json` records payload hashes
+and source state; archival manifests also hash that report and the symbol packages.
+Archival qualification requires clean tracked files and no untracked package sources.
+The PCRE2 archive verifier independently checks these payloads and rejects legacy
+archives without this evidence. Qualify and verify a fresh committed revision with:
+
+```powershell
+./test-packaged-pcre2.ps1 -Configuration Release -Archive
+./verify-pcre2-qualification.ps1 -QualificationId (git rev-parse HEAD)
+```
+
+`test-package-provenance.ps1 -PackagePath <core.nupkg> -SourceRevision <commit>`
+checks a valid package and eight deliberately altered fixture copies, including
+stale assembly/SourceLink stamps, missing symbols and a mismatched PDB.
+
+The read-only historical audit found stale embedded/SourceLink revisions in 23
+of 30 archives (46 of 60 packages), with all recorded artifact hashes intact.
+Those archives retain their functional observations, but their claimed clean-commit
+provenance is superseded. A stale stamp does not establish which source changes
+were actually compiled. The other seven archives have matching metadata; this
+alone does not supply the new rebuild/source-state evidence.
+
 ## Historical qualification
 
 > Historical ledger for the 0.2.0 qualification (2026-08-21). Current release
@@ -35,12 +63,11 @@ not a claim of complete upstream PCRE2 compatibility.
 
 The qualified files are frozen under
 `artifacts/package-qualification/archive/e02af985a3bb5bcbb42dfecc04e40f931e58e1c4/`.
-The archive command refuses a dirty tracked worktree and refuses to overwrite
-an existing revision directory. Verify all four archived artifacts with:
-
-```powershell
-./verify-pcre2-qualification.ps1 -QualificationId e02af985a3bb5bcbb42dfecc04e40f931e58e1c4
-```
+The archive command refused a dirty tracked worktree and refused to overwrite
+an existing revision directory. The 2026-10-07 audit confirmed the four artifact
+hashes, but both assemblies and SourceLink maps carry `ca4204b5d11c0528cf05f20e4b3f9d5c32601c34`.
+The historical source identity below is therefore unproven; the current verifier
+rejects this archive. Its functional observations and original ledger remain history.
 
 Generic paths such as `artifacts/nuget/*.nupkg` and
 `PCRE2.Benchmarks.json` remain mutable working outputs and are not identified

@@ -22,13 +22,18 @@ $version = Read-CoherentPackageVersion -RepositoryRoot $repositoryRoot
 $coreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj"
 $pcre2ProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex.Pcre2\Lokad.Utf8Regex.Pcre2.csproj"
 Invoke-DotNet @(
-    "pack", $coreProjectPath,
+    "build", $pcre2ProjectPath, "-t:Rebuild",
     "-c", $Configuration,
     "--tl:off", "--nologo", "-v", "minimal",
     "-p:PackageOutputPath=$($locations.PackageDirectory)")
 Invoke-DotNet @(
+    "pack", $coreProjectPath,
+    "-c", $Configuration, "--no-build",
+    "--tl:off", "--nologo", "-v", "minimal",
+    "-p:PackageOutputPath=$($locations.PackageDirectory)")
+Invoke-DotNet @(
     "pack", $pcre2ProjectPath,
-    "-c", $Configuration,
+    "-c", $Configuration, "--no-build",
     "--tl:off", "--nologo", "-v", "minimal",
     "-p:PackageOutputPath=$($locations.PackageDirectory)")
 
@@ -36,10 +41,12 @@ $corePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.$version.n
 $pcre2Package = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.Pcre2.$version.nupkg"
 Assert-PackageShape $corePackage "Lokad.Utf8Regex.dll" "" ""
 Assert-PackageShape $pcre2Package "Lokad.Utf8Regex.Pcre2.dll" "Lokad.Utf8Regex" $version
+$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage, $pcre2Package) -ExpectedAssemblies @("Lokad.Utf8Regex.dll", "Lokad.Utf8Regex.Pcre2.dll") -RequireCleanSource $Archive
 
 Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -PackageDirectory $locations.PackageDirectory -TestDirectory $locations.TestDirectory -PackageCache $locations.PackageCache -Configuration $Configuration -SourceTestProjectName "Lokad.Utf8Regex.Pcre2.Tests" -PackageIds @("Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2") -Version $version
 
 if ($Archive) {
+    [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
     $evidenceDirectory = New-Item -ItemType Directory -Path (Join-Path $locations.QualificationRoot "evidence")
     $snapshotSource = Join-Path $repositoryRoot "PCRE2.Benchmarks.json"
     $apiSource = Join-Path $repositoryRoot "tests\Lokad.Utf8Regex.Pcre2.Tests\PublicApi.Shipped.txt"
@@ -78,7 +85,7 @@ if ($Archive) {
         Configuration = $Configuration
         TargetFramework = "net10.0"
         PackageVersion = $version
-        Artifacts = $manifestArtifacts
+        Artifacts = $manifestArtifacts + $provenance.Artifacts
     }
     $manifestPath = Join-Path $locations.QualificationRoot "manifest.json"
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestPath -Encoding utf8

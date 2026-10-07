@@ -21,13 +21,19 @@ $version = Read-CoherentPackageVersion -RepositoryRoot $repositoryRoot
 
 $coreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj"
 Invoke-DotNet @(
-    "pack", $coreProjectPath,
+    "build", $coreProjectPath, "-t:Rebuild",
     "-c", $Configuration,
+    "--tl:off", "--nologo", "-v", "minimal",
+    "-p:PackageOutputPath=$($locations.PackageDirectory)")
+Invoke-DotNet @(
+    "pack", $coreProjectPath,
+    "-c", $Configuration, "--no-build",
     "--tl:off", "--nologo", "-v", "minimal",
     "-p:PackageOutputPath=$($locations.PackageDirectory)")
 
 $corePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.$version.nupkg"
 Assert-PackageShape $corePackage "Lokad.Utf8Regex.dll" "" ""
+$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage) -ExpectedAssemblies @("Lokad.Utf8Regex.dll") -RequireCleanSource $Archive
 
 foreach ($testProjectName in @("Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests")) {
     $projectTestDirectory = New-Item -ItemType Directory -Path (Join-Path $locations.TestDirectory $testProjectName)
@@ -35,6 +41,7 @@ foreach ($testProjectName in @("Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTes
 }
 
 if ($Archive) {
+    [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
     $evidenceDirectory = New-Item -ItemType Directory -Path (Join-Path $locations.QualificationRoot "evidence")
     $snapshotSource = Join-Path $repositoryRoot "README.Benchmarks.json"
     $paritySource = Join-Path $repositoryRoot "README.Parity.json"
@@ -68,7 +75,7 @@ if ($Archive) {
         Configuration = $Configuration
         TargetFramework = "net10.0"
         PackageVersion = $version
-        Artifacts = $manifestArtifacts
+        Artifacts = $manifestArtifacts + $provenance.Artifacts
     }
     $manifestPath = Join-Path $locations.QualificationRoot "manifest.json"
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestPath -Encoding utf8

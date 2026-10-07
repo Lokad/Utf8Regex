@@ -22,13 +22,18 @@ $version = Read-CoherentPackageVersion -RepositoryRoot $repositoryRoot
 $coreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj"
 $pythonreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex.PythonRe\Lokad.Utf8Regex.PythonRe.csproj"
 Invoke-DotNet @(
-    "pack", $coreProjectPath,
+    "build", $pythonreProjectPath, "-t:Rebuild",
     "-c", $Configuration,
     "--tl:off", "--nologo", "-v", "minimal",
     "-p:PackageOutputPath=$($locations.PackageDirectory)")
 Invoke-DotNet @(
+    "pack", $coreProjectPath,
+    "-c", $Configuration, "--no-build",
+    "--tl:off", "--nologo", "-v", "minimal",
+    "-p:PackageOutputPath=$($locations.PackageDirectory)")
+Invoke-DotNet @(
     "pack", $pythonreProjectPath,
-    "-c", $Configuration,
+    "-c", $Configuration, "--no-build",
     "--tl:off", "--nologo", "-v", "minimal",
     "-p:PackageOutputPath=$($locations.PackageDirectory)")
 
@@ -36,6 +41,7 @@ $corePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.$version.n
 $pythonrePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.PythonRe.$version.nupkg"
 Assert-PackageShape $corePackage "Lokad.Utf8Regex.dll" "" ""
 Assert-PackageShape $pythonrePackage "Lokad.Utf8Regex.PythonRe.dll" "Lokad.Utf8Regex" $version
+$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage, $pythonrePackage) -ExpectedAssemblies @("Lokad.Utf8Regex.dll", "Lokad.Utf8Regex.PythonRe.dll") -RequireCleanSource $Archive
 
 # The PythonRe test project links benchmark sources by relative path. Mirror
 # them beside the qualification root so the isolated copy resolves identically.
@@ -57,6 +63,7 @@ foreach ($benchSource in @("PythonReBenchmarkCatalog.cs", "BenchmarkDataFiles.cs
 Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -PackageDirectory $locations.PackageDirectory -TestDirectory $locations.TestDirectory -PackageCache $locations.PackageCache -Configuration $Configuration -SourceTestProjectName "Lokad.Utf8Regex.PythonRe.Tests" -PackageIds @("Lokad.Utf8Regex", "Lokad.Utf8Regex.PythonRe") -Version $version
 
 if ($Archive) {
+    [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
     $evidenceDirectory = New-Item -ItemType Directory -Path (Join-Path $locations.QualificationRoot "evidence")
     $snapshotSource = Join-Path $repositoryRoot "PythonRe.Benchmarks.json"
     $snapshotArchive = Join-Path $evidenceDirectory.FullName "PythonRe.Benchmarks.json"
@@ -87,7 +94,7 @@ if ($Archive) {
         Configuration = $Configuration
         TargetFramework = "net10.0"
         PackageVersion = $version
-        Artifacts = $manifestArtifacts
+        Artifacts = $manifestArtifacts + $provenance.Artifacts
     }
     $manifestPath = Join-Path $locations.QualificationRoot "manifest.json"
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestPath -Encoding utf8
