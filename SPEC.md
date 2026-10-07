@@ -422,6 +422,10 @@ The implementation is done when all of the following are true:
   public group exposes its last completed capture, including an empty capture;
   nested/shared declarations retain their own openings. Runtime capture defects
   and timeout rounding do not define this contract.
+  Zero-width repetition preserves its predicate and final capture without work
+  proportional to the numeric bound. Nullable loop progress is part of the owned
+  graph; empty completions exit without epsilon cycles. Parsed constructs outside
+  this mode's grammar fail before planning, with no BCL validation engine.
 * Supported construction/execution is owned, common construction/invocation/result/retained bounds work, and synchronous cancellation interrupts ongoing work. Obsolete parity machinery and production BCL engine dependence are removed.
 * Hot native paths are allocation-light, and the benchmark suite meets qualified per-scenario thresholds against semantically comparable baselines.
 

@@ -18,23 +18,8 @@ internal static class Utf8SliceParser
     internal static Utf8SliceProgram? TryParse(RegexOptions options, Utf8OwnedRegexTree? tree)
     {
         if (tree is null) return null;
-        if ((options & RegexOptions.NonBacktracking) != 0)
-        {
-            var pending = new Stack<Utf8TreeNode>();
-            pending.Push(tree.Root);
-            while (pending.TryPop(out var node))
-            {
-                // These constructs are outside the declared NonBacktracking
-                // grammar. Keep their construction rejection until owned error
-                // admission replaces the residual validation factory.
-                if (node.Kind is Utf8TreeNodeKind.Backreference or Utf8TreeNodeKind.Atomic or
-                    Utf8TreeNodeKind.PositiveLookaround or Utf8TreeNodeKind.NegativeLookaround or
-                    Utf8TreeNodeKind.BackreferenceConditional or Utf8TreeNodeKind.ExpressionConditional or
-                    Utf8TreeNodeKind.Start || node.Kind == Utf8TreeNodeKind.Capture && node.N >= 0)
-                    return null;
-                for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
-            }
-        }
+        if ((options & RegexOptions.NonBacktracking) != 0 &&
+            Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(tree.Root) is not null) return null;
         return Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
     }
 

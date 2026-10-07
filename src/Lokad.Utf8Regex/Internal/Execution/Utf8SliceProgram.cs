@@ -420,7 +420,7 @@ internal static class Utf8SliceLowerer
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking)
     {
-        var facts = AnalyzeNodes(root);
+        var facts = AnalyzeNodes(root, nonBacktracking);
         var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior, nonBacktracking);
         lowerer.CaptureCatalog = captureCatalog;
         var frames = new Stack<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>();
@@ -449,6 +449,7 @@ internal static class Utf8SliceLowerer
                 var program = FinishLowering(frame.Owner, frame.Root,
                     frames.Count == 0 && usesInterpretedLazyLoopSemantics,
                     frames.Count == 0 && usesLiteralClassBracketSyntax);
+                if (program is null) return null;
                 if (frames.Count == 0) return program;
                 frames.Peek().Owner.LastSubprogram = program;
             }
@@ -460,9 +461,9 @@ internal static class Utf8SliceLowerer
         }
     }
 
-    private readonly record struct NodeFacts(bool CanMatchEmpty, bool WritesGroup, int Minimum, int Maximum);
+    private readonly record struct NodeFacts(bool CanMatchEmpty, bool WritesGroup, bool IsZeroWidth, int Minimum, int Maximum);
 
-    private static Dictionary<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root)
+    private static Dictionary<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking)
     {
         // Slice nodes are records: structural hashing itself would recurse.
         // One identity cache serves the main and every nested assertion program.
@@ -498,7 +499,21 @@ internal static class Utf8SliceLowerer
                     _ => false,
                 };
                 var (minimum, maximum) = Measure(node, facts);
-                facts[node] = new NodeFacts(empty, writes, minimum, maximum);
+                var zeroWidth = nonBacktracking && (node switch
+                {
+                    Utf8SliceNode.EmptyNode or Utf8SliceNode.FailNode or Utf8SliceNode.AnchorNode or
+                        Utf8SliceNode.BoundaryNode or Utf8SliceNode.LookaheadNode or Utf8SliceNode.LookbehindNode => true,
+                    Utf8SliceNode.LiteralNode literal => !System.Text.Rune.IsValid(literal.Value),
+                    Utf8SliceNode.CaptureNode capture => facts[capture.Body].IsZeroWidth,
+                    Utf8SliceNode.BalanceNode balance => facts[balance.Body].IsZeroWidth,
+                    Utf8SliceNode.AtomicNode atomic => facts[atomic.Body].IsZeroWidth,
+                    Utf8SliceNode.ConcatNode concat => concat.Children.All(child => facts[child].IsZeroWidth),
+                    Utf8SliceNode.AlternationNode alternation => alternation.Branches.All(branch => branch.All(child => facts[child].IsZeroWidth)),
+                    Utf8SliceNode.RepeatNode repeat => repeat.Maximum == 0 || facts[repeat.Body].IsZeroWidth,
+                    Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].IsZeroWidth && facts[conditional.NoBody].IsZeroWidth,
+                    _ => false,
+                });
+                facts[node] = new NodeFacts(empty, writes, zeroWidth, minimum, maximum);
             }
             return facts;
         }
@@ -588,7 +603,7 @@ internal static class Utf8SliceLowerer
 
     private readonly record struct EmissionRequest(Utf8SliceNode Node, bool Program, bool RightToLeft);
 
-    private static Utf8SliceProgram FinishLowering(Lowering lowerer, Utf8SliceNode root, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+    private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresUnicodeWordBoundary = false;
@@ -678,6 +693,11 @@ internal static class Utf8SliceLowerer
         }
 
         var instructions = lowerer.Instructions.ToArray();
+        if (lowerer.HasNullableNonBacktrackingLoop && lowerer.NonBacktrackingScopes is { } scopes)
+        {
+            instructions = Utf8NonBacktrackingLoopGraph.Lift(instructions, scopes, MaxInstructions);
+            if (instructions is null) return null;
+        }
         return new Utf8SliceProgram(
             instructions,
             lowerer.SetMasks.ToArray(),
@@ -709,6 +729,9 @@ internal static class Utf8SliceLowerer
         internal int RepeatCount;
         internal int CaptureOpeningCount;
         internal readonly Dictionary<Utf8SliceNode.CaptureNode, int>? CaptureOpenings;
+        internal readonly List<Utf8NonBacktrackingLoopScope?>? NonBacktrackingScopes;
+        internal Utf8NonBacktrackingLoopScope? NonBacktrackingScope;
+        internal bool HasNullableNonBacktrackingLoop;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
@@ -735,6 +758,7 @@ internal static class Utf8SliceLowerer
             MirrorExecute = mirrorExecute;
             NonBacktracking = nonBacktracking;
             CaptureOpenings = nonBacktracking ? new(ReferenceEqualityComparer.Instance) : null;
+            NonBacktrackingScopes = nonBacktracking ? new() : null;
             Facts = facts;
             // RTL references can precede their captures. Every program starts
             // with the final catalog tally when supplied, just as the old entry.
@@ -744,6 +768,7 @@ internal static class Utf8SliceLowerer
         internal void Emit(Utf8SliceInstruction instruction)
         {
             Instructions.Add(instruction);
+            NonBacktrackingScopes?.Add(NonBacktrackingScope);
         }
 
         internal IEnumerable<EmissionRequest> EmitSteps(Utf8SliceNode node)
@@ -849,29 +874,46 @@ internal static class Utf8SliceLowerer
 
                     if (NonBacktracking)
                     {
+                        var minimum = repeat.Minimum;
+                        var maximum = repeat.Maximum;
+                        if (Facts[repeat.Body].IsZeroWidth)
+                        {
+                            // Acceptance is independent of captures in this regular
+                            // grammar, and only the last completion is exposed. At a
+                            // fixed scalar boundary, repeating a zero-width body has
+                            // the same predicates and preferred path every time.
+                            // One required/optional iteration therefore preserves its
+                            // outcome without work proportional to the numeric bound.
+                            minimum = minimum == 0 ? 0 : 1;
+                            maximum = maximum == 0 ? 0 : 1;
+                        }
                         // Thompson states have no input-dependent counter or
                         // backtracking trail. Finite bounds expand at preparation;
                         // the existing construction admission still applies.
-                        for (var iteration = 0; iteration < repeat.Minimum; iteration++)
+                        for (var iteration = 0; iteration < minimum; iteration++)
                         {
                             yield return new EmissionRequest(repeat.Body, false, false);
                             if (Failed) yield break;
                         }
                         var exits = new List<int>();
-                        for (var iteration = repeat.Minimum; iteration < repeat.Maximum; iteration++)
+                        for (var iteration = minimum; iteration < maximum; iteration++)
                         {
                             var fork = Instructions.Count;
                             Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
+                            var parentScope = NonBacktrackingScope;
+                            var nullableLoop = maximum == int.MaxValue && Facts[repeat.Body].CanMatchEmpty;
+                            if (nullableLoop)
+                            {
+                                NonBacktrackingScope = new(parentScope, fork);
+                                HasNullableNonBacktrackingLoop = true;
+                            }
                             yield return new EmissionRequest(repeat.Body, false, false);
                             if (Failed) yield break;
-                            if (repeat.Maximum == int.MaxValue)
+                            if (maximum == int.MaxValue)
                             {
-                                if (Facts[repeat.Body].CanMatchEmpty)
-                                {
-                                    ExpandNullableIteration(fork);
-                                    if (Failed) yield break;
-                                }
-                                else Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, fork, 0, 0, 0));
+                                if (nullableLoop && NonBacktrackingScope is { } scope) scope.End = Instructions.Count;
+                                Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, fork, 0, 0, 0));
+                                NonBacktrackingScope = parentScope;
                                 Patch(fork, Instructions.Count);
                                 break;
                             }
@@ -1151,52 +1193,6 @@ internal static class Utf8SliceLowerer
             }
 
             yield break;
-        }
-
-        internal void ExpandNullableIteration(int fork)
-        {
-            // Two static lanes record whether this iteration consumed a scalar.
-            // An empty completion exits; a consuming completion repeats. This
-            // removes epsilon cycles without losing the final empty capture or
-            // making capture registers part of the runner's state identity.
-            var first = fork + 1;
-            var body = Instructions.GetRange(first, Instructions.Count - first);
-            var emptyLane = new int[body.Count + 1];
-            var consumingLane = new int[body.Count + 1];
-            long count = first;
-            for (var index = 0; index < body.Count; index++)
-            {
-                emptyLane[index] = (int)count;
-                count += IsAtom(body[index].Kind) ? 2 : 1;
-            }
-            if (count + body.Count + 2 > MaxInstructions)
-            {
-                Failed = true;
-                return;
-            }
-            emptyLane[body.Count] = (int)count++;
-            for (var index = 0; index < body.Count; index++) consumingLane[index] = (int)count++;
-            consumingLane[body.Count] = (int)count++;
-            Instructions.RemoveRange(first, body.Count);
-            for (var index = 0; index < body.Count; index++)
-            {
-                Emit(Rebase(body[index], first, emptyLane));
-                if (IsAtom(body[index].Kind))
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, consumingLane[index + 1], 0, 0, 0));
-            }
-            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, (int)count, 0, 0, 0));
-            foreach (var instruction in body) Emit(Rebase(instruction, first, consumingLane));
-            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, fork, 0, 0, 0));
-
-            static bool IsAtom(Utf8SliceInstructionKind kind)
-                => kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
-                    Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
-                    Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid;
-
-            static Utf8SliceInstruction Rebase(Utf8SliceInstruction instruction, int first, int[] addresses)
-                => instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump
-                    ? new(instruction.Kind, addresses[instruction.A - first], instruction.B, instruction.C, instruction.D)
-                    : instruction;
         }
 
         private void Patch(int index, int target)

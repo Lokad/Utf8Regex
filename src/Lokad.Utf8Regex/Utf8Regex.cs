@@ -158,8 +158,9 @@ public sealed partial class Utf8Regex
             _ = _program.GroupNumbers.Value;
         }
 
-        // Admitted NonBacktracking graphs need no BCL engine. Unsupported
-        // constructs and over-limit preparation retain residual validation debt.
+        // The front end rejects parsed nonregular constructs itself. Only
+        // declined parsing/lowering and over-limit preparation still reach
+        // this transitional validation engine.
         if ((options & RegexOptions.NonBacktracking) != 0 && ownedSliceProgram is null)
         {
             _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
