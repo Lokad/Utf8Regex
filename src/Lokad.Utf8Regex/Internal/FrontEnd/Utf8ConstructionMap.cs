@@ -28,13 +28,22 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
             {
                 var capacity = _entries.Length == 0 ? 4 : checked(_entries.Length * 2);
                 var grown = budget.AllocateArray<Entry>(capacity, false);
-                foreach (var entry in _entries)
+                try
                 {
-                    if (!entry.Used) continue;
-                    var target = entry.Hash & (capacity - 1);
-                    while (grown[target].Used) target = (target + 1) & (capacity - 1);
-                    grown[target] = entry;
+                    foreach (var entry in _entries)
+                    {
+                        budget.ChargeWork(1);
+                        if (!entry.Used) continue;
+                        var target = entry.Hash & (capacity - 1);
+                        while (grown[target].Used)
+                        {
+                            budget.ChargeWork(1);
+                            target = (target + 1) & (capacity - 1);
+                        }
+                        grown[target] = entry;
+                    }
                 }
+                catch { budget.ReleaseArray(grown, false); throw; }
                 budget.ReleaseArray(_entries, false);
                 _entries = grown;
                 index = Find(key, hash);
@@ -65,6 +74,7 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
         var index = hash & (_entries.Length - 1);
         while (_entries[index].Used)
         {
+            budget.ChargeWork(1);
             if (_entries[index].Hash == hash && comparer.Equals(_entries[index].Key, key)) return index;
             index = (index + 1) & (_entries.Length - 1);
         }

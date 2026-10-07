@@ -5,6 +5,51 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ConstructionAdmissionTests
 {
+    [Fact]
+    public void BytePatternWorkAdmissionPrecedesValidationAndDecode()
+    {
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Pcre2Regex(new byte[] { 0xff }));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        Assert.Equal(1ul, failure.Requested);
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+        Assert.Throws<NotSupportedException>(() =>
+            Utf8Pcre2Regex.Create("cat"u8, Pcre2CompileOptions.None, default,
+                new Utf8ResourcePolicy { MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan));
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+    }
+
+    [Fact]
+    public void DelegatedStringParserWorkCannotResetOrSuppressTheOuterOwner()
+    {
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Pcre2Regex("cat"));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CoreParserDepthCannotBeSuppressedAndRecoversWithTheSameOwner(bool bytes)
+    {
+        var pattern = new string('(', 64) + "." + new string(')', 64);
+        var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            if (bytes) _ = new Utf8Pcre2Regex(encoded);
+            else _ = new Utf8Pcre2Regex(pattern);
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
+        Assert.Equal(8ul, failure.Limit);
+        Assert.Equal(0ul, scope.Budget.Depth);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+        Assert.True(scope.Budget.WorkSteps > 0);
+        Assert.True(new Utf8Pcre2Regex(".").IsMatch("😀"u8));
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void EveryBytePatternEntryAdmitsDecodedTextBeforeParsing(int entry)

@@ -8,14 +8,47 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// conservative 32-byte header and 16-byte payload rounding. Shared empties and
 /// borrowed payloads are excluded. This is
 /// defined live buffer capacity, not RSS or cumulative GC allocation traffic.</summary>
-internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
+internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
 {
+    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
+        : this(maximum, maximumBytes, Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth) { }
+
     internal ulong Maximum { get; } = maximum;
     internal ulong MaximumBytes { get; } = maximumBytes;
     internal ulong Reserved { get; private set; }
     internal ulong Peak { get; private set; }
     internal ulong ReservedBytes { get; private set; }
     internal ulong PeakBytes { get; private set; }
+    internal ulong MaximumWorkSteps { get; } = maximumWorkSteps;
+    internal ulong MaximumDepth { get; } = maximumDepth;
+    internal ulong WorkSteps { get; private set; }
+    internal ulong Depth { get; private set; }
+    internal ulong PeakDepth { get; private set; }
+
+    // Actual admitted work stays spent even when a speculative child declines.
+    // Batch admission happens before the bounded scan/copy it represents.
+    internal void ChargeWork(ulong steps)
+    {
+        var requested = steps > ulong.MaxValue - WorkSteps ? ulong.MaxValue : WorkSteps + steps;
+        if (steps > ulong.MaxValue - WorkSteps || requested > MaximumWorkSteps)
+            throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionWorkSteps, MaximumWorkSteps, requested);
+        WorkSteps += steps;
+    }
+
+    internal void EnterDepth()
+    {
+        var requested = Depth == ulong.MaxValue ? ulong.MaxValue : Depth + 1;
+        if (Depth == ulong.MaxValue || requested > MaximumDepth)
+            throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth, MaximumDepth, requested);
+        Depth++;
+        PeakDepth = Math.Max(PeakDepth, Depth);
+    }
+
+    internal void LeaveDepth()
+    {
+        if (Depth == 0) throw new InvalidOperationException("Construction depth release exceeds admitted frames.");
+        Depth--;
+    }
 
     internal static ulong ArrayBytes<T>(int count)
     {
@@ -35,9 +68,14 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
     {
         // Count/validate before allocating the output. Parsing starts only after
         // the decoded string has been admitted into the enclosing owner.
+        ChargeWork((ulong)input.Length);
         var bytes = StringBytes(encoding.GetCharCount(input));
         ReserveBytes(bytes);
-        try { return encoding.GetString(input); }
+        try
+        {
+            ChargeWork((ulong)input.Length);
+            return encoding.GetString(input);
+        }
         catch
         {
             ReleaseBytes(bytes);
@@ -86,6 +124,7 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
         var bytes = ArrayBytes<T>(count);
         if (instructions) CheckSlots((ulong)count);
         CheckBytes(bytes);
+        ChargeWork((ulong)count);
         if (instructions) Reserve((ulong)count);
         ReserveBytes(bytes);
         try { return count == 0 ? [] : new T[count]; }
@@ -123,11 +162,12 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
             throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionInstructionCapacity, Maximum, requested);
     }
 
-    internal void Rollback(ulong checkpoint, ulong byteCheckpoint)
+    internal void Rollback(ulong checkpoint, ulong byteCheckpoint, ulong depthCheckpoint)
     {
-        if (checkpoint > Reserved || byteCheckpoint > ReservedBytes)
+        if (checkpoint > Reserved || byteCheckpoint > ReservedBytes || depthCheckpoint > Depth)
             throw new InvalidOperationException("Construction rollback exceeds admitted capacity.");
         Reserved = checkpoint;
         ReservedBytes = byteCheckpoint;
+        Depth = depthCheckpoint;
     }
 }

@@ -18,29 +18,43 @@ internal readonly record struct Utf8PreparationStep(IEnumerable<Utf8PreparationS
     internal static bool TryRun(IEnumerable<Utf8PreparationStep> body, Utf8ConstructionBudget budget)
     {
         using var frames = new Utf8ConstructionBuffer<IEnumerator<Utf8PreparationStep>>(budget);
-        Push(frames, body);
+        Push(frames, body, budget);
         try
         {
             while (frames.Count != 0)
             {
+                budget.ChargeWork(1);
                 var frame = frames.Peek();
-                if (!frame.MoveNext()) frames.Pop().Dispose();
+                if (!frame.MoveNext())
+                {
+                    try { frames.Pop().Dispose(); }
+                    finally { budget.LeaveDepth(); }
+                }
                 else if (frame.Current.Failed) return false;
-                else Push(frames, frame.Current.Children);
+                else Push(frames, frame.Current.Children, budget);
             }
             return true;
         }
         finally
         {
-            while (frames.Count != 0) frames.Pop().Dispose();
+            while (frames.Count != 0)
+            {
+                try { frames.Pop().Dispose(); }
+                finally { budget.LeaveDepth(); }
+            }
         }
     }
 
     private static void Push(Utf8ConstructionBuffer<IEnumerator<Utf8PreparationStep>> frames,
-        IEnumerable<Utf8PreparationStep> body)
+        IEnumerable<Utf8PreparationStep> body, Utf8ConstructionBudget budget)
     {
         var iterator = body.GetEnumerator();
-        try { frames.Push(iterator); }
+        try
+        {
+            budget.EnterDepth();
+            try { frames.Push(iterator); }
+            catch { budget.LeaveDepth(); throw; }
+        }
         catch { iterator.Dispose(); throw; }
     }
 }

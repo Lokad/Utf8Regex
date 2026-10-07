@@ -71,6 +71,7 @@ public sealed partial class Utf8Pcre2Regex
         var pattern = patternSource.Text;
         if (patternSource.IsUtf8)
         {
+            construction.Budget.ChargeWork((ulong)patternSource.Utf8.Length);
             _ = Utf8Validation.Validate(patternSource.Utf8);
             pattern = construction.Budget.DecodeUtf8(patternSource.Utf8, Encoding.UTF8);
         }

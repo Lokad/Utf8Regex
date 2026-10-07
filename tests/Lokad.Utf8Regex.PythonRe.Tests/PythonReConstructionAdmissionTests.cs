@@ -5,6 +5,51 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReConstructionAdmissionTests
 {
+    [Fact]
+    public void BytePatternWorkAdmissionPrecedesValidationAndDecode()
+    {
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(new byte[] { 0xff }));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        Assert.Equal(1ul, failure.Requested);
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+        Assert.Throws<NotSupportedException>(() =>
+            new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+                new Utf8ResourcePolicy { MaxWorkSteps = 1 }));
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+    }
+
+    [Fact]
+    public void StringParserWorkUsesTheOuterOwnerAndDoesNotSelectAnOptionalBackend()
+    {
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex("cat"));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ScalarPreparationInheritsDepthAndRecoversWithTheSameOwner(bool bytes)
+    {
+        var pattern = new string('(', 64) + "." + new string(')', 64);
+        var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
+        using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            if (bytes) _ = new Utf8PythonRegex(encoded);
+            else _ = new Utf8PythonRegex(pattern);
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
+        Assert.Equal(8ul, failure.Limit);
+        Assert.Equal(0ul, scope.Budget.Depth);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+        Assert.True(scope.Budget.WorkSteps > 0);
+        Assert.True(new Utf8PythonRegex(".").IsMatch("😀"u8));
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void EveryBytePatternEntryAdmitsDecodedTextBeforeParsing(int entry)

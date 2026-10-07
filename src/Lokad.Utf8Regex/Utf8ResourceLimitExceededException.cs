@@ -5,8 +5,12 @@ public enum Utf8ResourceLimitKind
 {
     /// <summary>Combined capacity of live scalar-program instruction arrays during one construction.</summary>
     ConstructionInstructionCapacity,
-    /// <summary>Admitted construction-buffer bytes, including charged array headers and copy overlap.</summary>
+    /// <summary>Admitted construction capacity, including covered arrays, decoded pattern text and copy overlap.</summary>
     ConstructionBytes,
+    /// <summary>Cumulative admitted units of covered construction scans, loop iterations and array work.</summary>
+    ConstructionWorkSteps,
+    /// <summary>Combined live explicit traversal frames in covered construction walkers.</summary>
+    ConstructionDepth,
 }
 
 /// <summary>Reports an owned resource-admission failure, distinct from invalid syntax, no match and timeout.</summary>
@@ -26,6 +30,6 @@ public sealed class Utf8ResourceLimitExceededException : InvalidOperationExcepti
     /// <summary>Gets the configured maximum in the units of <see cref="ResourceKind"/>.</summary>
     public ulong Limit { get; }
 
-    /// <summary>Gets the combined capacity requested before the denied acquisition.</summary>
+    /// <summary>Gets the combined capacity, work or depth requested before the denied operation.</summary>
     public ulong Requested { get; }
 }

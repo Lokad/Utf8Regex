@@ -27,7 +27,12 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
                 throw new InvalidOperationException("The construction buffer cannot represent its next extent.");
             }
             var grown = budget.AllocateArray<T>(capacity, instructions);
-            _items.AsSpan(0, Count).CopyTo(grown);
+            try
+            {
+                budget.ChargeWork((ulong)Count);
+                _items.AsSpan(0, Count).CopyTo(grown);
+            }
+            catch { budget.ReleaseArray(grown, instructions); throw; }
             budget.ReleaseArray(_items, instructions);
             _items = grown;
         }
@@ -50,7 +55,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     }
 
     internal int IndexOf(T value) => Array.IndexOf(_items, value, 0, Count);
-    internal void Sort(Comparison<T> comparison) => Array.Sort(_items, 0, Count, Comparer<T>.Create(comparison));
+    internal void Sort(Comparison<T> comparison) => Utf8ConstructionSort.Sort(_items.AsSpan(0, Count), comparison, budget);
 
     internal T[] Take()
     {
@@ -58,7 +63,12 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
         if (Count != result.Length)
         {
             result = budget.AllocateArray<T>(Count, instructions);
-            _items.AsSpan(0, Count).CopyTo(result);
+            try
+            {
+                budget.ChargeWork((ulong)Count);
+                _items.AsSpan(0, Count).CopyTo(result);
+            }
+            catch { budget.ReleaseArray(result, instructions); throw; }
             budget.ReleaseArray(_items, instructions);
         }
         _items = [];
