@@ -395,6 +395,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         while (node.Kind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group &&
                node.Children.Count == 1)
         {
+            Internal.FrontEnd.Utf8ConstructionScope.ChargeWork(1);
             node = node.Children[0];
         }
 
@@ -411,13 +412,18 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
         for (var i = 0; i < text.Length; i++)
         {
+            Internal.FrontEnd.Utf8ConstructionScope.ChargeWork(1);
             if (text[i] > 0x7F)
             {
                 return false;
             }
         }
 
-        bytes = text.Select(static ch => (byte)ch).ToArray();
+        // The scan/copy share construction work. This returned byte array
+        // retains separate payload admission work.
+        Internal.FrontEnd.Utf8ConstructionScope.ChargeWork((ulong)text.Length);
+        bytes = new byte[text.Length];
+        for (var index = 0; index < text.Length; index++) bytes[index] = (byte)text[index];
         return true;
     }
 

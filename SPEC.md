@@ -484,8 +484,13 @@ continuations and a temporary minimum-length memo. Root depth/storage precede
 memo and builder acquisition; child frames admit before nested builders, and
 all admitted scratch releases on success, decline or failure without refunding
 work. Its former heap compiler context, request objects and six yield iterators
-are removed. Program/text arrays, builders and other preparation scans retain
-separate admission work. ASCII class projections defer non-ASCII subjects to
+are removed. Its fixed-text/alternation cursors and leading-mask unions now
+use admitted frames too, with saved child cursors and failed-child mask rollback.
+Shared wrapper unwrapping and ASCII validation/copy, plus compiler suffix and
+prefix comparisons, spend cumulative construction work. Successful/declined
+scan scratch releases descriptors, arrays and depth without refunding work.
+Program/text arrays, builders and other preparation scans retain separate
+admission work. ASCII class projections defer non-ASCII subjects to
 scalar execution; surrogate-half class membership does not determine loop
 admission or minimum scalar counts.
 Python scalar conversion also uses admitted value frames, deleting its captured
