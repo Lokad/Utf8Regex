@@ -1,226 +1,208 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-
-// Owned required-literal families, pinned against legacy instances over the probe
-// catalog. Concatenations collect one family per literal position while
-// alternations union clean single run branches, sorted ordinally.
-// Dirty top level branches fall back to members common across every branch,
-// sorted ordinally. Nested dirty alternations contribute nothing.
-// Group loops enter when their minimum is positive and single char loops
-// continue only for the bare optional, star and plus shapes while every other
-// counted loop clears prior families outside branches and skips inside them.
-// Opaque widths, anchors, boundaries, lookarounds, backreferences and empty
-// nodes contribute nothing. Scoring prefers the longest total length with
-// ties going to the first family. Every rule above was read off probe behavior.
+// Required literal families guide native search. Clean alternatives keep their
+// ordinally sorted branches; dirty top-level alternatives keep common members.
+// Nested dirty alternatives and opaque nodes contribute nothing. Selection uses
+// pattern-text length as a heuristic, never as a scalar matching width.
 internal static class Utf8OwnedRequiredLiterals
 {
+    private readonly record struct Frame(Utf8TreeNode Node, int NextChild, bool Entered);
+
     public static string[]? FindBestRequiredLiteralFamily(Utf8TreeNode node)
     {
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
         var top = node;
-        while ((top.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) && top.ChildCount == 1)
+        // Root admission precedes all auxiliary descriptors and payloads. Finish
+        // this scan before collecting so its depth does not overlap a second walk.
+        using (var wrappers = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, top))
         {
-            top = top.Child(0);
-        }
-
-        if (top.Kind == Utf8TreeNodeKind.Alternate)
-        {
-            var clean = UnionCleanBranches(top);
-            if (clean is not null)
+            while (true)
             {
-                return clean.ToArray();
+                budget.ChargeWork(1);
+                if (top.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || top.ChildCount != 1) break;
+                top = top.Child(0);
+                wrappers.Push(top);
             }
-
-            return BestCommonFamily(top);
         }
 
-        var collector = new FamilyCollector();
-        CollectInto(node, collector, false);
-        if (collector.Families.Count == 0)
+        using var arena = Utf8ConstructionArena.Create(budget);
+        string[]? selected;
+        if (top.Kind == Utf8TreeNodeKind.Alternate)
+            selected = UnionCleanBranches(top, budget, arena) ?? BestCommonFamily(top, budget, arena);
+        else
         {
-            return null;
+            using var families = Utf8ConstructionBuffer<string[]>.Create(budget);
+            CollectInto(node, families, false, budget, arena);
+            selected = families.Count == 0 ? null : BestByTotalLength(families, budget);
         }
+        if (selected is null) return null;
+        // Candidate arrays remain scratch. Copy only the selected family into a
+        // transferred payload, admitting overlap with the still-live candidates.
+        var result = budget.AllocateArray<string>(selected.Length, false);
+        budget.ChargeWork((ulong)selected.Length);
+        selected.AsSpan().CopyTo(result);
+        scope.Complete();
+        return result;
 
-        return BestByTotalLength(collector.Families);
-
-        static string[] BestByTotalLength(List<string[]> families)
+        static string[] BestByTotalLength(Utf8ConstructionBuffer<string[]> families, Utf8ConstructionBudget budget)
         {
             var best = families[0];
-            var bestScore = TotalLength(best);
+            var bestScore = TotalLength(best, budget);
             for (var i = 1; i < families.Count; i++)
             {
-                var score = TotalLength(families[i]);
-                if (score > bestScore)
-                {
-                    best = families[i];
-                    bestScore = score;
-                }
+                budget.ChargeWork(1);
+                var score = TotalLength(families[i], budget);
+                if (score > bestScore) { best = families[i]; bestScore = score; }
             }
-
             return best;
         }
 
-        static int TotalLength(string[] family)
+        static int TotalLength(string[] family, Utf8ConstructionBudget budget)
         {
             var total = 0;
-            foreach (var member in family)
-            {
-                total += member.Length;
-            }
-
+            foreach (var member in family) { budget.ChargeWork(1); total += member.Length; }
             return total;
         }
 
-        static void CollectInto(Utf8TreeNode node, FamilyCollector collector, bool branch)
+        static void CollectInto(Utf8TreeNode node, Utf8ConstructionBuffer<string[]> families,
+            bool branch, Utf8ConstructionBudget budget, Utf8ConstructionArena arena)
         {
-            var pending = new Stack<Utf8TreeNode>();
-            pending.Push(node);
-            while (pending.TryPop(out node))
+            using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, 0, false));
+            while (frames.Count != 0)
             {
-                switch (node.Kind)
+                budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                node = frame.Node;
+                if (!frame.Entered)
                 {
-                    case Utf8TreeNodeKind.One:
-                        collector.Families.Add(new string[] { node.Ch.ToString() });
-                        break;
-                    case Utf8TreeNodeKind.Multi:
-                        if (!string.IsNullOrEmpty(node.Str))
-                        {
-                            collector.Families.Add(new string[] { node.Str });
-                        }
-
-                        break;
-                    case Utf8TreeNodeKind.Capture:
-                    case Utf8TreeNodeKind.Group:
-                    case Utf8TreeNodeKind.Atomic:
-                    case Utf8TreeNodeKind.Concatenate:
-                        for (var i = node.ChildCount - 1; i >= 0; i--) pending.Push(node.Child(i));
-                        break;
-                    case Utf8TreeNodeKind.Alternate:
-                        var union = UnionCleanBranches(node);
-                        if (union is not null)
-                        {
-                            collector.Families.Add(union.ToArray());
-                        }
-
-                        break;
-                    case Utf8TreeNodeKind.Loop:
-                    case Utf8TreeNodeKind.Lazyloop:
-                        if (node.M > 0 && node.ChildCount == 1)
-                        {
-                            pending.Push(node.Child(0));
-                        }
-
-                        break;
-                    case Utf8TreeNodeKind.Oneloop:
-                    case Utf8TreeNodeKind.Onelazy:
-                    case Utf8TreeNodeKind.Oneloopatomic:
-                    case Utf8TreeNodeKind.Notoneloop:
-                    case Utf8TreeNodeKind.Notonelazy:
-                    case Utf8TreeNodeKind.Notoneloopatomic:
-                    case Utf8TreeNodeKind.Setloop:
-                    case Utf8TreeNodeKind.Setlazy:
-                    case Utf8TreeNodeKind.Setloopatomic:
-                        if (!branch && node.N > 1 && (node.N != int.MaxValue || node.M > 1))
-                        {
-                            collector.Families.Clear();
-                        }
-
-                        break;
-                    default:
-                        break;
+                    frame = frame with { Entered = true };
+                    switch (node.Kind)
+                    {
+                        case Utf8TreeNodeKind.One:
+                            var one = arena.Allocate<string>(1, false);
+                            one[0] = budget.CopyText([node.Ch]);
+                            families.Add(one);
+                            break;
+                        case Utf8TreeNodeKind.Multi:
+                            if (!string.IsNullOrEmpty(node.Str))
+                            {
+                                var multi = arena.Allocate<string>(1, false);
+                                multi[0] = node.Str;
+                                families.Add(multi);
+                            }
+                            break;
+                        case Utf8TreeNodeKind.Alternate:
+                            var union = UnionCleanBranches(node, budget, arena);
+                            if (union is not null) families.Add(union);
+                            break;
+                        case Utf8TreeNodeKind.Oneloop:
+                        case Utf8TreeNodeKind.Onelazy:
+                        case Utf8TreeNodeKind.Oneloopatomic:
+                        case Utf8TreeNodeKind.Notoneloop:
+                        case Utf8TreeNodeKind.Notonelazy:
+                        case Utf8TreeNodeKind.Notoneloopatomic:
+                        case Utf8TreeNodeKind.Setloop:
+                        case Utf8TreeNodeKind.Setlazy:
+                        case Utf8TreeNodeKind.Setloopatomic:
+                            if (!branch && node.N > 1 && (node.N != int.MaxValue || node.M > 1)) families.Clear();
+                            break;
+                    }
                 }
+                var childCount = node.Kind switch
+                {
+                    Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate => node.ChildCount,
+                    Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop when node.M > 0 && node.ChildCount == 1 => 1,
+                    _ => 0,
+                };
+                if (frame.NextChild == childCount) { frames.Pop(); continue; }
+                frames[index] = frame with { NextChild = frame.NextChild + 1 };
+                frames.Push(new(node.Child(frame.NextChild), 0, false));
             }
         }
 
-        static List<string>? UnionCleanBranches(Utf8TreeNode node)
+        static string[]? UnionCleanBranches(Utf8TreeNode node, Utf8ConstructionBudget budget, Utf8ConstructionArena arena)
         {
-            var result = new List<string>();
+            using var result = Utf8ConstructionBuffer<string>.Create(budget);
             for (var i = 0; i < node.ChildCount; i++)
             {
-                var text = BranchText(node.Child(i));
-                if (text is null)
-                {
-                    return null;
-                }
-
+                budget.ChargeWork(1);
+                var text = BranchText(node.Child(i), budget);
+                if (text is null) return null;
                 result.Add(text);
             }
-
-            result.Sort(static (left, right) => string.CompareOrdinal(left, right));
-            return result;
+            result.Sort(CompareOrdinal);
+            return arena.Take(result, false);
         }
 
-        static string[]? BestCommonFamily(Utf8TreeNode node)
+        static int CompareOrdinal(string left, string right)
         {
-            var members = new List<HashSet<string>>();
-            for (var i = 0; i < node.ChildCount; i++)
-            {
-                var collector = new FamilyCollector();
-                CollectInto(node.Child(i), collector, true);
-                var branch = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var family in collector.Families)
-                {
-                    foreach (var member in family)
-                    {
-                        branch.Add(member);
-                    }
-                }
-
-                members.Add(branch);
-            }
-
-            if (members.Count == 0)
-            {
-                return null;
-            }
-
-            var common = new List<string>();
-            foreach (var candidate in members[0])
-            {
-                var shared = true;
-                for (var i = 1; i < members.Count; i++)
-                {
-                    if (!members[i].Contains(candidate))
-                    {
-                        shared = false;
-                        break;
-                    }
-                }
-
-                if (shared && !common.Contains(candidate))
-                {
-                    common.Add(candidate);
-                }
-            }
-
-            if (common.Count == 0)
-            {
-                return null;
-            }
-
-            common.Sort(static (left, right) => string.CompareOrdinal(left, right));
-            return common.ToArray();
+            Utf8ConstructionScope.ChargeWork((ulong)Math.Min(left.Length, right.Length));
+            return string.CompareOrdinal(left, right);
         }
-        static string? BranchText(Utf8TreeNode node)
+
+        static string[]? BestCommonFamily(Utf8TreeNode node, Utf8ConstructionBudget budget, Utf8ConstructionArena arena)
         {
-            while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic)
+            using var members = Utf8ConstructionBuffer<Utf8ConstructionMap<string, bool>>.Create(budget);
+            using var candidates = Utf8ConstructionBuffer<string>.Create(budget);
+            using var common = Utf8ConstructionBuffer<string>.Create(budget);
+            try
             {
+                for (var i = 0; i < node.ChildCount; i++)
+                {
+                    budget.ChargeWork(1);
+                    var set = Utf8ConstructionMap<string, bool>.Create(budget, StringComparer.Ordinal);
+                    // Publish before populating so every acquired table is released
+                    // by the unmetered finally path, including partial branches.
+                    members.Add(set);
+                    using var families = Utf8ConstructionBuffer<string[]>.Create(budget);
+                    CollectInto(node.Child(i), families, true, budget, arena);
+                    foreach (var family in families)
+                        foreach (var member in family)
+                        {
+                            budget.ChargeWork(1);
+                            if (set.ContainsKey(member)) continue;
+                            set[member] = true;
+                            if (i == 0) candidates.Add(member);
+                        }
+                }
+                if (members.Count == 0) return null;
+                foreach (var candidate in candidates)
+                {
+                    budget.ChargeWork(1);
+                    var shared = true;
+                    for (var i = 1; i < members.Count; i++)
+                    {
+                        budget.ChargeWork(1);
+                        if (!members[i].ContainsKey(candidate)) { shared = false; break; }
+                    }
+                    if (shared) common.Add(candidate);
+                }
+                if (common.Count == 0) return null;
+                common.Sort(CompareOrdinal);
+                return arena.Take(common, false);
+            }
+            finally { foreach (var set in members) set.Dispose(); }
+        }
+
+        static string? BranchText(Utf8TreeNode node, Utf8ConstructionBudget budget)
+        {
+            using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
+            while (true)
+            {
+                budget.ChargeWork(1);
+                if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic)) break;
                 if (node.ChildCount != 1) return null;
                 node = node.Child(0);
+                frames.Push(node);
             }
-            switch (node.Kind)
+            return node.Kind switch
             {
-                case Utf8TreeNodeKind.One:
-                    return node.Ch.ToString();
-                case Utf8TreeNodeKind.Multi:
-                    return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-                default:
-                    return null;
-            }
+                Utf8TreeNodeKind.One => budget.CopyText([node.Ch]),
+                Utf8TreeNodeKind.Multi => string.IsNullOrEmpty(node.Str) ? null : node.Str,
+                _ => null,
+            };
         }
-    }
-
-    private sealed class FamilyCollector
-    {
-        public readonly List<string[]> Families = new();
     }
 }

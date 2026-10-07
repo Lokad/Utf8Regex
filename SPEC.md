@@ -517,6 +517,15 @@ only production loop query was redundant with the admitted feature cursor's
 own loop-kind census. Tests retain live grammar/features, capture metadata,
 deep parent ownership and scalar operation/resource invariants instead of
 pinning unused BCL runtime facts.
+Required-literal family preparation also admits wrapper/collector value frames,
+temporary family/candidate/member vectors, ordinal membership maps and arena
+tracking. Single-character text admits its string and retaining descriptor;
+existing node text remains borrowed. Sorting, membership hashing/equality,
+selection and copying spend shared work. Only the selected reference array
+transfers its payload loan; candidate arrays/maps and live depth unwind on every
+exit. Acquired object/string descriptors stay admitted until their owner closes.
+Decline/failure restores parent loans without refunding work. These search facts
+are heuristics, not scalar matching widths or complete retained-cache policies.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
 temporary reference maps, copied child arrays, node/tree/program objects and
 their retaining descriptors. Program vectors charge aggregate instruction slots
