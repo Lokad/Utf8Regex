@@ -10,8 +10,7 @@ internal static class Utf8OwnedTreeSliceLowerer
 {
     internal static Utf8SliceProgram? TryLower(Utf8OwnedRegexTree tree, RegexOptions options)
     {
-        if ((options & RegexOptions.NonBacktracking) != 0 ||
-            tree.CaptureCatalog is not { } catalog)
+        if (tree.CaptureCatalog is not { } catalog)
             return null;
 
         var hasBalancing = false;
@@ -29,7 +28,8 @@ internal static class Utf8OwnedTreeSliceLowerer
             hasBalancing, tree.UsesIgnoreCase || (options & RegexOptions.IgnoreCase) != 0,
             (options & RegexOptions.RightToLeft) != 0, catalog,
             (options & RegexOptions.Compiled) != 0 && hasCaptureWritingLazyRange,
-            tree.UsesLiteralClassBracketSyntax, Utf8SliceCaseEquivalences.GetBehavior(tree.Culture, options));
+            tree.UsesLiteralClassBracketSyntax, Utf8SliceCaseEquivalences.GetBehavior(tree.Culture, options),
+            (options & RegexOptions.NonBacktracking) != 0);
 
     }
 

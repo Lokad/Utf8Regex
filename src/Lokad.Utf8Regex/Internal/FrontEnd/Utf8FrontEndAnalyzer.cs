@@ -9,8 +9,8 @@ internal static class Utf8FrontEndAnalyzer
     {
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
         // Native discovery remains limited to admitted literal shapes. Other
-        // flat graphs receive their owned scalar program at construction;
-        // general graphs retain the unsupported-options migration route.
+        // graphs receive their owned scalar NFA at construction. The historical
+        // unsupported-options reason describes native-plan eligibility here.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
             Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.TryParseNonBacktrackingFlatGraph(executionOptions,
                 semanticRegex.RuntimeTree) is { } nativeScalarProof &&

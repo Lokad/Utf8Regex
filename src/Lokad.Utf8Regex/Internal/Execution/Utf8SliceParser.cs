@@ -11,13 +11,30 @@ internal static class Utf8SliceParser
 {
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
-        if (pattern is null || (options & RegexOptions.NonBacktracking) != 0) return null;
+        if (pattern is null) return null;
         return TryParse(options, Utf8OwnedTreeParser.TryParse(pattern, options));
     }
 
     internal static Utf8SliceProgram? TryParse(RegexOptions options, Utf8OwnedRegexTree? tree)
     {
         if (tree is null) return null;
+        if ((options & RegexOptions.NonBacktracking) != 0)
+        {
+            var pending = new Stack<Utf8TreeNode>();
+            pending.Push(tree.Root);
+            while (pending.TryPop(out var node))
+            {
+                // These constructs are outside the declared NonBacktracking
+                // grammar. Keep their construction rejection until owned error
+                // admission replaces the residual validation factory.
+                if (node.Kind is Utf8TreeNodeKind.Backreference or Utf8TreeNodeKind.Atomic or
+                    Utf8TreeNodeKind.PositiveLookaround or Utf8TreeNodeKind.NegativeLookaround or
+                    Utf8TreeNodeKind.BackreferenceConditional or Utf8TreeNodeKind.ExpressionConditional or
+                    Utf8TreeNodeKind.Start || node.Kind == Utf8TreeNodeKind.Capture && node.N >= 0)
+                    return null;
+                for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
+            }
+        }
         return Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
     }
 
@@ -26,8 +43,8 @@ internal static class Utf8SliceParser
         if (tree is null) return null;
         // No consuming loop, assertion recursion, reference, conditional or
         // atomic choice enters this admission. Candidate work is bounded by
-        // the cached finite graph, independent of subject length. General
-        // NonBacktracking graphs require a separate owned linear engine.
+        // the cached finite graph, independent of subject length. This proof
+        // limits native discovery only; general graphs use the owned scalar NFA.
         var pending = new Stack<Utf8TreeNode>();
         pending.Push(tree.Root);
         while (pending.TryPop(out var node))

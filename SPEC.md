@@ -382,7 +382,7 @@ The architecture must keep these invariants:
 * separate lowerings for candidate search and full execution
 * scalar-aware UTF-8 subject traversal and primary byte ranges
 * native `RightToLeft`; never emulate it by reversing the input
-* `RegexOptions.NonBacktracking` remains a separate official mode, not a hidden default optimization
+* `RegexOptions.NonBacktracking` is a separate owned linear-time scalar search mode
 * `Utf8Regex` instances are immutable and thread-safe
 
 Implementation details may evolve, but fast paths must be derived from the same semantic front-end rather than from separate pattern parsers.
@@ -413,7 +413,11 @@ The implementation is done when all of the following are true:
 * Supported features obey the declared Unicode-scalar contract over strict UTF-8, with direct coverage across all public operations.
 * String-returning APIs materialize the same scalar results as byte APIs.
 * Every successful core match and capture has a correct scalar-aligned byte range. There is no surrogate-half execution mode.
-* `RegexOptions.NonBacktracking` behaves like the official mode, including its documented restrictions and capture differences.
+* `RegexOptions.NonBacktracking` uses scalar matching with ordered alternatives,
+  greedy/lazy choice and the regular grammar's documented restrictions. Each
+  public group exposes its last completed capture, including an empty capture;
+  nested/shared declarations retain their own openings. Runtime capture defects
+  and timeout rounding do not define this contract.
 * Supported construction/execution is owned, common construction/invocation/result/retained bounds work, and synchronous cancellation interrupts ongoing work. Obsolete parity machinery and production BCL engine dependence are removed.
 * Hot native paths are allocation-light, and the benchmark suite meets qualified per-scenario thresholds against semantically comparable baselines.
 

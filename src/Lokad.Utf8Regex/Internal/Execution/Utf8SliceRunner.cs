@@ -288,6 +288,15 @@ internal static partial class Utf8SliceRunner
         bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation)
     {
+        if (program.IsNonBacktracking)
+        {
+            if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
+                start < input.Length && (input[start] & 0xC0) == 0x80)
+                return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            var outcome = RunNonBacktracking(program, input, start, captureStarts, captureEnds,
+                collectHistory, true, requireNonEmpty, ref invocation);
+            return new(outcome.Found, outcome.EndByte, outcome.Breach, outcome.CaptureStarts, outcome.CaptureLengths);
+        }
         var workspace = new AttemptWorkspace();
         try
         {
@@ -374,6 +383,9 @@ internal static partial class Utf8SliceRunner
         if ((uint)fromByte > (uint)input.Length ||
             fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
             return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+        if (program.IsNonBacktracking)
+            return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
+                collectHistory, false, false, ref invocation);
         var workspace = new AttemptWorkspace();
         try
         {
@@ -427,6 +439,19 @@ internal static partial class Utf8SliceRunner
         var count = 0;
         var position = fromByte;
         invocation.AnchorOriginByte = fromByte;
+        if (program.IsNonBacktracking)
+        {
+            while (position >= 0)
+            {
+                var found = TryFindFirst(program, input, position, captureStarts, captureEnds, false, ref invocation);
+                if (found.Breach != Utf8ExecutionLimitKind.None) return new(count, found.Breach);
+                if (!found.Found) break;
+                count++;
+                position = found.EndByte != found.StartByte
+                    ? found.EndByte : AdvancePastScalar(input, found.EndByte, false);
+            }
+            return new(count, Utf8ExecutionLimitKind.None);
+        }
         var workspace = new AttemptWorkspace();
         try
         {

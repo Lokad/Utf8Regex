@@ -266,6 +266,8 @@ internal sealed class Utf8SliceProgram
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
+    internal bool IsNonBacktracking { get; init; }
+    internal int NonBacktrackingCaptureOpeningCount { get; init; }
     internal Func<int, int>[] BackreferenceLowerings { get; init; } = [];
 
     internal byte[][] SetMasks { get; }
@@ -397,11 +399,10 @@ internal sealed class Utf8SliceProgram
 /// <summary>Lowers immutable slice trees to flat programs with patched jumps.</summary>
 internal static class Utf8SliceLowerer
 {
-    // Expansion-site backstop for the parser length cap: lowering is linear, so
-    // this only trips on synthetic trees or future parser changes, never on
-    // admitted patterns. The bound keeps retained programs near twenty megabytes
-    // worst case (one million twenty-byte instructions); over-limit trees decline
-    // to null and callers keep legacy routing.
+    // Transitional retained-program backstop. Ordinary lowering is linear;
+    // NonBacktracking finite bounds and nullable-loop lanes can expand the tree.
+    // Over-limit preparation still declines to residual routing. Replace this
+    // with the shared construction policy before claiming engine independence.
     internal const int MaxInstructions = 1048576;
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft)
@@ -413,9 +414,13 @@ internal static class Utf8SliceLowerer
         => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, captureCatalog, false, false, Utf8ScalarCaseBehavior.Invariant);
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior)
+        => Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft,
+            captureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, caseBehavior, false);
+
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking)
     {
         var facts = AnalyzeNodes(root);
-        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior);
+        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior, nonBacktracking);
         lowerer.CaptureCatalog = captureCatalog;
         var frames = new Stack<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>();
         frames.Push((lowerer, root, lowerer.EmitSteps(root).GetEnumerator(), true));
@@ -430,7 +435,7 @@ internal static class Utf8SliceLowerer
                     var owner = frame.Owner;
                     if (request.Program)
                     {
-                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts, owner.CaseBehavior);
+                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts, owner.CaseBehavior, owner.NonBacktracking);
                         owner.CaptureCatalog = frame.Owner.CaptureCatalog;
                     }
                     frames.Push((owner, request.Node, owner.EmitSteps(request.Node).GetEnumerator(), request.Program));
@@ -683,7 +688,11 @@ internal static class Utf8SliceLowerer
             requiresUnicodeCategory,
             assertions,
             hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior)
-        { BackreferenceLowerings = lowerer.BackreferenceLowerings.ToArray() };
+        {
+            BackreferenceLowerings = lowerer.BackreferenceLowerings.ToArray(),
+            IsNonBacktracking = lowerer.NonBacktracking,
+            NonBacktrackingCaptureOpeningCount = lowerer.CaptureOpeningCount,
+        };
     }
 
     private sealed class Lowering
@@ -694,6 +703,7 @@ internal static class Utf8SliceLowerer
         internal readonly List<Utf8SliceNode.CategorySetMember[]> CategorySetMembers = new();
         internal readonly List<Utf8SliceCategoryTable> CategoryTables = new();
         internal int RepeatCount;
+        internal int CaptureOpeningCount;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
@@ -706,17 +716,19 @@ internal static class Utf8SliceLowerer
         internal readonly bool MatchCaseInsensitive;
         internal readonly Utf8ScalarCaseBehavior CaseBehavior;
         internal readonly bool MirrorExecute;
+        internal readonly bool NonBacktracking;
         internal readonly Dictionary<Utf8SliceNode, NodeFacts> Facts;
         internal Utf8SliceProgram? LastSubprogram;
         internal bool Failed;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking)
         {
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
             CaseBehavior = caseBehavior;
             MirrorExecute = mirrorExecute;
+            NonBacktracking = nonBacktracking;
             Facts = facts;
             // RTL references can precede their captures. Every program starts
             // with the final catalog tally when supplied, just as the old entry.
@@ -827,6 +839,40 @@ internal static class Utf8SliceLowerer
                     if (repeat.Minimum < 0 || repeat.Maximum < repeat.Minimum)
                     {
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice repeat bounds need 0 <= min <= max.");
+                    }
+
+                    if (NonBacktracking)
+                    {
+                        // Thompson states have no input-dependent counter or
+                        // backtracking trail. Finite bounds expand at preparation;
+                        // the existing construction admission still applies.
+                        for (var iteration = 0; iteration < repeat.Minimum; iteration++)
+                        {
+                            yield return new EmissionRequest(repeat.Body, false, false);
+                            if (Failed) yield break;
+                        }
+                        var exits = new List<int>();
+                        for (var iteration = repeat.Minimum; iteration < repeat.Maximum; iteration++)
+                        {
+                            var fork = Instructions.Count;
+                            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
+                            yield return new EmissionRequest(repeat.Body, false, false);
+                            if (Failed) yield break;
+                            if (repeat.Maximum == int.MaxValue)
+                            {
+                                if (Facts[repeat.Body].CanMatchEmpty)
+                                {
+                                    ExpandNullableIteration(fork);
+                                    if (Failed) yield break;
+                                }
+                                else Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, fork, 0, 0, 0));
+                                Patch(fork, Instructions.Count);
+                                break;
+                            }
+                            exits.Add(fork);
+                        }
+                        foreach (var exit in exits) Patch(exit, Instructions.Count);
+                        break;
                     }
 
                     var repeatId = RepeatCount++;
@@ -1081,15 +1127,65 @@ internal static class Utf8SliceLowerer
                         GroupCount = capture.Slot + 1;
                     }
 
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureStart, capture.Slot, 0, 0, 0));
+                    // An opening register belongs to this declaration, not its
+                    // public slot: nested aliases can close the same slot in a
+                    // different order. The NFA exposes only the last completion.
+                    var opening = NonBacktracking ? CaptureOpeningCount++ : 0;
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureStart, capture.Slot, opening, 0, 0));
                     yield return new EmissionRequest(capture.Body, false, MirrorExecute);
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, opening, 0, 0));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported slice node {node.Kind}.", nameof(node));
             }
 
             yield break;
+        }
+
+        internal void ExpandNullableIteration(int fork)
+        {
+            // Two static lanes record whether this iteration consumed a scalar.
+            // An empty completion exits; a consuming completion repeats. This
+            // removes epsilon cycles without losing the final empty capture or
+            // making capture registers part of the runner's state identity.
+            var first = fork + 1;
+            var body = Instructions.GetRange(first, Instructions.Count - first);
+            var emptyLane = new int[body.Count + 1];
+            var consumingLane = new int[body.Count + 1];
+            long count = first;
+            for (var index = 0; index < body.Count; index++)
+            {
+                emptyLane[index] = (int)count;
+                count += IsAtom(body[index].Kind) ? 2 : 1;
+            }
+            if (count + body.Count + 2 > MaxInstructions)
+            {
+                Failed = true;
+                return;
+            }
+            emptyLane[body.Count] = (int)count++;
+            for (var index = 0; index < body.Count; index++) consumingLane[index] = (int)count++;
+            consumingLane[body.Count] = (int)count++;
+            Instructions.RemoveRange(first, body.Count);
+            for (var index = 0; index < body.Count; index++)
+            {
+                Emit(Rebase(body[index], first, emptyLane));
+                if (IsAtom(body[index].Kind))
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, consumingLane[index + 1], 0, 0, 0));
+            }
+            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, (int)count, 0, 0, 0));
+            foreach (var instruction in body) Emit(Rebase(instruction, first, consumingLane));
+            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, fork, 0, 0, 0));
+
+            static bool IsAtom(Utf8SliceInstructionKind kind)
+                => kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
+                    Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
+                    Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid;
+
+            static Utf8SliceInstruction Rebase(Utf8SliceInstruction instruction, int first, int[] addresses)
+                => instruction.Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump
+                    ? new(instruction.Kind, addresses[instruction.A - first], instruction.B, instruction.C, instruction.D)
+                    : instruction;
         }
 
         private void Patch(int index, int target)

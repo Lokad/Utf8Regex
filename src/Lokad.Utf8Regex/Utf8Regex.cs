@@ -144,14 +144,9 @@ public sealed partial class Utf8Regex
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // scalar slice. The instruction-count admission still declines to
         // transitional routing; pattern nesting does not select a BCL engine.
-        // The admitted NonBacktracking flat graphs have no loops, balancing,
-        // or shared capture declarations. Their cached scalar program supplies
-        // complete-scalar offsets without an input-dependent backtracking search.
-        // Other NonBacktracking graphs still require owned admission/execution.
-        var ownedSliceProgram =
-            (options & RegexOptions.NonBacktracking) != 0
-                ? Utf8SliceParser.TryParseNonBacktrackingFlatGraph(options, preparedRegex.SemanticRegex.RuntimeTree)
-                : Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
+        // NonBacktracking regular graphs lower to ordered scalar NFA states,
+        // including loops and shared captures. They do not use the backtracker.
+        var ownedSliceProgram = Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
         // Captured lookbehind has an owned tree and scalar program. Declined
@@ -163,10 +158,8 @@ public sealed partial class Utf8Regex
             _ = _program.GroupNumbers.Value;
         }
 
-        // Flat NonBacktracking graphs have an owned structural admission proof
-        // and no input-dependent repetition. Construction needs no BCL engine.
-        // General/unserved graphs and unsupported constructs remain migration
-        // debt; retain their existing construction validation until replaced.
+        // Admitted NonBacktracking graphs need no BCL engine. Unsupported
+        // constructs and over-limit preparation retain residual validation debt.
         if ((options & RegexOptions.NonBacktracking) != 0 && ownedSliceProgram is null)
         {
             _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;

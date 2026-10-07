@@ -74,7 +74,7 @@ public sealed class Utf8ScalarCultureCleanupTests
     [InlineData("tr-TR", true, false)]
     [InlineData("tr-TR", false, true)]
     [InlineData("tr-TR", true, true)]
-    public void UnservedNonBacktrackingLoopsRetainTheirConstructionCultureOnBmpOverlap(string culture, bool compiled, bool scoped)
+    public void OwnedNonBacktrackingLoopsRetainTheirConstructionCultureOnBmpOverlap(string culture, bool compiled, bool scoped)
     {
         var saved = CultureInfo.CurrentCulture;
         try
@@ -85,7 +85,7 @@ public sealed class Utf8ScalarCultureCleanupTests
                 (scoped ? RegexOptions.None : RegexOptions.IgnoreCase);
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options);
-            Assert.Null(regex.Inspection.AvailableOwnedSliceProgram);
+            Assert.True(regex.Inspection.AvailableOwnedSliceProgram?.IsNonBacktracking);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
             foreach (var text in new[] { "i", "I", "\u0130", "\u0131", "iii", "aIai" })
             {
