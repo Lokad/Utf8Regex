@@ -4,29 +4,44 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8ExecutionTreeLowerer
 {
+    private readonly record struct Frame(Utf8TreeNode Node, int NextChild);
+
     public static Utf8ExecutionTree? Lower(Utf8SemanticRegex semanticRegex)
     {
         if (semanticRegex.RuntimeTree?.Root is not { } root) return null;
-        var nodes = new Dictionary<Utf8TreeNode, Utf8ExecutionNode>();
-        var frames = new Stack<(Utf8TreeNode Node, int NextChild)>();
-        frames.Push((root, 0));
-        while (frames.TryPop(out var frame))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(root, 0));
+        using var nodes = Utf8ConstructionMap<Utf8TreeNode, Utf8ExecutionNode>.Create(budget, ReferenceEqualityComparer.Instance);
+        while (frames.Count != 0)
         {
+            budget.ChargeWork(1);
+            var frameIndex = frames.Count - 1;
+            var frame = frames[frameIndex];
             var node = frame.Node;
             if (frame.NextChild < node.ChildCount)
             {
-                frames.Push((node, frame.NextChild + 1));
-                frames.Push((node.Child(frame.NextChild), 0));
+                frames[frameIndex] = frame with { NextChild = frame.NextChild + 1 };
+                frames.Push(new(node.Child(frame.NextChild), 0));
                 continue;
             }
 
-            var children = node.ChildCount == 0 ? Array.Empty<Utf8ExecutionNode>() : new Utf8ExecutionNode[node.ChildCount];
-            for (var index = 0; index < children.Length; index++) children[index] = nodes[node.Child(index)];
-            nodes[node] = new Utf8ExecutionNode(
-                MapKind(node.Kind), node.Options, children, node.Str ?? string.Empty,
-                node.Ch, GetCaptureNumber(node), node.M, node.N);
+            var children = budget.AllocateArray<Utf8ExecutionNode>(node.ChildCount, false);
+            for (var index = 0; index < children.Length; index++)
+            {
+                budget.ChargeWork(1);
+                children[index] = nodes[node.Child(index)];
+            }
+            nodes[node] = budget.AllocateObject(
+                (Kind: MapKind(node.Kind), node.Options, Children: (IReadOnlyList<Utf8ExecutionNode>)children,
+                    Text: node.Str ?? string.Empty, node.Ch, Capture: GetCaptureNumber(node), node.M, node.N),
+                static state => new Utf8ExecutionNode(state.Kind, state.Options, state.Children,
+                    state.Text, state.Ch, state.Capture, state.M, state.N));
+            frames.Pop();
         }
-        return new Utf8ExecutionTree(nodes[root]);
+        var result = budget.AllocateObject(nodes[root], static node => new Utf8ExecutionTree(node));
+        scope.Complete();
+        return result;
     }
 
     private static int GetCaptureNumber(Utf8TreeNode node)

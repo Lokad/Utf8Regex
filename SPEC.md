@@ -510,6 +510,15 @@ scratch without refunding work. Whitespace prefix analysis borrows a child curso
 and preserves the owned tree's parent links instead of manufacturing a parent.
 Output builders, projection strings/spans and other preparation payloads remain
 separate admission work.
+Byte-safe execution-tree and program lowering also admit value frames, visits,
+temporary reference maps, copied child arrays, node/tree/program objects and
+their retaining descriptors. Program vectors charge aggregate instruction slots
+as well as bytes, including growth/final-copy overlap. Fixed-capture layout
+preparation admits its eligibility scan, frames, temporary index map and compact
+capture array; the retained hash table is removed. Completed results transfer
+payload loans, while decline or failure restores parent loans/depth without
+refunding work. Other preparation producers and retained-cache policies remain
+uncovered; these charges do not establish complete construction bounds.
 Python scalar conversion also uses admitted value frames, deleting its captured
 yield continuation. Its arena/map descriptors, direct structural IR nodes and
 retaining descriptors admit before acquisition; node charges include the base

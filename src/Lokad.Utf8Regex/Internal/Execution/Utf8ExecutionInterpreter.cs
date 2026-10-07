@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -411,8 +412,10 @@ internal static partial class Utf8ExecutionInterpreter
 
     private static bool IsDeterministicCaptureProgram(Utf8ExecutionProgram program)
     {
-        foreach (var instruction in program.Instructions)
+        for (var index = 0; index < program.Instructions.Count; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
+            var instruction = program.Instructions[index];
             if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
             {
                 continue;
@@ -454,25 +457,40 @@ internal static partial class Utf8ExecutionInterpreter
 
     internal static Utf8DeterministicCaptureLayout? CreateDeterministicCaptureLayout(Utf8ExecutionProgram program)
     {
-        if (program.Instructions.Count == 0 || !IsDeterministicCaptureProgram(program)) return null;
-        var captures = new Dictionary<int, Utf8DeterministicCaptureSlice>();
-        var frames = new Stack<(int Enter, int Start, int NextChild)>();
-        frames.Push((0, 0, -1));
+        if (program.Instructions.Count == 0) return null;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        using var frames = Utf8ConstructionFrames<CaptureLayoutFrame>.Create(budget, new(0, 0, -1));
+        if (!IsDeterministicCaptureProgram(program)) return null;
+        using var captures = Utf8ConstructionBuffer<KeyValuePair<int, Utf8DeterministicCaptureSlice>>.Create(budget);
+        using var indices = Utf8ConstructionMap<int, int>.Create(budget, EqualityComparer<int>.Default);
         var offset = 0;
-        while (frames.TryPop(out var frame))
+        while (frames.Count != 0)
         {
+            budget.ChargeWork(1);
+            var frameIndex = frames.Count - 1;
+            var frame = frames[frameIndex];
             var instruction = program.Instructions[frame.Enter];
             if (instruction.Kind != Utf8ExecutionInstructionKind.Enter) return null;
             var container = instruction.NodeKind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group or Utf8ExecutionNodeKind.Concatenate;
             var next = frame.NextChild < 0 ? frame.Enter + 1 : frame.NextChild;
             if (container && next < instruction.PartnerIndex)
             {
-                frames.Push((frame.Enter, frame.Start, program.Instructions[next].PartnerIndex + 1));
-                frames.Push((next, offset, -1));
+                frames[frameIndex] = frame with { NextChild = program.Instructions[next].PartnerIndex + 1 };
+                frames.Push(new(next, offset, -1));
                 continue;
             }
             if (instruction.NodeKind == Utf8ExecutionNodeKind.Capture)
-                captures[instruction.CaptureNumber] = new Utf8DeterministicCaptureSlice(frame.Start, offset - frame.Start);
+            {
+                var capture = new KeyValuePair<int, Utf8DeterministicCaptureSlice>(
+                    instruction.CaptureNumber, new(frame.Start, offset - frame.Start));
+                if (indices.TryGetValue(instruction.CaptureNumber, out var index)) captures[index] = capture;
+                else
+                {
+                    indices[instruction.CaptureNumber] = captures.Count;
+                    captures.Add(capture);
+                }
+            }
             if (!container)
             {
                 var width = instruction.NodeKind switch
@@ -485,9 +503,14 @@ internal static partial class Utf8ExecutionInterpreter
                 if (offset > int.MaxValue - width) return null;
                 offset += width;
             }
+            frames.Pop();
         }
-        return new Utf8DeterministicCaptureLayout(offset, captures);
+        var result = new Utf8DeterministicCaptureLayout(offset, captures.Take());
+        scope.Complete();
+        return result;
     }
+
+    private readonly record struct CaptureLayoutFrame(int Enter, int Start, int NextChild);
 
     // Fixed deterministic discovery borrows immutable preparation and caller-owned
     // slots. There is no invocation-owned continuation array, capture stack or
