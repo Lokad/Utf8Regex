@@ -1,11 +1,9 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned regex parse-tree node: kind, options, payloads, and child storage with
-// parent links. This mirrors the production-used fork node surface exactly
-// (construction shapes, single-or-list child storage, backtracking predicate)
-// so consumers migrate by renaming; fork-only surface (Reduce, MakeQuantifier,
-// case-conversion constructors, child replacement, and the scan position) is
-// deliberately omitted with no production readers.
+// parent links. The parser and scalar/native preparation consumers borrow this
+// representation; it carries grammar and lexical payloads, not BCL execution
+// or per-node runtime parity facts.
 internal sealed class Utf8TreeNode
 {
     public object? Children;
@@ -51,22 +49,6 @@ internal sealed class Utf8TreeNode
     // Execution retains the lexical fold flag even when structural analysis
     // consumes a partially expanded set and clears IgnoreCase on that node.
     internal bool MatchCaseInsensitive { get; set; }
-
-    public bool IsBacktrackingConstruct => Kind switch
-    {
-        Utf8TreeNodeKind.Alternate => true,
-        Utf8TreeNodeKind.Loop => true,
-        Utf8TreeNodeKind.Lazyloop => true,
-        Utf8TreeNodeKind.Oneloop => true,
-        Utf8TreeNodeKind.Notoneloop => true,
-        Utf8TreeNodeKind.Setloop => true,
-        Utf8TreeNodeKind.Onelazy => true,
-        Utf8TreeNodeKind.Notonelazy => true,
-        Utf8TreeNodeKind.Setlazy => true,
-        Utf8TreeNodeKind.BackreferenceConditional => true,
-        Utf8TreeNodeKind.ExpressionConditional => true,
-        _ => false,
-    };
 
     public string? Str { get; set; }
 

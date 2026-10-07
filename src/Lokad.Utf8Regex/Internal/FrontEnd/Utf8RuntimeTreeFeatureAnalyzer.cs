@@ -10,14 +10,13 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             return default;
         }
 
-        var runtimeAnalysis = semanticRegex.RuntimeAnalysis;
         var state = new FeatureState
         {
             CaptureCount = semanticRegex.RuntimeTree.CaptureCount,
             HasNamedCaptures = semanticRegex.RuntimeTree.CaptureNameToNumberMapping is { Count: > 0 },
         };
 
-        Visit(root, runtimeAnalysis, ref state);
+        Visit(root, ref state);
 
         return new Utf8RegexFeatures(
             state.CaptureCount,
@@ -40,7 +39,7 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
         internal bool Entered;
     }
 
-    private static void Visit(Utf8TreeNode node, Utf8OwnedTreeAnalysis? runtimeAnalysis, ref FeatureState state)
+    private static void Visit(Utf8TreeNode node, ref FeatureState state)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -54,11 +53,6 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             if (!frame.Entered)
             {
                 frame.Entered = true;
-                if (runtimeAnalysis?.IsInLoop(node) == true)
-                {
-                    state.HasLoops = true;
-                }
-
                 switch (node.Kind)
                 {
                     case Utf8TreeNodeKind.Backreference:

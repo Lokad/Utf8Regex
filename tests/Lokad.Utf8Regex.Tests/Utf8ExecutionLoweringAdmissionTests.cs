@@ -22,7 +22,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             node = new(Utf8ExecutionNodeKind.Capture, RegexOptions.None, [node], "", '\0', 1, 1, -1);
         }
         var owned = new Utf8OwnedRegexTree(source, 2, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture);
-        var semantic = new Utf8SemanticRegex("a", RegexOptions.None, "a", RegexOptions.None, owned, null);
+        var semantic = new Utf8SemanticRegex("a", RegexOptions.None, "a", RegexOptions.None, owned);
         var tree = new Utf8ExecutionTree(node);
         var program = Utf8ExecutionProgramLowerer.Lower(tree);
         Assert.NotNull(program);

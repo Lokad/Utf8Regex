@@ -7,15 +7,13 @@ internal readonly struct Utf8SemanticRegex
         RegexOptions options,
         string executionPattern,
         RegexOptions executionOptions,
-        Utf8OwnedRegexTree? runtimeTree,
-        Utf8OwnedTreeAnalysis? runtimeAnalysis)
+        Utf8OwnedRegexTree? runtimeTree)
     {
         Pattern = pattern;
         Options = options;
         ExecutionPattern = executionPattern;
         ExecutionOptions = executionOptions;
         RuntimeTree = runtimeTree;
-        RuntimeAnalysis = runtimeAnalysis;
     }
 
     public string Pattern { get; }
@@ -28,5 +26,4 @@ internal readonly struct Utf8SemanticRegex
 
     public Utf8OwnedRegexTree? RuntimeTree { get; }
 
-    public Utf8OwnedTreeAnalysis? RuntimeAnalysis { get; }
 }

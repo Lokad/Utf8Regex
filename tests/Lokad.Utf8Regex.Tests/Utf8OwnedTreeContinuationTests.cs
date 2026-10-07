@@ -37,7 +37,7 @@ public sealed class Utf8OwnedTreeContinuationTests
 
     [Theory]
     [MemberData(nameof(DeepGrammarCases))]
-    public void SuspendedGrammarKeepsOracleMetadataAndCompleteAnalysis(int depth, string family, RegexOptions options)
+    public void SuspendedGrammarKeepsOracleMetadataAndTreeOwnership(int depth, string family, RegexOptions options)
     {
         var pattern = Pattern(depth, family);
         var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
@@ -56,13 +56,13 @@ public sealed class Utf8OwnedTreeContinuationTests
     [InlineData((int)Utf8TreeNodeKind.Atomic)]
     [InlineData((int)Utf8TreeNodeKind.Loop)]
     [InlineData((int)Utf8TreeNodeKind.PositiveLookaround)]
-    public void ExtremeTreeDepthKeepsCompleteFacts(int nodeKind)
+    public void ExtremeTreeDepthKeepsTreeOwnershipAndLiveFeatures(int nodeKind)
     {
         const int depth = 16385;
         var kind = (Utf8TreeNodeKind)nodeKind;
         // Analyze an independently built tree beyond normal pattern sizes.
-        // No recursive test walker or
-        // .NET construction is required to exercise the owned analysis stack.
+        // No recursive test walker or .NET construction is required to exercise
+        // the admitted feature cursor and complete tree ownership.
         var tree = Utf8OwnedTreeParser.TryParse("(?<x>a|b)+c", RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
         var body = tree.Root.Child(0);
@@ -111,26 +111,17 @@ public sealed class Utf8OwnedTreeContinuationTests
 
     private static void AssertDeepTree(Utf8OwnedRegexTree tree, int minimumDepth)
     {
-        var facts = Utf8OwnedTreeAnalyzer.Analyze(tree);
-        Assert.True(facts.Complete);
-        Assert.True(facts.MayContainCapture(tree.Root));
-        Assert.True(facts.IsAtomicByAncestor(tree.Root));
+        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new("", tree.Options, "", tree.Options, tree));
         var nodes = new HashSet<Utf8TreeNode>();
         var pending = new Stack<(Utf8TreeNode Node, int Depth)>();
         pending.Push((tree.Root, 0));
         var maximumDepth = 0;
-        var hasIgnoreCase = false;
-        var hasRightToLeft = false;
+        var captures = 0;
         while (pending.TryPop(out var frame))
         {
             Assert.True(nodes.Add(frame.Node), "The owned tree must not contain cycles or shared children.");
             maximumDepth = Math.Max(maximumDepth, frame.Depth);
-            hasIgnoreCase |= (frame.Node.Options & RegexOptions.IgnoreCase) != 0;
-            hasRightToLeft |= (frame.Node.Options & RegexOptions.RightToLeft) != 0;
-            if (frame.Node.Kind == Utf8TreeNodeKind.Capture)
-                Assert.True(facts.MayContainCapture(frame.Node));
-            if (frame.Node.Kind is Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.PositiveLookaround or Utf8TreeNodeKind.NegativeLookaround)
-                Assert.False(facts.MayBacktrack(frame.Node));
+            if (frame.Node.Kind == Utf8TreeNodeKind.Capture) captures++;
             for (var index = 0; index < frame.Node.ChildCount; index++)
             {
                 var child = frame.Node.Child(index);
@@ -139,8 +130,9 @@ public sealed class Utf8OwnedTreeContinuationTests
             }
         }
         Assert.True(maximumDepth >= minimumDepth);
-        Assert.Equal(hasIgnoreCase, facts.HasIgnoreCase);
-        Assert.Equal(hasRightToLeft, facts.HasRightToLeft);
+        Assert.True(captures > 0);
+        Assert.Equal(tree.CaptureCount, features.CaptureCount);
+        Assert.Equal(tree.CaptureNameToNumberMapping is { Count: > 0 }, features.HasNamedCaptures);
     }
 
     public static IEnumerable<object[]> OwnedOperationCases()

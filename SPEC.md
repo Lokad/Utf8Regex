@@ -510,6 +510,13 @@ scratch without refunding work. Whitespace prefix analysis borrows a child curso
 and preserves the owned tree's parent links instead of manufacturing a parent.
 Output builders, projection strings/spans and other preparation payloads remain
 separate admission work.
+Feature census reads grammar nodes directly. The former per-node atomicity,
+capture-containment, backtracking and loop-membership analysis, its four sets,
+retained semantic field and orphaned backtracking predicate are removed. Its
+only production loop query was redundant with the admitted feature cursor's
+own loop-kind census. Tests retain live grammar/features, capture metadata,
+deep parent ownership and scalar operation/resource invariants instead of
+pinning unused BCL runtime facts.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
 temporary reference maps, copied child arrays, node/tree/program objects and
 their retaining descriptors. Program vectors charge aggregate instruction slots

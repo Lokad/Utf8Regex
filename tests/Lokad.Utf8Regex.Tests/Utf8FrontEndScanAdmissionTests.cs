@@ -26,7 +26,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     private static Utf8SemanticRegex Semantic(Utf8TreeNode root)
         => new("a", RegexOptions.None, "a", RegexOptions.None,
-            new Utf8OwnedRegexTree(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture), null);
+            new Utf8OwnedRegexTree(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture));
 
     private static Input Make(int route, int depth)
     {

@@ -63,37 +63,6 @@ public sealed class Utf8OwnedTreeNodeTests
         Assert.Empty(node.ChildList);
     }
 
-    public static IEnumerable<object?[]> BacktrackingCases()
-    {
-        yield return new object?[] { 3, true };
-        yield return new object?[] { 4, true };
-        yield return new object?[] { 5, true };
-        yield return new object?[] { 6, true };
-        yield return new object?[] { 7, true };
-        yield return new object?[] { 8, true };
-        yield return new object?[] { 24, true };
-        yield return new object?[] { 26, true };
-        yield return new object?[] { 27, true };
-        yield return new object?[] { 33, true };
-        yield return new object?[] { 34, true };
-        yield return new object?[] { 0, false };
-        yield return new object?[] { 9, false };
-        yield return new object?[] { 11, false };
-        yield return new object?[] { 13, false };
-        yield return new object?[] { 25, false };
-        yield return new object?[] { 28, false };
-        yield return new object?[] { 30, false };
-        yield return new object?[] { 41, false };
-    }
-
-    [Theory]
-    [MemberData(nameof(BacktrackingCases))]
-    public void OwnedBacktrackingPredicateMatchesKind(int value, bool expected)
-    {
-        var node = new Utf8TreeNode((Utf8TreeNodeKind)value, RegexOptions.None);
-        Assert.Equal(expected, node.IsBacktrackingConstruct);
-    }
-
     [Fact]
     public void OwnedConstructorsStorePayloads()
     {

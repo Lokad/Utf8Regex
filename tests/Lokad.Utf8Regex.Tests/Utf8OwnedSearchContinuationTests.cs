@@ -42,7 +42,7 @@ public sealed class Utf8OwnedSearchContinuationTests
         for (var index = 0; index < depth; index++) body = Parent(kind, body);
         tree.Root.Children = body;
         body.Parent = tree.Root;
-        return new Utf8SemanticRegex(pattern, options, pattern, options, tree, Utf8OwnedTreeAnalyzer.Analyze(tree));
+        return new Utf8SemanticRegex(pattern, options, pattern, options, tree);
     }
 
     private static string Snapshot(Utf8SearchFacts facts) => JsonSerializer.Serialize(new
