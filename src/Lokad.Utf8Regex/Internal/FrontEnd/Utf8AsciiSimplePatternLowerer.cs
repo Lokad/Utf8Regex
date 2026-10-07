@@ -5,6 +5,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
+    private readonly record struct ScanFrame(Utf8TreeNode Node, int NextChild, bool Entered);
+
     private const int MaxExpandedBranches = 64;
     private const int MaxLiteralCharClassExpansion = 4;
     private const int MaxPreparationWork = 4096;
@@ -144,43 +146,33 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool HasCaseClearingGroup(Utf8TreeNode node)
+    private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);
+
+    // Byte plans have one folding flag. These two callers reject opposite scoped
+    // changes when a plan would otherwise lose the scalar program's node options.
+    internal static bool HasScopedIgnoreCase(Utf8TreeNode node) => HasGroupWithCase(node, true);
+
+    private static bool HasGroupWithCase(Utf8TreeNode node, bool ignoreCase)
     {
-        var pending = new Stack<(Utf8TreeNode Node, int Child)>();
-        while (true)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node, 0, false));
+        while (frames.Count != 0)
         {
-            if (node.Kind == Utf8TreeNodeKind.Group && (node.Options & RegexOptions.IgnoreCase) == 0)
-                return true;
-            if (node.ChildCount != 0)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            node = frame.Node;
+            if (!frame.Entered)
             {
-                if (node.ChildCount > 1) pending.Push((node, 1));
-                node = node.Child(0);
-                continue;
+                frame = frame with { Entered = true };
+                if (node.Kind == Utf8TreeNodeKind.Group && ((node.Options & RegexOptions.IgnoreCase) != 0) == ignoreCase)
+                    return true;
             }
-            if (!pending.TryPop(out var next)) return false;
-            if (next.Child + 1 < next.Node.ChildCount) pending.Push((next.Node, next.Child + 1));
-            node = next.Node.Child(next.Child);
+            if (frame.NextChild == node.ChildCount) { frames.Pop(); continue; }
+            frames[index] = frame with { NextChild = frame.NextChild + 1 };
+            frames.Push(new(node.Child(frame.NextChild), 0, false));
         }
-    }
-
-    // Non-literal simple patterns carry no per-branch folding flag, so a sensitive top
-    // level with an i-scoped group would search and match case-sensitively where BCL
-    // folds. Literal-extractable branches keep their route (search misses fall back
-    // BCL-exactly); only the plan-executed remainder declines until per-branch
-    // folding exists.
-    internal static bool HasScopedIgnoreCase(Utf8TreeNode node)
-    {
-        var pending = new Stack<Utf8TreeNode>();
-        pending.Push(node);
-        while (pending.TryPop(out node))
-        {
-            if (node.Kind == Utf8TreeNodeKind.Group &&
-                (node.Options & RegexOptions.IgnoreCase) != 0)
-                return true;
-            for (var index = node.ChildCount - 1; index >= 0; index--)
-                pending.Push(node.Child(index));
-        }
-
         return false;
     }
 

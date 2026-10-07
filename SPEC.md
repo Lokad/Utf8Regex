@@ -526,6 +526,15 @@ transfers its payload loan; candidate arrays/maps and live depth unwind on every
 exit. Acquired object/string descriptors stay admitted until their owner closes.
 Decline/failure restores parent loans without refunding work. These search facts
 are heuristics, not scalar matching widths or complete retained-cache policies.
+Native eligibility and simple-plan case/tail checks admit root/ancestor value
+frames and every resume; opposite case checks share one traversal. Literal
+validation charges each decoded pattern scalar before the bounded decode.
+Pure boolean scans restore all temporary loans and descriptors on return.
+Flat NonBacktracking admission finishes its scan before scalar lowering, shares
+the same owner and rolls back a declined proof's lowered payload as well as
+scan scratch; only an accepted program transfers. The unused lookaround
+eligibility helper is removed rather than given a second implementation.
+These checks gate optimizations, not supported scalar grammar or general policies.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
 temporary reference maps, copied child arrays, node/tree/program objects and
 their retaining descriptors. Program vectors charge aggregate instruction slots

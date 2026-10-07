@@ -10,6 +10,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// acquisition; pattern parsing and IR preparation still require separate admission.</summary>
 internal static class Utf8SliceParser
 {
+    private readonly record struct FlatFrame(Utf8TreeNode Node, int NextChild, bool Entered);
+
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
         if (pattern is null) return null;
@@ -34,22 +36,37 @@ internal static class Utf8SliceParser
         // atomic choice enters this admission. Candidate work is bounded by
         // the cached finite graph, independent of subject length. This proof
         // limits native discovery only; general graphs use the owned scalar NFA.
-        var pending = new Stack<Utf8TreeNode>();
-        pending.Push(tree.Root);
-        while (pending.TryPop(out var node))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using (var frames = Utf8ConstructionFrames<FlatFrame>.Create(budget, new(tree.Root, 0, false)))
         {
-            if (node.Kind is not (Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set or
-                Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty or Utf8TreeNodeKind.Nothing or
-                Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
-                Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End or
-                Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.ECMABoundary or Utf8TreeNodeKind.NonECMABoundary))
-                return null;
-            if (node.Kind == Utf8TreeNodeKind.Capture && node.N >= 0) return null;
-            for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
+            while (frames.Count != 0)
+            {
+                budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                var node = frame.Node;
+                if (!frame.Entered)
+                {
+                    if (node.Kind is not (Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set or
+                        Utf8TreeNodeKind.Multi or Utf8TreeNodeKind.Empty or Utf8TreeNodeKind.Nothing or
+                        Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
+                        Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End or
+                        Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.ECMABoundary or Utf8TreeNodeKind.NonECMABoundary))
+                        return null;
+                    if (node.Kind == Utf8TreeNodeKind.Capture && node.N >= 0) return null;
+                    frame = frame with { Entered = true, NextChild = node.ChildCount };
+                }
+                if (frame.NextChild == 0) { frames.Pop(); continue; }
+                frames[index] = frame with { NextChild = frame.NextChild - 1 };
+                frames.Push(new(node.Child(frame.NextChild - 1), 0, false));
+            }
         }
         var program = TryParse(options & ~RegexOptions.NonBacktracking, tree);
         // Aliased declarations can write a public slot more than once even
         // without loops. Their NonBacktracking capture-history rule is separate.
-        return program is { HasSharedCaptureDeclarations: false, HasBalancing: false } ? program : null;
+        if (program is not { HasSharedCaptureDeclarations: false, HasBalancing: false }) return null;
+        construction.Complete();
+        return program;
     }
 }

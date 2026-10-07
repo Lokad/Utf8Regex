@@ -8,35 +8,45 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
     private static bool AllowsTrailingNewlineBeforeEnd(Utf8TreeNode node)
     {
-        var pending = new Stack<(Utf8TreeNode Node, int Child)>();
-        while (true)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node, 0, false));
+        while (frames.Count != 0)
         {
-            switch (node.Kind)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            node = frame.Node;
+            if (!frame.Entered)
             {
-                case Utf8TreeNodeKind.Eol:
-                case Utf8TreeNodeKind.EndZ:
-                    break;
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                    if (node.ChildCount != 1) return false;
-                    node = node.Child(0);
-                    continue;
-                case Utf8TreeNodeKind.Concatenate:
-                    if (node.ChildCount == 0) return false;
-                    node = node.Child(node.ChildCount - 1);
-                    continue;
-                case Utf8TreeNodeKind.Alternate:
-                    if (node.ChildCount == 0) return false;
-                    if (node.ChildCount > 1) pending.Push((node, 1));
-                    node = node.Child(0);
-                    continue;
-                default:
-                    return false;
+                frame = frame with { Entered = true };
+                switch (node.Kind)
+                {
+                    case Utf8TreeNodeKind.Eol:
+                    case Utf8TreeNodeKind.EndZ:
+                        break;
+                    case Utf8TreeNodeKind.Capture:
+                    case Utf8TreeNodeKind.Group:
+                        if (node.ChildCount != 1) return false;
+                        break;
+                    case Utf8TreeNodeKind.Concatenate:
+                        if (node.ChildCount == 0) return false;
+                        frame = frame with { NextChild = node.ChildCount - 1 };
+                        break;
+                    case Utf8TreeNodeKind.Alternate:
+                        if (node.ChildCount == 0) return false;
+                        break;
+                    default:
+                        return false;
+                }
             }
-            if (!pending.TryPop(out var next)) return true;
-            if (next.Child + 1 < next.Node.ChildCount) pending.Push((next.Node, next.Child + 1));
-            node = next.Node.Child(next.Child);
+            var childCount = node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate
+                ? node.ChildCount : 0;
+            if (frame.NextChild == childCount) { frames.Pop(); continue; }
+            frames[index] = frame with { NextChild = frame.NextChild + 1 };
+            frames.Push(new(node.Child(frame.NextChild), 0, false));
         }
+        return true;
     }
 
     private static bool TryReserveBranchCells(Utf8PreparationBudget budget, long count)

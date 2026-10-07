@@ -5,6 +5,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static class Utf8NativeExecutionAnalyzer
 {
+    private readonly record struct ScanFrame(Utf8TreeNode Node, int NextChild, bool Entered);
+
     public static bool TryAnalyze(
         Utf8SemanticRegex semanticRegex,
         string executionPattern,
@@ -73,27 +75,42 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool ContainsImpossibleAtom(Utf8TreeNode root)
     {
-        var pending = new Stack<Utf8TreeNode>();
-        pending.Push(root);
-        while (pending.TryPop(out var node))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(root, 0, false));
+        while (frames.Count != 0)
         {
-            // The parser already resolves raw and escaped lone surrogates to
-            // Nothing. Raw-pattern shortcuts must honor that authoritative tree.
-            if (node.Kind == Utf8TreeNodeKind.Nothing) return true;
-            if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            var node = frame.Node;
+            if (!frame.Entered)
             {
-                if (char.IsSurrogate(node.Ch)) return true;
-            }
-            else if (node.Kind == Utf8TreeNodeKind.Multi && node.Str is { } text)
-            {
-                for (var offset = 0; offset < text.Length;)
+                // Authoritative failure atoms must never be encoded as U+FFFD
+                // by a native shortcut. Pattern UTF-16 text is interoperability
+                // input; every decoded literal must represent a complete scalar.
+                if (node.Kind == Utf8TreeNodeKind.Nothing) return true;
+                if (node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic)
                 {
-                    if (System.Text.Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
-                        return true;
-                    offset += width;
+                    if (char.IsSurrogate(node.Ch)) return true;
                 }
+                else if (node.Kind == Utf8TreeNodeKind.Multi && node.Str is { } text)
+                {
+                    for (var offset = 0; offset < text.Length;)
+                    {
+                        budget.ChargeWork(1);
+                        if (System.Text.Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
+                            return true;
+                        offset += width;
+                    }
+                }
+                frame = frame with { Entered = true, NextChild = node.ChildCount };
             }
-            for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
+            // Preserve the original last-child-first early-exit order, while
+            // retaining only one live continuation per ancestor.
+            if (frame.NextChild == 0) { frames.Pop(); continue; }
+            frames[index] = frame with { NextChild = frame.NextChild - 1 };
+            frames.Push(new(node.Child(frame.NextChild - 1), 0, false));
         }
         return false;
     }
@@ -379,10 +396,9 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
 
-        // Scoped case folding has no per-branch flag in plan execution: a sensitive
-        // top level with an i-scoped group would search and match case-sensitively
-        // where BCL folds (e.g. (?i:[ab]){2}|(?:a.)). Decline those non-literal shapes
-        // to the BCL-exact fallback; literal-extractable branches above keep theirs.
+        // Simple byte plans have one folding flag. Scoped folding beneath a
+        // sensitive top level needs the owned scalar program's per-node behavior;
+        // decline this plan after the literal-extraction routes above.
         if ((executionOptions & RegexOptions.IgnoreCase) == 0 &&
             Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase(root.Child(0)))
         {
@@ -471,76 +487,57 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool IsSupportedSimplePatternNode(Utf8TreeNode node)
     {
-        var pending = new Stack<Utf8TreeNode>();
-        pending.Push(node);
-        while (pending.TryPop(out node))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node, 0, false));
+        while (frames.Count != 0)
         {
-            switch (node.Kind)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            node = frame.Node;
+            if (!frame.Entered)
             {
-                case Utf8TreeNodeKind.Capture:
-                    if (node.N != -1) return false;
-                    goto case Utf8TreeNodeKind.Group;
-                case Utf8TreeNodeKind.Group:
-                    if (node.ChildCount != 1) return false;
-                    pending.Push(node.Child(0));
-                    break;
-                case Utf8TreeNodeKind.Concatenate:
-                case Utf8TreeNodeKind.Alternate:
-                    for (var index = node.ChildCount - 1; index >= 0; index--)
-                        pending.Push(node.Child(index));
-                    break;
-                case Utf8TreeNodeKind.One:
-                case Utf8TreeNodeKind.Multi:
-                case Utf8TreeNodeKind.Bol:
-                case Utf8TreeNodeKind.Eol:
-                case Utf8TreeNodeKind.Beginning:
-                case Utf8TreeNodeKind.Start:
-                case Utf8TreeNodeKind.EndZ:
-                case Utf8TreeNodeKind.End:
-                case Utf8TreeNodeKind.Empty:
-                    break;
-                case Utf8TreeNodeKind.Set:
-                    if (node.Str is null || Utf8OwnedCharClass.IsSubtraction(node.Str)) return false;
-                    break;
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Setloop:
-                    if (node.M < 0 || node.N < node.M || node.N == int.MaxValue) return false;
-                    break;
-                case Utf8TreeNodeKind.Loop:
-                    if (node.M < 0 || node.N < node.M || node.N == int.MaxValue || node.ChildCount != 1) return false;
-                    pending.Push(node.Child(0));
-                    break;
-                default:
-                    return false;
+                frame = frame with { Entered = true };
+                switch (node.Kind)
+                {
+                    case Utf8TreeNodeKind.Capture:
+                        if (node.N != -1) return false;
+                        goto case Utf8TreeNodeKind.Group;
+                    case Utf8TreeNodeKind.Group:
+                        if (node.ChildCount != 1) return false;
+                        break;
+                    case Utf8TreeNodeKind.Concatenate:
+                    case Utf8TreeNodeKind.Alternate:
+                    case Utf8TreeNodeKind.One:
+                    case Utf8TreeNodeKind.Multi:
+                    case Utf8TreeNodeKind.Bol:
+                    case Utf8TreeNodeKind.Eol:
+                    case Utf8TreeNodeKind.Beginning:
+                    case Utf8TreeNodeKind.Start:
+                    case Utf8TreeNodeKind.EndZ:
+                    case Utf8TreeNodeKind.End:
+                    case Utf8TreeNodeKind.Empty:
+                        break;
+                    case Utf8TreeNodeKind.Set:
+                        if (node.Str is null || Utf8OwnedCharClass.IsSubtraction(node.Str)) return false;
+                        break;
+                    case Utf8TreeNodeKind.Oneloop:
+                    case Utf8TreeNodeKind.Setloop:
+                        if (node.M < 0 || node.N < node.M || node.N == int.MaxValue) return false;
+                        break;
+                    case Utf8TreeNodeKind.Loop:
+                        if (node.M < 0 || node.N < node.M || node.N == int.MaxValue || node.ChildCount != 1) return false;
+                        break;
+                    default:
+                        return false;
+                }
             }
-        }
-        return true;
-    }
-
-    private static bool IsSupportedSimplePatternLookaroundNode(Utf8TreeNode node)
-    {
-        var pending = new Stack<Utf8TreeNode>();
-        pending.Push(node);
-        while (pending.TryPop(out node))
-        {
-            switch (node.Kind)
-            {
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                    if (node.ChildCount != 1) return false;
-                    pending.Push(node.Child(0));
-                    break;
-                case Utf8TreeNodeKind.One:
-                case Utf8TreeNodeKind.Multi:
-                case Utf8TreeNodeKind.Set:
-                    break;
-                case Utf8TreeNodeKind.Concatenate:
-                    for (var index = node.ChildCount - 1; index >= 0; index--)
-                        pending.Push(node.Child(index));
-                    break;
-                default:
-                    return false;
-            }
+            var childCount = node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or Utf8TreeNodeKind.Loop
+                ? node.ChildCount : 0;
+            if (frame.NextChild == childCount) { frames.Pop(); continue; }
+            frames[index] = frame with { NextChild = frame.NextChild + 1 };
+            frames.Push(new(node.Child(frame.NextChild), 0, false));
         }
         return true;
     }
