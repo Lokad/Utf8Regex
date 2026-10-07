@@ -102,7 +102,8 @@ public sealed class PythonReTranslationContinuationTests
         var held = scope.Budget.ReservedBytes;
         Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), held);
         _ = Run(operation, simple);
-        Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), scope.Budget.ReservedBytes);
+        Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget)
+            + (operation == 5 ? Utf8ConstructionBudget.ArrayBytes<int>(1) : 0), scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.ReservedBytes >= held);
         Assert.Equal(1ul, scope.Budget.Depth);
         scope.Budget.LeaveDepth();
@@ -131,7 +132,8 @@ public sealed class PythonReTranslationContinuationTests
             if (cutoff == work)
             {
                 Assert.Null(failure);
-                Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), scope.Budget.ReservedBytes);
+                Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget)
+                    + (operation == 5 ? Utf8ConstructionBudget.ArrayBytes<int>(1) : 0), scope.Budget.ReservedBytes);
             }
             else
             {

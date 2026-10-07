@@ -152,7 +152,7 @@ public sealed class EngineDependencyInventoryTests
         Assert.Equal(new[] { "Utf8CaptureContext.cs" }, FilesContaining("Capture? _capture"));
 
         // 6. Regex.Escape is a pure string helper used while building translated patterns.
-        Assert.Equal(new[] { "Pcre2ExecutionArchitecture.cs", "PythonReParser.cs", "PythonReTranslator.cs" }, FilesContaining("Regex.Escape("));
+        Assert.Equal(new[] { "Pcre2ExecutionArchitecture.cs" }, FilesContaining("Regex.Escape("));
     }
 
     [Fact]

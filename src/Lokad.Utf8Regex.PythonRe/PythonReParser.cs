@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
@@ -285,7 +283,7 @@ internal sealed class PythonReParser
             var low = Consume();
             var scalar = char.ConvertToUtf32(literal, low);
             return ExpandIgnoreCaseScalar(scalar, options)
-                ?? PythonReAstFactory.Raw(Regex.Escape(char.ConvertFromUtf32(scalar)), PythonReRawKind.AstralLiteral);
+                ?? PythonReAstFactory.Raw(Utf8ConstructionText.EscapeScalar(scalar), PythonReRawKind.AstralLiteral);
         }
 
         return ExpandIgnoreCaseScalar(literal, options)
@@ -569,7 +567,7 @@ internal sealed class PythonReParser
                     _position++;
                 }
 
-                var invalidName = _pattern[referenceStart.._position];
+                var invalidName = Storage.Arena.Budget.CopyText(_pattern.AsSpan(referenceStart, _position - referenceStart));
                 throw new PythonRePatternException($"bad character in group name '{invalidName}'", referenceStart);
             }
 
@@ -588,7 +586,7 @@ internal sealed class PythonReParser
             throw Error("missing group name");
         }
 
-        var name = _pattern[start.._position];
+        var name = Storage.Arena.Budget.CopyText(_pattern.AsSpan(start, _position - start));
         if (!PythonReGroupNameValidator.IsValid(name))
         {
             throw new PythonRePatternException($"bad character in group name '{name}'", start);
@@ -756,15 +754,15 @@ internal sealed class PythonReParser
             'B' when !IsAsciiMode(options) => PythonReAstFactory.Raw(UnicodeNonWordBoundary, PythonReRawKind.Escape),
             'Z' => PythonReAstFactory.Raw(@"\z", PythonReRawKind.Escape),
             'A' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
-                PythonReAstFactory.Raw("\\" + ch, PythonReRawKind.Escape),
-            'x' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 2, 'x'), options),
-            'u' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 4, 'u'), options),
-            'U' => CreateEscapedLiteralNode(ParseUnicodeScalarEscapeValue(escapeStart), options),
+                PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(['\\', ch]), PythonReRawKind.Escape),
+            'x' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 2, 'x'), options),
+            'u' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 4, 'u'), options),
+            'U' => CreateEscapedLiteralNode(ParseUnicodeScalarEscapeIntValue(escapeStart), options),
             'N' => throw new PythonRePatternException(@"\N{...} named Unicode escapes are intentionally unsupported in PythonRe to avoid a large embedded Unicode-name table.", escapeStart),
-            '0' => CreateEscapedLiteralNode(ParseOctalEscapeValue(escapeStart, ch), options),
+            '0' => CreateEscapedLiteralNode(ParseOctalEscapeIntValue(escapeStart, ch), options),
             >= '1' and <= '9' => ParseNumericEscapeOrBackreference(ch, escapeStart, options),
             _ when PatternBadEscapeLetters.IndexOf(ch) >= 0 => throw new PythonRePatternException($@"bad escape \{ch}", escapeStart),
-            _ => PythonReAstFactory.Raw("\\" + ch, PythonReRawKind.Escape),
+            _ => PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(['\\', ch]), PythonReRawKind.Escape),
         };
     }
 
@@ -798,25 +796,11 @@ internal sealed class PythonReParser
         return PythonReAstFactory.CharacterClass(false, Storage.Arena.Take(items, true));
     }
 
-    private PythonReNode CreateEscapedLiteralNode(string value, PythonReCompileOptions options)
+    private PythonReNode CreateEscapedLiteralNode(int scalar, PythonReCompileOptions options)
     {
-        if (value.Length == 1 && char.IsSurrogate(value[0])) return PythonReAstFactory.Literal(value[0]);
-        int scalar;
-        if (value.Length == 1 && !char.IsSurrogate(value[0]))
-        {
-            scalar = value[0];
-        }
-        else if (value.Length == 2 && char.IsSurrogatePair(value[0], value[1]))
-        {
-            scalar = char.ConvertToUtf32(value, 0);
-        }
-        else
-        {
-            return PythonReAstFactory.Raw(Regex.Escape(value), PythonReRawKind.Escape);
-        }
-
+        if (scalar is >= 0xd800 and <= 0xdfff) return PythonReAstFactory.Literal((char)scalar);
         return ExpandIgnoreCaseScalar(scalar, options)
-            ?? PythonReAstFactory.Raw(Regex.Escape(value), PythonReRawKind.Escape);
+            ?? PythonReAstFactory.Raw(Utf8ConstructionText.EscapeScalar(scalar), PythonReRawKind.Escape);
     }
 
     private PythonReNode ParseNumericEscapeOrBackreference(char firstDigit, int escapeStart, PythonReCompileOptions options)
@@ -830,7 +814,7 @@ internal sealed class PythonReParser
                 IsOctalDigit(Current))
             {
                 var thirdDigit = Consume();
-                return CreateEscapedLiteralNode(ParseOctalEscapeValue(escapeStart, firstDigit, secondDigit, thirdDigit), options);
+                return CreateEscapedLiteralNode(ParseOctalEscapeIntValue(escapeStart, firstDigit, secondDigit, thirdDigit), options);
             }
 
             return ParseNumericBackreference(firstDigit, secondDigit, escapeStart, options);
@@ -942,78 +926,54 @@ internal sealed class PythonReParser
         }
     }
 
-    private string ParseHexEscapeValue(int escapeStart, int digits, char kind)
-    {
-        return ((char)ParseHexEscapeScalarValue(escapeStart, digits, kind)).ToString();
-    }
-
     private int ParseHexEscapeScalarValue(int escapeStart, int digits, char kind)
     {
         var hex = ReadHexDigits(escapeStart, digits, kind);
-        return Convert.ToInt32(hex, 16);
-    }
-
-    private string ParseUnicodeScalarEscapeValue(int escapeStart)
-    {
-        var value = ParseUnicodeScalarEscapeIntValue(escapeStart);
-        return value <= 0xFFFF ? ((char)value).ToString() : char.ConvertFromUtf32(value);
+        Utf8ConstructionScope.ChargeWork((ulong)hex.Length);
+        return int.Parse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private int ParseUnicodeScalarEscapeIntValue(int escapeStart)
     {
         var hex = ReadHexDigits(escapeStart, 8, 'U');
-        var scalar = Convert.ToInt32(hex, 16);
+        Utf8ConstructionScope.ChargeWork((ulong)hex.Length);
+        var scalar = int.Parse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
         if ((uint)scalar > 0x10FFFF)
-        {
-            throw new PythonRePatternException($@"bad escape \U{hex}", escapeStart);
-        }
-
+            throw new PythonRePatternException($@"bad escape \U{Storage.Arena.Budget.CopyText(hex)}", escapeStart);
         return scalar;
     }
 
-    private string ReadHexDigits(int escapeStart, int digits, char kind)
+    private ReadOnlySpan<char> ReadHexDigits(int escapeStart, int digits, char kind)
     {
-        var builder = new StringBuilder(digits);
-        while (builder.Length < digits && !IsAtEnd && HexDigits.IndexOf(Current) >= 0)
+        var start = _position;
+        while (_position - start < digits && !IsAtEnd && HexDigits.IndexOf(Current) >= 0)
         {
             Utf8ConstructionScope.ChargeWork(1);
-            builder.Append(Consume());
+            _position++;
         }
-
-        if (builder.Length != digits)
-        {
-            throw new PythonRePatternException($@"incomplete escape \{kind}{builder}", escapeStart);
-        }
-
-        return builder.ToString();
+        var hex = _pattern.AsSpan(start, _position - start);
+        if (hex.Length != digits)
+            throw new PythonRePatternException($@"incomplete escape \{kind}{Storage.Arena.Budget.CopyText(hex)}", escapeStart);
+        return hex;
     }
 
-    private string ParseOctalEscapeValue(int escapeStart, params char[] digits)
+    private int ParseOctalEscapeIntValue(int escapeStart, params ReadOnlySpan<char> digits)
     {
-        return char.ConvertFromUtf32(ParseOctalEscapeIntValue(escapeStart, digits));
-    }
-
-    private int ParseOctalEscapeIntValue(int escapeStart, params char[] digits)
-    {
-        var builder = new StringBuilder(3);
-        foreach (var digit in digits)
+        Span<char> octal = stackalloc char[3];
+        digits.CopyTo(octal);
+        Utf8ConstructionScope.ChargeWork((ulong)digits.Length);
+        var count = digits.Length;
+        var value = 0;
+        foreach (var digit in digits) value = value * 8 + digit - '0';
+        while (count < 3 && !IsAtEnd && IsOctalDigit(Current))
         {
             Utf8ConstructionScope.ChargeWork(1);
-            builder.Append(digit);
+            var digit = Consume();
+            octal[count++] = digit;
+            value = value * 8 + digit - '0';
         }
-
-        while (builder.Length < 3 && !IsAtEnd && IsOctalDigit(Current))
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            builder.Append(Consume());
-        }
-
-        var value = Convert.ToInt32(builder.ToString(), 8);
         if (value > 0xFF)
-        {
-            throw new PythonRePatternException($@"octal escape value \{builder} outside of range 0-0o377", escapeStart);
-        }
-
+            throw new PythonRePatternException($@"octal escape value \{Storage.Arena.Budget.CopyText(octal[..count])} outside of range 0-0o377", escapeStart);
         return value;
     }
 
@@ -1053,7 +1013,7 @@ internal sealed class PythonReParser
             throw new PythonRePatternException(unterminatedMessage, start);
         }
 
-        var name = _pattern[start.._position];
+        var name = Storage.Arena.Budget.CopyText(_pattern.AsSpan(start, _position - start));
         _position++;
         if (name.Length == 0)
         {
@@ -1300,23 +1260,6 @@ internal sealed class PythonReParser
         }
 
         return false;
-    }
-
-    private static string EscapeCharacterClassLiteral(string value)
-    {
-        var builder = new StringBuilder(value.Length + 4);
-        foreach (var ch in value)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (ch is '\\' or '-' or ']' or '^')
-            {
-                builder.Append('\\');
-            }
-
-            builder.Append(ch);
-        }
-
-        return builder.ToString();
     }
 
     private static string DescribeCharacterClassItem(PythonReCharacterClassItem item)

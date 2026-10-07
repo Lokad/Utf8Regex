@@ -15,19 +15,42 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     internal Utf8ConstructionBuffer(Utf8ConstructionBudget budget) : this(budget, false) { }
     internal int Count { get; private set; }
     internal int Capacity => _items.Length;
+    internal ReadOnlySpan<T> Span => _items.AsSpan(0, Count);
     internal T this[int index] { get => _items[index]; set => _items[index] = value; }
 
     internal void Add(T value)
     {
-        if (Count == _items.Length)
+        EnsureCapacity(checked(Count + 1));
+        _items[Count++] = value;
+    }
+
+    internal void AddRange(ReadOnlySpan<T> values)
+    {
+        var count = checked(Count + values.Length);
+        EnsureCapacity(count);
+        budget.ChargeWork((ulong)values.Length);
+        values.CopyTo(_items.AsSpan(Count));
+        Count = count;
+    }
+
+    internal void Clear()
+    {
+        budget.ChargeWork((ulong)Count);
+        _items.AsSpan(0, Count).Clear();
+        Count = 0;
+    }
+
+    private void EnsureCapacity(int required)
+    {
+        if (required > _items.Length)
         {
-            var desired = _items.Length == 0 ? 1L : (long)_items.Length * 2;
+            var desired = Math.Max(required, _items.Length == 0 ? 1L : (long)_items.Length * 2);
             var capacity = (int)Math.Min(desired, budget.AvailableArrayCapacity<T>());
             if (instructions) capacity = (int)Math.Min((ulong)capacity, budget.Maximum - budget.Reserved);
-            if (capacity <= _items.Length)
+            if (capacity < required)
             {
-                if (instructions) budget.CheckSlots((ulong)_items.Length + 1);
-                budget.CheckBytes(Utf8ConstructionBudget.ArrayBytes<T>(_items.Length + 1));
+                if (instructions) budget.CheckSlots((ulong)required);
+                budget.CheckBytes(Utf8ConstructionBudget.ArrayBytes<T>(required));
                 throw new InvalidOperationException("The construction buffer cannot represent its next extent.");
             }
             var grown = budget.AllocateArray<T>(capacity, instructions);
@@ -40,7 +63,6 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
             budget.ReleaseArray(_items, instructions);
             _items = grown;
         }
-        _items[Count++] = value;
     }
 
     internal void Push(T value) => Add(value);

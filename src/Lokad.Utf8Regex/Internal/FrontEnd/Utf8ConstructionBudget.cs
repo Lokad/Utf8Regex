@@ -98,6 +98,22 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
 
     internal void ClearObjectRoots() => ObjectCheckpoint = null;
 
+    internal string CopyText(ReadOnlySpan<char> text)
+    {
+        if (text.IsEmpty) return string.Empty;
+        var bytes = StringBytes(text.Length) + ObjectBytes<(object, ObjectAllocation?, ulong)>();
+        CheckBytes(bytes);
+        ChargeWork((ulong)text.Length + 1);
+        ReserveBytes(bytes);
+        try
+        {
+            var result = new string(text);
+            ObjectCheckpoint = new ObjectAllocation(result, ObjectCheckpoint, bytes);
+            return result;
+        }
+        catch { ReleaseBytes(bytes); throw; }
+    }
+
     internal string DecodeUtf8(ReadOnlySpan<byte> input, Encoding encoding)
     {
         // Count/validate before allocating the output. Parsing starts only after

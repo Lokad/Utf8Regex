@@ -108,7 +108,10 @@ public sealed class PythonReConstructionAdmissionTests
     [Fact]
     public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
     {
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 4096);
+        // The full "cat" constructor now charges text and metadata too (covered
+        // peak 6,032 bytes before the parent/decoded pattern). Keep a bounded
+        // envelope that admits the original public recovery operation.
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 8192);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
         Assert.Throws<NotSupportedException>(() =>
@@ -131,15 +134,15 @@ public sealed class PythonReConstructionAdmissionTests
     {
         var pattern = new string('a', 32768);
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 4096);
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 8192);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (bytes) _ = new Utf8PythonRegex(encoded);
             else _ = new Utf8PythonRegex(pattern);
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(4096ul, failure.Limit);
-        Assert.True(scope.Budget.PeakBytes <= 4096);
+        Assert.Equal(8192ul, failure.Limit);
+        Assert.True(scope.Budget.PeakBytes <= 8192);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Reserved);
         Assert.True(new Utf8PythonRegex("cat").IsMatch("cat"u8));

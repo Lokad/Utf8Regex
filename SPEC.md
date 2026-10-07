@@ -419,6 +419,16 @@ membership updates, string-key hash/comparison extents and admitted metadata
 enumeration charge covered work. Cleanup uses indexed release without allocating
 or resuming a metered iterator. Other parser strings and preparation iterator
 objects remain uncovered; this is not a complete construction policy.
+Python parser group-name slices and literal-escape text, and translator rendered
+patterns, generated names, class/range tables, numeric projection arrays and
+ASCII selector output share construction admission. Character vectors admit
+growth overlap; materialized strings admit their terminator and a retaining
+descriptor before copying and remain rooted through outer construction closure.
+Hex/octal digits and integer/hex formatting use borrowed spans or fixed stack
+scratch. This preserves bounded string-pattern interoperability; scalar matching
+and byte coordinates are unchanged. Exception-message formatting, preparation
+iterator objects, other construction consumers and retained-cache policies
+remain uncovered. Construction loans do not establish RSS or total GC bounds.
 Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
 Validation/counting precedes decoded-text admission and acquisition. The string
 charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16
