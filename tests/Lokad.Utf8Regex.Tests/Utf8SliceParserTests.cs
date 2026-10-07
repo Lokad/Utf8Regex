@@ -217,9 +217,9 @@ public sealed class Utf8SliceParserTests
 
     [Theory]
     [InlineData(RegexOptions.NonBacktracking)]
-    public void SensitiveOptionsDecline(RegexOptions options)
+    public void NonBacktrackingRegularGraphsKeepOwnedLinearPrograms(RegexOptions options)
     {
-        Assert.Null(Utf8SliceParser.TryParse("(a+)(b+)", options));
+        Assert.True(Utf8SliceParser.TryParse("(a+)(b+)", options)?.IsNonBacktracking);
     }
 
     [Theory]
@@ -229,7 +229,9 @@ public sealed class Utf8SliceParserTests
     public void CategoryOptionsRespectOwnedEngineCapabilities(string pattern)
     {
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.ECMAScript));
-        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking));
+        var nonBacktracking = Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking);
+        if (pattern.StartsWith("(?<=", StringComparison.Ordinal)) Assert.Null(nonBacktracking);
+        else Assert.True(nonBacktracking?.IsNonBacktracking);
     }
 
     [Theory]
