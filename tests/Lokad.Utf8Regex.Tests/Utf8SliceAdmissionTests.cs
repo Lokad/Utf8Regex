@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -43,7 +44,7 @@ public sealed class Utf8SliceAdmissionTests
     }
 
     [Fact]
-    public void OverInstructionSyntheticTreeDeclines()
+    public void OverInstructionSyntheticTreeFailsOwnedAdmission()
     {
         var shared = new Utf8SliceNode.LiteralNode(97, false);
         var branches = new Utf8SliceNode[400000][];
@@ -52,7 +53,14 @@ public sealed class Utf8SliceAdmissionTests
             branches[index] = new Utf8SliceNode[] { shared };
         }
 
-        Assert.Null(Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches), null, false, false, false));
+        // Resource exhaustion must not masquerade as unsupported grammar and
+        // select a residual engine. Keep the large shared-node witness.
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches), null, false, false, false));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionInstructionCapacity, failure.ResourceKind);
+        Assert.Equal(Utf8ConstructionScope.DefaultInstructionCapacity, failure.Limit);
+        Assert.True(failure.Requested > failure.Limit);
+        Assert.False(Utf8ConstructionScope.IsActive);
     }
 
     [Fact]
