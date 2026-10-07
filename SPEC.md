@@ -459,6 +459,16 @@ frame's referenced nodes, text and collections retain separate ownership: their
 acquisition admission, other shared preparation/emission walkers and retained
 facade descriptors remain unfinished.
 
+Shared scalar VM analysis and emission also use admitted value frames and borrowed
+child cursors. Their yield iterators and captured analysis predicates are removed.
+Analysis admits root depth/storage before acquiring its fact-map descriptor; both
+walkers admit child depth and array overlap, meter traversal and unwind scratch on
+failure. Nested assertion program frames precede lowerer-context acquisition.
+Alternation/repeat patch buffers admit their descriptors; conditional expression
+guards emit directly without synthetic IR nodes/branch arrays. Referenced IR,
+other lowerer descriptors, program objects and numeric names still require their
+separate admission; this does not close all preparation or retained storage.
+
 Python scalar conversion also uses admitted value frames, deleting its captured
 yield continuation. Its arena/map descriptors, direct structural IR nodes and
 retaining descriptors admit before acquisition; node charges include the base

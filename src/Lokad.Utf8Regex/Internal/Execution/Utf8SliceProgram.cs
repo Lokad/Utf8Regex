@@ -421,51 +421,65 @@ internal static class Utf8SliceLowerer
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         using var facts = AnalyzeNodes(root, nonBacktracking, budget);
-        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior, nonBacktracking, budget);
-        lowerer.CaptureCatalog = captureCatalog;
-        using var frames = new Utf8ConstructionBuffer<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>(budget);
-        frames.Push((lowerer, root, lowerer.EmitSteps(root).GetEnumerator(), true));
+        using var frames = Utf8ConstructionFrames<EmissionFrame>.Create(budget, new(root, true, rightToLeft, null, 0));
         try
         {
-            while (frames.Count > 0)
+            while (frames.Count != 0)
             {
-                var frame = frames.Peek();
-                if (frame.Steps.MoveNext())
+                budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                bool suspended;
+                EmissionRequest request;
+                try
                 {
-                    var request = frame.Steps.Current;
-                    var owner = frame.Owner;
-                    if (request.Program)
+                    if (frame.Owner is null)
                     {
-                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts, owner.CaseBehavior, owner.NonBacktracking, budget);
-                        owner.CaptureCatalog = frame.Owner.CaptureCatalog;
+                        // The program frame is admitted before acquiring its
+                        // lowerer and scratch descriptors. Their separate object
+                        // admission remains work; referenced facts are borrowed.
+                        frame.Owner = new Lowering(groupNames, maintainBalance, matchCaseInsensitive,
+                            frame.RightToLeft, facts, caseBehavior, nonBacktracking, budget);
+                        frame.Owner.CaptureCatalog = captureCatalog;
                     }
-                    frames.Push((owner, request.Node, owner.EmitSteps(request.Node).GetEnumerator(), request.Program));
+                    suspended = frame.Owner.Advance(ref frame, out request);
+                }
+                finally { frames[index] = frame; }
+                var owner = frame.Owner ?? throw new InvalidOperationException("Missing emission owner.");
+                if (suspended)
+                {
+                    frames.Push(new(request.Node, request.Program, request.RightToLeft,
+                        request.Program ? null : owner, request.LookaheadPolarity));
                     continue;
                 }
                 frames.Pop();
-                frame.Steps.Dispose();
-                if (frame.Owner.Failed && !frame.Program) return null;
+                frame.Scratch?.Dispose();
+                if (owner.Failed && !frame.Program) return null;
                 if (!frame.Program) continue;
                 try
                 {
-                    if (frame.Owner.Failed) return null;
-                    var program = FinishLowering(frame.Owner, frame.Root,
+                    if (owner.Failed) return null;
+                    var program = FinishLowering(owner, frame.Root,
                         frames.Count == 0 && usesInterpretedLazyLoopSemantics,
                         frames.Count == 0 && usesLiteralClassBracketSyntax);
                     if (program is null) return null;
                     if (frames.Count == 0) { construction.Complete(); return program; }
-                    frames.Peek().Owner.LastSubprogram = program;
+                    var parent = frames[frames.Count - 1].Owner
+                        ?? throw new InvalidOperationException("Missing assertion parent.");
+                    parent.LastSubprogram = program;
                 }
-                finally { frame.Owner.Dispose(); }
+                finally { owner.Dispose(); }
             }
             return null;
         }
         finally
         {
-            while (frames.TryPop(out var frame))
+            while (frames.Count != 0)
             {
-                frame.Steps.Dispose();
-                if (frame.Program) frame.Owner.Dispose();
+                var frame = frames[frames.Count - 1];
+                frame.Scratch?.Dispose();
+                if (frame.Program) frame.Owner?.Dispose();
+                frames.Pop();
             }
         }
     }
@@ -476,25 +490,29 @@ internal static class Utf8SliceLowerer
     {
         // Slice nodes are records: structural hashing itself would recurse.
         // One identity cache serves the main and every nested assertion program.
-        var facts = new Utf8ConstructionMap<Utf8SliceNode, NodeFacts>(budget, ReferenceEqualityComparer.Instance);
-        using var frames = new Utf8ConstructionBuffer<(Utf8SliceNode Node, IEnumerator<Utf8SliceNode> Children)>(budget);
-        frames.Push((root, Children(root).GetEnumerator()));
+        using var frames = Utf8ConstructionFrames<AnalysisFrame>.Create(budget, new(root, new(root, budget)));
+        var facts = Utf8ConstructionMap<Utf8SliceNode, NodeFacts>.Create(budget, ReferenceEqualityComparer.Instance);
         try
         {
             while (frames.Count > 0)
             {
-                var frame = frames.Peek();
-                if (frame.Children.MoveNext())
+                budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                bool hasChild;
+                try { hasChild = frame.Children.MoveNext(); }
+                finally { frames[index] = frame; }
+                if (hasChild)
                 {
                     var child = frame.Children.Current;
-                    if (!facts.ContainsKey(child)) frames.Push((child, Children(child).GetEnumerator()));
+                    if (!facts.ContainsKey(child)) frames.Push(new(child, new(child, budget)));
                     continue;
                 }
                 frames.Pop();
-                frame.Children.Dispose();
                 var node = frame.Node;
                 var writes = node is Utf8SliceNode.CaptureNode or Utf8SliceNode.BalanceNode;
-                foreach (var child in Children(node)) writes |= facts[child].WritesGroup;
+                var children = new ChildCursor(node, budget);
+                while (children.MoveNext()) writes |= facts[children.Current].WritesGroup;
                 var empty = node switch
                 {
                     Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or
@@ -502,8 +520,8 @@ internal static class Utf8SliceLowerer
                     Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].CanMatchEmpty || facts[conditional.NoBody].CanMatchEmpty,
                     Utf8SliceNode.CaptureNode capture => facts[capture.Body].CanMatchEmpty,
                     Utf8SliceNode.AtomicNode atomic => facts[atomic.Body].CanMatchEmpty,
-                    Utf8SliceNode.ConcatNode concat => concat.Children.All(child => facts[child].CanMatchEmpty),
-                    Utf8SliceNode.AlternationNode alternation => alternation.Branches.Any(branch => branch.All(child => facts[child].CanMatchEmpty)),
+                    Utf8SliceNode.ConcatNode concat => All(concat.Children, facts, true, budget),
+                    Utf8SliceNode.AlternationNode alternation => AnyEmptyBranch(alternation.Branches, facts, budget),
                     Utf8SliceNode.RepeatNode repeat => repeat.Minimum == 0 || facts[repeat.Body].CanMatchEmpty,
                     _ => false,
                 };
@@ -516,8 +534,8 @@ internal static class Utf8SliceLowerer
                     Utf8SliceNode.CaptureNode capture => facts[capture.Body].IsZeroWidth,
                     Utf8SliceNode.BalanceNode balance => facts[balance.Body].IsZeroWidth,
                     Utf8SliceNode.AtomicNode atomic => facts[atomic.Body].IsZeroWidth,
-                    Utf8SliceNode.ConcatNode concat => concat.Children.All(child => facts[child].IsZeroWidth),
-                    Utf8SliceNode.AlternationNode alternation => alternation.Branches.All(branch => branch.All(child => facts[child].IsZeroWidth)),
+                    Utf8SliceNode.ConcatNode concat => All(concat.Children, facts, false, budget),
+                    Utf8SliceNode.AlternationNode alternation => AllZeroWidthBranches(alternation.Branches, facts, budget),
                     Utf8SliceNode.RepeatNode repeat => repeat.Maximum == 0 || facts[repeat.Body].IsZeroWidth,
                     Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].IsZeroWidth && facts[conditional.NoBody].IsZeroWidth,
                     _ => false,
@@ -527,34 +545,35 @@ internal static class Utf8SliceLowerer
             return facts;
         }
         catch { facts.Dispose(); throw; }
-        finally
+        static bool All(Utf8SliceNode[] nodes, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, bool empty, Utf8ConstructionBudget budget)
         {
-            while (frames.TryPop(out var frame)) frame.Children.Dispose();
+            foreach (var node in nodes)
+            {
+                budget.ChargeWork(1);
+                var fact = facts[node];
+                if (!(empty ? fact.CanMatchEmpty : fact.IsZeroWidth)) return false;
+            }
+            return true;
         }
 
-        static IEnumerable<Utf8SliceNode> Children(Utf8SliceNode node)
+        static bool AnyEmptyBranch(Utf8SliceNode[][] branches, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, Utf8ConstructionBudget budget)
         {
-            switch (node)
+            foreach (var branch in branches)
             {
-                case Utf8SliceNode.CaptureNode capture: yield return capture.Body; break;
-                case Utf8SliceNode.BalanceNode balance: yield return balance.Body; break;
-                case Utf8SliceNode.AtomicNode atomic: yield return atomic.Body; break;
-                case Utf8SliceNode.RepeatNode repeat: yield return repeat.Body; break;
-                case Utf8SliceNode.LookaheadNode lookahead: yield return lookahead.Body; break;
-                case Utf8SliceNode.LookbehindNode lookbehind: yield return lookbehind.Body; break;
-                case Utf8SliceNode.ConcatNode concat:
-                    foreach (var child in concat.Children) yield return child;
-                    break;
-                case Utf8SliceNode.AlternationNode alternation:
-                    foreach (var branch in alternation.Branches)
-                        foreach (var child in branch) yield return child;
-                    break;
-                case Utf8SliceNode.ConditionalNode conditional:
-                    yield return conditional.YesBody;
-                    yield return conditional.NoBody;
-                    if (conditional.TestBody is not null) yield return conditional.TestBody;
-                    break;
+                budget.ChargeWork(1);
+                if (All(branch, facts, true, budget)) return true;
             }
+            return false;
+        }
+
+        static bool AllZeroWidthBranches(Utf8SliceNode[][] branches, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, Utf8ConstructionBudget budget)
+        {
+            foreach (var branch in branches)
+            {
+                budget.ChargeWork(1);
+                if (!All(branch, facts, false, budget)) return false;
+            }
+            return true;
         }
 
         static (int Minimum, int Maximum) Measure(Utf8SliceNode node, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts)
@@ -611,7 +630,75 @@ internal static class Utf8SliceLowerer
         static int Saturate(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
     }
 
-    private readonly record struct EmissionRequest(Utf8SliceNode Node, bool Program, bool RightToLeft);
+    private struct AnalysisFrame(Utf8SliceNode node, ChildCursor children)
+    {
+        internal Utf8SliceNode Node = node;
+        internal ChildCursor Children = children;
+    }
+
+    // Borrowed IR traversal has no enumerable/boxed state. Empty alternatives
+    // spend shared work even when they contain no child to push.
+    private struct ChildCursor(Utf8SliceNode node, Utf8ConstructionBudget budget)
+    {
+        private int _index, _branch;
+        internal Utf8SliceNode Current = node;
+        internal bool MoveNext()
+        {
+            budget.ChargeWork(1);
+            switch (node)
+            {
+                case Utf8SliceNode.ConcatNode concat:
+                    if (_index == concat.Children.Length) return false;
+                    Current = concat.Children[_index++]; return true;
+                case Utf8SliceNode.AlternationNode alternate:
+                    while (_branch < alternate.Branches.Length)
+                    {
+                        budget.ChargeWork(1);
+                        if (_index < alternate.Branches[_branch].Length)
+                        {
+                            Current = alternate.Branches[_branch][_index++]; return true;
+                        }
+                        _branch++; _index = 0;
+                    }
+                    return false;
+                case Utf8SliceNode.ConditionalNode conditional:
+                    var index = _index++;
+                    if (index == 0) { Current = conditional.YesBody; return true; }
+                    if (index == 1) { Current = conditional.NoBody; return true; }
+                    if (index == 2 && conditional.TestBody is { } test) { Current = test; return true; }
+                    return false;
+                default:
+                    if (_index++ != 0) return false;
+                    var body = node switch
+                    {
+                        Utf8SliceNode.CaptureNode capture => capture.Body,
+                        Utf8SliceNode.BalanceNode balance => balance.Body,
+                        Utf8SliceNode.AtomicNode atomic => atomic.Body,
+                        Utf8SliceNode.RepeatNode repeat => repeat.Body,
+                        Utf8SliceNode.LookaheadNode ahead => ahead.Body,
+                        Utf8SliceNode.LookbehindNode behind => behind.Body,
+                        _ => null,
+                    };
+                    if (body is null) return false;
+                    Current = body; return true;
+            }
+        }
+    }
+
+    private readonly record struct EmissionRequest(Utf8SliceNode Node, bool Program, bool RightToLeft, int LookaheadPolarity);
+
+    private struct EmissionFrame(Utf8SliceNode root, bool program, bool rightToLeft, Lowering? owner, int lookaheadPolarity)
+    {
+        internal Utf8SliceNode Root = root;
+        internal bool Program = program;
+        internal bool RightToLeft = rightToLeft;
+        internal Lowering? Owner = owner;
+        internal int LookaheadPolarity = lookaheadPolarity;
+        internal int Stage, Index, Branch, Mark, Jump, RepeatId, Minimum, Maximum, Opening;
+        internal bool NullableLoop;
+        internal Utf8NonBacktrackingLoopScope? ParentScope;
+        internal Utf8ConstructionBuffer<int>? Scratch;
+    }
 
     private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
@@ -802,8 +889,12 @@ internal static class Utf8SliceLowerer
             NonBacktrackingScopes?.Add(NonBacktrackingScope);
         }
 
-        internal IEnumerable<EmissionRequest> EmitSteps(Utf8SliceNode node)
+        internal bool Advance(ref EmissionFrame frame, out EmissionRequest request)
         {
+            request = default;
+            var node = frame.Root;
+            if (frame.LookaheadPolarity != 0)
+                return EmitLookahead(node, frame.LookaheadPolarity == 1, ref frame, out request);
             switch (node)
             {
                 case Utf8SliceNode.EmptyNode:
@@ -848,128 +939,135 @@ internal static class Utf8SliceLowerer
 
                     break;
                 case Utf8SliceNode.ConcatNode concat:
-                    foreach (var child in concat.Children)
+                    if (frame.Index < concat.Children.Length)
                     {
-                        yield return new EmissionRequest(child, false, MirrorExecute);
+                        request = new(concat.Children[frame.Index++], false, MirrorExecute, 0);
+                        return true;
                     }
-
                     break;
-                case Utf8SliceNode.AlternationNode alternation:
-                {
-                    if (alternation.Branches.Length == 0)
-                    {
+                case Utf8SliceNode.AlternationNode alternate:
+                    if (alternate.Branches.Length == 0)
                         throw new ArgumentException("Slice alternations need at least one branch.", nameof(node));
-                    }
-
-                    using var endJumps = new Utf8ConstructionBuffer<int>(Budget);
-                    for (var branch = 0; branch < alternation.Branches.Length; branch++)
+                    if (frame.Stage == 0)
                     {
-                        if (branch + 1 < alternation.Branches.Length)
-                        {
-                            var forkIndex = Instructions.Count;
-                            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
-                            foreach (var child in alternation.Branches[branch])
-                            {
-                                yield return new EmissionRequest(child, false, MirrorExecute);
-                            }
-
-                            endJumps.Add(Instructions.Count);
-                            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
-                            Patch(forkIndex, Instructions.Count);
-                        }
-                        else
-                        {
-                            foreach (var child in alternation.Branches[branch])
-                            {
-                                yield return new EmissionRequest(child, false, MirrorExecute);
-                            }
-                        }
+                        frame.Scratch = Utf8ConstructionBuffer<int>.Create(Budget);
+                        frame.Stage = 1;
                     }
-
-                    foreach (var jump in endJumps)
+                    var jumps = frame.Scratch ?? throw new InvalidOperationException("Missing alternation jumps.");
+                    while (frame.Branch < alternate.Branches.Length)
                     {
-                        Patch(jump, Instructions.Count);
+                        Budget.ChargeWork(1);
+                        if (frame.Stage == 1)
+                        {
+                            frame.Mark = Instructions.Count;
+                            if (frame.Branch + 1 < alternate.Branches.Length)
+                                Emit(new(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
+                            frame.Index = 0;
+                            frame.Stage = 2;
+                        }
+                        var branch = alternate.Branches[frame.Branch];
+                        if (frame.Index < branch.Length)
+                        {
+                            request = new(branch[frame.Index++], false, MirrorExecute, 0);
+                            return true;
+                        }
+                        if (frame.Branch + 1 < alternate.Branches.Length)
+                        {
+                            jumps.Add(Instructions.Count);
+                            Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                            Patch(frame.Mark, Instructions.Count);
+                        }
+                        frame.Branch++;
+                        frame.Stage = 1;
                     }
-
+                    foreach (var jump in jumps) { Budget.ChargeWork(1); Patch(jump, Instructions.Count); }
                     break;
-                }
                 case Utf8SliceNode.RepeatNode repeat:
                     if (repeat.Minimum < 0 || repeat.Maximum < repeat.Minimum)
-                    {
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice repeat bounds need 0 <= min <= max.");
-                    }
-
                     if (NonBacktracking)
                     {
-                        var minimum = repeat.Minimum;
-                        var maximum = repeat.Maximum;
-                        if (Facts[repeat.Body].IsZeroWidth)
+                        if (frame.Stage == 0)
                         {
-                            // Acceptance is independent of captures in this regular
-                            // grammar, and only the last completion is exposed. At a
-                            // fixed scalar boundary, repeating a zero-width body has
-                            // the same predicates and preferred path every time.
-                            // One required/optional iteration therefore preserves its
-                            // outcome without work proportional to the numeric bound.
-                            minimum = minimum == 0 ? 0 : 1;
-                            maximum = maximum == 0 ? 0 : 1;
-                        }
-                        else
-                        {
-                            // Each required consuming body emits at least one
-                            // instruction; each finite optional copy also emits
-                            // a fork. Reject a known impossible retained extent
-                            // before traversing copies or growing any buffer.
-                            var minimumInstructions = maximum == int.MaxValue ? minimum : maximum;
-                            Budget.CheckReplacementMinimum((ulong)Instructions.Capacity,
-                                (ulong)Instructions.Count + (ulong)minimumInstructions);
-                        }
-                        // Thompson states have no input-dependent counter or
-                        // backtracking trail. Finite bounds expand at preparation;
-                        // the existing construction admission still applies.
-                        for (var iteration = 0; iteration < minimum; iteration++)
-                        {
-                            yield return new EmissionRequest(repeat.Body, false, false);
-                            if (Failed) yield break;
-                        }
-                        using var exits = new Utf8ConstructionBuffer<int>(Budget);
-                        for (var iteration = minimum; iteration < maximum; iteration++)
-                        {
-                            var fork = Instructions.Count;
-                            Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
-                            var parentScope = NonBacktrackingScope;
-                            var nullableLoop = maximum == int.MaxValue && Facts[repeat.Body].CanMatchEmpty;
-                            if (nullableLoop)
+                            frame.Minimum = repeat.Minimum;
+                            frame.Maximum = repeat.Maximum;
+                            if (Facts[repeat.Body].IsZeroWidth)
                             {
-                                NonBacktrackingScope = new(parentScope, fork);
+                                // Only the final zero-width completion is exposed.
+                                // Keep predicates/preference without expanding a bound.
+                                frame.Minimum = frame.Minimum == 0 ? 0 : 1;
+                                frame.Maximum = frame.Maximum == 0 ? 0 : 1;
+                            }
+                            else
+                            {
+                                var copies = frame.Maximum == int.MaxValue ? frame.Minimum : frame.Maximum;
+                                Budget.CheckReplacementMinimum((ulong)Instructions.Capacity, (ulong)Instructions.Count + (ulong)copies);
+                            }
+                            frame.Stage = 1;
+                        }
+                        if (Failed) return false;
+                        if (frame.Stage == 1)
+                        {
+                            if (frame.Index < frame.Minimum)
+                            {
+                                frame.Index++;
+                                request = new(repeat.Body, false, false, 0);
+                                return true;
+                            }
+                            frame.Stage = 2;
+                        }
+                        if (frame.Stage == 3)
+                        {
+                            if (frame.Maximum == int.MaxValue)
+                            {
+                                if (frame.NullableLoop && NonBacktrackingScope is { } scope) scope.End = Instructions.Count;
+                                Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));
+                                NonBacktrackingScope = frame.ParentScope;
+                                Patch(frame.Mark, Instructions.Count);
+                                frame.Stage = 4;
+                            }
+                            else
+                            {
+                                var exits = frame.Scratch ?? throw new InvalidOperationException("Missing repeat exits.");
+                                exits.Add(frame.Mark);
+                                frame.Stage = 2;
+                            }
+                        }
+                        if (frame.Stage == 2 && frame.Index < frame.Maximum)
+                        {
+                            frame.Scratch ??= Utf8ConstructionBuffer<int>.Create(Budget);
+                            frame.Mark = Instructions.Count;
+                            Emit(new(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
+                            frame.ParentScope = NonBacktrackingScope;
+                            frame.NullableLoop = frame.Maximum == int.MaxValue && Facts[repeat.Body].CanMatchEmpty;
+                            if (frame.NullableLoop)
+                            {
+                                NonBacktrackingScope = new(frame.ParentScope, frame.Mark);
                                 HasNullableNonBacktrackingLoop = true;
                             }
-                            yield return new EmissionRequest(repeat.Body, false, false);
-                            if (Failed) yield break;
-                            if (maximum == int.MaxValue)
-                            {
-                                if (nullableLoop && NonBacktrackingScope is { } scope) scope.End = Instructions.Count;
-                                Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, fork, 0, 0, 0));
-                                NonBacktrackingScope = parentScope;
-                                Patch(fork, Instructions.Count);
-                                break;
-                            }
-                            exits.Add(fork);
+                            frame.Index++;
+                            frame.Stage = 3;
+                            request = new(repeat.Body, false, false, 0);
+                            return true;
                         }
-                        foreach (var exit in exits) Patch(exit, Instructions.Count);
+                        if (frame.Scratch is { } remainingExits)
+                            foreach (var exit in remainingExits) { Budget.ChargeWork(1); Patch(exit, Instructions.Count); }
                         break;
                     }
-
-                    var repeatId = RepeatCount++;
-                    var repeatIndex = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatGreedy, 0, 0, 0, 0));
-                    yield return new EmissionRequest(repeat.Body, false, MirrorExecute);
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatEnd, repeatIndex, 0, 0, 0));
-                    var exitIndex = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatExit, repeatId, 0, 0, 0));
-                    Instructions[repeatIndex] = new Utf8SliceInstruction(
-                        repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy,
-                        exitIndex, repeatId, repeat.Minimum, repeat.Maximum);
+                    if (frame.Stage == 0)
+                    {
+                        frame.RepeatId = RepeatCount++;
+                        frame.Mark = Instructions.Count;
+                        Emit(new(Utf8SliceInstructionKind.RepeatGreedy, 0, 0, 0, 0));
+                        frame.Stage = 1;
+                        request = new(repeat.Body, false, MirrorExecute, 0);
+                        return true;
+                    }
+                    Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, 0, 0, 0));
+                    var repeatExit = Instructions.Count;
+                    Emit(new(Utf8SliceInstructionKind.RepeatExit, frame.RepeatId, 0, 0, 0));
+                    Instructions[frame.Mark] = new(repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy,
+                        repeatExit, frame.RepeatId, repeat.Minimum, repeat.Maximum);
                     break;
                 case Utf8SliceNode.DotNode dot:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Dot, dot.MatchNewline ? 1 : 0, 0, 0, 0));
@@ -1035,201 +1133,166 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, backref.AllowUnmatched ? 1 : 0, loweringIndex));
                     break;
                 case Utf8SliceNode.BalanceNode balance:
-                    if (balance.PopSlot < 0 || (balance.CaptureSlot < -1))
-                    {
+                    if (balance.PopSlot < 0 || balance.CaptureSlot < -1)
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice balance slots start at zero.");
-                    }
-
-                    if (balance.PopSlot + 1 > GroupCount)
+                    if (frame.Stage == 0)
                     {
-                        GroupCount = balance.PopSlot + 1;
+                        GroupCount = Math.Max(GroupCount, Math.Max(balance.PopSlot + 1, balance.CaptureSlot + 1));
+                        if (balance.CaptureSlot >= 0) Emit(new(Utf8SliceInstructionKind.BalanceStart, balance.PopSlot, balance.CaptureSlot, 0, 0));
+                        frame.Stage = 1;
+                        request = new(balance.Body, false, MirrorExecute, 0);
+                        return true;
                     }
-
-                    if (balance.CaptureSlot + 1 > GroupCount)
-                    {
-                        GroupCount = balance.CaptureSlot + 1;
-                    }
-
-                    if (balance.CaptureSlot >= 0)
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalanceStart, balance.PopSlot, balance.CaptureSlot, 0, 0));
-                    yield return new EmissionRequest(balance.Body, false, MirrorExecute);
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.BalancePop, balance.PopSlot, balance.CaptureSlot, 0, 0));
-
+                    Emit(new(Utf8SliceInstructionKind.BalancePop, balance.PopSlot, balance.CaptureSlot, 0, 0));
                     break;
                 case Utf8SliceNode.AtomicNode atomic:
-                    // Possessive groups: a surviving body commits (popping to the
-                    // atomic fork and keeping captures, input, and repeat state)
-                    // while any failing path unwinds to the fork and fails through
-                    // the Fail branch.
-                    var atomicFork = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 2, 0, 0));
-                    yield return new EmissionRequest(atomic.Body, false, MirrorExecute);
-
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.AtomicCommit, 0, 0, 0, 0));
+                    if (frame.Stage == 0)
+                    {
+                        frame.Mark = Instructions.Count;
+                        Emit(new(Utf8SliceInstructionKind.Fork, 0, 2, 0, 0));
+                        frame.Stage = 1;
+                        request = new(atomic.Body, false, MirrorExecute, 0);
+                        return true;
+                    }
+                    Emit(new(Utf8SliceInstructionKind.AtomicCommit, 0, 0, 0, 0));
                     var atomicJump = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                    Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
                     var atomicFail = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
-                    Patch(atomicFork, atomicFail);
+                    Emit(new(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                    Patch(frame.Mark, atomicFail);
                     Patch(atomicJump, Instructions.Count);
                     break;
                 case Utf8SliceNode.ConditionalNode conditional:
-                    if (conditional.TestBody is not null)
+                    if (conditional.TestBody is { } testBody)
                     {
-                        // Expression tests desugar to lookahead-guarded branches (the test
-                        // is a positive lookaround per BCL); the marker preserves the
-                        // distinction for consumers with different assertion capture flow.
+                        // Emit the two guarded branches directly, borrowing the
+                        // test/body nodes. The former synthetic alternation,
+                        // lookahead nodes and branch arrays are unnecessary.
                         HasConditionalTest = true;
-                        yield return new EmissionRequest(new Utf8SliceNode.AlternationNode(new[]
+                        switch (frame.Stage)
                         {
-                            new Utf8SliceNode[] { new Utf8SliceNode.LookaheadNode(conditional.TestBody, true), conditional.YesBody },
-                            new Utf8SliceNode[] { new Utf8SliceNode.LookaheadNode(conditional.TestBody, false), conditional.NoBody },
-                        }), false, MirrorExecute);
-
+                            case 0:
+                                frame.Mark = Instructions.Count;
+                                Emit(new(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
+                                frame.Stage = 1;
+                                request = new(testBody, false, MirrorExecute, 1); return true;
+                            case 1:
+                                frame.Stage = 2;
+                                request = new(conditional.YesBody, false, MirrorExecute, 0); return true;
+                            case 2:
+                                frame.Jump = Instructions.Count;
+                                Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                                Patch(frame.Mark, Instructions.Count);
+                                frame.Stage = 3;
+                                request = new(testBody, false, MirrorExecute, 2); return true;
+                            case 3:
+                                frame.Stage = 4;
+                                request = new(conditional.NoBody, false, MirrorExecute, 0); return true;
+                            default:
+                                Patch(frame.Jump, Instructions.Count); break;
+                        }
                         break;
                     }
-
-                    // One-shot group test with committed branches: the test reads current
-                    // capture state and jumps to the no-branch on false; downstream
-                    // failure never retries the other branch (BCL commits to the test).
-                    var testIndex = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, 0, 0, 0));
-                    yield return new EmissionRequest(conditional.YesBody, false, MirrorExecute);
-
-                    var noJump = Instructions.Count;
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
-                    Instructions[testIndex] = new Utf8SliceInstruction(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, Instructions.Count, 0, 0);
-                    yield return new EmissionRequest(conditional.NoBody, false, MirrorExecute);
-
-                    Patch(noJump, Instructions.Count);
+                    if (frame.Stage == 0)
+                    {
+                        frame.Mark = Instructions.Count;
+                        Emit(new(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, 0, 0, 0));
+                        frame.Stage = 1;
+                        request = new(conditional.YesBody, false, MirrorExecute, 0); return true;
+                    }
+                    if (frame.Stage == 1)
+                    {
+                        frame.Jump = Instructions.Count;
+                        Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                        Instructions[frame.Mark] = new(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, Instructions.Count, 0, 0);
+                        frame.Stage = 2;
+                        request = new(conditional.NoBody, false, MirrorExecute, 0); return true;
+                    }
+                    Patch(frame.Jump, Instructions.Count);
                     break;
-                case Utf8SliceNode.LookaheadNode lookahead:
+                case Utf8SliceNode.LookaheadNode ahead:
+                    return EmitLookahead(ahead.Body, ahead.Positive, ref frame, out request);
+                case Utf8SliceNode.LookbehindNode behind:
                     SawLookaround = true;
-                    // Right-to-left programs run the main stream mirrored while BCL
-                    // parses lookahead bodies left-to-right, so mirrored mains serve
-                    // lookahead bodies as left-to-right sub-programs (shared slots,
-                    // zero width, captures persisting on positive survival exactly
-                    // like lookbehind bodies).
-                    if (MirrorExecute)
+                    SawCapturingLookbehind |= Facts[behind.Body].WritesGroup;
+                    if (frame.Stage == 0)
                     {
-                        yield return new EmissionRequest(lookahead.Body, true, false);
-                        var lookaheadBody = LastSubprogram;
-                        if (lookaheadBody is null)
-                        {
-                            Failed = true;
-                            yield break;
-                        }
-
-                        if (lookaheadBody.GroupCount > GroupCount)
-                        {
-                            GroupCount = lookaheadBody.GroupCount;
-                        }
-
-                        var (lookaheadMinimum, lookaheadMaximum) = (Facts[lookahead.Body].Minimum, Facts[lookahead.Body].Maximum);
-                        var lookaheadAssertionIndex = Assertions.Count;
-                        Assertions.Add(new Utf8SliceAssertion(lookaheadBody, lookaheadMinimum, lookaheadMaximum, false));
-                        Emit(new Utf8SliceInstruction(
-                            Utf8SliceInstructionKind.Lookahead,
-                            lookaheadAssertionIndex,
-                            lookahead.Positive ? 1 : 0,
-                            0,
-                            0));
-                        break;
+                        frame.Stage = 1;
+                        request = new(behind.Body, true, true, 0); return true;
                     }
-
-                    // Atomic first-success assertions on the shared trail:
-                    // a surviving body commits (popping to the assertion
-                    // fork, restoring repeat state, keeping captures) while
-                    // any failing path unwinds to the fork and truncates the
-                    // body writes.
-                    if (lookahead.Positive)
-                    {
-                        var forkIndex = Instructions.Count;
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
-                        yield return new EmissionRequest(lookahead.Body, false, MirrorExecute);
-
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
-                        var jumpIndex = Instructions.Count;
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
-                        var failIndex = Instructions.Count;
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
-                        Patch(forkIndex, failIndex);
-                        Patch(jumpIndex, Instructions.Count);
-                    }
-                    else
-                    {
-                        var forkIndex = Instructions.Count;
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
-                        yield return new EmissionRequest(lookahead.Body, false, MirrorExecute);
-
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
-                        Patch(forkIndex, Instructions.Count);
-                    }
-
+                    var body = LastSubprogram;
+                    if (body is null) { Failed = true; return false; }
+                    GroupCount = Math.Max(GroupCount, body.GroupCount);
+                    var width = Facts[behind.Body];
+                    var assertionIndex = Assertions.Count;
+                    Assertions.Add(new(body, width.Minimum, width.Maximum, true));
+                    Emit(new(Utf8SliceInstructionKind.Lookbehind, assertionIndex, behind.Positive ? 1 : 0, 0, 0));
                     break;
-                case Utf8SliceNode.LookbehindNode lookbehind:
-                    {
-                        SawLookaround = true;
-                        if (Facts[lookbehind.Body].WritesGroup)
-                        {
-                            SawCapturingLookbehind = true;
-                        }
-                        yield return new EmissionRequest(lookbehind.Body, true, true);
-                        var body = LastSubprogram;
-                        if (body is null)
-                        {
-                            Failed = true;
-                            yield break;
-                        }
-
-                        if (body.GroupCount > GroupCount)
-                        {
-                            GroupCount = body.GroupCount;
-                        }
-
-                        var (minimum, maximum) = (Facts[lookbehind.Body].Minimum, Facts[lookbehind.Body].Maximum);
-
-                        var assertionIndex = Assertions.Count;
-                        Assertions.Add(new Utf8SliceAssertion(body, minimum, maximum, true));
-                        Emit(new Utf8SliceInstruction(
-                            Utf8SliceInstructionKind.Lookbehind,
-                            assertionIndex,
-                            lookbehind.Positive ? 1 : 0,
-                            0,
-                            0));
-                        break;
-                    }
-
                 case Utf8SliceNode.CaptureNode capture:
                     if (capture.Slot < 0)
-                    {
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice capture slots start at zero.");
-                    }
-
-                    if (capture.Slot + 1 > GroupCount)
+                    if (frame.Stage == 0)
                     {
-                        GroupCount = capture.Slot + 1;
+                        GroupCount = Math.Max(GroupCount, capture.Slot + 1);
+                        if (CaptureOpenings is { } openings && !openings.TryGetValue(capture, out frame.Opening))
+                        {
+                            frame.Opening = CaptureOpeningCount++;
+                            openings.Add(capture, frame.Opening);
+                        }
+                        Emit(new(Utf8SliceInstructionKind.CaptureStart, capture.Slot, frame.Opening, 0, 0));
+                        frame.Stage = 1;
+                        request = new(capture.Body, false, MirrorExecute, 0); return true;
                     }
-
-                    // An opening register belongs to this declaration, not its
-                    // public slot: nested aliases can close the same slot in a
-                    // different order. The NFA exposes only the last completion.
-                    var opening = 0;
-                    if (CaptureOpenings is { } openings && !openings.TryGetValue(capture, out opening))
-                    {
-                        opening = CaptureOpeningCount++;
-                        openings.Add(capture, opening);
-                    }
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureStart, capture.Slot, opening, 0, 0));
-                    yield return new EmissionRequest(capture.Body, false, MirrorExecute);
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, opening, 0, 0));
+                    Emit(new(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, frame.Opening, 0, 0));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported slice node {node.Kind}.", nameof(node));
             }
+            return false;
+        }
 
-            yield break;
+        internal bool EmitLookahead(Utf8SliceNode body, bool positive, ref EmissionFrame frame, out EmissionRequest request)
+        {
+            request = default;
+            SawLookaround = true;
+            if (frame.Stage == 0)
+            {
+                frame.Stage = 1;
+                if (!MirrorExecute)
+                {
+                    frame.Mark = Instructions.Count;
+                    Emit(new(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
+                }
+                request = new(body, MirrorExecute, false, 0);
+                return true;
+            }
+            if (MirrorExecute)
+            {
+                var program = LastSubprogram;
+                if (program is null) { Failed = true; return false; }
+                GroupCount = Math.Max(GroupCount, program.GroupCount);
+                var width = Facts[body];
+                var index = Assertions.Count;
+                Assertions.Add(new(program, width.Minimum, width.Maximum, false));
+                Emit(new(Utf8SliceInstructionKind.Lookahead, index, positive ? 1 : 0, 0, 0));
+                return false;
+            }
+            Emit(new(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
+            if (positive)
+            {
+                var jump = Instructions.Count;
+                Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                var fail = Instructions.Count;
+                Emit(new(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                Patch(frame.Mark, fail);
+                Patch(jump, Instructions.Count);
+            }
+            else
+            {
+                Emit(new(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                Patch(frame.Mark, Instructions.Count);
+            }
+            return false;
         }
 
         private void Patch(int index, int target)

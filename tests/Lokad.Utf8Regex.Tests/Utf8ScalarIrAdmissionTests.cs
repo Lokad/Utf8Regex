@@ -21,7 +21,7 @@ public sealed class Utf8ScalarIrAdmissionTests
         Assert.NotNull(program);
         Assert.Equal(2, program.SetMasks.Length);
         Assert.Same(program.SetMasks[0], program.SetMasks[1]);
-        Assert.Equal(CountOwnedGraphArrays(program), scope.Budget.ReservedBytes);
+        Assert.Equal(CountOwnedGraphArrays(program) + CountOwnedConstructionDescriptors(scope.Budget), scope.Budget.ReservedBytes);
     }
 
     [Theory]
@@ -90,6 +90,18 @@ public sealed class Utf8ScalarIrAdmissionTests
         Assert.Equal(maximumBytes == 0 ? 0 : 1, child.Disposals);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.PeakBytes <= maximumBytes);
+    }
+
+    internal static ulong CountOwnedConstructionDescriptors(Utf8ConstructionBudget budget)
+    {
+        var bytes = 0ul;
+        for (var allocation = budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
+        {
+            var type = allocation.Value.GetType().GetGenericTypeDefinition();
+            Assert.Contains(type, new[] { typeof(Utf8ConstructionBuffer<>), typeof(Utf8ConstructionMap<,>) });
+            bytes += allocation.Bytes;
+        }
+        return bytes;
     }
 
     // Inspect all reachable arrays, including private subtraction segments,

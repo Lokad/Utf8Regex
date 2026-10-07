@@ -65,16 +65,15 @@ public sealed class Utf8ConstructionBufferAdmissionTests
     [InlineData("(?<x>[abc]\\p{L})\\k<x>", false)]
     [InlineData("(?<x>[a-z-[aeiou]])", false)]
     [InlineData("(?<x>[😀-🙏]|[é-\uFFFF])", false)]
-    public void RetainedGraphArraysAndParserDescriptorExactlyMatchTheLoweringByteLoan(string pattern, bool nonBacktracking)
+    public void RetainedGraphArraysAndDescriptorsExactlyMatchTheLoweringByteLoan(string pattern, bool nonBacktracking)
     {
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
         var program = Utf8SliceParser.TryParse(pattern, nonBacktracking ? RegexOptions.NonBacktracking : RegexOptions.None);
         Assert.NotNull(program);
         var retained = Utf8ScalarIrAdmissionTests.CountOwnedGraphArrays(program);
-        var descriptor = Assert.IsType<Utf8ConstructionBudget.ObjectAllocation>(scope.Budget.ObjectCheckpoint);
-        Assert.Equal(typeof(Utf8ConstructionBuffer<>), descriptor.Value.GetType().GetGenericTypeDefinition());
-        Assert.Null(descriptor.Previous);
-        Assert.Equal(retained + descriptor.Bytes, scope.Budget.ReservedBytes);
+        var descriptors = Utf8ScalarIrAdmissionTests.CountOwnedConstructionDescriptors(scope.Budget);
+        Assert.True(descriptors > 0);
+        Assert.Equal(retained + descriptors, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.PeakBytes > retained);
     }
 
