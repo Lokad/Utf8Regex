@@ -145,10 +145,12 @@ internal sealed class Utf8SliceCategoryTable
 {
     internal Utf8SliceCategoryTable(uint mask, ushort[] ranges)
     {
+        using var construction = Utf8ConstructionScope.Enter();
         Mask = mask;
-        Ranges = ranges.Length == 0 ? [] : new int[ranges.Length + (ranges.Length & 1)];
+        Ranges = construction.Budget.AllocateArray<int>(ranges.Length + (ranges.Length & 1), false);
         for (var index = 0; index < ranges.Length; index++) Ranges[index] = ranges[index];
         if ((ranges.Length & 1) != 0) Ranges[^1] = 0x10000;
+        construction.Complete();
     }
 
     private Utf8SliceCategoryTable(int[] ranges)

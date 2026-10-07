@@ -63,29 +63,14 @@ public sealed class Utf8ConstructionBufferAdmissionTests
     [InlineData("(?=a)(?=(?<=b)c)d", false)]
     [InlineData("(?:(?<x>a?)*)*b", true)]
     [InlineData("(?<x>[abc]\\p{L})\\k<x>", false)]
+    [InlineData("(?<x>[a-z-[aeiou]])", false)]
+    [InlineData("(?<x>[😀-🙏]|[é-\uFFFF])", false)]
     public void RetainedGraphArraysExactlyMatchTheLoweringByteLoan(string pattern, bool nonBacktracking)
     {
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
         var program = Utf8SliceParser.TryParse(pattern, nonBacktracking ? RegexOptions.NonBacktracking : RegexOptions.None);
         Assert.NotNull(program);
-        var pending = new Stack<Utf8SliceProgram>();
-        pending.Push(program);
-        ulong retained = 0;
-        while (pending.TryPop(out var graph))
-        {
-            retained += Utf8ConstructionBudget.ArrayBytes<Utf8SliceInstruction>(graph.Instructions.Length)
-                + Utf8ConstructionBudget.ArrayBytes<byte[]>(graph.SetMasks.Length)
-                + Utf8ConstructionBudget.ArrayBytes<Utf8SliceCategoryTable>(graph.CategoryTables.Length)
-                + Utf8ConstructionBudget.ArrayBytes<Utf8SliceNode.CategorySetMember[]>(graph.CategorySetMembers.Length)
-                + Utf8ConstructionBudget.ArrayBytes<Utf8SliceAssertion>(graph.Assertions.Length)
-                + Utf8ConstructionBudget.ArrayBytes<Func<int, int>>(graph.BackreferenceLowerings.Length)
-                + Utf8ConstructionBudget.ArrayBytes<int>(graph.NonBacktrackingEpsilonOrder.Length);
-            // The parser supplies borrowed name/number arrays; hand-built trees
-            // acquire their own arrays, and their element strings remain excluded.
-            if (graph.CaptureCatalog is null)
-                retained += Utf8ConstructionBudget.ArrayBytes<int>(graph.GroupNumbers.Length);
-            foreach (var assertion in graph.Assertions) pending.Push(assertion.Body);
-        }
+        var retained = Utf8ScalarIrAdmissionTests.CountOwnedGraphArrays(program);
         Assert.Equal(retained, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.PeakBytes > retained);
     }

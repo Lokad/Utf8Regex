@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable scalar class subtraction chain. Each segment owns its
@@ -14,25 +16,23 @@ internal sealed class Utf8SliceClassProgram
         _segments = segments;
     }
 
-    internal static Utf8SliceNode Subtract(IReadOnlyList<Utf8SliceNode> operands)
+    internal static Utf8SliceNode Subtract(Utf8ConstructionBuffer<Utf8SliceNode> operands, Utf8ConstructionArena arena)
     {
         static Segment FromNode(Utf8SliceNode node) => node switch
         {
             Utf8SliceNode.SetNode set => new Segment(set.Mask16, set.Members, [], set.Negated, set.FoldCase),
             Utf8SliceNode.CategorySetNode set => new Segment(set.Mask16, set.Members, set.Categories, set.Negated, set.FoldCase),
-            Utf8SliceNode.ShorthandNode shorthand => new Segment(new byte[16], [shorthand.Shorthand], [], false, false),
-            Utf8SliceNode.CategoryNode category => new Segment(new byte[16], [],
-                [new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(category.Mask, category.Ranges), category.Negated)], false, category.FoldCase),
             _ => throw new ArgumentOutOfRangeException(nameof(node), "Class subtraction requires class operands."),
         };
 
-        var segments = new Segment[operands.Count];
+        var segments = arena.Allocate<Segment>(operands.Count, true);
         for (var index = 0; index < operands.Count; index++)
             segments[index] = FromNode(operands[index]);
 
         var program = new Utf8SliceClassProgram(segments);
-        return new Utf8SliceNode.CategorySetNode(new byte[16], false, [],
-            [new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(program), false)], false);
+        var categories = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
+        categories[0] = new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(program), false);
+        return new Utf8SliceNode.CategorySetNode(arena.Allocate<byte>(16, true), false, [], categories, false);
     }
 
     internal bool TryMatch(Rune scalar, Utf8ScalarCaseBehavior behavior, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)

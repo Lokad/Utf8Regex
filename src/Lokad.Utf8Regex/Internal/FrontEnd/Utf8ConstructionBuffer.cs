@@ -50,6 +50,7 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     }
 
     internal int IndexOf(T value) => Array.IndexOf(_items, value, 0, Count);
+    internal void Sort(Comparison<T> comparison) => Array.Sort(_items, 0, Count, Comparer<T>.Create(comparison));
 
     internal T[] Take()
     {

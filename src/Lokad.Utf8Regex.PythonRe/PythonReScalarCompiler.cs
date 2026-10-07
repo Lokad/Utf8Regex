@@ -12,17 +12,26 @@ internal static class PythonReScalarCompiler
     internal static Utf8SliceProgram? Compile(PythonReParseResult parse,
         PythonReTranslation translation, bool fullMatch)
     {
-        var nodes = new Dictionary<PythonReNode, Utf8SliceNode>(ReferenceEqualityComparer.Instance);
-        if (!Utf8PreparationStep.TryRun(Convert(parse.Root, parse.Options, false))) return null;
+        using var construction = Utf8ConstructionScope.Enter();
+        using var arena = new Utf8ConstructionArena(construction.Budget);
+        using var nodes = new Utf8ConstructionMap<PythonReNode, Utf8SliceNode>(construction.Budget, ReferenceEqualityComparer.Instance);
+        if (!Utf8PreparationStep.TryRun(Convert(parse.Root, parse.Options, false), construction.Budget)) return null;
         var root = nodes[parse.Root];
-        if (fullMatch) root = new Utf8SliceNode.ConcatNode(
-            [root, new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.VeryEnd, false)]);
-        var names = new string[parse.CaptureGroupCount + 1];
+        if (fullMatch)
+        {
+            var children = arena.Allocate<Utf8SliceNode>(2, false);
+            children[0] = root;
+            children[1] = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.VeryEnd, false);
+            root = new Utf8SliceNode.ConcatNode(children);
+        }
+        var names = arena.Allocate<string>(parse.CaptureGroupCount + 1, true);
         for (var group = 0; group < names.Length; group++)
             names[group] = group.ToString(CultureInfo.InvariantCulture);
         foreach (var named in parse.NamedGroups)
             names[translation.ManagedNumbersByPython[named.Value]] = translation.EmittedGroupNames[named.Key];
-        return Utf8SliceLowerer.Lower(root, names, false, false, false);
+        var program = Utf8SliceLowerer.Lower(root, names, false, false, false);
+        if (program is not null) { arena.Complete(); construction.Complete(); }
+        return program;
 
         IEnumerable<Utf8PreparationStep> Convert(PythonReNode node, PythonReCompileOptions options, bool reversed)
         {
@@ -30,7 +39,7 @@ internal static class PythonReScalarCompiler
             {
                 case PythonReSequenceNode sequence:
                     {
-                        var children = new Utf8SliceNode[sequence.Elements.Count];
+                        var children = arena.Allocate<Utf8SliceNode>(sequence.Elements.Count, false);
                         for (var index = 0; index < children.Length; index++)
                         {
                             yield return new Utf8PreparationStep(Convert(sequence.Elements[reversed ? children.Length - 1 - index : index], options, reversed), false);
@@ -42,12 +51,13 @@ internal static class PythonReScalarCompiler
                     }
                 case PythonReAlternationNode alternation:
                     {
-                        var branches = new Utf8SliceNode[alternation.Branches.Count][];
+                        var branches = arena.Allocate<Utf8SliceNode[]>(alternation.Branches.Count, false);
                         for (var index = 0; index < branches.Length; index++)
                         {
                             yield return new Utf8PreparationStep(Convert(alternation.Branches[index], options, reversed), false);
                             var child = nodes[alternation.Branches[index]];
-                            branches[index] = [child];
+                            branches[index] = arena.Allocate<Utf8SliceNode>(1, false);
+                            branches[index][0] = child;
                         }
                         nodes[node] = new Utf8SliceNode.AlternationNode(branches);
                         yield break;
@@ -131,7 +141,7 @@ internal static class PythonReScalarCompiler
                         }
                         var balancing = false;
                         var lazyCaptures = false;
-                        if (Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, ref balancing, ref lazyCaptures) is not { } atom)
+                        if (Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures) is not { } atom)
                         {
                             yield return Utf8PreparationStep.Decline;
                             yield break;
