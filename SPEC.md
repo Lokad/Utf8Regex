@@ -554,6 +554,12 @@ end the proof instead of contributing their minimum. Fixed-literal preparation
 admits its width map, ancestor frames and copied character text; the old raw stack
 and result holder are removed. ASCII-set offsets include complete encoded literal
 prefixes; folded variable-width sets cannot supply an ASCII-only fixed certificate.
+Finite ordered-window gaps reuse these scalar byte bounds, including folded
+literals, Unicode classes and dot. Combined gap arithmetic declines on overflow
+instead of wrapping into a false maximum. Line-break counts are an independent
+optional proof; plain class-wire membership is metered before scanning, and class
+subtraction declines that proof without invoking its legacy allocating predicate.
+The duplicate window-width formulas and unused line-safety frame state are removed.
 Alternate/set results and the facts container still require complete admission;
 these facts do not prove complete construction/retained bounds or that other
 native width producers and remaining BCL routes meet the scalar contract.

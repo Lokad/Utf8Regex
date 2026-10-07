@@ -93,7 +93,7 @@ public sealed class Utf8OwnedSearchContinuationTests
                 _ => Parent(Utf8TreeNodeKind.Loop, node),
             };
         object?[] width = [node, 0, false];
-        Assert.True(Assert.IsType<bool>(Call("TryGetFiniteAsciiWindowWidth", width)));
+        Assert.True(Assert.IsType<bool>(Call("TryGetFiniteScalarWindowByteWidth", width)));
         Assert.Equal(5 + (shape == 1 ? depth : 0), Assert.IsType<int>(width[1]));
         Assert.False(Assert.IsType<bool>(width[2]));
         object?[] lines = [node, 0];
@@ -111,7 +111,7 @@ public sealed class Utf8OwnedSearchContinuationTests
         Assert.False(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", lines)));
         Assert.Equal(0, Assert.IsType<int>(lines[1]));
         object?[] width = [overflow, 0, true];
-        Assert.False(Assert.IsType<bool>(Call("TryGetFiniteAsciiWindowWidth", width)));
+        Assert.False(Assert.IsType<bool>(Call("TryGetFiniteScalarWindowByteWidth", width)));
         Assert.Equal(0, Assert.IsType<int>(width[1]));
         Assert.False(Assert.IsType<bool>(width[2]));
         var thrown = Assert.Throws<TargetInvocationException>(() => Call("TryGetFiniteLineBreakCount", overflow, 0));

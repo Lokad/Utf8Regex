@@ -75,7 +75,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
             case 0: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryFindQuotedAsciiRun", input.Find, null, 0))); break;
             case 1: Assert.True(Assert.IsType<bool>(Call(analyzer, "IsQuoteNode", input.Find))); break;
             case 2: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractAsciiWindowPhrase", input.Find, ""))); break;
-            case 3: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteAsciiWindowWidth", input.Find, 0, false))); break;
+            case 3: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteScalarWindowByteWidth", input.Find, 0, false))); break;
             case 4: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteLineBreakCount", input.Find, 0))); break;
             case 5: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractTrailingLiteral", input.Find, ""))); break;
             case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryAppendDeterministicPrefixSets", input.Find, new List<Utf8FixedDistanceSet>(), 0, 0))); break;
