@@ -114,6 +114,36 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         catch { ReleaseBytes(bytes); throw; }
     }
 
+    internal byte[] EncodeUtf8(ReadOnlySpan<char> input)
+    {
+        // Pattern strings are interoperability input. Validate complete scalars
+        // before acquiring bytes; an impossible surrogate atom must never become
+        // a replacement-character literal in a native search plan.
+        ChargeWork((ulong)input.Length);
+        var byteCount = 0;
+        for (var offset = 0; offset < input.Length;)
+        {
+            if (Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width) != System.Buffers.OperationStatus.Done)
+                throw new ArgumentException("A native literal must contain complete Unicode scalars.", nameof(input));
+            byteCount = checked(byteCount + scalar.Utf8SequenceLength);
+            offset += width;
+        }
+        var result = AllocateArray<byte>(byteCount, false);
+        try
+        {
+            ChargeWork((ulong)input.Length + (ulong)byteCount);
+            var position = 0;
+            for (var offset = 0; offset < input.Length;)
+            {
+                _ = Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width);
+                position += scalar.EncodeToUtf8(result.AsSpan(position));
+                offset += width;
+            }
+            return result;
+        }
+        catch { ReleaseArray(result, false); throw; }
+    }
+
     internal string DecodeUtf8(ReadOnlySpan<byte> input, Encoding encoding)
     {
         // Count/validate before allocating the output. Parsing starts only after

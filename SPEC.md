@@ -555,8 +555,18 @@ have admitted output loans; failed suffix or parent-family speculation recovers
 all child loans. Quote/separator proofs unwind temporary loans, retain wrapper
 depth and avoid quote-string copies. Prefix comparisons spend work before byte
 scans. Existing local grammar, branch order, zero-minimum separators and checked
-line-count overflow are retained. Other literal/lookahead encoders, structural
-plan containers and complete retained/shared policies remain open.
+line-count overflow are retained.
+Native literal/lookahead preparation admits final UTF-8 bytes and alternative
+reference arrays under the same speculative owner as its child text. Encoding
+validates complete scalars before acquisition and meters both passes; it cannot
+turn an impossible surrogate atom into U+FFFD. Lookahead concatenation uses the
+admitted text buffer. Flat captured/alternative patterns use borrowed spans,
+without Split or substring intermediates, and scan alternatives in linear work.
+Literal/alternative wrapper ancestors remain in live-depth admission; late
+boundary, empty, unsupported or folded-Unicode decline restores all child loans
+without refunding work. Successful scratch arrays unwind and output arrays/text
+retain their loans. Search-fact objects, simple-plan decode/re-encode projection,
+structural plan containers and complete retained/shared policies remain open.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
 selection work. Literal builders and copied character/run strings share byte
