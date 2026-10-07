@@ -990,7 +990,8 @@ internal static class PythonReTranslator
                     var repeated = widths[repeat.Inner];
                     var repeatMin = ClampWidth(repeated.Min * (uint)repeat.Min);
                     var repeatMax = repeat.Max.HasValue
-                        ? ClampWidth(repeated.Max * (uint)repeat.Max.Value) : PythonReWidth.Maximum;
+                        ? ClampWidth(repeated.Max * (uint)repeat.Max.Value)
+                        : repeated.Max == 0 ? 0 : PythonReWidth.Maximum;
                     width = new(repeatMin, repeatMax);
                     break;
                 case PythonReConditionalNode conditional:

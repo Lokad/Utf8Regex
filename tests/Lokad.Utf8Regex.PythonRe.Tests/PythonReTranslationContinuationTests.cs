@@ -199,6 +199,7 @@ public sealed class PythonReTranslationContinuationTests
 
     [Theory]
     [InlineData("(?<=a{2147483647}b)x", null)]
+    [InlineData("(?<=(?:)*)x", null)]
     [InlineData("(?<=😀{2147483647}é)x", null)]
     [InlineData("(?<=a{2147483647}|a{2147483646}bb)x", "look-behind requires fixed-width pattern")]
     [InlineData("(?<=a{2147483647}a{2147483647}bb)x", "looks too much behind")]
@@ -211,6 +212,17 @@ public sealed class PythonReTranslationContinuationTests
             Assert.EndsWith(")x", native);
         }
         else Assert.StartsWith(error, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse)).Message);
+    }
+
+    [Fact]
+    public void PureEmptyUnboundedRepetitionHasNoNonEmptyMatchAndKeepsScalarEmptyProgress()
+    {
+        var parse = new PythonReParser("(?:)*").Parse(PythonReCompileOptions.None);
+        Assert.True(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
+        Assert.False(PythonReTranslator.CanMatchNonEmpty(parse.Root, parse));
+        var regex = new Utf8PythonRegex("(?<=(?:)*)x");
+        Assert.Equal("x", regex.SearchToString("😀x"u8));
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
 
     private static object Run(int operation, PythonReParseResult parse) => operation switch
