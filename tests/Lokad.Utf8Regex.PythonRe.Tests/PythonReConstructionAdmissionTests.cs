@@ -108,10 +108,9 @@ public sealed class PythonReConstructionAdmissionTests
     [Fact]
     public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
     {
-        // The full "cat" constructor now charges text and metadata too (covered
-        // peak 6,032 bytes before the parent/decoded pattern). Keep a bounded
-        // envelope that admits the original public recovery operation.
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 8192);
+        // Compiler frames, descriptors and direct IR objects now share this
+        // loan too. Keep a bounded envelope for the original public "cat" retry.
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 16384);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
         Assert.Throws<NotSupportedException>(() =>
@@ -132,17 +131,20 @@ public sealed class PythonReConstructionAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void WideScalarIrCannotBypassTheEnclosingByteOwner(bool bytes)
     {
+        // Preserve the wide denial and original same-owner "cat" recovery while
+        // including newly admitted compiler descriptors, frames and IR objects.
+        const ulong maximumBytes = 16384;
         var pattern = new string('a', 32768);
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 8192);
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (bytes) _ = new Utf8PythonRegex(encoded);
             else _ = new Utf8PythonRegex(pattern);
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(8192ul, failure.Limit);
-        Assert.True(scope.Budget.PeakBytes <= 8192);
+        Assert.Equal(maximumBytes, failure.Limit);
+        Assert.True(scope.Budget.PeakBytes <= maximumBytes);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Reserved);
         Assert.True(new Utf8PythonRegex("cat").IsMatch("cat"u8));

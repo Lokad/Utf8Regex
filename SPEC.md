@@ -448,6 +448,15 @@ boxing a heap descriptor. Shared value-frame stacks check root/child depth befor
 descriptor/array acquisition and unwind depth on every exit. Other preparation,
 core/conversion/emission iterators, diagnostic text and complete retained/RSS
 policies remain outside this partial construction backstop.
+Python scalar conversion also uses admitted value frames, deleting its captured
+yield continuation. Its arena/map descriptors, direct structural IR nodes and
+retaining descriptors admit before acquisition; node charges include the base
+Kind and initializer fields. Numeric capture-name strings admit their buffers,
+copy and retaining descriptor; the immutable whole-match name is borrowed.
+Failed or declined conversion restores parent loans/depth without refunding
+work, and releases frame-array scratch before lowering. Core fragment-parser
+and leaf-conversion IR objects, other core producers and lazy retained preparation
+remain separate admission work; these charges do not establish complete policies.
 Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
 Validation/counting precedes decoded-text admission and acquisition. The string
 charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16
