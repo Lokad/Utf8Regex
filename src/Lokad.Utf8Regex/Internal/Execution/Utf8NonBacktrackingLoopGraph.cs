@@ -25,11 +25,11 @@ internal sealed class Utf8NonBacktrackingLoopScope
 internal static class Utf8NonBacktrackingLoopGraph
 {
     internal static Utf8SliceInstruction[] Lift(Utf8SliceInstruction[] instructions,
-        List<Utf8NonBacktrackingLoopScope?> scopes, Utf8ConstructionInstructionBudget budget)
+        Utf8ConstructionBuffer<Utf8NonBacktrackingLoopScope?> scopes, Utf8ConstructionBudget budget)
     {
-        var states = new List<(int Pc, int ConsumedDepth)>();
-        var addresses = new List<int>();
-        var lookup = new Dictionary<(int Pc, int ConsumedDepth), int>();
+        using var states = new Utf8ConstructionBuffer<(int Pc, int ConsumedDepth)>(budget);
+        using var addresses = new Utf8ConstructionBuffer<int>(budget);
+        using var lookup = new Utf8ConstructionMap<(int Pc, int ConsumedDepth), int>(budget, EqualityComparer<(int, int)>.Default);
         var instructionsNeeded = 0;
         Add(0, 0);
         // Discovery computes every final block width and target before allocating
@@ -62,7 +62,7 @@ internal static class Utf8NonBacktrackingLoopGraph
                     break;
             }
         }
-        var result = new Utf8SliceInstruction[instructionsNeeded];
+        var result = budget.AllocateArray<Utf8SliceInstruction>(instructionsNeeded, false);
         for (var index = 0; index < states.Count; index++)
         {
             var (pc, consumed) = states[index];

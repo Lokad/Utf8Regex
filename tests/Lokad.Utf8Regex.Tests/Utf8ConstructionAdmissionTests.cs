@@ -116,7 +116,7 @@ public sealed class Utf8ConstructionAdmissionTests
     [Fact]
     public void CapacityArithmeticCannotWrapOrCorruptTheOwner()
     {
-        var budget = new Utf8ConstructionInstructionBudget(ulong.MaxValue);
+        var budget = new Utf8ConstructionBudget(ulong.MaxValue, ulong.MaxValue);
         budget.Reserve(ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => budget.Reserve(1));
         Assert.Equal(ulong.MaxValue, failure.Requested);

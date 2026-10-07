@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable scalar-boundary viability for one NonBacktracking batch.
@@ -24,47 +26,57 @@ internal sealed class Utf8NonBacktrackingSearchState
 
     internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions)
     {
-        var colors = new byte[instructions.Length];
-        var order = new int[instructions.Length];
-        var written = 0;
-        var frames = new Stack<(int Pc, bool Complete)>();
-        for (var pc = 0; pc < instructions.Length; pc++)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        var colors = budget.AllocateArray<byte>(instructions.Length, false);
+        try
         {
-            if (colors[pc] == 2) continue;
-            frames.Push((pc, false));
-            while (frames.TryPop(out var frame))
+            var order = budget.AllocateArray<int>(instructions.Length, false);
+            var written = 0;
+            using var frames = new Utf8ConstructionBuffer<(int Pc, bool Complete)>(budget);
+            for (var pc = 0; pc < instructions.Length; pc++)
             {
-                if (frame.Complete)
+                if (colors[pc] == 2) continue;
+                frames.Push((pc, false));
+                while (frames.TryPop(out var frame))
                 {
-                    colors[frame.Pc] = 2;
-                    order[written++] = frame.Pc;
-                    continue;
-                }
-                if (colors[frame.Pc] == 2) continue;
-                if (colors[frame.Pc] == 1)
-                    throw new InvalidOperationException("A nullable NonBacktracking cycle escaped scalar lowering.");
-                colors[frame.Pc] = 1;
-                frames.Push((frame.Pc, true));
-                var instruction = instructions[frame.Pc];
-                switch (instruction.Kind)
-                {
-                    case Utf8SliceInstructionKind.Fork:
-                        frames.Push((instruction.A, false));
-                        frames.Push((frame.Pc + 1, false));
-                        break;
-                    case Utf8SliceInstructionKind.Jump:
-                        frames.Push((instruction.A, false));
-                        break;
-                    case Utf8SliceInstructionKind.CaptureStart:
-                    case Utf8SliceInstructionKind.CaptureEnd:
-                    case Utf8SliceInstructionKind.Anchor:
-                    case Utf8SliceInstructionKind.Boundary:
-                        frames.Push((frame.Pc + 1, false));
-                        break;
+                    if (frame.Complete)
+                    {
+                        colors[frame.Pc] = 2;
+                        order[written++] = frame.Pc;
+                        continue;
+                    }
+                    if (colors[frame.Pc] == 2) continue;
+                    if (colors[frame.Pc] == 1)
+                        throw new InvalidOperationException("A nullable NonBacktracking cycle escaped scalar lowering.");
+                    colors[frame.Pc] = 1;
+                    frames.Push((frame.Pc, true));
+                    var instruction = instructions[frame.Pc];
+                    switch (instruction.Kind)
+                    {
+                        case Utf8SliceInstructionKind.Fork:
+                            frames.Push((instruction.A, false));
+                            frames.Push((frame.Pc + 1, false));
+                            break;
+                        case Utf8SliceInstructionKind.Jump:
+                            frames.Push((instruction.A, false));
+                            break;
+                        case Utf8SliceInstructionKind.CaptureStart:
+                        case Utf8SliceInstructionKind.CaptureEnd:
+                        case Utf8SliceInstructionKind.Anchor:
+                        case Utf8SliceInstructionKind.Boundary:
+                            frames.Push((frame.Pc + 1, false));
+                            break;
+                    }
                 }
             }
+            construction.Complete();
+            return order;
         }
-        return order;
+        finally
+        {
+            budget.ReleaseArray(colors, false);
+        }
     }
 
     // The caller has validated the complete subject. Two bounded scalar passes

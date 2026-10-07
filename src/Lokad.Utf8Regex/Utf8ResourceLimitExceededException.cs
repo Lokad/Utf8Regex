@@ -5,6 +5,8 @@ public enum Utf8ResourceLimitKind
 {
     /// <summary>Combined capacity of live scalar-program instruction arrays during one construction.</summary>
     ConstructionInstructionCapacity,
+    /// <summary>Admitted construction-buffer bytes, including charged array headers and copy overlap.</summary>
+    ConstructionBytes,
 }
 
 /// <summary>Reports an owned resource-admission failure, distinct from invalid syntax, no match and timeout.</summary>

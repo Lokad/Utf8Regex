@@ -5,8 +5,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Compiles the scalar UTF-8 VM from the authoritative owned tree.
 /// Raw-pattern callers use the same front end as production preparation;
 /// prepared callers reuse their tree and resolved capture catalog. Remaining
-/// unsupported grammar can decline to residual routing. Instruction-capacity
-/// exhaustion throws an owned resource failure before acquisition.</summary>
+/// unsupported grammar can decline to residual routing. Lowering instruction
+/// and buffer-capacity exhaustion throws an owned resource failure before
+/// acquisition; pattern parsing and IR preparation remain separately bounded work.</summary>
 internal static class Utf8SliceParser
 {
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)

@@ -216,6 +216,7 @@ internal sealed class Utf8SliceProgram
 {
     internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior)
     {
+        using var construction = Utf8ConstructionScope.Enter();
         Instructions = instructions;
         SetMasks = setMasks;
         CategoryTables = categoryTables;
@@ -260,9 +261,10 @@ internal sealed class Utf8SliceProgram
                         or Utf8SliceInstructionKind.TestGroup or Utf8SliceInstructionKind.Lookahead
                         or Utf8SliceInstructionKind.Lookbehind or Utf8SliceInstructionKind.AtomicCommit;
         }
-        GroupNumbers = captureCatalog?.GroupNumbers ?? new int[groupCount + 1];
+        GroupNumbers = captureCatalog?.GroupNumbers ?? construction.Budget.AllocateArray<int>(groupCount + 1, false);
         if (captureCatalog is null)
             for (var group = 0; group <= groupCount; group++) GroupNumbers[group] = group;
+        construction.Complete();
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
@@ -416,10 +418,10 @@ internal static class Utf8SliceLowerer
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        var facts = AnalyzeNodes(root, nonBacktracking);
+        using var facts = AnalyzeNodes(root, nonBacktracking, budget);
         var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior, nonBacktracking, budget);
         lowerer.CaptureCatalog = captureCatalog;
-        var frames = new Stack<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>();
+        using var frames = new Utf8ConstructionBuffer<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>(budget);
         frames.Push((lowerer, root, lowerer.EmitSteps(root).GetEnumerator(), true));
         try
         {
@@ -452,7 +454,7 @@ internal static class Utf8SliceLowerer
                     if (frames.Count == 0) { construction.Complete(); return program; }
                     frames.Peek().Owner.LastSubprogram = program;
                 }
-                finally { frame.Owner.Instructions.Dispose(); }
+                finally { frame.Owner.Dispose(); }
             }
             return null;
         }
@@ -461,19 +463,19 @@ internal static class Utf8SliceLowerer
             while (frames.TryPop(out var frame))
             {
                 frame.Steps.Dispose();
-                if (frame.Program) frame.Owner.Instructions.Dispose();
+                if (frame.Program) frame.Owner.Dispose();
             }
         }
     }
 
     private readonly record struct NodeFacts(bool CanMatchEmpty, bool WritesGroup, bool IsZeroWidth, int Minimum, int Maximum);
 
-    private static Dictionary<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking)
+    private static Utf8ConstructionMap<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking, Utf8ConstructionBudget budget)
     {
         // Slice nodes are records: structural hashing itself would recurse.
         // One identity cache serves the main and every nested assertion program.
-        var facts = new Dictionary<Utf8SliceNode, NodeFacts>(ReferenceEqualityComparer.Instance);
-        var frames = new Stack<(Utf8SliceNode Node, IEnumerator<Utf8SliceNode> Children)>();
+        var facts = new Utf8ConstructionMap<Utf8SliceNode, NodeFacts>(budget, ReferenceEqualityComparer.Instance);
+        using var frames = new Utf8ConstructionBuffer<(Utf8SliceNode Node, IEnumerator<Utf8SliceNode> Children)>(budget);
         frames.Push((root, Children(root).GetEnumerator()));
         try
         {
@@ -522,6 +524,7 @@ internal static class Utf8SliceLowerer
             }
             return facts;
         }
+        catch { facts.Dispose(); throw; }
         finally
         {
             while (frames.TryPop(out var frame)) frame.Children.Dispose();
@@ -552,7 +555,7 @@ internal static class Utf8SliceLowerer
             }
         }
 
-        static (int Minimum, int Maximum) Measure(Utf8SliceNode node, Dictionary<Utf8SliceNode, NodeFacts> facts)
+        static (int Minimum, int Maximum) Measure(Utf8SliceNode node, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts)
         {
             switch (node)
             {
@@ -647,7 +650,7 @@ internal static class Utf8SliceLowerer
 
         // Hoist nested language features and variable byte-length lookbehind
         // facts for consumers with narrower native admission.
-        var assertions = lowerer.Assertions.ToArray();
+        var assertions = lowerer.Assertions.Take();
         var hasNonFixedLookbehind = false;
         foreach (var assertion in assertions)
         {
@@ -671,7 +674,7 @@ internal static class Utf8SliceLowerer
         var resolvedNames = lowerer.GroupNames;
         if (resolvedNames is null)
         {
-            resolvedNames = new string[lowerer.GroupCount + 1];
+            resolvedNames = lowerer.Budget.AllocateArray<string>(lowerer.GroupCount + 1, false);
             for (var number = 0; number <= lowerer.GroupCount; number++)
             {
                 resolvedNames[number] = ((uint)number).ToString();
@@ -701,14 +704,14 @@ internal static class Utf8SliceLowerer
         if (lowerer.HasNullableNonBacktrackingLoop && lowerer.NonBacktrackingScopes is { } scopes)
         {
             var lifted = Utf8NonBacktrackingLoopGraph.Lift(instructions, scopes, lowerer.Budget);
-            lowerer.Budget.Release((ulong)instructions.Length);
+            lowerer.Budget.ReleaseArray(instructions, true);
             instructions = lifted;
         }
         return new Utf8SliceProgram(
             instructions,
-            lowerer.SetMasks.ToArray(),
-            lowerer.CategoryTables.ToArray(),
-            lowerer.CategorySetMembers.ToArray(),
+            lowerer.SetMasks.Take(),
+            lowerer.CategoryTables.Take(),
+            lowerer.CategorySetMembers.Take(),
             lowerer.RepeatCount,
             lowerer.GroupCount,
             requiresUnicodeWordBoundary,
@@ -717,7 +720,7 @@ internal static class Utf8SliceLowerer
             assertions,
             hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior)
         {
-            BackreferenceLowerings = lowerer.BackreferenceLowerings.ToArray(),
+            BackreferenceLowerings = lowerer.BackreferenceLowerings.Take(),
             IsNonBacktracking = lowerer.NonBacktracking,
             NonBacktrackingCaptureOpeningCount = lowerer.CaptureOpeningCount,
             NonBacktrackingEpsilonOrder = lowerer.NonBacktracking
@@ -727,16 +730,16 @@ internal static class Utf8SliceLowerer
 
     private sealed class Lowering
     {
-        internal readonly Utf8SliceInstructionBuilder Instructions;
-        internal readonly Utf8ConstructionInstructionBudget Budget;
-        internal readonly List<Func<int, int>> BackreferenceLowerings = new();
-        internal readonly List<byte[]> SetMasks = new();
-        internal readonly List<Utf8SliceNode.CategorySetMember[]> CategorySetMembers = new();
-        internal readonly List<Utf8SliceCategoryTable> CategoryTables = new();
+        internal readonly Utf8ConstructionBuffer<Utf8SliceInstruction> Instructions;
+        internal readonly Utf8ConstructionBudget Budget;
+        internal readonly Utf8ConstructionBuffer<Func<int, int>> BackreferenceLowerings;
+        internal readonly Utf8ConstructionBuffer<byte[]> SetMasks;
+        internal readonly Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember[]> CategorySetMembers;
+        internal readonly Utf8ConstructionBuffer<Utf8SliceCategoryTable> CategoryTables;
         internal int RepeatCount;
         internal int CaptureOpeningCount;
-        internal readonly Dictionary<Utf8SliceNode.CaptureNode, int>? CaptureOpenings;
-        internal readonly List<Utf8NonBacktrackingLoopScope?>? NonBacktrackingScopes;
+        internal readonly Utf8ConstructionMap<Utf8SliceNode.CaptureNode, int>? CaptureOpenings;
+        internal readonly Utf8ConstructionBuffer<Utf8NonBacktrackingLoopScope?>? NonBacktrackingScopes;
         internal Utf8NonBacktrackingLoopScope? NonBacktrackingScope;
         internal bool HasNullableNonBacktrackingLoop;
         internal int GroupCount;
@@ -744,7 +747,7 @@ internal static class Utf8SliceLowerer
         internal bool HasConditionalTest;
         internal bool SawLookaround;
         internal bool SawCapturingLookbehind;
-        internal readonly List<Utf8SliceAssertion> Assertions = new();
+        internal readonly Utf8ConstructionBuffer<Utf8SliceAssertion> Assertions;
         internal readonly string[]? GroupNames;
         internal Utf8CaptureCatalog? CaptureCatalog;
         internal readonly bool MaintainBalance;
@@ -752,26 +755,43 @@ internal static class Utf8SliceLowerer
         internal readonly Utf8ScalarCaseBehavior CaseBehavior;
         internal readonly bool MirrorExecute;
         internal readonly bool NonBacktracking;
-        internal readonly Dictionary<Utf8SliceNode, NodeFacts> Facts;
+        internal readonly Utf8ConstructionMap<Utf8SliceNode, NodeFacts> Facts;
         internal Utf8SliceProgram? LastSubprogram;
         internal bool Failed;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking, Utf8ConstructionInstructionBudget budget)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Utf8ConstructionMap<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking, Utf8ConstructionBudget budget)
         {
             Budget = budget;
-            Instructions = new(budget);
+            Instructions = new(budget, true);
+            BackreferenceLowerings = new(budget);
+            SetMasks = new(budget);
+            CategorySetMembers = new(budget);
+            CategoryTables = new(budget);
+            Assertions = new(budget);
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
             CaseBehavior = caseBehavior;
             MirrorExecute = mirrorExecute;
             NonBacktracking = nonBacktracking;
-            CaptureOpenings = nonBacktracking ? new(ReferenceEqualityComparer.Instance) : null;
-            NonBacktrackingScopes = nonBacktracking ? new() : null;
+            CaptureOpenings = nonBacktracking ? new(budget, ReferenceEqualityComparer.Instance) : null;
+            NonBacktrackingScopes = nonBacktracking ? new(budget) : null;
             Facts = facts;
             // RTL references can precede their captures. Every program starts
             // with the final catalog tally when supplied, just as the old entry.
             if (groupNames is not null) GroupCount = groupNames.Length - 1;
+        }
+
+        internal void Dispose()
+        {
+            Instructions.Dispose();
+            BackreferenceLowerings.Dispose();
+            SetMasks.Dispose();
+            CategorySetMembers.Dispose();
+            CategoryTables.Dispose();
+            Assertions.Dispose();
+            CaptureOpenings?.Dispose();
+            NonBacktrackingScopes?.Dispose();
         }
 
         internal void Emit(Utf8SliceInstruction instruction)
@@ -833,12 +853,13 @@ internal static class Utf8SliceLowerer
 
                     break;
                 case Utf8SliceNode.AlternationNode alternation:
+                {
                     if (alternation.Branches.Length == 0)
                     {
                         throw new ArgumentException("Slice alternations need at least one branch.", nameof(node));
                     }
 
-                    var endJumps = new List<int>();
+                    using var endJumps = new Utf8ConstructionBuffer<int>(Budget);
                     for (var branch = 0; branch < alternation.Branches.Length; branch++)
                     {
                         if (branch + 1 < alternation.Branches.Length)
@@ -869,6 +890,7 @@ internal static class Utf8SliceLowerer
                     }
 
                     break;
+                }
                 case Utf8SliceNode.RepeatNode repeat:
                     if (repeat.Minimum < 0 || repeat.Maximum < repeat.Minimum)
                     {
@@ -908,7 +930,7 @@ internal static class Utf8SliceLowerer
                             yield return new EmissionRequest(repeat.Body, false, false);
                             if (Failed) yield break;
                         }
-                        var exits = new List<int>();
+                        using var exits = new Utf8ConstructionBuffer<int>(Budget);
                         for (var iteration = minimum; iteration < maximum; iteration++)
                         {
                             var fork = Instructions.Count;

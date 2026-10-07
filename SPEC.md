@@ -391,16 +391,24 @@ The architecture must keep these invariants:
 
 Implementation details may evolve, but fast paths must be derived from the same semantic front-end rather than from separate pattern parsers.
 
-Current construction backstop: scalar-program instruction arrays share an owned
-capacity admission scope across synchronous nested core/adaptor construction.
-The provisional maximum is 1,048,576 live instruction slots. Admission includes
-old/new growth and copy overlap, completed assertion programs and source/lifted
-NonBacktracking graphs; it precedes acquisition. Exhaustion throws
+Current construction backstop: scalar-lowering arrays share an owned admission
+scope across synchronous nested core/adaptor construction. The provisional
+maximums are 1,048,576 live instruction slots and 64 MiB of lowering-array
+capacity. The byte model charges actual element strides, a conservative 32-byte
+array header and payload rounded to 16 bytes; shared empty arrays cost zero.
+It covers instruction vectors, analysis/capture maps, lowering frames, auxiliary
+vectors, nullable-graph discovery, epsilon-order preparation and newly acquired
+program metadata arrays. Old/new growth and final-copy overlap, completed
+assertion programs and source/lifted NonBacktracking graphs remain charged
+while live. Admission precedes acquisition. Exhaustion throws
 `Utf8ResourceLimitExceededException` with resource kind, maximum and requested
 capacity, and never selects a BCL engine. A failed construction restores its
-parent's admission state. This instruction-slot backstop is not the complete
-common construction policy: pattern conversion, AST/IR, tables/dictionaries,
-work/depth, lazy retained storage and a qualified safe default remain open.
+parent's admission state. This partial buffer backstop is not the complete
+common construction policy. It excludes pattern conversion, parser/AST/IR
+objects, strings, borrowed payloads, collection/iterator descriptors, independent
+PCRE2 programs and lazy retained storage. Work/depth, public construction
+controls and qualified safe defaults remain open. The byte charge bounds the
+defined live array capacity, not process RSS or cumulative GC allocations.
 
 ## 6. Performance and benchmarking
 
