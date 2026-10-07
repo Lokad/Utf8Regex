@@ -7,15 +7,16 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // R05: ordered expansion-span maps for single-alternation literal shapes whose branches
 // may diverge (different lengths or group spans), and for pure multi-loop shapes with two
 // to six optional loops over literal runs. Each pattern records the literal expansion
-// text plus every enclosed capture fixed UTF-16 range, so detailed shaping identifies
-// the winning pattern by ordinal text comparison against the owned discovery hit and
-// projects its spans without executing the fallback engine. Stored order is the BCL
-// choice order (source order for branches; per-loop preference with rightmost unwinding
-// for loops, as probed on .NET 10), so the first ordinal match wins. Nested divergent
+// text plus derived UTF-16 spans for its existing capture projection consumer.
+// Detailed shaping identifies the winning pattern by ordinal text comparison
+// against the owned discovery hit and projects scalar-aligned spans. Source order
+// for branches and per-loop preference with rightmost unwinding are retained,
+// so the first ordinal match wins. Nested divergent
 // alternations and (0,1) loops inside alternation branches expand the same way. Exact-count
 // loops over literal alternations expand per-iteration leftmost-major (the last iteration
-// backtracks first), with loop-body captures taking their span from the last iteration
-// exactly like BCL. Nested loops, other quantifiers, empty entries, more than 64 entries, sets, anchors,
+// backtracks first), with loop-body captures taking their span from the last
+// completed iteration. Nested loops, other quantifiers, empty entries, more than
+// 64 entries, sets, anchors,
 // lookarounds, backreferences, and empty nodes decline; a null map means
 // the dispatcher selects another route. Construction is eager and pure over the owned
 // tree: no fallback engine is built here.
@@ -690,7 +691,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         List<int> wholeMatchGroups)
     {
         // Pure multi-loop shapes: two to six optional loops over literal runs, no
-        // alternation. Single loops belong to the span table; deeper counts stay BCL.
+        // alternation. Single loops belong to the span table; deeper counts need another route.
         // Six bounds the eager per-pattern expansion (64 patterns) while covering
         // the witnessed five-loop debt; the ordering rule below is count-generic.
         // Stored pattern order is the BCL choice order (per-loop preference with the
@@ -766,17 +767,39 @@ internal sealed class Utf8AlternationBranchSpanMap
             lengths);
     }
 
+    private struct DiscoveryFrame(Utf8ExecutionNode node)
+    {
+        internal Utf8ExecutionNode Node = node;
+        internal int Index;
+        internal bool Entered;
+    }
+
     private static bool TryCollectLoops(Utf8ExecutionNode node, List<bool> greedy)
     {
-        var pending = new Stack<Utf8ExecutionNode>();
-        pending.Push(node);
-        while (pending.TryPop(out var current))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<DiscoveryFrame>.Create(budget, new(node));
+        while (frames.Count != 0)
         {
-            if (current.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
-                greedy.Add(current.Kind == Utf8ExecutionNodeKind.Loop);
-            else if (current.Kind == Utf8ExecutionNodeKind.Alternate) return false;
-            else for (var index = current.Children.Count - 1; index >= 0; index--)
-                pending.Push(current.Children[index]);
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            var current = frame.Node;
+            if (!frame.Entered)
+            {
+                if (current.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
+                {
+                    greedy.Add(current.Kind == Utf8ExecutionNodeKind.Loop);
+                    frames.Pop();
+                    continue;
+                }
+                if (current.Kind == Utf8ExecutionNodeKind.Alternate) return false;
+                frame.Entered = true;
+            }
+            if (frame.Index == current.Children.Count) { frames.Pop(); continue; }
+            var child = current.Children[frame.Index++];
+            frames[index] = frame;
+            frames.Push(new(child));
         }
         return true;
     }
@@ -790,6 +813,7 @@ internal sealed class Utf8AlternationBranchSpanMap
 
     private static void CollectPatternOrder(List<bool> greedy, int index, int mask, List<int> order)
     {
+        Utf8ConstructionScope.ChargeWork(1);
         if (index >= greedy.Count)
         {
             order.Add(mask);
@@ -923,17 +947,28 @@ internal sealed class Utf8AlternationBranchSpanMap
 
     private static void CountAlternates(Utf8ExecutionNode node, ref Utf8ExecutionNode? found, ref int count)
     {
-        var pending = new Stack<Utf8ExecutionNode>();
-        pending.Push(node);
-        while (pending.TryPop(out var current))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<DiscoveryFrame>.Create(budget, new(node));
+        while (frames.Count != 0)
         {
-            if (current.Kind == Utf8ExecutionNodeKind.Alternate)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            var current = frame.Node;
+            if (!frame.Entered)
             {
-                count++;
-                found ??= current;
+                if (current.Kind == Utf8ExecutionNodeKind.Alternate)
+                {
+                    count++;
+                    found ??= current;
+                }
+                frame.Entered = true;
             }
-            for (var index = current.Children.Count - 1; index >= 0; index--)
-                pending.Push(current.Children[index]);
+            if (frame.Index == current.Children.Count) { frames.Pop(); continue; }
+            var child = current.Children[frame.Index++];
+            frames[index] = frame;
+            frames.Push(new(child));
         }
     }
 

@@ -33,74 +33,92 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             state.HasLookbehind);
     }
 
+    private struct Frame(Utf8TreeNode node)
+    {
+        internal Utf8TreeNode Node = node;
+        internal int Index;
+        internal bool Entered;
+    }
+
     private static void Visit(Utf8TreeNode node, Utf8OwnedTreeAnalysis? runtimeAnalysis, ref FeatureState state)
     {
-        var pending = new Stack<Utf8TreeNode>();
-        pending.Push(node);
-        while (pending.TryPop(out node))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node));
+        while (frames.Count != 0)
         {
-            if (runtimeAnalysis?.IsInLoop(node) == true)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            node = frame.Node;
+            if (!frame.Entered)
             {
-                state.HasLoops = true;
-            }
-
-            switch (node.Kind)
-            {
-                case Utf8TreeNodeKind.Backreference:
-                    state.HasBackreferences = true;
-                    break;
-
-                case Utf8TreeNodeKind.PositiveLookaround:
-                case Utf8TreeNodeKind.NegativeLookaround:
-                    state.HasLookarounds = true;
-                    if ((node.Options & RegexOptions.RightToLeft) != 0)
-                    {
-                        state.HasLookbehind = true;
-                    }
-
-                    break;
-
-                case Utf8TreeNodeKind.Atomic:
-                    state.HasAtomicGroups = true;
-                    break;
-
-                case Utf8TreeNodeKind.BackreferenceConditional:
-                case Utf8TreeNodeKind.ExpressionConditional:
-                    state.HasConditionals = true;
-                    break;
-
-                case Utf8TreeNodeKind.Loop:
-                case Utf8TreeNodeKind.Lazyloop:
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                case Utf8TreeNodeKind.Notoneloopatomic:
-                case Utf8TreeNodeKind.Setloopatomic:
+                frame.Entered = true;
+                if (runtimeAnalysis?.IsInLoop(node) == true)
+                {
                     state.HasLoops = true;
-                    break;
+                }
 
-                case Utf8TreeNodeKind.Alternate:
-                    state.HasAlternation = true;
-                    break;
+                switch (node.Kind)
+                {
+                    case Utf8TreeNodeKind.Backreference:
+                        state.HasBackreferences = true;
+                        break;
 
-                case Utf8TreeNodeKind.Bol:
-                case Utf8TreeNodeKind.Beginning:
-                    state.HasAbsoluteStartAnchor = true;
-                    break;
+                    case Utf8TreeNodeKind.PositiveLookaround:
+                    case Utf8TreeNodeKind.NegativeLookaround:
+                        state.HasLookarounds = true;
+                        if ((node.Options & RegexOptions.RightToLeft) != 0)
+                        {
+                            state.HasLookbehind = true;
+                        }
 
-                case Utf8TreeNodeKind.Boundary:
-                case Utf8TreeNodeKind.NonBoundary:
-                case Utf8TreeNodeKind.ECMABoundary:
-                case Utf8TreeNodeKind.NonECMABoundary:
-                    state.HasWordBoundary = true;
-                    break;
+                        break;
+
+                    case Utf8TreeNodeKind.Atomic:
+                        state.HasAtomicGroups = true;
+                        break;
+
+                    case Utf8TreeNodeKind.BackreferenceConditional:
+                    case Utf8TreeNodeKind.ExpressionConditional:
+                        state.HasConditionals = true;
+                        break;
+
+                    case Utf8TreeNodeKind.Loop:
+                    case Utf8TreeNodeKind.Lazyloop:
+                    case Utf8TreeNodeKind.Oneloop:
+                    case Utf8TreeNodeKind.Notoneloop:
+                    case Utf8TreeNodeKind.Setloop:
+                    case Utf8TreeNodeKind.Onelazy:
+                    case Utf8TreeNodeKind.Notonelazy:
+                    case Utf8TreeNodeKind.Setlazy:
+                    case Utf8TreeNodeKind.Oneloopatomic:
+                    case Utf8TreeNodeKind.Notoneloopatomic:
+                    case Utf8TreeNodeKind.Setloopatomic:
+                        state.HasLoops = true;
+                        break;
+
+                    case Utf8TreeNodeKind.Alternate:
+                        state.HasAlternation = true;
+                        break;
+
+                    case Utf8TreeNodeKind.Bol:
+                    case Utf8TreeNodeKind.Beginning:
+                        state.HasAbsoluteStartAnchor = true;
+                        break;
+
+                    case Utf8TreeNodeKind.Boundary:
+                    case Utf8TreeNodeKind.NonBoundary:
+                    case Utf8TreeNodeKind.ECMABoundary:
+                    case Utf8TreeNodeKind.NonECMABoundary:
+                        state.HasWordBoundary = true;
+                        break;
+                }
             }
-            for (var index = node.ChildCount - 1; index >= 0; index--)
-                pending.Push(node.Child(index));
+            if (frame.Index == node.ChildCount) { frames.Pop(); continue; }
+            var child = node.Child(frame.Index++);
+            frames[index] = frame;
+            frames.Push(new(child));
         }
     }
 

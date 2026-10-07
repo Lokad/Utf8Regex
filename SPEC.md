@@ -500,6 +500,16 @@ scans retain separate
 admission work. ASCII class projections defer non-ASCII subjects to
 scalar execution; surrogate-half class membership does not determine loop
 admission or minimum scalar counts.
+Front-end quoted-run/quote checks, window phrases, finite byte widths and line
+counts, trailing literals and deterministic prefix sets also use admitted value
+frames. Branch loop/alternate discovery, feature census and NonBacktracking
+grammar checks share the same construction owner for storage, depth and visits.
+Saved cursors retain source-order choices and reverse-source diagnostic order;
+failed children stop later work. Successful, declined and exceptional exits release
+scratch without refunding work. Whitespace prefix analysis borrows a child cursor
+and preserves the owned tree's parent links instead of manufacturing a parent.
+Output builders, projection strings/spans and other preparation payloads remain
+separate admission work.
 Python scalar conversion also uses admitted value frames, deleting its captured
 yield continuation. Its arena/map descriptors, direct structural IR nodes and
 retaining descriptors admit before acquisition; node charges include the base

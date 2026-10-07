@@ -158,7 +158,7 @@ public sealed class Utf8OwnedSearchContinuationTests
             new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
         for (var index = 0; index < depth; index++) root = Parent(Utf8TreeNodeKind.Concatenate, root);
         var sets = new List<Utf8FixedDistanceSet>();
-        object?[] args = [root, sets, 0];
+        object?[] args = [root, sets, 0, 0];
         Assert.True(Assert.IsType<bool>(Call("TryAppendDeterministicPrefixSets", args)));
         Assert.Equal(3, Assert.IsType<int>(args[2]));
         Assert.Equal(new[] { 0, 1, 2 }, sets.Select(static set => set.Distance));
