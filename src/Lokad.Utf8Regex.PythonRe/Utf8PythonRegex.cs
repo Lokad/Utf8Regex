@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 
@@ -193,6 +194,7 @@ public sealed partial class Utf8PythonRegex
         {
             ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
         }
+        using var construction = Utf8ConstructionScope.Enter();
 
         PythonReCompileValidator.Validate(pattern, options);
         Pattern = pattern;
@@ -347,6 +349,7 @@ public sealed partial class Utf8PythonRegex
             : PythonReDirectBackendKind.ManagedRegex;
 
         ResourcePolicy = resourcePolicy;
+        construction.Complete();
     }
 
     private static void ValidatePythonRePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)

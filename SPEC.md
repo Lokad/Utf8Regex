@@ -391,6 +391,17 @@ The architecture must keep these invariants:
 
 Implementation details may evolve, but fast paths must be derived from the same semantic front-end rather than from separate pattern parsers.
 
+Current construction backstop: scalar-program instruction arrays share an owned
+capacity admission scope across synchronous nested core/adaptor construction.
+The provisional maximum is 1,048,576 live instruction slots. Admission includes
+old/new growth and copy overlap, completed assertion programs and source/lifted
+NonBacktracking graphs; it precedes acquisition. Exhaustion throws
+`Utf8ResourceLimitExceededException` with resource kind, maximum and requested
+capacity, and never selects a BCL engine. A failed construction restores its
+parent's admission state. This instruction-slot backstop is not the complete
+common construction policy: pattern conversion, AST/IR, tables/dictionaries,
+work/depth, lazy retained storage and a qualified safe default remain open.
+
 ## 6. Performance and benchmarking
 
 Performance rules:

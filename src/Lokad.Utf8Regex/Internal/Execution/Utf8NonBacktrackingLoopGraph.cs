@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Lexical context of a nullable unbounded iteration in the temporary
@@ -22,19 +24,18 @@ internal sealed class Utf8NonBacktrackingLoopScope
 /// nested bodies avoid the former repeated whole-body duplication.</summary>
 internal static class Utf8NonBacktrackingLoopGraph
 {
-    internal static Utf8SliceInstruction[]? Lift(Utf8SliceInstruction[] instructions,
-        List<Utf8NonBacktrackingLoopScope?> scopes, int maximumInstructions)
+    internal static Utf8SliceInstruction[] Lift(Utf8SliceInstruction[] instructions,
+        List<Utf8NonBacktrackingLoopScope?> scopes, Utf8ConstructionInstructionBudget budget)
     {
         var states = new List<(int Pc, int ConsumedDepth)>();
         var addresses = new List<int>();
         var lookup = new Dictionary<(int Pc, int ConsumedDepth), int>();
         var instructionsNeeded = 0;
-        var exceeded = false;
         Add(0, 0);
         // Discovery computes every final block width and target before allocating
         // the final array. Edges into a child retain the parent's consumed prefix;
         // edges out drop inactive contexts. Only atoms increase that prefix.
-        for (var index = 0; index < states.Count && !exceeded; index++)
+        for (var index = 0; index < states.Count; index++)
         {
             var (pc, consumed) = states[index];
             var instruction = instructions[pc];
@@ -61,7 +62,6 @@ internal static class Utf8NonBacktrackingLoopGraph
                     break;
             }
         }
-        if (exceeded) return null;
         var result = new Utf8SliceInstruction[instructionsNeeded];
         for (var index = 0; index < states.Count; index++)
         {
@@ -99,12 +99,13 @@ internal static class Utf8NonBacktrackingLoopGraph
 
         void Add(int pc, int consumed)
         {
-            if (exceeded) return;
             var key = (pc, Math.Min(consumed, scopes[pc]?.Depth ?? 0));
             if (lookup.ContainsKey(key)) return;
             var width = instructions[pc].Kind is Utf8SliceInstructionKind.Accept or
                 Utf8SliceInstructionKind.Fail or Utf8SliceInstructionKind.Jump ? 1 : 2;
-            if (instructionsNeeded > maximumInstructions - width) { exceeded = true; return; }
+            // Admission precedes discovery storage as well as the final array.
+            // The source graph remains charged while its lifted copy is built.
+            budget.Reserve((ulong)width);
             lookup.Add(key, states.Count);
             states.Add(key);
             addresses.Add(instructionsNeeded);

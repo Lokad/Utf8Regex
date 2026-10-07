@@ -85,6 +85,7 @@ public sealed partial class Utf8Regex
         {
             ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
         }
+        using var construction = Utf8ConstructionScope.Enter();
 
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
@@ -142,8 +143,8 @@ public sealed partial class Utf8Regex
         _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
-        // scalar slice. The instruction-count admission still declines to
-        // transitional routing; pattern nesting does not select a BCL engine.
+        // scalar slice. Instruction-capacity exhaustion fails in owned admission;
+        // pattern nesting and resource failure do not select a BCL engine.
         // NonBacktracking regular graphs lower to ordered scalar NFA states,
         // including loops and shared captures. They do not use the backtracker.
         var ownedSliceProgram = Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
@@ -159,7 +160,7 @@ public sealed partial class Utf8Regex
         }
 
         // The front end rejects parsed nonregular constructs itself. Only
-        // declined parsing/lowering and over-limit preparation still reach
+        // declined parsing/unsupported lowering still reach
         // this transitional validation engine.
         if ((options & RegexOptions.NonBacktracking) != 0 && ownedSliceProgram is null)
         {
@@ -252,6 +253,7 @@ public sealed partial class Utf8Regex
         }
 
         ResourcePolicy = resourcePolicy;
+        construction.Complete();
     }
 
     private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
@@ -55,6 +56,7 @@ public sealed partial class Utf8Pcre2Regex
         Utf8Pcre2ExecutionLimits defaultExecutionLimits,
         TimeSpan matchTimeout)
     {
+        using var construction = Utf8ConstructionScope.Enter();
         var request = new Pcre2CompileRequest(
             pattern,
             options,
@@ -75,6 +77,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             _unmeteredIsMatchProgram = isMatchProgram;
         }
+        construction.Complete();
     }
 
     /// <summary>Maps a shared resource policy onto PCRE2 execution limits.</summary>

@@ -400,12 +400,6 @@ internal sealed class Utf8SliceProgram
 /// <summary>Lowers immutable slice trees to flat programs with patched jumps.</summary>
 internal static class Utf8SliceLowerer
 {
-    // Transitional retained-program backstop. Ordinary lowering is linear;
-    // NonBacktracking finite bounds and nullable-loop lanes can expand the tree.
-    // Over-limit preparation still declines to residual routing. Replace this
-    // with the shared construction policy before claiming engine independence.
-    internal const int MaxInstructions = 1048576;
-
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft)
     {
         return Lower(root, groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, null);
@@ -420,8 +414,10 @@ internal static class Utf8SliceLowerer
 
     internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking)
     {
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
         var facts = AnalyzeNodes(root, nonBacktracking);
-        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior, nonBacktracking);
+        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft, facts, caseBehavior, nonBacktracking, budget);
         lowerer.CaptureCatalog = captureCatalog;
         var frames = new Stack<(Lowering Owner, Utf8SliceNode Root, IEnumerator<EmissionRequest> Steps, bool Program)>();
         frames.Push((lowerer, root, lowerer.EmitSteps(root).GetEnumerator(), true));
@@ -436,7 +432,7 @@ internal static class Utf8SliceLowerer
                     var owner = frame.Owner;
                     if (request.Program)
                     {
-                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts, owner.CaseBehavior, owner.NonBacktracking);
+                        owner = new Lowering(owner.GroupNames, owner.MaintainBalance, owner.MatchCaseInsensitive, request.RightToLeft, facts, owner.CaseBehavior, owner.NonBacktracking, budget);
                         owner.CaptureCatalog = frame.Owner.CaptureCatalog;
                     }
                     frames.Push((owner, request.Node, owner.EmitSteps(request.Node).GetEnumerator(), request.Program));
@@ -444,20 +440,29 @@ internal static class Utf8SliceLowerer
                 }
                 frames.Pop();
                 frame.Steps.Dispose();
-                if (frame.Owner.Failed) return null;
+                if (frame.Owner.Failed && !frame.Program) return null;
                 if (!frame.Program) continue;
-                var program = FinishLowering(frame.Owner, frame.Root,
-                    frames.Count == 0 && usesInterpretedLazyLoopSemantics,
-                    frames.Count == 0 && usesLiteralClassBracketSyntax);
-                if (program is null) return null;
-                if (frames.Count == 0) return program;
-                frames.Peek().Owner.LastSubprogram = program;
+                try
+                {
+                    if (frame.Owner.Failed) return null;
+                    var program = FinishLowering(frame.Owner, frame.Root,
+                        frames.Count == 0 && usesInterpretedLazyLoopSemantics,
+                        frames.Count == 0 && usesLiteralClassBracketSyntax);
+                    if (program is null) return null;
+                    if (frames.Count == 0) { construction.Complete(); return program; }
+                    frames.Peek().Owner.LastSubprogram = program;
+                }
+                finally { frame.Owner.Instructions.Dispose(); }
             }
             return null;
         }
         finally
         {
-            while (frames.TryPop(out var frame)) frame.Steps.Dispose();
+            while (frames.TryPop(out var frame))
+            {
+                frame.Steps.Dispose();
+                if (frame.Program) frame.Owner.Instructions.Dispose();
+            }
         }
     }
 
@@ -692,11 +697,12 @@ internal static class Utf8SliceLowerer
             }
         }
 
-        var instructions = lowerer.Instructions.ToArray();
+        var instructions = lowerer.Instructions.Take();
         if (lowerer.HasNullableNonBacktrackingLoop && lowerer.NonBacktrackingScopes is { } scopes)
         {
-            instructions = Utf8NonBacktrackingLoopGraph.Lift(instructions, scopes, MaxInstructions);
-            if (instructions is null) return null;
+            var lifted = Utf8NonBacktrackingLoopGraph.Lift(instructions, scopes, lowerer.Budget);
+            lowerer.Budget.Release((ulong)instructions.Length);
+            instructions = lifted;
         }
         return new Utf8SliceProgram(
             instructions,
@@ -721,7 +727,8 @@ internal static class Utf8SliceLowerer
 
     private sealed class Lowering
     {
-        internal readonly List<Utf8SliceInstruction> Instructions = new();
+        internal readonly Utf8SliceInstructionBuilder Instructions;
+        internal readonly Utf8ConstructionInstructionBudget Budget;
         internal readonly List<Func<int, int>> BackreferenceLowerings = new();
         internal readonly List<byte[]> SetMasks = new();
         internal readonly List<Utf8SliceNode.CategorySetMember[]> CategorySetMembers = new();
@@ -749,8 +756,10 @@ internal static class Utf8SliceLowerer
         internal Utf8SliceProgram? LastSubprogram;
         internal bool Failed;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute, Dictionary<Utf8SliceNode, NodeFacts> facts, Utf8ScalarCaseBehavior caseBehavior, bool nonBacktracking, Utf8ConstructionInstructionBudget budget)
         {
+            Budget = budget;
+            Instructions = new(budget);
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
@@ -773,12 +782,6 @@ internal static class Utf8SliceLowerer
 
         internal IEnumerable<EmissionRequest> EmitSteps(Utf8SliceNode node)
         {
-            if (Instructions.Count >= Utf8SliceLowerer.MaxInstructions)
-            {
-                Failed = true;
-                yield break;
-            }
-
             switch (node)
             {
                 case Utf8SliceNode.EmptyNode:
@@ -886,6 +889,16 @@ internal static class Utf8SliceLowerer
                             // outcome without work proportional to the numeric bound.
                             minimum = minimum == 0 ? 0 : 1;
                             maximum = maximum == 0 ? 0 : 1;
+                        }
+                        else
+                        {
+                            // Each required consuming body emits at least one
+                            // instruction; each finite optional copy also emits
+                            // a fork. Reject a known impossible retained extent
+                            // before traversing copies or growing any buffer.
+                            var minimumInstructions = maximum == int.MaxValue ? minimum : maximum;
+                            Budget.CheckReplacementMinimum((ulong)Instructions.Capacity,
+                                (ulong)Instructions.Count + (ulong)minimumInstructions);
                         }
                         // Thompson states have no input-dependent counter or
                         // backtracking trail. Finite bounds expand at preparation;
