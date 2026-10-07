@@ -429,6 +429,15 @@ scratch. This preserves bounded string-pattern interoperability; scalar matching
 and byte coordinates are unchanged. Exception-message formatting, preparation
 iterator objects, other construction consumers and retained-cache policies
 remain uncovered. Construction loans do not establish RSS or total GC bounds.
+The Python raw parser now stores alternation/sequence/group continuations in an
+admitted array of explicit frames, including old/new growth overlap; it creates
+no compiler-generated iterator for those grammar walkers. Root depth is checked
+before acquiring the frame-stack descriptor, and every exit releases scratch
+arrays and live depth without spending cleanup work. Production parser objects
+and their retaining descriptors admit their complete field-state extent before
+acquisition; a parser explicitly supplied by an internal caller remains borrowed.
+This does not cover the remaining core/conversion/emission iterators or diagnostic
+formatting, and does not establish a complete construction or retained policy.
 Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
 Validation/counting precedes decoded-text admission and acquisition. The string
 charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16

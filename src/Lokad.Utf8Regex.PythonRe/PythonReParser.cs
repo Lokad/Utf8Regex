@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-internal sealed class PythonReParser
+internal sealed partial class PythonReParser
 {
     private const string PatternBadEscapeLetters = "ceghijklmopqyCEFGHIJKLMNOPQRTVXYz";
     private const string CharacterClassBadEscapeLetters = "ceghijklmopqyzABCEFGHIJKLMOPQRTVXYZ";
@@ -48,6 +48,11 @@ internal sealed class PythonReParser
     private int _groupCount;
     private PythonReCompileOptions _leadingInlineOptions;
 
+    internal static PythonReParser Create(string pattern) =>
+        Utf8ConstructionScope.CurrentBudget.AllocateObject(
+            (pattern, (PythonReParserStorage?)null, false, PythonReAstFactory.Empty, 0, 0, PythonReCompileOptions.None),
+            static state => new PythonReParser(state.pattern));
+
     public PythonReParser(string pattern)
     {
         _pattern = pattern;
@@ -60,7 +65,7 @@ internal sealed class PythonReParser
         try
         {
             ConsumeLeadingInlineFlags(ref options);
-            Utf8PreparationStep.TryRun(ParseAlternation(options), construction.Budget);
+            ParseFrames(options, construction.Budget);
             var node = _parsedNode;
             if (!IsAtEnd)
             {
@@ -124,54 +129,6 @@ internal sealed class PythonReParser
         add = ParseFlagSet(allowEmpty: false, FlagParseContext.Added);
         _position++;
         return true;
-    }
-
-    private IEnumerable<Utf8PreparationStep> ParseAlternation(PythonReCompileOptions options)
-    {
-        _storage ??= PythonReParserStorage.Create(Utf8ConstructionScope.CurrentBudget);
-        using var branches = Utf8ConstructionBuffer<PythonReNode>.Create(Storage.Arena.Budget);
-        yield return new Utf8PreparationStep(ParseSequence(options), false);
-        branches.Add(_parsedNode);
-        while (TryConsume('|'))
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            yield return new Utf8PreparationStep(ParseSequence(options), false);
-            branches.Add(_parsedNode);
-        }
-
-        _parsedNode = branches.Count == 1
-            ? branches[0]
-            : PythonReAstFactory.Alternation(Storage.Arena.Take(branches, true));
-    }
-
-    private IEnumerable<Utf8PreparationStep> ParseSequence(PythonReCompileOptions options)
-    {
-        using var elements = Utf8ConstructionBuffer<PythonReNode>.Create(Storage.Arena.Budget);
-        while (true)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            SkipIgnoredPatternTrivia(options);
-            if (IsAtEnd || Current == ')' || Current == '|')
-            {
-                break;
-            }
-
-            PythonReNode atom;
-            if (TryConsume('('))
-            {
-                yield return new Utf8PreparationStep(ParseGroup(options), false);
-                atom = _parsedNode;
-            }
-            else atom = ParseAtom(options);
-            elements.Add(ParseQuantifiedAtom(atom));
-        }
-
-        _parsedNode = elements.Count switch
-        {
-            0 => PythonReAstFactory.Empty,
-            1 => elements[0],
-            _ => PythonReAstFactory.Sequence(Storage.Arena.Take(elements, true)),
-        };
     }
 
     private PythonReNode ParseQuantifiedAtom(PythonReNode atom)
@@ -288,259 +245,6 @@ internal sealed class PythonReParser
 
         return ExpandIgnoreCaseScalar(literal, options)
             ?? PythonReAstFactory.Literal(literal);
-    }
-
-    private IEnumerable<Utf8PreparationStep> ParseGroup(PythonReCompileOptions options)
-    {
-        var groupStart = _position - 1;
-        if (!TryConsume('?'))
-        {
-            var groupNumber = _groupCount + 1;
-            _groupCount = groupNumber;
-            Storage.OpenGroups.Add(true);
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            Storage.OpenGroups[groupNumber - 1] = false;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            Storage.GroupBodies[groupNumber] = inner;
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.Capturing, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, groupNumber);
-            yield break;
-        }
-
-        if (IsAtEnd)
-        {
-            throw new PythonRePatternException("unexpected end of pattern", _position);
-        }
-
-        if (TryConsume('#'))
-        {
-            while (!IsAtEnd && !TryConsume(')'))
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                _position++;
-            }
-
-            if (IsAtEnd && (_position == 0 || _pattern[_position - 1] != ')'))
-            {
-                throw new PythonRePatternException("missing ), unterminated comment", groupStart);
-            }
-
-            _parsedNode = PythonReAstFactory.Empty;
-            yield break;
-        }
-
-        if (TryConsume(':'))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NonCapturing, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
-            yield break;
-        }
-
-        if (TryConsume('>'))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.Atomic, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
-            yield break;
-        }
-
-        if (TryConsume('='))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.PositiveLookahead, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
-            yield break;
-        }
-
-        if (TryConsume('!'))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NegativeLookahead, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
-            yield break;
-        }
-
-        if (TryConsumeExact("<="))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _hasLookbehind = true;
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.PositiveLookbehind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
-            yield break;
-        }
-
-        if (TryConsumeExact("<!"))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _hasLookbehind = true;
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NegativeLookbehind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
-            yield break;
-        }
-
-        if (TryConsumeExact("P<"))
-        {
-            var groupNumber = _groupCount + 1;
-            _groupCount = groupNumber;
-            var name = ParseGroupName('>', "missing >, unterminated name");
-            if (Storage.NamedGroups.ContainsKey(name))
-            {
-                throw Error($"redefinition of group name '{name}'");
-            }
-
-            Storage.NamedGroups.Add(name, groupNumber);
-            Storage.OpenGroups.Add(true);
-            yield return new Utf8PreparationStep(ParseAlternation(options), false);
-            var inner = _parsedNode;
-            Storage.OpenGroups[groupNumber - 1] = false;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            Storage.GroupBodies[groupNumber] = inner;
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NamedCapturing, inner, name, PythonReCompileOptions.None, PythonReCompileOptions.None, groupNumber);
-            yield break;
-        }
-
-        if (TryConsumeExact("P="))
-        {
-            var referenceStart = _position;
-            var name = ParseGroupName(')', "missing ), unterminated name");
-            if (Storage.NamedGroups.TryGetValue(name, out var number) && Storage.IsOpen(number))
-            {
-                throw new PythonRePatternException("cannot refer to an open group", referenceStart);
-            }
-
-            _parsedNode = PythonReAstFactory.NamedReference(name, BackreferenceLower(options));
-            yield break;
-        }
-
-        if (TryConsume('('))
-        {
-            var condition = ParseConditionalReference();
-            ExpectGroupEnd(groupStart, "missing ), unterminated name");
-            yield return new Utf8PreparationStep(ParseSequence(options), false);
-            var yesBranch = _parsedNode;
-            PythonReNode? noBranch = null;
-            if (TryConsume('|'))
-            {
-                yield return new Utf8PreparationStep(ParseSequence(options), false);
-                noBranch = _parsedNode;
-                if (!IsAtEnd && Current == '|')
-                {
-                    throw new PythonRePatternException("conditional backref with more than two branches", _position);
-                }
-            }
-
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = PythonReAstFactory.Conditional(condition, yesBranch, noBranch);
-            yield break;
-        }
-
-        if (TryConsume('-'))
-        {
-            var removedOnlyOptions = ParseFlagSet(allowEmpty: false, context: FlagParseContext.Removed);
-            if (!IsAtEnd && char.IsAsciiLetter(Current) && Current != ':')
-            {
-                throw new PythonRePatternException("unknown flag", _position);
-            }
-
-            if (TryConsume(':'))
-            {
-                yield return new Utf8PreparationStep(ParseAlternation(ApplyScopedFlags(options, PythonReCompileOptions.None, removedOnlyOptions)), false);
-                var inner = _parsedNode;
-                ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-                _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.ScopedFlags, inner, null, PythonReCompileOptions.None, removedOnlyOptions, 0);
-                yield break;
-            }
-
-            throw new PythonRePatternException("missing :", _position);
-        }
-
-        if (IsAtEnd)
-        {
-            throw new PythonRePatternException("missing -, : or )", _position);
-        }
-
-        if (Current == 'P')
-        {
-            if (_position + 1 >= _pattern.Length)
-            {
-                throw new PythonRePatternException("unexpected end of pattern", _position + 1);
-            }
-
-            throw new PythonRePatternException(GetUnknownExtensionMessage(), _position - 1);
-        }
-
-        if (char.IsAsciiLetter(Current) && !IsInlineFlagChar(Current))
-        {
-            throw new PythonRePatternException("unknown extension ?" + Current, _position - 1);
-        }
-
-        if (Current == '<')
-        {
-            if (_position + 1 >= _pattern.Length)
-            {
-                throw new PythonRePatternException("unexpected end of pattern", _position + 1);
-            }
-
-            if (_pattern[_position + 1] == '>')
-            {
-                throw new PythonRePatternException("unknown extension ?<>", _position - 1);
-            }
-
-            // CPython rejects every other (?< opener (balancing shapes,
-            // stray flags) as an unknown extension naming the next
-            // character; the flag-set fallthrough below only served these
-            // invalid spellings with a misleading missing-flag error.
-            throw new PythonRePatternException("unknown extension ?<" + _pattern[_position + 1], _position - 1);
-        }
-
-        var addOptions = ParseFlagSet(allowEmpty: false, context: FlagParseContext.Added);
-        if (!IsAtEnd && Current != ':' && Current != ')' && Current != '-' && !char.IsAsciiLetter(Current))
-        {
-            throw new PythonRePatternException("missing -, : or )", _position);
-        }
-
-        var removeOptions = PythonReCompileOptions.None;
-        if (TryConsume('-'))
-        {
-            removeOptions = ParseFlagSet(allowEmpty: false, context: FlagParseContext.Removed);
-            if (!IsAtEnd && char.IsAsciiLetter(Current) && Current != ':')
-            {
-                throw new PythonRePatternException("unknown flag", _position);
-            }
-        }
-
-        if (TryConsume(':'))
-        {
-            yield return new Utf8PreparationStep(ParseAlternation(ApplyScopedFlags(options, addOptions, removeOptions)), false);
-            var inner = _parsedNode;
-            ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.ScopedFlags, inner, null, addOptions, removeOptions, 0);
-            yield break;
-        }
-
-        if (TryConsume(')'))
-        {
-            throw new PythonRePatternException("global flags not at the start of the expression", groupStart);
-        }
-
-        if (IsAtEnd)
-        {
-            throw new PythonRePatternException("missing -, : or )", _position);
-        }
-
-        if (char.IsAsciiLetter(Current))
-        {
-            throw new PythonRePatternException("unknown flag", _position);
-        }
-
-        throw Error("unknown group extension");
     }
 
     private PythonReConditionalReference ParseConditionalReference()

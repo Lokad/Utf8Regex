@@ -91,8 +91,9 @@ public sealed class PythonReAstObjectAdmissionTests
     }
 
     [Theory]
-    [InlineData("abcdef", 1536ul)]
-    [InlineData("(?:a|b){2}", 1536ul)]
+    // Include the newly admitted explicit parser frames in the recovery parse.
+    [InlineData("abcdef", 1920ul)]
+    [InlineData("(?:a|b){2}", 1920ul)]
     public void DeniedChildParserCanBeFollowedByScalarConstructionInTheSameOwner(string pattern, ulong allowance)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 112, ulong.MaxValue, ulong.MaxValue);

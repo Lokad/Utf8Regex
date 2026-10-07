@@ -204,7 +204,7 @@ public sealed partial class Utf8PythonRegex
         Options = options;
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
 
-        var parser = new PythonReParser(pattern);
+        var parser = PythonReParser.Create(pattern);
         var parseResult = parser.Parse(options);
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
         _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root, parseResult);
