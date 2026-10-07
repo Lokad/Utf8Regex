@@ -422,6 +422,9 @@ strings. Translator loops and prefix comparisons admit work; group-name ordering
 and range merging use the admitted heap sort.
 The core facade's capture census uses the same explicit admitted traversal,
 including capture-free nested trees; it no longer recurses on the CLR stack.
+Python scalar widths use UInt128 intermediates and the CPython 3.13.2 2^64
+getwidth clamp/sentinel. Fixedness does not collapse at int.MaxValue; fixed
+lookbehind widths above the 32-bit code limit report "looks too much behind".
 Provisional limits are 67,108,864 work units and 65,536 covered live frames.
 Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;

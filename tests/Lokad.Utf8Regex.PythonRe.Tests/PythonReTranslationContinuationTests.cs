@@ -197,6 +197,22 @@ public sealed class PythonReTranslationContinuationTests
             new PythonReParser("(?<=a{2147483647}|b{2147483647})").Parse(PythonReCompileOptions.None)).NativePattern);
     }
 
+    [Theory]
+    [InlineData("(?<=a{2147483647}b)x", null)]
+    [InlineData("(?<=😀{2147483647}é)x", null)]
+    [InlineData("(?<=a{2147483647}|a{2147483646}bb)x", "look-behind requires fixed-width pattern")]
+    [InlineData("(?<=a{2147483647}a{2147483647}bb)x", "looks too much behind")]
+    public void WideScalarLookbehindBoundsPreserveExactFixednessAndPythonErrors(string pattern, string? error)
+    {
+        var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
+        if (error is null)
+        {
+            var native = PythonReTranslator.Translate(parse).NativePattern;
+            Assert.EndsWith(")x", native);
+        }
+        else Assert.StartsWith(error, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse)).Message);
+    }
+
     private static object Run(int operation, PythonReParseResult parse) => operation switch
     {
         0 => PythonReTranslator.CanMatchEmpty(parse.Root, parse),

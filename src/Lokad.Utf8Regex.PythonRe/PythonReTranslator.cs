@@ -25,7 +25,7 @@ internal static class PythonReTranslator
     public static bool CanMatchNonEmpty(PythonReNode node, PythonReParseResult parseResult)
     {
         var max = GetWidth(node, parseResult).Max;
-        return !max.HasValue || max.Value > 0;
+        return max > 0;
     }
 
     // Native FindAll over UTF-8 is admissible only when alternation order is
@@ -933,6 +933,10 @@ internal static class PythonReTranslator
         {
             throw new PythonRePatternException("look-behind requires fixed-width pattern");
         }
+        if (width.Min > uint.MaxValue)
+        {
+            throw new PythonRePatternException("looks too much behind");
+        }
     }
 
     private static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult)
@@ -955,28 +959,28 @@ internal static class PythonReTranslator
             switch (current)
             {
                 case PythonReAlternationNode alternation:
-                    var alternateMin = int.MaxValue;
-                    int? alternateMax = 0;
+                    var alternateMin = PythonReWidth.Maximum;
+                    UInt128 alternateMax = 0;
                     foreach (var branch in alternation.Branches)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
                         yield return new Utf8PreparationStep(Measure(branch), false);
                         var branchWidth = widths[branch];
-                        alternateMin = Math.Min(alternateMin, branchWidth.Min);
+                        alternateMin = alternateMin < branchWidth.Min ? alternateMin : branchWidth.Min;
                         alternateMax = UnionMax(alternateMax, branchWidth.Max);
                     }
                     // A saturated positive minimum is not an empty alternation.
                     width = new(alternation.Branches.Count == 0 ? 0 : alternateMin, alternateMax);
                     break;
                 case PythonReSequenceNode sequence:
-                    var sequenceMin = 0;
-                    int? sequenceMax = 0;
+                    UInt128 sequenceMin = 0;
+                    UInt128 sequenceMax = 0;
                     foreach (var element in sequence.Elements)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
                         yield return new Utf8PreparationStep(Measure(element), false);
                         var elementWidth = widths[element];
-                        sequenceMin = (int)Math.Min((long)sequenceMin + elementWidth.Min, int.MaxValue);
+                        sequenceMin = AddMax(sequenceMin, elementWidth.Min);
                         sequenceMax = AddMax(sequenceMax, elementWidth.Max);
                     }
                     width = new(sequenceMin, sequenceMax);
@@ -984,9 +988,9 @@ internal static class PythonReTranslator
                 case PythonReQuantifierNode repeat:
                     yield return new Utf8PreparationStep(Measure(repeat.Inner), false);
                     var repeated = widths[repeat.Inner];
-                    var repeatMin = (int)Math.Min((long)repeated.Min * repeat.Min, int.MaxValue);
-                    int? repeatMax = repeat.Max.HasValue && repeated.Max.HasValue
-                        ? (int)Math.Min((long)repeated.Max.Value * repeat.Max.Value, int.MaxValue) : null;
+                    var repeatMin = ClampWidth(repeated.Min * (uint)repeat.Min);
+                    var repeatMax = repeat.Max.HasValue
+                        ? ClampWidth(repeated.Max * (uint)repeat.Max.Value) : PythonReWidth.Maximum;
                     width = new(repeatMin, repeatMax);
                     break;
                 case PythonReConditionalNode conditional:
@@ -996,7 +1000,7 @@ internal static class PythonReTranslator
                     {
                         yield return new Utf8PreparationStep(Measure(no), false);
                         var otherwise = widths[no];
-                        width = new(Math.Min(yes.Min, otherwise.Min), UnionMax(yes.Max, otherwise.Max));
+                        width = new(yes.Min < otherwise.Min ? yes.Min : otherwise.Min, UnionMax(yes.Max, otherwise.Max));
                     }
                     else width = new(0, yes.Max);
                     break;
@@ -1014,7 +1018,7 @@ internal static class PythonReTranslator
                         yield return new Utf8PreparationStep(Measure(namedBody), false);
                         width = widths[namedBody];
                     }
-                    else width = new(0, null);
+                    else width = new(0, PythonReWidth.Maximum);
                     break;
                 case PythonReNumericBackreferenceNode numeric:
                     if (parseResult.GroupBodies.TryGetValue(numeric.GroupNumber, out var numberedBody))
@@ -1022,7 +1026,7 @@ internal static class PythonReTranslator
                         yield return new Utf8PreparationStep(Measure(numberedBody), false);
                         width = widths[numberedBody];
                     }
-                    else width = new(0, null);
+                    else width = new(0, PythonReWidth.Maximum);
                     break;
                 case PythonReRawNode raw:
                     if (raw.Kind is PythonReRawKind.StartAnchor or PythonReRawKind.EndAnchor ||
@@ -1037,14 +1041,11 @@ internal static class PythonReTranslator
         }
     }
 
-    private static int? AddMax(int? left, int? right)
-    {
-        if (!left.HasValue || !right.HasValue) return null;
-        return (int)Math.Min((long)left.Value + right.Value, int.MaxValue);
-    }
+    private static UInt128 ClampWidth(UInt128 value) => value > PythonReWidth.Maximum ? PythonReWidth.Maximum : value;
 
-    private static int? UnionMax(int? left, int? right) =>
-        left.HasValue && right.HasValue ? Math.Max(left.Value, right.Value) : null;
+    private static UInt128 AddMax(UInt128 left, UInt128 right) => ClampWidth(left + right);
+
+    private static UInt128 UnionMax(UInt128 left, UInt128 right) => left > right ? left : right;
 
     private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
     {

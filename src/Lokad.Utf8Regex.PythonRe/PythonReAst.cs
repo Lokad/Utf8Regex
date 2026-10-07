@@ -108,7 +108,10 @@ internal enum PythonReGroupKind
     ScopedFlags,
 }
 
-internal readonly record struct PythonReWidth(int Min, int? Max)
+internal readonly record struct PythonReWidth(UInt128 Min, UInt128 Max)
 {
-    public bool IsFixed => Max.HasValue && Max.Value == Min;
+    // CPython 3.13.2 getwidth clamps at 2^64, including the unbounded sentinel.
+    // UInt128 holds that endpoint and the intermediate sums/products exactly.
+    internal static UInt128 Maximum => (UInt128)ulong.MaxValue + 1;
+    public bool IsFixed => Max == Min;
 }
