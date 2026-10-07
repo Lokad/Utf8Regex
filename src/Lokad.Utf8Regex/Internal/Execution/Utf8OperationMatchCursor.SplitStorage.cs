@@ -33,11 +33,14 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal void AbortOwnedSplitMatches()
     {
+        _nonBacktrackingState = null;
         _sliceProgram = null;
     }
 
     internal void AbortOwnedSplitSetup()
     {
+        _nonBacktrackingState?.AbortCursorSetup();
+        _nonBacktrackingState = null;
         _boundaryMap?.StorageLease?.AbortBeforePublication();
         _boundaryMap = null;
         _boundaryMapReservedBytes = 0;

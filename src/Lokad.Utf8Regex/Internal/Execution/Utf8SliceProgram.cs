@@ -268,6 +268,7 @@ internal sealed class Utf8SliceProgram
     internal Utf8SliceInstruction[] Instructions { get; }
     internal bool IsNonBacktracking { get; init; }
     internal int NonBacktrackingCaptureOpeningCount { get; init; }
+    internal int[] NonBacktrackingEpsilonOrder { get; init; } = [];
     internal Func<int, int>[] BackreferenceLowerings { get; init; } = [];
 
     internal byte[][] SetMasks { get; }
@@ -676,8 +677,9 @@ internal static class Utf8SliceLowerer
             }
         }
 
+        var instructions = lowerer.Instructions.ToArray();
         return new Utf8SliceProgram(
-            lowerer.Instructions.ToArray(),
+            instructions,
             lowerer.SetMasks.ToArray(),
             lowerer.CategoryTables.ToArray(),
             lowerer.CategorySetMembers.ToArray(),
@@ -692,6 +694,8 @@ internal static class Utf8SliceLowerer
             BackreferenceLowerings = lowerer.BackreferenceLowerings.ToArray(),
             IsNonBacktracking = lowerer.NonBacktracking,
             NonBacktrackingCaptureOpeningCount = lowerer.CaptureOpeningCount,
+            NonBacktrackingEpsilonOrder = lowerer.NonBacktracking
+                ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions) : [],
         };
     }
 
@@ -704,6 +708,7 @@ internal static class Utf8SliceLowerer
         internal readonly List<Utf8SliceCategoryTable> CategoryTables = new();
         internal int RepeatCount;
         internal int CaptureOpeningCount;
+        internal readonly Dictionary<Utf8SliceNode.CaptureNode, int>? CaptureOpenings;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
@@ -729,6 +734,7 @@ internal static class Utf8SliceLowerer
             CaseBehavior = caseBehavior;
             MirrorExecute = mirrorExecute;
             NonBacktracking = nonBacktracking;
+            CaptureOpenings = nonBacktracking ? new(ReferenceEqualityComparer.Instance) : null;
             Facts = facts;
             // RTL references can precede their captures. Every program starts
             // with the final catalog tally when supplied, just as the old entry.
@@ -1130,7 +1136,12 @@ internal static class Utf8SliceLowerer
                     // An opening register belongs to this declaration, not its
                     // public slot: nested aliases can close the same slot in a
                     // different order. The NFA exposes only the last completion.
-                    var opening = NonBacktracking ? CaptureOpeningCount++ : 0;
+                    var opening = 0;
+                    if (CaptureOpenings is { } openings && !openings.TryGetValue(capture, out opening))
+                    {
+                        opening = CaptureOpeningCount++;
+                        openings.Add(capture, opening);
+                    }
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureStart, capture.Slot, opening, 0, 0));
                     yield return new EmissionRequest(capture.Body, false, MirrorExecute);
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, opening, 0, 0));

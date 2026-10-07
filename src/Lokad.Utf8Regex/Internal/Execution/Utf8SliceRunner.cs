@@ -441,16 +441,24 @@ internal static partial class Utf8SliceRunner
         invocation.AnchorOriginByte = fromByte;
         if (program.IsNonBacktracking)
         {
-            while (position >= 0)
+            Array.Fill(captureStarts, -1);
+            Array.Fill(captureEnds, -1);
+            var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var batch);
+            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+            if (batch is null) throw new InvalidOperationException("NonBacktracking preparation returned no state.");
+            try
             {
-                var found = TryFindFirst(program, input, position, captureStarts, captureEnds, false, ref invocation);
-                if (found.Breach != Utf8ExecutionLimitKind.None) return new(count, found.Breach);
-                if (!found.Found) break;
-                count++;
-                position = found.EndByte != found.StartByte
-                    ? found.EndByte : AdvancePastScalar(input, found.EndByte, false);
+                var boundary = batch.ResolveByteOffset(fromByte);
+                while (true)
+                {
+                    var found = batch.FindFirst(program, ref boundary, captureStarts, captureEnds, false, ref invocation);
+                    if (found.Breach != Utf8ExecutionLimitKind.None) return new(count, found.Breach);
+                    if (!found.Found) break;
+                    count++;
+                }
+                return new(count, Utf8ExecutionLimitKind.None);
             }
-            return new(count, Utf8ExecutionLimitKind.None);
+            finally { batch.Release(ref invocation); }
         }
         var workspace = new AttemptWorkspace();
         try

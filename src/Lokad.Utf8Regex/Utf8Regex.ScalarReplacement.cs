@@ -37,9 +37,16 @@ public sealed partial class Utf8Regex
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
         ulong mapReservation = 0;
+        Utf8NonBacktrackingSearchState? batch = null;
+        var boundary = 0;
         try
         {
             var validation = Utf8Validation.Validate(input, ref invocation);
+            if (program.IsNonBacktracking)
+            {
+                var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);
+                if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned replacement preparation exceeded {breach}.");
+            }
             var map = default(Utf8BoundaryMap);
             var mapCreated = false;
             var writer = scope.CreateBuffer();
@@ -50,8 +57,9 @@ public sealed partial class Utf8Regex
             while (position >= 0)
             {
                 invocation.AnchorOriginByte = anchor;
-                var outcome = Utf8SliceRunner.TryFindFirst(program, input,
-                    position, slots.Starts, slots.Ends, true, ref invocation);
+                var outcome = batch is null
+                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref invocation)
+                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, true, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -103,6 +111,7 @@ public sealed partial class Utf8Regex
         }
         finally
         {
+            batch?.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
             invocation.Ledger.Release(mapReservation);
             scope.Release();
@@ -116,9 +125,16 @@ public sealed partial class Utf8Regex
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
         ulong mapReservation = 0;
+        Utf8NonBacktrackingSearchState? batch = null;
+        var boundary = 0;
         try
         {
             var validation = Utf8Validation.Validate(input, ref invocation);
+            if (program.IsNonBacktracking)
+            {
+                var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);
+                if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned evaluator preparation exceeded {breach}.");
+            }
             var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var writer = new Utf8ReplacementWriter(scope.CreateBuffer());
@@ -128,8 +144,9 @@ public sealed partial class Utf8Regex
             while (position >= 0)
             {
                 invocation.AnchorOriginByte = anchor;
-                var outcome = Utf8SliceRunner.TryFindFirst(program, input,
-                    position, slots.Starts, slots.Ends, true, ref invocation);
+                var outcome = batch is null
+                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref invocation)
+                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, true, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -171,6 +188,7 @@ public sealed partial class Utf8Regex
         }
         finally
         {
+            batch?.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
             invocation.Ledger.Release(mapReservation);
             scope.Release();

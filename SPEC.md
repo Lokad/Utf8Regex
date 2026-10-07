@@ -383,6 +383,10 @@ The architecture must keep these invariants:
 * scalar-aware UTF-8 subject traversal and primary byte ranges
 * native `RightToLeft`; never emulate it by reversing the input
 * `RegexOptions.NonBacktracking` is a separate owned linear-time scalar search mode
+  whose discovery guarantee covers the complete Count, enumeration, split or
+  replacement invocation, including repeated empty matches. Any shared batch
+  storage must be admitted before allocation and remain charged while a copied
+  cursor can still use it.
 * `Utf8Regex` instances are immutable and thread-safe
 
 Implementation details may evolve, but fast paths must be derived from the same semantic front-end rather than from separate pattern parsers.

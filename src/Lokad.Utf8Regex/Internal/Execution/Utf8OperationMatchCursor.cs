@@ -62,6 +62,8 @@ internal ref partial struct Utf8OperationMatchCursor
     private int _baseByteOffset;
     private int _baseUtf16Offset;
     private Utf8SliceProgram? _sliceProgram;
+    private Utf8NonBacktrackingSearchState? _nonBacktrackingState;
+    private int _nonBacktrackingBoundary;
     // Owned VM state and native projection share this cursor's invocation.
     // Literal discovery and projection use one state; other native families
     // still need scan-wide token/finite-policy routing and accounting.
@@ -302,6 +304,12 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         Utf8BoundaryMap map, Utf8SliceInvocation invocation)
+        : this(program, input, map, invocation, program.RightToLeft ? input.Length : 0)
+    {
+    }
+
+    internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map, Utf8SliceInvocation invocation, int startByte)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
@@ -327,7 +335,20 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = program;
         _sliceInvocation = invocation;
         _sliceInvocation.ShareStorageForCursor();
-        _slicePositionByte = program.RightToLeft ? input.Length : 0;
+        if (program.IsNonBacktracking)
+        {
+            var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref _sliceInvocation, out var state);
+            if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned cursor preparation exceeded {breach}.");
+            if (state is null) throw new InvalidOperationException("NonBacktracking preparation returned no state.");
+            try
+            {
+                _nonBacktrackingBoundary = state.ResolveByteOffset(startByte);
+                state.PublishForCursor(ref _sliceInvocation);
+            }
+            catch { state.Release(ref _sliceInvocation); throw; }
+            _nonBacktrackingState = state;
+        }
+        _slicePositionByte = startByte;
         _sliceOriginByte = _slicePositionByte;
         _mode = EnumeratorMode.OwnedSlice;
     }
@@ -363,11 +384,10 @@ internal ref partial struct Utf8OperationMatchCursor
         invocation.ShareStorageForCursor();
         try
         {
+            var startByte = map.Resolve(startUnit).ByteOffset;
             map = map.WithStorageLease(invocation.Ledger.CreateLease(reservation));
-            var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
+            var cursor = new Utf8OperationMatchCursor(program, input, map, invocation, startByte);
             cursor._boundaryMapReservedBytes = reservation;
-            cursor._slicePositionByte = map.Resolve(startUnit).ByteOffset;
-            cursor._sliceOriginByte = cursor._slicePositionByte;
             return cursor;
         }
         catch
@@ -381,6 +401,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal void ReleaseOwnedBoundaryMap()
     {
+        _nonBacktrackingState = null;
         if (_retainBoundaryMapReservation) return;
         if (_boundaryMap?.StorageLease is null)
             _sliceInvocation.Ledger.Release(_boundaryMapReservedBytes);
@@ -397,10 +418,9 @@ internal ref partial struct Utf8OperationMatchCursor
         TimeSpan timeout,
         CancellationToken token,
         int startUnit)
-        : this(program, input, map, timeout, token)
+        : this(program, input, map, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token),
+            map.Resolve(startUnit).ByteOffset)
     {
-        _slicePositionByte = map.Resolve(startUnit).ByteOffset;
-        _sliceOriginByte = _slicePositionByte;
     }
 
     private bool MoveNextOwnedSlice()
@@ -415,8 +435,9 @@ internal ref partial struct Utf8OperationMatchCursor
             var projectionMap = _boundaryMap.Value;
             slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
             _sliceInvocation.AnchorOriginByte = _sliceOriginByte;
-            var outcome = Utf8SliceRunner.TryFindFirst(_sliceProgram, _input, _slicePositionByte,
-                slots.Starts, slots.Ends, false, ref _sliceInvocation);
+            var outcome = _nonBacktrackingState is { } batch
+                ? batch.FindFirst(_sliceProgram, ref _nonBacktrackingBoundary, slots.Starts, slots.Ends, false, ref _sliceInvocation)
+                : Utf8SliceRunner.TryFindFirst(_sliceProgram, _input, _slicePositionByte, slots.Starts, slots.Ends, false, ref _sliceInvocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
             if (outcome.Found)

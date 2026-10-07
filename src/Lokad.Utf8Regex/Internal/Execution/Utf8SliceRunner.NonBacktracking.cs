@@ -53,7 +53,7 @@ internal static partial class Utf8SliceRunner
                         break;
                     }
                     if (!hasScalar) continue;
-                    var hit = workspace.MatchesAtom(program, instruction, scalar, ref invocation, out breach);
+                    var hit = MatchesNonBacktrackingAtom(program, instruction, scalar, ref invocation, out breach);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
                     if (!hit) continue;
                     breach = workspace.AddClosure(program, input, pc + 1, position + width, start,
@@ -224,7 +224,7 @@ internal static partial class Utf8SliceRunner
                             pc++;
                             continue;
                         case Utf8SliceInstructionKind.Anchor:
-                            if (HoldsAnchor(instruction, input, position)) { pc++; continue; }
+                            if (HoldsNonBacktrackingAnchor(instruction, input, position)) { pc++; continue; }
                             break;
                         case Utf8SliceInstructionKind.Boundary:
                             var beforeWord = TryReadScalar(input, position, true, out var before, out _) &&
@@ -252,91 +252,106 @@ internal static partial class Utf8SliceRunner
             }
         }
 
-        internal static bool HoldsAnchor(Utf8SliceInstruction instruction, ReadOnlySpan<byte> input, int position)
-            => instruction.A switch
-            {
-                (int)Utf8SliceAnchorKind.Beginning => position == 0 || instruction.B != 0 && position > 0 && input[position - 1] == (byte)'\n',
-                (int)Utf8SliceAnchorKind.VeryEnd => position == input.Length,
-                (int)Utf8SliceAnchorKind.End => position == input.Length ||
-                    position < input.Length && input[position] == (byte)'\n' && (instruction.B != 0 || position + 1 == input.Length),
-                _ => false,
-            };
-
-        internal bool MatchesAtom(Utf8SliceProgram program, Utf8SliceInstruction instruction, Rune scalar,
-            ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
-        {
-            breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return false;
-            switch (instruction.Kind)
-            {
-                case Utf8SliceInstructionKind.Literal:
-                    return scalar.Value == instruction.A || instruction.B != 0 && Rune.IsValid(instruction.A) &&
-                        Utf8SliceCaseEquivalences.ScalarsEquivalent(scalar, new Rune(instruction.A), program.CaseBehavior);
-                case Utf8SliceInstructionKind.Dot:
-                    return instruction.A != 0 || scalar.Value != '\n';
-                case Utf8SliceInstructionKind.Set:
-                    return Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
-                case Utf8SliceInstructionKind.Shorthand:
-                    return Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
-                case Utf8SliceInstructionKind.Category:
-                    return Utf8SliceScalarClasses.MatchesTable(scalar, program.CategoryTables[instruction.A],
-                        (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior);
-                case Utf8SliceInstructionKind.Hybrid:
-                case Utf8SliceInstructionKind.CategorySet:
-                    var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
-                    var members = categorySet ? program.CategorySetMembers[instruction.D] : null;
-                    if (members is { Length: 1 } && members[0].Table.ClassProgram is { } classProgram)
-                        return classProgram.TryMatch(scalar, program.CaseBehavior, ref invocation, out breach);
-                    var fold = categorySet ? (instruction.B & 2) != 0 : instruction.D != 0;
-                    var hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
-                        Utf8SliceScalarClasses.MatchesMembers(scalar, instruction.C);
-                    if (!hit && members is not null)
-                        foreach (var member in members)
-                            if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, fold, member.Negated, program.CaseBehavior))
-                            { hit = true; break; }
-                    return hit != ((instruction.B & 1) != 0);
-                default:
-                    throw new InvalidOperationException("A nonregular instruction entered the NonBacktracking atom runner.");
-            }
-        }
-
         internal Utf8ExecutionLimitKind Project(Utf8SliceProgram program, int[] captureStarts, int[] captureEnds,
             bool collectHistory, ref Utf8SliceInvocation invocation, out int[][]? starts, out int[][]? lengths)
         {
             starts = null;
             lengths = null;
-            var participants = 0;
             for (var group = 0; group < program.GroupCount; group++)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 captureStarts[group] = Best[group * 2];
                 captureEnds[group] = Best[group * 2 + 1];
-                if (captureStarts[group] >= 0) participants++;
             }
-            if (!collectHistory) return Utf8ExecutionLimitKind.None;
-            var bytes = (ulong)program.GroupCount * 16 + (ulong)participants * 8;
-            if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-            var published = false;
-            try
-            {
-                var admission = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-                if (admission != Utf8ExecutionLimitKind.None) return admission;
-                var resultStarts = new int[program.GroupCount][];
-                var resultLengths = new int[program.GroupCount][];
-                for (var group = 0; group < program.GroupCount; group++)
-                {
-                    var breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    resultStarts[group] = captureStarts[group] >= 0 ? [captureStarts[group]] : [];
-                    resultLengths[group] = captureStarts[group] >= 0 ? [captureEnds[group] - captureStarts[group]] : [];
-                }
-                starts = resultStarts;
-                lengths = resultLengths;
-                published = true;
-                return Utf8ExecutionLimitKind.None;
-            }
-            finally { if (!published) invocation.Ledger.Release(bytes); }
+            return BuildNonBacktrackingHistory(captureStarts, captureEnds, collectHistory, ref invocation, out starts, out lengths);
         }
     }
+
+    internal static Utf8ExecutionLimitKind BuildNonBacktrackingHistory(int[] captureStarts, int[] captureEnds,
+        bool collectHistory, ref Utf8SliceInvocation invocation, out int[][]? starts, out int[][]? lengths)
+    {
+        starts = null;
+        lengths = null;
+        var participants = 0;
+        if (collectHistory)
+            for (var group = 0; group < captureStarts.Length; group++)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (captureStarts[group] >= 0) participants++;
+            }
+        if (!collectHistory) return Utf8ExecutionLimitKind.None;
+        var bytes = (ulong)captureStarts.Length * 16 + (ulong)participants * 8;
+        if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+        var published = false;
+        try
+        {
+            var admission = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            if (admission != Utf8ExecutionLimitKind.None) return admission;
+            var resultStarts = new int[captureStarts.Length][];
+            var resultLengths = new int[captureStarts.Length][];
+            for (var group = 0; group < captureStarts.Length; group++)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                resultStarts[group] = captureStarts[group] >= 0 ? [captureStarts[group]] : [];
+                resultLengths[group] = captureStarts[group] >= 0 ? [captureEnds[group] - captureStarts[group]] : [];
+            }
+            starts = resultStarts;
+            lengths = resultLengths;
+            published = true;
+            return Utf8ExecutionLimitKind.None;
+        }
+        finally { if (!published) invocation.Ledger.Release(bytes); }
+    }
+
+    internal static bool HoldsNonBacktrackingAnchor(Utf8SliceInstruction instruction, ReadOnlySpan<byte> input, int position)
+        => instruction.A switch
+        {
+            (int)Utf8SliceAnchorKind.Beginning => position == 0 || instruction.B != 0 && position > 0 && input[position - 1] == (byte)'\n',
+            (int)Utf8SliceAnchorKind.VeryEnd => position == input.Length,
+            (int)Utf8SliceAnchorKind.End => position == input.Length ||
+                position < input.Length && input[position] == (byte)'\n' && (instruction.B != 0 || position + 1 == input.Length),
+            _ => false,
+        };
+
+    internal static bool MatchesNonBacktrackingAtom(Utf8SliceProgram program, Utf8SliceInstruction instruction, Rune scalar,
+        ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+    {
+        breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return false;
+        switch (instruction.Kind)
+        {
+            case Utf8SliceInstructionKind.Literal:
+                return scalar.Value == instruction.A || instruction.B != 0 && Rune.IsValid(instruction.A) &&
+                    Utf8SliceCaseEquivalences.ScalarsEquivalent(scalar, new Rune(instruction.A), program.CaseBehavior);
+            case Utf8SliceInstructionKind.Dot:
+                return instruction.A != 0 || scalar.Value != '\n';
+            case Utf8SliceInstructionKind.Set:
+                return Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
+            case Utf8SliceInstructionKind.Shorthand:
+                return Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
+            case Utf8SliceInstructionKind.Category:
+                return Utf8SliceScalarClasses.MatchesTable(scalar, program.CategoryTables[instruction.A],
+                    (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior);
+            case Utf8SliceInstructionKind.Hybrid:
+            case Utf8SliceInstructionKind.CategorySet:
+                var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
+                var members = categorySet ? program.CategorySetMembers[instruction.D] : null;
+                if (members is { Length: 1 } && members[0].Table.ClassProgram is { } classProgram)
+                    return classProgram.TryMatch(scalar, program.CaseBehavior, ref invocation, out breach);
+                var fold = categorySet ? (instruction.B & 2) != 0 : instruction.D != 0;
+                var hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
+                    Utf8SliceScalarClasses.MatchesMembers(scalar, instruction.C);
+                if (!hit && members is not null)
+                    foreach (var member in members)
+                        if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, fold, member.Negated, program.CaseBehavior))
+                        { hit = true; break; }
+                return hit != ((instruction.B & 1) != 0);
+            default:
+                throw new InvalidOperationException("A nonregular instruction entered the NonBacktracking atom runner.");
+        }
+    }
+
 }
