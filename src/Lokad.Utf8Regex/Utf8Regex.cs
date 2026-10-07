@@ -2116,20 +2116,18 @@ public sealed partial class Utf8Regex
 
     private static bool ContainsCapture(Utf8ExecutionNode node)
     {
-        if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0)
-        {
-            return true;
-        }
+        return !Utf8PreparationStep.TryRun(Check(node));
 
-        for (var i = 0; i < node.Children.Count; i++)
+        static IEnumerable<Utf8PreparationStep> Check(Utf8ExecutionNode current)
         {
-            if (ContainsCapture(node.Children[i]))
+            if (current.Kind == Utf8ExecutionNodeKind.Capture && current.CaptureNumber > 0)
             {
-                return true;
+                yield return Utf8PreparationStep.Decline;
+                yield break;
             }
+            foreach (var child in current.Children)
+                yield return new Utf8PreparationStep(Check(child), false);
         }
-
-        return false;
     }
 
     // R05: construction-cached caret-anchored grouped-literal prefix for direct

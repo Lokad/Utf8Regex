@@ -1,4 +1,6 @@
 using System.Text;
+using System.Runtime.InteropServices;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.PythonRe;
@@ -122,6 +124,7 @@ internal static class PythonReTranslator
         var length = 0;
         for (var index = 0; index < sequence.Elements.Count - 1; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!TryGetExactLiteral(sequence.Elements[index], out var segment))
             {
                 prefixLength = 0;
@@ -154,6 +157,7 @@ internal static class PythonReTranslator
         var optionalCaptureIndex = -1;
         for (var index = 0; index < sequence.Elements.Count; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (sequence.Elements[index] is PythonReQuantifierNode
                 {
                     Inner: PythonReGroupNode
@@ -186,6 +190,7 @@ internal static class PythonReTranslator
         var fixedLength = 0;
         for (var index = 0; index < sequence.Elements.Count; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (index == optionalCaptureIndex)
             {
                 continue;
@@ -269,6 +274,7 @@ internal static class PythonReTranslator
         var literal = new StringBuilder();
         for (var index = 0; index < sequence.Elements.Count - 1; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!TryGetExactLiteral(sequence.Elements[index], out var segment) ||
                 segment.Any(static character => character > 0x7f))
             {
@@ -305,6 +311,7 @@ internal static class PythonReTranslator
         var wildcardIndex = -1;
         for (var index = 0; index < sequence.Elements.Count; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (sequence.Elements[index] is PythonReQuantifierNode
                 {
                     Inner: PythonReRawNode { Kind: PythonReRawKind.Dot },
@@ -331,6 +338,7 @@ internal static class PythonReTranslator
         var suffix = new StringBuilder();
         for (var index = 0; index < sequence.Elements.Count; index++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (index == wildcardIndex)
             {
                 continue;
@@ -357,47 +365,51 @@ internal static class PythonReTranslator
 
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
-        ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
+        using var construction = Utf8ConstructionScope.Enter();
+        using var widths = new Utf8ConstructionMap<PythonReNode, PythonReWidth>(construction.Budget, ReferenceEqualityComparer.Instance);
+        Utf8PreparationStep.TryRun(ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups), construction.Budget);
         // PLAN.md C10: lookbehind width is validated up front over the whole tree (fixed content widths, backreferences resolved to their group widths) so emission never meets an invalid lookbehind.
-        ValidateLookbehindWidths(parseResult.Root, parseResult);
+        Utf8PreparationStep.TryRun(ValidateLookbehindWidths(parseResult.Root, parseResult), construction.Budget);
 
-        static void ValidateLookbehindWidths(PythonReNode node, PythonReParseResult result)
+        IEnumerable<Utf8PreparationStep> ValidateLookbehindWidths(PythonReNode node, PythonReParseResult result)
         {
             switch (node)
             {
                 case PythonReGroupNode { Kind: PythonReGroupKind.PositiveLookbehind, Inner: var positiveInner }:
-                    EnsureFixedWidth(positiveInner, result);
-                    ValidateLookbehindWidths(positiveInner, result);
+                    EnsureFixedWidth(positiveInner, result, widths);
+                    yield return new Utf8PreparationStep(ValidateLookbehindWidths(positiveInner, result), false);
                     break;
                 case PythonReGroupNode { Kind: PythonReGroupKind.NegativeLookbehind, Inner: var negativeInner }:
-                    EnsureFixedWidth(negativeInner, result);
-                    ValidateLookbehindWidths(negativeInner, result);
+                    EnsureFixedWidth(negativeInner, result, widths);
+                    yield return new Utf8PreparationStep(ValidateLookbehindWidths(negativeInner, result), false);
                     break;
                 case PythonReAlternationNode alternation:
                     foreach (var branch in alternation.Branches)
                     {
-                        ValidateLookbehindWidths(branch, result);
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(ValidateLookbehindWidths(branch, result), false);
                     }
 
                     break;
                 case PythonReSequenceNode sequence:
                     foreach (var element in sequence.Elements)
                     {
-                        ValidateLookbehindWidths(element, result);
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(ValidateLookbehindWidths(element, result), false);
                     }
 
                     break;
                 case PythonReQuantifierNode quantifier:
-                    ValidateLookbehindWidths(quantifier.Inner, result);
+                    yield return new Utf8PreparationStep(ValidateLookbehindWidths(quantifier.Inner, result), false);
                     break;
                 case PythonReGroupNode group:
-                    ValidateLookbehindWidths(group.Inner, result);
+                    yield return new Utf8PreparationStep(ValidateLookbehindWidths(group.Inner, result), false);
                     break;
                 case PythonReConditionalNode conditional:
-                    ValidateLookbehindWidths(conditional.YesBranch, result);
+                    yield return new Utf8PreparationStep(ValidateLookbehindWidths(conditional.YesBranch, result), false);
                     if (conditional.NoBranch is not null)
                     {
-                        ValidateLookbehindWidths(conditional.NoBranch, result);
+                        yield return new Utf8PreparationStep(ValidateLookbehindWidths(conditional.NoBranch, result), false);
                     }
 
                     break;
@@ -414,6 +426,7 @@ internal static class PythonReTranslator
         var nextManagedGroup = 1;
         for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!namedPythonGroups.Contains(pythonGroup))
             {
                 managedNumbersByPython[pythonGroup] = nextManagedGroup++;
@@ -422,16 +435,17 @@ internal static class PythonReTranslator
 
         for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (namedPythonGroups.Contains(pythonGroup))
             {
                 managedNumbersByPython[pythonGroup] = nextManagedGroup++;
             }
         }
 
-        AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, false);
+        Utf8PreparationStep.TryRun(AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, false), construction.Budget);
         var translatedPattern = builder.ToString();
         builder.Clear();
-        AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, true);
+        Utf8PreparationStep.TryRun(AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, true), construction.Budget);
         var nativePattern = builder.ToString();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
@@ -442,6 +456,7 @@ internal static class PythonReTranslator
             nativePattern = nativePattern.Replace(@"\ ", " ", StringComparison.Ordinal);
         }
 
+        construction.Complete();
         return new PythonReTranslation(
             translatedPattern,
             nativePattern,
@@ -455,55 +470,49 @@ internal static class PythonReTranslator
 
     private static bool CapturesAreMandatory(PythonReNode node)
     {
-        switch (node)
+        return Utf8PreparationStep.TryRun(Check(node, false));
+
+        static IEnumerable<Utf8PreparationStep> Check(PythonReNode current, bool forbidCapture)
         {
-            case PythonReAlternationNode alternation:
-                return !ContainsCapture(alternation);
-            case PythonReSequenceNode sequence:
-                return sequence.Elements.All(CapturesAreMandatory);
-            case PythonReQuantifierNode quantifier:
-                return (quantifier.Min > 0 || !ContainsCapture(quantifier.Inner)) &&
-                    CapturesAreMandatory(quantifier.Inner);
-            case PythonReGroupNode group when group.Kind is
-                PythonReGroupKind.Capturing or
-                PythonReGroupKind.NamedCapturing or
-                PythonReGroupKind.NonCapturing or
-                PythonReGroupKind.Atomic or
-                PythonReGroupKind.ScopedFlags:
-                return CapturesAreMandatory(group.Inner);
-            case PythonReGroupNode group:
-                return !ContainsCapture(group.Inner);
-            case PythonReConditionalNode conditional:
-                return !ContainsCapture(conditional);
-            default:
-                return true;
+            switch (current)
+            {
+                case PythonReGroupNode group:
+                    if (forbidCapture && group.Kind is PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing)
+                    {
+                        yield return Utf8PreparationStep.Decline;
+                        yield break;
+                    }
+                    var assertion = group.Kind is PythonReGroupKind.PositiveLookahead or PythonReGroupKind.NegativeLookahead
+                        or PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind;
+                    yield return new Utf8PreparationStep(Check(group.Inner, forbidCapture || assertion), false);
+                    break;
+                case PythonReQuantifierNode repeat:
+                    yield return new Utf8PreparationStep(Check(repeat.Inner, forbidCapture || repeat.Min == 0), false);
+                    break;
+                case PythonReSequenceNode sequence:
+                    foreach (var element in sequence.Elements)
+                        {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(Check(element, forbidCapture), false);
+                    }
+                    break;
+                case PythonReAlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                        {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(Check(branch, true), false);
+                    }
+                    break;
+                case PythonReConditionalNode conditional:
+                    yield return new Utf8PreparationStep(Check(conditional.YesBranch, true), false);
+                    if (conditional.NoBranch is PythonReNode no)
+                        yield return new Utf8PreparationStep(Check(no, true), false);
+                    break;
+            }
         }
     }
 
-    private static bool ContainsCapture(PythonReNode node)
-    {
-        switch (node)
-        {
-            case PythonReAlternationNode alternation:
-                return alternation.Branches.Any(ContainsCapture);
-            case PythonReSequenceNode sequence:
-                return sequence.Elements.Any(ContainsCapture);
-            case PythonReQuantifierNode quantifier:
-                return ContainsCapture(quantifier.Inner);
-            case PythonReGroupNode group when group.Kind is
-                PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing:
-                return true;
-            case PythonReGroupNode group:
-                return ContainsCapture(group.Inner);
-            case PythonReConditionalNode conditional:
-                return ContainsCapture(conditional.YesBranch) ||
-                    conditional.NoBranch is not null && ContainsCapture(conditional.NoBranch);
-            default:
-                return false;
-        }
-    }
-
-    private static void ValidateReferences(
+    private static IEnumerable<Utf8PreparationStep> ValidateReferences(
         PythonReNode node,
         int captureGroupCount,
         IReadOnlyDictionary<string, int> namedGroups)
@@ -513,7 +522,8 @@ internal static class PythonReTranslator
             case PythonReAlternationNode alternation:
                 foreach (var branch in alternation.Branches)
                 {
-                    ValidateReferences(branch, captureGroupCount, namedGroups);
+                    Utf8ConstructionScope.ChargeWork(1);
+                    yield return new Utf8PreparationStep(ValidateReferences(branch, captureGroupCount, namedGroups), false);
                 }
 
                 break;
@@ -521,7 +531,8 @@ internal static class PythonReTranslator
             case PythonReSequenceNode sequence:
                 foreach (var element in sequence.Elements)
                 {
-                    ValidateReferences(element, captureGroupCount, namedGroups);
+                    Utf8ConstructionScope.ChargeWork(1);
+                    yield return new Utf8PreparationStep(ValidateReferences(element, captureGroupCount, namedGroups), false);
                 }
 
                 break;
@@ -544,20 +555,20 @@ internal static class PythonReTranslator
 
             case PythonReConditionalNode conditional:
                 ValidateConditionalReference(conditional.Reference, captureGroupCount, namedGroups);
-                ValidateReferences(conditional.YesBranch, captureGroupCount, namedGroups);
+                yield return new Utf8PreparationStep(ValidateReferences(conditional.YesBranch, captureGroupCount, namedGroups), false);
                 if (conditional.NoBranch is not null)
                 {
-                    ValidateReferences(conditional.NoBranch, captureGroupCount, namedGroups);
+                    yield return new Utf8PreparationStep(ValidateReferences(conditional.NoBranch, captureGroupCount, namedGroups), false);
                 }
 
                 break;
 
             case PythonReQuantifierNode quantifier:
-                ValidateReferences(quantifier.Inner, captureGroupCount, namedGroups);
+                yield return new Utf8PreparationStep(ValidateReferences(quantifier.Inner, captureGroupCount, namedGroups), false);
                 break;
 
             case PythonReGroupNode group:
-                ValidateReferences(group.Inner, captureGroupCount, namedGroups);
+                yield return new Utf8PreparationStep(ValidateReferences(group.Inner, captureGroupCount, namedGroups), false);
                 break;
         }
     }
@@ -594,30 +605,32 @@ internal static class PythonReTranslator
     internal static string RenderNativeAtom(PythonReNode node)
     {
         var builder = new StringBuilder();
-        AppendNode(node, builder, new Dictionary<string, string>(), [], true);
+        Utf8PreparationStep.TryRun(AppendNode(node, builder, new Dictionary<string, string>(), [], true));
         return builder.ToString();
     }
 
-    private static void AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+    private static IEnumerable<Utf8PreparationStep> AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         switch (node)
         {
             case PythonReAlternationNode alternation:
                 for (var i = 0; i < alternation.Branches.Count; i++)
                 {
+                    Utf8ConstructionScope.ChargeWork(1);
                     if (i != 0)
                     {
                         builder.Append('|');
                     }
 
-                    AppendNode(alternation.Branches[i], builder, emittedGroupNames, managedNumbersByPython, native);
+                    yield return new Utf8PreparationStep(AppendNode(alternation.Branches[i], builder, emittedGroupNames, managedNumbersByPython, native), false);
                 }
                 break;
 
             case PythonReSequenceNode sequence:
                 foreach (var element in sequence.Elements)
                 {
-                    AppendNode(element, builder, emittedGroupNames, managedNumbersByPython, native);
+                    Utf8ConstructionScope.ChargeWork(1);
+                    yield return new Utf8PreparationStep(AppendNode(element, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 }
                 break;
 
@@ -633,6 +646,7 @@ internal static class PythonReTranslator
                 break;
 
             case PythonReRawNode raw:
+                Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
                 builder.Append(native
                     ? raw.Kind == PythonReRawKind.Dot
                         ? raw.Text == AnyUnicodeScalarPattern ? NativeScalarPattern : "(?-s:.)"
@@ -653,15 +667,15 @@ internal static class PythonReTranslator
                 break;
 
             case PythonReConditionalNode conditional:
-                AppendConditional(conditional, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendConditional(conditional, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 break;
 
             case PythonReQuantifierNode quantifier:
-                AppendQuantifier(quantifier, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendQuantifier(quantifier, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 break;
 
             case PythonReGroupNode group:
-                AppendGroup(group, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendGroup(group, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 break;
 
             default:
@@ -669,22 +683,22 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendQuantifier(PythonReQuantifierNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+    private static IEnumerable<Utf8PreparationStep> AppendQuantifier(PythonReQuantifierNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         if (node.Flavor == PythonReQuantifierFlavor.Possessive)
         {
             builder.Append("(?>");
-            AppendQuantifierCore(node, builder, PythonReQuantifierFlavor.Greedy, emittedGroupNames, managedNumbersByPython, native);
+            yield return new Utf8PreparationStep(AppendQuantifierCore(node, builder, PythonReQuantifierFlavor.Greedy, emittedGroupNames, managedNumbersByPython, native), false);
             builder.Append(')');
-            return;
+            yield break;
         }
 
-        AppendQuantifierCore(node, builder, node.Flavor, emittedGroupNames, managedNumbersByPython, native);
+        yield return new Utf8PreparationStep(AppendQuantifierCore(node, builder, node.Flavor, emittedGroupNames, managedNumbersByPython, native), false);
     }
 
-    private static void AppendQuantifierCore(PythonReQuantifierNode node, StringBuilder builder, PythonReQuantifierFlavor flavor, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+    private static IEnumerable<Utf8PreparationStep> AppendQuantifierCore(PythonReQuantifierNode node, StringBuilder builder, PythonReQuantifierFlavor flavor, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
-        AppendInnerAsAtom(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+        yield return new Utf8PreparationStep(AppendInnerAsAtom(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
         if (node.Min == 0 && node.Max is null)
         {
             builder.Append('*');
@@ -721,15 +735,15 @@ internal static class PythonReTranslator
         });
     }
 
-    private static void AppendGroup(PythonReGroupNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+    private static IEnumerable<Utf8PreparationStep> AppendGroup(PythonReGroupNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         switch (node.Kind)
         {
             case PythonReGroupKind.Capturing:
                 builder.Append('(');
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.NamedCapturing:
                 if (node.Name is not string groupName)
@@ -738,45 +752,45 @@ internal static class PythonReTranslator
                 }
 
                 builder.Append("(?<").Append(emittedGroupNames[groupName]).Append('>');
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.NonCapturing:
                 builder.Append("(?:");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.PositiveLookahead:
                 builder.Append("(?=");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.NegativeLookahead:
                 builder.Append("(?!");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.PositiveLookbehind:
                 builder.Append("(?<=");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.NegativeLookbehind:
                 builder.Append("(?<!");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.Atomic:
                 builder.Append("(?>");
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             case PythonReGroupKind.ScopedFlags:
                 builder.Append("(?");
@@ -789,16 +803,16 @@ internal static class PythonReTranslator
                 }
 
                 builder.Append(':');
-                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
-                return;
+                yield break;
 
             default:
                 throw new PythonRePatternException("Unsupported group kind.");
         }
     }
 
-    private static void AppendConditional(PythonReConditionalNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+    private static IEnumerable<Utf8PreparationStep> AppendConditional(PythonReConditionalNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         builder.Append("(?(");
         switch (node.Reference.Kind)
@@ -819,11 +833,11 @@ internal static class PythonReTranslator
         }
 
         builder.Append(')');
-        AppendNode(node.YesBranch, builder, emittedGroupNames, managedNumbersByPython, native);
+        yield return new Utf8PreparationStep(AppendNode(node.YesBranch, builder, emittedGroupNames, managedNumbersByPython, native), false);
         if (node.NoBranch is not null)
         {
             builder.Append('|');
-            AppendNode(node.NoBranch, builder, emittedGroupNames, managedNumbersByPython, native);
+            yield return new Utf8PreparationStep(AppendNode(node.NoBranch, builder, emittedGroupNames, managedNumbersByPython, native), false);
         }
 
         builder.Append(')');
@@ -852,7 +866,7 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendInnerAsAtom(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+    private static IEnumerable<Utf8PreparationStep> AppendInnerAsAtom(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
     {
         switch (node)
         {
@@ -862,12 +876,12 @@ internal static class PythonReTranslator
             case PythonReNamedBackreferenceNode:
             case PythonReNumericBackreferenceNode:
             case PythonReGroupNode:
-                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 break;
 
             default:
                 builder.Append("(?:");
-                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython, native);
+                yield return new Utf8PreparationStep(AppendNode(node, builder, emittedGroupNames, managedNumbersByPython, native), false);
                 builder.Append(')');
                 break;
         }
@@ -876,8 +890,15 @@ internal static class PythonReTranslator
     private static IReadOnlyDictionary<string, string> BuildEmittedGroupNames(IReadOnlyDictionary<string, int> namedGroups)
     {
         var map = new Dictionary<string, string>(namedGroups.Count, StringComparer.Ordinal);
-        foreach (var pair in namedGroups.OrderBy(x => x.Value))
+        using var names = new Utf8ConstructionBuffer<KeyValuePair<string, int>>(Utf8ConstructionScope.CurrentBudget);
+        foreach (var pair in namedGroups) {
+            Utf8ConstructionScope.ChargeWork(1);
+            names.Add(pair);
+        }
+        names.Sort(static (left, right) => left.Value.CompareTo(right.Value));
+        foreach (var pair in names)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             map[pair.Key] = IsDotNetSafeGroupName(pair.Key)
                 ? pair.Key
                 : "g" + pair.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -895,6 +916,7 @@ internal static class PythonReTranslator
 
         for (var i = 1; i < name.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!(char.IsAsciiLetterOrDigit(name[i]) || name[i] == '_'))
             {
                 return false;
@@ -904,9 +926,9 @@ internal static class PythonReTranslator
         return true;
     }
 
-    private static void EnsureFixedWidth(PythonReNode node, PythonReParseResult parseResult)
+    private static void EnsureFixedWidth(PythonReNode node, PythonReParseResult parseResult, Utf8ConstructionMap<PythonReNode, PythonReWidth> widths)
     {
-        var width = GetWidth(node, parseResult);
+        var width = GetWidth(node, parseResult, widths);
         if (!width.IsFixed)
         {
             throw new PythonRePatternException("look-behind requires fixed-width pattern");
@@ -915,130 +937,114 @@ internal static class PythonReTranslator
 
     private static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult)
     {
-        return node switch
+        using var construction = Utf8ConstructionScope.Enter();
+        using var widths = new Utf8ConstructionMap<PythonReNode, PythonReWidth>(construction.Budget, ReferenceEqualityComparer.Instance);
+        return GetWidth(node, parseResult, widths);
+    }
+
+    private static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult,
+        Utf8ConstructionMap<PythonReNode, PythonReWidth> widths)
+    {
+        Utf8PreparationStep.TryRun(Measure(node), Utf8ConstructionScope.CurrentBudget);
+        return widths[node];
+
+        IEnumerable<Utf8PreparationStep> Measure(PythonReNode current)
         {
-            PythonReAlternationNode alternation => GetAlternationWidth(alternation, parseResult),
-            PythonReSequenceNode sequence => GetSequenceWidth(sequence, parseResult),
-            PythonReLiteralNode => new PythonReWidth(1, 1),
-            PythonReCharacterClassNode => new PythonReWidth(1, 1),
-            PythonReRawNode raw => raw.Kind switch
+            if (widths.ContainsKey(current)) yield break;
+            var width = new PythonReWidth(1, 1);
+            switch (current)
             {
-                PythonReRawKind.StartAnchor or PythonReRawKind.EndAnchor => new PythonReWidth(0, 0),
-                PythonReRawKind.Escape when IsZeroWidthEscape(raw.Text) => new PythonReWidth(0, 0),
-                PythonReRawKind.AstralLiteral => new PythonReWidth(1, 1),
-                _ => new PythonReWidth(1, 1),
-            },
-            PythonReNamedBackreferenceNode named => parseResult.NamedGroups.TryGetValue(named.Name, out var namedSlot) && parseResult.GroupBodies.TryGetValue(namedSlot, out var namedBody)
-                ? GetWidth(namedBody, parseResult)
-                : new PythonReWidth(0, null),
-            PythonReNumericBackreferenceNode numeric => parseResult.GroupBodies.TryGetValue(numeric.GroupNumber, out var numberedBody)
-                ? GetWidth(numberedBody, parseResult)
-                : new PythonReWidth(0, null),
-            PythonReConditionalNode conditional => GetConditionalWidth(conditional, parseResult),
-            PythonReQuantifierNode quantifier => GetQuantifierWidth(quantifier, parseResult),
-            PythonReGroupNode group => group.Kind switch
-            {
-                PythonReGroupKind.PositiveLookahead or
-                PythonReGroupKind.NegativeLookahead or
-                PythonReGroupKind.PositiveLookbehind or
-                PythonReGroupKind.NegativeLookbehind => new PythonReWidth(0, 0),
-                _ => GetWidth(group.Inner, parseResult),
-            },
-            _ => throw new PythonRePatternException("Unsupported AST node."),
-        };
-    }
-
-    private static PythonReWidth GetAlternationWidth(PythonReAlternationNode alternation, PythonReParseResult parseResult)
-    {
-        var min = int.MaxValue;
-        int? max = 0;
-        foreach (var branch in alternation.Branches)
-        {
-            var width = GetWidth(branch, parseResult);
-            min = Math.Min(min, width.Min);
-            max = CombineMax(max, width.Max, add: false);
+                case PythonReAlternationNode alternation:
+                    var alternateMin = int.MaxValue;
+                    int? alternateMax = 0;
+                    foreach (var branch in alternation.Branches)
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(Measure(branch), false);
+                        var branchWidth = widths[branch];
+                        alternateMin = Math.Min(alternateMin, branchWidth.Min);
+                        alternateMax = UnionMax(alternateMax, branchWidth.Max);
+                    }
+                    // A saturated positive minimum is not an empty alternation.
+                    width = new(alternation.Branches.Count == 0 ? 0 : alternateMin, alternateMax);
+                    break;
+                case PythonReSequenceNode sequence:
+                    var sequenceMin = 0;
+                    int? sequenceMax = 0;
+                    foreach (var element in sequence.Elements)
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(Measure(element), false);
+                        var elementWidth = widths[element];
+                        sequenceMin = (int)Math.Min((long)sequenceMin + elementWidth.Min, int.MaxValue);
+                        sequenceMax = AddMax(sequenceMax, elementWidth.Max);
+                    }
+                    width = new(sequenceMin, sequenceMax);
+                    break;
+                case PythonReQuantifierNode repeat:
+                    yield return new Utf8PreparationStep(Measure(repeat.Inner), false);
+                    var repeated = widths[repeat.Inner];
+                    var repeatMin = (int)Math.Min((long)repeated.Min * repeat.Min, int.MaxValue);
+                    int? repeatMax = repeat.Max.HasValue && repeated.Max.HasValue
+                        ? (int)Math.Min((long)repeated.Max.Value * repeat.Max.Value, int.MaxValue) : null;
+                    width = new(repeatMin, repeatMax);
+                    break;
+                case PythonReConditionalNode conditional:
+                    yield return new Utf8PreparationStep(Measure(conditional.YesBranch), false);
+                    var yes = widths[conditional.YesBranch];
+                    if (conditional.NoBranch is PythonReNode no)
+                    {
+                        yield return new Utf8PreparationStep(Measure(no), false);
+                        var otherwise = widths[no];
+                        width = new(Math.Min(yes.Min, otherwise.Min), UnionMax(yes.Max, otherwise.Max));
+                    }
+                    else width = new(0, yes.Max);
+                    break;
+                case PythonReGroupNode group when group.Kind is PythonReGroupKind.PositiveLookahead
+                    or PythonReGroupKind.NegativeLookahead or PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind:
+                    width = new(0, 0);
+                    break;
+                case PythonReGroupNode group:
+                    yield return new Utf8PreparationStep(Measure(group.Inner), false);
+                    width = widths[group.Inner];
+                    break;
+                case PythonReNamedBackreferenceNode named:
+                    if (parseResult.NamedGroups.TryGetValue(named.Name, out var namedSlot) && parseResult.GroupBodies.TryGetValue(namedSlot, out var namedBody))
+                    {
+                        yield return new Utf8PreparationStep(Measure(namedBody), false);
+                        width = widths[namedBody];
+                    }
+                    else width = new(0, null);
+                    break;
+                case PythonReNumericBackreferenceNode numeric:
+                    if (parseResult.GroupBodies.TryGetValue(numeric.GroupNumber, out var numberedBody))
+                    {
+                        yield return new Utf8PreparationStep(Measure(numberedBody), false);
+                        width = widths[numberedBody];
+                    }
+                    else width = new(0, null);
+                    break;
+                case PythonReRawNode raw:
+                    if (raw.Kind is PythonReRawKind.StartAnchor or PythonReRawKind.EndAnchor ||
+                        raw.Kind == PythonReRawKind.Escape && IsZeroWidthEscape(raw.Text)) width = new(0, 0);
+                    break;
+                case PythonReLiteralNode or PythonReCharacterClassNode:
+                    break;
+                default:
+                    throw new PythonRePatternException("Unsupported AST node.");
+            }
+            widths[current] = width;
         }
-
-        return new PythonReWidth(min == int.MaxValue ? 0 : min, max);
-    }
-
-    private static PythonReWidth GetSequenceWidth(PythonReSequenceNode sequence, PythonReParseResult parseResult)
-    {
-        var min = 0;
-        int? max = 0;
-        foreach (var element in sequence.Elements)
-        {
-            var width = GetWidth(element, parseResult);
-            // Widths saturate like CPython MAXWIDTH instead of wrapping (PLAN.md C10): verdicts stay exact wherever exact bounds fit int32, i.e. every feasible pattern.
-            min = (int)Math.Min((long)min + width.Min, int.MaxValue);
-            max = AddMax(max, width.Max);
-        }
-
-        return new PythonReWidth(min, max);
-    }
-
-    private static PythonReWidth GetQuantifierWidth(PythonReQuantifierNode quantifier, PythonReParseResult parseResult)
-    {
-        var inner = GetWidth(quantifier.Inner, parseResult);
-        var min = (int)Math.Min((long)inner.Min * quantifier.Min, int.MaxValue);
-        int? max = null;
-        if (quantifier.Max.HasValue && inner.Max.HasValue)
-        {
-            max = (int)Math.Min((long)inner.Max.Value * quantifier.Max.Value, int.MaxValue);
-        }
-
-        return new PythonReWidth(min, max);
-    }
-
-    private static PythonReWidth GetConditionalWidth(PythonReConditionalNode conditional, PythonReParseResult parseResult)
-    {
-        var yesWidth = GetWidth(conditional.YesBranch, parseResult);
-        if (conditional.NoBranch is null)
-        {
-            return new PythonReWidth(0, yesWidth.Max);
-        }
-
-        var noWidth = GetWidth(conditional.NoBranch, parseResult);
-        var min = Math.Min(yesWidth.Min, noWidth.Min);
-        int? max;
-        if (!yesWidth.Max.HasValue || !noWidth.Max.HasValue)
-        {
-            max = null;
-        }
-        else
-        {
-            max = Math.Max(yesWidth.Max.Value, noWidth.Max.Value);
-        }
-
-        return new PythonReWidth(min, max);
     }
 
     private static int? AddMax(int? left, int? right)
     {
-        if (!left.HasValue || !right.HasValue)
-        {
-            return null;
-        }
-
-        var sum = (long)left.Value + right.Value;
-        return sum > int.MaxValue ? int.MaxValue : (int)sum;
+        if (!left.HasValue || !right.HasValue) return null;
+        return (int)Math.Min((long)left.Value + right.Value, int.MaxValue);
     }
 
-    private static int? CombineMax(int? left, int? right, bool add)
-    {
-        if (!left.HasValue || !right.HasValue)
-        {
-            return null;
-        }
-
-        if (!add)
-        {
-            return Math.Max(left.Value, right.Value);
-        }
-
-        var sum = (long)left.Value + right.Value;
-        return sum > int.MaxValue ? int.MaxValue : (int)sum;
-    }
+    private static int? UnionMax(int? left, int? right) =>
+        left.HasValue && right.HasValue ? Math.Max(left.Value, right.Value) : null;
 
     private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
     {
@@ -1073,15 +1079,33 @@ internal static class PythonReTranslator
 
     private static bool IsUtf8IterationSafe(PythonReNode node)
     {
-        return node switch
+        return Utf8PreparationStep.TryRun(Check(node));
+
+        static IEnumerable<Utf8PreparationStep> Check(PythonReNode current)
         {
-            PythonReConditionalNode => false,
-            PythonReAlternationNode alternation => IsPrefixFreeExactLiteralAlternation(alternation),
-            PythonReSequenceNode sequence => sequence.Elements.All(IsUtf8IterationSafe),
-            PythonReQuantifierNode quantifier => IsUtf8IterationSafe(quantifier.Inner),
-            PythonReGroupNode group => IsUtf8IterationSafe(group.Inner),
-            _ => true,
-        };
+            switch (current)
+            {
+                case PythonReConditionalNode:
+                    yield return Utf8PreparationStep.Decline;
+                    break;
+                case PythonReAlternationNode alternation:
+                    if (!IsPrefixFreeExactLiteralAlternation(alternation)) yield return Utf8PreparationStep.Decline;
+                    break;
+                case PythonReSequenceNode sequence:
+                    foreach (var element in sequence.Elements)
+                        {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(Check(element), false);
+                    }
+                    break;
+                case PythonReQuantifierNode repeat:
+                    yield return new Utf8PreparationStep(Check(repeat.Inner), false);
+                    break;
+                case PythonReGroupNode group:
+                    yield return new Utf8PreparationStep(Check(group.Inner), false);
+                    break;
+            }
+        }
     }
 
     private static bool IsZeroWidthEscape(string text)
@@ -1095,9 +1119,11 @@ internal static class PythonReTranslator
 
     private static bool IsPrefixFreeExactLiteralAlternation(PythonReAlternationNode alternation)
     {
-        List<string> literals = [];
+        using var construction = Utf8ConstructionScope.Enter();
+        using var literals = new Utf8ConstructionBuffer<string>(construction.Budget);
         foreach (var branch in alternation.Branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!TryGetExactLiteral(branch, out var literal) || literal.Length == 0)
             {
                 return false;
@@ -1110,11 +1136,13 @@ internal static class PythonReTranslator
         {
             for (var j = 0; j < literals.Count; j++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (i == j)
                 {
                     continue;
                 }
 
+                Utf8ConstructionScope.ChargeWork((ulong)literals[i].Length);
                 if (literals[j].StartsWith(literals[i], StringComparison.Ordinal))
                 {
                     return false;
@@ -1127,36 +1155,34 @@ internal static class PythonReTranslator
 
     private static bool TryGetExactLiteral(PythonReNode node, out string literal)
     {
-        switch (node)
+        // Flatten once into the actual literal consumer's text, avoiding
+        // recursive intermediate strings for nested sequences/groups.
+        var builder = new StringBuilder();
+        var complete = Utf8PreparationStep.TryRun(AppendLiteral(node));
+        literal = complete ? builder.ToString() : string.Empty;
+        return complete;
+
+        IEnumerable<Utf8PreparationStep> AppendLiteral(PythonReNode current)
         {
-            case PythonReLiteralNode value:
-                literal = value.Value.ToString();
-                return true;
-
-            case PythonReSequenceNode sequence:
+            switch (current)
             {
-                var builder = new StringBuilder();
-                foreach (var element in sequence.Elements)
-                {
-                    if (!TryGetExactLiteral(element, out var segment))
-                    {
-                        literal = string.Empty;
-                        return false;
+                case PythonReLiteralNode value:
+                    builder.Append(value.Value);
+                    break;
+                case PythonReSequenceNode sequence:
+                    foreach (var element in sequence.Elements)
+                        {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        yield return new Utf8PreparationStep(AppendLiteral(element), false);
                     }
-
-                    builder.Append(segment);
-                }
-
-                literal = builder.ToString();
-                return true;
+                    break;
+                case PythonReGroupNode { Kind: PythonReGroupKind.NonCapturing } group:
+                    yield return new Utf8PreparationStep(AppendLiteral(group.Inner), false);
+                    break;
+                default:
+                    yield return Utf8PreparationStep.Decline;
+                    break;
             }
-
-            case PythonReGroupNode { Kind: PythonReGroupKind.NonCapturing } group:
-                return TryGetExactLiteral(group.Inner, out literal);
-
-            default:
-                literal = string.Empty;
-                return false;
         }
     }
 
@@ -1174,6 +1200,7 @@ internal static class PythonReTranslator
 
         foreach (var item in characterClass.Items)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             switch (item)
             {
                 case PythonReCharacterClassLiteralItem literal when IsAsciiWordCharacter(literal.Scalar) || literal.Scalar > 0x7F:
@@ -1184,6 +1211,7 @@ internal static class PythonReTranslator
                          range.StartScalar >= 0:
                     for (var scalar = range.StartScalar; scalar <= Math.Min(range.EndScalar, 0x7F); scalar++)
                     {
+                        Utf8ConstructionScope.ChargeWork(1);
                         if (!IsAsciiWordCharacter(scalar))
                         {
                             return false;
@@ -1230,6 +1258,7 @@ internal static class PythonReTranslator
         var branches = new List<string>();
         foreach (var item in items)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             switch (item)
             {
                 case PythonReCharacterClassLiteralItem literal:
@@ -1269,6 +1298,7 @@ internal static class PythonReTranslator
 
         foreach (var item in items)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             switch (item)
             {
                 case PythonReCharacterClassLiteralItem literal:
@@ -1343,11 +1373,13 @@ internal static class PythonReTranslator
         builder.Append('[');
         foreach (var fragment in fragments)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             builder.Append(fragment);
         }
 
         foreach (var (start, end) in MergeRanges(ranges))
         {
+            Utf8ConstructionScope.ChargeWork(1);
             AppendClassRange(builder, start, end);
         }
 
@@ -1362,11 +1394,12 @@ internal static class PythonReTranslator
             yield break;
         }
 
-        ranges.Sort(static (x, y) => x.Start.CompareTo(y.Start));
+        Utf8ConstructionSort.Sort(CollectionsMarshal.AsSpan(ranges), static (x, y) => x.Start.CompareTo(y.Start), Utf8ConstructionScope.CurrentBudget);
         var currentStart = ranges[0].Start;
         var currentEnd = ranges[0].End;
         for (var i = 1; i < ranges.Count; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var next = ranges[i];
             if (next.Start <= currentEnd + 1)
             {
@@ -1450,6 +1483,7 @@ internal static class PythonReTranslator
 
         for (var high = startHigh; high <= endHigh; high++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var lowStart = high == startHigh ? startLow : '\uDC00';
             var lowEnd = high == endHigh ? endLow : '\uDFFF';
             yield return BuildSurrogateBranch((char)high, lowStart, lowEnd);

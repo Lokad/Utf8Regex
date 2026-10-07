@@ -5,6 +5,22 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DeepScalarAdmissionTests
 {
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void DeepCaptureFreeMetadataAndPublicOperationsAvoidRecursiveCensus(bool compiled, bool rtl)
+    {
+        const int depth = 16385;
+        var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + "." + new string(')', depth);
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
+            (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.IsMatch("😀"u8));
+        Assert.Equal(1, regex.Count("😀"u8));
+        Assert.Equal(4, regex.Match("😀"u8).LengthInBytes);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     public static IEnumerable<object[]> Cases()
     {
         foreach (var depth in new[] { 65, 257, 4097 })

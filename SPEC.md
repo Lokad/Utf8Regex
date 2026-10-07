@@ -413,13 +413,23 @@ failures directly. Core/PythonRe parsers and preparation walkers share live
 explicit-frame depth; denied pushes dispose acquired iterators, and cleanup
 spends no work. Python alternation, sequence and group parsing suspends child
 work on that stack; conditional branches reuse the same sequence parser.
+Python rendering, reference/lookbehind validation, scalar-width analysis and
+capture/iteration/literal fast-path checks also suspend child traversal on that
+stack. Width memoization uses reference identity and admitted temporary maps;
+lookbehind validation shares its memo across the translation. Literal extraction
+flattens once into its consumer's text rather than building recursive intermediate
+strings. Translator loops and prefix comparisons admit work; group-name ordering
+and range merging use the admitted heap sort.
+The core facade's capture census uses the same explicit admitted traversal,
+including capture-free nested trees; it no longer recurses on the CLR stack.
 Provisional limits are 67,108,864 work units and 65,536 covered live frames.
 Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.
 These are partial counters: other parsing/rendering/optimization/preparation
-work, Python renderer/width/optimization recursion, descriptors and other
-object/string capacity remain uncovered. They do not establish complete
+work, descriptors and other object/string capacity remain uncovered. Translator
+StringBuilder/string/list/dictionary storage and iterator objects are not yet
+admitted. These counters do not establish complete
 work/depth controls or safe defaults.
 It covers core/PythonRe tree-to-scalar conversion maps/frames, child/literal
 arrays, decoded class/subtraction payloads, instruction vectors, analysis/capture
