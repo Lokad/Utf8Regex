@@ -479,8 +479,15 @@ resource failure, without refunding work. The shared yield-based preparation
 driver and its heap iterator continuations are removed; the two duplicate
 literal walkers share one implementation. These frames borrow existing root
 walkers, strings, builders and result collections, whose separate admission is
-still incomplete. Other find scans and the byte-safe verifier compiler's own
-continuations remain outside this partial backstop.
+still incomplete. The byte-safe verifier compiler also uses admitted value
+continuations and a temporary minimum-length memo. Root depth/storage precede
+memo and builder acquisition; child frames admit before nested builders, and
+all admitted scratch releases on success, decline or failure without refunding
+work. Its former heap compiler context, request objects and six yield iterators
+are removed. Program/text arrays, builders and other preparation scans retain
+separate admission work. ASCII class projections defer non-ASCII subjects to
+scalar execution; surrogate-half class membership does not determine loop
+admission or minimum scalar counts.
 Python scalar conversion also uses admitted value frames, deleting its captured
 yield continuation. Its arena/map descriptors, direct structural IR nodes and
 retaining descriptors admit before acquisition; node charges include the base
