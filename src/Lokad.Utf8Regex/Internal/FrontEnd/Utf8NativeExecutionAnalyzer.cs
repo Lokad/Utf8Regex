@@ -355,94 +355,109 @@ internal static class Utf8NativeExecutionAnalyzer
         RegexOptions executionOptions,
         out Utf8RegexAnalysis analyzedRegex)
     {
-        if (!SupportsNativeOptions(executionOptions) || IsPlainLiteral(executionPattern))
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            analyzedRegex = default;
-            return false;
-        }
-
-        if (semanticRegex.RuntimeTree?.Root is not { } root ||
-            root.Kind != Utf8TreeNodeKind.Capture ||
-            root.ChildCount != 1)
-        {
-            analyzedRegex = default;
-            return false;
-        }
-
-        var body = root.Child(0);
-        if (!IsSupportedSimplePatternNode(body))
-        {
-            analyzedRegex = default;
-            return false;
-        }
-
-        if (!Utf8AsciiSimplePatternLowerer.TryCreatePlan(semanticRegex, executionOptions, out var simplePatternPlan, out var searchFacts))
-        {
-            analyzedRegex = default;
-            return false;
-        }
-
-        if (Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(simplePatternPlan, out var literalBranches))
-        {
-            if (literalBranches.Length == 1)
+            if (!SupportsNativeOptions(executionOptions) || IsPlainLiteral(executionPattern))
             {
-                return TryCreateLiteralAnalyzedRegex(
-                    semanticRegex,
-                    Encoding.UTF8.GetString(literalBranches[0]),
-                    executionOptions,
-                    out analyzedRegex);
+                analyzedRegex = default;
+                return false;
             }
 
-            // R05: enumerated branch sets feed the longest-match automaton once they
-            // reach its selection floor, but BCL stops ordered repetition at first
-            // success, so mixed-length sets would project longest spans where the
-            // oracle stops early (e.g. (a|ab){2,3} light [1:4] vs oracle [1:2]).
-            // Decline those shapes to the ordered slice-or-fallback routes;
-            // uniform sets cannot diverge and small direct sets resolve in order.
-            if (literalBranches.Length >= Search.PreparedMultiLiteralSearch.AutomatonThreshold)
+            if (semanticRegex.RuntimeTree?.Root is not { } root ||
+                root.Kind != Utf8TreeNodeKind.Capture ||
+                root.ChildCount != 1)
             {
-                var firstBranchLength = literalBranches[0].Length;
-                for (var branchIndex = 1; branchIndex < literalBranches.Length; branchIndex++)
+                analyzedRegex = default;
+                return false;
+            }
+
+            var body = root.Child(0);
+            if (!IsSupportedSimplePatternNode(body))
+            {
+                analyzedRegex = default;
+                return false;
+            }
+
+            if (!Utf8AsciiSimplePatternLowerer.TryCreatePlan(semanticRegex, executionOptions, out var simplePatternPlan, out var searchFacts))
+            {
+                analyzedRegex = default;
+                return false;
+            }
+
+            if (Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(simplePatternPlan, out var literalBranches))
+            {
+                if (literalBranches.Length == 1)
                 {
-                    if (literalBranches[branchIndex].Length != firstBranchLength)
+                    // Keep literal-pattern text for diagnostics/classification,
+                    // while byte execution shares the admitted expansion payload.
+                    var bytes = literalBranches[0]; var text = owner.CopyAsciiText(bytes);
+                    var plainAscii = IsPlainAsciiLiteral(text);
+                    var folded = (executionOptions & RegexOptions.IgnoreCase) != 0;
+                    if (folded && !plainAscii) { analyzedRegex = default; return false; }
+                    var kind = folded ? NativeExecutionKind.AsciiLiteralIgnoreCase :
+                        plainAscii ? NativeExecutionKind.ExactAsciiLiteral : NativeExecutionKind.ExactUtf8Literal;
+                    analyzedRegex = Utf8RegexAnalysis.CreateLiteral(semanticRegex, text,
+                        Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                        Utf8FrontEndSearchAnalyzer.AnalyzeLiteral(bytes, kind), kind, bytes);
+                    owner.ReleaseArray(literalBranches, false);
+                    construction.Complete(); return true;
+                }
+
+                // Scalar regex alternatives preserve ordered repetition. A longest-
+                // match automaton cannot substitute for mixed-length ordered choices
+                // (e.g. (a|ab){2,3} on abab). Keep those on owned ordered execution;
+                // uniform sets and small direct sets preserve the same selection.
+                if (literalBranches.Length >= Search.PreparedMultiLiteralSearch.AutomatonThreshold)
+                {
+                    var firstBranchLength = literalBranches[0].Length;
+                    for (var branchIndex = 1; branchIndex < literalBranches.Length; branchIndex++)
                     {
-                        analyzedRegex = default;
-                        return false;
+                        owner.ChargeWork(1);
+                        if (literalBranches[branchIndex].Length != firstBranchLength)
+                        {
+                            analyzedRegex = default;
+                            return false;
+                        }
                     }
                 }
+
+                var ignoreCase = (executionOptions & RegexOptions.IgnoreCase) != 0;
+                analyzedRegex = Utf8RegexAnalysis.Create(
+                    semanticRegex,
+                    executionPattern,
+                    Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
+                    Utf8SearchFacts.Create(
+                        ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,
+                        new Utf8SearchFactData
+                        {
+                            AlternateLiteralsUtf8 = literalBranches,
+                        }),
+                    ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals);
+                construction.Complete();
+                return true;
             }
 
-            var ignoreCase = (executionOptions & RegexOptions.IgnoreCase) != 0;
-            analyzedRegex = Utf8RegexAnalysis.Create(
-                semanticRegex,
-                executionPattern,
-                Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                Utf8SearchFacts.Create(
-                    ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,
-                    new Utf8SearchFactData
-                    {
-                        AlternateLiteralsUtf8 = literalBranches,
-                    }),
-                ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals);
+            // Simple byte plans have one folding flag. Scoped folding beneath a
+            // sensitive top level needs the owned scalar program's per-node behavior;
+            // decline this plan after the literal-extraction routes above.
+            if ((executionOptions & RegexOptions.IgnoreCase) == 0 &&
+                Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase(root.Child(0)))
+            {
+                analyzedRegex = default;
+                return false;
+            }
+
+            var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
+            var analyzedSearchFacts = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(semanticRegex, simplePatternPlan, searchFacts);
+            analyzedRegex = searchFacts.LiteralUtf8 is { } literalUtf8
+                ? Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan, literalUtf8)
+                : Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan);
+            construction.Complete();
             return true;
         }
-
-        // Simple byte plans have one folding flag. Scoped folding beneath a
-        // sensitive top level needs the owned scalar program's per-node behavior;
-        // decline this plan after the literal-extraction routes above.
-        if ((executionOptions & RegexOptions.IgnoreCase) == 0 &&
-            Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase(root.Child(0)))
-        {
-            analyzedRegex = default;
-            return false;
-        }
-
-        var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
-        var analyzedSearchFacts = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(semanticRegex, simplePatternPlan, searchFacts);
-        analyzedRegex = searchFacts.LiteralUtf8 is { } literalUtf8
-            ? Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan, literalUtf8)
-            : Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan);
-        return true;
+        finally { owner.LeaveDepth(); }
     }
 
     private static bool TryAnalyzeAnchoredAsciiHeadTailRunTree(

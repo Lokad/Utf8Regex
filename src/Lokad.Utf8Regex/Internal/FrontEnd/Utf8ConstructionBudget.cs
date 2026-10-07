@@ -114,6 +114,26 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         catch { ReleaseBytes(bytes); throw; }
     }
 
+    internal string CopyAsciiText(byte[] input)
+    {
+        // Retained literal-pattern metadata only; byte execution reuses input.
+        // No subject decoding or temporary UTF-16 character buffer is needed.
+        ChargeWork((ulong)input.Length);
+        foreach (var value in input)
+            if (value > 0x7f) throw new ArgumentException("Literal metadata must be ASCII.", nameof(input));
+        if (input.Length == 0) return string.Empty;
+        var bytes = StringBytes(input.Length) + ObjectBytes<(object, ObjectAllocation?, ulong)>();
+        CheckBytes(bytes); ChargeWork((ulong)input.Length + 1); ReserveBytes(bytes);
+        try
+        {
+            var result = string.Create(input.Length, input, static (target, source) =>
+            { for (var index = 0; index < source.Length; index++) target[index] = (char)source[index]; });
+            ObjectCheckpoint = new ObjectAllocation(result, ObjectCheckpoint, bytes);
+            return result;
+        }
+        catch { ReleaseBytes(bytes); throw; }
+    }
+
     internal byte[] EncodeUtf8(ReadOnlySpan<char> input)
     {
         // Pattern strings are interoperability input. Validate complete scalars

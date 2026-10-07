@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Search;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Planning;
 
@@ -7,8 +8,12 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 /// empty storage for absence; nullable lengths represent a genuine unbounded or
 /// unknown fact rather than selecting the search kind.
 /// </summary>
-internal sealed class Utf8SearchFactData
+// Initializers are values: no heap object can be acquired before Create admits
+// its complete field state and retaining descriptor. Payload arrays stay borrowed
+// from their independently admitted producers.
+internal readonly struct Utf8SearchFactData
 {
+    public Utf8SearchFactData() { }
     public byte[] LiteralUtf8 { get; init; } = [];
     public byte[][] AlternateLiteralsUtf8 { get; init; } = [];
     public bool CanGuideFallbackStarts { get; init; }
@@ -34,10 +39,14 @@ internal sealed class Utf8SearchFactData
 
 internal readonly struct Utf8SearchFacts
 {
-    private static readonly Utf8SearchFactData s_empty = new();
-    private readonly Utf8SearchFactData? _data;
+    private sealed class Storage(Utf8SearchFactData state)
+    {
+        internal readonly Utf8SearchFactData State = state;
+    }
+    private static readonly Storage s_empty = new(new Utf8SearchFactData());
+    private readonly Storage? _data;
 
-    private Utf8SearchFacts(Utf8SearchKind kind, Utf8SearchFactData data)
+    private Utf8SearchFacts(Utf8SearchKind kind, Storage data)
     {
         Kind = kind;
         _data = data;
@@ -66,12 +75,15 @@ internal readonly struct Utf8SearchFacts
     public Utf8BoundaryRequirement LeadingBoundary => Data.LeadingBoundary;
     public Utf8BoundaryRequirement TrailingBoundary => Data.TrailingBoundary;
 
-    private Utf8SearchFactData Data => _data ?? s_empty;
+    private ref readonly Utf8SearchFactData Data => ref (_data ?? s_empty).State;
 
     public static Utf8SearchFacts Create(Utf8SearchKind kind) => new(kind, s_empty);
 
     public static Utf8SearchFacts Create(Utf8SearchKind kind, Utf8SearchFactData data)
     {
-        return new Utf8SearchFacts(kind, data);
+        using var construction = Utf8ConstructionScope.Enter();
+        var stored = construction.Budget.AllocateObject(data, static state => new Storage(state));
+        construction.Complete();
+        return new Utf8SearchFacts(kind, stored);
     }
 }

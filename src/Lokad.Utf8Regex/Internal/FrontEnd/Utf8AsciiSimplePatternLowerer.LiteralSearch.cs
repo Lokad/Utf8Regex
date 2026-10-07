@@ -8,149 +8,133 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     internal static bool TryExtractLiteralBranches(AsciiSimplePatternPlan simplePatternPlan, out byte[][] literals)
     {
         literals = [];
-        if (simplePatternPlan.IsStartAnchored || simplePatternPlan.IsEndAnchored || simplePatternPlan.Branches.Length == 0)
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            return false;
-        }
-
-        var expanded = new List<byte[]>(simplePatternPlan.Branches.Length);
-        for (var i = 0; i < simplePatternPlan.Branches.Length; i++)
-        {
-            if (!TryExpandLiteralBranch(simplePatternPlan.Branches[i], simplePatternPlan.IgnoreCase, expanded))
+            owner.ChargeWork(1);
+            if (simplePatternPlan.IsStartAnchored || simplePatternPlan.IsEndAnchored || simplePatternPlan.Branches.Length == 0) return false;
+            using var expanded = Utf8ConstructionBuffer<byte[]>.Create(owner);
+            foreach (var branch in simplePatternPlan.Branches)
             {
-                literals = [];
-                return false;
+                owner.ChargeWork(1);
+                if (!TryExpandLiteralBranch(branch, simplePatternPlan.IgnoreCase, out var values) ||
+                    expanded.Count + values.Length > MaxExpandedBranches) return false;
+                // Mutate only the parent's vector, after the speculative child
+                // has returned. Failure cannot leave a borrowed vector pointing
+                // at capacity whose child loan was rolled back.
+                expanded.AddRange(values); owner.ReleaseArray(values, false);
             }
+            literals = expanded.Take(); construction.Complete(); return true;
         }
-
-        literals = [.. expanded];
-        return true;
+        finally { owner.LeaveDepth(); }
     }
 
-    private static bool TryExpandLiteralBranch(IReadOnlyList<AsciiSimplePatternToken> tokens, bool ignoreCase, List<byte[]> destination)
+    private static bool TryExpandLiteralBranch(IReadOnlyList<AsciiSimplePatternToken> tokens, bool ignoreCase, out byte[][] literals)
     {
-        var current = new List<byte[]> { Array.Empty<byte>() };
-        for (var i = 0; i < tokens.Count; i++)
+        literals = [];
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            var token = tokens[i];
-            if (token.Kind == AsciiSimplePatternTokenKind.Literal)
+            using var current = Utf8ConstructionBuffer<byte[]>.Create(owner);
+            current.Add([]);
+            for (var index = 0; index < tokens.Count; index++)
             {
-                AppendLiteralByte(current, token.Literal);
-                continue;
-            }
-
-            // Case-pair folding is only valid under IgnoreCase: without it, [Aa] must expand to both branches below, never fold to one folded byte.
-            if (ignoreCase &&
-                token.Kind == AsciiSimplePatternTokenKind.CharClass &&
-                !token.CharClass.IsEmpty &&
-                TryExtractIgnoreCaseLiteral(token.CharClass, out var literal))
-            {
-                AppendLiteralByte(current, literal);
-                continue;
-            }
-
-            if (token.Kind == AsciiSimplePatternTokenKind.CharClass &&
-                !token.CharClass.IsEmpty &&
-                TryExtractLiteralBytes(token.CharClass, ignoreCase, out var literalBytes))
-            {
-                if (current.Count * literalBytes.Length > MaxExpandedBranches)
-                {
-                    return false;
-                }
-
-                var expanded = new List<byte[]>(current.Count * literalBytes.Length);
+                owner.ChargeWork(1);
+                var token = tokens[index];
+                if (token.Kind == AsciiSimplePatternTokenKind.Literal)
+                { AppendLiteralByte(current, token.Literal); continue; }
+                // Sensitive [Aa] expands in ascending byte order; invariant
+                // folding may collapse it only under the existing folding flag.
+                if (ignoreCase && token.Kind == AsciiSimplePatternTokenKind.CharClass &&
+                    !token.CharClass.IsEmpty && TryExtractIgnoreCaseLiteral(token.CharClass, out var literal))
+                { AppendLiteralByte(current, literal); continue; }
+                if (token.Kind != AsciiSimplePatternTokenKind.CharClass || token.CharClass.IsEmpty ||
+                    !TryExtractLiteralBytes(token.CharClass, ignoreCase, out var literalBytes) ||
+                    current.Count * literalBytes.Length > MaxExpandedBranches) return false;
+                using var expanded = Utf8ConstructionBuffer<byte[]>.Create(owner);
                 foreach (var prefix in current)
+                foreach (var value in literalBytes)
                 {
-                    foreach (var value in literalBytes)
-                    {
-                        var next = new byte[prefix.Length + 1];
-                        prefix.CopyTo(next, 0);
-                        next[^1] = value;
-                        expanded.Add(next);
-                    }
+                    owner.ChargeWork(1);
+                    var next = owner.AllocateArray<byte>(checked(prefix.Length + 1), false);
+                    owner.ChargeWork((ulong)prefix.Length + 1);
+                    prefix.CopyTo(next, 0); next[^1] = value; expanded.Add(next);
                 }
-
-                current = expanded;
-                continue;
+                foreach (var prefix in current) owner.ReleaseArray(prefix, false);
+                current.Clear(); current.AddRange(expanded.Span); owner.ReleaseArray(literalBytes, false);
             }
-
-            return false;
+            literals = current.Take(); construction.Complete(); return true;
         }
-
-        if (destination.Count + current.Count > MaxExpandedBranches)
-        {
-            return false;
-        }
-
-        destination.AddRange(current);
-        return true;
+        finally { owner.LeaveDepth(); }
     }
 
-    private static void AppendLiteralByte(List<byte[]> literals, byte value)
+    private static void AppendLiteralByte(Utf8ConstructionBuffer<byte[]> literals, byte value)
     {
-        for (var i = 0; i < literals.Count; i++)
+        var owner = Utf8ConstructionScope.CurrentBudget;
+        for (var index = 0; index < literals.Count; index++)
         {
-            var next = new byte[literals[i].Length + 1];
-            literals[i].CopyTo(next, 0);
-            next[^1] = value;
-            literals[i] = next;
+            owner.ChargeWork(1);
+            var previous = literals[index];
+            var next = owner.AllocateArray<byte>(checked(previous.Length + 1), false);
+            owner.ChargeWork((ulong)previous.Length + 1);
+            previous.CopyTo(next, 0); next[^1] = value; literals[index] = next;
+            owner.ReleaseArray(previous, false);
         }
     }
 
     private static bool TryExtractIgnoreCaseLiteral(AsciiCharClass charClass, out byte literal)
     {
         literal = 0;
-        var values = charClass.GetPositiveMatchBytes();
-        if (values.Length == 0)
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            return false;
-        }
-
-        var folded = Internal.Search.AsciiSearch.FoldCase(values[0]);
-        for (var i = 1; i < values.Length; i++)
-        {
-            if (Internal.Search.AsciiSearch.FoldCase(values[i]) != folded)
+            if (charClass.Negated) return false;
+            var found = false;
+            for (var value = 0; value < 128; value++)
             {
-                return false;
+                owner.ChargeWork(1);
+                if (!charClass.Contains((byte)value)) continue;
+                var folded = Internal.Search.AsciiSearch.FoldCase((byte)value);
+                if (found && folded != literal) return false;
+                literal = folded; found = true;
             }
+            return found;
         }
-
-        literal = folded;
-        return true;
+        finally { owner.LeaveDepth(); }
     }
 
     private static bool TryExtractLiteralBytes(AsciiCharClass charClass, bool ignoreCase, out byte[] literals)
     {
         literals = [];
-        var values = charClass.GetPositiveMatchBytes();
-        if (values.Length == 0)
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            return false;
-        }
-
-        if (!ignoreCase)
-        {
-            if (values.Length > MaxLiteralCharClassExpansion)
+            if (charClass.Negated) return false;
+            ulong low = 0, high = 0; var count = 0;
+            for (var value = 0; value < 128; value++)
             {
-                return false;
+                owner.ChargeWork(1);
+                if (!charClass.Contains((byte)value)) continue;
+                var folded = ignoreCase ? Internal.Search.AsciiSearch.FoldCase((byte)value) : (byte)value;
+                var bit = 1ul << (folded & 63);
+                if (((folded < 64 ? low : high) & bit) != 0) continue;
+                if (++count > MaxLiteralCharClassExpansion) return false;
+                if (folded < 64) low |= bit; else high |= bit;
             }
-
-            literals = values;
-            return true;
-        }
-
-        var folded = new HashSet<byte>();
-        for (var i = 0; i < values.Length; i++)
-        {
-            folded.Add(Internal.Search.AsciiSearch.FoldCase(values[i]));
-            if (folded.Count > MaxLiteralCharClassExpansion)
+            if (count == 0) return false;
+            var result = owner.AllocateArray<byte>(count, false); var position = 0;
+            for (var value = 0; value < 128; value++)
             {
-                return false;
+                owner.ChargeWork(1);
+                if (((value < 64 ? low : high) & (1ul << (value & 63))) != 0) result[position++] = (byte)value;
             }
+            literals = result; construction.Complete(); return true;
         }
-
-        literals = [.. folded.Order()];
-        return true;
+        finally { owner.LeaveDepth(); }
     }
 
     private static void NormalizeBranchesForIgnoreCase(AsciiSimplePatternToken[][] branches)

@@ -565,7 +565,21 @@ without Split or substring intermediates, and scan alternatives in linear work.
 Literal/alternative wrapper ancestors remain in live-depth admission; late
 boundary, empty, unsupported or folded-Unicode decline restores all child loans
 without refunding work. Successful scratch arrays unwind and output arrays/text
-retain their loans. Search-fact objects, simple-plan decode/re-encode projection,
+retain their loans.
+Search-fact initializers are value carriers; their immutable reference storage
+and retaining descriptors are admitted before acquisition using the complete
+field-state extent. Default/shared empty facts borrow one static carrier. Byte,
+alternative, set and window payloads remain independently owned by their producers;
+this storage admission does not admit an unconverted payload retroactively.
+Simple literal expansion admits reference vectors, Cartesian byte copies and
+final arrays, retaining original order and expansion limits. Positive ASCII and
+folded class proofs use scalar value masks rather than raw byte copies/HashSet
+scratch. Prefix replacements admit old/new overlap and release superseded arrays;
+failed children cannot mutate their parent's vector. The native singleton route
+reuses its final byte payload. Its admitted ASCII string serves literal-pattern
+diagnostics/classification only; no subject is decoded and bytes are not re-encoded.
+The enclosing speculative attempt recovers child arrays/text/fact storage on late
+decline without refunding work. Other simple-plan branch/token/search extraction,
 structural plan containers and complete retained/shared policies remain open.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
