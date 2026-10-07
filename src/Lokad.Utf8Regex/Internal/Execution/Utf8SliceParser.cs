@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// prepared callers reuse their tree and resolved capture catalog. Remaining
 /// unsupported grammar can decline to residual routing. Lowering instruction
 /// and buffer-capacity exhaustion throws an owned resource failure before
-/// acquisition; pattern parsing and IR preparation remain separately bounded work.</summary>
+/// acquisition; pattern parsing and IR preparation still require separate admission.</summary>
 internal static class Utf8SliceParser
 {
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
