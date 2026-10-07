@@ -103,9 +103,14 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
     }
 
     /// <summary>Enumerates the initialized extent during construction.</summary>
-    public IEnumerator<T> GetEnumerator()
+    public Enumerator GetEnumerator() => new(this);
+
+    public struct Enumerator(Utf8ConstructionBuffer<T> buffer) : IDisposable
     {
-        for (var index = 0; index < Count; index++) yield return _items[index];
+        private int _index = -1;
+        public readonly T Current => buffer[_index];
+        public bool MoveNext() => ++_index < buffer.Count;
+        public readonly void Dispose() { }
     }
 
     /// <summary>Releases only the temporary array still owned by this buffer.</summary>

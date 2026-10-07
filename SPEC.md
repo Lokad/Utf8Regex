@@ -438,6 +438,16 @@ and their retaining descriptors admit their complete field-state extent before
 acquisition; a parser explicitly supplied by an internal caller remains borrowed.
 This does not cover the remaining core/conversion/emission iterators or diagnostic
 formatting, and does not establish a complete construction or retained policy.
+Python translation, reference/lookbehind checks, capture/iteration eligibility,
+scalar width analysis and exact-literal extraction also use admitted value-frame
+stacks. Their former yield continuations and captured closures are removed;
+borrowed AST/class lists are traversed by index. Width memoization retains
+reference identity for backreference DAGs, scalar widths and exact clamping.
+Construction-vector enumeration uses a value enumerator without acquiring or
+boxing a heap descriptor. Shared value-frame stacks check root/child depth before
+descriptor/array acquisition and unwind depth on every exit. Other preparation,
+core/conversion/emission iterators, diagnostic text and complete retained/RSS
+policies remain outside this partial construction backstop.
 Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
 Validation/counting precedes decoded-text admission and acquisition. The string
 charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16
