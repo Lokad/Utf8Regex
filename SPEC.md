@@ -409,15 +409,18 @@ iteration per covered core/PythonRe parser and owned tree-conversion loop; and
 one unit per map probe/rehash, sort comparison/swap or preparation resume.
 Core parser bulk delimiter scans and literal copies admit conservative extents.
 The owned in-place heap sort admits each comparison/swap and propagates resource
-failures directly. Core parser and preparation walkers share live explicit-frame
-depth; denied pushes dispose acquired iterators, and cleanup spends no work.
+failures directly. Core/PythonRe parsers and preparation walkers share live
+explicit-frame depth; denied pushes dispose acquired iterators, and cleanup
+spends no work. Python alternation, sequence and group parsing suspends child
+work on that stack; conditional branches reuse the same sequence parser.
 Provisional limits are 67,108,864 work units and 65,536 covered live frames.
 Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.
 These are partial counters: other parsing/rendering/optimization/preparation
-work, Python raw recursion, descriptors and other object/string capacity remain
-uncovered. They do not establish complete work/depth controls or safe defaults.
+work, Python renderer/width/optimization recursion, descriptors and other
+object/string capacity remain uncovered. They do not establish complete
+work/depth controls or safe defaults.
 It covers core/PythonRe tree-to-scalar conversion maps/frames, child/literal
 arrays, decoded class/subtraction payloads, instruction vectors, analysis/capture
 maps, lowering/preparation frames, auxiliary vectors, nullable-graph discovery,

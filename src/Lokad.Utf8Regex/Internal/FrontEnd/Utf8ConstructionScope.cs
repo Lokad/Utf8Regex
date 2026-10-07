@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// instruction arrays also share instruction-slot admission. Adapter byte-pattern
 /// decoding admits its retained text in the same owner before acquisition.
 /// Covered scans, parser/conversion loops, vectors/maps/sorts and preparation
-/// resumes share cumulative work admission; core parser/preparation frames share
+/// resumes share cumulative work admission; core/Python parser and preparation frames share
 /// live depth admission. Speculative failure never refunds admitted work.
 /// Parser/IR node objects, other strings, descriptors, CLR/JIT metadata and lazy retained
 /// caches remain outside this partial backstop.</summary>

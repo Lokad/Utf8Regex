@@ -44,6 +44,10 @@ internal sealed class PythonReParser
     private bool _hasLookbehind;
     private readonly HashSet<string> _openNamedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _openGroupNumbers = [];
+    // A suspended parent reads the completed child's node only after the
+    // admitted preparation driver resumes it. The initial node is the empty
+    // expression, also the result of an empty sequence.
+    private PythonReNode _parsedNode = new PythonReSequenceNode([]);
     private int _position;
     private int _groupCount;
     private PythonReCompileOptions _leadingInlineOptions;
@@ -57,7 +61,8 @@ internal sealed class PythonReParser
     {
         using var construction = Utf8ConstructionScope.Enter();
         ConsumeLeadingInlineFlags(ref options);
-        var node = ParseAlternation(options);
+        Utf8PreparationStep.TryRun(ParseAlternation(options), construction.Budget);
+        var node = _parsedNode;
         if (!IsAtEnd)
         {
             if (Current == ')')
@@ -114,22 +119,24 @@ internal sealed class PythonReParser
         return true;
     }
 
-    private PythonReNode ParseAlternation(PythonReCompileOptions options)
+    private IEnumerable<Utf8PreparationStep> ParseAlternation(PythonReCompileOptions options)
     {
         var branches = new List<PythonReNode>();
-        branches.Add(ParseSequence(options));
+        yield return new Utf8PreparationStep(ParseSequence(options), false);
+        branches.Add(_parsedNode);
         while (TryConsume('|'))
         {
             Utf8ConstructionScope.ChargeWork(1);
-            branches.Add(ParseSequence(options));
+            yield return new Utf8PreparationStep(ParseSequence(options), false);
+            branches.Add(_parsedNode);
         }
 
-        return branches.Count == 1
+        _parsedNode = branches.Count == 1
             ? branches[0]
             : new PythonReAlternationNode(branches);
     }
 
-    private PythonReNode ParseSequence(PythonReCompileOptions options)
+    private IEnumerable<Utf8PreparationStep> ParseSequence(PythonReCompileOptions options)
     {
         var elements = new List<PythonReNode>();
         while (true)
@@ -141,10 +148,17 @@ internal sealed class PythonReParser
                 break;
             }
 
-            elements.Add(ParseQuantifiedAtom(options));
+            PythonReNode atom;
+            if (TryConsume('('))
+            {
+                yield return new Utf8PreparationStep(ParseGroup(options), false);
+                atom = _parsedNode;
+            }
+            else atom = ParseAtom(options);
+            elements.Add(ParseQuantifiedAtom(atom));
         }
 
-        return elements.Count switch
+        _parsedNode = elements.Count switch
         {
             0 => new PythonReSequenceNode([]),
             1 => elements[0],
@@ -152,9 +166,8 @@ internal sealed class PythonReParser
         };
     }
 
-    private PythonReNode ParseQuantifiedAtom(PythonReCompileOptions options)
+    private PythonReNode ParseQuantifiedAtom(PythonReNode atom)
     {
-        var atom = ParseAtom(options);
         if (IsAtEnd)
         {
             return atom;
@@ -226,11 +239,6 @@ internal sealed class PythonReParser
             throw new PythonRePatternException("nothing to repeat", _position);
         }
 
-        if (TryConsume('('))
-        {
-            return ParseGroup(options);
-        }
-
         if (TryConsume('['))
         {
             return ParseCharacterClass(options);
@@ -274,7 +282,7 @@ internal sealed class PythonReParser
             ?? new PythonReLiteralNode(literal);
     }
 
-    private PythonReNode ParseGroup(PythonReCompileOptions options)
+    private IEnumerable<Utf8PreparationStep> ParseGroup(PythonReCompileOptions options)
     {
         var groupStart = _position - 1;
         if (!TryConsume('?'))
@@ -282,11 +290,13 @@ internal sealed class PythonReParser
             var groupNumber = _groupCount + 1;
             _groupCount = groupNumber;
             _openGroupNumbers.Add(groupNumber);
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             _openGroupNumbers.Remove(groupNumber);
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _groupBodies[groupNumber] = inner;
-            return new PythonReGroupNode(PythonReGroupKind.Capturing, inner) { GroupNumber = groupNumber };
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.Capturing, inner) { GroupNumber = groupNumber };
+            yield break;
         }
 
         if (IsAtEnd)
@@ -307,51 +317,64 @@ internal sealed class PythonReParser
                 throw new PythonRePatternException("missing ), unterminated comment", groupStart);
             }
 
-            return new PythonReSequenceNode([]);
+            _parsedNode = new PythonReSequenceNode([]);
+            yield break;
         }
 
         if (TryConsume(':'))
         {
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            return new PythonReGroupNode(PythonReGroupKind.NonCapturing, inner);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NonCapturing, inner);
+            yield break;
         }
 
         if (TryConsume('>'))
         {
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            return new PythonReGroupNode(PythonReGroupKind.Atomic, inner);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.Atomic, inner);
+            yield break;
         }
 
         if (TryConsume('='))
         {
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            return new PythonReGroupNode(PythonReGroupKind.PositiveLookahead, inner);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.PositiveLookahead, inner);
+            yield break;
         }
 
         if (TryConsume('!'))
         {
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            return new PythonReGroupNode(PythonReGroupKind.NegativeLookahead, inner);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NegativeLookahead, inner);
+            yield break;
         }
 
         if (TryConsumeExact("<="))
         {
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _hasLookbehind = true;
-            return new PythonReGroupNode(PythonReGroupKind.PositiveLookbehind, inner);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.PositiveLookbehind, inner);
+            yield break;
         }
 
         if (TryConsumeExact("<!"))
         {
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _hasLookbehind = true;
-            return new PythonReGroupNode(PythonReGroupKind.NegativeLookbehind, inner);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NegativeLookbehind, inner);
+            yield break;
         }
 
         if (TryConsumeExact("P<"))
@@ -366,12 +389,14 @@ internal sealed class PythonReParser
 
             _openNamedGroups.Add(name);
             _openGroupNumbers.Add(groupNumber);
-            var inner = ParseAlternation(options);
+            yield return new Utf8PreparationStep(ParseAlternation(options), false);
+            var inner = _parsedNode;
             _openNamedGroups.Remove(name);
             _openGroupNumbers.Remove(groupNumber);
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _groupBodies[groupNumber] = inner;
-            return new PythonReGroupNode(PythonReGroupKind.NamedCapturing, inner, name) { GroupNumber = groupNumber };
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NamedCapturing, inner, name) { GroupNumber = groupNumber };
+            yield break;
         }
 
         if (TryConsumeExact("P="))
@@ -383,18 +408,21 @@ internal sealed class PythonReParser
                 throw new PythonRePatternException("cannot refer to an open group", referenceStart);
             }
 
-            return new PythonReNamedBackreferenceNode(name) { LowerScalar = BackreferenceLower(options) };
+            _parsedNode = new PythonReNamedBackreferenceNode(name) { LowerScalar = BackreferenceLower(options) };
+            yield break;
         }
 
         if (TryConsume('('))
         {
             var condition = ParseConditionalReference();
             ExpectGroupEnd(groupStart, "missing ), unterminated name");
-            var yesBranch = ParseConditionalBranch(options);
+            yield return new Utf8PreparationStep(ParseSequence(options), false);
+            var yesBranch = _parsedNode;
             PythonReNode? noBranch = null;
             if (TryConsume('|'))
             {
-                noBranch = ParseConditionalBranch(options);
+                yield return new Utf8PreparationStep(ParseSequence(options), false);
+                noBranch = _parsedNode;
                 if (!IsAtEnd && Current == '|')
                 {
                     throw new PythonRePatternException("conditional backref with more than two branches", _position);
@@ -402,7 +430,8 @@ internal sealed class PythonReParser
             }
 
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            return new PythonReConditionalNode(condition, yesBranch, noBranch);
+            _parsedNode = new PythonReConditionalNode(condition, yesBranch, noBranch);
+            yield break;
         }
 
         if (TryConsume('-'))
@@ -415,9 +444,11 @@ internal sealed class PythonReParser
 
             if (TryConsume(':'))
             {
-                var inner = ParseAlternation(ApplyScopedFlags(options, PythonReCompileOptions.None, removedOnlyOptions));
+                yield return new Utf8PreparationStep(ParseAlternation(ApplyScopedFlags(options, PythonReCompileOptions.None, removedOnlyOptions)), false);
+                var inner = _parsedNode;
                 ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-                return new PythonReGroupNode(PythonReGroupKind.ScopedFlags, inner, null, PythonReCompileOptions.None, removedOnlyOptions);
+                _parsedNode = new PythonReGroupNode(PythonReGroupKind.ScopedFlags, inner, null, PythonReCompileOptions.None, removedOnlyOptions);
+                yield break;
             }
 
             throw new PythonRePatternException("missing :", _position);
@@ -480,9 +511,11 @@ internal sealed class PythonReParser
 
         if (TryConsume(':'))
         {
-            var inner = ParseAlternation(ApplyScopedFlags(options, addOptions, removeOptions));
+            yield return new Utf8PreparationStep(ParseAlternation(ApplyScopedFlags(options, addOptions, removeOptions)), false);
+            var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            return new PythonReGroupNode(PythonReGroupKind.ScopedFlags, inner, null, addOptions, removeOptions);
+            _parsedNode = new PythonReGroupNode(PythonReGroupKind.ScopedFlags, inner, null, addOptions, removeOptions);
+            yield break;
         }
 
         if (TryConsume(')'))
@@ -553,29 +586,6 @@ internal sealed class PythonReParser
         }
 
         return PythonReConditionalReference.ForGroupName(name);
-    }
-
-    private PythonReNode ParseConditionalBranch(PythonReCompileOptions options)
-    {
-        var elements = new List<PythonReNode>();
-        while (true)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            SkipIgnoredPatternTrivia(options);
-            if (IsAtEnd || Current == ')' || Current == '|')
-            {
-                break;
-            }
-
-            elements.Add(ParseQuantifiedAtom(options));
-        }
-
-        return elements.Count switch
-        {
-            0 => new PythonReSequenceNode([]),
-            1 => elements[0],
-            _ => new PythonReSequenceNode(elements),
-        };
     }
 
     private PythonReNode ParseCharacterClass(PythonReCompileOptions options)
