@@ -4,8 +4,10 @@ using System.Text;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>Aggregate admission for pattern decoding and scalar-lowering capacity. Charges
-/// actual array strides and decoded string text plus its terminator, with a
-/// conservative 32-byte header and 16-byte payload rounding. Shared empties and
+/// actual array strides, decoded string text plus its terminator and acquired
+/// object field-state extents, with a conservative 32-byte header and 16-byte
+/// payload rounding. Object tracking descriptors use the same byte owner.
+/// Shared empties and
 /// borrowed payloads are excluded. This is
 /// defined live buffer capacity, not RSS or cumulative GC allocation traffic.</summary>
 internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
@@ -24,6 +26,17 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     internal ulong WorkSteps { get; private set; }
     internal ulong Depth { get; private set; }
     internal ulong PeakDepth { get; private set; }
+    internal ObjectAllocation? ObjectCheckpoint { get; private set; }
+
+    // The owner keeps acquired objects alive until its scope closes. This makes
+    // their conservative loans live construction capacity rather than a count
+    // of allocations whose objects may already have become unreachable.
+    internal sealed class ObjectAllocation(object value, ObjectAllocation? previous, ulong bytes)
+    {
+        internal readonly object Value = value;
+        internal readonly ObjectAllocation? Previous = previous;
+        internal readonly ulong Bytes = bytes;
+    }
 
     // Actual admitted work stays spent even when a speculative child declines.
     // Batch admission happens before the bounded scan/copy it represents.
@@ -63,6 +76,27 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         ArgumentOutOfRangeException.ThrowIfNegative(length);
         return length == 0 ? 0 : 32 + ((2 * ((ulong)length + 1) + 15) & ~15ul);
     }
+
+    // State contains every acquired instance field, including initializer
+    // fields; referenced strings/arrays have independent acquisition loans.
+    internal static ulong ObjectBytes<TState>() => 32 + (((ulong)Unsafe.SizeOf<TState>() + 15) & ~15ul);
+
+    internal T AllocateObject<TState, T>(TState state, Func<TState, T> factory) where T : class
+    {
+        var bytes = ObjectBytes<TState>() + ObjectBytes<(object, ObjectAllocation?, ulong)>();
+        CheckBytes(bytes);
+        ChargeWork(2); // Acquired object and its retaining descriptor.
+        ReserveBytes(bytes);
+        try
+        {
+            var result = factory(state);
+            ObjectCheckpoint = new ObjectAllocation(result, ObjectCheckpoint, bytes);
+            return result;
+        }
+        catch { ReleaseBytes(bytes); throw; }
+    }
+
+    internal void ClearObjectRoots() => ObjectCheckpoint = null;
 
     internal string DecodeUtf8(ReadOnlySpan<byte> input, Encoding encoding)
     {
@@ -162,12 +196,13 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
             throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionInstructionCapacity, Maximum, requested);
     }
 
-    internal void Rollback(ulong checkpoint, ulong byteCheckpoint, ulong depthCheckpoint)
+    internal void Rollback(ulong checkpoint, ulong byteCheckpoint, ulong depthCheckpoint, ObjectAllocation? objectCheckpoint)
     {
         if (checkpoint > Reserved || byteCheckpoint > ReservedBytes || depthCheckpoint > Depth)
             throw new InvalidOperationException("Construction rollback exceeds admitted capacity.");
         Reserved = checkpoint;
         ReservedBytes = byteCheckpoint;
         Depth = depthCheckpoint;
+        ObjectCheckpoint = objectCheckpoint;
     }
 }

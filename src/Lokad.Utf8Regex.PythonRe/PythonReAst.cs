@@ -28,16 +28,6 @@ internal sealed record PythonReGroupNode(
     PythonReCompileOptions RemoveOptions) : PythonReNode
 {
     internal int GroupNumber { get; init; }
-
-    internal PythonReGroupNode(PythonReGroupKind kind, PythonReNode inner)
-        : this(kind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None)
-    {
-    }
-
-    internal PythonReGroupNode(PythonReGroupKind kind, PythonReNode inner, string name)
-        : this(kind, inner, name, PythonReCompileOptions.None, PythonReCompileOptions.None)
-    {
-    }
 }
 
 internal sealed record PythonReNamedBackreferenceNode(string Name) : PythonReNode

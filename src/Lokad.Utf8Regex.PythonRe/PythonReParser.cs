@@ -47,7 +47,7 @@ internal sealed class PythonReParser
     // A suspended parent reads the completed child's node only after the
     // admitted preparation driver resumes it. The initial node is the empty
     // expression, also the result of an empty sequence.
-    private PythonReNode _parsedNode = new PythonReSequenceNode([]);
+    private PythonReNode _parsedNode = PythonReAstFactory.Empty;
     private int _position;
     private int _groupCount;
     private PythonReCompileOptions _leadingInlineOptions;
@@ -133,7 +133,7 @@ internal sealed class PythonReParser
 
         _parsedNode = branches.Count == 1
             ? branches[0]
-            : new PythonReAlternationNode(branches);
+            : PythonReAstFactory.Alternation(branches);
     }
 
     private IEnumerable<Utf8PreparationStep> ParseSequence(PythonReCompileOptions options)
@@ -160,9 +160,9 @@ internal sealed class PythonReParser
 
         _parsedNode = elements.Count switch
         {
-            0 => new PythonReSequenceNode([]),
+            0 => PythonReAstFactory.Empty,
             1 => elements[0],
-            _ => new PythonReSequenceNode(elements),
+            _ => PythonReAstFactory.Sequence(elements),
         };
     }
 
@@ -229,7 +229,7 @@ internal sealed class PythonReParser
             throw new PythonRePatternException("multiple repeat", _position);
         }
 
-        return new PythonReQuantifierNode(atom, min, max, flavor);
+        return PythonReAstFactory.Quantifier(atom, min, max, flavor);
     }
 
     private PythonReNode ParseAtom(PythonReCompileOptions options)
@@ -253,17 +253,17 @@ internal sealed class PythonReParser
         {
             // PLAN.md C06: `.` matches one scalar, not one UTF-16 unit. The text is fixed at parse time from the DotAll scope so shape analyses keep keying on the Dot kind; ASCII mode does not restrict dot.
             var dot = (options & PythonReCompileOptions.DotAll) != 0 ? UnicodeScalarDotAll : UnicodeScalarDot;
-            return new PythonReRawNode(dot, PythonReRawKind.Dot);
+            return PythonReAstFactory.Raw(dot, PythonReRawKind.Dot);
         }
 
         if (TryConsume('^'))
         {
-            return new PythonReRawNode("^", PythonReRawKind.StartAnchor);
+            return PythonReAstFactory.Raw("^", PythonReRawKind.StartAnchor);
         }
 
         if (TryConsume('$'))
         {
-            return new PythonReRawNode("$", PythonReRawKind.EndAnchor);
+            return PythonReAstFactory.Raw("$", PythonReRawKind.EndAnchor);
         }
 
         var literal = Consume();
@@ -275,11 +275,11 @@ internal sealed class PythonReParser
             var low = Consume();
             var scalar = char.ConvertToUtf32(literal, low);
             return ExpandIgnoreCaseScalar(scalar, options)
-                ?? new PythonReRawNode(Regex.Escape(char.ConvertFromUtf32(scalar)), PythonReRawKind.AstralLiteral);
+                ?? PythonReAstFactory.Raw(Regex.Escape(char.ConvertFromUtf32(scalar)), PythonReRawKind.AstralLiteral);
         }
 
         return ExpandIgnoreCaseScalar(literal, options)
-            ?? new PythonReLiteralNode(literal);
+            ?? PythonReAstFactory.Literal(literal);
     }
 
     private IEnumerable<Utf8PreparationStep> ParseGroup(PythonReCompileOptions options)
@@ -295,7 +295,7 @@ internal sealed class PythonReParser
             _openGroupNumbers.Remove(groupNumber);
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _groupBodies[groupNumber] = inner;
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.Capturing, inner) { GroupNumber = groupNumber };
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.Capturing, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, groupNumber);
             yield break;
         }
 
@@ -317,7 +317,7 @@ internal sealed class PythonReParser
                 throw new PythonRePatternException("missing ), unterminated comment", groupStart);
             }
 
-            _parsedNode = new PythonReSequenceNode([]);
+            _parsedNode = PythonReAstFactory.Empty;
             yield break;
         }
 
@@ -326,7 +326,7 @@ internal sealed class PythonReParser
             yield return new Utf8PreparationStep(ParseAlternation(options), false);
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NonCapturing, inner);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NonCapturing, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
             yield break;
         }
 
@@ -335,7 +335,7 @@ internal sealed class PythonReParser
             yield return new Utf8PreparationStep(ParseAlternation(options), false);
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.Atomic, inner);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.Atomic, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
             yield break;
         }
 
@@ -344,7 +344,7 @@ internal sealed class PythonReParser
             yield return new Utf8PreparationStep(ParseAlternation(options), false);
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.PositiveLookahead, inner);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.PositiveLookahead, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
             yield break;
         }
 
@@ -353,7 +353,7 @@ internal sealed class PythonReParser
             yield return new Utf8PreparationStep(ParseAlternation(options), false);
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NegativeLookahead, inner);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NegativeLookahead, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
             yield break;
         }
 
@@ -363,7 +363,7 @@ internal sealed class PythonReParser
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _hasLookbehind = true;
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.PositiveLookbehind, inner);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.PositiveLookbehind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
             yield break;
         }
 
@@ -373,7 +373,7 @@ internal sealed class PythonReParser
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _hasLookbehind = true;
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NegativeLookbehind, inner);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NegativeLookbehind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, 0);
             yield break;
         }
 
@@ -395,7 +395,7 @@ internal sealed class PythonReParser
             _openGroupNumbers.Remove(groupNumber);
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
             _groupBodies[groupNumber] = inner;
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.NamedCapturing, inner, name) { GroupNumber = groupNumber };
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NamedCapturing, inner, name, PythonReCompileOptions.None, PythonReCompileOptions.None, groupNumber);
             yield break;
         }
 
@@ -408,7 +408,7 @@ internal sealed class PythonReParser
                 throw new PythonRePatternException("cannot refer to an open group", referenceStart);
             }
 
-            _parsedNode = new PythonReNamedBackreferenceNode(name) { LowerScalar = BackreferenceLower(options) };
+            _parsedNode = PythonReAstFactory.NamedReference(name, BackreferenceLower(options));
             yield break;
         }
 
@@ -430,7 +430,7 @@ internal sealed class PythonReParser
             }
 
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = new PythonReConditionalNode(condition, yesBranch, noBranch);
+            _parsedNode = PythonReAstFactory.Conditional(condition, yesBranch, noBranch);
             yield break;
         }
 
@@ -447,7 +447,7 @@ internal sealed class PythonReParser
                 yield return new Utf8PreparationStep(ParseAlternation(ApplyScopedFlags(options, PythonReCompileOptions.None, removedOnlyOptions)), false);
                 var inner = _parsedNode;
                 ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-                _parsedNode = new PythonReGroupNode(PythonReGroupKind.ScopedFlags, inner, null, PythonReCompileOptions.None, removedOnlyOptions);
+                _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.ScopedFlags, inner, null, PythonReCompileOptions.None, removedOnlyOptions, 0);
                 yield break;
             }
 
@@ -514,7 +514,7 @@ internal sealed class PythonReParser
             yield return new Utf8PreparationStep(ParseAlternation(ApplyScopedFlags(options, addOptions, removeOptions)), false);
             var inner = _parsedNode;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _parsedNode = new PythonReGroupNode(PythonReGroupKind.ScopedFlags, inner, null, addOptions, removeOptions);
+            _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.ScopedFlags, inner, null, addOptions, removeOptions, 0);
             yield break;
         }
 
@@ -600,7 +600,7 @@ internal sealed class PythonReParser
             if (Current == ']' && !allowLiteralClosingBracket)
             {
                 _position++;
-                return new PythonReCharacterClassNode(isNegated, ExpandClassItems(items, options));
+                return PythonReAstFactory.CharacterClass(isNegated, ExpandClassItems(items, options));
             }
 
             var parsedItem = ParseCharacterClassItem(options, allowLiteralClosingBracket);
@@ -631,7 +631,7 @@ internal sealed class PythonReParser
                         parsedItem.Position);
                 }
 
-                items.Add(new PythonReCharacterClassRangeItem(literal.Scalar, endLiteral.Scalar));
+                items.Add(PythonReAstFactory.ClassRange(literal.Scalar, endLiteral.Scalar));
                 continue;
             }
 
@@ -745,8 +745,8 @@ internal sealed class PythonReParser
                 else
                 {
                     rebuilt.Add(runStart == runEnd
-                        ? new PythonReCharacterClassLiteralItem(runStart)
-                        : new PythonReCharacterClassRangeItem(runStart, runEnd));
+                        ? PythonReAstFactory.ClassLiteral(runStart)
+                        : PythonReAstFactory.ClassRange(runStart, runEnd));
                     runStart = scalar;
                     runEnd = scalar;
                 }
@@ -755,8 +755,8 @@ internal sealed class PythonReParser
             if (runStart >= 0)
             {
                 rebuilt.Add(runStart == runEnd
-                    ? new PythonReCharacterClassLiteralItem(runStart)
-                    : new PythonReCharacterClassRangeItem(runStart, runEnd));
+                    ? PythonReAstFactory.ClassLiteral(runStart)
+                    : PythonReAstFactory.ClassRange(runStart, runEnd));
             }
         }
     }
@@ -771,20 +771,20 @@ internal sealed class PythonReParser
         var ch = Consume();
         return ch switch
         {
-            'w' when IsAsciiMode(options) => new PythonReRawNode(AsciiWordClass, PythonReRawKind.Escape),
-            'W' when IsAsciiMode(options) => new PythonReRawNode(AsciiNonWordClass, PythonReRawKind.Escape),
-            'd' when IsAsciiMode(options) => new PythonReRawNode(AsciiDigitClass, PythonReRawKind.Escape),
-            'D' when IsAsciiMode(options) => new PythonReRawNode(AsciiNonDigitClass, PythonReRawKind.Escape),
-            's' when IsAsciiMode(options) => new PythonReRawNode(AsciiSpaceClass, PythonReRawKind.Escape),
-            'S' when IsAsciiMode(options) => new PythonReRawNode(AsciiNonSpaceClass, PythonReRawKind.Escape),
-            'b' when IsAsciiMode(options) => new PythonReRawNode(AsciiWordBoundary, PythonReRawKind.Escape),
-            'B' when IsAsciiMode(options) => new PythonReRawNode(AsciiNonWordBoundary, PythonReRawKind.Escape),
-            'w' or 'W' or 's' or 'S' or 'd' or 'D' when !IsAsciiMode(options) => new PythonReRawNode(GetUnicodePredefinedFragment(ch), PythonReRawKind.Escape),
-            'b' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeWordBoundary, PythonReRawKind.Escape),
-            'B' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeNonWordBoundary, PythonReRawKind.Escape),
-            'Z' => new PythonReRawNode(@"\z", PythonReRawKind.Escape),
+            'w' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiWordClass, PythonReRawKind.Escape),
+            'W' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiNonWordClass, PythonReRawKind.Escape),
+            'd' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiDigitClass, PythonReRawKind.Escape),
+            'D' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiNonDigitClass, PythonReRawKind.Escape),
+            's' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiSpaceClass, PythonReRawKind.Escape),
+            'S' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiNonSpaceClass, PythonReRawKind.Escape),
+            'b' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiWordBoundary, PythonReRawKind.Escape),
+            'B' when IsAsciiMode(options) => PythonReAstFactory.Raw(AsciiNonWordBoundary, PythonReRawKind.Escape),
+            'w' or 'W' or 's' or 'S' or 'd' or 'D' when !IsAsciiMode(options) => PythonReAstFactory.Raw(GetUnicodePredefinedFragment(ch), PythonReRawKind.Escape),
+            'b' when !IsAsciiMode(options) => PythonReAstFactory.Raw(UnicodeWordBoundary, PythonReRawKind.Escape),
+            'B' when !IsAsciiMode(options) => PythonReAstFactory.Raw(UnicodeNonWordBoundary, PythonReRawKind.Escape),
+            'Z' => PythonReAstFactory.Raw(@"\z", PythonReRawKind.Escape),
             'A' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
-                new PythonReRawNode("\\" + ch, PythonReRawKind.Escape),
+                PythonReAstFactory.Raw("\\" + ch, PythonReRawKind.Escape),
             'x' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 2, 'x'), options),
             'u' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 4, 'u'), options),
             'U' => CreateEscapedLiteralNode(ParseUnicodeScalarEscapeValue(escapeStart), options),
@@ -792,7 +792,7 @@ internal sealed class PythonReParser
             '0' => CreateEscapedLiteralNode(ParseOctalEscapeValue(escapeStart, ch), options),
             >= '1' and <= '9' => ParseNumericEscapeOrBackreference(ch, escapeStart, options),
             _ when PatternBadEscapeLetters.IndexOf(ch) >= 0 => throw new PythonRePatternException($@"bad escape \{ch}", escapeStart),
-            _ => new PythonReRawNode("\\" + ch, PythonReRawKind.Escape),
+            _ => PythonReAstFactory.Raw("\\" + ch, PythonReRawKind.Escape),
         };
     }
 
@@ -817,22 +817,20 @@ internal sealed class PythonReParser
         foreach (var member in members)
         {
             Utf8ConstructionScope.ChargeWork(1);
-            items.Add(new PythonReCharacterClassLiteralItem(member));
+            items.Add(PythonReAstFactory.ClassLiteral(member));
         }
 
-        return new PythonReCharacterClassNode(false, items);
+        return PythonReAstFactory.CharacterClass(false, items);
     }
 
     static PythonReCharacterClassNode ToAsciiPairClass(int scalar, int partner)
     {
-        return new PythonReCharacterClassNode(
-            false,
-            [new PythonReCharacterClassLiteralItem(scalar), new PythonReCharacterClassLiteralItem(partner)]);
+        return PythonReAstFactory.CharacterClass(false, [PythonReAstFactory.ClassLiteral(scalar), PythonReAstFactory.ClassLiteral(partner)]);
     }
 
     private static PythonReNode CreateEscapedLiteralNode(string value, PythonReCompileOptions options)
     {
-        if (value.Length == 1 && char.IsSurrogate(value[0])) return new PythonReLiteralNode(value[0]);
+        if (value.Length == 1 && char.IsSurrogate(value[0])) return PythonReAstFactory.Literal(value[0]);
         int scalar;
         if (value.Length == 1 && !char.IsSurrogate(value[0]))
         {
@@ -844,11 +842,11 @@ internal sealed class PythonReParser
         }
         else
         {
-            return new PythonReRawNode(Regex.Escape(value), PythonReRawKind.Escape);
+            return PythonReAstFactory.Raw(Regex.Escape(value), PythonReRawKind.Escape);
         }
 
         return ExpandIgnoreCaseScalar(scalar, options)
-            ?? new PythonReRawNode(Regex.Escape(value), PythonReRawKind.Escape);
+            ?? PythonReAstFactory.Raw(Regex.Escape(value), PythonReRawKind.Escape);
     }
 
     private PythonReNode ParseNumericEscapeOrBackreference(char firstDigit, int escapeStart, PythonReCompileOptions options)
@@ -889,7 +887,7 @@ internal sealed class PythonReParser
             throw new PythonRePatternException($"invalid group reference {value}", escapeStart + 1);
         }
 
-        return new PythonReNumericBackreferenceNode(value) { LowerScalar = BackreferenceLower(options) };
+        return PythonReAstFactory.NumericReference(value, BackreferenceLower(options));
     }
 
     // References compare captured scalars using lexical simple lowercase,
@@ -923,25 +921,25 @@ internal sealed class PythonReParser
             var escapedLiteral = ParseEscapedCharacterClassLiteralScalar(escaped, escapeStart);
             if (escapedLiteral.HasValue)
             {
-                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassLiteralItem(escapedLiteral.Value), escapeStart);
+                return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(escapedLiteral.Value), escapeStart);
             }
 
             if (TryGetAsciiCharacterClassEscapeFragment(escaped, options, out var asciiFragment))
             {
-                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassPredefinedItem(asciiFragment, IsStandaloneAtom: false), escapeStart);
+                return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassPredefined(asciiFragment, false), escapeStart);
             }
 
             if (escaped is 'w' or 'W' or 'd' or 'D' or 's' or 'S')
             {
-                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassPredefinedItem(GetUnicodePredefinedFragment(escaped), IsStandaloneAtom: true), escapeStart);
+                return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassPredefined(GetUnicodePredefinedFragment(escaped), true), escapeStart);
             }
 
-            return new PythonReParsedCharacterClassItem(new PythonReCharacterClassLiteralItem(escaped), escapeStart);
+            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(escaped), escapeStart);
         }
 
         if (ch == ']' && allowLiteralClosingBracket)
         {
-            return new PythonReParsedCharacterClassItem(new PythonReCharacterClassLiteralItem(ch), escapeStart);
+            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(ch), escapeStart);
         }
 
         if (char.IsHighSurrogate(ch) &&
@@ -949,10 +947,10 @@ internal sealed class PythonReParser
             char.IsLowSurrogate(Current))
         {
             var low = Consume();
-            return new PythonReParsedCharacterClassItem(new PythonReCharacterClassLiteralItem(char.ConvertToUtf32(ch, low)), escapeStart);
+            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(char.ConvertToUtf32(ch, low)), escapeStart);
         }
 
-        return new PythonReParsedCharacterClassItem(new PythonReCharacterClassLiteralItem(ch), escapeStart);
+        return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(ch), escapeStart);
     }
 
     private int? ParseEscapedCharacterClassLiteralScalar(char escaped, int escapeStart)

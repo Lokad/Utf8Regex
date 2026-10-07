@@ -37,7 +37,7 @@ public sealed class PythonReParserContinuationTests
             : PythonReParser.ManagedUnicodeScalarPattern, atom.Text);
         Assert.InRange(scope.Budget.PeakDepth, (ulong)depth, Utf8ConstructionScope.DefaultDepth);
         Assert.Equal(0ul, scope.Budget.Depth);
-        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+        Assert.True(scope.Budget.ReservedBytes > 0); // Successful AST loans stay with the owner.
         Assert.Equal(0ul, scope.Budget.Reserved);
     }
 
@@ -64,7 +64,7 @@ public sealed class PythonReParserContinuationTests
         Assert.Null(repeat.Max);
         Assert.Equal("😀", Assert.IsType<PythonReRawNode>(repeat.Inner).Text);
         Assert.Equal(0ul, scope.Budget.Depth);
-        Assert.Equal(0ul, scope.Budget.ReservedBytes);
+        Assert.True(scope.Budget.ReservedBytes > 0);
     }
 
     [Theory]
@@ -110,7 +110,6 @@ public sealed class PythonReParserContinuationTests
             var parent = scope.Budget.AllocateArray<byte>(1, false);
             scope.Budget.EnterDepth();
             var failure = Record.Exception(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
-            Assert.Equal(48ul, scope.Budget.ReservedBytes);
             Assert.Equal(1ul, scope.Budget.Depth);
             if (cutoff < work)
             {
@@ -118,8 +117,15 @@ public sealed class PythonReParserContinuationTests
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, limit.ResourceKind);
                 Assert.True(limit.Requested > limit.Limit);
                 Assert.True(scope.Budget.WorkSteps <= cutoff + 1);
+                Assert.Equal(48ul, scope.Budget.ReservedBytes);
+                Assert.Null(scope.Budget.ObjectCheckpoint);
             }
-            else Assert.Null(failure);
+            else
+            {
+                Assert.Null(failure);
+                Assert.True(scope.Budget.ReservedBytes > 48);
+                Assert.NotNull(scope.Budget.ObjectCheckpoint);
+            }
             scope.Budget.LeaveDepth();
             scope.Budget.ReleaseArray(parent, false);
         }
@@ -146,7 +152,7 @@ public sealed class PythonReParserContinuationTests
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.IsType<PythonReLiteralNode>(new PythonReParser("a").Parse(PythonReCompileOptions.None).Root);
         Assert.True(scope.Budget.WorkSteps > spent);
-        Assert.Equal(48ul, scope.Budget.ReservedBytes);
+        Assert.Equal(48ul + 112ul, scope.Budget.ReservedBytes);
         scope.Budget.ReleaseArray(parent, false);
     }
 

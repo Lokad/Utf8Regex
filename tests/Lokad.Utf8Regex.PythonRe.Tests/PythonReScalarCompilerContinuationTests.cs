@@ -26,8 +26,10 @@ public sealed class PythonReScalarCompilerContinuationTests
         for (var level = 0; level < depth; level++)
             node = shape switch
             {
-                0 => new PythonReGroupNode(PythonReGroupKind.NonCapturing, node),
-                1 => new PythonReGroupNode(PythonReGroupKind.Atomic, node),
+                0 => new PythonReGroupNode(PythonReGroupKind.NonCapturing, node, null,
+                    PythonReCompileOptions.None, PythonReCompileOptions.None),
+                1 => new PythonReGroupNode(PythonReGroupKind.Atomic, node, null,
+                    PythonReCompileOptions.None, PythonReCompileOptions.None),
                 2 => new PythonReQuantifierNode(node, 1, 1, PythonReQuantifierFlavor.Greedy),
                 _ => new PythonReGroupNode(PythonReGroupKind.ScopedFlags, node, null,
                     PythonReCompileOptions.Multiline, PythonReCompileOptions.None),

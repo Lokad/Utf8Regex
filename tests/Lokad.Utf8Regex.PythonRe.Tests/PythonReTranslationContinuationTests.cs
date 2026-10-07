@@ -99,8 +99,10 @@ public sealed class PythonReTranslationContinuationTests
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.WorkSteps > 1);
         var simple = new PythonReParser("a").Parse(PythonReCompileOptions.None);
+        var held = scope.Budget.ReservedBytes;
+        Assert.Equal(48ul + 112ul, held);
         _ = Run(operation, simple);
-        Assert.Equal(48ul, scope.Budget.ReservedBytes);
+        Assert.Equal(held, scope.Budget.ReservedBytes);
         Assert.Equal(1ul, scope.Budget.Depth);
         scope.Budget.LeaveDepth();
         scope.Budget.ReleaseArray(parent, false);

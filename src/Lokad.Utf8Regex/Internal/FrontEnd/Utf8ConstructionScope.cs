@@ -7,7 +7,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// Covered scans, parser/conversion loops, vectors/maps/sorts and preparation
 /// resumes share cumulative work admission; core/Python parser and preparation frames share
 /// live depth admission. Speculative failure never refunds admitted work.
-/// Parser/IR node objects, other strings, descriptors, CLR/JIT metadata and lazy retained
+/// Python parser AST objects and their retaining descriptors share byte admission.
+/// Other parser/IR node objects, strings/descriptors, CLR/JIT metadata and lazy retained
 /// caches remain outside this partial backstop.</summary>
 internal sealed class Utf8ConstructionScope : IDisposable
 {
@@ -22,6 +23,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
     private readonly ulong _checkpoint;
     private readonly ulong _byteCheckpoint;
     private readonly ulong _depthCheckpoint;
+    private readonly Utf8ConstructionBudget.ObjectAllocation? _objectCheckpoint;
     private bool _disposed;
     private bool _completed;
 
@@ -42,6 +44,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
         _checkpoint = Budget.Reserved;
         _byteCheckpoint = Budget.ReservedBytes;
         _depthCheckpoint = Budget.Depth;
+        _objectCheckpoint = Budget.ObjectCheckpoint;
         s_current = this;
     }
 
@@ -63,7 +66,8 @@ internal sealed class Utf8ConstructionScope : IDisposable
         if (_disposed) return;
         if (!ReferenceEquals(s_current, this))
             throw new InvalidOperationException("Construction scopes must close in lexical order.");
-        if (!_completed) Budget.Rollback(_checkpoint, _byteCheckpoint, _depthCheckpoint);
+        if (!_completed) Budget.Rollback(_checkpoint, _byteCheckpoint, _depthCheckpoint, _objectCheckpoint);
+        if (_previous is null) Budget.ClearObjectRoots();
         s_current = _previous;
         _disposed = true;
     }

@@ -396,6 +396,15 @@ scope across synchronous nested core/adaptor construction. The provisional
 maximums are 1,048,576 live instruction slots and 64 MiB of covered construction
 capacity. The byte model charges actual element strides, a conservative 32-byte
 array header and payload rounded to 16 bytes; shared empty arrays cost zero.
+Python parser AST nodes and class items use the same header/rounding model over
+field-state extents, including fields assigned by initializers. The node and its
+64-byte retaining descriptor are admitted before either object is acquired;
+referenced payloads have independent ownership. The shared immutable empty AST
+is borrowed. The owner keeps acquired nodes alive through nested construction,
+including discarded parser intermediates, and releases tracking roots when its
+outer scope closes. Failed children restore the parent's object checkpoint and
+byte/depth loans; admitted creation work stays spent. This is conservative live
+construction capacity, not a retained-cache policy or process RSS bound.
 Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
 Validation/counting precedes decoded-text admission and acquisition. The string
 charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16
@@ -430,7 +439,7 @@ Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requeste
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.
 These are partial counters: other parsing/rendering/optimization/preparation
-work, descriptors and other object/string capacity remain uncovered. Translator
+work, other descriptors and object/string capacity remain uncovered. Translator
 StringBuilder/string/list/dictionary storage and iterator objects are not yet
 admitted. These counters do not establish complete
 work/depth controls or safe defaults.
@@ -445,7 +454,7 @@ while live. Admission precedes acquisition. Exhaustion throws
 `Utf8ResourceLimitExceededException` with resource kind, maximum and requested
 capacity, and never selects a BCL engine. A failed construction restores its
 parent's admission state. This partial buffer backstop is not the complete
-common construction policy. It excludes other pattern conversion, parser/AST/IR
+common construction policy. It excludes other pattern conversion, core parser/IR
 node objects, other created strings, independently borrowed payloads, collection/iterator descriptors, independent
 PCRE2 programs and lazy retained storage. Work/depth, public construction
 controls and qualified safe defaults remain open. The byte charge bounds the
