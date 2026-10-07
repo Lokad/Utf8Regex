@@ -489,7 +489,14 @@ use admitted frames too, with saved child cursors and failed-child mask rollback
 Shared wrapper unwrapping and ASCII validation/copy, plus compiler suffix and
 prefix comparisons, spend cumulative construction work. Successful/declined
 scan scratch releases descriptors, arrays and depth without refunding work.
-Program/text arrays, builders and other preparation scans retain separate
+Deterministic prefix, literal-family, leading-mask, byte-safety and guard walks
+also use admitted value frames and metered visits, comparisons and ASCII copies.
+They preserve local partial-prefix stops and completed-sibling masks. Whitespace
+guard preparation borrows the remaining children instead of manufacturing a
+node/array. Ignore-case anchor validation has no input-sized stack scratch; it
+admits only the successful folded byte array and transfers that loan to its
+enclosing construction owner. Other program/text arrays, builders and preparation
+scans retain separate
 admission work. ASCII class projections defer non-ASCII subjects to
 scalar execution; surrogate-half class membership does not determine loop
 admission or minimum scalar counts.
