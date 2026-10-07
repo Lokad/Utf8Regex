@@ -8,15 +8,31 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget budget, IEqualityComparer<TKey> comparer) : IDisposable
     where TKey : notnull
 {
-    private readonly record struct Entry(TKey Key, TValue Value, int Hash, bool Used);
+    internal readonly record struct Entry(TKey Key, TValue Value, int Hash, bool Used);
     private Entry[] _entries = [];
     internal int Count { get; private set; }
+
+    internal static Utf8ConstructionMap<TKey, TValue> Create(Utf8ConstructionBudget owner, IEqualityComparer<TKey> equality) =>
+        owner.AllocateObject((owner, equality, Array.Empty<Entry>(), 0), static state => new Utf8ConstructionMap<TKey, TValue>(state.owner, state.equality));
+
+    internal Utf8ConstructionReadOnlyMap<TKey, TValue> Freeze(Utf8ConstructionArena arena)
+    {
+        if (Count == 0) return Utf8ConstructionReadOnlyMap<TKey, TValue>.Empty;
+        var result = budget.AllocateObject((_entries, comparer, Count), static state =>
+            new Utf8ConstructionReadOnlyMap<TKey, TValue>(state._entries, state.comparer, state.Count));
+        var entries = _entries;
+        _entries = [];
+        Count = 0;
+        arena.Adopt(entries, true);
+        return result;
+    }
 
     internal TValue this[TKey key]
     {
         get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();
         set
         {
+            if (key is string text) budget.ChargeWork((ulong)text.Length);
             var hash = comparer.GetHashCode(key) & int.MaxValue;
             var index = Find(key, hash);
             if (index >= 0 && _entries[index].Used)
@@ -56,6 +72,7 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
     internal bool ContainsKey(TKey key) => TryGetValue(key, out _);
     internal bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
+        if (key is string text) budget.ChargeWork((ulong)text.Length);
         var index = Find(key, comparer.GetHashCode(key) & int.MaxValue);
         if (index >= 0 && _entries[index].Used) { value = _entries[index].Value; return true; }
         value = default;
@@ -75,7 +92,11 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
         while (_entries[index].Used)
         {
             budget.ChargeWork(1);
-            if (_entries[index].Hash == hash && comparer.Equals(_entries[index].Key, key)) return index;
+            if (_entries[index].Hash == hash)
+            {
+                if (key is string text) budget.ChargeWork((ulong)text.Length);
+                if (comparer.Equals(_entries[index].Key, key)) return index;
+            }
             index = (index + 1) & (_entries.Length - 1);
         }
         return index;

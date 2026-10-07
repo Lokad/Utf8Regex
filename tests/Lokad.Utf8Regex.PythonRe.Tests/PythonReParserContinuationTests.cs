@@ -152,7 +152,7 @@ public sealed class PythonReParserContinuationTests
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.IsType<PythonReLiteralNode>(new PythonReParser("a").Parse(PythonReCompileOptions.None).Root);
         Assert.True(scope.Budget.WorkSteps > spent);
-        Assert.Equal(48ul + 112ul, scope.Budget.ReservedBytes);
+        Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), scope.Budget.ReservedBytes);
         scope.Budget.ReleaseArray(parent, false);
     }
 

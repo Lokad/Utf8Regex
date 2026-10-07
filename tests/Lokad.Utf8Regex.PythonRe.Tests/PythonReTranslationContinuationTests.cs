@@ -100,9 +100,10 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(scope.Budget.WorkSteps > 1);
         var simple = new PythonReParser("a").Parse(PythonReCompileOptions.None);
         var held = scope.Budget.ReservedBytes;
-        Assert.Equal(48ul + 112ul, held);
+        Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), held);
         _ = Run(operation, simple);
-        Assert.Equal(held, scope.Budget.ReservedBytes);
+        Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), scope.Budget.ReservedBytes);
+        Assert.True(scope.Budget.ReservedBytes >= held);
         Assert.Equal(1ul, scope.Budget.Depth);
         scope.Budget.LeaveDepth();
         scope.Budget.ReleaseArray(parent, false);
@@ -126,14 +127,19 @@ public sealed class PythonReTranslationContinuationTests
             var parent = scope.Budget.AllocateArray<byte>(1, false);
             scope.Budget.EnterDepth();
             var failure = Record.Exception(() => Run(operation, parse));
-            Assert.Equal(48ul, scope.Budget.ReservedBytes);
             Assert.Equal(1ul, scope.Budget.Depth);
-            if (cutoff == work) Assert.Null(failure);
+            if (cutoff == work)
+            {
+                Assert.Null(failure);
+                Assert.Equal(48ul + PythonReAstObjectAdmissionTests.ObjectBytes(scope.Budget), scope.Budget.ReservedBytes);
+            }
             else
             {
                 var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
                 Assert.True(breach.Requested > breach.Limit);
+                Assert.Equal(48ul, scope.Budget.ReservedBytes);
+                Assert.Null(scope.Budget.ObjectCheckpoint);
             }
             scope.Budget.LeaveDepth();
             scope.Budget.ReleaseArray(parent, false);

@@ -405,6 +405,20 @@ including discarded parser intermediates, and releases tracking roots when its
 outer scope closes. Failed children restore the parent's object checkpoint and
 byte/depth loans; admitted creation work stays spent. This is conservative live
 construction capacity, not a retained-cache policy or process RSS bound.
+Python parser branch/sequence/class-item arrays, capture/open-group metadata,
+their collection/arena descriptors, and old/new growth and final-copy overlap
+share admission. Completed AST arrays and immutable metadata tables retain their
+loans through the enclosing construction owner; parser scratch releases on every
+exit. Immutable metadata lookup/enumeration spends the current construction
+owner's work, rather than a closed original owner. Its generic enumerable views
+and boxed enumerators admit descriptor capacity before acquisition.
+Scalar class folding uses sparse 256-code-point bit pages with admitted directory,
+page/key vectors and sorting, replacing unadmitted SortedSet trees. It preserves
+the profile's ASCII/Unicode closures and BMP/astral run ordering. Page scans,
+membership updates, string-key hash/comparison extents and admitted metadata
+enumeration charge covered work. Cleanup uses indexed release without allocating
+or resuming a metered iterator. Other parser strings and preparation iterator
+objects remain uncovered; this is not a complete construction policy.
 Adapter UTF-8 pattern entries borrow bytes until the shared constructor scope.
 Validation/counting precedes decoded-text admission and acquisition. The string
 charge is a 32-byte header plus its UTF-16 payload and terminator rounded to 16

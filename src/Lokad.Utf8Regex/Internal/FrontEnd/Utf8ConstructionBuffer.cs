@@ -8,6 +8,10 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, bool instructions) : IDisposable
 {
     private T[] _items = [];
+    // Opt-in descriptor acquisition for construction-owned parser collections.
+    // Existing callers may still borrow a separately owned descriptor.
+    internal static Utf8ConstructionBuffer<T> Create(Utf8ConstructionBudget owner) =>
+        owner.AllocateObject((owner, false, Array.Empty<T>(), 0), static state => new Utf8ConstructionBuffer<T>(state.owner));
     internal Utf8ConstructionBuffer(Utf8ConstructionBudget budget) : this(budget, false) { }
     internal int Count { get; private set; }
     internal int Capacity => _items.Length;

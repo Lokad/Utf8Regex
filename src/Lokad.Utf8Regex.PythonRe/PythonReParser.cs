@@ -39,11 +39,9 @@ internal sealed class PythonReParser
     private const string OctalDigits = "01234567";
     private const string HexDigits = "0123456789abcdefABCDEF";
     private readonly string _pattern;
-    private readonly Dictionary<string, int> _namedGroups = new(StringComparer.Ordinal);
-    private readonly Dictionary<int, PythonReNode> _groupBodies = new();
+    private PythonReParserStorage? _storage;
+    private PythonReParserStorage Storage => _storage ?? throw new InvalidOperationException("Parser storage is not initialized.");
     private bool _hasLookbehind;
-    private readonly HashSet<string> _openNamedGroups = new(StringComparer.Ordinal);
-    private readonly HashSet<int> _openGroupNumbers = [];
     // A suspended parent reads the completed child's node only after the
     // admitted preparation driver resumes it. The initial node is the empty
     // expression, also the result of an empty sequence.
@@ -60,20 +58,31 @@ internal sealed class PythonReParser
     public PythonReParseResult Parse(PythonReCompileOptions options)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        ConsumeLeadingInlineFlags(ref options);
-        Utf8PreparationStep.TryRun(ParseAlternation(options), construction.Budget);
-        var node = _parsedNode;
-        if (!IsAtEnd)
+        PythonReParseResult result;
+        try
         {
-            if (Current == ')')
+            ConsumeLeadingInlineFlags(ref options);
+            Utf8PreparationStep.TryRun(ParseAlternation(options), construction.Budget);
+            var node = _parsedNode;
+            if (!IsAtEnd)
             {
-                throw Error("unbalanced parenthesis");
+                if (Current == ')') throw Error("unbalanced parenthesis");
+                throw Error("unexpected character");
             }
-
-            throw Error("unexpected character");
+            result = new PythonReParseResult(node, options, _groupCount,
+                Storage.NamedGroups.Freeze(Storage.Arena), _hasLookbehind, Storage.GroupBodies.Freeze(Storage.Arena));
+            Storage.Arena.Complete();
         }
-
-        var result = new PythonReParseResult(node, options, _groupCount, new Dictionary<string, int>(_namedGroups, StringComparer.Ordinal), _hasLookbehind, new Dictionary<int, PythonReNode>(_groupBodies));
+        catch
+        {
+            _parsedNode = PythonReAstFactory.Empty;
+            throw;
+        }
+        finally
+        {
+            _storage?.Dispose();
+            _storage = null;
+        }
         construction.Complete();
         return result;
     }
@@ -121,7 +130,8 @@ internal sealed class PythonReParser
 
     private IEnumerable<Utf8PreparationStep> ParseAlternation(PythonReCompileOptions options)
     {
-        var branches = new List<PythonReNode>();
+        _storage ??= PythonReParserStorage.Create(Utf8ConstructionScope.CurrentBudget);
+        using var branches = Utf8ConstructionBuffer<PythonReNode>.Create(Storage.Arena.Budget);
         yield return new Utf8PreparationStep(ParseSequence(options), false);
         branches.Add(_parsedNode);
         while (TryConsume('|'))
@@ -133,12 +143,12 @@ internal sealed class PythonReParser
 
         _parsedNode = branches.Count == 1
             ? branches[0]
-            : PythonReAstFactory.Alternation(branches);
+            : PythonReAstFactory.Alternation(Storage.Arena.Take(branches, true));
     }
 
     private IEnumerable<Utf8PreparationStep> ParseSequence(PythonReCompileOptions options)
     {
-        var elements = new List<PythonReNode>();
+        using var elements = Utf8ConstructionBuffer<PythonReNode>.Create(Storage.Arena.Budget);
         while (true)
         {
             Utf8ConstructionScope.ChargeWork(1);
@@ -162,7 +172,7 @@ internal sealed class PythonReParser
         {
             0 => PythonReAstFactory.Empty,
             1 => elements[0],
-            _ => PythonReAstFactory.Sequence(elements),
+            _ => PythonReAstFactory.Sequence(Storage.Arena.Take(elements, true)),
         };
     }
 
@@ -289,12 +299,12 @@ internal sealed class PythonReParser
         {
             var groupNumber = _groupCount + 1;
             _groupCount = groupNumber;
-            _openGroupNumbers.Add(groupNumber);
+            Storage.OpenGroups.Add(true);
             yield return new Utf8PreparationStep(ParseAlternation(options), false);
             var inner = _parsedNode;
-            _openGroupNumbers.Remove(groupNumber);
+            Storage.OpenGroups[groupNumber - 1] = false;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _groupBodies[groupNumber] = inner;
+            Storage.GroupBodies[groupNumber] = inner;
             _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.Capturing, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None, groupNumber);
             yield break;
         }
@@ -382,19 +392,18 @@ internal sealed class PythonReParser
             var groupNumber = _groupCount + 1;
             _groupCount = groupNumber;
             var name = ParseGroupName('>', "missing >, unterminated name");
-            if (!_namedGroups.TryAdd(name, groupNumber))
+            if (Storage.NamedGroups.ContainsKey(name))
             {
                 throw Error($"redefinition of group name '{name}'");
             }
 
-            _openNamedGroups.Add(name);
-            _openGroupNumbers.Add(groupNumber);
+            Storage.NamedGroups.Add(name, groupNumber);
+            Storage.OpenGroups.Add(true);
             yield return new Utf8PreparationStep(ParseAlternation(options), false);
             var inner = _parsedNode;
-            _openNamedGroups.Remove(name);
-            _openGroupNumbers.Remove(groupNumber);
+            Storage.OpenGroups[groupNumber - 1] = false;
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
-            _groupBodies[groupNumber] = inner;
+            Storage.GroupBodies[groupNumber] = inner;
             _parsedNode = PythonReAstFactory.Group(PythonReGroupKind.NamedCapturing, inner, name, PythonReCompileOptions.None, PythonReCompileOptions.None, groupNumber);
             yield break;
         }
@@ -403,7 +412,7 @@ internal sealed class PythonReParser
         {
             var referenceStart = _position;
             var name = ParseGroupName(')', "missing ), unterminated name");
-            if (_openNamedGroups.Contains(name))
+            if (Storage.NamedGroups.TryGetValue(name, out var number) && Storage.IsOpen(number))
             {
                 throw new PythonRePatternException("cannot refer to an open group", referenceStart);
             }
@@ -592,7 +601,7 @@ internal sealed class PythonReParser
     {
         var classStart = _position - 1;
         var isNegated = TryConsume('^');
-        var items = new List<PythonReCharacterClassItem>();
+        using var items = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
         var allowLiteralClosingBracket = true;
         while (!IsAtEnd)
         {
@@ -656,107 +665,70 @@ internal sealed class PythonReParser
 
         // Pinned scalar closures contain lowercase inverses and literal-only
         // extra partners. Recompress runs; negate the completed positive class.
-        static List<PythonReCharacterClassItem> ExpandClassItems(List<PythonReCharacterClassItem> classItems, PythonReCompileOptions scopeOptions)
+        PythonReCharacterClassItem[] ExpandClassItems(Utf8ConstructionBuffer<PythonReCharacterClassItem> classItems, PythonReCompileOptions scopeOptions)
         {
             if ((scopeOptions & PythonReCompileOptions.IgnoreCase) == 0)
-            {
-                return classItems;
-            }
-
-            var bmp = new SortedSet<int>();
-            var astral = new SortedSet<int>();
-            var others = new List<PythonReCharacterClassItem>();
-            foreach (var item in classItems)
+                return Storage.Arena.Take(classItems, true);
+            using var scalars = PythonReScalarSet.Create(Storage.Arena.Budget);
+            using var others = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
+            for (var index = 0; index < classItems.Count; index++)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                switch (item)
+                switch (classItems[index])
                 {
                     case PythonReCharacterClassLiteralItem literal:
-                        AddExpandedScalar(bmp, astral, literal.Scalar, scopeOptions);
+                        AddExpandedScalar(literal.Scalar);
                         break;
                     case PythonReCharacterClassRangeItem range:
                         for (var scalar = range.StartScalar; ; scalar++)
                         {
                             Utf8ConstructionScope.ChargeWork(1);
-                            AddExpandedScalar(bmp, astral, scalar, scopeOptions);
-                            if (scalar == range.EndScalar)
-                            {
-                                break;
-                            }
+                            AddExpandedScalar(scalar);
+                            if (scalar == range.EndScalar) break;
                         }
-
                         break;
                     default:
-                        others.Add(item);
+                        others.Add(classItems[index]);
                         break;
                 }
             }
-
-            var rebuilt = new List<PythonReCharacterClassItem>();
-            AddScalarRuns(rebuilt, bmp);
-            AddScalarRuns(rebuilt, astral);
-            rebuilt.AddRange(others);
-            return rebuilt.Count == 0 ? classItems : rebuilt;
-        }
-
-        static void AddExpandedScalar(SortedSet<int> bmp, SortedSet<int> astral, int scalar, PythonReCompileOptions scopeOptions)
-        {
-            if (IsAsciiMode(scopeOptions))
-            {
-                // ASCII folding: exact members plus ASCII case flips.
-                bmp.Add(scalar);
-                if (scalar is >= 'a' and <= 'z')
-                {
-                    bmp.Add(scalar - 32);
-                }
-                else if (scalar is >= 'A' and <= 'Z')
-                {
-                    bmp.Add(scalar + 32);
-                }
-
-                return;
-            }
-
-            var target = scalar > 0xFFFF ? astral : bmp;
-            target.Add(scalar);
-            foreach (var partner in PythonReScalarCaseData.LiteralPartners(scalar))
-                {
-                Utf8ConstructionScope.ChargeWork(1);
-                (partner > 0xFFFF ? astral : bmp).Add(partner);
-            }
-        }
-
-        static void AddScalarRuns(List<PythonReCharacterClassItem> rebuilt, SortedSet<int> scalars)
-        {
+            using var rebuilt = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
             var runStart = -1;
             var runEnd = -1;
             foreach (var scalar in scalars)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (runStart < 0)
-                {
-                    runStart = scalar;
-                    runEnd = scalar;
-                }
-                else if (scalar == runEnd + 1)
-                {
-                    runEnd = scalar;
-                }
+                if (runStart < 0) runStart = runEnd = scalar;
+                else if (scalar == runEnd + 1 && (IsAsciiMode(scopeOptions) || scalar != 0x10000)) runEnd = scalar;
                 else
                 {
-                    rebuilt.Add(runStart == runEnd
-                        ? PythonReAstFactory.ClassLiteral(runStart)
-                        : PythonReAstFactory.ClassRange(runStart, runEnd));
-                    runStart = scalar;
-                    runEnd = scalar;
+                    rebuilt.Add(runStart == runEnd ? PythonReAstFactory.ClassLiteral(runStart) : PythonReAstFactory.ClassRange(runStart, runEnd));
+                    runStart = runEnd = scalar;
                 }
             }
-
             if (runStart >= 0)
+                rebuilt.Add(runStart == runEnd ? PythonReAstFactory.ClassLiteral(runStart) : PythonReAstFactory.ClassRange(runStart, runEnd));
+            for (var index = 0; index < others.Count; index++)
             {
-                rebuilt.Add(runStart == runEnd
-                    ? PythonReAstFactory.ClassLiteral(runStart)
-                    : PythonReAstFactory.ClassRange(runStart, runEnd));
+                Utf8ConstructionScope.ChargeWork(1);
+                rebuilt.Add(others[index]);
+            }
+            return Storage.Arena.Take(rebuilt.Count == 0 ? classItems : rebuilt, true);
+
+            void AddExpandedScalar(int scalar)
+            {
+                scalars.Add(scalar);
+                if (IsAsciiMode(scopeOptions))
+                {
+                    if (scalar is >= 'a' and <= 'z') scalars.Add(scalar - 32);
+                    else if (scalar is >= 'A' and <= 'Z') scalars.Add(scalar + 32);
+                }
+                else
+                    foreach (var partner in PythonReScalarCaseData.LiteralPartners(scalar))
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        scalars.Add(partner);
+                    }
             }
         }
     }
@@ -798,37 +770,35 @@ internal sealed class PythonReParser
 
     // Exact scalar classes encode all profile folding before core lowering.
     // A scoped ASCII class must stay exact against non-ASCII fold partners.
-    private static PythonReNode? ExpandIgnoreCaseScalar(int scalar, PythonReCompileOptions options)
+    private PythonReNode? ExpandIgnoreCaseScalar(int scalar, PythonReCompileOptions options)
     {
         if ((options & PythonReCompileOptions.IgnoreCase) == 0) return null;
         if (IsAsciiMode(options))
         {
-            if (scalar is >= 'a' and <= 'z') return ToAsciiPairClass(scalar, scalar - 32);
-            if (scalar is >= 'A' and <= 'Z') return ToAsciiPairClass(scalar, scalar + 32);
-            return null;
+            if (scalar is not (>= 'a' and <= 'z') and not (>= 'A' and <= 'Z')) return null;
+            var pair = Storage.Arena.Allocate<PythonReCharacterClassItem>(2, true);
+            pair[0] = PythonReAstFactory.ClassLiteral(scalar);
+            pair[1] = PythonReAstFactory.ClassLiteral(scalar is >= 'a' and <= 'z' ? scalar - 32 : scalar + 32);
+            return PythonReAstFactory.CharacterClass(false, pair);
         }
         var partners = PythonReScalarCaseData.LiteralPartners(scalar);
-        return partners.IsEmpty ? null : ToScalarClass(new SortedSet<int>(partners.ToArray()));
-    }
-
-    static PythonReCharacterClassNode ToScalarClass(SortedSet<int> members)
-    {
-        var items = new List<PythonReCharacterClassItem>(members.Count);
+        if (partners.IsEmpty) return null;
+        using var members = PythonReScalarSet.Create(Storage.Arena.Budget);
+        foreach (var partner in partners)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            members.Add(partner);
+        }
+        using var items = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
         foreach (var member in members)
         {
             Utf8ConstructionScope.ChargeWork(1);
             items.Add(PythonReAstFactory.ClassLiteral(member));
         }
-
-        return PythonReAstFactory.CharacterClass(false, items);
+        return PythonReAstFactory.CharacterClass(false, Storage.Arena.Take(items, true));
     }
 
-    static PythonReCharacterClassNode ToAsciiPairClass(int scalar, int partner)
-    {
-        return PythonReAstFactory.CharacterClass(false, [PythonReAstFactory.ClassLiteral(scalar), PythonReAstFactory.ClassLiteral(partner)]);
-    }
-
-    private static PythonReNode CreateEscapedLiteralNode(string value, PythonReCompileOptions options)
+    private PythonReNode CreateEscapedLiteralNode(string value, PythonReCompileOptions options)
     {
         if (value.Length == 1 && char.IsSurrogate(value[0])) return PythonReAstFactory.Literal(value[0]);
         int scalar;
@@ -877,7 +847,7 @@ internal sealed class PythonReParser
             value = checked(value * 10 + (secondDigit.Value - '0'));
         }
 
-        if (_openGroupNumbers.Contains(value))
+        if (Storage.IsOpen(value))
         {
             throw new PythonRePatternException("cannot refer to an open group", escapeStart);
         }
