@@ -81,8 +81,8 @@ public sealed class Utf8OwnedFindContinuationTests
             suffix.Parent = concat;
             body = concat;
         }
-        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.ComputeMinLength(body));
-        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.ComputeMaxLength(body));
+        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.ComputeByteWidth(body).Minimum);
+        Assert.Equal(depth + 1, Utf8OwnedFindOptimizations.ComputeByteWidth(body).Maximum);
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(body));
         Assert.Equal("b", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
         Assert.Equal(new[] { "a" + new string('b', depth) },
@@ -105,8 +105,8 @@ public sealed class Utf8OwnedFindContinuationTests
             body.Parent = loop;
             body = loop;
         }
-        Assert.Equal(int.MaxValue - 1, Utf8OwnedFindOptimizations.ComputeMinLength(body));
-        Assert.Null(Utf8OwnedFindOptimizations.ComputeMaxLength(body));
+        Assert.Equal(int.MaxValue, Utf8OwnedFindOptimizations.ComputeByteWidth(body).Minimum);
+        Assert.Null(Utf8OwnedFindOptimizations.ComputeByteWidth(body).Maximum);
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(body));
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
         Assert.Null(Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant));

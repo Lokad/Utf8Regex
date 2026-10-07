@@ -40,8 +40,8 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
     private static object? Prepare(int route, Utf8TreeNode find, Utf8ExecutionTree execution) => route switch
     {
-        0 => Utf8OwnedFindOptimizations.ComputeMinLength(find),
-        1 => Utf8OwnedFindOptimizations.ComputeMaxLength(find),
+        0 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Minimum,
+        1 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Maximum,
         2 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
         3 => Utf8GroupedLiteralSpanTable.TryCreate(execution),
         7 => ContainsCapture(execution.Root),

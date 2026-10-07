@@ -1100,7 +1100,7 @@ public sealed class Utf8SearchPlanTests
         var analysis = Utf8FrontEnd.Compile(@"(?:using var|await using var)[A-Z]{1,3}await", RegexOptions.CultureInvariant);
         var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(analysis.SemanticRegex);
 
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiLiteral, searchFacts.Kind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, searchFacts.Kind);
         Assert.Equal(3, searchFacts.OrderedWindowMaxGap);
         Assert.True(searchFacts.OrderedWindowSameLine);
 
@@ -1168,13 +1168,13 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void ConstructorCanStillCreateFixedDistanceLiteralSearchPlanWhenNoSetExists()
+    public void ConstructorKeepsFixedDistanceSearchInsideTheAsciiPrefix()
     {
         var regex = new Utf8Regex("ab..cd", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal("d", Encoding.UTF8.GetString(regex.Inspection.SearchPlan.LiteralUtf8!));
-        Assert.Equal(5, regex.Inspection.SearchPlan.Distance);
+        Assert.Equal("b", Encoding.UTF8.GetString(regex.Inspection.SearchPlan.LiteralUtf8!));
+        Assert.Equal(1, regex.Inspection.SearchPlan.Distance);
         Assert.Equal(6, regex.Inspection.SearchPlan.MinRequiredLength);
     }
 

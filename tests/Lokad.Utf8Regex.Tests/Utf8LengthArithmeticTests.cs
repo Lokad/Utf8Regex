@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
 /// R02 extraction 5: length arithmetic saturates in the owned hub (long products and
-/// sums capped at int.MaxValue - 1 for minimums, null maximums on overflow) instead of
+/// sums capped at int.MaxValue for byte minimums, null maximums on overflow) instead of
 /// wrapping like the pristine fork. Values are read off the owned analysis; behavior on
 /// non-saturating shapes is pinned alongside so the formulas cannot drift silently.
 /// </summary>
@@ -40,7 +40,7 @@ public sealed class Utf8LengthArithmeticTests
     public void HugeLoopProductSaturatesMinimumAndNullsMaximum()
     {
         var analysis = Analyze("(?:abc){2000000000}");
-        Assert.Equal(int.MaxValue - 1, analysis.MinRequiredLength);
+        Assert.Equal(int.MaxValue, analysis.MinRequiredLength);
         Assert.Null(analysis.MaxPossibleLength);
     }
 
@@ -48,7 +48,7 @@ public sealed class Utf8LengthArithmeticTests
     public void HugeConcatenationSumSaturatesMinimumAndNullsMaximum()
     {
         var analysis = Analyze("(?:a){1500000000}(?:b){1500000000}");
-        Assert.Equal(int.MaxValue - 1, analysis.MinRequiredLength);
+        Assert.Equal(int.MaxValue, analysis.MinRequiredLength);
         Assert.Null(analysis.MaxPossibleLength);
     }
 

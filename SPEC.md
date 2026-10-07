@@ -543,9 +543,20 @@ borrowed. Returned text transfers its loans; pure anchor results and declined
 literal scans restore scratch/descriptors. Frame/map arrays and live depth
 unwind on every exit; acquired successful text/object descriptors remain owned
 until construction closes. The unused leading-anchor fact/producer and redundant
-cached tree root are removed. Width/distance formulas, alternate/set results and
-the facts container still require migration/admission; this is not a complete
-construction bound or proof that legacy search widths are scalar-byte correct.
+cached tree root are removed. Search widths bound consumed scalar UTF-8 bytes:
+literal pairs decode once per scalar, plain ranges exclude surrogate code points,
+and complex classes/case fibers retain sound conservative bounds. Conditions
+measure their yes/no branches with an implicit empty else; references have no
+independent finite maximum. Arithmetic saturates the lower bound at int.MaxValue
+and makes an overflowing upper bound unknown. A fixed distance requires equal
+known byte bounds for every preceding node and checked addition. Variable prefixes
+end the proof instead of contributing their minimum. Fixed-literal preparation
+admits its width map, ancestor frames and copied character text; the old raw stack
+and result holder are removed. ASCII-set offsets include complete encoded literal
+prefixes; folded variable-width sets cannot supply an ASCII-only fixed certificate.
+Alternate/set results and the facts container still require complete admission;
+these facts do not prove complete construction/retained bounds or that other
+native width producers and remaining BCL routes meet the scalar contract.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
 temporary reference maps, copied child arrays, node/tree/program objects and
 their retaining descriptors. Program vectors charge aggregate instruction slots

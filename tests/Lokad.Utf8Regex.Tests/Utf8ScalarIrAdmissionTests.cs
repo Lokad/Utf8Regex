@@ -82,7 +82,7 @@ public sealed class Utf8ScalarIrAdmissionTests
     {
         var root = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeMinLength(root));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.PeakBytes <= maximumBytes);

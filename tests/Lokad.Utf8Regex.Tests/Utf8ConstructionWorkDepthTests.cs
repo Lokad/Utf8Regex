@@ -98,7 +98,7 @@ public sealed class Utf8ConstructionWorkDepthTests
         var leaf = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         var root = new Utf8TreeNode(Utf8TreeNodeKind.Group, RegexOptions.None) { Children = leaf };
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, work, depth);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeMinLength(root));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
         Assert.Equal(depth == 1 ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);

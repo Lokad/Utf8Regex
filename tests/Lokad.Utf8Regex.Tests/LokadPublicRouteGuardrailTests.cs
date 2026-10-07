@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -50,17 +52,57 @@ public sealed class LokadPublicRouteGuardrailTests
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.SimplePatternInterpreter, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiLiteral, regex.Inspection.SearchPlan.Kind);
+        // The prefix has variable UTF-8 width; the suffix is a candidate, not a fixed offset.
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
     }
 
-    [Fact]
-    public void SherlockWordHolmesStaysOnByteSafeLinearFallback()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    [InlineData(RegexOptions.RightToLeft)]
+    [InlineData(RegexOptions.Compiled | RegexOptions.RightToLeft)]
+    public void SherlockWordHolmesUsesOwnedScalarExecutionWithoutAFixedOffset(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"\w+\s+Holmes", RegexOptions.None);
-
+        var regex = new Utf8Regex(@"\w+\s+Holmes", options);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
+        // Historic compiled-plan labels do not describe the scalar VM selected
+        // before native/fallback dispatch. No offset through these loops is fixed.
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        var runtimeProperty = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(runtimeProperty);
+        var runtime = Assert.IsType<Utf8VerifierRuntime>(runtimeProperty.GetValue(regex));
+        foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
+        {
+            var field = typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(field);
+            field.SetValue(runtime.FallbackCandidateVerifier, new Lazy<Regex>(() =>
+                throw new InvalidOperationException("Scalar search accessed BCL fallback.")));
+        }
+        var input = Encoding.UTF8.GetBytes("!éé Holmes!𐐀 Holmes!");
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(2, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.True(match.Success);
+        Assert.Equal((options & RegexOptions.RightToLeft) != 0 ? 13 : 1, match.IndexInBytes);
+        Assert.Equal(11, match.LengthInBytes);
+        var detailed = regex.MatchDetailed(input);
+        Assert.Equal(match.IndexInBytes, detailed.IndexInBytes);
+        Assert.Equal(match.LengthInBytes, detailed.LengthInBytes);
+        var enumerator = regex.EnumerateMatches(input);
+        Assert.True(enumerator.DebugIsOwnedSlice);
+        var count = 0;
+        while (enumerator.MoveNext()) { Assert.Equal(11, enumerator.Current.LengthInBytes); count++; }
+        Assert.Equal(2, count);
+        Assert.Equal("!X!X!", regex.ReplaceToString(input, "X"));
+        var splits = new List<string>();
+        foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
+        Assert.Equal(new[] { "!", "!", "!" }, splits);
+        Assert.False(regex.IsMatch("Holmes"u8));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Fact]

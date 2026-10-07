@@ -4,190 +4,179 @@ using System.Text.RegularExpressions;
 // Owned find-optimization facts: lengths, anchors, alternate prefixes and
 // fixed-distance literals and sets. Iterative walks over owned runtime-shaped
 // trees. Literal text is pattern interoperability text, not subject matching
-// units. The legacy width/distance producers still require scalar-byte
-// replacements; admitting traversal storage does not make those facts byte-safe.
+// units. Width bounds describe scalar byte consumption; exact-distance facts
+// require fixed byte widths rather than the minimum length of a variable prefix.
 internal static class Utf8OwnedFindOptimizations
 {
-    public static int ComputeMinLength(Utf8TreeNode node)
+    public readonly record struct ByteWidth(int Minimum, int? Maximum)
     {
-        return MeasurePostOrder<int>(node, Measure, false);
-
-        static int Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, int> values)
-        {
-            switch (node.Kind)
-            {
-                case Utf8TreeNodeKind.One:
-                case Utf8TreeNodeKind.Notone:
-                case Utf8TreeNodeKind.Set:
-                    return 1;
-                case Utf8TreeNodeKind.Multi:
-                    return node.Str?.Length ?? 1;
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                case Utf8TreeNodeKind.Notoneloopatomic:
-                case Utf8TreeNodeKind.Setloopatomic:
-                    return node.M;
-                case Utf8TreeNodeKind.Loop:
-                case Utf8TreeNodeKind.Lazyloop:
-                    return CapMin((long)node.M * ChildMinLength(node));
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                case Utf8TreeNodeKind.Concatenate:
-                    return SumMinLength(node);
-                case Utf8TreeNodeKind.Alternate:
-                case Utf8TreeNodeKind.BackreferenceConditional:
-                case Utf8TreeNodeKind.ExpressionConditional:
-                    return AlternateMinLength(node);
-                default:
-                    return 0;
-            }
-
-            int ChildMinLength(Utf8TreeNode parent)
-            {
-                return parent.ChildCount == 0 ? 0 : values[parent.Child(0)];
-            }
-
-            int SumMinLength(Utf8TreeNode parent)
-            {
-                long total = 0;
-                for (var i = 0; i < parent.ChildCount; i++)
-                {
-                    total += values[parent.Child(i)];
-                    if (total > int.MaxValue)
-                    {
-                        return int.MaxValue - 1;
-                    }
-                }
-
-                return CapMin(total);
-            }
-
-            int AlternateMinLength(Utf8TreeNode parent)
-            {
-                var minimum = int.MaxValue;
-                for (var i = 0; i < parent.ChildCount; i++)
-                {
-                    var branch = values[parent.Child(i)];
-                    if (branch < minimum)
-                    {
-                        minimum = branch;
-                    }
-                }
-
-                return minimum == int.MaxValue ? 0 : minimum;
-            }
-
-            static int CapMin(long value)
-            {
-                return value > int.MaxValue ? int.MaxValue - 1 : (int)value;
-            }
-
-        }
+        internal bool IsFixed => Maximum is int maximum && maximum == Minimum;
     }
 
-    public static int? ComputeMaxLength(Utf8TreeNode node)
+    public static ByteWidth ComputeByteWidth(Utf8TreeNode node) => MeasurePostOrder<ByteWidth>(node, MeasureByteWidth, false);
+
+    // Bounds concern consumed UTF-8 bytes. Assertions are zero-width; conditions
+    // select their result branches, and references have no independent maximum.
+    // Complex classes/case fibers may have conservative bounds. Equality is a
+    // fixed-byte certificate only when the upper bound is known and unsaturated.
+    private static ByteWidth MeasureByteWidth(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, ByteWidth> values)
     {
-        return MeasurePostOrder<int?>(node, Measure, false);
-
-        static int? Measure(Utf8TreeNode node, Utf8ConstructionMap<Utf8TreeNode, int?> values)
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        switch (node.Kind)
         {
-            switch (node.Kind)
-            {
-                case Utf8TreeNodeKind.One:
-                case Utf8TreeNodeKind.Notone:
-                case Utf8TreeNodeKind.Set:
-                    return 1;
-                case Utf8TreeNodeKind.Multi:
-                    return node.Str?.Length ?? 1;
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Notoneloop:
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Onelazy:
-                case Utf8TreeNodeKind.Notonelazy:
-                case Utf8TreeNodeKind.Setlazy:
-                case Utf8TreeNodeKind.Oneloopatomic:
-                case Utf8TreeNodeKind.Notoneloopatomic:
-                case Utf8TreeNodeKind.Setloopatomic:
-                    return node.N == int.MaxValue ? null : node.N;
-                case Utf8TreeNodeKind.Loop:
-                case Utf8TreeNodeKind.Lazyloop:
-                    return RepeatMaxLength(node);
-                case Utf8TreeNodeKind.Capture:
-                case Utf8TreeNodeKind.Group:
-                case Utf8TreeNodeKind.Atomic:
-                case Utf8TreeNodeKind.Concatenate:
-                    return SumMaxLength(node);
-                case Utf8TreeNodeKind.Alternate:
-                case Utf8TreeNodeKind.BackreferenceConditional:
-                case Utf8TreeNodeKind.ExpressionConditional:
-                    return AlternateMaxLength(node);
-                default:
-                    return 0;
-            }
-
-            int? RepeatMaxLength(Utf8TreeNode parent)
-            {
-                var child = parent.ChildCount == 0 ? 0 : values[parent.Child(0)];
-                if (parent.N == int.MaxValue || child is null)
+            case Utf8TreeNodeKind.One:
+                return Scalar(node.Ch, node.MatchCaseInsensitive, node.Options);
+            case Utf8TreeNodeKind.Multi:
+                if (node.Str is not { } text) return new(0, null);
+                long low = 0, high = 0;
+                for (var offset = 0; offset < text.Length;)
                 {
-                    return null;
+                    budget.ChargeWork(1);
+                    if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
+                        return new(0, null);
+                    var atom = Scalar(scalar.Value, node.MatchCaseInsensitive, node.Options);
+                    low += atom.Minimum; high += atom.Maximum.GetValueOrDefault(); offset += consumed;
                 }
-
-                return CapMax((long)parent.N * child.Value);
-            }
-
-            int? SumMaxLength(Utf8TreeNode parent)
-            {
-                long total = 0;
-                for (var i = 0; i < parent.ChildCount; i++)
+                return Bounds(low, high);
+            case Utf8TreeNodeKind.Notone:
+                return new(1, 4);
+            case Utf8TreeNodeKind.Set:
+                return Class(node);
+            case Utf8TreeNodeKind.Oneloop:
+            case Utf8TreeNodeKind.Onelazy:
+            case Utf8TreeNodeKind.Oneloopatomic:
+                return Repeat(Scalar(node.Ch, node.MatchCaseInsensitive, node.Options), node.M, node.N);
+            case Utf8TreeNodeKind.Notoneloop:
+            case Utf8TreeNodeKind.Notonelazy:
+            case Utf8TreeNodeKind.Notoneloopatomic:
+                return Repeat(new(1, 4), node.M, node.N);
+            case Utf8TreeNodeKind.Setloop:
+            case Utf8TreeNodeKind.Setlazy:
+            case Utf8TreeNodeKind.Setloopatomic:
+                return Repeat(Class(node), node.M, node.N);
+            case Utf8TreeNodeKind.Loop:
+            case Utf8TreeNodeKind.Lazyloop:
+                return node.ChildCount == 1 ? Repeat(values[node.Child(0)], node.M, node.N) : new(0, null);
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
+            case Utf8TreeNodeKind.Atomic:
+            case Utf8TreeNodeKind.Concatenate:
+                long minimum = 0, maximum = 0; var unbounded = false;
+                for (var i = 0; i < node.ChildCount; i++)
                 {
-                    var child = values[parent.Child(i)];
-                    if (child is null)
-                    {
-                        return null;
-                    }
-
-                    total += child.Value;
-                    if (total > int.MaxValue)
-                    {
-                        return null;
-                    }
+                    budget.ChargeWork(1); var child = values[node.Child(i)];
+                    minimum += child.Minimum;
+                    if (child.Maximum is int bound) maximum += bound; else unbounded = true;
                 }
-
-                return CapMax(total);
-            }
-
-            int? AlternateMaxLength(Utf8TreeNode parent)
-            {
-                int? maximum = 0;
-                for (var i = 0; i < parent.ChildCount; i++)
+                return new(CapMinimum(minimum), unbounded ? null : CapMaximum(maximum));
+            case Utf8TreeNodeKind.Alternate:
+            case Utf8TreeNodeKind.BackreferenceConditional:
+            case Utf8TreeNodeKind.ExpressionConditional:
+                var first = node.Kind == Utf8TreeNodeKind.ExpressionConditional ? 1 : 0;
+                var conditional = node.Kind != Utf8TreeNodeKind.Alternate;
+                var branchMin = int.MaxValue; int? branchMax = 0;
+                for (var i = first; i < node.ChildCount; i++)
                 {
-                    var branch = values[parent.Child(i)];
-                    if (branch is null)
-                    {
-                        return null;
-                    }
+                    budget.ChargeWork(1); var child = values[node.Child(i)];
+                    branchMin = Math.Min(branchMin, child.Minimum);
+                    branchMax = branchMax is int current && child.Maximum is int bound ? Math.Max(current, bound) : null;
+                }
+                if (node.ChildCount == first || conditional && node.ChildCount - first < 2) branchMin = 0;
+                return new(branchMin, branchMax);
+            case Utf8TreeNodeKind.Backreference:
+            case Utf8TreeNodeKind.Unknown:
+                return new(0, null);
+            default:
+                return new(0, 0);
+        }
 
-                    if (branch > maximum)
+        static int CapMinimum(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
+        static int? CapMaximum(long value) => value > int.MaxValue ? null : (int)value;
+        static ByteWidth Bounds(long low, long high) => new(CapMinimum(low), CapMaximum(high));
+        static ByteWidth Repeat(ByteWidth body, int minimum, int maximum)
+        {
+            if (minimum < 0 || maximum < minimum) return new(0, null);
+            return new(CapMinimum((long)body.Minimum * minimum), maximum == 0 || body.Maximum == 0 ? 0 :
+                maximum == int.MaxValue || body.Maximum is null ? null : CapMaximum((long)body.Maximum.Value * maximum));
+        }
+        static ByteWidth Scalar(int scalar, bool folded, RegexOptions options)
+        {
+            var owner = Utf8ConstructionScope.CurrentBudget; owner.ChargeWork(1);
+            if (!Rune.IsValid(scalar)) return new(0, null);
+            var width = new Rune(scalar).Utf8SequenceLength;
+            if (!folded) return new(width, width);
+            // Supplementary equivalence uses runtime scalar casing, not this BMP
+            // table. Keep sound bounds without assuming cross-plane closure.
+            if (scalar > 0xffff) return new(1, 4);
+            var low = width; var high = width;
+            var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
+            for (var behavior = 0; behavior <= lastBehavior; behavior++)
+            {
+                owner.ChargeWork(1);
+                foreach (var equivalent in Internal.Execution.Utf8SliceCaseEquivalences.GetEquivalents((char)scalar,
+                    (Internal.Execution.Utf8ScalarCaseBehavior)behavior))
+                {
+                    owner.ChargeWork(1); var bytes = new Rune(equivalent).Utf8SequenceLength;
+                    low = Math.Min(low, bytes); high = Math.Max(high, bytes);
+                }
+            }
+            return new(low, high);
+        }
+        static ByteWidth Range(int low, int high)
+        {
+            var minimum = 4; var maximum = 0;
+            if (low < 0 || high > 0x110000 || high <= low) return new(0, null);
+            if (low < 0x80 && high > 0) { minimum = 1; maximum = 1; }
+            if (low < 0x800 && high > 0x80) { minimum = Math.Min(minimum, 2); maximum = 2; }
+            if (low < 0xd800 && high > 0x800 || low < 0x10000 && high > 0xe000)
+                { minimum = Math.Min(minimum, 3); maximum = 3; }
+            if (high > 0x10000) { minimum = Math.Min(minimum, 4); maximum = 4; }
+            return maximum == 0 ? new(0, null) : new(minimum, maximum);
+        }
+        static ByteWidth Class(Utf8TreeNode node)
+        {
+            var owner = Utf8ConstructionScope.CurrentBudget;
+            if (node.Str is not { Length: >= 3 } wire) return new(0, null);
+            var ranges = (int)wire[1]; var categories = (int)wire[2];
+            if (wire.Length != 3 + ranges + categories || wire[0] != 0) return new(1, 4);
+            var minimum = 4; var maximum = 0;
+            for (var index = 0; index < ranges; index += 2)
+            {
+                owner.ChargeWork(1);
+                var low = (int)wire[3 + index];
+                var high = index + 1 == ranges || wire[4 + index] == 0 ? 65536 : wire[4 + index];
+                var range = Range(low, high);
+                if (range.Maximum is null) return new(0, null);
+                if (node.MatchCaseInsensitive)
+                {
+                    if (high - low > 128) return new(1, 4);
+                    for (var value = low; value < high; value++)
                     {
-                        maximum = branch;
+                        var scalar = Scalar(value, true, node.Options);
+                        minimum = Math.Min(minimum, scalar.Minimum); maximum = Math.Max(maximum, scalar.Maximum.GetValueOrDefault());
                     }
                 }
-
-                return maximum;
+                else { minimum = Math.Min(minimum, range.Minimum); maximum = Math.Max(maximum, range.Maximum.Value); }
             }
-
-            static int? CapMax(long value)
+            var position = 3 + ranges;
+            while (position < wire.Length)
             {
-                return value > int.MaxValue ? null : (int?)value;
+                owner.ChargeWork(1);
+                if (wire[position++] != Utf8OwnedCharClass.ScalarRangePredicateCode || position == wire.Length) return new(1, 4);
+                var endpoints = wire[position++];
+                if ((endpoints & 1) != 0 || endpoints > (wire.Length - position) / 2) return new(0, null);
+                if (node.MatchCaseInsensitive) return new(1, 4);
+                for (var index = 0; index < endpoints; index += 2)
+                {
+                    owner.ChargeWork(1);
+                    var low = wire[position] | wire[position + 1] << 16;
+                    var high = wire[position + 2] | wire[position + 3] << 16; position += 4;
+                    var range = Range(low, high);
+                    if (range.Maximum is null) return new(0, null);
+                    minimum = Math.Min(minimum, range.Minimum); maximum = Math.Max(maximum, range.Maximum.Value);
+                }
             }
-
+            return maximum == 0 ? new(0, null) : new(minimum, maximum);
         }
     }
 
@@ -361,13 +350,6 @@ internal static class Utf8OwnedFindOptimizations
         public List<string> Families = [""];
         public bool Failed;
         public bool Stopped;
-    }
-
-    private sealed class LiteralHolder
-    {
-        public string? Text;
-        public int Length = -1;
-        public int Distance;
     }
 
     // Owned alternate prefixes, pinned against legacy instances over the probe
@@ -986,95 +968,74 @@ internal static class Utf8OwnedFindOptimizations
     }
 
 
-    // Owned fixed-distance literal, pinned against legacy instances over the
-    // probe catalog. Literal runs record their text with the minimum distance
-    // accumulated ahead of them while sets, dots, shorthands and opaque loops
-    // only advance that distance. Groups and atomic wrappers stay transparent,
-    // anchors, lookarounds and backreferences cost nothing, alternations skip
-    // their branches at the shortest branch length, and loops advance their
-    // minimum length. The longest run wins with ties going to the last run.
-    // Case folded trees carry sets instead of literals and yield nothing, and
-    // RightToLeft needs no special handling. Distances use unchecked integer
-    // arithmetic exactly like the surrounding runtime formulas.
+    // A candidate is mandatory at this byte offset only while its entire
+    // preceding prefix has one proven byte width. An opaque variable node ends
+    // the proof; a longer literal after it must never displace a safe prefix.
     public static (string Literal, int Distance)? TryExtractFixedDistanceLiteral(Utf8TreeNode node)
     {
-        var holder = new LiteralHolder();
-        WalkLiteral(node, 0, holder);
-        var text = holder.Text;
-        if (text is null)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
+        using var widths = Utf8ConstructionMap<Utf8TreeNode, ByteWidth>.Create(budget, ReferenceEqualityComparer.Instance);
+        PopulateFacts(frames, widths, MeasureByteWidth);
+        string? best = null; var bestDistance = 0; var distance = 0;
+        frames.Push(new(node));
+        while (frames.Count != 0)
         {
-            return null;
-        }
-
-        return (text, holder.Distance);
-
-        static void ConsiderLiteral(LiteralHolder holder, string text, int distance)
-        {
-            if (!string.IsNullOrEmpty(text) && text.Length >= holder.Length)
+            budget.ChargeWork(1);
+            var index = frames.Count - 1; var frame = frames[index]; var current = frame.Node;
+            if (current.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate)
             {
-                holder.Text = text;
-                holder.Length = text.Length;
-                holder.Distance = distance;
-            }
-        }
-
-        static int WalkLiteral(Utf8TreeNode node, int distance, LiteralHolder holder)
-        {
-            var pending = new Stack<Utf8TreeNode>();
-            pending.Push(node);
-            while (pending.TryPop(out node))
-            {
-                switch (node.Kind)
+                if (frame.NextChild < current.ChildCount)
                 {
-                    case Utf8TreeNodeKind.One:
-                        ConsiderLiteral(holder, node.Ch.ToString(), distance);
-                        distance = distance + 1;
-                        break;
-                    case Utf8TreeNodeKind.Multi:
-                        if (!string.IsNullOrEmpty(node.Str))
-                        {
-                            ConsiderLiteral(holder, node.Str, distance);
-                        }
-
-                        distance = distance + (node.Str is null ? 1 : node.Str.Length);
-
-                        break;
-                    case Utf8TreeNodeKind.Notone:
-                    case Utf8TreeNodeKind.Set:
-                        distance = distance + 1;
-                        break;
-                    case Utf8TreeNodeKind.Capture:
-                    case Utf8TreeNodeKind.Group:
-                    case Utf8TreeNodeKind.Atomic:
-                    case Utf8TreeNodeKind.Concatenate:
-                        for (var index = node.ChildCount - 1; index >= 0; index--)
-                            pending.Push(node.Child(index));
-                        break;
-                    case Utf8TreeNodeKind.Alternate:
-                        distance = distance + ComputeMinLength(node);
-                        break;
-                    case Utf8TreeNodeKind.Oneloop:
-                    case Utf8TreeNodeKind.Onelazy:
-                    case Utf8TreeNodeKind.Oneloopatomic:
-                    case Utf8TreeNodeKind.Notoneloop:
-                    case Utf8TreeNodeKind.Notonelazy:
-                    case Utf8TreeNodeKind.Notoneloopatomic:
-                    case Utf8TreeNodeKind.Setloop:
-                    case Utf8TreeNodeKind.Setlazy:
-                    case Utf8TreeNodeKind.Setloopatomic:
-                        distance = distance + node.M;
-                        break;
-                    case Utf8TreeNodeKind.Loop:
-                    case Utf8TreeNodeKind.Lazyloop:
-                        var body = node.ChildCount == 0 ? 0 : ComputeMinLength(node.Child(0));
-                        distance = unchecked(distance + node.M * body);
-                        break;
-                    default:
-                        distance = distance + ComputeMinLength(node);
-                        break;
+                    var child = current.Child(frame.NextChild++); frames[index] = frame; frames.Push(new(child));
                 }
+                else frames.Pop();
+                continue;
             }
-            return distance;
+            var width = widths[current];
+            if (!width.IsFixed || width.Minimum > int.MaxValue - distance) break;
+            if (current.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi && IsExactLiteral(current))
+            {
+                var text = current.Kind == Utf8TreeNodeKind.One ? budget.CopyText([current.Ch]) : current.Str;
+                if (!string.IsNullOrEmpty(text) && (best is null || text.Length >= best.Length))
+                    { best = text; bestDistance = distance; }
+            }
+            distance += width.Minimum; frames.Pop();
+        }
+        if (best is null) return null;
+        construction.Complete();
+        return (best, bestDistance);
+
+        static bool IsExactLiteral(Utf8TreeNode node)
+        {
+            if (!node.MatchCaseInsensitive) return true;
+            if (node.Kind == Utf8TreeNodeKind.One) return Identity(node.Ch, node.Options);
+            if (node.Str is not { } text) return false;
+            for (var offset = 0; offset < text.Length;)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
+                    !scalar.IsBmp || !Identity((char)scalar.Value, node.Options)) return false;
+                offset += consumed;
+            }
+            return true;
+
+            static bool Identity(char value, RegexOptions options)
+            {
+                var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
+                for (var behavior = 0; behavior <= lastBehavior; behavior++)
+                {
+                    Utf8ConstructionScope.ChargeWork(1);
+                    foreach (var equivalent in Internal.Execution.Utf8SliceCaseEquivalences.GetEquivalents(value,
+                        (Internal.Execution.Utf8ScalarCaseBehavior)behavior))
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        if (equivalent != value) return false;
+                    }
+                }
+                return true;
+            }
         }
     }
 
@@ -1083,15 +1044,15 @@ internal static class Utf8OwnedFindOptimizations
     public readonly record struct OwnedSet(string Set, int Distance, bool Negated, char[]? Chars, OwnedCharRange? Range);
 
     // Owned fixed-distance sets, pinned against legacy instances over the probe
-    // catalog. The walk admits literals, clean ascii sets, transparent groups
-    // and line anchors only, accumulating minimum distances as it goes. Every
+    // catalog. The walk admits fixed-byte literals, clean ASCII sets, transparent
+    // groups and line anchors only, accumulating proven byte distances. Every
     // other shape poisons the whole result: alternations, all loop kinds,
     // lookarounds, backreferences, boundaries, opaque widths, categorized or
     // negated or subtracted or non ascii classes, and conditionals. Single wire
     // ranges project to the range form while wider sets project to distinct
     // ascending characters with the wire payload reused verbatim. No options
     // take part: folded payloads already carry their bytes. Every rule above
-    // was read off probe behavior.
+    // was retained only where it supplies a sound scalar-byte search fact.
     public static OwnedSet[]? FindFixedDistanceSets(Utf8TreeNode node)
     {
         var sets = new List<OwnedSet>();
@@ -1112,13 +1073,15 @@ internal static class Utf8OwnedFindOptimizations
                 switch (current.Kind)
                 {
                     case Utf8TreeNodeKind.One:
-                        distance++;
-                        break;
                     case Utf8TreeNodeKind.Multi:
-                        distance += current.Str is null ? 1 : current.Str.Length;
+                        var width = ComputeByteWidth(current);
+                        if (!width.IsFixed || width.Minimum > int.MaxValue - distance) return (distance, false);
+                        distance += width.Minimum;
                         break;
                     case Utf8TreeNodeKind.Set:
-                        if (!TryAddSet(current.Str, distance, sets)) return (distance, false);
+                        var setWidth = ComputeByteWidth(current);
+                        if (!setWidth.IsFixed || setWidth.Minimum != 1 || distance == int.MaxValue ||
+                            !TryAddSet(current.Str, distance, sets)) return (distance, false);
                         distance++;
                         break;
                     case Utf8TreeNodeKind.Capture:
@@ -1224,6 +1187,17 @@ internal static class Utf8OwnedFindOptimizations
         var budget = construction.Budget;
         using var frames = Utf8ConstructionFrames<FactFrame>.Create(budget, new(node));
         using var values = Utf8ConstructionMap<Utf8TreeNode, T>.Create(budget, ReferenceEqualityComparer.Instance);
+        PopulateFacts(frames, values, measure);
+        var result = values[node];
+        if (transferResult && result is not null) construction.Complete();
+        return result;
+    }
+
+    private static void PopulateFacts<T>(Utf8ConstructionFrames<FactFrame> frames,
+        Utf8ConstructionMap<Utf8TreeNode, T> values,
+        Func<Utf8TreeNode, Utf8ConstructionMap<Utf8TreeNode, T>, T> measure)
+    {
+        var budget = Utf8ConstructionScope.CurrentBudget;
         while (frames.Count != 0)
         {
             budget.ChargeWork(1);
@@ -1241,8 +1215,5 @@ internal static class Utf8OwnedFindOptimizations
                 frames.Pop();
             }
         }
-        var result = values[node];
-        if (transferResult && result is not null) construction.Complete();
-        return result;
     }
 }
