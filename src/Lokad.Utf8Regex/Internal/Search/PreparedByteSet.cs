@@ -64,6 +64,38 @@ internal sealed class PreparedByteSet(PreparedByteSetState state)
     private static readonly Vector128<byte> s_bits = Vector128.Create(
         (byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
 
+    internal static PreparedByteSet CreateOwned(ReadOnlySpan<byte> values)
+    {
+        if (values.IsEmpty) return Empty;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork((ulong)values.Length + 256);
+            var result = budget.AllocateObject(PreparedByteSetState.FromValues(values), static value => new PreparedByteSet(value));
+            scope.Complete();
+            return result;
+        }
+        finally { budget.LeaveDepth(); }
+    }
+
+    internal static PreparedByteSet CreateOwned(ulong mask0, ulong mask1, ulong mask2, ulong mask3)
+    {
+        if ((mask0 | mask1 | mask2 | mask3) == 0) return Empty;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork(256);
+            var result = budget.AllocateObject(PreparedByteSetState.FromMasks(mask0, mask1, mask2, mask3), static value => new PreparedByteSet(value));
+            scope.Complete();
+            return result;
+        }
+        finally { budget.LeaveDepth(); }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool Contains(byte value)
     {

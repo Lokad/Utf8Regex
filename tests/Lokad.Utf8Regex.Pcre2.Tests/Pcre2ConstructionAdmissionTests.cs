@@ -1,10 +1,27 @@
-using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ConstructionAdmissionTests
 {
+    [Fact]
+    public void Pcre2CandidateByteSearchSharesCoreAdmissionAndRecoversTheParent()
+    {
+        using var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue);
+        var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            Pcre2CandidateSearchProgram.FromLeadingAsciiSet(new byte[] { 0, 64, 96, 127 }, default));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(48ul, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.Depth); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+        owner.Budget.ReleaseArray(parent, false);
+        var program = Pcre2CandidateSearchProgram.FromLeadingAsciiSet(new byte[] { 64, 127 }, default);
+        Assert.Equal(48ul, owner.Budget.ReservedBytes);
+        Assert.Equal(1, program.Searcher.FindFirst(new byte[] { 128, 64, 255 }));
+        Assert.Equal(-1, program.Searcher.FindFirst(new byte[] { 128, 255 }));
+    }
+
     [Fact]
     public void BytePatternWorkAdmissionPrecedesValidationAndDecode()
     {

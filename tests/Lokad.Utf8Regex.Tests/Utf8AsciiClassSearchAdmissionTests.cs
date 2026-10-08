@@ -55,7 +55,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
             case 0: Assert.Equal(4, charClass.GetMatchBytes().Length); break;
             case 1: Assert.Equal(4, charClass.GetPositiveMatchBytes().Length); break;
             case 2: Assert.Equal(124, Class(4, true).GetMatchBytes().Length); break;
-            case 3: Assert.Equal(caller, Utf8PreparedByteSearchFactory.Create(caller).Values.ToArray()); break;
+            case 3: Assert.Equal(caller, PreparedByteSearch.Create(caller).Values.ToArray()); break;
             case 4: Assert.Equal(4, Utf8PreparedByteSearchFactory.CreateFromPositiveClass(charClass).Count); break;
             case 5: Assert.Equal(4, new AsciiSimplePatternRunPlan(charClass, 2, 4).Search.Count); break;
             case 6:
@@ -157,7 +157,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
     public void PreparedSearchIsolatesArbitraryCallerBytesAndKeepsFullByteDomain()
     {
         byte[] values = [0, 64, 128, 255];
-        var search = Utf8PreparedByteSearchFactory.Create(values); Array.Fill(values, (byte)17);
+        var search = PreparedByteSearch.Create(values); Array.Fill(values, (byte)17);
         Assert.Equal(new byte[] { 0, 64, 128, 255 }, search.Values.ToArray());
         Assert.Equal(1, search.IndexOf(new byte[] { 17, 128, 18, 255 }));
         Assert.Equal(3, search.LastIndexOf(new byte[] { 17, 128, 18, 255 }));

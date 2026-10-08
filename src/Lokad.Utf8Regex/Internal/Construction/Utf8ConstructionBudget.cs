@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Lokad.Utf8Regex.Internal.FrontEnd;
+namespace Lokad.Utf8Regex.Internal;
 
 /// <summary>Aggregate admission for pattern decoding and scalar-lowering capacity. Charges
 /// actual array strides, decoded string text plus its terminator and acquired

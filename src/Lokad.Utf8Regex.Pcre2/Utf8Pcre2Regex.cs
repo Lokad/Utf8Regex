@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;

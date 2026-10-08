@@ -728,7 +728,7 @@ internal readonly struct PreparedMultiLiteralPackedSearch
         }
 
         search = new PreparedMultiLiteralPackedSearch(
-            PreparedByteSearch.Create(discriminatorBytes[..count].ToArray()),
+            PreparedByteSearch.Create(discriminatorBytes[..count]),
             literals,
             literalByDiscriminator,
             literalIdByDiscriminator,
@@ -1525,7 +1525,7 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             }
         }
 
-        Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount].ToArray());
+        Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount]);
 
         static int[] SelectAsciiIgnoreCaseOffsets(byte[][] foldedLiterals, int shortestLength)
         {
@@ -1850,7 +1850,7 @@ internal readonly struct PreparedMultiLiteralNibbleMaskPrefilter
             }
         }
 
-        Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount].ToArray());
+        Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount]);
     }
 
     public int ShortestLength { get; }
@@ -1996,7 +1996,7 @@ internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
             }
         }
 
-        Search = count == 0 ? default : PreparedByteSearch.Create(searchBytes[..count].ToArray());
+        Search = count == 0 ? default : PreparedByteSearch.Create(searchBytes[..count]);
     }
 
     public int ShortestLength { get; }
@@ -2118,7 +2118,7 @@ internal readonly struct PreparedMultiLiteralRareBytePrefilter
 
         Search = count == 0
             ? default
-            : PreparedByteSearch.Create(selected[..count].ToArray());
+            : PreparedByteSearch.Create(selected[..count]);
     }
 
     public PreparedByteSearch Search { get; }

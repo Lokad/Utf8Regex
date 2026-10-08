@@ -16,7 +16,7 @@ public sealed class PreparedByteSetTests
             foreach (var complement in new[] { false, true })
             {
                 var values = all.Where(value => (value == member) != complement).ToArray();
-                var set = Utf8PreparedByteSearchFactory.CreateSet(values);
+                var set = PreparedByteSet.CreateOwned(values);
                 var oracle = SearchValues.Create(values);
                 foreach (var value in all) Assert.Equal((value == member) != complement, set.Contains(value));
                 for (var offset = 0; offset < 33; offset++)
@@ -45,7 +45,7 @@ public sealed class PreparedByteSetTests
             4 => Enumerable.Range(115, 35).Select(value => (byte)value).ToArray(),
             _ => Enumerable.Range(0, 256).Where(_ => random.Next(4) < profile % 3 + 1).Select(value => (byte)value).ToArray(),
         };
-        var set = Utf8PreparedByteSearchFactory.CreateSet(values);
+        var set = PreparedByteSet.CreateOwned(values);
         var oracle = SearchValues.Create(values);
         var members = values.Distinct().ToArray();
         var nonmembers = Enumerable.Range(0, 256).Select(value => (byte)value).Except(members).ToArray();
@@ -71,7 +71,7 @@ public sealed class PreparedByteSetTests
     public void MatrixSearchFindsEachLaneAndTheScalarTailInBothDirections()
     {
         byte[] members = [0, 15, 16, 31, 63, 64, 127, 128, 143, 191, 192, 254, 255];
-        var set = Utf8PreparedByteSearchFactory.CreateSet(members);
+        var set = PreparedByteSet.CreateOwned(members);
         foreach (var member in members)
         foreach (var length in new[] { 15, 16, 17, 31, 32, 33, 65, 129 })
         for (var position = 0; position < length; position++)
@@ -88,7 +88,7 @@ public sealed class PreparedByteSetTests
     {
         byte[] values = [0, 64, 128, 255];
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var set = Utf8PreparedByteSearchFactory.CreateSet(values); Array.Fill(values, (byte)17);
+        var set = PreparedByteSet.CreateOwned(values); Array.Fill(values, (byte)17);
         Assert.True(set.Contains(0)); Assert.True(set.Contains(255)); Assert.False(set.Contains(17));
         Assert.Equal(262ul, owner.Budget.WorkSteps);
         Assert.Equal(Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
@@ -103,7 +103,7 @@ public sealed class PreparedByteSetTests
     {
         var full = AsciiCharClass.FromRange(Utf8InclusiveByteRange.Create(0, 127), true);
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
-        Assert.Same(PreparedByteSet.Empty, Utf8PreparedByteSearchFactory.CreateSet(Array.Empty<byte>()));
+        Assert.Same(PreparedByteSet.Empty, PreparedByteSet.CreateOwned(Array.Empty<byte>()));
         Assert.Same(PreparedByteSet.Empty, Utf8PreparedByteSearchFactory.CreateSet(full));
         Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
@@ -116,7 +116,7 @@ public sealed class PreparedByteSetTests
         using var owner = new Utf8ConstructionScope(0, 112 + setBytes - 1, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PreparedByteSearchFactory.CreateSet(new byte[] { 0, 128, 255 }));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => PreparedByteSet.CreateOwned(new byte[] { 0, 128, 255 }));
         Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(261ul, owner.Budget.WorkSteps);

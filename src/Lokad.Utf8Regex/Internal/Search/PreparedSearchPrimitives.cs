@@ -42,8 +42,24 @@ internal readonly struct PreparedByteSearch
     private PreparedByteSet? ByteSet { get; }
 
     public static PreparedByteSearch Create(params byte[] values)
+        => Create(values.AsSpan());
+
+    internal static PreparedByteSearch Create(ReadOnlySpan<byte> values)
     {
-        return new PreparedByteSearch([.. values], values.Length > 3 ? new PreparedByteSet(PreparedByteSetState.FromValues(values)) : null);
+        if (values.IsEmpty) return FromOwnedValues([], null);
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            var owned = budget.AllocateArray<byte>(values.Length, false);
+            budget.ChargeWork((ulong)values.Length);
+            values.CopyTo(owned);
+            var result = FromOwnedValues(owned, owned.Length > 3 ? PreparedByteSet.CreateOwned(owned) : null);
+            scope.Complete();
+            return result;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     // Owned preparation supplies an immutable array with independent admission.

@@ -613,8 +613,14 @@ keeps complements restricted to ASCII. Vector loads stay within the subject,
 including overlapping tail loads, and scalar execution remains available.
 Count-only eligibility and projected-mask checks do not materialize class arrays.
 Two runtime validators use fixed 128-byte stack scratch instead of acquiring
-class arrays or entering construction scopes. Generic primitive construction,
-other opaque BCL SearchValues state in multi-literal/search producers, emission
+class arrays or entering construction scopes. Generic byte-search constructors
+share the same flavor-neutral construction owner in Internal/Construction. They
+admit one independent copy from an array or borrowed span, then derive large-set
+state from that owned copy. Shared empty searches acquire nothing. Five multi-literal
+producers pass stack spans directly, avoiding temporary arrays before the admitted
+copy. The front end retains only its ASCII-class bridge; redundant generic factories
+are removed. Budget/scope semantics and provisional defaults remain unchanged.
+Other opaque BCL SearchValues state and multi-literal maps/vectors/tries, emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

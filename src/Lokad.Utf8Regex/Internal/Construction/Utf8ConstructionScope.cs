@@ -1,4 +1,4 @@
-namespace Lokad.Utf8Regex.Internal.FrontEnd;
+namespace Lokad.Utf8Regex.Internal;
 
 /// <summary>Shares scalar-program capacity admission across synchronous nested
 /// construction. Scalar tree conversion/lowering arrays share byte admission;
