@@ -115,7 +115,7 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
         var startIndex = 0;
         while (startIndex <= input.Length - ShortestLength)
         {
-            var relative = input[startIndex..].IndexOfAny(_searchData.FirstByteSearchValues);
+            var relative = _searchData.FirstByteSearch.IndexOf(input[startIndex..]);
             if (relative < 0)
             {
                 return false;

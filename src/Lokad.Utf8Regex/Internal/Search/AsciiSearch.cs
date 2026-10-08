@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,7 +8,7 @@ internal readonly record struct AsciiAnchorSelection(int Anchor2, int Anchor3)
     public bool HasThirdAnchor => Anchor3 > 0;
 }
 
-internal static class AsciiSearch
+internal static partial class AsciiSearch
 {
     public static bool TryGetDotNetLikeAsciiAnchorSelection(ReadOnlySpan<byte> literal, bool ignoreCase, out AsciiAnchorSelection selection)
     {
@@ -88,55 +87,6 @@ internal static class AsciiSearch
             (byte)'_' => 0.797f,
             _ => 27f,
         };
-    }
-
-    public static AsciiExactLiteralSearchData CreateExactLiteralSearchData(byte[][] literals)
-    {
-        if (literals.Length == 0)
-        {
-            return new AsciiExactLiteralSearchData([], [], int.MaxValue);
-        }
-
-        var shortestLength = int.MaxValue;
-        Span<byte> distinctFirstBytes = stackalloc byte[Math.Min(literals.Length, 256)];
-        var distinctCount = 0;
-        var bucketLists = new List<byte[]>[256];
-
-        foreach (var literal in literals)
-        {
-            if (literal.Length == 0)
-            {
-                return new AsciiExactLiteralSearchData([], [new AsciiExactLiteralBucket(0, [[]])], 0);
-            }
-
-            if (literal.Length < shortestLength)
-            {
-                shortestLength = literal.Length;
-            }
-
-            var firstByte = literal[0];
-            var bucket = bucketLists[firstByte];
-            if (bucket is null)
-            {
-                bucket = [];
-                bucketLists[firstByte] = bucket;
-                distinctFirstBytes[distinctCount++] = firstByte;
-            }
-
-            bucket.Add(literal);
-        }
-
-        var firstBytes = distinctFirstBytes[..distinctCount].ToArray();
-        var buckets = new AsciiExactLiteralBucket[distinctCount];
-        for (var i = 0; i < distinctCount; i++)
-        {
-            var firstByte = firstBytes[i];
-            var bucket = bucketLists[firstByte] ??
-                throw new InvalidOperationException("A recorded literal bucket must have storage.");
-            buckets[i] = new AsciiExactLiteralBucket(firstByte, [.. bucket]);
-        }
-
-        return new AsciiExactLiteralSearchData(firstBytes, buckets, shortestLength);
     }
 
     public static int IndexOfExact(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
@@ -578,159 +528,24 @@ internal static class AsciiSearch
 
 internal readonly struct AsciiExactLiteralSearchData
 {
-    public AsciiExactLiteralSearchData(byte[] firstBytes, AsciiExactLiteralBucket[] buckets, int shortestLength)
-    {
-        FirstBytes = firstBytes;
-        FirstByteSearchValues = SearchValues.Create(firstBytes);
-        Buckets = buckets;
-        BucketIndexMap = CreateBucketIndexMap(buckets);
-        ShortestLength = shortestLength;
-    }
-
-    public byte[] FirstBytes { get; }
-
-    public SearchValues<byte> FirstByteSearchValues { get; }
-
+    public AsciiExactLiteralSearchData(PreparedByteSearch firstByteSearch, AsciiExactLiteralBucket[] buckets, int[] bucketIndexMap, int shortestLength)
+    { FirstByteSearch = firstByteSearch; Buckets = buckets; BucketIndexMap = bucketIndexMap; ShortestLength = shortestLength; }
+    public PreparedByteSearch FirstByteSearch { get; }
     public AsciiExactLiteralBucket[] Buckets { get; }
-
     public int[] BucketIndexMap { get; }
-
     public int ShortestLength { get; }
-
-    private static int[] CreateBucketIndexMap(AsciiExactLiteralBucket[] buckets)
-    {
-        var map = new int[256];
-        Array.Fill(map, -1);
-
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            map[buckets[i].FirstByte] = i;
-        }
-
-        return map;
-    }
 }
 
 internal readonly struct AsciiExactLiteralBucket
 {
-    public AsciiExactLiteralBucket(byte firstByte, byte[][] literals)
-    {
-        FirstByte = firstByte;
-        Literals = literals;
-        CommonPrefix = GetCommonPrefix(literals);
-        SecondByteCandidates = GetDistinctSecondBytes(literals);
-        SecondByteSearchValues = SecondByteCandidates is { Length: > 1 } secondBytes
-            ? SearchValues.Create(secondBytes)
-            : null;
-        PrefixDiscriminator = CreatePrefixDiscriminator(literals, CommonPrefix.Length);
-    }
-
+    public AsciiExactLiteralBucket(byte firstByte, byte[][] literals, byte[] commonPrefix,
+        byte[]? secondByteCandidates, AsciiExactLiteralPrefixDiscriminator prefixDiscriminator)
+    { FirstByte = firstByte; Literals = literals; CommonPrefix = commonPrefix; SecondByteCandidates = secondByteCandidates; PrefixDiscriminator = prefixDiscriminator; }
     public byte FirstByte { get; }
-
     public byte[][] Literals { get; }
-
     public byte[] CommonPrefix { get; }
-
     public byte[]? SecondByteCandidates { get; }
-
-    public SearchValues<byte>? SecondByteSearchValues { get; }
-
     public AsciiExactLiteralPrefixDiscriminator PrefixDiscriminator { get; }
-
-    private static byte[] GetCommonPrefix(byte[][] literals)
-    {
-        if (literals.Length == 0)
-        {
-            return [];
-        }
-
-        var prefixLength = literals[0].Length;
-        for (var i = 1; i < literals.Length && prefixLength > 1; i++)
-        {
-            prefixLength = CommonPrefixLength(literals[0], literals[i], prefixLength);
-        }
-
-        return prefixLength <= 1 ? [] : literals[0][..prefixLength];
-    }
-
-    private static int CommonPrefixLength(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, int maxLength)
-    {
-        var length = Math.Min(Math.Min(left.Length, right.Length), maxLength);
-        var i = 0;
-        while (i < length && left[i] == right[i])
-        {
-            i++;
-        }
-
-        return i;
-    }
-
-    private static byte[]? GetDistinctSecondBytes(byte[][] literals)
-    {
-        if (literals.Length <= 1)
-        {
-            return null;
-        }
-
-        Span<byte> secondBytes = stackalloc byte[Math.Min(literals.Length, 256)];
-        var count = 0;
-        foreach (var literal in literals)
-        {
-            if (literal.Length <= 1)
-            {
-                return null;
-            }
-
-            var secondByte = literal[1];
-            var seen = false;
-            for (var i = 0; i < count; i++)
-            {
-                if (secondBytes[i] == secondByte)
-                {
-                    seen = true;
-                    break;
-                }
-            }
-
-            if (!seen)
-            {
-                secondBytes[count++] = secondByte;
-            }
-        }
-
-        return count <= 1 ? null : secondBytes[..count].ToArray();
-    }
-
-    private static AsciiExactLiteralPrefixDiscriminator CreatePrefixDiscriminator(byte[][] literals, int prefixLength)
-    {
-        if (literals.Length <= 1)
-        {
-            return default;
-        }
-
-        var shortestLength = literals.Min(static literal => literal.Length);
-        if (prefixLength <= 0 || prefixLength >= shortestLength)
-        {
-            return default;
-        }
-
-        Span<bool> seen = stackalloc bool[256];
-        var map = new byte[256][];
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            var value = literal[prefixLength];
-            if (seen[value])
-            {
-                return default;
-            }
-
-            seen[value] = true;
-            map[value] = literal;
-        }
-
-        return new AsciiExactLiteralPrefixDiscriminator(prefixLength, map);
-    }
 }
 
 internal readonly struct AsciiExactLiteralPrefixDiscriminator

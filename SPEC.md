@@ -658,7 +658,24 @@ runtime fields and forward methods are unchanged; segment candidates use the sam
 ordered prefixes directly, with constant storage for identical-prefix families;
 packed reverse search now excludes a rejected candidate to guarantee progress.
 Budget/scope semantics and provisional defaults remain unchanged.
-Other opaque BCL SearchValues state, literal-set buckets and upstream preparation/emission
+Exact literal-set preparation admits final ordered bucket/reference arrays,
+prefix copies, second-byte membership filters, prefix discriminator maps and the
+first-byte map/search. Fixed byte-alphabet count/index rows replace List grouping.
+The owned byte-search carrier replaces opaque first-byte and unique-anchor
+SearchValues state. Empty families borrow every extent; empty literals preserve
+their bucket and map behavior under normal admission. Anchor selection scans
+bucket references directly without flattening. Only selected anchors/tries are
+built; a borrowed-data trie releases its admitted temporary reference vector
+after copying keys, order and lengths. Child failure refunds acquisitions and
+retainers, preserves parent state, and never refunds spent work. The never-selected
+second-byte search tier, its enum/dispatch/runtime methods and search object,
+unused first-byte/anchor byte carriers, eager unused anchors/tries and raw/LINQ
+construction paths are removed. The live second-byte membership filter and
+candidate/priority behavior remain. Reverse common-prefix search retains the
+complete prefix of its last permitted start; the former truncated window could
+miss final matches. This is construction capacity, not a complete
+public/retained policy or a performance qualification.
+Other opaque BCL SearchValues state, folded/small-family preparation and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

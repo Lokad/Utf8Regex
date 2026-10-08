@@ -1,4 +1,3 @@
-using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
@@ -8,34 +7,13 @@ internal enum PreparedLiteralSetStrategy : byte
     UniqueAnchorByte = 1,
     SingleLiteralBuckets = 2,
     SingleBucketPrefix = 3,
-    SingleBucketSecondByte = 4,
     MultiLiteralTrie = 5,
     Bucketed = 6,
 }
 
-internal readonly struct PreparedLiteralSetSearch
+internal readonly partial struct PreparedLiteralSetSearch
 {
     private const int MultiLiteralThreshold = 8;
-
-    public PreparedLiteralSetSearch(byte[][] literals)
-    {
-        SearchData = AsciiSearch.CreateExactLiteralSearchData(literals);
-        UniqueAnchor = CreateUniqueAnchor(SearchData);
-        MultiLiteral = SearchData.ShortestLength == 0 || literals.Length < MultiLiteralThreshold
-            ? default
-            : PreparedMultiLiteralTrieSearch.Create(literals);
-        Strategy = SelectStrategy(SearchData, UniqueAnchor);
-    }
-
-    public PreparedLiteralSetSearch(AsciiExactLiteralSearchData searchData)
-    {
-        SearchData = searchData;
-        UniqueAnchor = CreateUniqueAnchor(searchData);
-        MultiLiteral = SearchData.ShortestLength == 0 || LiteralCount(searchData.Buckets) < MultiLiteralThreshold
-            ? default
-            : PreparedMultiLiteralTrieSearch.Create(searchData.Buckets.SelectMany(static bucket => bucket.Literals).ToArray());
-        Strategy = SelectStrategy(searchData, UniqueAnchor);
-    }
 
     public AsciiExactLiteralSearchData SearchData { get; }
 
@@ -62,7 +40,6 @@ internal readonly struct PreparedLiteralSetSearch
             PreparedLiteralSetStrategy.UniqueAnchorByte when UniqueAnchor.HasValue => IndexOfUniqueAnchorByte(input, UniqueAnchor.Value),
             PreparedLiteralSetStrategy.SingleLiteralBuckets => IndexOfSingleLiteralBuckets(input, SearchData),
             PreparedLiteralSetStrategy.SingleBucketPrefix => IndexOfSingleBucketPrefix(input, SearchData),
-            PreparedLiteralSetStrategy.SingleBucketSecondByte => IndexOfSingleBucketSecondByte(input, SearchData),
             PreparedLiteralSetStrategy.MultiLiteralTrie => MultiLiteral.IndexOf(input),
             _ => IndexOfBucketed(input, SearchData),
         };
@@ -85,7 +62,6 @@ internal readonly struct PreparedLiteralSetSearch
             PreparedLiteralSetStrategy.UniqueAnchorByte when UniqueAnchor.HasValue => LastIndexOfUniqueAnchorByte(input, UniqueAnchor.Value),
             PreparedLiteralSetStrategy.SingleLiteralBuckets => LastIndexOfSingleLiteralBuckets(input, SearchData),
             PreparedLiteralSetStrategy.SingleBucketPrefix => LastIndexOfSingleBucketPrefix(input, SearchData),
-            PreparedLiteralSetStrategy.SingleBucketSecondByte => LastIndexOfSingleBucketSecondByte(input, SearchData),
             PreparedLiteralSetStrategy.MultiLiteralTrie => MultiLiteral.LastIndexOf(input),
             _ => LastIndexOfBucketed(input, SearchData),
         };
@@ -149,8 +125,7 @@ internal readonly struct PreparedLiteralSetSearch
 
         if (Strategy is PreparedLiteralSetStrategy.Bucketed
             or PreparedLiteralSetStrategy.UniqueAnchorByte
-            or PreparedLiteralSetStrategy.SingleLiteralBuckets
-            or PreparedLiteralSetStrategy.SingleBucketSecondByte)
+            or PreparedLiteralSetStrategy.SingleLiteralBuckets)
         {
             return TryFindFirstMatchBucketed(input, SearchData, out index, out matchedLength);
         }
@@ -170,7 +145,7 @@ internal readonly struct PreparedLiteralSetSearch
         var offset = 0;
         while (offset <= input.Length - searchData.ShortestLength)
         {
-            var relative = input[offset..].IndexOfAny(searchData.FirstByteSearchValues);
+            var relative = searchData.FirstByteSearch.IndexOf(input[offset..]);
             if (relative < 0)
             {
                 return false;
@@ -231,122 +206,12 @@ internal readonly struct PreparedLiteralSetSearch
         return false;
     }
 
-    private static PreparedLiteralSetStrategy SelectStrategy(AsciiExactLiteralSearchData searchData, PreparedLiteralSetUniqueAnchor? uniqueAnchor)
-    {
-        if (searchData.ShortestLength == int.MaxValue)
-        {
-            return PreparedLiteralSetStrategy.Empty;
-        }
-
-        if (searchData.Buckets.Length == 1 && searchData.Buckets[0].CommonPrefix.Length > 1)
-        {
-            return PreparedLiteralSetStrategy.SingleBucketPrefix;
-        }
-
-        // For single-bucket families (shared first byte), prefer first-byte search via
-        // Bucketed — IndexOf on 1 byte is faster than IndexOfAny on N second bytes when
-        // the first byte is rarer than the combined second bytes.
-        if (searchData.Buckets.Length == 1 && searchData.Buckets[0].SecondByteSearchValues is not null)
-        {
-            return PreparedLiteralSetStrategy.Bucketed;
-        }
-
-        if (AllBucketsContainSingleLiteral(searchData.Buckets))
-        {
-            return PreparedLiteralSetStrategy.SingleLiteralBuckets;
-        }
-
-        if (uniqueAnchor.HasValue)
-        {
-            return PreparedLiteralSetStrategy.UniqueAnchorByte;
-        }
-
-        if (LiteralCount(searchData.Buckets) >= MultiLiteralThreshold)
-        {
-            return PreparedLiteralSetStrategy.MultiLiteralTrie;
-        }
-
-        return PreparedLiteralSetStrategy.Bucketed;
-    }
-
-    private static PreparedLiteralSetUniqueAnchor? CreateUniqueAnchor(AsciiExactLiteralSearchData searchData)
-    {
-        if (searchData.ShortestLength <= 1)
-        {
-            return null;
-        }
-
-        var literals = searchData.Buckets.SelectMany(static bucket => bucket.Literals).ToArray();
-        if (literals.Length <= 1)
-        {
-            return null;
-        }
-
-        Span<byte> anchorBytes = stackalloc byte[Math.Min(literals.Length, 256)];
-        Span<bool> seen = stackalloc bool[256];
-        for (var offset = 1; offset < searchData.ShortestLength; offset++)
-        {
-            seen.Clear();
-            var count = 0;
-            var duplicate = false;
-
-            foreach (var literal in literals)
-            {
-                var value = literal[offset];
-                if (seen[value])
-                {
-                    duplicate = true;
-                    break;
-                }
-
-                seen[value] = true;
-                anchorBytes[count++] = value;
-            }
-
-            if (!duplicate)
-            {
-                return new PreparedLiteralSetUniqueAnchor(offset, anchorBytes[..count].ToArray(), literals);
-            }
-        }
-
-        return null;
-    }
-
-    private static bool AllBucketsContainSingleLiteral(AsciiExactLiteralBucket[] buckets)
-    {
-        if (buckets.Length == 0)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            if (buckets[i].Literals.Length != 1)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static int LiteralCount(AsciiExactLiteralBucket[] buckets)
-    {
-        var count = 0;
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            count += buckets[i].Literals.Length;
-        }
-
-        return count;
-    }
-
     private static int IndexOfSingleLiteralBuckets(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
     {
         var index = 0;
         while (index <= input.Length - searchData.ShortestLength)
         {
-            var relative = input[index..].IndexOfAny(searchData.FirstByteSearchValues);
+            var relative = searchData.FirstByteSearch.IndexOf(input[index..]);
             if (relative < 0)
             {
                 return -1;
@@ -376,7 +241,7 @@ internal readonly struct PreparedLiteralSetSearch
                 return -1;
             }
 
-            var relative = input[anchorStart..].IndexOfAny(anchor.AnchorSearchValues);
+            var relative = anchor.AnchorSearch.IndexOf(input[anchorStart..]);
             if (relative < 0)
             {
                 return -1;
@@ -400,7 +265,7 @@ internal readonly struct PreparedLiteralSetSearch
     {
         for (var end = input.Length - searchData.ShortestLength + 1; end > 0;)
         {
-            var relative = input[..end].LastIndexOfAny(searchData.FirstByteSearchValues);
+            var relative = searchData.FirstByteSearch.LastIndexOf(input[..end]);
             if (relative < 0)
             {
                 return -1;
@@ -422,7 +287,7 @@ internal readonly struct PreparedLiteralSetSearch
     {
         for (var searchEnd = input.Length - anchor.ShortestLength + anchor.Offset + 1; searchEnd > anchor.Offset;)
         {
-            var relative = input[..searchEnd].LastIndexOfAny(anchor.AnchorSearchValues);
+            var relative = anchor.AnchorSearch.LastIndexOf(input[..searchEnd]);
             if (relative < anchor.Offset)
             {
                 return -1;
@@ -446,7 +311,7 @@ internal readonly struct PreparedLiteralSetSearch
         var index = 0;
         while (index <= input.Length - searchData.ShortestLength)
         {
-            var relative = input[index..].IndexOfAny(searchData.FirstByteSearchValues);
+            var relative = searchData.FirstByteSearch.IndexOf(input[index..]);
             if (relative < 0)
             {
                 return -1;
@@ -469,7 +334,7 @@ internal readonly struct PreparedLiteralSetSearch
     {
         for (var end = input.Length - searchData.ShortestLength + 1; end > 0;)
         {
-            var relative = input[..end].LastIndexOfAny(searchData.FirstByteSearchValues);
+            var relative = searchData.FirstByteSearch.LastIndexOf(input[..end]);
             if (relative < 0)
             {
                 return -1;
@@ -518,7 +383,9 @@ internal readonly struct PreparedLiteralSetSearch
         var prefix = bucket.CommonPrefix;
         for (var end = input.Length - searchData.ShortestLength + 1; end > 0;)
         {
-            var relative = input[..end].LastIndexOf(prefix);
+            // end bounds candidate starts. Retain the complete prefix of the
+            // last permitted start, including after a rejected candidate.
+            var relative = input[..(end + prefix.Length - 1)].LastIndexOf(prefix);
             if (relative < 0)
             {
                 return -1;
@@ -530,71 +397,6 @@ internal readonly struct PreparedLiteralSetSearch
             }
 
             end = relative;
-        }
-
-        return -1;
-    }
-
-    private static int IndexOfSingleBucketSecondByte(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
-    {
-        var bucket = searchData.Buckets[0];
-        var secondByteSearchValues = bucket.SecondByteSearchValues;
-        if (secondByteSearchValues is null)
-        {
-            return -1;
-        }
-
-        var index = 0;
-        while (index <= input.Length - searchData.ShortestLength)
-        {
-            var secondByteStart = index + 1;
-            if (secondByteStart >= input.Length)
-            {
-                return -1;
-            }
-
-            var relative = input[secondByteStart..].IndexOfAny(secondByteSearchValues);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            var candidate = index + relative;
-            if (input[candidate] == bucket.FirstByte && MatchesBucketAt(input, candidate, bucket))
-            {
-                return candidate;
-            }
-
-            index = candidate + 1;
-        }
-
-        return -1;
-    }
-
-    private static int LastIndexOfSingleBucketSecondByte(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
-    {
-        var bucket = searchData.Buckets[0];
-        var secondByteSearchValues = bucket.SecondByteSearchValues;
-        if (secondByteSearchValues is null)
-        {
-            return -1;
-        }
-
-        for (var searchEnd = input.Length - searchData.ShortestLength + 2; searchEnd > 1;)
-        {
-            var relative = input[..searchEnd].LastIndexOfAny(secondByteSearchValues);
-            if (relative < 1)
-            {
-                return -1;
-            }
-
-            var candidate = relative - 1;
-            if (input[candidate] == bucket.FirstByte && MatchesBucketAt(input, candidate, bucket))
-            {
-                return candidate;
-            }
-
-            searchEnd = relative;
         }
 
         return -1;
@@ -722,33 +524,10 @@ internal readonly struct PreparedLiteralSetSearch
 
 internal readonly struct PreparedLiteralSetUniqueAnchor
 {
-    public PreparedLiteralSetUniqueAnchor(int offset, byte[] anchorBytes, byte[][] literals)
-    {
-        Offset = offset;
-        AnchorBytes = anchorBytes;
-        AnchorSearchValues = SearchValues.Create(anchorBytes);
-        LiteralByAnchorByte = CreateLiteralMap(offset, literals);
-        ShortestLength = literals.Min(static literal => literal.Length);
-    }
-
+    public PreparedLiteralSetUniqueAnchor(int offset, PreparedByteSearch anchorSearch, byte[][] literalByAnchorByte, int shortestLength)
+    { Offset = offset; AnchorSearch = anchorSearch; LiteralByAnchorByte = literalByAnchorByte; ShortestLength = shortestLength; }
     public int Offset { get; }
-
-    public byte[] AnchorBytes { get; }
-
-    public SearchValues<byte> AnchorSearchValues { get; }
-
+    public PreparedByteSearch AnchorSearch { get; }
     public byte[][] LiteralByAnchorByte { get; }
-
     public int ShortestLength { get; }
-
-    private static byte[][] CreateLiteralMap(int offset, byte[][] literals)
-    {
-        var map = new byte[256][];
-        foreach (var literal in literals)
-        {
-            map[literal[offset]] = literal;
-        }
-
-        return map;
-    }
 }
