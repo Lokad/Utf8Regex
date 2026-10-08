@@ -627,8 +627,17 @@ release before return; their descriptors stay funded until the enclosing owner
 closes. One fixed 256-entry stack row handles child ordering. Empty tries borrow
 all state. The superseded node objects, per-node dictionaries, list and sorting
 arrays are removed; runtime trie layout and literal priority are unchanged.
+Exact multi-literal automaton construction admits one growable transition matrix
+and value-state buffer with growth overlap, an exact temporary failure queue and
+the final matrix/output extents. Iterative insertion, failure completion and output
+projection share work. The final matrix transfers when its capacity is exact;
+otherwise its final copy admits old/new overlap. Temporary arrays release before
+return; descriptors stay funded until construction closes. Empty automata borrow
+all state. Mutable node objects, per-node transition/flag arrays, List/Queue
+storage, unused node APIs and redundant output initialization are removed.
+Runtime automaton layout and matching methods remain unchanged.
 Budget/scope semantics and provisional defaults remain unchanged.
-Other opaque BCL SearchValues state and multi-literal maps/vectors/automata, emission
+Other opaque BCL SearchValues state and multi-literal prefilter maps/vectors/buckets, emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

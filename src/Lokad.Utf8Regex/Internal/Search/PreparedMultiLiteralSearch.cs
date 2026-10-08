@@ -2357,7 +2357,7 @@ internal readonly struct PreparedMultiLiteralEarliestExactSearch
     }
 }
 
-internal readonly struct PreparedMultiLiteralAutomatonSearch
+internal readonly partial struct PreparedMultiLiteralAutomatonSearch
 {
     private PreparedMultiLiteralAutomatonSearch(int[] transitions, int[] bestOutputOrders, int[] bestOutputLengths, int[] shortestOutputLengths, int shortestLength, int longestLength)
     {
@@ -2420,51 +2420,6 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
 
             return count;
         }
-    }
-
-    public static PreparedMultiLiteralAutomatonSearch Create(byte[][] literals)
-    {
-        if (literals.Length == 0)
-        {
-            return new PreparedMultiLiteralAutomatonSearch([], [], [], [], int.MaxValue, 0);
-        }
-
-        var nodes = new List<MutablePreparedMultiLiteralAutomatonNode> { new() };
-        var shortestLength = int.MaxValue;
-        var longestLength = 0;
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            shortestLength = Math.Min(shortestLength, literal.Length);
-            longestLength = Math.Max(longestLength, literal.Length);
-            InsertLiteral(nodes, literal, i);
-        }
-
-        BuildFailures(nodes);
-
-        var stateCount = nodes.Count;
-        var transitions = new int[stateCount * 256];
-        var bestOutputOrders = new int[stateCount];
-        var bestOutputLengths = new int[stateCount];
-        var shortestOutputLengths = new int[stateCount];
-        Array.Fill(bestOutputOrders, -1);
-        Array.Fill(shortestOutputLengths, int.MaxValue);
-
-        for (var state = 0; state < stateCount; state++)
-        {
-            var node = nodes[state];
-            bestOutputOrders[state] = node.BestOutputOrder;
-            bestOutputLengths[state] = node.BestOutputLength;
-            shortestOutputLengths[state] = node.ShortestOutputLength;
-            var baseIndex = state * 256;
-            for (var b = 0; b < 256; b++)
-            {
-                transitions[baseIndex + b] = node.Transitions[b];
-            }
-        }
-
-        return new PreparedMultiLiteralAutomatonSearch(transitions, bestOutputOrders, bestOutputLengths, shortestOutputLengths, shortestLength, longestLength);
     }
 
     public int IndexOf(ReadOnlySpan<byte> input)
@@ -2681,64 +2636,6 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
         return true;
     }
 
-    private static void InsertLiteral(List<MutablePreparedMultiLiteralAutomatonNode> nodes, byte[] literal, int order)
-    {
-        var state = 0;
-        for (var i = 0; i < literal.Length; i++)
-        {
-            var key = literal[i];
-            var next = nodes[state].Transitions[key];
-            if (next == 0 && (state != 0 || !nodes[state].HasTransition(key)))
-            {
-                next = nodes.Count;
-                nodes.Add(new MutablePreparedMultiLiteralAutomatonNode());
-                nodes[state].RegisterTransition(key, next);
-            }
-
-            state = next;
-        }
-
-        nodes[state].RegisterOutput(order, literal.Length);
-    }
-
-    private static void BuildFailures(List<MutablePreparedMultiLiteralAutomatonNode> nodes)
-    {
-        var queue = new Queue<int>();
-        for (var b = 0; b < 256; b++)
-        {
-            var next = nodes[0].Transitions[b];
-            if (next != 0)
-            {
-                queue.Enqueue(next);
-            }
-        }
-
-        while (queue.Count > 0)
-        {
-            var state = queue.Dequeue();
-            for (var b = 0; b < 256; b++)
-            {
-                var next = nodes[state].Transitions[b];
-                if (next != 0)
-                {
-                    var fail = nodes[state].Failure;
-                    while (fail != 0 && nodes[fail].Transitions[b] == 0)
-                    {
-                        fail = nodes[fail].Failure;
-                    }
-
-                    var failureTarget = nodes[fail].Transitions[b];
-                    nodes[next].Failure = failureTarget;
-                    nodes[next].AbsorbFailureOutputs(nodes[failureTarget]);
-                    queue.Enqueue(next);
-                }
-                else
-                {
-                    nodes[state].Transitions[b] = nodes[nodes[state].Failure].Transitions[b];
-                }
-            }
-        }
-    }
 }
 
 internal readonly record struct PreparedMultiLiteralScanState(int NextStart, int ScanIndex, int AutomatonState)
@@ -2749,67 +2646,6 @@ internal readonly record struct PreparedMultiLiteralScanState(int NextStart, int
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PreparedMultiLiteralScanState AfterOverlappingMatch(int matchIndex) =>
         new(matchIndex + 1, matchIndex + 1, 0);
-}
-
-internal sealed class MutablePreparedMultiLiteralAutomatonNode
-{
-    private readonly bool[] _hasTransition = new bool[256];
-
-    public int[] Transitions { get; } = new int[256];
-
-    public int Failure { get; set; }
-
-    public int BestOutputOrder { get; private set; } = -1;
-
-    public int BestOutputLength { get; private set; }
-
-    public int ShortestOutputLength { get; private set; } = int.MaxValue;
-
-    public bool HasTransition(byte key) => _hasTransition[key];
-
-    public void RegisterTransition(byte key, int state)
-    {
-        _hasTransition[key] = true;
-        Transitions[key] = state;
-    }
-
-    public void RegisterOutput(int order, int length)
-    {
-        if (BestOutputLength == 0 || length > BestOutputLength || (length == BestOutputLength && (BestOutputOrder < 0 || order < BestOutputOrder)))
-        {
-            BestOutputOrder = order;
-            BestOutputLength = length;
-        }
-
-        ShortestOutputLength = Math.Min(ShortestOutputLength, length);
-    }
-
-    public void AbsorbFailureOutputs(MutablePreparedMultiLiteralAutomatonNode failure)
-    {
-        if (failure.BestOutputOrder >= 0 &&
-            (BestOutputLength == 0 ||
-            failure.BestOutputLength > BestOutputLength ||
-            (failure.BestOutputLength == BestOutputLength && (BestOutputOrder < 0 || failure.BestOutputOrder < BestOutputOrder))))
-        {
-            BestOutputOrder = failure.BestOutputOrder;
-            BestOutputLength = failure.BestOutputLength;
-        }
-
-        if (failure.ShortestOutputLength < ShortestOutputLength)
-        {
-            ShortestOutputLength = failure.ShortestOutputLength;
-        }
-    }
-
-    public int this[byte key]
-    {
-        get => Transitions[key];
-        set
-        {
-            _hasTransition[key] = true;
-            Transitions[key] = value;
-        }
-    }
 }
 
 internal readonly partial struct PreparedMultiLiteralTrieSearch
