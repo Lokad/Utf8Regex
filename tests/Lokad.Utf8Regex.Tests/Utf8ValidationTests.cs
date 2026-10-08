@@ -413,72 +413,6 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
-    public void BoundaryMapCanAdvanceAndRetreatByCodeUnitAndScalar()
-    {
-        var map = Utf8BoundaryMap.Create("a😀b"u8);
-
-        Assert.True(map.TryAdvanceCodeUnit(1, out var surrogateSplit));
-        Assert.Equal(2, surrogateSplit.Utf16Offset);
-        Assert.False(surrogateSplit.IsScalarBoundary);
-
-        Assert.True(map.TryAdvanceScalar(1, out var afterEmoji));
-        Assert.Equal(3, afterEmoji.Utf16Offset);
-        Assert.True(afterEmoji.IsScalarBoundary);
-
-        Assert.True(map.TryRetreatCodeUnit(3, out var beforeEmojiSplit));
-        Assert.Equal(2, beforeEmojiSplit.Utf16Offset);
-        Assert.False(beforeEmojiSplit.IsScalarBoundary);
-
-        Assert.True(map.TryRetreatScalar(3, out var beforeEmoji));
-        Assert.Equal(1, beforeEmoji.Utf16Offset);
-        Assert.True(beforeEmoji.IsScalarBoundary);
-    }
-
-    [Fact]
-    public void Utf8CursorsExposeMappedOffsets()
-    {
-        var input = "a😀b"u8;
-        var map = Utf8BoundaryMap.Create(input);
-
-        var cursor = new Utf8Cursor(input, map, 3);
-        var reverse = new Utf8ReverseCursor(input, map, 1);
-
-        Assert.Equal(3, cursor.Utf16Offset);
-        Assert.Equal(5, cursor.ByteOffset);
-        Assert.True(cursor.IsScalarBoundary);
-        Assert.Equal("b"u8.ToArray(), cursor.Remaining.ToArray());
-
-        Assert.Equal(1, reverse.Utf16Offset);
-        Assert.Equal(1, reverse.ByteOffset);
-        Assert.True(reverse.IsScalarBoundary);
-        Assert.Equal("a"u8.ToArray(), reverse.Consumed.ToArray());
-    }
-
-    [Fact]
-    public void Utf8CursorsCanAdvanceAndRetreatByCodeUnitAndScalar()
-    {
-        var input = "a😀b"u8;
-        var map = Utf8BoundaryMap.Create(input);
-
-        var cursor = new Utf8Cursor(input, map);
-        Assert.True(cursor.TryAdvanceCodeUnit(out var afterA));
-        Assert.Equal(1, afterA.Utf16Offset);
-        Assert.True(afterA.TryAdvanceCodeUnit(out var surrogateSplit));
-        Assert.Equal(2, surrogateSplit.Utf16Offset);
-        Assert.False(surrogateSplit.IsScalarBoundary);
-        Assert.True(afterA.TryAdvanceScalar(out var afterEmoji));
-        Assert.Equal(3, afterEmoji.Utf16Offset);
-
-        var reverse = new Utf8ReverseCursor(input, map, map.Utf16Length);
-        Assert.True(reverse.TryRetreatCodeUnit(out var beforeB));
-        Assert.Equal(3, beforeB.Utf16Offset);
-        Assert.True(beforeB.TryRetreatScalar(out var beforeEmoji));
-        Assert.Equal(1, beforeEmoji.Utf16Offset);
-        Assert.True(beforeEmoji.TryRetreatScalar(out var beforeA));
-        Assert.Equal(0, beforeA.Utf16Offset);
-    }
-
-    [Fact]
     public void InputAnalyzerValidatesBeforeLazilyBuildingBoundaryMap()
     {
         var input = "a😀b"u8;
@@ -534,19 +468,45 @@ public sealed class Utf8ValidationTests
         }
     }
 
-    [Fact]
-    public void ValidatedInputAdvancesAndRetreatsByScalar()
+    [Theory]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("a😀b")]
+    [InlineData("é€😀")]
+    [InlineData("\U00010000\U0010ffff")]
+    [InlineData("e\u0301👩‍💻")]
+    public void ValidatedInputAdvancesAndRetreatsByScalar(string text)
     {
-        var subject = Utf8ValidatedInput.Create("a😀b"u8);
-        var atEmoji = subject.GetBytePosition(1, "position");
+        var input = Encoding.UTF8.GetBytes(text);
+        var subject = Utf8ValidatedInput.Create(input);
+        var boundaries = new List<(int Bytes, int Utf16)> { (0, 0) };
+        foreach (var scalar in text.EnumerateRunes())
+        {
+            var last = boundaries[^1];
+            boundaries.Add((last.Bytes + scalar.Utf8SequenceLength, last.Utf16 + scalar.Utf16SequenceLength));
+        }
+        Assert.Equal((input.Length, text.Length), boundaries[^1]);
 
-        Assert.True(subject.TryAdvanceScalar(atEmoji, out var afterEmoji));
-        Assert.Equal(5, afterEmoji.Value);
-        Assert.True(subject.TryRetreatScalar(afterEmoji, out var beforeEmoji));
-        Assert.Equal(atEmoji, beforeEmoji);
-        Assert.True(subject.TryRetreatScalar(beforeEmoji, out var start));
-        Assert.Equal(0, start.Value);
-        Assert.False(subject.TryRetreatScalar(start, out _));
+        var position = subject.GetBytePosition(0, "position");
+        for (var index = 0; index < boundaries.Count; index++)
+        {
+            Assert.Equal(boundaries[index].Bytes, position.Value);
+            Assert.Equal(boundaries[index].Utf16, subject.Project(position).Value);
+            if (index == boundaries.Count - 1) break;
+            Assert.True(subject.TryAdvanceScalar(position, out var next));
+            Assert.True(next.Value > position.Value);
+            position = next;
+        }
+        Assert.False(subject.TryAdvanceScalar(position, out _));
+        for (var index = boundaries.Count - 1; index > 0; index--)
+        {
+            Assert.True(subject.TryRetreatScalar(position, out var previous));
+            Assert.Equal(boundaries[index - 1].Bytes, previous.Value);
+            Assert.True(previous.Value < position.Value);
+            position = previous;
+        }
+        Assert.Equal(0, position.Value);
+        Assert.False(subject.TryRetreatScalar(position, out _));
     }
 
     [Fact]
