@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -112,8 +113,16 @@ internal readonly struct AsciiStructuralVerifierProgram
 {
     public AsciiStructuralVerifierProgram(AsciiStructuralVerifierStep[]? steps, AsciiStructuralCompiledSuffixPart[] compiledSuffixParts)
     {
-        Steps = steps is { Length: > 0 } ? steps : [];
-        LinearProgram = AsciiStructuralLinearVerifierProgram.Create(Steps, compiledSuffixParts);
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
+        {
+            owner.ChargeWork(1);
+            Steps = steps is { Length: > 0 } ? steps : [];
+            LinearProgram = AsciiStructuralLinearVerifierProgram.Create(Steps, compiledSuffixParts);
+            construction.Complete();
+        }
+        finally { owner.LeaveDepth(); }
     }
 
     public AsciiStructuralVerifierStep[] Steps { get; }
@@ -124,33 +133,47 @@ internal readonly struct AsciiStructuralVerifierProgram
 
     public static AsciiStructuralVerifierProgram Create(AsciiStructuralIdentifierFamilyPlan plan, AsciiStructuralCompiledSuffixPart[] compiledSuffixParts)
     {
-        var steps = new List<AsciiStructuralVerifierStep>(8);
-        if (!string.IsNullOrEmpty(plan.SeparatorSet))
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            steps.Add(AsciiStructuralVerifierStep.ConsumeSeparator(plan.SeparatorSet, plan.SeparatorMinCount));
-        }
-
-        if (!string.IsNullOrEmpty(plan.IdentifierStartSet))
-        {
-            steps.Add(AsciiStructuralVerifierStep.RequireIdentifierStart(plan.IdentifierStartSet));
-            steps.Add(AsciiStructuralVerifierStep.ConsumeIdentifierTail(plan.IdentifierTailSet, plan.IdentifierTailMinCount, plan.IdentifierTailMaxCount));
-            if (plan.SuffixParts.Length > 0)
+            owner.ChargeWork(1);
+            var count = 1 + (!string.IsNullOrEmpty(plan.SeparatorSet) ? 1 : 0)
+                + (!string.IsNullOrEmpty(plan.IdentifierStartSet) ? 2 : 0)
+                + (plan.SuffixParts.Length > 0 ? 1 : 0)
+                + (plan.TrailingBoundary != Utf8BoundaryRequirement.None ? 1 : 0);
+            var steps = owner.AllocateArray<AsciiStructuralVerifierStep>(count, false);
+            owner.ChargeWork((ulong)count);
+            var index = 0;
+            if (!string.IsNullOrEmpty(plan.SeparatorSet))
             {
-                steps.Add(AsciiStructuralVerifierStep.MatchSuffixAfterTail(plan.SuffixParts, plan.IdentifierTailMinCount));
+                steps[index++] = AsciiStructuralVerifierStep.ConsumeSeparator(plan.SeparatorSet, plan.SeparatorMinCount);
             }
-        }
-        else if (plan.SuffixParts.Length > 0)
-        {
-            steps.Add(AsciiStructuralVerifierStep.MatchSuffixAtCurrent(plan.SuffixParts));
-        }
 
-        if (plan.TrailingBoundary != Utf8BoundaryRequirement.None)
-        {
-            steps.Add(AsciiStructuralVerifierStep.RequireTrailingBoundary(plan.TrailingBoundary));
-        }
+            if (!string.IsNullOrEmpty(plan.IdentifierStartSet))
+            {
+                steps[index++] = AsciiStructuralVerifierStep.RequireIdentifierStart(plan.IdentifierStartSet);
+                steps[index++] = AsciiStructuralVerifierStep.ConsumeIdentifierTail(plan.IdentifierTailSet, plan.IdentifierTailMinCount, plan.IdentifierTailMaxCount);
+                if (plan.SuffixParts.Length > 0)
+                {
+                    steps[index++] = AsciiStructuralVerifierStep.MatchSuffixAfterTail(plan.SuffixParts, plan.IdentifierTailMinCount);
+                }
+            }
+            else if (plan.SuffixParts.Length > 0)
+            {
+                steps[index++] = AsciiStructuralVerifierStep.MatchSuffixAtCurrent(plan.SuffixParts);
+            }
 
-        steps.Add(AsciiStructuralVerifierStep.Accept());
-        return new AsciiStructuralVerifierProgram([.. steps], compiledSuffixParts);
+            if (plan.TrailingBoundary != Utf8BoundaryRequirement.None)
+            {
+                steps[index++] = AsciiStructuralVerifierStep.RequireTrailingBoundary(plan.TrailingBoundary);
+            }
+
+            steps[index++] = AsciiStructuralVerifierStep.Accept();
+            var result = new AsciiStructuralVerifierProgram(steps, compiledSuffixParts);
+            construction.Complete(); return result;
+        }
+        finally { owner.LeaveDepth(); }
     }
 
     public bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, out int matchedLength)
@@ -247,41 +270,50 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
 
     public static AsciiStructuralLinearVerifierProgram Create(ReadOnlySpan<AsciiStructuralVerifierStep> steps, AsciiStructuralCompiledSuffixPart[] sharedSuffixParts)
     {
-        if (steps.Length == 0)
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            return default;
-        }
-
-        var instructions = new AsciiStructuralLinearVerifierInstruction[steps.Length];
-        for (var i = 0; i < steps.Length; i++)
-        {
-            var step = steps[i];
-            var charClass = AsciiStructuralIdentifierFamilyPlan.TryCreateAsciiCharClass(step.Set, out var createdCharClass)
-                ? createdCharClass
-                : default;
-            // Suffix steps always carry the owning plan raw parts, so the shared array holds identical data.
-            var compiledSuffixParts = step.SuffixParts.Length == 0 ? [] : sharedSuffixParts;
-            instructions[i] = step.Kind switch
+            owner.ChargeWork(1);
+            if (steps.Length == 0)
             {
-                AsciiStructuralVerifierStepKind.ConsumeSeparator
-                    => AsciiStructuralLinearVerifierInstruction.ConsumeSetLoop(step.Set, charClass, step.MinCount),
-                AsciiStructuralVerifierStepKind.RequireIdentifierStart
-                    => AsciiStructuralLinearVerifierInstruction.RequireSetByte(step.Set, charClass),
-                AsciiStructuralVerifierStepKind.ConsumeIdentifierTail
-                    => AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(step.Set, charClass, step.MinCount, step.MaxCount),
-                AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent
-                    => AsciiStructuralLinearVerifierInstruction.MatchSuffixAtCurrent(compiledSuffixParts),
-                AsciiStructuralVerifierStepKind.MatchSuffixAfterTail
-                    => AsciiStructuralLinearVerifierInstruction.MatchSuffixAfterTail(compiledSuffixParts, step.MinCount),
-                AsciiStructuralVerifierStepKind.RequireTrailingBoundary
-                    => AsciiStructuralLinearVerifierInstruction.RequireBoundary(step.BoundaryRequirement),
-                AsciiStructuralVerifierStepKind.Accept
-                    => AsciiStructuralLinearVerifierInstruction.Accept(),
-                _ => default,
-            };
-        }
+                return default;
+            }
 
-        return new AsciiStructuralLinearVerifierProgram(instructions);
+            var instructions = owner.AllocateArray<AsciiStructuralLinearVerifierInstruction>(steps.Length, false);
+            for (var i = 0; i < steps.Length; i++)
+            {
+                owner.ChargeWork(1);
+                var step = steps[i];
+                var charClass = AsciiStructuralIdentifierFamilyPlan.TryCreateAsciiCharClass(step.Set, out var createdCharClass)
+                    ? createdCharClass
+                    : default;
+                // Suffix steps always carry the owning plan raw parts, so the shared array holds identical data.
+                var compiledSuffixParts = step.SuffixParts.Length == 0 ? [] : sharedSuffixParts;
+                instructions[i] = step.Kind switch
+                {
+                    AsciiStructuralVerifierStepKind.ConsumeSeparator
+                        => AsciiStructuralLinearVerifierInstruction.ConsumeSetLoop(step.Set, charClass, step.MinCount),
+                    AsciiStructuralVerifierStepKind.RequireIdentifierStart
+                        => AsciiStructuralLinearVerifierInstruction.RequireSetByte(step.Set, charClass),
+                    AsciiStructuralVerifierStepKind.ConsumeIdentifierTail
+                        => AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(step.Set, charClass, step.MinCount, step.MaxCount),
+                    AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent
+                        => AsciiStructuralLinearVerifierInstruction.MatchSuffixAtCurrent(compiledSuffixParts),
+                    AsciiStructuralVerifierStepKind.MatchSuffixAfterTail
+                        => AsciiStructuralLinearVerifierInstruction.MatchSuffixAfterTail(compiledSuffixParts, step.MinCount),
+                    AsciiStructuralVerifierStepKind.RequireTrailingBoundary
+                        => AsciiStructuralLinearVerifierInstruction.RequireBoundary(step.BoundaryRequirement),
+                    AsciiStructuralVerifierStepKind.Accept
+                        => AsciiStructuralLinearVerifierInstruction.Accept(),
+                    _ => default,
+                };
+            }
+
+            var result = new AsciiStructuralLinearVerifierProgram(instructions);
+            construction.Complete(); return result;
+        }
+        finally { owner.LeaveDepth(); }
     }
 
     public bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, out int matchedLength)

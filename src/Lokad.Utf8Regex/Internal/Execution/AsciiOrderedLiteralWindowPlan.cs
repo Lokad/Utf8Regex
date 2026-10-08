@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -41,42 +42,60 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
         Utf8BoundaryRequirement trailingLiteralLeadingBoundary,
         Utf8BoundaryRequirement trailingLiteralTrailingBoundary)
     {
-        LeadingLiteralUtf8 = leadingLiteralUtf8;
-        _leadingLiteralsUtf8 = leadingLiteralsUtf8;
-        TrailingLiteralUtf8 = trailingLiteralUtf8;
-        _trailingLiteralsUtf8 = trailingLiteralsUtf8;
-        MaxGap = maxGap;
-        MinGap = minGap;
-        GapSameLine = gapSameLine;
-        Separator = separator;
-        BranchSeparators = branchSeparators ?? [];
-        YieldLeadingLiteralOnly = yieldLeadingLiteralOnly;
-        LeadingLiteralLeadingBoundary = leadingLiteralLeadingBoundary;
-        LeadingLiteralTrailingBoundary = leadingLiteralTrailingBoundary;
-        TrailingLiteralLeadingBoundary = trailingLiteralLeadingBoundary;
-        TrailingLiteralTrailingBoundary = trailingLiteralTrailingBoundary;
-        var trailing = HasPairedTrailingLiterals ? TrailingLiteralsUtf8 : [trailingLiteralUtf8];
-        TrailingSearchers = new PreparedSearcher[trailing.Length];
-        RequiresSemanticExecutor = Utf8SearchPlan.GetLiteralOverlap(leadingLiteralsUtf8) != Utf8AlternateLiteralOverlapKind.None;
-        for (var i = 0; i < trailing.Length; i++)
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            TrailingSearchers[i] = new PreparedSearcher(new PreparedSubstringSearch(trailing[i], false), false);
-            var currentSeparator = BranchSeparators.Length > 0 ? BranchSeparators[i] : separator;
-            var leading = HasPairedTrailingLiterals ? LeadingLiteralsUtf8[i] : leadingLiteralUtf8;
-            RequiresSemanticExecutor |= gapSameLine && trailing[i].AsSpan().Contains((byte)'\n') ||
-                currentSeparator.HasValue && (currentSeparator.Minimum == 0 || currentSeparator.IsLazy && maxGap > 0 ||
-                    currentSeparator.CharClass.Contains(leading[^1]) || currentSeparator.CharClass.Contains(trailing[i][0]));
-            if (currentSeparator.HasValue)
+            owner.ChargeWork(1);
+            LeadingLiteralUtf8 = leadingLiteralUtf8;
+            _leadingLiteralsUtf8 = leadingLiteralsUtf8;
+            TrailingLiteralUtf8 = trailingLiteralUtf8;
+            _trailingLiteralsUtf8 = trailingLiteralsUtf8;
+            MaxGap = maxGap;
+            MinGap = minGap;
+            GapSameLine = gapSameLine;
+            Separator = separator;
+            BranchSeparators = branchSeparators ?? [];
+            YieldLeadingLiteralOnly = yieldLeadingLiteralOnly;
+            LeadingLiteralLeadingBoundary = leadingLiteralLeadingBoundary;
+            LeadingLiteralTrailingBoundary = leadingLiteralTrailingBoundary;
+            TrailingLiteralLeadingBoundary = trailingLiteralLeadingBoundary;
+            TrailingLiteralTrailingBoundary = trailingLiteralTrailingBoundary;
+            var trailingCount = HasPairedTrailingLiterals ? TrailingLiteralsUtf8.Length : 1;
+            TrailingSearchers = owner.AllocateArray<PreparedSearcher>(trailingCount, false);
+            RequiresSemanticExecutor = Utf8SearchPlan.GetLiteralOverlap(leadingLiteralsUtf8) != Utf8AlternateLiteralOverlapKind.None;
+            for (var i = 0; i < trailingCount; i++)
             {
-                // A family fast path must admit every leading alternative,
-                // including a longer one whose last byte joins the separator run.
-                if (!HasPairedTrailingLiterals)
-                    foreach (var alternative in LeadingLiteralsUtf8)
-                        RequiresSemanticExecutor |= currentSeparator.CharClass.Contains(alternative[^1]);
-                for (var value = 0; value < 128; value++)
-                    RequiresSemanticExecutor |= currentSeparator.CharClass.Contains((byte)value) != Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value);
+                owner.ChargeWork(1);
+                var trailing = HasPairedTrailingLiterals ? TrailingLiteralsUtf8[i] : trailingLiteralUtf8;
+                // The exact short-needle constructor runs at most three scans.
+                // It borrows the byte payload and acquires no secondary arrays.
+                owner.ChargeWork(3ul * (ulong)trailing.Length);
+                TrailingSearchers[i] = new PreparedSearcher(new PreparedSubstringSearch(trailing, false), false);
+                var currentSeparator = BranchSeparators.Length > 0 ? BranchSeparators[i] : separator;
+                var leading = HasPairedTrailingLiterals ? LeadingLiteralsUtf8[i] : leadingLiteralUtf8;
+                if (gapSameLine) owner.ChargeWork((ulong)trailing.Length);
+                RequiresSemanticExecutor |= gapSameLine && trailing.AsSpan().Contains((byte)'\n') ||
+                    currentSeparator.HasValue && (currentSeparator.Minimum == 0 || currentSeparator.IsLazy && maxGap > 0 ||
+                        currentSeparator.CharClass.Contains(leading[^1]) || currentSeparator.CharClass.Contains(trailing[0]));
+                if (currentSeparator.HasValue)
+                {
+                    // A family fast path must admit every leading alternative,
+                    // including a longer one whose last byte joins the separator run.
+                    if (!HasPairedTrailingLiterals)
+                        foreach (var alternative in LeadingLiteralsUtf8)
+                        {
+                            owner.ChargeWork(1);
+                            RequiresSemanticExecutor |= currentSeparator.CharClass.Contains(alternative[^1]);
+                        }
+                    owner.ChargeWork(128);
+                    for (var value = 0; value < 128; value++)
+                        RequiresSemanticExecutor |= currentSeparator.CharClass.Contains((byte)value) != Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value);
+                }
             }
+            construction.Complete();
         }
+        finally { owner.LeaveDepth(); }
     }
 
     /// <summary>Search anchor literal (shortest, or the only one for single-literal patterns).</summary>

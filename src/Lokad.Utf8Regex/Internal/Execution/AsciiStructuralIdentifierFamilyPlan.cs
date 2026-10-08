@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -17,45 +18,53 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
         Utf8BoundaryRequirement leadingBoundary,
         Utf8BoundaryRequirement trailingBoundary)
     {
-        Prefixes = prefixes;
-        var overlap = Utf8SearchPlan.GetLiteralOverlap(prefixes);
-        HasOverlappingPrefixes = overlap != Utf8AlternateLiteralOverlapKind.None;
-        HasPrefixOverlap = (overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) != 0;
-        SeparatorSet = separatorSet;
-        SeparatorMinCount = separatorMinCount;
-        IdentifierStartSet = identifierStartSet;
-        IdentifierTailSet = identifierTailSet;
-        IdentifierTailMinCount = identifierTailMinCount;
-        IdentifierTailMaxCount = identifierTailMaxCount;
-        SuffixUtf8 = suffixUtf8;
-        SuffixParts = suffixParts is { Length: > 0 }
-            ? suffixParts
-            : suffixUtf8 is { Length: > 0 }
-                ? [AsciiStructuralSuffixPart.CreateLiteral(suffixUtf8)]
-                : [];
-        LeadingBoundary = leadingBoundary;
-        TrailingBoundary = trailingBoundary;
-        SeparatorCharClass = TryCreateAsciiCharClass(separatorSet, out var separatorCharClass)
-            ? separatorCharClass
-            : default;
-        IdentifierStartCharClass = TryCreateAsciiCharClass(identifierStartSet, out var identifierStartCharClass)
-            ? identifierStartCharClass
-            : default;
-        IdentifierTailCharClass = TryCreateAsciiCharClass(identifierTailSet, out var identifierTailCharClass)
-            ? identifierTailCharClass
-            : default;
-        CompiledSuffixParts = CreateCompiledSuffixParts(SuffixParts);
-        VerifierProgram = AsciiStructuralVerifierProgram.Create(this, CompiledSuffixParts);
-        HasAsciiUpperWordTailKernel =
-            SuffixParts.Length == 0 &&
-            !IdentifierStartCharClass.IsEmpty &&
-            !IdentifierTailCharClass.IsEmpty &&
-            HasSamePositiveDefinition(IdentifierStartCharClass, static b => b is >= (byte)'A' and <= (byte)'Z') &&
-            HasSamePositiveDefinition(IdentifierTailCharClass, static b =>
-                b is >= (byte)'A' and <= (byte)'Z' ||
-                b is >= (byte)'a' and <= (byte)'z' ||
-                b is >= (byte)'0' and <= (byte)'9' ||
-                b == (byte)'_');
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
+        {
+            owner.ChargeWork(1);
+            Prefixes = prefixes;
+            var overlap = Utf8SearchPlan.GetLiteralOverlap(prefixes);
+            HasOverlappingPrefixes = overlap != Utf8AlternateLiteralOverlapKind.None;
+            HasPrefixOverlap = (overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) != 0;
+            SeparatorSet = separatorSet;
+            SeparatorMinCount = separatorMinCount;
+            IdentifierStartSet = identifierStartSet;
+            IdentifierTailSet = identifierTailSet;
+            IdentifierTailMinCount = identifierTailMinCount;
+            IdentifierTailMaxCount = identifierTailMaxCount;
+            SuffixUtf8 = suffixUtf8;
+            SuffixParts = suffixParts is { Length: > 0 }
+                ? suffixParts
+                : suffixUtf8 is { Length: > 0 }
+                    ? CreateLiteralSuffixPart(suffixUtf8, owner)
+                    : [];
+            LeadingBoundary = leadingBoundary;
+            TrailingBoundary = trailingBoundary;
+            SeparatorCharClass = TryCreateAsciiCharClass(separatorSet, out var separatorCharClass)
+                ? separatorCharClass
+                : default;
+            IdentifierStartCharClass = TryCreateAsciiCharClass(identifierStartSet, out var identifierStartCharClass)
+                ? identifierStartCharClass
+                : default;
+            IdentifierTailCharClass = TryCreateAsciiCharClass(identifierTailSet, out var identifierTailCharClass)
+                ? identifierTailCharClass
+                : default;
+            CompiledSuffixParts = CreateCompiledSuffixParts(SuffixParts);
+            VerifierProgram = AsciiStructuralVerifierProgram.Create(this, CompiledSuffixParts);
+            HasAsciiUpperWordTailKernel =
+                SuffixParts.Length == 0 &&
+                !IdentifierStartCharClass.IsEmpty &&
+                !IdentifierTailCharClass.IsEmpty &&
+                HasSamePositiveDefinition(IdentifierStartCharClass, static b => b is >= (byte)'A' and <= (byte)'Z') &&
+                HasSamePositiveDefinition(IdentifierTailCharClass, static b =>
+                    b is >= (byte)'A' and <= (byte)'Z' ||
+                    b is >= (byte)'a' and <= (byte)'z' ||
+                    b is >= (byte)'0' and <= (byte)'9' ||
+                    b == (byte)'_');
+            construction.Complete();
+        }
+        finally { owner.LeaveDepth(); }
     }
 
     public byte[][] Prefixes { get; }
@@ -99,24 +108,39 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
     // PLAN.md D05: single construction owner for compiled suffix parts; the linear verifier shares this array instead of rebuilding it.
     internal static AsciiStructuralCompiledSuffixPart[] CreateCompiledSuffixParts(AsciiStructuralSuffixPart[] suffixParts)
     {
-        if (suffixParts.Length == 0)
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
         {
-            return [];
-        }
+            owner.ChargeWork(1);
+            if (suffixParts.Length == 0)
+            {
+                return [];
+            }
 
-        var compiled = new AsciiStructuralCompiledSuffixPart[suffixParts.Length];
-        for (var i = 0; i < suffixParts.Length; i++)
-        {
-            var part = suffixParts[i];
-            compiled[i] = part.IsLiteral
-                ? AsciiStructuralCompiledSuffixPart.CreateLiteral(part.LiteralUtf8)
-                : AsciiStructuralCompiledSuffixPart.CreateSeparator(
-                    part.SeparatorSet,
-                    TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : default,
-                    part.SeparatorMinCount);
-        }
+            var compiled = owner.AllocateArray<AsciiStructuralCompiledSuffixPart>(suffixParts.Length, false);
+            for (var i = 0; i < suffixParts.Length; i++)
+            {
+                owner.ChargeWork(1);
+                var part = suffixParts[i];
+                compiled[i] = part.IsLiteral
+                    ? AsciiStructuralCompiledSuffixPart.CreateLiteral(part.LiteralUtf8)
+                    : AsciiStructuralCompiledSuffixPart.CreateSeparator(
+                        part.SeparatorSet,
+                        TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : default,
+                        part.SeparatorMinCount);
+            }
 
-        return compiled;
+            construction.Complete(); return compiled;
+        }
+        finally { owner.LeaveDepth(); }
+    }
+
+    private static AsciiStructuralSuffixPart[] CreateLiteralSuffixPart(byte[] literal, Utf8ConstructionBudget owner)
+    {
+        var parts = owner.AllocateArray<AsciiStructuralSuffixPart>(1, false);
+        owner.ChargeWork(1); parts[0] = AsciiStructuralSuffixPart.CreateLiteral(literal);
+        return parts;
     }
 
     internal static bool TryCreateAsciiCharClass(string? runtimeSet, out AsciiCharClass charClass)
@@ -133,6 +157,7 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
 
         for (var i = 0; i < 0x80; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (charClass.Contains((byte)i) != predicate((byte)i))
             {
                 return false;

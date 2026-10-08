@@ -579,8 +579,23 @@ failed children cannot mutate their parent's vector. The native singleton route
 reuses its final byte payload. Its admitted ASCII string serves literal-pattern
 diagnostics/classification only; no subject is decoded and bytes are not re-encoded.
 The enclosing speculative attempt recovers child arrays/text/fact storage on late
-decline without refunding work. Other simple-plan branch/token/search extraction,
-structural plan containers and complete retained/shared policies remain open.
+decline without refunding work. Structural identifier plans also admit singleton
+suffix arrays, compiled suffix metadata, exact verifier steps and linear verifier
+arrays before acquisition. The former temporary step list is replaced by an
+exact final array; linear instructions share the owning plan's compiled suffix
+payload rather than rebuilding it. Ordered-window plans admit trailing searcher
+arrays and paired literal/separator arrays, borrow singleton trailing bytes
+without an intermediate reference array, and select the first shortest literal
+with a metered scan instead of sorting. Literal overlap, suffix compilation,
+kernel classification and exact trailing-search preparation charge their bounded
+scans before execution. Structural attempts keep root/wrapper continuations live;
+late decline or denial recovers completed child loans and never refunds work.
+Quoted-relation edge extraction borrows original children instead of acquiring
+a synthetic concatenation and changing their parent links. Other simple-plan
+branch/token/search extraction, token-run/search-set acquisition, remaining
+structural predicate/scalar-width work and complete retained/shared policies
+remain open. This is buffer/work/depth admission for covered preparation, not
+complete resource policy, retained storage or RSS qualification.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
 selection work. Literal builders and copied character/run strings share byte

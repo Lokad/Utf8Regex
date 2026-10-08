@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
@@ -496,6 +497,7 @@ internal readonly struct Utf8SearchPlan
 
     internal static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)
     {
+        Utf8ConstructionScope.ChargeWork(1);
         if (literals is not { Length: > 1 })
         {
             return Utf8AlternateLiteralOverlapKind.None;
@@ -507,11 +509,12 @@ internal readonly struct Utf8SearchPlan
             var candidate = literals[i];
             for (var j = 0; j < literals.Length; j++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 var alternate = literals[j];
                 if ((overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) == 0 &&
                     i != j &&
                     candidate.Length != alternate.Length &&
-                    (candidate.AsSpan().StartsWith(alternate) || alternate.AsSpan().StartsWith(candidate)))
+                    HaveCommonStart(candidate, 0, alternate))
                 {
                     overlap |= Utf8AlternateLiteralOverlapKind.SameStartPrefix;
                 }
@@ -520,8 +523,8 @@ internal readonly struct Utf8SearchPlan
                 {
                     for (var offset = 1; offset < candidate.Length; offset++)
                     {
-                        var suffix = candidate.AsSpan(offset);
-                        if (suffix.StartsWith(alternate) || alternate.AsSpan().StartsWith(suffix))
+                        Utf8ConstructionScope.ChargeWork(1);
+                        if (HaveCommonStart(candidate, offset, alternate))
                         {
                             overlap |= Utf8AlternateLiteralOverlapKind.ProperStart;
                             break;
@@ -537,6 +540,14 @@ internal readonly struct Utf8SearchPlan
         }
 
         return overlap;
+    }
+
+    private static bool HaveCommonStart(byte[] first, int offset, byte[] second)
+    {
+        // These are preparation-owned literals, never a subject input surface.
+        Utf8ConstructionScope.ChargeWork(2ul * (ulong)Math.Min(first.Length - offset, second.Length));
+        var suffix = first.AsSpan(offset);
+        return suffix.StartsWith(second) || second.AsSpan().StartsWith(suffix);
     }
 }
 
