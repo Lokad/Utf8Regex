@@ -3,6 +3,11 @@ namespace Lokad.Utf8Regex.Internal.Search;
 internal static partial class AsciiSearch
 {
     public static AsciiExactLiteralSearchData CreateExactLiteralSearchData(byte[][] literals)
+        => CreateExactLiteralSearchData(literals, fullMetadata: true);
+
+    // Small-family verification uses literal/discriminator maps and full literal
+    // equality. It has no consumer for prefix copies or second-byte membership.
+    internal static AsciiExactLiteralSearchData CreateExactLiteralSearchData(byte[][] literals, bool fullMetadata)
     {
         if (literals.Length == 0) return new(PreparedByteSearch.FromOwnedValues([], null), [], [], int.MaxValue);
         using var scope = Utf8ConstructionScope.Enter();
@@ -69,9 +74,12 @@ internal static partial class AsciiSearch
             {
                 budget.ChargeWork(1);
                 var references = buckets[group].Literals;
-                var prefix = GetCommonPrefix(references, budget);
+                var prefixLength = 0;
+                var prefix = fullMetadata || references.Length > 1
+                    ? GetCommonPrefix(references, budget, fullMetadata, out prefixLength) : [];
                 buckets[group] = new(firstBytes[group], references, prefix,
-                    GetDistinctSecondBytes(references, budget), CreatePrefixDiscriminator(references, prefix.Length, budget));
+                    fullMetadata ? GetDistinctSecondBytes(references, budget) : null,
+                    CreatePrefixDiscriminator(references, prefixLength, budget));
             }
             var map = budget.AllocateArray<int>(256, false);
             budget.ChargeWork(256);
@@ -83,7 +91,7 @@ internal static partial class AsciiSearch
         finally { budget.LeaveDepth(); }
     }
 
-    private static byte[] GetCommonPrefix(byte[][] literals, Utf8ConstructionBudget budget)
+    private static byte[] GetCommonPrefix(byte[][] literals, Utf8ConstructionBudget budget, bool retain, out int prefixLength)
     {
         var first = literals[0];
         var length = first.Length;
@@ -101,7 +109,8 @@ internal static partial class AsciiSearch
             }
             length = common;
         }
-        if (length <= 1) return [];
+        prefixLength = length <= 1 ? 0 : length;
+        if (prefixLength == 0 || !retain) return [];
         var prefix = budget.AllocateArray<byte>(length, false);
         budget.ChargeWork((ulong)length);
         first.AsSpan(0, length).CopyTo(prefix);

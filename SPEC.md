@@ -685,7 +685,20 @@ reference vector in grouped order, released after the masks copy their state;
 ineligible mask preparation borrows original lengths without flattening. Failed
 children restore parent storage, retainers and depth while work remains spent.
 This preserves ASCII folding, bucket/literal order and runtime verification.
-Other opaque BCL SearchValues state, small-family preparation and upstream preparation/emission
+Small ASCII-family preparation meters eligibility, ranks offsets in fixed
+four-entry scratch, and admits only the selected anchor byte search, filter
+arrays/values and pair-dispatch entries alongside its exact search data. Three
+literal dispatch borrows its inputs. One-bucket families decline before acquiring
+exact metadata. Its exact-data mode retains literal/discriminator maps and
+first-byte search without unused prefix copies or second-byte membership arrays;
+the full exact-search mode keeps those live consumers' metadata unchanged.
+Length-sized candidate lists/arrays, sorting/LINQ, opaque anchor
+and filter SearchValues, unused original-list retention and the unreachable
+fallback are removed. Selected metadata stays bounded independently of the number
+of candidate offsets. A prefix discriminator selects a literal for full
+verification; checking that byte and a few anchor/filter positions does not prove
+the common prefix. The old unchecked-prefix helper is removed.
+Other opaque BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

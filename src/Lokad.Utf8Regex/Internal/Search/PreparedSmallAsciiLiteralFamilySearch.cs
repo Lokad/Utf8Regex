@@ -1,23 +1,17 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
-internal readonly struct PreparedSmallAsciiLiteralFamilySearch
+internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 {
-    private readonly byte[][] _literals;
     private readonly AsciiExactLiteralSearchData _searchData;
     private readonly int _anchorOffset;
-    private readonly SearchValues<byte> _anchorSearchValues;
+    private readonly PreparedByteSearch _anchorSearch;
     private readonly Filter[] _filters;
     private readonly TripleDispatch _tripleDispatch;
     private readonly PairDispatch _pairDispatch;
 
-    private readonly record struct Filter(int Offset, byte[] Values, SearchValues<byte> SearchValues);
-
-    private readonly record struct AnchorCandidate(int Offset, byte[] Values, int Score);
-
-    private readonly record struct AnchorAndFilters(int AnchorOffset, byte[] AnchorValues, Filter[] Filters);
+    private readonly record struct Filter(int Offset, byte[] Values);
 
     private readonly record struct TripleDispatch(
         int PrimaryOffset,
@@ -43,66 +37,22 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
     private readonly record struct PairDispatchEntry(byte PrimaryValue, byte SecondaryValue, byte[] Literal);
 
     private PreparedSmallAsciiLiteralFamilySearch(
-        byte[][] literals,
         AsciiExactLiteralSearchData searchData,
         int anchorOffset,
-        byte[] anchorValues,
+        PreparedByteSearch anchorSearch,
         Filter[] filters,
         TripleDispatch tripleDispatch,
         PairDispatch pairDispatch)
     {
-        _literals = literals;
         _searchData = searchData;
         _anchorOffset = anchorOffset;
-        _anchorSearchValues = SearchValues.Create(anchorValues);
+        _anchorSearch = anchorSearch;
         _filters = filters;
         _tripleDispatch = tripleDispatch;
         _pairDispatch = pairDispatch;
     }
 
     public int ShortestLength => _searchData.ShortestLength;
-
-    public static bool TryCreate(byte[][] literals, out PreparedSmallAsciiLiteralFamilySearch search)
-    {
-        search = default;
-        if (literals is not { Length: >= 3 and <= 6 })
-        {
-            return false;
-        }
-
-        foreach (var literal in literals)
-        {
-            if (literal.Length < 2)
-            {
-                return false;
-            }
-
-            for (var i = 0; i < literal.Length; i++)
-            {
-                if (literal[i] >= 0x80)
-                {
-                    return false;
-                }
-            }
-        }
-
-        var searchData = AsciiSearch.CreateExactLiteralSearchData(literals);
-        if (searchData.Buckets.Length is < 2 or > 6)
-        {
-            return false;
-        }
-
-        var anchor = CreateAnchorAndFilters(literals);
-        search = new PreparedSmallAsciiLiteralFamilySearch(
-            literals,
-            searchData,
-            anchor.AnchorOffset,
-            anchor.AnchorValues,
-            anchor.Filters,
-            CreateTripleDispatch(literals, anchor.AnchorOffset),
-            CreatePairDispatch(literals, anchor.AnchorOffset));
-        return true;
-    }
 
     public int Count(ReadOnlySpan<byte> input) => Count(input, preferFastMatch: true);
 
@@ -202,7 +152,7 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
                 return -1;
             }
 
-            var relative = input[anchorSearchIndex..].IndexOfAny(_anchorSearchValues);
+            var relative = _anchorSearch.IndexOf(input[anchorSearchIndex..]);
             if (relative < 0)
             {
                 return -1;
@@ -218,7 +168,7 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
             for (var i = 0; i < _filters.Length; i++)
             {
                 var filter = _filters[i];
-                if (!filter.SearchValues.Contains(input[candidate + filter.Offset]))
+                if (!filter.Values.AsSpan().Contains(input[candidate + filter.Offset]))
                 {
                     passes = false;
                     break;
@@ -276,7 +226,9 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
             var discriminatorIndex = index + bucket.PrefixDiscriminator.Offset;
             if ((uint)discriminatorIndex < (uint)input.Length &&
                 map[input[discriminatorIndex]] is { } literal &&
-                LiteralMatchesAtKnownPrefix(input, index, literal, bucket.CommonPrefix.Length, preferFastMatch))
+                // A discriminator selects a literal; it does not prove the
+                // common prefix. Anchor/filter checks may cover only part of it.
+                LiteralMatchesAt(input, index, literal, preferFastMatch))
             {
                 matchedLength = literal.Length;
                 return true;
@@ -360,169 +312,6 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
         return false;
     }
 
-    private static AnchorAndFilters CreateAnchorAndFilters(byte[][] literals)
-    {
-        var shortestLength = literals.Min(static literal => literal.Length);
-        var offsets = new List<AnchorCandidate>(shortestLength);
-        var seenFlags = new bool[256];
-        var valueBuffer = new byte[8];
-        for (var offset = 0; offset < shortestLength; offset++)
-        {
-            Array.Clear(seenFlags);
-            var count = 0;
-            var overflow = false;
-            foreach (var literal in literals)
-            {
-                var value = literal[offset];
-                if (seenFlags[value])
-                {
-                    continue;
-                }
-
-                seenFlags[value] = true;
-                if (count >= valueBuffer.Length)
-                {
-                    overflow = true;
-                    break;
-                }
-
-                valueBuffer[count++] = value;
-            }
-
-            if (overflow || count is <= 1 or > 6)
-            {
-                continue;
-            }
-
-            var commonness = 0;
-            for (var i = 0; i < count; i++)
-            {
-                commonness += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(valueBuffer[i]);
-            }
-
-            offsets.Add(new AnchorCandidate(offset, valueBuffer[..count].ToArray(), commonness * 8 + count));
-        }
-
-        if (offsets.Count == 0)
-        {
-            return new AnchorAndFilters(0, GetFallbackAnchorValues(literals), []);
-        }
-
-        var ordered = offsets
-            .OrderBy(static f => f.Score)
-            .ThenByDescending(static f => f.Offset)
-            .ToArray();
-
-        var anchor = ordered[0];
-        var filters = ordered
-            .Skip(1)
-            .Take(3)
-            .Select(static f => new Filter(f.Offset, f.Values, SearchValues.Create(f.Values)))
-            .ToArray();
-
-        return new AnchorAndFilters(anchor.Offset, anchor.Values, filters);
-    }
-
-    private static byte[] GetFallbackAnchorValues(byte[][] literals)
-    {
-        var firstBytes = new byte[literals.Length];
-        for (var i = 0; i < literals.Length; i++)
-        {
-            firstBytes[i] = literals[i][0];
-        }
-
-        Array.Sort(firstBytes);
-        return firstBytes.Distinct().ToArray();
-    }
-
-    private static PairDispatch CreatePairDispatch(byte[][] literals, int primaryOffset)
-    {
-        if (literals.Length == 3)
-        {
-            return default;
-        }
-
-        var shortestLength = literals.Min(static literal => literal.Length);
-        if (shortestLength < 2)
-        {
-            return default;
-        }
-
-        for (var secondaryOffset = 0; secondaryOffset < shortestLength; secondaryOffset++)
-        {
-            if (secondaryOffset == primaryOffset)
-            {
-                continue;
-            }
-
-            if (!HasUniquePairs(literals, primaryOffset, secondaryOffset))
-            {
-                continue;
-            }
-
-            var entries = new PairDispatchEntry[literals.Length];
-            for (var i = 0; i < literals.Length; i++)
-            {
-                entries[i] = new PairDispatchEntry(
-                    literals[i][primaryOffset],
-                    literals[i][secondaryOffset],
-                    literals[i]);
-            }
-
-            return new PairDispatch(primaryOffset, secondaryOffset, entries);
-        }
-
-        return default;
-    }
-
-    private static TripleDispatch CreateTripleDispatch(byte[][] literals, int primaryOffset)
-    {
-        if (literals.Length != 3)
-        {
-            return default;
-        }
-
-        var shortestLength = literals.Min(static literal => literal.Length);
-        if (shortestLength < 2)
-        {
-            return default;
-        }
-
-        for (var secondaryOffset = 0; secondaryOffset < shortestLength; secondaryOffset++)
-        {
-            if (secondaryOffset == primaryOffset || !HasUniquePairs(literals, primaryOffset, secondaryOffset))
-            {
-                continue;
-            }
-
-            return new TripleDispatch(
-                primaryOffset,
-                secondaryOffset,
-                literals[0][primaryOffset], literals[0][secondaryOffset], literals[0],
-                literals[1][primaryOffset], literals[1][secondaryOffset], literals[1],
-                literals[2][primaryOffset], literals[2][secondaryOffset], literals[2]);
-        }
-
-        return default;
-    }
-
-    private static bool HasUniquePairs(byte[][] literals, int primaryOffset, int secondaryOffset)
-    {
-        for (var i = 0; i < literals.Length; i++)
-        {
-            for (var j = i + 1; j < literals.Length; j++)
-            {
-                if (literals[i][primaryOffset] == literals[j][primaryOffset] &&
-                    literals[i][secondaryOffset] == literals[j][secondaryOffset])
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool LiteralMatchesAt(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> literal, bool preferFastMatch)
         => Utf8LiteralEquality.EqualsAt(
@@ -531,12 +320,4 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
             literal,
             preferFastMatch ? Utf8LiteralComparisonKind.FastShort : Utf8LiteralComparisonKind.Scalar);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool LiteralMatchesAtKnownPrefix(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> literal, int knownPrefixLength, bool preferFastMatch)
-        => Utf8LiteralEquality.EqualsAtKnownPrefix(
-            input,
-            index,
-            literal,
-            knownPrefixLength,
-            preferFastMatch ? Utf8LiteralComparisonKind.FastShort : Utf8LiteralComparisonKind.Scalar);
 }
