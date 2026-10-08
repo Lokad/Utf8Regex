@@ -644,9 +644,21 @@ SIMD selection tests its three selected offsets instead of a length-sized bitmap
 The old score list, LINQ ordering/materialization and selection bitmap are removed.
 Empty families borrow all extents, including the rare-byte map. Runtime field layouts,
 frequency/tie ordering, masks and candidate methods remain unchanged.
+Packed-discriminator construction admits its literal/id maps, required anchor
+tables and shared byte-search state. Absent anchors borrow empty extents; families
+larger than the byte alphabet reject before offset scanning. Leading UTF-8 segment
+preparation validates eligibility before acquiring an admitted segment-reference
+buffer. It copies each distinct segment once and transfers or admits its final
+reference array in first-encounter order. The descriptor stays funded until the
+enclosing owner closes. Per-bucket literal references and their bucket type,
+assignment/count state, duplicate copies, List storage and repeated growth are
+removed; literal verification uses the wrapper's original literal list. The unchanged
+shortest-length scan is shared across these builders and mask preparation. Packed
+runtime fields and forward methods are unchanged; segment candidates use the same
+ordered prefixes directly, with constant storage for identical-prefix families;
+packed reverse search now excludes a rejected candidate to guarantee progress.
 Budget/scope semantics and provisional defaults remain unchanged.
-Other opaque BCL SearchValues state, packed-discriminator maps, leading-segment/literal
-set buckets and upstream preparation/emission
+Other opaque BCL SearchValues state, literal-set buckets and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

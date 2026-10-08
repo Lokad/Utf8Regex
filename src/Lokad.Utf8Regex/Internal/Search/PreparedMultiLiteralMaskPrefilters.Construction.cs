@@ -4,20 +4,6 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
-internal static class PreparedMultiLiteralMaskConstruction
-{
-    internal static int GetShortestLength(byte[][] literals, Utf8ConstructionBudget budget)
-    {
-        var shortest = int.MaxValue;
-        foreach (var literal in literals)
-        {
-            budget.ChargeWork(1);
-            shortest = Math.Min(shortest, literal.Length);
-        }
-        return shortest;
-    }
-}
-
 internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 {
     public PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals)
@@ -37,7 +23,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
         budget.EnterDepth();
         try
         {
-            ShortestLength = PreparedMultiLiteralMaskConstruction.GetShortestLength(literals, budget);
+            ShortestLength = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
             if (!Ssse3.IsSupported || !Sse2.IsSupported || literals.Length > 8 || ShortestLength <= 0 || ShortestLength == int.MaxValue)
             {
                 scope.Complete();
@@ -185,7 +171,7 @@ internal readonly partial struct PreparedMultiLiteralNibbleMaskPrefilter
         budget.EnterDepth();
         try
         {
-            ShortestLength = PreparedMultiLiteralMaskConstruction.GetShortestLength(literals, budget);
+            ShortestLength = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
             if (literals.Length > 64 || ShortestLength <= 0 || ShortestLength == int.MaxValue)
             { scope.Complete(); return; }
             MaskLength = Math.Min(MaxMaskLen, ShortestLength);
@@ -237,7 +223,7 @@ internal readonly partial struct PreparedMultiLiteralOffsetMaskPrefilter
         budget.EnterDepth();
         try
         {
-            ShortestLength = PreparedMultiLiteralMaskConstruction.GetShortestLength(literals, budget);
+            ShortestLength = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
             if (ShortestLength <= 0 || ShortestLength == int.MaxValue) { scope.Complete(); return; }
             var count = Math.Min(MaxOffsets, ShortestLength);
             Span<OffsetScore> selected = stackalloc OffsetScore[MaxOffsets];
@@ -311,7 +297,7 @@ internal readonly partial struct PreparedMultiLiteralRareBytePrefilter
         budget.EnterDepth();
         try
         {
-            ShortestLength = PreparedMultiLiteralMaskConstruction.GetShortestLength(literals, budget);
+            ShortestLength = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
             OffsetByValue = budget.AllocateArray<int>(256, false);
             budget.ChargeWork(768);
             Array.Fill(OffsetByValue, -1);

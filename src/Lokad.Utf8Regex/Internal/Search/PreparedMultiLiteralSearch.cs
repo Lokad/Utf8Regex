@@ -569,7 +569,7 @@ internal readonly struct PreparedMultiLiteralSearch
     }
 }
 
-internal readonly struct PreparedMultiLiteralPackedSearch
+internal readonly partial struct PreparedMultiLiteralPackedSearch
 {
     private PreparedMultiLiteralPackedSearch(
         PreparedByteSearch discriminatorSearch,
@@ -625,122 +625,6 @@ internal readonly struct PreparedMultiLiteralPackedSearch
         return search;
     }
 
-    public static bool TryCreate(byte[][] literals, out PreparedMultiLiteralPackedSearch search)
-    {
-        search = default;
-        if (literals.Length == 0)
-        {
-            return false;
-        }
-
-        var shortestLength = int.MaxValue;
-        for (var i = 0; i < literals.Length; i++)
-        {
-            shortestLength = Math.Min(shortestLength, literals[i].Length);
-        }
-
-        if (shortestLength <= 0)
-        {
-            return false;
-        }
-
-        for (var offset = 0; offset < shortestLength; offset++)
-        {
-            if (TryCreateAtOffset(literals, shortestLength, offset, out search))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    internal static bool TryCreateAtDiscriminatorOffset(byte[][] literals, int offset, out PreparedMultiLiteralPackedSearch search)
-    {
-        search = default;
-        if (literals.Length == 0)
-        {
-            return false;
-        }
-
-        var shortestLength = int.MaxValue;
-        for (var i = 0; i < literals.Length; i++)
-        {
-            shortestLength = Math.Min(shortestLength, literals[i].Length);
-        }
-
-        return shortestLength > 0 &&
-            TryCreateAtOffset(literals, shortestLength, offset, out search);
-    }
-
-    private static bool TryCreateAtOffset(byte[][] literals, int shortestLength, int offset, out PreparedMultiLiteralPackedSearch search)
-    {
-        search = default;
-        if ((uint)offset >= (uint)shortestLength)
-        {
-            return false;
-        }
-
-        Span<byte> discriminatorBytes = stackalloc byte[Math.Min(literals.Length, 256)];
-        Span<bool> seen = stackalloc bool[256];
-        seen.Clear();
-        var count = 0;
-        var duplicate = false;
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var value = literals[i][offset];
-            if (seen[value])
-            {
-                duplicate = true;
-                break;
-            }
-
-            seen[value] = true;
-            discriminatorBytes[count++] = value;
-        }
-
-        if (duplicate)
-        {
-            return false;
-        }
-
-        var literalByDiscriminator = new byte[256][];
-        var literalIdByDiscriminator = new int[256];
-        var secondByteByDiscriminator = new byte[256];
-        var thirdByteByDiscriminator = new byte[256];
-        Array.Fill(literalIdByDiscriminator, -1);
-        var hasSecondByteAnchor = offset + 1 < shortestLength;
-        var hasThirdByteAnchor = offset + 2 < shortestLength;
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var discriminator = literals[i][offset];
-            literalByDiscriminator[discriminator] = literals[i];
-            literalIdByDiscriminator[discriminator] = i;
-            if (hasSecondByteAnchor)
-            {
-                secondByteByDiscriminator[discriminator] = literals[i][offset + 1];
-            }
-
-            if (hasThirdByteAnchor)
-            {
-                thirdByteByDiscriminator[discriminator] = literals[i][offset + 2];
-            }
-        }
-
-        search = new PreparedMultiLiteralPackedSearch(
-            PreparedByteSearch.Create(discriminatorBytes[..count]),
-            literals,
-            literalByDiscriminator,
-            literalIdByDiscriminator,
-            secondByteByDiscriminator,
-            thirdByteByDiscriminator,
-            hasSecondByteAnchor,
-            hasThirdByteAnchor,
-            offset,
-            shortestLength);
-        return true;
-    }
-
     public int IndexOf(ReadOnlySpan<byte> input)
     {
         return TryFindFirstMatch(input, out var index, out _, out _) ? index : -1;
@@ -782,7 +666,9 @@ internal readonly struct PreparedMultiLiteralPackedSearch
                 }
             }
 
-            end = relative - DiscriminatorOffset + 1;
+            // Exclude the rejected start. Keeping it in the next window can
+            // rediscover the same discriminator indefinitely on a miss.
+            end = relative - DiscriminatorOffset;
         }
 
         return -1;
@@ -1296,59 +1182,13 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
     }
 }
 
-internal readonly struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
+internal readonly partial struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
 {
-    public PreparedMultiLiteralLeadingUtf8SegmentPrefilter(byte[][] literals)
-    {
-        ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
-        Buckets = [];
-
-        if (literals.Length == 0)
-        {
-            return;
-        }
-
-        var buckets = new List<PreparedMultiLiteralLeadingUtf8SegmentBucket>();
-        foreach (var literal in literals)
-        {
-            if (!TryGetLeadingSegmentLength(literal, out var segmentLength))
-            {
-                Buckets = [];
-                return;
-            }
-
-            var segment = literal[..segmentLength].ToArray();
-            var bucketIndex = -1;
-            for (var i = 0; i < buckets.Count; i++)
-            {
-                if (buckets[i].Segment.AsSpan().SequenceEqual(segment))
-                {
-                    bucketIndex = i;
-                    break;
-                }
-            }
-
-            if (bucketIndex < 0)
-            {
-                buckets.Add(new PreparedMultiLiteralLeadingUtf8SegmentBucket(segment, [literal]));
-                continue;
-            }
-
-            var existing = buckets[bucketIndex];
-            var expanded = new byte[existing.Literals.Length + 1][];
-            Array.Copy(existing.Literals, expanded, existing.Literals.Length);
-            expanded[^1] = literal;
-            buckets[bucketIndex] = new PreparedMultiLiteralLeadingUtf8SegmentBucket(existing.Segment, expanded);
-        }
-
-        Buckets = [.. buckets];
-    }
-
     public int ShortestLength { get; }
 
-    public PreparedMultiLiteralLeadingUtf8SegmentBucket[] Buckets { get; }
+    public byte[][] Segments { get; }
 
-    public bool HasValue => Buckets.Length > 0;
+    public bool HasValue => Segments.Length > 0;
 
     public bool TryFindNextCandidate(ReadOnlySpan<byte> input, ref PreparedMultiLiteralScanState state, out int candidateIndex)
     {
@@ -1359,9 +1199,9 @@ internal readonly struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
         }
 
         var bestIndex = int.MaxValue;
-        for (var i = 0; i < Buckets.Length; i++)
+        for (var i = 0; i < Segments.Length; i++)
         {
-            var relative = input[state.NextStart..].IndexOf(Buckets[i].Segment);
+            var relative = input[state.NextStart..].IndexOf(Segments[i]);
             if (relative < 0)
             {
                 continue;
@@ -1415,8 +1255,6 @@ internal readonly struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
         return false;
     }
 }
-
-internal readonly record struct PreparedMultiLiteralLeadingUtf8SegmentBucket(byte[] Segment, byte[][] Literals);
 
 internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 {
