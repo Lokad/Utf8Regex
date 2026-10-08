@@ -619,8 +619,16 @@ admit one independent copy from an array or borrowed span, then derive large-set
 state from that owned copy. Shared empty searches acquire nothing. Five multi-literal
 producers pass stack spans directly, avoiding temporary arrays before the admitted
 copy. The front end retains only its ASCII-class bridge; redundant generic factories
-are removed. Budget/scope semantics and provisional defaults remain unchanged.
-Other opaque BCL SearchValues state and multi-literal maps/vectors/tries, emission
+are removed. Exact multi-literal trie construction now admits temporary node/edge
+value buffers (including growth overlap and descriptors), frozen node/key/child
+arrays, the root map and its byte-search state. Iterative insertion, bounded sibling
+visits, freezing and in-place sorting share construction work. Temporary arrays
+release before return; their descriptors stay funded until the enclosing owner
+closes. One fixed 256-entry stack row handles child ordering. Empty tries borrow
+all state. The superseded node objects, per-node dictionaries, list and sorting
+arrays are removed; runtime trie layout and literal priority are unchanged.
+Budget/scope semantics and provisional defaults remain unchanged.
+Other opaque BCL SearchValues state and multi-literal maps/vectors/automata, emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

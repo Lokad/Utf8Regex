@@ -9,15 +9,15 @@ once per compiled regex; scan state is retained by operation cursors.
 
 | Owner | Preparation | Stateful scan envelope | Retention rule |
 |---|---:|---:|---|
-| `PreparedByteSearch` | `O(k)` | `O(n)` | `SearchValues<byte>` is retained only for sets larger than three bytes. |
+| `PreparedByteSearch` | `O(k + alphabet)` | `O(n)` | One admitted byte copy and, for sets larger than three bytes, an owned immutable byte set. Shared empties acquire nothing. |
 | `PreparedSubstringSearch` | `O(m + alphabet)` | `O(n * m)` worst case; vector/Boyer-Moore tiers are sublinear on favorable input | Shift tables and selected comparison offsets are prepared once. |
 | `PreparedQuotedAsciiRunSearch` | `O(1)` | `O(n)` | No candidate revisits an earlier opening quote. |
 | `PreparedAsciiIgnoreCaseLiteralSetSearch` | `O(L + alphabet)` | `O(n * max(m))` worst case | One immutable data owner retains the folded buckets, first-byte search, and optional packed folded masks. Long families select three rare correlated offsets; shorter families retain up to four leading offsets. Scalar and correlated scans advance monotonically. |
 | `PreparedSmallAsciiLiteralFamilySearch` | `O(L + alphabet)` | `O(n * k * max(m))` worst case | Anchor filters and pair/triple dispatch are prepared once; rejected candidates advance by at least one byte. |
-| `PreparedLiteralSetSearch` | `O(L + alphabet)` | `O(n * k * max(m))` worst case | Packed, unique-anchor, and prefix-discriminator states are mutually exclusive prepared strategies. |
+| `PreparedLiteralSetSearch` | `O(L * alphabet)` worst case | `O(n * k * max(m))` worst case | Packed, unique-anchor, and prefix-discriminator states are mutually exclusive prepared strategies; retained trie preparation follows the trie row below. |
 | `PreparedMultiLiteralSearch` packed/prefilter tiers | `O(L + k * alphabet)` | `O(n * k * max(m))` worst case | AVX2, SSE, and scalar tails share retained selected offsets, masks, and buckets; every prefilter advances monotonically. |
 | `PreparedMultiLiteralSearch` automaton tier | `O(L * alphabet)` | `O(n + matches)` | The automaton state is carried in `PreparedMultiLiteralScanState`; it never restarts after a rejected match. |
-| `PreparedMultiLiteralSearch` trie tier | `O(L)` | `O(n * max(m))` worst case | Trie nodes are immutable after preparation. |
+| `PreparedMultiLiteralSearch` trie tier | `O(L * alphabet)` | `O(n * max(m))` worst case | Admitted node/edge value buffers freeze to immutable node/key/child arrays and the root map. Sibling chains contain at most 256 entries; sorting uses one fixed stack row. Temporary arrays release before return; empty tries borrow all state. |
 | `Utf8InvariantCyrillicLiteralCountStrategy` | `O(L + k * alphabet)` | `O(n * k * max(m))` worst case | At most eight plain-literal branches share the packed candidate scan when SIMD is available; every correlated, shared-anchor, and per-branch fallback cursor advances monotonically. |
 | `PreparedSearcher` | selected-owner cost | selected-owner cost | It is a typed dispatcher and does not add another scan; overlapping byte-set cursors advance at least one byte after every candidate. |
 | `PreparedWindowSearch` | two selected-owner costs | `O(leading work + trailing work + c)` | Leading and trailing scan states are both retained. A dense leading stream with an absent trailing literal scans the trailing suffix once, not once per leading candidate. |

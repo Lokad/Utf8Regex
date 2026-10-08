@@ -2812,7 +2812,7 @@ internal sealed class MutablePreparedMultiLiteralAutomatonNode
     }
 }
 
-internal readonly struct PreparedMultiLiteralTrieSearch
+internal readonly partial struct PreparedMultiLiteralTrieSearch
 {
     private readonly PreparedMultiLiteralTrieNode[] _nodes;
 
@@ -2833,35 +2833,6 @@ internal readonly struct PreparedMultiLiteralTrieSearch
     public int[] RootMap { get; }
 
     public int ShortestLength { get; }
-
-    public static PreparedMultiLiteralTrieSearch Create(byte[][] literals)
-    {
-        if (literals.Length == 0)
-        {
-            return new PreparedMultiLiteralTrieSearch(PreparedByteSearch.Create(), CreateRootMap(Array.Empty<byte>(), Array.Empty<int>()), [], int.MaxValue);
-        }
-
-        var nodes = new List<MutablePreparedMultiLiteralTrieNode>();
-        nodes.Add(new MutablePreparedMultiLiteralTrieNode());
-
-        var shortestLength = int.MaxValue;
-        for (var order = 0; order < literals.Length; order++)
-        {
-            var literal = literals[order];
-            shortestLength = Math.Min(shortestLength, literal.Length);
-            InsertLiteral(nodes, literal, nodes[0], literal.Length, order);
-        }
-
-        var flattened = new PreparedMultiLiteralTrieNode[nodes.Count];
-        for (var i = 0; i < nodes.Count; i++)
-        {
-            flattened[i] = nodes[i].Freeze();
-        }
-
-        var rootBytes = flattened[0].Keys;
-        var rootMap = CreateRootMap(rootBytes, flattened[0].Children);
-        return new PreparedMultiLiteralTrieSearch(PreparedByteSearch.Create(rootBytes), rootMap, flattened, shortestLength);
-    }
 
     public int IndexOf(ReadOnlySpan<byte> input)
     {
@@ -2985,80 +2956,6 @@ internal readonly struct PreparedMultiLiteralTrieSearch
         return true;
     }
 
-    private static void InsertLiteral(
-        List<MutablePreparedMultiLiteralTrieNode> nodes,
-        byte[] literal,
-        MutablePreparedMultiLiteralTrieNode root,
-        int length,
-        int order)
-    {
-        var node = root;
-        for (var i = 0; i < literal.Length; i++)
-        {
-            var key = literal[i];
-            if (!node.Children.TryGetValue(key, out var next))
-            {
-                next = nodes.Count;
-                node.Children.Add(key, next);
-                nodes.Add(new MutablePreparedMultiLiteralTrieNode());
-            }
-
-            node = nodes[next];
-        }
-
-        node.SetTerminal(order, length);
-    }
-
-    private static int[] CreateRootMap(byte[] keys, int[] children)
-    {
-        var map = new int[256];
-        Array.Fill(map, -1);
-        for (var i = 0; i < keys.Length; i++)
-        {
-            map[keys[i]] = children[i];
-        }
-
-        return map;
-    }
-}
-
-internal sealed class MutablePreparedMultiLiteralTrieNode
-{
-    public Dictionary<byte, int> Children { get; } = [];
-
-    public int TerminalOrder { get; private set; } = -1;
-
-    public int TerminalLength { get; private set; }
-
-    public void SetTerminal(int order, int length)
-    {
-        if (TerminalOrder >= 0 && TerminalOrder <= order)
-        {
-            return;
-        }
-
-        TerminalOrder = order;
-        TerminalLength = length;
-    }
-
-    public PreparedMultiLiteralTrieNode Freeze()
-    {
-        if (Children.Count == 0)
-        {
-            return new PreparedMultiLiteralTrieNode([], [], TerminalOrder, TerminalLength);
-        }
-
-        var ordered = Children.OrderBy(static pair => pair.Key).ToArray();
-        var keys = new byte[ordered.Length];
-        var children = new int[ordered.Length];
-        for (var i = 0; i < ordered.Length; i++)
-        {
-            keys[i] = ordered[i].Key;
-            children[i] = ordered[i].Value;
-        }
-
-        return new PreparedMultiLiteralTrieNode(keys, children, TerminalOrder, TerminalLength);
-    }
 }
 
 internal readonly struct PreparedMultiLiteralTrieNode

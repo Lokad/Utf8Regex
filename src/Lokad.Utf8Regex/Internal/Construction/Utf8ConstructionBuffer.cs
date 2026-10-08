@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Lokad.Utf8Regex.Internal.FrontEnd;
+namespace Lokad.Utf8Regex.Internal;
 
 /// <summary>Exact array-backed construction vector/stack. Admission covers both
 /// extents during growth and final copying; Take transfers the final array loan.

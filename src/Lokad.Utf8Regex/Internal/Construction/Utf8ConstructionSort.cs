@@ -1,4 +1,4 @@
-namespace Lokad.Utf8Regex.Internal.FrontEnd;
+namespace Lokad.Utf8Regex.Internal;
 
 /// <summary>In-place construction sort whose comparisons and swaps are admitted
 /// individually. Resource failures propagate directly and require no scratch array.</summary>
