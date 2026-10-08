@@ -11,7 +11,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
+internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
     IUtf8AsciiWellFormedMatchRuntime,
     IUtf8WellFormedMatchRuntime,
     IUtf8UnvalidatedMatchRuntime
@@ -24,10 +24,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     private readonly Utf8CompiledExecutionBackend _backend;
     private readonly Utf8SearchOperationPlan _countProgram;
     private readonly Utf8SearchOperationPlan _firstMatchProgram;
-    private readonly Utf8SearchOperationPlan _enumerationProgram;
     private readonly Utf8EmittedLiteralFamilyCounter? _emittedLiteralFamilyCounter;
     private readonly byte[][]? _smallAsciiLiteralFamily;
-    private readonly SearchValues<byte>? _smallAsciiLiteralFamilyFirstBytes;
+    private readonly PreparedByteSearch _smallAsciiLiteralFamilyFirstBytes;
     private readonly PreparedMultiLiteralCandidatePrefilter _leadingUtf8SegmentLiteralFamilyPrefilter;
     private readonly PreparedMultiLiteralAutomatonSearch _leadingUtf8SegmentLiteralFamilyAutomaton;
     private readonly PreparedSmallAsciiLiteralFamilySearch? _smallAsciiLiteralFamilyPrimitive;
@@ -37,45 +36,23 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private const int SmallAsciiLiteralFamilyPrimitiveProbeBytes = 16 * 1024;
 
-    public Utf8LiteralCompiledEngineRuntime(Utf8CompiledEngine compiledEngine, Utf8PreparedRegex regexPlan, bool usesRightToLeft)
+    private Utf8LiteralCompiledEngineRuntime(ConstructionState state)
     {
-        _compiledEngine = compiledEngine;
-        _regexPlan = regexPlan;
-        _usesRightToLeft = usesRightToLeft;
-        _backend = compiledEngine.Backend;
-        _countProgram = _regexPlan.SearchPlan.CountOperation;
-        _firstMatchProgram = _regexPlan.SearchPlan.FirstMatchOperation;
-        _enumerationProgram = _regexPlan.SearchPlan.EnumerationOperation;
-        _emittedLiteralFamilyCounter = _backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
-                                       Utf8EmittedLiteralFamilyCounter.TryCreate(_regexPlan.SearchPlan, _countProgram, _firstMatchProgram, out var emitted)
-            ? emitted
-            : null;
-        if (TryCreateSmallAsciiLiteralFamily(regexPlan, usesRightToLeft, out var smallAsciiLiteralFamily, out var firstBytes))
-        {
-            _smallAsciiLiteralFamily = smallAsciiLiteralFamily;
-            _smallAsciiLiteralFamilyFirstBytes = SearchValues.Create(firstBytes);
-        }
-
-        if (TryCreateLeadingUtf8SegmentLiteralFamily(regexPlan, usesRightToLeft, out var leadingUtf8SegmentLiteralFamilyPrefilter, out var leadingUtf8SegmentLiteralFamilyAutomaton))
-        {
-            _leadingUtf8SegmentLiteralFamilyPrefilter = leadingUtf8SegmentLiteralFamilyPrefilter;
-            _leadingUtf8SegmentLiteralFamilyAutomaton = leadingUtf8SegmentLiteralFamilyAutomaton;
-        }
-
-        if (TryCreateBmpThreeByteLiteralFamilySearch(regexPlan, usesRightToLeft, out var bmpThreeByteLiteralFamilySearch))
-        {
-            _bmpThreeByteLiteralFamilySearch = bmpThreeByteLiteralFamilySearch;
-        }
-
-        _smallAsciiLiteralFamilyPrimitive = TryCreateSmallAsciiLiteralFamilyPrimitive(regexPlan, usesRightToLeft, out var primitive)
-            ? primitive
-            : null;
-        if (TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortAsciiLiteralFamilyCounter))
-        {
-            _shortAsciiLiteralFamilyCounter = shortAsciiLiteralFamilyCounter;
-        }
-
-        _compositeTrailingLiteralSearch = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
+        _compiledEngine = state.CompiledEngine;
+        _regexPlan = state.RegexPlan;
+        _usesRightToLeft = state.UsesRightToLeft;
+        _backend = state.Backend;
+        _countProgram = state.CountProgram;
+        _firstMatchProgram = state.FirstMatchProgram;
+        _emittedLiteralFamilyCounter = state.EmittedCounter;
+        _smallAsciiLiteralFamily = state.SmallFamily;
+        _smallAsciiLiteralFamilyFirstBytes = state.FirstBytes;
+        _leadingUtf8SegmentLiteralFamilyPrefilter = state.LeadingPrefilter;
+        _leadingUtf8SegmentLiteralFamilyAutomaton = state.LeadingAutomaton;
+        _smallAsciiLiteralFamilyPrimitive = state.Primitive;
+        _shortAsciiLiteralFamilyCounter = state.ShortCounter;
+        _bmpThreeByteLiteralFamilySearch = state.BmpSearch;
+        _compositeTrailingLiteralSearch = state.CompositeSearch;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -310,27 +287,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             _regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
     }
 
-    private static CompositeTrailingLiteralSearch? CreateCompositeTrailingLiteralSearch(
-        Utf8PreparedRegex regexPlan,
-        bool usesRightToLeft)
-    {
-        if (usesRightToLeft ||
-            regexPlan.SearchPlan.HasBoundaryRequirements ||
-            regexPlan.ExecutionKind is not
-                (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
-            regexPlan.LiteralUtf8 is not { Length: > 0 } leadingLiteral ||
-            regexPlan.SearchPlan.TrailingLiteralUtf8 is not { Length: > 0 } trailingLiteral)
-        {
-            return null;
-        }
-
-        byte[] compositeLiteral = [.. leadingLiteral, .. trailingLiteral];
-        return new CompositeTrailingLiteralSearch(
-            new PreparedSubstringSearch(compositeLiteral, ignoreCase: false),
-            leadingLiteral.Length,
-            GetLiteralUtf16Length(leadingLiteral));
-    }
-
     private static Utf8ValueMatch MatchCompositeTrailingLiteral(
         ReadOnlySpan<byte> input,
         CompositeTrailingLiteralSearch search,
@@ -448,7 +404,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
         if (!_usesRightToLeft &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
-            _smallAsciiLiteralFamilyFirstBytes is not null &&
+            _smallAsciiLiteralFamilyFirstBytes.Count > 0 &&
             TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out index, out matchedByteLength))
         {
             return true;
@@ -1401,7 +1357,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         if (budget.IsInfinite &&
             input.Length >= PreparedSearcherLiteralFamilyCountThresholdBytes &&
             _smallAsciiLiteralFamily is { Length: 2 } singleByteLiteralPair &&
-            _smallAsciiLiteralFamilyFirstBytes is not null &&
+            _smallAsciiLiteralFamilyFirstBytes.Count > 0 &&
             (singleByteLiteralPair[0].Length == 1 || singleByteLiteralPair[1].Length == 1))
         {
             return CountSmallAsciiLiteralFamily(
@@ -1432,7 +1388,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         if (_smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
-            _smallAsciiLiteralFamilyFirstBytes is not null)
+            _smallAsciiLiteralFamilyFirstBytes.Count > 0)
         {
             return CountSmallAsciiLiteralFamily(input, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, budget);
         }
@@ -1477,42 +1433,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return count;
     }
 
-    private static bool TryCreateLeadingUtf8SegmentLiteralFamily(
-        Utf8PreparedRegex regexPlan,
-        bool usesRightToLeft,
-        out PreparedMultiLiteralCandidatePrefilter prefilter,
-        out PreparedMultiLiteralAutomatonSearch automaton)
-    {
-        prefilter = default;
-        automaton = default;
-
-        if (usesRightToLeft ||
-            regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
-            regexPlan.SearchPlan.HasBoundaryRequirements ||
-            regexPlan.SearchPlan.HasTrailingLiteralRequirement ||
-            regexPlan.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 1 } literals)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            if (!TryGetLeadingUtf8SegmentLength(literals[i], out _))
-            {
-                return false;
-            }
-        }
-
-        prefilter = PreparedMultiLiteralCandidatePrefilter.CreateLeadingUtf8Segment(literals);
-        if (!prefilter.HasValue)
-        {
-            return false;
-        }
-
-        automaton = PreparedMultiLiteralAutomatonSearch.Create(literals);
-        return true;
-    }
-
     private static int CountLeadingUtf8SegmentLiteralFamilyHybrid(
         ReadOnlySpan<byte> input,
         PreparedMultiLiteralCandidatePrefilter prefilter,
@@ -1555,35 +1475,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         return count;
-    }
-
-    private static bool CanUseFusedValidatedBmpThreeByteLiteralFamilyCount(byte[][] literals)
-    {
-        for (var i = 0; i < literals.Length; i++)
-        {
-            if (!CanUseFusedValidatedBmpThreeByteLiteralCount(literals[i]))
-            {
-                return false;
-            }
-        }
-
-        return literals.Length > 0;
-    }
-
-    private static bool TryCreateBmpThreeByteLiteralFamilySearch(
-        Utf8PreparedRegex regexPlan,
-        bool usesRightToLeft,
-        out PreparedBmpThreeByteLiteralFamilySearch search)
-    {
-        search = default;
-
-        return !usesRightToLeft &&
-            regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            regexPlan.SearchPlan.HasBoundaryRequirements == false &&
-            regexPlan.SearchPlan.HasTrailingLiteralRequirement == false &&
-            regexPlan.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } literals &&
-            CanUseFusedValidatedBmpThreeByteLiteralFamilyCount(literals) &&
-            PreparedBmpThreeByteLiteralFamilySearch.TryCreate(literals, out search);
     }
 
     private static int CountExactUtf8LiteralFamilyValidated(ReadOnlySpan<byte> input, PreparedBmpThreeByteLiteralFamilySearch search)
@@ -1737,7 +1628,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
-            _smallAsciiLiteralFamilyFirstBytes is not null)
+            _smallAsciiLiteralFamilyFirstBytes.Count > 0)
         {
             return TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out _, out _);
         }
@@ -1772,7 +1663,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
-            _smallAsciiLiteralFamilyFirstBytes is not null)
+            _smallAsciiLiteralFamilyFirstBytes.Count > 0)
         {
             return TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out var directLength)
                 ? new Utf8ValueMatch(true, true, directIndex, directLength, directIndex, directLength)
@@ -2006,7 +1897,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         matchedByteLength = 0;
         if (budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
-            _smallAsciiLiteralFamilyFirstBytes is not null &&
+            _smallAsciiLiteralFamilyFirstBytes.Count > 0 &&
             TryFindNextSmallAsciiLiteralFamily(input, startIndex, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out matchedByteLength))
         {
             return directIndex;
@@ -2071,76 +1962,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return byteCount == 0 ? 0 : Utf8Validation.Validate(input[..byteCount]).Utf16Length;
     }
 
-    private static bool TryCreateSmallAsciiLiteralFamily(Utf8PreparedRegex regexPlan, bool usesRightToLeft, out byte[][]? literals, out byte[] firstBytes)
-    {
-        literals = null;
-        firstBytes = [];
-
-        if (usesRightToLeft ||
-            regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
-            regexPlan.SearchPlan.HasBoundaryRequirements ||
-            regexPlan.SearchPlan.HasTrailingLiteralRequirement ||
-            regexPlan.SearchPlan.AlternateLiteralsUtf8 is not { Length: >= 2 and <= 8 } candidates)
-        {
-            return false;
-        }
-
-        Span<bool> seen = stackalloc bool[256];
-        var orderedLiterals = new byte[candidates.Length][];
-        var orderedFirstBytes = new byte[candidates.Length];
-        for (var i = 0; i < candidates.Length; i++)
-        {
-            var literal = candidates[i];
-            if (literal.Length == 0 || !IsAscii(literal))
-            {
-                return false;
-            }
-
-            var first = literal[0];
-            if (seen[first])
-            {
-                return false;
-            }
-
-            seen[first] = true;
-            orderedLiterals[i] = literal;
-            orderedFirstBytes[i] = first;
-        }
-
-        Array.Sort(orderedFirstBytes, orderedLiterals, Comparer<byte>.Default);
-        literals = orderedLiterals;
-        firstBytes = orderedFirstBytes;
-        return true;
-    }
-
-    private static bool TryCreateSmallAsciiLiteralFamilyPrimitive(Utf8PreparedRegex regexPlan, bool usesRightToLeft, out PreparedSmallAsciiLiteralFamilySearch primitive)
-    {
-        primitive = default;
-
-        return !usesRightToLeft &&
-            regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            !regexPlan.SearchPlan.HasBoundaryRequirements &&
-            !regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
-            regexPlan.SearchPlan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 6 } literals &&
-            literals.Min(static literal => literal.Length) >= 5 &&
-            PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out primitive);
-    }
-
-    private static bool TryCreateShortAsciiLiteralFamilyCounter(
-        Utf8PreparedRegex regexPlan,
-        bool usesRightToLeft,
-        out PreparedShortAsciiLiteralFamilyCounter counter)
-    {
-        counter = default;
-
-        return !usesRightToLeft &&
-            regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            !regexPlan.SearchPlan.HasBoundaryRequirements &&
-            !regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
-            regexPlan.SearchPlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 4 } literals &&
-            PreparedShortAsciiLiteralFamilyCounter.TryCreate(literals, out counter);
-    }
-
     private static bool ShouldPreferSmallAsciiLiteralFamilyPrimitive(ReadOnlySpan<byte> input, PreparedSmallAsciiLiteralFamilySearch primitive)
     {
         var probeLength = Math.Min(input.Length, SmallAsciiLiteralFamilyPrimitiveProbeBytes);
@@ -2154,7 +1975,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return primitive.TryFindNextNonOverlapping(probe, ref startIndex, out _, out _);
     }
 
-    private static int CountSmallAsciiLiteralFamily(ReadOnlySpan<byte> input, byte[][] literals, SearchValues<byte> firstBytes, Utf8ExecutionDeadline budget)
+    private static int CountSmallAsciiLiteralFamily(ReadOnlySpan<byte> input, byte[][] literals, PreparedByteSearch firstBytes, Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var startIndex = 0;
@@ -2168,11 +1989,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return count;
     }
 
-    private static bool TryFindNextSmallAsciiLiteralFamily(ReadOnlySpan<byte> input, int startIndex, byte[][] literals, SearchValues<byte> firstBytes, out int index, out int matchedLength)
+    private static bool TryFindNextSmallAsciiLiteralFamily(ReadOnlySpan<byte> input, int startIndex, byte[][] literals, PreparedByteSearch firstBytes, out int index, out int matchedLength)
     {
         while ((uint)startIndex < (uint)input.Length)
         {
-            var relativeIndex = input[startIndex..].IndexOfAny(firstBytes);
+            var relativeIndex = firstBytes.IndexOf(input[startIndex..]);
             if (relativeIndex < 0)
             {
                 break;
@@ -2213,19 +2034,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         public int MatchLengthInUtf16 { get; } = matchLengthInUtf16;
 
         public int FindFirst(ReadOnlySpan<byte> input) => search.IndexOf(input);
-    }
-
-    private static bool IsAscii(ReadOnlySpan<byte> value)
-    {
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value[i] >= 0x80)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private InvalidOperationException UnexpectedExecutionKind()

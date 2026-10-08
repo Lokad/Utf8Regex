@@ -18,14 +18,28 @@ internal static class Utf8CompiledRuntimeFactory
             compiledEngine = new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex);
         }
 
-        var literalRuntime = new Utf8LiteralCompiledEngineRuntime(compiledEngine, regexPlan, (options & RegexOptions.RightToLeft) != 0);
+        if (compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
+        {
+            using var scope = Utf8ConstructionScope.Enter();
+            var budget = scope.Budget;
+            budget.EnterDepth();
+            try
+            {
+                var inner = Utf8LiteralCompiledEngineRuntime.Create(compiledEngine, regexPlan,
+                    (options & RegexOptions.RightToLeft) != 0);
+                Utf8CompiledEngineRuntime result = compiledEngine.Kind == Utf8CompiledEngineKind.ExactLiteral
+                    ? budget.AllocateObject(inner, static value => new Utf8ExactLiteralCompiledEngineRuntime(value))
+                    : budget.AllocateObject(inner, static value => new Utf8LiteralFamilyCompiledEngineRuntime(value));
+                scope.Complete();
+                return result;
+            }
+            finally { budget.LeaveDepth(); }
+        }
+        // Prepare only the selected implementation. The discarded literal
+        // runtime could otherwise acquire unrelated family/search/emitted state.
         var nonLiteralRuntime = new Utf8NonLiteralCompiledEngineRuntime(compiledEngine, regexPlan, verifierRuntime);
         return compiledEngine.Kind switch
         {
-            Utf8CompiledEngineKind.ExactLiteral
-                => new Utf8ExactLiteralCompiledEngineRuntime(literalRuntime),
-            Utf8CompiledEngineKind.LiteralFamily
-                => new Utf8LiteralFamilyCompiledEngineRuntime(literalRuntime),
             Utf8CompiledEngineKind.StructuralFamily
                 => new Utf8StructuralFamilyCompiledEngineRuntime(nonLiteralRuntime),
             Utf8CompiledEngineKind.EmittedKernel

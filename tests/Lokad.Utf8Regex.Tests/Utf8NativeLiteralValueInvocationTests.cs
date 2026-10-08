@@ -143,7 +143,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     {
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant);
         var plan = Prepared(regex);
-        var runtime = new Utf8LiteralCompiledEngineRuntime(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
+        var runtime = Utf8LiteralCompiledEngineRuntime.Create(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1));
         // TickCount64 can stay unchanged during a 10 ms sleep on Windows.
         // Establish expiration rather than assuming a sleep crosses a tick.
@@ -220,7 +220,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             0, input.Length, reverse, ref search, out _, out var found));
         Assert.True(found);
         var searchSteps = search.Budget.Steps;
-        var runtime = new Utf8LiteralCompiledEngineRuntime(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
+        var runtime = Utf8LiteralCompiledEngineRuntime.Create(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
             if (!entered && steps > searchSteps) { entered = true; Thread.Sleep(250); }

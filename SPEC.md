@@ -723,8 +723,17 @@ family declines before acquisition. The caller still proves the BMP scalar shape
 and the execution path still validates strict UTF-8 and compares full literals.
 Its preparation helper does not independently establish scalar validity. Mutable
 lists, intermediate scalar-reference arrays and the short counter's opaque SearchValues
-are removed. Runtime objects, factory eligibility scans, other opaque state and
-emission remain separate unqualified construction debt.
+are removed. The literal runtime root, composite trailing-search holder and
+selected exact/family wrapper objects now admit complete transfer field state and
+retainers. Root depth covers their eligibility scans and child preparation. The
+small runtime family borrows an already ordered vector or admits its sorted copy,
+and uses owned byte search; ineligible vectors acquire no candidate state. BMP and
+leading-segment preflights, primitive minimum-length scanning and composite copies
+share the owner. The top-level factory constructs only its selected literal or
+nonliteral implementation, without a discarded second runtime. Unused runtime
+enumeration state, duplicate ASCII scanning and obsolete family-wide BMP helpers
+are removed. Other runtime objects, fallback preference scans, opaque state and
+dynamic emission remain separate unqualified construction debt.
 Other opaque BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.

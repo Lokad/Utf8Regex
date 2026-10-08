@@ -137,7 +137,13 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex("("u8));
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Reserved);
-        Assert.True(new Utf8Pcre2Regex("cat"u8).IsMatch("cat"u8));
+        // Literal runtime fields are now admitted; "cat" no longer fits this
+        // four-KiB owner. Recover through the smaller owned scalar route.
+        var recovered = new Utf8Pcre2Regex("."u8);
+        Assert.True(recovered.IsMatch("😀"u8));
+        Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.Equal(0, parent[0]);
+        Assert.InRange(scope.Budget.ReservedBytes, 48ul, 4096ul);
         scope.Budget.ReleaseArray(parent, false);
     }
 
@@ -158,7 +164,12 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.True(scope.Budget.PeakBytes <= 4096);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Reserved);
-        Assert.True(new Utf8Pcre2Regex("cat").IsMatch("cat"u8));
+        // Keep the original byte limit and prove recovery using an owned scalar
+        // program whose complete retained construction state fits that limit.
+        var recovered = new Utf8Pcre2Regex(".");
+        Assert.True(recovered.IsMatch("😀"u8));
+        Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.InRange(scope.Budget.ReservedBytes, 1ul, 4096ul);
     }
 
     [Theory]
