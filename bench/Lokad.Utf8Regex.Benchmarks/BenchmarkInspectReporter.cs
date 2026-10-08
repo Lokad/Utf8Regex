@@ -4778,7 +4778,7 @@ internal static partial class BenchmarkInspectReporter
         var regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
         var context = new Utf8RegexBenchmarkContext(benchmarkCase);
         var verifierRuntime = Utf8VerifierRuntime.Create(analysis, benchmarkCase.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
-        var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
+        var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
         _ = Utf8EmittedKernelMatcher.TryCreate(analysis, out var emittedKernelMatcher);
         var iterations = ParseIterations(iterationsText);
@@ -4836,7 +4836,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var verifierRuntime = Utf8VerifierRuntime.Create(analysis, context.CompiledPattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
-        var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
+        var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
         var iterations = ParseIterations(iterationsText);
 
@@ -5168,7 +5168,7 @@ internal static partial class BenchmarkInspectReporter
 
         var validation = Utf8InputAnalyzer.ValidateOnly(context.InputBytes);
         var verifierRuntime = Utf8VerifierRuntime.Create(analysis, context.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
-        var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
+        var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var iterations = ParseIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");

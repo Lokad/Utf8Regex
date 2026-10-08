@@ -8,13 +8,27 @@ internal sealed class Utf8CompiledSymmetricLiteralWindowCounter
     private readonly int _firstLength;
     private readonly int _secondLength;
 
-    public Utf8CompiledSymmetricLiteralWindowCounter(AsciiSimplePatternSymmetricLiteralWindowPlan plan)
+    private readonly record struct ConstructionState(
+        AsciiSimplePatternSymmetricLiteralWindowPlan Plan, byte[] FirstLiteral,
+        byte[] SecondLiteral, int FirstLength, int SecondLength);
+
+    private Utf8CompiledSymmetricLiteralWindowCounter(ConstructionState state)
     {
-        _plan = plan;
-        _firstLiteral = plan.FirstLiteralUtf8;
-        _secondLiteral = plan.SecondLiteralUtf8;
-        _firstLength = _firstLiteral.Length;
-        _secondLength = _secondLiteral.Length;
+        _plan = state.Plan;
+        _firstLiteral = state.FirstLiteral;
+        _secondLiteral = state.SecondLiteral;
+        _firstLength = state.FirstLength;
+        _secondLength = state.SecondLength;
+    }
+
+    internal static Utf8CompiledSymmetricLiteralWindowCounter Create(AsciiSimplePatternSymmetricLiteralWindowPlan plan)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
+        var result = scope.Budget.AllocateObject(new ConstructionState(plan, plan.FirstLiteralUtf8,
+            plan.SecondLiteralUtf8, plan.FirstLiteralUtf8.Length, plan.SecondLiteralUtf8.Length),
+            static state => new Utf8CompiledSymmetricLiteralWindowCounter(state));
+        scope.Complete();
+        return result;
     }
 
     public int Count(ReadOnlySpan<byte> input)

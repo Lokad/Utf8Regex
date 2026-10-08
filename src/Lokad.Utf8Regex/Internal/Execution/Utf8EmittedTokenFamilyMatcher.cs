@@ -11,30 +11,31 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
 {
     private readonly Utf8FallbackDirectFamilyPlan _plan;
 
-    private Utf8EmittedTokenFamilyMatcher(Utf8FallbackDirectFamilyPlan plan, Utf8EmittedTokenFamilyKind kind)
+    private readonly record struct ConstructionState(Utf8FallbackDirectFamilyPlan Plan, Utf8EmittedTokenFamilyKind Kind);
+
+    private Utf8EmittedTokenFamilyMatcher(ConstructionState state)
     {
-        _plan = plan;
-        Kind = kind;
+        _plan = state.Plan;
+        Kind = state.Kind;
     }
 
     public Utf8EmittedTokenFamilyKind Kind { get; }
 
     public static bool TryCreate(in Utf8FallbackDirectFamilyPlan plan, out Utf8EmittedTokenFamilyMatcher? matcher)
     {
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
-        {
-            matcher = new Utf8EmittedTokenFamilyMatcher(plan, Utf8EmittedTokenFamilyKind.BoundedDate);
-            return true;
-        }
-
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
-        {
-            matcher = new Utf8EmittedTokenFamilyMatcher(plan, Utf8EmittedTokenFamilyKind.Uri);
-            return true;
-        }
-
         matcher = null;
-        return false;
+        var kind = plan.Kind switch
+        {
+            Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken => Utf8EmittedTokenFamilyKind.BoundedDate,
+            Utf8FallbackDirectFamilyKind.Utf8UriToken => Utf8EmittedTokenFamilyKind.Uri,
+            _ => Utf8EmittedTokenFamilyKind.None,
+        };
+        if (kind == Utf8EmittedTokenFamilyKind.None) return false;
+        using var scope = Utf8ConstructionScope.Enter();
+        matcher = scope.Budget.AllocateObject(new ConstructionState(plan, kind),
+            static state => new Utf8EmittedTokenFamilyMatcher(state));
+        scope.Complete();
+        return true;
     }
 
     public bool TryFindNext(ReadOnlySpan<byte> input, int startIndex, out int matchIndex, out int matchedLength)

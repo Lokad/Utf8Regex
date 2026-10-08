@@ -136,10 +136,17 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     {
         var plan = Plan("aaaaa|bbbbb|ccccc");
         var verifier = Utf8VerifierRuntime.Create(plan, "aaaaa|bbbbb|ccccc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
+        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 2, 2);
         var runtime = Utf8CompiledRuntimeFactory.Create(new Utf8CompiledEngine((Utf8CompiledEngineKind)kind), plan, verifier, RegexOptions.None);
         Assert.False(runtime is Utf8LiteralFamilyCompiledEngineRuntime or Utf8ExactLiteralCompiledEngineRuntime);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakDepth);
+        // Only the selected nonliteral object's complete field state is acquired.
+        // A discarded literal runtime would exceed both the work and depth gates.
+        var state = runtime.GetType().GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
+        var bytes = (ulong)typeof(Utf8ConstructionBudget).GetMethod("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!
+            .MakeGenericMethod(state).Invoke(null, null)! + 64;
+        Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
+        Assert.Equal(2ul, owner.Budget.PeakDepth); Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Same(runtime, owner.Budget.ObjectCheckpoint!.Value); Assert.Null(owner.Budget.ObjectCheckpoint.Previous);
     }
 
     [Theory]

@@ -27,7 +27,7 @@ internal static class Utf8SearchEngineExecutor
             Utf8CandidateSearchKind.OrderedLiteralWindow
                 => Utf8BackendInstructionExecutor.IsMatchOrderedLiteralWindow(regexPlan, input, budget),
             Utf8CandidateSearchKind.StructuralDeterministicAutomaton
-                => Utf8StructuralLinearRuntime.Create(regexPlan.StructuralLinearProgram).IsMatch(input, Utf8InputAnalyzer.ValidateOnly(input), verifierRuntime, budget),
+                => Utf8StructuralLinearRuntime.Create(regexPlan).IsMatch(input, Utf8InputAnalyzer.ValidateOnly(input), verifierRuntime, budget),
             _ => TryFindFirst(primaryExecutionEngine, input),
         };
     }

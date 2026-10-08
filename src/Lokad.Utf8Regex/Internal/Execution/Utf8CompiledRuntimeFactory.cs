@@ -11,58 +11,62 @@ internal static class Utf8CompiledRuntimeFactory
         Utf8VerifierRuntime verifierRuntime,
         RegexOptions options)
     {
-        if ((compiledEngine.Kind == Utf8CompiledEngineKind.ByteSafeLinear ||
-             compiledEngine.Kind == Utf8CompiledEngineKind.CompiledFallback) &&
-            ShouldPreferFallbackRegexRuntime(compiledEngine.Kind, regexPlan))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            compiledEngine = new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex);
-        }
+            if ((compiledEngine.Kind == Utf8CompiledEngineKind.ByteSafeLinear ||
+                 compiledEngine.Kind == Utf8CompiledEngineKind.CompiledFallback) &&
+                ShouldPreferFallbackRegexRuntime(compiledEngine.Kind, regexPlan, budget))
+            {
+                compiledEngine = new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex);
+            }
 
-        if (compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
-        {
-            using var scope = Utf8ConstructionScope.Enter();
-            var budget = scope.Budget;
-            budget.EnterDepth();
-            try
+            Utf8CompiledEngineRuntime result;
+            if (compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
             {
                 var inner = Utf8LiteralCompiledEngineRuntime.Create(compiledEngine, regexPlan,
                     (options & RegexOptions.RightToLeft) != 0);
-                Utf8CompiledEngineRuntime result = compiledEngine.Kind == Utf8CompiledEngineKind.ExactLiteral
+                result = compiledEngine.Kind == Utf8CompiledEngineKind.ExactLiteral
                     ? budget.AllocateObject(inner, static value => new Utf8ExactLiteralCompiledEngineRuntime(value))
                     : budget.AllocateObject(inner, static value => new Utf8LiteralFamilyCompiledEngineRuntime(value));
-                scope.Complete();
-                return result;
             }
-            finally { budget.LeaveDepth(); }
+            else
+            {
+                // Build the selected runtime directly. No temporary implementation
+                // is needed to transfer borrowed plan and verifier references.
+                result = compiledEngine.Kind switch
+                {
+                    Utf8CompiledEngineKind.StructuralFamily
+                        => Utf8StructuralFamilyCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
+                    Utf8CompiledEngineKind.EmittedKernel
+                        => Utf8StructuralLinearAutomatonCompiledEngineRuntime.Create(regexPlan, verifierRuntime, true),
+                    Utf8CompiledEngineKind.StructuralLinearAutomaton
+                        => Utf8StructuralLinearAutomatonCompiledEngineRuntime.Create(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
+                    Utf8CompiledEngineKind.SimplePatternInterpreter
+                        => Utf8SimplePatternCompiledEngineRuntime.Create(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
+                    Utf8CompiledEngineKind.ByteSafeLinear
+                        => Utf8ByteSafeLinearCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
+                    Utf8CompiledEngineKind.CompiledFallback
+                        => Utf8CompiledFallbackCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
+                    Utf8CompiledEngineKind.SearchGuidedFallback
+                        => Utf8SearchGuidedFallbackCompiledEngineRuntime.Create(compiledEngine, regexPlan, verifierRuntime),
+                    _ => Utf8FallbackRegexCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
+                };
+            }
+            scope.Complete();
+            return result;
         }
-        // Prepare only the selected implementation. The discarded literal
-        // runtime could otherwise acquire unrelated family/search/emitted state.
-        var nonLiteralRuntime = new Utf8NonLiteralCompiledEngineRuntime(compiledEngine, regexPlan, verifierRuntime);
-        return compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.StructuralFamily
-                => new Utf8StructuralFamilyCompiledEngineRuntime(nonLiteralRuntime),
-            Utf8CompiledEngineKind.EmittedKernel
-                => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(nonLiteralRuntime, emitEnabled: true),
-            Utf8CompiledEngineKind.StructuralLinearAutomaton
-                => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(nonLiteralRuntime, (options & RegexOptions.Compiled) != 0),
-            Utf8CompiledEngineKind.SimplePatternInterpreter
-                => new Utf8SimplePatternCompiledEngineRuntime(nonLiteralRuntime, (options & RegexOptions.Compiled) != 0),
-            Utf8CompiledEngineKind.ByteSafeLinear
-                => new Utf8ByteSafeLinearCompiledEngineRuntime(nonLiteralRuntime),
-            Utf8CompiledEngineKind.CompiledFallback
-                => new Utf8CompiledFallbackCompiledEngineRuntime(nonLiteralRuntime),
-            Utf8CompiledEngineKind.SearchGuidedFallback
-                => new Utf8SearchGuidedFallbackCompiledEngineRuntime(compiledEngine, nonLiteralRuntime),
-            _ => new Utf8FallbackRegexCompiledEngineRuntime(nonLiteralRuntime),
-        };
+        finally { budget.LeaveDepth(); }
     }
 
     public static RegexOptions NormalizeDirectRouteOptions(RegexOptions options) => options & ~RegexOptions.Compiled;
 
     private static bool ShouldPreferFallbackRegexRuntime(
         Utf8CompiledEngineKind engineKind,
-        Utf8PreparedRegex regexPlan)
+        Utf8PreparedRegex regexPlan,
+        Utf8ConstructionBudget budget)
     {
         if (regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
             !string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal))
@@ -72,7 +76,7 @@ internal static class Utf8CompiledRuntimeFactory
 
         return HasWeakFallbackPrefilter(regexPlan) ||
             engineKind == Utf8CompiledEngineKind.CompiledFallback &&
-            HasVariableWidthFixedDistanceCandidateOutsidePrefix(regexPlan);
+            HasVariableWidthFixedDistanceCandidateOutsidePrefix(regexPlan, budget);
     }
 
     private static bool HasWeakFallbackPrefilter(Utf8PreparedRegex regexPlan)
@@ -83,7 +87,7 @@ internal static class Utf8CompiledRuntimeFactory
             regexPlan.SearchPlan.RequiredWindowPrefilterPlans is not { Length: > 0 };
     }
 
-    private static bool HasVariableWidthFixedDistanceCandidateOutsidePrefix(Utf8PreparedRegex regexPlan)
+    private static bool HasVariableWidthFixedDistanceCandidateOutsidePrefix(Utf8PreparedRegex regexPlan, Utf8ConstructionBudget budget)
     {
         var searchPlan = regexPlan.SearchPlan;
         if (searchPlan.Kind is not (Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar) ||
@@ -101,10 +105,12 @@ internal static class Utf8CompiledRuntimeFactory
 
         for (var i = 0; i < literal.Length; i++)
         {
+            budget.ChargeWork(1);
             var offset = searchPlan.Distance + i;
             var covered = false;
             foreach (var guard in prefixGuards)
             {
+                budget.ChargeWork(1);
                 if (guard.Offset == offset && guard.Literal == literal[i])
                 {
                     covered = true;

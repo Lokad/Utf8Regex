@@ -849,14 +849,14 @@ internal readonly struct Utf8StructuralLinearProgram
 
 internal abstract class Utf8StructuralLinearRuntime
 {
-    private readonly Utf8StructuralLinearProgram _program;
+    private readonly Utf8PreparedRegex _regexPlan;
 
-    protected Utf8StructuralLinearRuntime(Utf8StructuralLinearProgram program)
+    protected Utf8StructuralLinearRuntime(Utf8PreparedRegex regexPlan)
     {
-        _program = program;
+        _regexPlan = regexPlan;
     }
 
-    protected ref readonly Utf8StructuralLinearProgram Program => ref _program;
+    protected ref readonly Utf8StructuralLinearProgram Program => ref _regexPlan.StructuralLinearProgram;
 
     /// <summary>
     /// Evaluates whether the validated complete subject contains a match. All
@@ -884,28 +884,35 @@ internal abstract class Utf8StructuralLinearRuntime
     /// </summary>
     public abstract bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength);
 
-    public static Utf8StructuralLinearRuntime Create(Utf8StructuralLinearProgram program)
+    public static Utf8StructuralLinearRuntime Create(Utf8PreparedRegex regexPlan)
     {
-        return program.Kind switch
+        using var scope = Utf8ConstructionScope.Enter();
+        // The prepared regex already owns the program. Borrow its storage rather
+        // than copying the large program and all its alternative plan payloads.
+        // Selected subtypes add no fields to this one-reference object state.
+        var result = scope.Budget.AllocateObject<Utf8PreparedRegex, Utf8StructuralLinearRuntime>(regexPlan,
+            static value => value.StructuralLinearProgram.Kind switch
         {
-            Utf8StructuralLinearProgramKind.AsciiCharClassRun => new Utf8AsciiInstructionLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern => new Utf8AsciiInstructionLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun => new Utf8AsciiInstructionLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiStructuralFamily => new Utf8AsciiStructuralFamilyLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiTokenWindow => new Utf8AsciiInstructionLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiRepeatedSegment => new Utf8AsciiInstructionLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiQuotedRelation => new Utf8AsciiInstructionLinearRuntime(program),
-            Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow => new Utf8AsciiInstructionLinearRuntime(program),
-            _ => new Utf8NoStructuralLinearRuntime(program),
-        };
+            Utf8StructuralLinearProgramKind.AsciiCharClassRun => new Utf8AsciiInstructionLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern => new Utf8AsciiInstructionLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun => new Utf8AsciiInstructionLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiStructuralFamily => new Utf8AsciiStructuralFamilyLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiTokenWindow => new Utf8AsciiInstructionLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiRepeatedSegment => new Utf8AsciiInstructionLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiQuotedRelation => new Utf8AsciiInstructionLinearRuntime(value),
+            Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow => new Utf8AsciiInstructionLinearRuntime(value),
+            _ => new Utf8NoStructuralLinearRuntime(value),
+        });
+        scope.Complete();
+        return result;
     }
 
 }
 
 internal sealed class Utf8NoStructuralLinearRuntime : Utf8StructuralLinearRuntime
 {
-    public Utf8NoStructuralLinearRuntime(Utf8StructuralLinearProgram program)
-        : base(program)
+    public Utf8NoStructuralLinearRuntime(Utf8PreparedRegex regexPlan)
+        : base(regexPlan)
     {
     }
 
@@ -934,8 +941,8 @@ internal sealed class Utf8NoStructuralLinearRuntime : Utf8StructuralLinearRuntim
 
 internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRuntime
 {
-    public Utf8AsciiInstructionLinearRuntime(Utf8StructuralLinearProgram program)
-        : base(program)
+    public Utf8AsciiInstructionLinearRuntime(Utf8PreparedRegex regexPlan)
+        : base(regexPlan)
     {
     }
 
@@ -2385,8 +2392,8 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
 
 internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLinearRuntime
 {
-    public Utf8AsciiStructuralFamilyLinearRuntime(Utf8StructuralLinearProgram program)
-        : base(program)
+    public Utf8AsciiStructuralFamilyLinearRuntime(Utf8PreparedRegex regexPlan)
+        : base(regexPlan)
     {
     }
 
