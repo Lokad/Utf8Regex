@@ -710,6 +710,21 @@ search's trie cannot be borrowed blindly because its branch order may differ
 from the wrapper's grouped vector. Earliest search meters one length scan and
 borrows its literal vector. Empty wrappers preserve their kinds without acquiring
 state. Failures restore child storage, retainers and depth while work stays spent.
+The runtime short ASCII-family counter admits eligibility, pair discrimination,
+scoring and selected byte-search state under one root. Four-byte fixed scratch
+replaces all offset-candidate arrays, and the unused longest-length calculation
+is removed. The selected membership search retains distinct bytes only, avoiding
+duplicate values and an unnecessary owned set. The counter borrows its two to four
+literals, preserving pair scores,
+tie-breaking and nonoverlapping matching. Runtime three-byte BMP-family guard
+preparation admits active value buffers, final ordered reference vectors and each
+distinct three-byte copy. Inactive second/third guards borrow empties; a too-short
+family declines before acquisition. The caller still proves the BMP scalar shape,
+and the execution path still validates strict UTF-8 and compares full literals.
+Its preparation helper does not independently establish scalar validity. Mutable
+lists, intermediate scalar-reference arrays and the short counter's opaque SearchValues
+are removed. Runtime objects, factory eligibility scans, other opaque state and
+emission remain separate unqualified construction debt.
 Other opaque BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.

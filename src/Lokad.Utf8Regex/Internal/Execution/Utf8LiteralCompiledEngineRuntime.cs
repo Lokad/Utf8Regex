@@ -2234,7 +2234,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 }
 
-internal readonly struct PreparedBmpThreeByteLiteralFamilySearch
+internal readonly partial struct PreparedBmpThreeByteLiteralFamilySearch
 {
     private PreparedBmpThreeByteLiteralFamilySearch(byte[][] literals, byte[][] firstScalars, byte[][] secondScalars, byte[][] thirdScalars, int shortestLength)
     {
@@ -2256,56 +2256,6 @@ internal readonly struct PreparedBmpThreeByteLiteralFamilySearch
     public int ShortestLength { get; }
 
     public bool HasValue => Literals is { Length: > 0 };
-
-    public static bool TryCreate(byte[][] literals, out PreparedBmpThreeByteLiteralFamilySearch search)
-    {
-        search = default;
-        if (literals.Length == 0)
-        {
-            return false;
-        }
-
-        var shortestLength = int.MaxValue;
-        var firstScalars = new List<byte[]>();
-        var secondScalars = new List<byte[]>();
-        var thirdScalars = new List<byte[]>();
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            shortestLength = Math.Min(shortestLength, literal.Length);
-        }
-
-        var useSecondScalarGuard = shortestLength >= 6;
-        var useThirdScalarGuard = shortestLength >= 9;
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            if (!TryAddUniqueScalar(firstScalars, literal, 0))
-            {
-                return false;
-            }
-
-            if (useSecondScalarGuard && !TryAddUniqueScalar(secondScalars, literal, 3))
-            {
-                return false;
-            }
-
-            if (useThirdScalarGuard && !TryAddUniqueScalar(thirdScalars, literal, 6))
-            {
-                return false;
-            }
-        }
-
-        search = new PreparedBmpThreeByteLiteralFamilySearch(
-            literals,
-            [.. firstScalars],
-            [.. secondScalars],
-            [.. thirdScalars],
-            shortestLength);
-        return true;
-    }
 
     public int TryGetMatchedLength(ReadOnlySpan<byte> input, int index, byte firstByte)
     {
@@ -2346,26 +2296,6 @@ internal readonly struct PreparedBmpThreeByteLiteralFamilySearch
         return 0;
     }
 
-    private static bool TryAddUniqueScalar(List<byte[]> scalars, byte[] literal, int offset)
-    {
-        if (literal.Length < offset + 3)
-        {
-            return false;
-        }
-
-        var scalar = literal.AsSpan(offset, 3);
-        for (var i = 0; i < scalars.Count; i++)
-        {
-            if (scalars[i].AsSpan().SequenceEqual(scalar))
-            {
-                return true;
-            }
-        }
-
-        scalars.Add(scalar.ToArray());
-        return true;
-    }
-
     private static bool MatchesAnyScalar(ReadOnlySpan<byte> input, int index, byte firstByte, byte[][] scalars)
     {
         if ((uint)index > (uint)(input.Length - 3))
@@ -2391,7 +2321,7 @@ internal readonly struct PreparedBmpThreeByteLiteralFamilySearch
     }
 }
 
-internal readonly struct PreparedShortAsciiLiteralFamilyCounter
+internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
 {
     private readonly byte[] _literal0;
     private readonly byte[] _literal1;
@@ -2409,7 +2339,7 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
     private readonly int _primaryOffset;
     private readonly int _secondaryOffset;
     private readonly int _shortestLength;
-    private readonly SearchValues<byte> _primaryValues;
+    private readonly PreparedByteSearch _primarySearch;
 
     private PreparedShortAsciiLiteralFamilyCounter(
         byte[] literal0,
@@ -2428,7 +2358,7 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
         int primaryOffset,
         int secondaryOffset,
         int shortestLength,
-        SearchValues<byte> primaryValues)
+        PreparedByteSearch primarySearch)
     {
         _literal0 = literal0;
         _literal1 = literal1;
@@ -2446,64 +2376,10 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
         _primaryOffset = primaryOffset;
         _secondaryOffset = secondaryOffset;
         _shortestLength = shortestLength;
-        _primaryValues = primaryValues;
+        _primarySearch = primarySearch;
     }
 
     public bool HasValue => _shortestLength > 0;
-
-    public static bool TryCreate(byte[][] literals, out PreparedShortAsciiLiteralFamilyCounter counter)
-    {
-        counter = default;
-        if (literals is not { Length: >= 2 and <= 4 })
-        {
-            return false;
-        }
-
-        var shortestLength = int.MaxValue;
-        var longestLength = 0;
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            if (literal.Length is < 3 or > 8 || !Utf8InputAnalyzer.IsAscii(literal))
-            {
-                return false;
-            }
-
-            shortestLength = Math.Min(shortestLength, literal.Length);
-            longestLength = Math.Max(longestLength, literal.Length);
-        }
-
-        if (!TryChooseBestUniquePair(literals, shortestLength, out var primaryOffset, out var secondaryOffset))
-        {
-            return false;
-        }
-
-        var primaryValues = new byte[literals.Length];
-        for (var i = 0; i < literals.Length; i++)
-        {
-            primaryValues[i] = literals[i][primaryOffset];
-        }
-
-        counter = new PreparedShortAsciiLiteralFamilyCounter(
-            literals[0],
-            literals.Length > 1 ? literals[1] : [],
-            literals.Length > 2 ? literals[2] : [],
-            literals.Length > 3 ? literals[3] : [],
-            literals[0][primaryOffset],
-            literals.Length > 1 ? literals[1][primaryOffset] : default,
-            literals.Length > 2 ? literals[2][primaryOffset] : default,
-            literals.Length > 3 ? literals[3][primaryOffset] : default,
-            literals[0][secondaryOffset],
-            literals.Length > 1 ? literals[1][secondaryOffset] : default,
-            literals.Length > 2 ? literals[2][secondaryOffset] : default,
-            literals.Length > 3 ? literals[3][secondaryOffset] : default,
-            (byte)literals.Length,
-            primaryOffset,
-            secondaryOffset,
-            shortestLength,
-            SearchValues.Create(primaryValues));
-        return true;
-    }
 
     public int Count(ReadOnlySpan<byte> input)
     {
@@ -2513,7 +2389,7 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
         while (startIndex <= maxStart)
         {
             var anchorIndex = startIndex + _primaryOffset;
-            var relative = input[anchorIndex..].IndexOfAny(_primaryValues);
+            var relative = _primarySearch.IndexOf(input[anchorIndex..]);
             if (relative < 0)
             {
                 return count;
@@ -2580,102 +2456,6 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
         }
 
         return false;
-    }
-
-    private static bool TryChooseBestUniquePair(byte[][] literals, int shortestLength, out int primaryOffset, out int secondaryOffset)
-    {
-        primaryOffset = -1;
-        secondaryOffset = -1;
-        var bestScore = int.MaxValue;
-        for (var firstOffset = 0; firstOffset < shortestLength; firstOffset++)
-        {
-            if (!TryGetDistinctValues(literals, firstOffset, out var firstValues))
-            {
-                continue;
-            }
-
-            for (var secondOffset = 0; secondOffset < shortestLength; secondOffset++)
-            {
-                if (secondOffset == firstOffset ||
-                    !HasUniquePairs(literals, firstOffset, secondOffset) ||
-                    !TryGetDistinctValues(literals, secondOffset, out var secondValues))
-                {
-                    continue;
-                }
-
-                var score = ScoreValues(firstValues) * 4 + ScoreValues(secondValues);
-                if (score < bestScore ||
-                    (score == bestScore && (primaryOffset < 0 || firstOffset < primaryOffset ||
-                                            (firstOffset == primaryOffset && secondOffset < secondaryOffset))))
-                {
-                    bestScore = score;
-                    primaryOffset = firstOffset;
-                    secondaryOffset = secondOffset;
-                }
-            }
-        }
-
-        return primaryOffset >= 0;
-    }
-
-    private static bool TryGetDistinctValues(byte[][] literals, int offset, out byte[] values)
-    {
-        values = [];
-        Span<bool> seen = stackalloc bool[256];
-        Span<byte> buffer = stackalloc byte[8];
-        var count = 0;
-        foreach (var literal in literals)
-        {
-            var value = literal[offset];
-            if (seen[value])
-            {
-                continue;
-            }
-
-            seen[value] = true;
-            if (count >= buffer.Length)
-            {
-                return false;
-            }
-
-            buffer[count++] = value;
-        }
-
-        if (count is <= 1 or > 6)
-        {
-            return false;
-        }
-
-        values = buffer[..count].ToArray();
-        return true;
-    }
-
-    private static bool HasUniquePairs(byte[][] literals, int firstOffset, int secondOffset)
-    {
-        for (var i = 0; i < literals.Length; i++)
-        {
-            for (var j = i + 1; j < literals.Length; j++)
-            {
-                if (literals[i][firstOffset] == literals[j][firstOffset] &&
-                    literals[i][secondOffset] == literals[j][secondOffset])
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private static int ScoreValues(byte[] values)
-    {
-        var commonness = 0;
-        for (var i = 0; i < values.Length; i++)
-        {
-            commonness += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(values[i]);
-        }
-
-        return commonness * 8 + values.Length;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
