@@ -698,6 +698,18 @@ fallback are removed. Selected metadata stays bounded independently of the numbe
 of candidate offsets. A prefix discriminator selects a literal for full
 verification; checking that byte and a few anchor/filter positions does not prove
 the common prefix. The old unchecked-prefix helper is removed.
+Multi-literal wrapper construction admits root/child depth, selection scans and
+the retained reference vectors required by borrowed exact/folded searches. It
+borrows their payloads and preserves grouped order without charging parent data
+again. Raw exact construction selects packed, earliest, automaton, trie or direct
+search before acquiring that route's structures; discarded exact buckets,
+prefix copies and anchor/trie preparation are no longer built. Selection uses
+fixed byte-alphabet scratch rather than retained candidate state. Automaton
+trie verification and earliest/hybrid Count helpers remain live; a supplied
+search's trie cannot be borrowed blindly because its branch order may differ
+from the wrapper's grouped vector. Earliest search meters one length scan and
+borrows its literal vector. Empty wrappers preserve their kinds without acquiring
+state. Failures restore child storage, retainers and depth while work stays spent.
 Other opaque BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.

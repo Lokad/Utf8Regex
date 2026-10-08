@@ -19,139 +19,10 @@ internal enum PreparedMultiLiteralKind : byte
     ExactEarliest = 6,
 }
 
-internal readonly struct PreparedMultiLiteralSearch
+internal readonly partial struct PreparedMultiLiteralSearch
 {
     private const int TrieThreshold = 8;
     internal const int AutomatonThreshold = 5;
-
-    public PreparedMultiLiteralSearch(byte[][] literals, bool ignoreCase)
-    {
-        if (ignoreCase)
-        {
-            Literals = literals;
-            ExactSearch = default;
-            TrieSearch = default;
-            AutomatonSearch = default;
-            IgnoreCaseSearch = new PreparedAsciiIgnoreCaseLiteralSetSearch(literals);
-            Kind = PreparedMultiLiteralKind.AsciiIgnoreCase;
-        }
-        else
-        {
-            Literals = literals;
-            var exactSearch = new PreparedLiteralSetSearch(literals);
-            if (TryPreparePacked(exactSearch, literals, out var packedSearch))
-            {
-                ExactSearch = default;
-                TrieSearch = default;
-                AutomatonSearch = default;
-                EarliestSearch = default;
-                PackedSearch = packedSearch;
-                Kind = PreparedMultiLiteralKind.ExactPacked;
-            }
-            else if (ShouldUseEarliestExact(exactSearch))
-            {
-                ExactSearch = default;
-                TrieSearch = default;
-                AutomatonSearch = default;
-                EarliestSearch = new PreparedMultiLiteralEarliestExactSearch(literals);
-                PackedSearch = default;
-                Kind = PreparedMultiLiteralKind.ExactEarliest;
-            }
-            else if (ShouldUseAutomaton(exactSearch))
-            {
-                ExactSearch = default;
-                TrieSearch = PreparedMultiLiteralTrieSearch.Create(literals);
-                AutomatonSearch = PreparedMultiLiteralAutomatonSearch.Create(literals);
-                EarliestSearch = new PreparedMultiLiteralEarliestExactSearch(literals);
-                PackedSearch = default;
-                Kind = PreparedMultiLiteralKind.ExactAutomaton;
-            }
-            else if (ShouldUseTrie(exactSearch))
-            {
-                ExactSearch = default;
-                TrieSearch = PreparedMultiLiteralTrieSearch.Create(literals);
-                AutomatonSearch = default;
-                EarliestSearch = default;
-                PackedSearch = default;
-                Kind = PreparedMultiLiteralKind.ExactTrie;
-            }
-            else
-            {
-                ExactSearch = exactSearch;
-                TrieSearch = default;
-                AutomatonSearch = default;
-                EarliestSearch = default;
-                PackedSearch = default;
-                Kind = PreparedMultiLiteralKind.ExactDirect;
-            }
-
-            IgnoreCaseSearch = default;
-        }
-    }
-
-    public PreparedMultiLiteralSearch(PreparedLiteralSetSearch search)
-    {
-        Literals = search.SearchData.Buckets.SelectMany(static bucket => bucket.Literals).ToArray();
-        if (TryPreparePacked(search, Literals, out var packedSearch))
-        {
-            ExactSearch = default;
-            TrieSearch = default;
-            AutomatonSearch = default;
-            EarliestSearch = default;
-            PackedSearch = packedSearch;
-            Kind = PreparedMultiLiteralKind.ExactPacked;
-        }
-        else if (ShouldUseEarliestExact(search))
-        {
-            ExactSearch = default;
-            TrieSearch = default;
-            AutomatonSearch = default;
-            EarliestSearch = new PreparedMultiLiteralEarliestExactSearch(Literals);
-            PackedSearch = default;
-            Kind = PreparedMultiLiteralKind.ExactEarliest;
-        }
-        else if (ShouldUseAutomaton(search))
-        {
-            ExactSearch = default;
-            TrieSearch = PreparedMultiLiteralTrieSearch.Create(Literals);
-            AutomatonSearch = PreparedMultiLiteralAutomatonSearch.Create(Literals);
-            EarliestSearch = new PreparedMultiLiteralEarliestExactSearch(Literals);
-            PackedSearch = default;
-            Kind = PreparedMultiLiteralKind.ExactAutomaton;
-        }
-        else if (ShouldUseTrie(search))
-        {
-            ExactSearch = default;
-            TrieSearch = PreparedMultiLiteralTrieSearch.Create(Literals);
-            AutomatonSearch = default;
-            EarliestSearch = default;
-            PackedSearch = default;
-            Kind = PreparedMultiLiteralKind.ExactTrie;
-        }
-        else
-        {
-            ExactSearch = search;
-            TrieSearch = default;
-            AutomatonSearch = default;
-            EarliestSearch = default;
-            PackedSearch = default;
-            Kind = PreparedMultiLiteralKind.ExactDirect;
-        }
-
-        IgnoreCaseSearch = default;
-    }
-
-    public PreparedMultiLiteralSearch(PreparedAsciiIgnoreCaseLiteralSetSearch search)
-    {
-        Literals = search.Buckets.SelectMany(static bucket => bucket.Literals).ToArray();
-        ExactSearch = default;
-        TrieSearch = default;
-        AutomatonSearch = default;
-        EarliestSearch = default;
-        PackedSearch = default;
-        IgnoreCaseSearch = search;
-        Kind = PreparedMultiLiteralKind.AsciiIgnoreCase;
-    }
 
     public PreparedMultiLiteralKind Kind { get; }
 
@@ -476,97 +347,7 @@ internal readonly struct PreparedMultiLiteralSearch
         }
     }
 
-    private static bool TryPreparePacked(
-        PreparedLiteralSetSearch search,
-        byte[][] literals,
-        out PreparedMultiLiteralPackedSearch packedSearch)
-    {
-        if (ContainsNonAsciiLiteral(search.SearchData.Buckets) &&
-            LiteralCount(search.SearchData.Buckets) >= 3 &&
-            LiteralCount(search.SearchData.Buckets) < TrieThreshold &&
-            search.SearchData.ShortestLength >= 4)
-        {
-            return PreparedMultiLiteralPackedSearch.TryCreate(literals, out packedSearch);
-        }
 
-        packedSearch = default;
-        return false;
-    }
-
-    private static bool ShouldUseAutomaton(PreparedLiteralSetSearch search)
-    {
-        return search.Strategy != PreparedLiteralSetStrategy.SingleBucketPrefix &&
-            LiteralCount(search.SearchData.Buckets) >= AutomatonThreshold;
-    }
-
-    private static bool ShouldUseTrie(PreparedLiteralSetSearch search)
-    {
-        return search.Strategy == PreparedLiteralSetStrategy.MultiLiteralTrie ||
-            ShouldPreferTrieForSmallUniqueAnchorFamily(search) ||
-            LiteralCount(search.SearchData.Buckets) >= TrieThreshold;
-    }
-
-    private static bool ShouldUseEarliestExact(PreparedLiteralSetSearch search)
-    {
-        var literalCount = LiteralCount(search.SearchData.Buckets);
-        if (literalCount > 3 || search.SearchData.ShortestLength < 4)
-        {
-            return false;
-        }
-
-        var totalBytes = 0;
-        for (var i = 0; i < search.SearchData.Buckets.Length; i++)
-        {
-            var literals = search.SearchData.Buckets[i].Literals;
-            for (var j = 0; j < literals.Length; j++)
-            {
-                totalBytes += literals[j].Length;
-            }
-        }
-
-        return totalBytes >= 24;
-    }
-
-    private static bool ShouldPreferTrieForSmallUniqueAnchorFamily(PreparedLiteralSetSearch search)
-    {
-        var literalCount = LiteralCount(search.SearchData.Buckets);
-        return search.Strategy == PreparedLiteralSetStrategy.UniqueAnchorByte &&
-            literalCount >= 3 &&
-            literalCount < AutomatonThreshold &&
-            search.SearchData.ShortestLength >= 4;
-    }
-
-    private static int LiteralCount(AsciiExactLiteralBucket[] buckets)
-    {
-        var count = 0;
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            count += buckets[i].Literals.Length;
-        }
-
-        return count;
-    }
-
-    private static bool ContainsNonAsciiLiteral(AsciiExactLiteralBucket[] buckets)
-    {
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            var literals = buckets[i].Literals;
-            for (var j = 0; j < literals.Length; j++)
-            {
-                var literal = literals[j];
-                for (var k = 0; k < literal.Length; k++)
-                {
-                    if (literal[k] >= 0x80)
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
 }
 
 internal readonly partial struct PreparedMultiLiteralPackedSearch
@@ -1694,15 +1475,8 @@ internal readonly partial struct PreparedMultiLiteralRareBytePrefilter
     }
 }
 
-internal readonly struct PreparedMultiLiteralEarliestExactSearch
+internal readonly partial struct PreparedMultiLiteralEarliestExactSearch
 {
-    public PreparedMultiLiteralEarliestExactSearch(byte[][] literals)
-    {
-        Literals = literals;
-        ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
-        LongestLength = literals.Length == 0 ? 0 : literals.Max(static literal => literal.Length);
-    }
-
     public byte[][] Literals { get; }
 
     public int ShortestLength { get; }
