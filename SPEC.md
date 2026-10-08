@@ -592,10 +592,23 @@ scans before execution. Structural attempts keep root/wrapper continuations live
 late decline or denial recovers completed child loans and never refunds work.
 Quoted-relation edge extraction borrows original children instead of acquiring
 a synthetic concatenation and changing their parent links. Other simple-plan
-branch/token/search extraction, token-run/search-set acquisition, remaining
+branch/token/search extraction, complete token-run/search-set acquisition, remaining
 structural predicate/scalar-width work and complete retained/shared policies
 remain open. This is buffer/work/depth admission for covered preparation, not
 complete resource policy, retained storage or RSS qualification.
+ASCII class byte extraction admits its exact output before acquisition and
+charges initialization and ascending mask-bit copies. Shared empties are borrowed;
+complements remain restricted to ASCII. Owned byte-search preparation either copies
+caller bytes into an admitted independent array or reuses the class producer's
+owned output. The reusable search kernel has no front-end budget dependency.
+Head/tail and fixed-distance preparation release temporary class byte arrays after
+creating SearchValues; the unused retained TailBytes plan field is removed.
+Count-only eligibility and projected-mask checks do not materialize class arrays.
+Two runtime validators use fixed 128-byte stack scratch instead of acquiring
+class arrays or entering construction scopes. This does not account for the
+opaque BCL SearchValues representation, remaining multi-literal/search producer
+allocations, emission metadata or retained/shared preparation. Their complete
+admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
 selection work. Literal builders and copied character/run strings share byte

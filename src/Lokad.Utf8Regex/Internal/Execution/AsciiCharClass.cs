@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -195,37 +196,46 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
 
     public byte[] GetPositiveMatchBytes()
     {
-        if (Negated)
-        {
-            return [];
-        }
-
-        var values = new byte[Count];
-        var index = 0;
-        for (var value = 0; value < 128; value++)
-        {
-            if (Contains((byte)value))
-            {
-                values[index++] = (byte)value;
-            }
-        }
-
-        return values;
+        return Negated ? [] : GetMatchBytes();
     }
 
     public byte[] GetMatchBytes()
     {
-        var values = new byte[Count];
-        var index = 0;
-        for (var value = 0; value < 128; value++)
+        if (Count == 0) return [];
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            if (Contains((byte)value))
-            {
-                values[index++] = (byte)value;
-            }
+            var values = budget.AllocateArray<byte>(Count, false);
+            budget.ChargeWork((ulong)values.Length);
+            CopyMatchBytes(values);
+            scope.Complete();
+            return values;
         }
+        finally { budget.LeaveDepth(); }
+    }
 
-        return values;
+    // Caller-owned output also lets execution inspect a class without acquiring
+    // a construction buffer. Membership is complemented only inside ASCII.
+    public int CopyMatchBytes(Span<byte> destination)
+    {
+        if (destination.Length < Count)
+            throw new ArgumentException("The destination cannot hold the ASCII class.", nameof(destination));
+        var low = ActualLowMask;
+        var high = ActualHighMask;
+        var index = 0;
+        while (low != 0)
+        {
+            destination[index++] = (byte)BitOperations.TrailingZeroCount(low);
+            low &= low - 1;
+        }
+        while (high != 0)
+        {
+            destination[index++] = (byte)(64 + BitOperations.TrailingZeroCount(high));
+            high &= high - 1;
+        }
+        return index;
     }
 
     public AsciiCharClass ToIgnoreCaseInvariant()

@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Search;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 using System.Buffers;
@@ -225,7 +226,7 @@ internal readonly struct AsciiSimplePatternRunPlan
             : AsciiCharClassPredicateKind.None;
         MinLength = minLength;
         MaxLength = maxLength;
-        Search = PreparedByteSearch.Create(charClass.GetPositiveMatchBytes());
+        Search = Utf8PreparedByteSearchFactory.CreateFromPositiveClass(charClass);
     }
 
     public AsciiCharClass CharClass { get; }
@@ -261,11 +262,22 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
         AsciiCharClass tailCharClass,
         int tailMinLength)
     {
-        HeadCharClass = headCharClass;
-        TailCharClass = tailCharClass;
-        TailMinLength = tailMinLength;
-        TailBytes = tailCharClass.GetPositiveMatchBytes();
-        TailSearchValues = TailBytes.Length > 0 ? SearchValues.Create(TailBytes) : null;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            HeadCharClass = headCharClass;
+            TailCharClass = tailCharClass;
+            TailMinLength = tailMinLength;
+            var tailBytes = tailCharClass.GetPositiveMatchBytes();
+            TailSearchValues = tailBytes.Length > 0 ? SearchValues.Create(tailBytes) : null;
+            // SearchValues retains its own representation; this construction-only
+            // byte array has no runtime consumer and must not remain plan state.
+            budget.ReleaseArray(tailBytes, false);
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     public AsciiCharClass HeadCharClass { get; }
@@ -273,8 +285,6 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
     public AsciiCharClass TailCharClass { get; }
 
     public int TailMinLength { get; }
-
-    public byte[] TailBytes { get; }
 
     public SearchValues<byte>? TailSearchValues { get; }
 

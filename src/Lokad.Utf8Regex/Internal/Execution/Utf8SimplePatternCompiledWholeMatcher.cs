@@ -235,8 +235,9 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
             }
         }
 
-        var allowed = firstClass.GetPositiveMatchBytes();
-        if (allowed.Length == 0 || input[..branch.Length].IndexOfAnyExcept(allowed) >= 0)
+        Span<byte> allowed = stackalloc byte[128];
+        var count = firstClass.CopyMatchBytes(allowed);
+        if (count == 0 || input[..branch.Length].IndexOfAnyExcept(allowed[..count]) >= 0)
         {
             return false;
         }

@@ -46,6 +46,10 @@ internal readonly struct PreparedByteSearch
         return new PreparedByteSearch([.. values]);
     }
 
+    // Owned preparation supplies an immutable array with independent admission.
+    // The reusable kernel has no dependency on a flavor's construction owner.
+    internal static PreparedByteSearch FromOwnedValues(byte[] values) => new(values);
+
     public int IndexOf(ReadOnlySpan<byte> input)
     {
         return _values.Length switch

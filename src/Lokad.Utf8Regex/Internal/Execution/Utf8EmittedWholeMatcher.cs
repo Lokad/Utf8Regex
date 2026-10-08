@@ -190,7 +190,7 @@ internal sealed class Utf8EmittedWholeMatcher
             }
 
             return charClass is { Negated: false } &&
-                charClass.GetPositiveMatchBytes().Length is > 0 and <= MaxSmallPositiveSetSize;
+                charClass.Count is > 0 and <= MaxSmallPositiveSetSize;
         }
 
         MatchDelegate CompileOptionalField()
@@ -409,7 +409,7 @@ internal sealed class Utf8EmittedWholeMatcher
             }
 
             if (segment.CharClass is not { Negated: false } charClass ||
-                charClass.GetPositiveMatchBytes().Length is 0 or > MaxSmallPositiveSetSize)
+                charClass.Count is 0 or > MaxSmallPositiveSetSize)
             {
                 return false;
             }

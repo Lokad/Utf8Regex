@@ -30,7 +30,7 @@ internal static class Utf8SimplePatternCompiledRuntimePolicy
                 segment.CharClass is { Negated: false } charClass &&
                 segment.MinLength == 1 &&
                 segment.MaxLength == 1 &&
-                charClass.GetPositiveMatchBytes().Length is > 0 and <= 8)
+                charClass.Count is > 0 and <= 8)
             {
                 return true;
             }

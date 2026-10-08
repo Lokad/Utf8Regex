@@ -565,9 +565,19 @@ internal readonly struct Utf8FixedDistanceSet
         int distance,
         AsciiCharClass byteSet)
     {
-        Distance = distance;
-        ByteSet = byteSet;
-        SearchValues = System.Buffers.SearchValues.Create(byteSet.GetMatchBytes());
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            Distance = distance;
+            ByteSet = byteSet;
+            var values = byteSet.GetMatchBytes();
+            SearchValues = System.Buffers.SearchValues.Create(values);
+            budget.ReleaseArray(values, false);
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     public int Distance { get; }

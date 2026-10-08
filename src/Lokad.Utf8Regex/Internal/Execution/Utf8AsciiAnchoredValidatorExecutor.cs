@@ -562,9 +562,10 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
 
         if (!charClass.Negated)
         {
-            var allowed = charClass.GetPositiveMatchBytes();
-            return allowed.Length > 0 &&
-                input.Slice(index, length).IndexOfAnyExcept(allowed) < 0;
+            Span<byte> allowed = stackalloc byte[128];
+            var count = charClass.CopyMatchBytes(allowed);
+            return count > 0 &&
+                input.Slice(index, length).IndexOfAnyExcept(allowed[..count]) < 0;
         }
 
         for (var i = 0; i < length; i++)

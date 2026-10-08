@@ -1049,12 +1049,9 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
 
         if (TryCreateProjectedAsciiCharClass(set, out var asciiCharClass))
         {
-            lowMask = 0;
-            highMask = 0;
-            foreach (var value in asciiCharClass.GetPositiveMatchBytes())
-            {
-                AddByteToMask(value, ref lowMask, ref highMask);
-            }
+            Utf8ConstructionScope.ChargeWork(1);
+            lowMask = asciiCharClass.Negated ? 0 : asciiCharClass.PositiveLowMask;
+            highMask = asciiCharClass.Negated ? 0 : asciiCharClass.PositiveHighMask;
 
             return (lowMask | highMask) != 0;
         }

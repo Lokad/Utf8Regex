@@ -59,7 +59,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         if (TryExtractDeterministicLeadingAsciiByteSet(tree.Root, out var leadingBytes))
         {
             return new Utf8DeterministicAnchorSearch(
-                new PreparedSearcher(PreparedByteSearch.Create(leadingBytes)),
+                new PreparedSearcher(Internal.FrontEnd.Utf8PreparedByteSearchFactory.Create(leadingBytes)),
                 0);
         }
 

@@ -208,7 +208,14 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryAppendDeterministicPrefixSets", args)));
         Assert.Equal(4, args[2]);
         Assert.Equal(new[] { 0, 1, 2, 3 }, sets.Select(static set => set.Distance));
-        Assert.Equal(new[] { "a", "b", "0123456789", "c" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
+        Assert.Equal(new[] { "a", "b", "0123456789", "c" }, sets.Select(static set =>
+        {
+            // Inspection borrows scratch; acquiring fresh class arrays would
+            // change the live owner whose rollback this fixture verifies.
+            Span<byte> bytes = stackalloc byte[128];
+            var count = set.ByteSet.CopyMatchBytes(bytes);
+            return System.Text.Encoding.ASCII.GetString(bytes[..count]);
+        }));
         for (var index = 0; index < root.ChildCount; index++) Assert.Same(root, root.Child(index).Parent);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
