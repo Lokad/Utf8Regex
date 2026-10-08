@@ -389,9 +389,11 @@ public sealed class Utf8SearchPlanTests
         var orderedWindow = Utf8FrontEnd.Compile(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, literalFamily.Inspection.SearchPlan.NativeCandidateSource.Kind);
-        Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, Utf8SearchEngineExecutor.GetPrimaryExecutionEngine(fallback).Kind);
-        Assert.Equal(Utf8CandidateSearchKind.StructuralDeterministicAutomaton, Utf8SearchEngineExecutor.GetPrimaryExecutionEngine(structural).Kind);
-        Assert.Equal(Utf8CandidateSearchKind.StructuralDeterministicAutomaton, Utf8SearchEngineExecutor.GetPrimaryExecutionEngine(orderedWindow).Kind);
+        Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, fallback.SearchPlan.FallbackCandidateSource.Kind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, Utf8CompiledEngineSelector.Select(fallback).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(structural).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(orderedWindow).Kind);
     }
 
     [Fact]

@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Planning;
 
@@ -14,39 +13,6 @@ internal static class Utf8SearchEngineExecutor
             Utf8CandidateSearchKind.StructuralSearch => TryFindFirst(engine.StructuralSearchPlan, input),
             Utf8CandidateSearchKind.StructuralSearchSet => TryFindFirst(engine.StructuralSearchPlans, input),
             _ => false,
-        };
-    }
-
-    public static bool TryFindFirst(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        var primaryExecutionEngine = GetPrimaryExecutionEngine(regexPlan);
-        return primaryExecutionEngine.Kind switch
-        {
-            Utf8CandidateSearchKind.StructuralIdentifierFamily
-                => Utf8BackendInstructionExecutor.IsMatchStructuralIdentifierFamily(regexPlan, verifierRuntime, input, budget),
-            Utf8CandidateSearchKind.OrderedLiteralWindow
-                => Utf8BackendInstructionExecutor.IsMatchOrderedLiteralWindow(regexPlan, input, budget),
-            Utf8CandidateSearchKind.StructuralDeterministicAutomaton
-                => Utf8StructuralLinearRuntime.Create(regexPlan).IsMatch(input, Utf8InputAnalyzer.ValidateOnly(input), verifierRuntime, budget),
-            _ => TryFindFirst(primaryExecutionEngine, input),
-        };
-    }
-
-    public static Utf8CandidateSearchPlan GetPrimaryExecutionEngine(Utf8PreparedRegex regexPlan)
-    {
-        return Utf8CompiledEngineSelector.Select(regexPlan).Kind switch
-        {
-            Utf8CompiledEngineKind.LiteralFamily or Utf8CompiledEngineKind.ExactLiteral
-                => regexPlan.SearchPlan.NativeCandidateSource,
-            Utf8CompiledEngineKind.SearchGuidedFallback
-                => regexPlan.SearchPlan.FallbackCandidateSource,
-            Utf8CompiledEngineKind.StructuralFamily
-                => Utf8CandidateSearchPlan.ForExecutionFamily(Utf8CandidateSearchKind.StructuralIdentifierFamily),
-            Utf8CompiledEngineKind.StructuralLinearAutomaton when regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
-                => Utf8CandidateSearchPlan.ForExecutionFamily(Utf8CandidateSearchKind.OrderedLiteralWindow),
-            Utf8CompiledEngineKind.StructuralLinearAutomaton
-                => Utf8CandidateSearchPlan.ForExecutionFamily(Utf8CandidateSearchKind.StructuralDeterministicAutomaton),
-            _ => default,
         };
     }
 

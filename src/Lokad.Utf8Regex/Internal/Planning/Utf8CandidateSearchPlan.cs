@@ -8,9 +8,6 @@ internal enum Utf8CandidateSearchKind : byte
     PreparedSearcher = 1,
     StructuralSearch = 2,
     StructuralSearchSet = 3,
-    StructuralIdentifierFamily = 4,
-    OrderedLiteralWindow = 5,
-    StructuralDeterministicAutomaton = 6,
 }
 
 internal readonly struct Utf8CandidateSearchPlan
@@ -101,21 +98,4 @@ internal readonly struct Utf8CandidateSearchPlan
             Utf8SearchPortfolioKind.None);
     }
 
-    public static Utf8CandidateSearchPlan ForExecutionFamily(Utf8CandidateSearchKind kind)
-    {
-        if (kind is not (Utf8CandidateSearchKind.StructuralIdentifierFamily or
-            Utf8CandidateSearchKind.OrderedLiteralWindow or
-            Utf8CandidateSearchKind.StructuralDeterministicAutomaton))
-        {
-            throw new ArgumentOutOfRangeException(nameof(kind));
-        }
-
-        return new Utf8CandidateSearchPlan(
-            kind,
-            Utf8SearchSemantics.FirstMatch,
-            default,
-            default,
-            null,
-            Utf8SearchPortfolioKind.None);
-    }
 }
