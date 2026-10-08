@@ -29,26 +29,26 @@ internal readonly struct PreparedByteSearch
 {
     private readonly byte[] _values;
 
-    private PreparedByteSearch(byte[] values)
+    private PreparedByteSearch(byte[] values, PreparedByteSet? byteSet)
     {
         _values = values;
-        SearchValues = values.Length > 3 ? System.Buffers.SearchValues.Create(values) : null;
+        ByteSet = byteSet;
     }
 
     public int Count => _values?.Length ?? 0;
 
     public ReadOnlySpan<byte> Values => _values ?? [];
 
-    public SearchValues<byte>? SearchValues { get; }
+    private PreparedByteSet? ByteSet { get; }
 
     public static PreparedByteSearch Create(params byte[] values)
     {
-        return new PreparedByteSearch([.. values]);
+        return new PreparedByteSearch([.. values], values.Length > 3 ? new PreparedByteSet(PreparedByteSetState.FromValues(values)) : null);
     }
 
     // Owned preparation supplies an immutable array with independent admission.
     // The reusable kernel has no dependency on a flavor's construction owner.
-    internal static PreparedByteSearch FromOwnedValues(byte[] values) => new(values);
+    internal static PreparedByteSearch FromOwnedValues(byte[] values, PreparedByteSet? byteSet) => new(values, byteSet);
 
     public int IndexOf(ReadOnlySpan<byte> input)
     {
@@ -58,7 +58,7 @@ internal readonly struct PreparedByteSearch
             1 => input.IndexOf(_values[0]),
             2 => input.IndexOfAny(_values[0], _values[1]),
             3 => input.IndexOfAny(_values[0], _values[1], _values[2]),
-            _ => input.IndexOfAny(GetRequiredSearchValues()),
+            _ => GetRequiredByteSet().IndexOf(input),
         };
     }
 
@@ -70,12 +70,12 @@ internal readonly struct PreparedByteSearch
             1 => input.LastIndexOf(_values[0]),
             2 => input.LastIndexOfAny(_values[0], _values[1]),
             3 => input.LastIndexOfAny(_values[0], _values[1], _values[2]),
-            _ => input.LastIndexOfAny(GetRequiredSearchValues()),
+            _ => GetRequiredByteSet().LastIndexOf(input),
         };
     }
 
-    private SearchValues<byte> GetRequiredSearchValues()
-        => SearchValues ?? throw new InvalidOperationException("A large byte search requires prepared search values.");
+    private PreparedByteSet GetRequiredByteSet()
+        => ByteSet ?? throw new InvalidOperationException("A large byte search requires a prepared byte set.");
 }
 
 internal readonly struct PreparedSubstringSearch

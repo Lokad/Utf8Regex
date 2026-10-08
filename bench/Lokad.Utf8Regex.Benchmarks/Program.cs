@@ -4,6 +4,11 @@ using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
 using Lokad.Utf8Regex.Benchmarks;
 
+if (args.Length == 2 && args[0].Equals("--measure-byte-set-kernels", StringComparison.Ordinal))
+{
+    return PreparedByteSetReporter.Run(args[1]);
+}
+
 if (args.Length >= 2 && args[0].Equals("--diagnose-ismatch", StringComparison.Ordinal))
 {
     return Utf8RegexDiagnosticsReporter.RunIsMatch(args[1]);

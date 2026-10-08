@@ -654,7 +654,7 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
             return DirectMatchResult.NoMatch;
         }
 
-        if (!plan.TailCharClass.Negated && plan.TailSearchValues is { } tailSearchValues)
+        if (!plan.TailCharClass.Negated && plan.TailSearch is { } tailSearch)
         {
             for (var i = 1; i < input.Length; i++)
             {
@@ -664,7 +664,7 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
                     return DirectMatchResult.NeedsValidation;
                 }
 
-                if (!tailSearchValues.Contains(value))
+                if (!tailSearch.Contains(value))
                 {
                     return DirectMatchResult.NoMatch;
                 }

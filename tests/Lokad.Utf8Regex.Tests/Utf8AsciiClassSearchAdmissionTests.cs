@@ -92,13 +92,15 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
 
     [Theory]
     [MemberData(nameof(Routes))]
-    public void EveryWorkCutoffRecoversParentAndSuccessRetainsOnlyItsOwnedArray(int route)
+    public void EveryWorkCutoffRecoversParentAndSuccessRetainsItsOwnedArrayAndSet(int route)
     {
         var charClass = Class(4); byte[] caller = [0, 1, 2, 3]; ulong work, retained;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { Produce(route, charClass, caller); work = measure.Budget.WorkSteps; retained = measure.Budget.ReservedBytes; }
-        Assert.InRange(work, 1ul, 256ul);
-        Assert.Equal(route >= 6 ? 0ul : Utf8ConstructionBudget.ArrayBytes<byte>(route == 2 ? 124 : 4), retained);
+        Assert.Equal(route switch { 0 or 1 => 8ul, 2 => 248ul, 3 => 270ul, 4 or 5 => 266ul, _ => 258ul }, work);
+        var setBytes = route >= 3 ? Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
+            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>() : 0;
+        Assert.Equal(setBytes + (route >= 6 ? 0ul : Utf8ConstructionBudget.ArrayBytes<byte>(route == 2 ? 124 : 4)), retained);
         for (var cutoff = 0ul; cutoff <= work; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
@@ -111,7 +113,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
             }
             else { Assert.Null(error); Assert.Equal(48 + retained, owner.Budget.ReservedBytes); }
             Assert.Equal(0ul, owner.Budget.Depth); Assert.InRange(owner.Budget.WorkSteps, 1ul, cutoff + 1);
-            Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+            Assert.Equal(route >= 3 && cutoff == work, owner.Budget.ObjectCheckpoint is not null); Assert.Equal(0xa5, parent[0]);
         }
     }
 
@@ -122,7 +124,9 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         var charClass = Class(4); byte[] caller = [0, 1, 2, 3]; ulong peak;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { Produce(route, charClass, caller); peak = measure.Budget.PeakBytes; }
-        Assert.InRange(peak, 48ul, 160ul);
+        var setBytes = route >= 3 ? Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
+            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>() : 0;
+        Assert.Equal(setBytes + (route >= 6 ? 0ul : Utf8ConstructionBudget.ArrayBytes<byte>(route == 2 ? 124 : 4)), peak);
         for (var allowance = 0ul; allowance <= peak; allowance++)
         {
             using var owner = new Utf8ConstructionScope(0, 48 + allowance, ulong.MaxValue, ulong.MaxValue);
@@ -136,7 +140,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
             }
             else Assert.Null(error);
             Assert.InRange(owner.Budget.PeakBytes, 48ul, 48 + allowance); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+            Assert.Equal(route >= 3 && allowance == peak, owner.Budget.ObjectCheckpoint is not null); Assert.Equal(0xa5, parent[0]);
         }
     }
 

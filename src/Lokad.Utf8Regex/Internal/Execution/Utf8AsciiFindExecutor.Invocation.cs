@@ -39,7 +39,7 @@ internal static partial class Utf8AsciiFindExecutor
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var count = Math.Min(2048, input.Length - position);
-                var relative = input.Slice(position, count).IndexOfAny(primary.SearchValues);
+                var relative = primary.Search.IndexOf(input.Slice(position, count));
                 if (relative < 0) { position += count; continue; }
                 var anchor = position + relative;
                 var candidate = (long)anchor - primary.Distance;

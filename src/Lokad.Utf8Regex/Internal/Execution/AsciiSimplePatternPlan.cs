@@ -2,8 +2,6 @@ using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-using System.Buffers;
-
 internal readonly struct AsciiSimplePatternPlan
 {
     public AsciiSimplePatternPlan(
@@ -270,11 +268,8 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
             HeadCharClass = headCharClass;
             TailCharClass = tailCharClass;
             TailMinLength = tailMinLength;
-            var tailBytes = tailCharClass.GetPositiveMatchBytes();
-            TailSearchValues = tailBytes.Length > 0 ? SearchValues.Create(tailBytes) : null;
-            // SearchValues retains its own representation; this construction-only
-            // byte array has no runtime consumer and must not remain plan state.
-            budget.ReleaseArray(tailBytes, false);
+            TailSearch = !tailCharClass.Negated && !tailCharClass.IsEmpty
+                ? Utf8PreparedByteSearchFactory.CreateSet(tailCharClass) : null;
             scope.Complete();
         }
         finally { budget.LeaveDepth(); }
@@ -286,7 +281,7 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
 
     public int TailMinLength { get; }
 
-    public SearchValues<byte>? TailSearchValues { get; }
+    public PreparedByteSet? TailSearch { get; }
 
     public bool HasValue => !HeadCharClass.IsEmpty && !TailCharClass.IsEmpty && TailMinLength >= 0;
 
@@ -302,9 +297,9 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
             return false;
         }
 
-        if (!TailCharClass.Negated && TailSearchValues is not null)
+        if (!TailCharClass.Negated && TailSearch is not null)
         {
-            return input[1..].IndexOfAnyExcept(TailSearchValues) < 0;
+            return TailSearch.IndexOfAnyExcept(input[1..]) < 0;
         }
 
         for (var i = 1; i < input.Length; i++)

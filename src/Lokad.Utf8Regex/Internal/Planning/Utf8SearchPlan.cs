@@ -1,4 +1,3 @@
-using System.Buffers;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -572,9 +571,7 @@ internal readonly struct Utf8FixedDistanceSet
         {
             Distance = distance;
             ByteSet = byteSet;
-            var values = byteSet.GetMatchBytes();
-            SearchValues = System.Buffers.SearchValues.Create(values);
-            budget.ReleaseArray(values, false);
+            Search = Utf8PreparedByteSearchFactory.CreateSet(byteSet);
             scope.Complete();
         }
         finally { budget.LeaveDepth(); }
@@ -584,7 +581,7 @@ internal readonly struct Utf8FixedDistanceSet
 
     public AsciiCharClass ByteSet { get; }
 
-    public SearchValues<byte> SearchValues { get; }
+    public PreparedByteSet Search { get; }
 
     public bool Contains(byte value) => ByteSet.Contains(value);
 

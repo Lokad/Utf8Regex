@@ -601,13 +601,21 @@ charges initialization and ascending mask-bit copies. Shared empties are borrowe
 complements remain restricted to ASCII. Owned byte-search preparation either copies
 caller bytes into an admitted independent array or reuses the class producer's
 owned output. The reusable search kernel has no front-end budget dependency.
-Head/tail and fixed-distance preparation release temporary class byte arrays after
-creating SearchValues; the unused retained TailBytes plan field is removed.
+Covered run, head/tail and fixed-distance preparation now builds owned byte-set
+state: four membership masks, two fixed nibble lookup tables, range bounds and
+representation flags. Admit its complete field extent and retaining descriptor
+before object acquisition, and charge bounded table-building work before scanning.
+Head/tail and fixed-distance preparation derive this state directly from masks,
+without temporary class arrays. Their former opaque SearchValues fields and the
+unused retained TailBytes field are removed. The kernel handles forward/reverse
+and complemented searches over the full byte domain; the ASCII class factory
+keeps complements restricted to ASCII. Vector loads stay within the subject,
+including overlapping tail loads, and scalar execution remains available.
 Count-only eligibility and projected-mask checks do not materialize class arrays.
 Two runtime validators use fixed 128-byte stack scratch instead of acquiring
-class arrays or entering construction scopes. This does not account for the
-opaque BCL SearchValues representation, remaining multi-literal/search producer
-allocations, emission metadata or retained/shared preparation. Their complete
+class arrays or entering construction scopes. Generic primitive construction,
+other opaque BCL SearchValues state in multi-literal/search producers, emission
+metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run

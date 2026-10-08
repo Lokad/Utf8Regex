@@ -141,11 +141,11 @@ internal static partial class Utf8AsciiFindExecutor
 
         var primary = sets[0];
         var anchorStart = Math.Max(0, startIndex + primary.Distance);
-        var searchValues = primary.SearchValues;
+        var search = primary.Search;
         var position = anchorStart;
         while (position < input.Length)
         {
-            var relative = input[position..].IndexOfAny(searchValues);
+            var relative = search.IndexOf(input[position..]);
             if (relative < 0)
             {
                 return false;
