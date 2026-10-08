@@ -47,7 +47,8 @@ public sealed class Utf8SearchPlanTests
 
         var alternate = regex.Inspection.SearchPlan.AlternateIgnoreCaseLiteralSearch.Value;
         var prepared = regex.Inspection.SearchPlan.MultiLiteralSearch.IgnoreCaseSearch;
-        Assert.Same(alternate.FirstByteSearchValues, prepared.FirstByteSearchValues);
+        // The value search shares its owned byte array and byte-set object.
+        Assert.Equal(alternate.FirstByteSearch, prepared.FirstByteSearch);
         Assert.Same(alternate.Buckets, prepared.Buckets);
         Assert.Same(alternate.BucketIndexMap, prepared.BucketIndexMap);
     }

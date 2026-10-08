@@ -7529,7 +7529,7 @@ internal static partial class BenchmarkInspectReporter
         var start = 0;
         while (start <= maximumStart)
         {
-            var relative = input[start..].IndexOfAny(search.FirstByteSearchValues);
+            var relative = search.FirstByteSearch.IndexOf(input[start..]);
             if (relative < 0)
             {
                 break;

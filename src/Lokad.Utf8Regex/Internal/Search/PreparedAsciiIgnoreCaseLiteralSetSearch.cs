@@ -1,96 +1,22 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
-internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
+internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
 {
     private const int PrefixProbeLength = 8;
     private const int CorrelatedPromotionTailLength = 256;
-    private readonly PreparedAsciiIgnoreCaseLiteralSetSearchData _data;
+    private readonly PreparedAsciiIgnoreCaseLiteralSetSearchData? _data;
 
-    public PreparedAsciiIgnoreCaseLiteralSetSearch(byte[][] literals)
-    {
-        if (literals.Length == 0)
-        {
-            var emptyBuckets = Array.Empty<AsciiIgnoreCaseLiteralBucket>();
-            _data = new PreparedAsciiIgnoreCaseLiteralSetSearchData(
-                SearchValues.Create(Array.Empty<byte>()),
-                emptyBuckets,
-                CreateBucketIndexMap(emptyBuckets),
-                int.MaxValue,
-                default);
-            return;
-        }
+    public PreparedByteSearch FirstByteSearch => _data?.FirstByteSearch ?? PreparedByteSearch.FromOwnedValues([], null);
 
-        var shortestLength = int.MaxValue;
-        Span<byte> distinctFoldedFirstBytes = stackalloc byte[Math.Min(literals.Length, 256)];
-        var distinctCount = 0;
-        var bucketLists = new List<byte[]>[256];
+    public AsciiIgnoreCaseLiteralBucket[] Buckets => _data?.Buckets ?? [];
 
-        foreach (var literal in literals)
-        {
-            if (literal.Length == 0)
-            {
-                AsciiIgnoreCaseLiteralBucket[] emptyLiteralBuckets =
-                    [new AsciiIgnoreCaseLiteralBucket(0, [Array.Empty<byte>()])];
-                _data = new PreparedAsciiIgnoreCaseLiteralSetSearchData(
-                    SearchValues.Create(Array.Empty<byte>()),
-                    emptyLiteralBuckets,
-                    CreateBucketIndexMap(emptyLiteralBuckets),
-                    0,
-                    default);
-                return;
-            }
+    public int[] BucketIndexMap => _data?.BucketIndexMap ?? [];
 
-            var normalized = literal.ToArray();
-            for (var i = 0; i < normalized.Length; i++)
-            {
-                normalized[i] = AsciiSearch.FoldCase(normalized[i]);
-            }
+    public int ShortestLength => _data?.ShortestLength ?? int.MaxValue;
 
-            shortestLength = Math.Min(shortestLength, normalized.Length);
-            var firstByte = normalized[0];
-            var bucket = bucketLists[firstByte];
-            if (bucket is null)
-            {
-                bucket = [];
-                bucketLists[firstByte] = bucket;
-                distinctFoldedFirstBytes[distinctCount++] = firstByte;
-            }
-
-            bucket.Add(normalized);
-        }
-
-        var searchBytes = BuildSearchBytes(distinctFoldedFirstBytes[..distinctCount]);
-        var buckets = new AsciiIgnoreCaseLiteralBucket[distinctCount];
-        for (var i = 0; i < distinctCount; i++)
-        {
-            var firstByte = distinctFoldedFirstBytes[i];
-            var bucket = bucketLists[firstByte] ??
-                throw new InvalidOperationException("A recorded literal bucket must have storage.");
-            buckets[i] = new AsciiIgnoreCaseLiteralBucket(firstByte, [.. bucket]);
-        }
-
-        var correlatedPrefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(
-            buckets.SelectMany(static bucket => bucket.Literals).ToArray());
-        _data = new PreparedAsciiIgnoreCaseLiteralSetSearchData(
-            SearchValues.Create(searchBytes),
-            buckets,
-            CreateBucketIndexMap(buckets),
-            shortestLength,
-            correlatedPrefilter);
-    }
-
-    public SearchValues<byte> FirstByteSearchValues => _data.FirstByteSearchValues;
-
-    public AsciiIgnoreCaseLiteralBucket[] Buckets => _data.Buckets;
-
-    public int[] BucketIndexMap => _data.BucketIndexMap;
-
-    public int ShortestLength => _data.ShortestLength;
-
-    private PreparedMultiLiteralPackedNibbleSimdPrefilter CorrelatedPrefilter => _data.CorrelatedPrefilter;
+    private PreparedMultiLiteralPackedNibbleSimdPrefilter CorrelatedPrefilter => _data?.CorrelatedPrefilter ?? default;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int IndexOf(ReadOnlySpan<byte> input)
@@ -105,7 +31,7 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
             return 0;
         }
 
-        var candidate = input.IndexOfAny(FirstByteSearchValues);
+        var candidate = FirstByteSearch.IndexOf(input);
         if (candidate < 0 || candidate > input.Length - ShortestLength)
         {
             return -1;
@@ -137,7 +63,7 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
             return true;
         }
 
-        var candidate = input.IndexOfAny(FirstByteSearchValues);
+        var candidate = FirstByteSearch.IndexOf(input);
         if (candidate < 0 || candidate > input.Length - ShortestLength)
         {
             return false;
@@ -178,7 +104,7 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
         while (searchIndex <= input.Length - ShortestLength)
         {
-            var relative = input[searchIndex..].IndexOfAny(FirstByteSearchValues);
+            var relative = FirstByteSearch.IndexOf(input[searchIndex..]);
             if (relative < 0)
             {
                 return false;
@@ -211,7 +137,7 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
         for (var end = input.Length - ShortestLength + 1; end > 0;)
         {
-            var relative = input[..end].LastIndexOfAny(FirstByteSearchValues);
+            var relative = FirstByteSearch.LastIndexOf(input[..end]);
             if (relative < 0)
             {
                 return -1;
@@ -290,63 +216,20 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
         return true;
     }
 
-    private static byte[] BuildSearchBytes(ReadOnlySpan<byte> foldedFirstBytes)
-    {
-        Span<bool> seen = stackalloc bool[256];
-        Span<byte> values = stackalloc byte[Math.Min(foldedFirstBytes.Length * 2, 256)];
-        var count = 0;
-        foreach (var folded in foldedFirstBytes)
-        {
-            if (!seen[folded])
-            {
-                seen[folded] = true;
-                values[count++] = folded;
-            }
-
-            if ((uint)(folded - (byte)'a') <= 'z' - 'a')
-            {
-                var upper = (byte)(folded - 32);
-                if (!seen[upper])
-                {
-                    seen[upper] = true;
-                    values[count++] = upper;
-                }
-            }
-        }
-
-        return values[..count].ToArray();
-    }
-
-    private static int[] CreateBucketIndexMap(AsciiIgnoreCaseLiteralBucket[] buckets)
-    {
-        var map = new int[256];
-        Array.Fill(map, -1);
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            map[buckets[i].FoldedFirstByte] = i;
-        }
-
-        return map;
-    }
 }
 
 internal sealed class PreparedAsciiIgnoreCaseLiteralSetSearchData
 {
-    public PreparedAsciiIgnoreCaseLiteralSetSearchData(
-        SearchValues<byte> firstByteSearchValues,
-        AsciiIgnoreCaseLiteralBucket[] buckets,
-        int[] bucketIndexMap,
-        int shortestLength,
-        PreparedMultiLiteralPackedNibbleSimdPrefilter correlatedPrefilter)
+    public PreparedAsciiIgnoreCaseLiteralSetSearchData(PreparedAsciiIgnoreCaseLiteralSetSearchDataState state)
     {
-        FirstByteSearchValues = firstByteSearchValues;
-        Buckets = buckets;
-        BucketIndexMap = bucketIndexMap;
-        ShortestLength = shortestLength;
-        CorrelatedPrefilter = correlatedPrefilter;
+        FirstByteSearch = state.Search;
+        Buckets = state.Buckets;
+        BucketIndexMap = state.Map;
+        ShortestLength = state.Shortest;
+        CorrelatedPrefilter = state.Prefilter;
     }
 
-    public SearchValues<byte> FirstByteSearchValues { get; }
+    public PreparedByteSearch FirstByteSearch { get; }
 
     public AsciiIgnoreCaseLiteralBucket[] Buckets { get; }
 

@@ -675,7 +675,17 @@ candidate/priority behavior remain. Reverse common-prefix search retains the
 complete prefix of its last permitted start; the former truncated window could
 miss final matches. This is construction capacity, not a complete
 public/retained policy or a performance qualification.
-Other opaque BCL SearchValues state, folded/small-family preparation and upstream preparation/emission
+ASCII-folded literal-set preparation admits normalized byte payloads, ordered
+bucket/reference arrays, the first-byte map and owned byte search, plus the
+complete retained descriptor field state and its retaining node. An empty family
+borrows all state; a preflight finds empty alternatives before acquiring discarded
+normalizations. Fixed alphabet scratch replaces grouping lists and intermediate
+search-byte copies. Eligible correlated masks receive an admitted temporary
+reference vector in grouped order, released after the masks copy their state;
+ineligible mask preparation borrows original lengths without flattening. Failed
+children restore parent storage, retainers and depth while work remains spent.
+This preserves ASCII folding, bucket/literal order and runtime verification.
+Other opaque BCL SearchValues state, small-family preparation and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
