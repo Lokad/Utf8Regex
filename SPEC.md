@@ -636,8 +636,17 @@ return; descriptors stay funded until construction closes. Empty automata borrow
 all state. Mutable node objects, per-node transition/flag arrays, List/Queue
 storage, unused node APIs and redundant output initialization are removed.
 Runtime automaton layout and matching methods remain unchanged.
+Packed SIMD nibble, scalar nibble, offset-mask and rare-byte prefilter construction
+admits every retained offset/map, nested mask and vector array plus shared byte-search
+state. Scans, table initialization, selection and projection share construction work
+and nested depth. Offset selection retains only three stack scores; weighted folded
+SIMD selection tests its three selected offsets instead of a length-sized bitmap.
+The old score list, LINQ ordering/materialization and selection bitmap are removed.
+Empty families borrow all extents, including the rare-byte map. Runtime field layouts,
+frequency/tie ordering, masks and candidate methods remain unchanged.
 Budget/scope semantics and provisional defaults remain unchanged.
-Other opaque BCL SearchValues state and multi-literal prefilter maps/vectors/buckets, emission
+Other opaque BCL SearchValues state, packed-discriminator maps, leading-segment/literal
+set buckets and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

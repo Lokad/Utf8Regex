@@ -1418,181 +1418,11 @@ internal readonly struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
 
 internal readonly record struct PreparedMultiLiteralLeadingUtf8SegmentBucket(byte[] Segment, byte[][] Literals);
 
-internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
+internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 {
     private const int MaxMaskLen = 4;
     private const int SseLaneCount = 16;
     private const int AvxLaneCount = 32;
-
-    public PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals)
-        : this(literals, asciiIgnoreCase: false, invariantCyrillicIgnoreCase: false)
-    {
-    }
-
-    private PreparedMultiLiteralPackedNibbleSimdPrefilter(
-        byte[][] literals,
-        bool asciiIgnoreCase,
-        bool invariantCyrillicIgnoreCase)
-    {
-        ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
-        MaskLength = 0;
-        MaskOffsets = [];
-        LowMaskVectors = [];
-        HighMaskVectors = [];
-        Search = default;
-
-        if (!Ssse3.IsSupported || !Sse2.IsSupported || literals.Length == 0 || literals.Length > 8 || ShortestLength <= 0 || ShortestLength == int.MaxValue)
-        {
-            return;
-        }
-
-        // Long folded families benefit more from three rare correlated positions.
-        // Three-scalar UTF-8 prefixes likewise use one continuation byte per scalar:
-        // their leading bytes are usually identical and add little discrimination.
-        MaskOffsets = invariantCyrillicIgnoreCase
-            ? Enumerable.Range(0, Math.Min(MaxMaskLen, ShortestLength)).ToArray()
-            : asciiIgnoreCase && ShortestLength >= 8
-            ? SelectAsciiIgnoreCaseOffsets(literals, ShortestLength)
-            : SelectExactOffsets(literals, ShortestLength);
-        MaskLength = MaskOffsets.Length;
-        LowMaskVectors = new Vector256<byte>[MaskLength];
-        HighMaskVectors = new Vector256<byte>[MaskLength];
-
-        Span<bool> firstSeen = stackalloc bool[256];
-        Span<byte> firstBytes = stackalloc byte[256];
-        Span<byte> lowTable = stackalloc byte[16];
-        Span<byte> highTable = stackalloc byte[16];
-        var firstCount = 0;
-
-        for (var offset = 0; offset < MaskLength; offset++)
-        {
-            lowTable.Clear();
-            highTable.Clear();
-            for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
-            {
-                var bit = (byte)(1 << literalIndex);
-                var value = literals[literalIndex][MaskOffsets[offset]];
-                AddMaskValue(lowTable, highTable, value, bit);
-                if (asciiIgnoreCase && IsFoldedAsciiLetter(value))
-                {
-                    AddMaskValue(lowTable, highTable, (byte)(value - ('a' - 'A')), bit);
-                }
-                else if (invariantCyrillicIgnoreCase &&
-                    Utf8InvariantCyrillicCase.TryGetCounterpartByte(literals[literalIndex], MaskOffsets[offset], out var counterpart))
-                {
-                    AddMaskValue(lowTable, highTable, counterpart, bit);
-                }
-            }
-
-            var lowMask = Vector128.Create(
-                lowTable[0], lowTable[1], lowTable[2], lowTable[3],
-                lowTable[4], lowTable[5], lowTable[6], lowTable[7],
-                lowTable[8], lowTable[9], lowTable[10], lowTable[11],
-                lowTable[12], lowTable[13], lowTable[14], lowTable[15]);
-            var highMask = Vector128.Create(
-                highTable[0], highTable[1], highTable[2], highTable[3],
-                highTable[4], highTable[5], highTable[6], highTable[7],
-                highTable[8], highTable[9], highTable[10], highTable[11],
-                highTable[12], highTable[13], highTable[14], highTable[15]);
-            LowMaskVectors[offset] = Vector256.Create(lowMask, lowMask);
-            HighMaskVectors[offset] = Vector256.Create(highMask, highMask);
-        }
-
-        for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
-        {
-            var first = literals[literalIndex][0];
-            if (!firstSeen[first])
-            {
-                firstSeen[first] = true;
-                firstBytes[firstCount++] = first;
-            }
-
-            if (asciiIgnoreCase && IsFoldedAsciiLetter(first))
-            {
-                var upper = (byte)(first - ('a' - 'A'));
-                if (!firstSeen[upper])
-                {
-                    firstSeen[upper] = true;
-                    firstBytes[firstCount++] = upper;
-                }
-            }
-            else if (invariantCyrillicIgnoreCase &&
-                Utf8InvariantCyrillicCase.TryGetCounterpartByte(literals[literalIndex], 0, out var counterpart) &&
-                !firstSeen[counterpart])
-            {
-                firstSeen[counterpart] = true;
-                firstBytes[firstCount++] = counterpart;
-            }
-        }
-
-        Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount]);
-
-        static int[] SelectAsciiIgnoreCaseOffsets(byte[][] foldedLiterals, int shortestLength)
-        {
-            const int selectedOffsetCount = 3;
-            var offsets = new int[selectedOffsetCount];
-            var selected = new bool[shortestLength];
-            Span<long> literalWeights = stackalloc long[foldedLiterals.Length];
-            literalWeights.Fill(1);
-
-            for (var selectedIndex = 0; selectedIndex < selectedOffsetCount; selectedIndex++)
-            {
-                var bestOffset = -1;
-                var bestScore = long.MaxValue;
-                for (var offset = 0; offset < shortestLength; offset++)
-                {
-                    if (selected[offset])
-                    {
-                        continue;
-                    }
-
-                    long score = 0;
-                    for (var literalIndex = 0; literalIndex < foldedLiterals.Length; literalIndex++)
-                    {
-                        var rank = PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(
-                            foldedLiterals[literalIndex][offset]);
-                        score += literalWeights[literalIndex] * (rank + 1L);
-                    }
-
-                    if (score < bestScore)
-                    {
-                        bestScore = score;
-                        bestOffset = offset;
-                    }
-                }
-
-                offsets[selectedIndex] = bestOffset;
-                selected[bestOffset] = true;
-                for (var literalIndex = 0; literalIndex < foldedLiterals.Length; literalIndex++)
-                {
-                    var rank = PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(
-                        foldedLiterals[literalIndex][bestOffset]);
-                    literalWeights[literalIndex] *= rank + 1L;
-                }
-            }
-
-            return offsets;
-        }
-
-        static int[] SelectExactOffsets(byte[][] exactLiterals, int shortestLength)
-        {
-            if (shortestLength >= 9 && exactLiterals.All(static literal =>
-                    literal[0] is >= 0xE0 and < 0xF0 &&
-                    literal[1] is >= 0x80 and < 0xC0 &&
-                    literal[2] is >= 0x80 and < 0xC0 &&
-                    literal[3] is >= 0xE0 and < 0xF0 &&
-                    literal[4] is >= 0x80 and < 0xC0 &&
-                    literal[5] is >= 0x80 and < 0xC0 &&
-                    literal[6] is >= 0xE0 and < 0xF0 &&
-                    literal[7] is >= 0x80 and < 0xC0 &&
-                    literal[8] is >= 0x80 and < 0xC0))
-            {
-                return [2, 5, 8];
-            }
-
-            return Enumerable.Range(0, Math.Min(MaxMaskLen, shortestLength)).ToArray();
-        }
-    }
 
     public static PreparedMultiLiteralPackedNibbleSimdPrefilter CreateAsciiIgnoreCase(byte[][] foldedLiterals)
         => new(foldedLiterals, asciiIgnoreCase: true, invariantCyrillicIgnoreCase: false);
@@ -1802,56 +1632,9 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     }
 }
 
-internal readonly struct PreparedMultiLiteralNibbleMaskPrefilter
+internal readonly partial struct PreparedMultiLiteralNibbleMaskPrefilter
 {
     private const int MaxMaskLen = 4;
-
-    public PreparedMultiLiteralNibbleMaskPrefilter(byte[][] literals)
-    {
-        ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
-        Search = default;
-        LowMasks = [];
-        HighMasks = [];
-        MaskLength = 0;
-
-        if (literals.Length == 0 || literals.Length > 64 || ShortestLength <= 0 || ShortestLength == int.MaxValue)
-        {
-            return;
-        }
-
-        MaskLength = Math.Min(MaxMaskLen, ShortestLength);
-        LowMasks = new ulong[MaskLength][];
-        HighMasks = new ulong[MaskLength][];
-        for (var offset = 0; offset < MaskLength; offset++)
-        {
-            LowMasks[offset] = new ulong[16];
-            HighMasks[offset] = new ulong[16];
-        }
-
-        Span<bool> firstSeen = stackalloc bool[256];
-        Span<byte> firstBytes = stackalloc byte[256];
-        var firstCount = 0;
-        for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
-        {
-            var literal = literals[literalIndex];
-            var bit = 1UL << literalIndex;
-            for (var offset = 0; offset < MaskLength; offset++)
-            {
-                var b = literal[offset];
-                LowMasks[offset][b & 0xF] |= bit;
-                HighMasks[offset][b >> 4] |= bit;
-            }
-
-            var first = literal[0];
-            if (!firstSeen[first])
-            {
-                firstSeen[first] = true;
-                firstBytes[firstCount++] = first;
-            }
-        }
-
-        Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount]);
-    }
 
     public int ShortestLength { get; }
 
@@ -1919,85 +1702,11 @@ internal readonly struct PreparedMultiLiteralNibbleMaskPrefilter
     }
 }
 
-internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
+internal readonly partial struct PreparedMultiLiteralOffsetMaskPrefilter
 {
     private const int MaxOffsets = 3;
 
     private readonly record struct OffsetScore(int Offset, int Cardinality, int FrequencyScore);
-
-    public PreparedMultiLiteralOffsetMaskPrefilter(byte[][] literals)
-    {
-        ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
-        Offsets = [];
-        Masks = [];
-        Search = default;
-
-        if (literals.Length == 0 || ShortestLength <= 0 || ShortestLength == int.MaxValue)
-        {
-            return;
-        }
-
-        var scores = new List<OffsetScore>(ShortestLength);
-        var seenAtOffset = new bool[256];
-        for (var offset = 0; offset < ShortestLength; offset++)
-        {
-            Array.Clear(seenAtOffset);
-            var cardinality = 0;
-            var frequencyScore = 0;
-            for (var i = 0; i < literals.Length; i++)
-            {
-                var value = literals[i][offset];
-                if (seenAtOffset[value])
-                {
-                    continue;
-                }
-
-                seenAtOffset[value] = true;
-                cardinality++;
-                frequencyScore += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(value);
-            }
-
-            scores.Add(new OffsetScore(offset, cardinality, frequencyScore));
-        }
-
-        var selected = scores
-            .OrderBy(static score => score.Cardinality)
-            .ThenBy(static score => score.FrequencyScore)
-            .ThenBy(static score => score.Offset)
-            .Take(MaxOffsets)
-            .ToArray();
-
-        if (selected.Length == 0)
-        {
-            return;
-        }
-
-        Offsets = new int[selected.Length];
-        Masks = new byte[selected.Length][];
-        for (var i = 0; i < selected.Length; i++)
-        {
-            Offsets[i] = selected[i].Offset;
-            var mask = new byte[256];
-            for (var j = 0; j < literals.Length; j++)
-            {
-                mask[literals[j][selected[i].Offset]] = 1;
-            }
-
-            Masks[i] = mask;
-        }
-
-        Span<byte> searchBytes = stackalloc byte[256];
-        var count = 0;
-        for (var value = 0; value < 256; value++)
-        {
-            if (Masks[0][value] != 0)
-            {
-                searchBytes[count++] = (byte)value;
-            }
-        }
-
-        Search = count == 0 ? default : PreparedByteSearch.Create(searchBytes[..count]);
-    }
 
     public int ShortestLength { get; }
 
@@ -2060,67 +1769,8 @@ internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
     }
 }
 
-internal readonly struct PreparedMultiLiteralRareBytePrefilter
+internal readonly partial struct PreparedMultiLiteralRareBytePrefilter
 {
-    public PreparedMultiLiteralRareBytePrefilter(byte[][] literals)
-    {
-        ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
-        OffsetByValue = new int[256];
-        Array.Fill(OffsetByValue, -1);
-
-        Span<bool> seen = stackalloc bool[256];
-        Span<int> maxOffsets = stackalloc int[256];
-        maxOffsets.Fill(-1);
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            for (var j = 0; j < literal.Length; j++)
-            {
-                var value = literal[j];
-                seen[value] = true;
-                if (j > maxOffsets[value])
-                {
-                    maxOffsets[value] = j;
-                }
-            }
-        }
-
-        Span<byte> selected = stackalloc byte[3];
-        var count = 0;
-        for (var pick = 0; pick < selected.Length; pick++)
-        {
-            var bestValue = -1;
-            var bestRank = int.MaxValue;
-            for (var value = 0; value < 256; value++)
-            {
-                if (!seen[value] || OffsetByValue[value] >= 0)
-                {
-                    continue;
-                }
-
-                var rank = GetAsciiFrequencyRank((byte)value);
-                if (rank < bestRank)
-                {
-                    bestRank = rank;
-                    bestValue = value;
-                }
-            }
-
-            if (bestValue < 0)
-            {
-                break;
-            }
-
-            selected[count++] = (byte)bestValue;
-            OffsetByValue[bestValue] = maxOffsets[bestValue];
-        }
-
-        Search = count == 0
-            ? default
-            : PreparedByteSearch.Create(selected[..count]);
-    }
-
     public PreparedByteSearch Search { get; }
 
     public int[] OffsetByValue { get; }
