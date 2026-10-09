@@ -9,9 +9,12 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal static class Utf8FrontEnd
 {
     public static Utf8PreparedRegex Compile(string pattern, RegexOptions options)
+        => Compile(pattern, options, options);
+
+    internal static Utf8PreparedRegex Compile(string pattern, RegexOptions options, RegexOptions scalarOptions)
     {
         var analysis = Analyze(pattern, options);
-        return Utf8RegexPreparer.Prepare(analysis);
+        return Utf8RegexPreparer.Prepare(analysis, scalarOptions);
     }
 
     internal static Utf8RegexAnalysis Analyze(string pattern, RegexOptions options)

@@ -422,6 +422,15 @@ uses a bounded class projection; unavailable projections decline only that nativ
 tree, while the authoritative scalar tree continues to serve operations. Retiring
 the projection and its consumers remains cleanup work. Initial class member lists,
 other lexical/IR objects and complete retained/cache policies remain uncovered.
+Core preparation compiles and retains the scalar program once from the owned
+tree. Public matching borrows that program; native NonBacktracking eligibility
+reads tree/catalog facts rather than compiling and discarding another program.
+Prepared and operation-cursor descriptors admit their complete field-state
+extents and retaining roots before acquisition, while referenced scalar/native
+payloads keep independent loans. Their shared immutable empty cursor state is
+borrowed. Failed preparation restores parent byte/depth/object loans without
+refunding work. These covered acquisitions do not establish complete retained
+cache policies or retire the remaining production BCL consumers.
 Python parser branch/sequence/class-item arrays, capture/open-group metadata,
 their collection/arena descriptors, and old/new growth and final-copy overlap
 share admission. Completed AST arrays and immutable metadata tables retain their

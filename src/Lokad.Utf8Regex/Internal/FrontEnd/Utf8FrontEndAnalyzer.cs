@@ -12,10 +12,10 @@ internal static class Utf8FrontEndAnalyzer
         // graphs receive their owned scalar NFA at construction. The historical
         // unsupported-options reason describes native-plan eligibility here.
         if ((executionOptions & RegexOptions.NonBacktracking) != 0 &&
-            Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.TryParseNonBacktrackingFlatGraph(executionOptions,
-                semanticRegex.RuntimeTree) is { } nativeScalarProof &&
+            Lokad.Utf8Regex.Internal.Execution.Utf8SliceParser.IsNonBacktrackingFlatGraph(semanticRegex.RuntimeTree) &&
             Utf8NativeExecutionAnalyzer.TryAnalyze(semanticRegex, executionPattern, executionOptions, out var nativeNonBacktracking) &&
-            nativeScalarProof.IgnoreCase == ((executionOptions & RegexOptions.IgnoreCase) != 0))
+            (semanticRegex.RuntimeTree is { UsesIgnoreCase: true } || (executionOptions & RegexOptions.IgnoreCase) != 0) ==
+                ((executionOptions & RegexOptions.IgnoreCase) != 0))
         {
             return nativeNonBacktracking;
         }

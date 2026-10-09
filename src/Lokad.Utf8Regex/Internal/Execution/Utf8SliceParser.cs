@@ -29,9 +29,9 @@ internal static class Utf8SliceParser
         return Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
     }
 
-    internal static Utf8SliceProgram? TryParseNonBacktrackingFlatGraph(RegexOptions options, Utf8OwnedRegexTree? tree)
+    internal static bool IsNonBacktrackingFlatGraph(Utf8OwnedRegexTree? tree)
     {
-        if (tree is null) return null;
+        if (tree is null) return false;
         // No consuming loop, assertion recursion, reference, conditional or
         // atomic choice enters this admission. Candidate work is bounded by
         // the cached finite graph, independent of subject length. This proof
@@ -53,8 +53,11 @@ internal static class Utf8SliceParser
                         Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate or
                         Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End or
                         Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.ECMABoundary or Utf8TreeNodeKind.NonECMABoundary))
-                        return null;
-                    if (node.Kind == Utf8TreeNodeKind.Capture && node.N >= 0) return null;
+                        return false;
+                    if (node.Kind == Utf8TreeNodeKind.Capture &&
+                        (node.N >= 0 || node.M == 0 && !ReferenceEquals(node, tree.Root))) return false;
+                    if (node.Kind == Utf8TreeNodeKind.Set && node.ScalarClass is null ||
+                        node.Kind == Utf8TreeNodeKind.Multi && node.Str is null) return false;
                     frame = frame with { Entered = true, NextChild = node.ChildCount };
                 }
                 if (frame.NextChild == 0) { frames.Pop(); continue; }
@@ -62,11 +65,12 @@ internal static class Utf8SliceParser
                 frames.Push(new(node.Child(frame.NextChild - 1), 0, false));
             }
         }
-        var program = TryParse(options & ~RegexOptions.NonBacktracking, tree);
         // Aliased declarations can write a public slot more than once even
         // without loops. Their NonBacktracking capture-history rule is separate.
-        if (program is not { HasSharedCaptureDeclarations: false, HasBalancing: false }) return null;
+        // These are authoritative tree/catalog facts, not a reason to compile
+        // and discard a second scalar program during native eligibility.
+        if (tree.CaptureCatalog is not { HasSharedCaptureDeclarations: false }) return false;
         construction.Complete();
-        return program;
+        return true;
     }
 }

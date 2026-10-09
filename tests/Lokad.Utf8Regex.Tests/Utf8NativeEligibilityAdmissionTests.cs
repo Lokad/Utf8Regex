@@ -54,12 +54,12 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     private static object? Prepare(int route, Utf8OwnedRegexTree tree) => route == 5
-        ? Utf8SliceParser.TryParseNonBacktrackingFlatGraph(RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, tree)
+        ? Utf8SliceParser.IsNonBacktrackingFlatGraph(tree)
         : Scans[route](tree.Root);
 
     private static void AssertResult(int route, object? result)
     {
-        if (route == 5) Assert.NotNull(Assert.IsType<Utf8SliceProgram>(result));
+        if (route == 5) Assert.True(Assert.IsType<bool>(result));
         else Assert.Equal(route != 0, Assert.IsType<bool>(result));
     }
 
@@ -153,21 +153,11 @@ public sealed class Utf8NativeEligibilityAdmissionTests
             var checkpoint = owner.Budget.ObjectCheckpoint;
             Exception? failure;
             using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => AssertResult(route, Prepare(route, input)));
-            // Pure scans reuse only borrowed nodes and have repeatable costs.
-            // Flat lowering acquires IR identities; reference-map collisions
-            // can change its probe work. Admit and inspect the actual attempt.
-            if (route != 5)
-            {
-                if (cutoff == work) Assert.Null(failure);
-                else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-            }
-            else if (failure is not null)
-            {
-                var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
-                Assert.Equal(cutoff + 2, breach.Limit);
-                Assert.True(breach.Requested > breach.Limit);
-            }
+            // All eligibility routes now scan borrowed tree/catalog facts;
+            // they do not compile a discarded scalar program or vary by map probes.
+            if (cutoff == work) Assert.Null(failure);
+            else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
+                Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
             Assert.Equal(112ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Reserved);
@@ -251,13 +241,13 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     }
 
     [Fact]
-    public void FlatProofDeclinedAfterLoweringRollsBackTheWholeAttempt()
+    public void FlatProofDeclinedForSharedCapturesRollsBackTheWholeAttempt()
     {
         var tree = Utf8OwnedTreeParser.TryParse("(?<x>a)(?<x>b)", RegexOptions.CultureInvariant) ?? throw new InvalidOperationException();
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        Assert.Null(Prepare(5, tree));
+        Assert.False(Assert.IsType<bool>(Prepare(5, tree)));
         Assert.True(owner.Budget.PeakBytes > 112);
         Assert.True(owner.Budget.WorkSteps > 2);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);

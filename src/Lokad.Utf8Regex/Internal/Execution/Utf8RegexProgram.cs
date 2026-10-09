@@ -54,7 +54,7 @@ internal sealed class Utf8RegexProgram
         try
         {
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-            var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions);
+            var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options);
             var compiledEngine = Utf8CompiledEngineSelector.Select(
                 preparedRegex,
                 (options & RegexOptions.Compiled) != 0);

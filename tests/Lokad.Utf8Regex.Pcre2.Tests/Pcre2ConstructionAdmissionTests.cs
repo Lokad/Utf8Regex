@@ -124,8 +124,9 @@ public sealed class Pcre2ConstructionAdmissionTests
     [Fact]
     public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
     {
-        // The boundary recovery now includes its admitted tree/container and parent.
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 8192);
+        // The boundary recovery includes admitted scalar/prepared/cursor plans;
+        // the byte-pattern probe peaks at 22,672 bytes, plus this parent loan.
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 32768);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
         Assert.Throws<NotSupportedException>(() =>
@@ -138,13 +139,13 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex("("u8));
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Reserved);
-        // Keep the original owned boundary recovery within a bounded eight KiB.
+        // Keep the original owned boundary recovery within a bounded 32 KiB.
         var recovered = new Utf8Pcre2Regex("\\b"u8);
         Assert.True(recovered.IsMatch("a😀"u8));
         Assert.Equal(2, recovered.Count("a😀"u8));
         Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
         Assert.Equal(0, parent[0]);
-        Assert.InRange(scope.Budget.ReservedBytes, 48ul, 8192ul);
+        Assert.InRange(scope.Budget.ReservedBytes, 48ul, 32768ul);
         scope.Budget.ReleaseArray(parent, false);
     }
 
@@ -154,17 +155,18 @@ public sealed class Pcre2ConstructionAdmissionTests
     {
         var pattern = new string('a', 32768);
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        // The boundary route now admits its tree, peaking at 4,128 bytes.
-        // Eight KiB still rejects the wide IR and funds the same-owner recovery.
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 8192);
+        // The boundary route now admits tree, scalar program and plan descriptors;
+        // the funded byte-pattern probe peaks at 22,672 bytes before a parent loan.
+        // 32 KiB still rejects the wide IR and funds the same-owner recovery.
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 32768);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (bytes) _ = new Utf8Pcre2Regex(encoded);
             else _ = new Utf8Pcre2Regex(pattern);
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(8192ul, failure.Limit);
-        Assert.True(scope.Budget.PeakBytes <= 8192);
+        Assert.Equal(32768ul, failure.Limit);
+        Assert.True(scope.Budget.PeakBytes <= 32768);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Reserved);
         // Keep this byte limit and prove recovery using an owned scalar
@@ -173,7 +175,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.True(recovered.IsMatch("a😀"u8));
         Assert.Equal(2, recovered.Count("a😀"u8));
         Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
-        Assert.InRange(scope.Budget.ReservedBytes, 1ul, 8192ul);
+        Assert.InRange(scope.Budget.ReservedBytes, 1ul, 32768ul);
     }
 
     [Theory]

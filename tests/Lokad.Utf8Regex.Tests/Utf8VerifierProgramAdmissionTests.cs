@@ -215,10 +215,10 @@ internal static class Utf8VerifierTestPlans
     internal static Utf8PreparedRegex WithStructuralVerifier(Utf8StructuralVerifierPlan structuralVerifier)
     {
         var p = Utf8FrontEnd.Compile("a", RegexOptions.CultureInvariant);
-        return new(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.SearchPlan, p.StructuralSearchPlan,
-            p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, structuralVerifier, p.StructuralLinearProgram,
-            p.SimplePatternPlan, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
+        return Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
+            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan, p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
+            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, structuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
     }

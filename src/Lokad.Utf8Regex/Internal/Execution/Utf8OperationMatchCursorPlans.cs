@@ -11,7 +11,25 @@ internal sealed class Utf8OperationMatchCursorPlans
     private readonly Utf8StructuralSearchPlan _structuralSearchPlan;
     private readonly AsciiStructuralVerifierProgram _structuralVerifier;
 
-    public Utf8OperationMatchCursorPlans(
+    private readonly record struct ConstructionState(
+        Utf8SearchPlan SearchPlan,
+        Utf8StructuralLinearProgram StructuralLinearProgram,
+        AsciiSimplePatternPlan SimplePatternPlan,
+        Utf8StructuralSearchPlan StructuralSearchPlan,
+        AsciiStructuralVerifierProgram StructuralVerifier,
+        Utf8ExecutionProgram? ExecutionProgram);
+
+    private Utf8OperationMatchCursorPlans(ConstructionState state)
+    {
+        _searchPlan = state.SearchPlan;
+        _structuralLinearProgram = state.StructuralLinearProgram;
+        _simplePatternPlan = state.SimplePatternPlan;
+        _structuralSearchPlan = state.StructuralSearchPlan;
+        _structuralVerifier = state.StructuralVerifier;
+        ExecutionProgram = state.ExecutionProgram;
+    }
+
+    internal static Utf8OperationMatchCursorPlans Create(
         Utf8ExecutionProgram? executionProgram,
         Utf8SearchPlan searchPlan,
         Utf8StructuralLinearProgram structuralLinearProgram,
@@ -19,21 +37,17 @@ internal sealed class Utf8OperationMatchCursorPlans
         Utf8StructuralSearchPlan structuralSearchPlan,
         AsciiStructuralVerifierProgram structuralVerifier)
     {
-        ExecutionProgram = executionProgram;
-        _searchPlan = searchPlan;
-        _structuralLinearProgram = structuralLinearProgram;
-        _simplePatternPlan = simplePatternPlan;
-        _structuralSearchPlan = structuralSearchPlan;
-        _structuralVerifier = structuralVerifier;
+        using var scope = Utf8ConstructionScope.Enter();
+        var result = scope.Budget.AllocateObject(new ConstructionState(searchPlan, structuralLinearProgram,
+            simplePatternPlan, structuralSearchPlan, structuralVerifier, executionProgram),
+            static state => new Utf8OperationMatchCursorPlans(state));
+        scope.Complete();
+        return result;
     }
 
-    public static Utf8OperationMatchCursorPlans Empty { get; } = new(
-        executionProgram: null,
-        searchPlan: default,
-        structuralLinearProgram: default,
-        simplePatternPlan: default,
-        structuralSearchPlan: default,
-        structuralVerifier: default);
+    // Shared immutable empty plans are borrowed, not acquired per invocation.
+    public static Utf8OperationMatchCursorPlans Empty { get; } = new(new ConstructionState(
+        default, default, default, default, default, null));
 
     public Utf8ExecutionProgram? ExecutionProgram { get; }
 

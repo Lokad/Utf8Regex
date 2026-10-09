@@ -12,7 +12,59 @@ internal sealed class Utf8PreparedRegex
     private readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily;
     private readonly Utf8OperationMatchCursorPlans _operationMatchCursorPlans;
 
-    public Utf8PreparedRegex(
+    private readonly record struct ConstructionState(
+        Utf8FallbackDirectFamilyPlan FallbackDirectFamily,
+        Utf8OperationMatchCursorPlans OperationMatchCursorPlans,
+        Utf8SemanticRegex SemanticRegex,
+        Utf8RegexFeatures Features,
+        string ExecutionPattern,
+        NativeExecutionKind ExecutionKind,
+        Utf8ExecutionBackend ExecutionBackend,
+        Utf8CompiledPatternCategory CompiledPatternCategory,
+        Utf8ExecutionTree? ExecutionTree,
+        Utf8ExecutionProgram? ExecutionProgram,
+        Utf8SliceProgram? ScalarProgram,
+        Utf8StructuralSearchPlan StructuralSearchPlan,
+        Utf8DeterministicAnchorSearch DeterministicAnchor,
+        Utf8DeterministicVerifierGuards DeterministicGuards,
+        Utf8FallbackVerifierPlan FallbackVerifier,
+        Utf8StructuralVerifierPlan StructuralVerifier,
+        AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan,
+        AsciiStructuralTokenWindowPlan StructuralTokenWindowPlan,
+        AsciiStructuralRepeatedSegmentPlan StructuralRepeatedSegmentPlan,
+        AsciiStructuralQuotedRelationPlan StructuralQuotedRelationPlan,
+        AsciiOrderedLiteralWindowPlan OrderedLiteralWindowPlan,
+        byte[]? LiteralUtf8,
+        string? FallbackReason);
+
+    private Utf8PreparedRegex(ConstructionState state)
+    {
+        _fallbackDirectFamily = state.FallbackDirectFamily;
+        _operationMatchCursorPlans = state.OperationMatchCursorPlans;
+        SemanticRegex = state.SemanticRegex;
+        Features = state.Features;
+        ExecutionPattern = state.ExecutionPattern;
+        ExecutionKind = state.ExecutionKind;
+        ExecutionBackend = state.ExecutionBackend;
+        CompiledPatternCategory = state.CompiledPatternCategory;
+        ExecutionTree = state.ExecutionTree;
+        ExecutionProgram = state.ExecutionProgram;
+        ScalarProgram = state.ScalarProgram;
+        StructuralSearchPlan = state.StructuralSearchPlan;
+        DeterministicAnchor = state.DeterministicAnchor;
+        DeterministicGuards = state.DeterministicGuards;
+        FallbackVerifier = state.FallbackVerifier;
+        StructuralVerifier = state.StructuralVerifier;
+        StructuralIdentifierFamilyPlan = state.StructuralIdentifierFamilyPlan;
+        StructuralTokenWindowPlan = state.StructuralTokenWindowPlan;
+        StructuralRepeatedSegmentPlan = state.StructuralRepeatedSegmentPlan;
+        StructuralQuotedRelationPlan = state.StructuralQuotedRelationPlan;
+        OrderedLiteralWindowPlan = state.OrderedLiteralWindowPlan;
+        LiteralUtf8 = state.LiteralUtf8;
+        FallbackReason = state.FallbackReason;
+    }
+
+    internal static Utf8PreparedRegex Create(
         Utf8SemanticRegex semanticRegex,
         Utf8RegexFeatures features,
         string executionPattern,
@@ -21,14 +73,13 @@ internal sealed class Utf8PreparedRegex
         Utf8CompiledPatternCategory compiledPatternCategory,
         Utf8ExecutionTree? executionTree,
         Utf8ExecutionProgram? executionProgram,
-        Utf8SearchPlan searchPlan,
+        Utf8SliceProgram? scalarProgram,
+        Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8DeterministicAnchorSearch deterministicAnchor,
         Utf8DeterministicVerifierGuards deterministicGuards,
         Utf8FallbackVerifierPlan fallbackVerifier,
         Utf8StructuralVerifierPlan structuralVerifier,
-        Utf8StructuralLinearProgram structuralLinearProgram,
-        AsciiSimplePatternPlan simplePatternPlan,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
         AsciiStructuralRepeatedSegmentPlan structuralRepeatedSegmentPlan,
@@ -38,34 +89,34 @@ internal sealed class Utf8PreparedRegex
         string? fallbackReason,
         Utf8FallbackDirectFamilyPlan fallbackDirectFamily)
     {
-        SemanticRegex = semanticRegex;
-        Features = features;
-        ExecutionPattern = executionPattern;
-        ExecutionKind = executionKind;
-        ExecutionBackend = executionBackend;
-        CompiledPatternCategory = compiledPatternCategory;
-        ExecutionTree = executionTree;
-        ExecutionProgram = executionProgram;
-        _operationMatchCursorPlans = new Utf8OperationMatchCursorPlans(
+        using var scope = Utf8ConstructionScope.Enter();
+        var result = scope.Budget.AllocateObject(new ConstructionState(
+            fallbackDirectFamily,
+            operationMatchCursorPlans,
+            semanticRegex,
+            features,
+            executionPattern,
+            executionKind,
+            executionBackend,
+            compiledPatternCategory,
+            executionTree,
             executionProgram,
-            searchPlan,
-            structuralLinearProgram,
-            simplePatternPlan,
+            scalarProgram,
             structuralSearchPlan,
-            structuralVerifier.AsciiProgram);
-        StructuralSearchPlan = structuralSearchPlan;
-        DeterministicAnchor = deterministicAnchor;
-        DeterministicGuards = deterministicGuards;
-        FallbackVerifier = fallbackVerifier;
-        StructuralVerifier = structuralVerifier;
-        StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
-        StructuralTokenWindowPlan = structuralTokenWindowPlan;
-        StructuralRepeatedSegmentPlan = structuralRepeatedSegmentPlan;
-        StructuralQuotedRelationPlan = structuralQuotedRelationPlan;
-        OrderedLiteralWindowPlan = orderedLiteralWindowPlan;
-        LiteralUtf8 = literalUtf8;
-        FallbackReason = fallbackReason;
-        _fallbackDirectFamily = fallbackDirectFamily;
+            deterministicAnchor,
+            deterministicGuards,
+            fallbackVerifier,
+            structuralVerifier,
+            structuralIdentifierFamilyPlan,
+            structuralTokenWindowPlan,
+            structuralRepeatedSegmentPlan,
+            structuralQuotedRelationPlan,
+            orderedLiteralWindowPlan,
+            literalUtf8,
+            fallbackReason),
+            static state => new Utf8PreparedRegex(state));
+        scope.Complete();
+        return result;
     }
 
     public Utf8SemanticRegex SemanticRegex { get; }
@@ -83,6 +134,8 @@ internal sealed class Utf8PreparedRegex
     public Utf8ExecutionTree? ExecutionTree { get; }
 
     public Utf8ExecutionProgram? ExecutionProgram { get; }
+
+    public Utf8SliceProgram? ScalarProgram { get; }
 
     public ref readonly Utf8SearchPlan SearchPlan => ref _operationMatchCursorPlans.SearchPlan;
 

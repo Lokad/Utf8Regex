@@ -147,7 +147,7 @@ public sealed partial class Utf8Regex
         // pattern nesting and resource failure do not select a BCL engine.
         // NonBacktracking regular graphs lower to ordered scalar NFA states,
         // including loops and shared captures. They do not use the backtracker.
-        var ownedSliceProgram = Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
+        var ownedSliceProgram = preparedRegex.ScalarProgram;
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
         // Syntax failures already have owned diagnostics. This residual
