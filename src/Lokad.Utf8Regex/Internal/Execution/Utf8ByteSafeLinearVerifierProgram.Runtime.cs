@@ -183,9 +183,9 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
                 return Utf8ByteSafeAnchor.MatchesEnd(input, index, step.AnchorKind, step.Options);
             case Utf8ByteSafeLinearVerifierStepKind.RequireBoundary:
-                return DotNetUtf8WordBoundary.IsBoundary(input, index);
+                return Utf8ScalarWordBoundary.IsBoundary(input, index);
             case Utf8ByteSafeLinearVerifierStepKind.RequireNonBoundary:
-                return !DotNetUtf8WordBoundary.IsBoundary(input, index);
+                return !Utf8ScalarWordBoundary.IsBoundary(input, index);
             default:
                 return false;
         }

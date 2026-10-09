@@ -1300,7 +1300,7 @@ public sealed class GroupedLiteralDetailedTests
     {
         // FromOffset keeps absolute-origin semantics through the shared
         // first-of-enumeration arm and projects the winning nested entry.
-        // Boundary starts on astral-adjacent input serve owned; half-scalar starts keep BCL routing, see NestedDivergentHalfOffsetDeclineCases.
+        // Scalar-boundary starts on astral-adjacent input serve owned; interior starts reject, see NestedDivergentInteriorOffsetCases.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -1411,7 +1411,7 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentHalfOffsetDeclineCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentInteriorOffsetCases()
     {
         (string pattern, string text, int offset)[] rows =
         [
@@ -1429,28 +1429,11 @@ public sealed class GroupedLiteralDetailedTests
     }
 
     [Theory]
-    [MemberData(nameof(NestedDivergentHalfOffsetDeclineCases))]
-    public void NestedDivergentHalfOffsetsUseOwnedShaping(string pattern, RegexOptions options, string text, int offset)
+    [MemberData(nameof(NestedDivergentInteriorOffsetCases))]
+    public void NestedDivergentOffsetsRejectScalarInteriors(string pattern, RegexOptions options, string text, int offset)
     {
-        // Detailed offsets inside scalars use the owned unit subject with complete group projection.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-        var expected = oracle.Match(text, offset);
-        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Groups.Count, actual.GroupCount);
-        if (expected.Success)
-        {
-            for (var i = 0; i < expected.Groups.Count; i++)
-            {
-                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
-                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
-                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
-            }
-        }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        // Interior UTF-16 coordinates are invalid even when the next hit is aligned.
+        Utf8AsciiScalarOperationAssertions.Offset(pattern, options, text, offset);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapDetailedCases()

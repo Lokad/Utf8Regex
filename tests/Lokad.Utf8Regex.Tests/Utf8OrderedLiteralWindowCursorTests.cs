@@ -132,22 +132,12 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
     [InlineData("a\u00a0\u00a0b", @"a\s{2,}b")]
     [InlineData("a\U0001f600b", @"a.{1,1}b")]
     [InlineData("a\U0001f600b", @"a.{2,2}b")]
-    public void NonAsciiWindowSubjectsKeepUnitCorrectFallback(string text, string pattern)
+    public void NonAsciiWindowSubjectsKeepScalarCoordinates(string text, string pattern)
     {
-        var input = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options);
-            var oracle = new Regex(pattern, options);
-            var expected = oracle.Matches(text).Select(m => (m.Index, m.Length)).ToArray();
-            var actual = new List<(int, int)>();
-            foreach (var match in regex.EnumerateMatches(input))
-            {
-                actual.Add((match.IndexInUtf16, match.LengthInUtf16));
-            }
-            Assert.Equal(expected, actual);
-            Assert.Equal(oracle.Replace(text, "Q"), regex.ReplaceToString(input, "Q"));
+            Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
         }
     }
 

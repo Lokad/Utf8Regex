@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 // R03 dot slice: ASCII dot plus Singleline dot lower to owned Dot programs
 // with scalar-atomic astral consumption and newline exclusion. Every row runs
-// BCL oracle parity with zero fallback-engine construction.
+// Scalar outcomes with zero fallback-engine construction; BMP cases retain BCL comparison.
 public sealed class Utf8SliceDotTests
 {
     public static IEnumerable<object?[]> SliceDotShapes()
@@ -104,32 +104,24 @@ public sealed class Utf8SliceDotTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    // Astral inputs decline dot shapes to the fallback engine (BCL unit
-    // semantics split astral scalars while scalar profiles do not). The star
-    // absorbs the difference, so the pins use a single-dot group and a
-    // whole-input census, which both discriminate. Construction stays lazy;
-    // correctness rides the oracle.
+    // Dot consumes one complete supplementary scalar.
     [Theory]
-    [InlineData("(a.c)+", "xa\U0001F600c", false, 0)]
-    public void NonAsciiDotUsesOwnedUnits(
+    [InlineData("(a.c)+", "xa\U0001F600c", true, 1)]
+    public void NonAsciiDotUsesOwnedScalars(
         string pattern, string inputText, bool expectedSuccess, int expectedCount)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
-        Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
         Assert.Equal(expectedCount, regex.Count(input));
         Assert.Equal(expectedSuccess, regex.Match(input).Success);
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.CultureInvariant, inputText, requireSlice: true);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    // Bare dot-star over halves-closed atoms tiles unit-for-unit with the
-    // oracle on astral input (IsMatch, Count, and Match serve owned with
-    // no fallback construction). Divergent multi-atom branches keep BCL.
+    // Bare dot-star consumes the scalar and then matches empty at the end.
     [Theory]
     [InlineData(".*", "\U0001F600", true, 2)]
     public void NonAsciiDotStarServesOwned(

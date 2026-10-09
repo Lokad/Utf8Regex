@@ -3,12 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 boundary slice: `\b`/`\B` lower to owned zero-width Boundary programs
-// with Unicode word semantics (BCL-exact, including zero-width joiners);
-// `\A`, `\Z`, `\z` ride the anchor program. Every row runs oracle parity
-// with zero fallback-engine construction. Astral scalars count as non-word
-// (the oracle sees non-word halves), so no astral routing gate is needed;
-// low-surrogate attempts reproduce the oracle halves positions.
+// Boundary programs test Unicode word membership at complete scalar boundaries.
+// Emoji is non-word; its four bytes have no interior matching position. Joiners
+// retain their boundary word membership. BMP cases overlap the BCL comparator.
 public sealed class Utf8SliceBoundaryTests
 {
     public static IEnumerable<object?[]> SliceBoundaryShapes()
@@ -111,8 +108,8 @@ public sealed class Utf8SliceBoundaryTests
     {
         yield return new object?[] { "\\b", "a word here", 6 };
         yield return new object?[] { "\\b", "a\U0001F600b", 4 };
-        yield return new object?[] { "\\B", "a\U0001F600b", 1 };
-        yield return new object?[] { "\\B", "\U0001F600", 3 };
+        yield return new object?[] { "\\B", "a\U0001F600b", 0 };
+        yield return new object?[] { "\\B", "\U0001F600", 2 };
         yield return new object?[] { "\\b", "\U0001F600", 0 };
         yield return new object?[] { "\\b", "é", 2 };
         yield return new object?[] { "\\b", "a\u200Db", 2 };
@@ -123,14 +120,13 @@ public sealed class Utf8SliceBoundaryTests
 
     [Theory]
     [MemberData(nameof(CountCases))]
-    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
+    public void OwnedCountMatchesScalarContract(string pattern, string inputText, int expected)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.CultureInvariant, inputText, requireSlice: true);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 

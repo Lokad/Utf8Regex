@@ -35,8 +35,8 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
                 breach = Utf8SearchExecutor.TryCompareLiteral(input[candidate.Index..], leading, false,
                     ref invocation, out var equal);
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (!equal || !DotNetUtf8WordBoundary.MatchesRequirement(plan.LeadingLiteralLeadingBoundary, input, candidate.Index) ||
-                    !DotNetUtf8WordBoundary.MatchesRequirement(plan.LeadingLiteralTrailingBoundary, input, candidate.Index + leading.Length)) continue;
+                if (!equal || !Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingLiteralLeadingBoundary, input, candidate.Index) ||
+                    !Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingLiteralTrailingBoundary, input, candidate.Index + leading.Length)) continue;
                 Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
                 breach = TryMatchAt(input, plan, candidate.Index, leading.Length, id,
                     ref invocation, out var length, out var accepted);
@@ -153,8 +153,8 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
                 if (!found) break;
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (DotNetUtf8WordBoundary.MatchesRequirement(plan.TrailingLiteralLeadingBoundary, input, candidate.Index) &&
-                    DotNetUtf8WordBoundary.MatchesRequirement(plan.TrailingLiteralTrailingBoundary, input, candidate.Index + trailingLength))
+                if (Utf8ScalarWordBoundary.MatchesRequirement(plan.TrailingLiteralLeadingBoundary, input, candidate.Index) &&
+                    Utf8ScalarWordBoundary.MatchesRequirement(plan.TrailingLiteralTrailingBoundary, input, candidate.Index + trailingLength))
                 {
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;

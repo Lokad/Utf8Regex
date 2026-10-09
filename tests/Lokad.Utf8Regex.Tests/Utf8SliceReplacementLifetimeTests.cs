@@ -31,13 +31,14 @@ public sealed class Utf8SliceReplacementLifetimeTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var timeout = TimeSpan.FromSeconds(30);
-            var oracle = new Regex(pattern, options, timeout);
+            var subject = new Utf8AsciiScalarOperationAssertions.Subject(text);
+            var oracle = Utf8AsciiScalarOperationAssertions.Comparator(pattern, options);
             var regex = new Utf8Regex(pattern, options, timeout);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             using var source = new CancellationTokenSource();
             foreach (var replacement in new[] { "Q", "", template, "$`|$&|$'|$_" })
             {
-                var expected = oracle.Replace(text, replacement);
+                var expected = subject.Restore(oracle.Replace(subject.Projected, replacement));
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 foreach (var operation in Operations)
                 {

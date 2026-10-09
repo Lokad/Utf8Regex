@@ -274,8 +274,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     }
 
     private static bool ConfirmAsciiBoundaryOnly(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength) =>
-        DotNetUtf8WordBoundary.MatchesRequirement(counter._leadingBoundary, input, index) &&
-        DotNetUtf8WordBoundary.MatchesRequirement(counter._trailingBoundary, input, index + matchedLength);
+        Utf8ScalarWordBoundary.MatchesRequirement(counter._leadingBoundary, input, index) &&
+        Utf8ScalarWordBoundary.MatchesRequirement(counter._trailingBoundary, input, index + matchedLength);
 
     private static void ResetAfterRejectedCandidate(ref PreparedMultiLiteralScanState state, int candidateIndex)
     {

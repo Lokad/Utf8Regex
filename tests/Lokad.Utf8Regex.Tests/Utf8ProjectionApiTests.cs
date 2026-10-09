@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -8,128 +7,57 @@ public sealed class Utf8ProjectionApiTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void MatchDetailedProjectsNonByteAlignedDotMatchLikeRuntime(bool compiled)
+    public void MatchDetailedProjectsCompleteScalar(bool compiled)
     {
-        const string pattern = ".";
-        const string input = "😀";
-
-        var regex = CreateUtf8Regex(pattern, compiled);
-        var runtime = CreateRuntimeRegex(pattern, compiled);
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(input));
-        var expected = runtime.Match(input);
-
+        var regex = CreateUtf8Regex(".", compiled);
+        var match = regex.MatchDetailed("😀"u8);
         Assert.True(match.Success);
-        Assert.Equal(expected.Index, match.IndexInUtf16);
-        Assert.Equal(expected.Length, match.LengthInUtf16);
-        Assert.Equal(expected.Value, match.GetValueString());
-        Assert.False(match.IsByteAligned);
-        Assert.False(match.TryGetByteRange(out _, out _));
-        Assert.False(match.TryGetValueBytes(out _));
-        AssertByteAccessThrows(
-            static (in Utf8MatchContext value) => _ = value.IndexInBytes,
-            match);
-        AssertByteAccessThrows(
-            static (in Utf8MatchContext value) => _ = value.LengthInBytes,
-            match);
+        Assert.Equal((0, 4), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((0, 2), (match.IndexInUtf16, match.LengthInUtf16));
+        Assert.Equal("😀", match.GetValueString());
+        Assert.True(match.IsByteAligned);
+        Assert.True(match.TryGetByteRange(out var index, out var length));
+        Assert.Equal((0, 4), (index, length));
+        Assert.True(match.TryGetValueBytes(out var bytes));
+        Assert.True(bytes.SequenceEqual("😀"u8));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void MatchDetailedProjectsNonByteAlignedGroupAndCaptureLikeRuntime(bool compiled)
+    public void MatchDetailedProjectsCompleteScalarGroupAndCapture(bool compiled)
     {
-        const string pattern = "(.)";
-        const string input = "😀";
-
-        var regex = CreateUtf8Regex(pattern, compiled);
-        var runtime = CreateRuntimeRegex(pattern, compiled);
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(input));
-        var expected = runtime.Match(input);
+        var regex = CreateUtf8Regex("(.)", compiled);
+        var match = regex.MatchDetailed("😀"u8);
         var group = match.GetGroup(1);
-        var expectedGroup = expected.Groups[1];
         var capture = group.GetCapture(0);
-        var expectedCapture = expectedGroup.Captures[0];
-
+        Assert.True(match.Success);
+        Assert.Equal((0, 4), (match.IndexInBytes, match.LengthInBytes));
         Assert.True(group.Success);
-        Assert.Equal(expectedGroup.Index, group.IndexInUtf16);
-        Assert.Equal(expectedGroup.Length, group.LengthInUtf16);
-        Assert.Equal(expectedGroup.Value, group.GetValueString());
-        Assert.False(group.IsByteAligned);
-        Assert.False(group.TryGetByteRange(out _, out _));
-        Assert.False(group.TryGetValueBytes(out _));
-        AssertByteAccessThrows(
-            static (in Utf8GroupContext value) => _ = value.IndexInBytes,
-            group);
-        AssertByteAccessThrows(
-            static (in Utf8GroupContext value) => _ = value.LengthInBytes,
-            group);
-        AssertByteAccessThrows(
-            static (in Utf8GroupContext value) => _ = value.GetValueBytes(),
-            group);
-
+        Assert.Equal(1, group.CaptureCount);
+        Assert.Equal((0, 4), (group.IndexInBytes, group.LengthInBytes));
+        Assert.Equal((0, 2), (group.IndexInUtf16, group.LengthInUtf16));
+        Assert.Equal("😀", group.GetValueString());
+        Assert.True(group.IsByteAligned);
+        Assert.True(group.TryGetByteRange(out var index, out var length));
+        Assert.Equal((0, 4), (index, length));
+        Assert.True(group.TryGetValueBytes(out var bytes));
+        Assert.True(bytes.SequenceEqual("😀"u8));
+        Assert.True(group.GetValueBytes().SequenceEqual("😀"u8));
         Assert.True(capture.Success);
-        Assert.Equal(expectedCapture.Index, capture.IndexInUtf16);
-        Assert.Equal(expectedCapture.Length, capture.LengthInUtf16);
-        Assert.Equal(expectedCapture.Value, capture.GetValueString());
-        Assert.False(capture.IsByteAligned);
-        Assert.False(capture.TryGetByteRange(out _, out _));
-        Assert.False(capture.TryGetValueBytes(out _));
-        AssertByteAccessThrows(
-            static (in Utf8CaptureContext value) => _ = value.IndexInBytes,
-            capture);
-        AssertByteAccessThrows(
-            static (in Utf8CaptureContext value) => _ = value.LengthInBytes,
-            capture);
-        AssertByteAccessThrows(
-            static (in Utf8CaptureContext value) => _ = value.GetValueBytes(),
-            capture);
+        Assert.Equal((0, 4), (capture.IndexInBytes, capture.LengthInBytes));
+        Assert.Equal((0, 2), (capture.IndexInUtf16, capture.LengthInUtf16));
+        Assert.Equal("😀", capture.GetValueString());
+        Assert.True(capture.IsByteAligned);
+        Assert.True(capture.TryGetByteRange(out index, out length));
+        Assert.Equal((0, 4), (index, length));
+        Assert.True(capture.TryGetValueBytes(out bytes));
+        Assert.True(bytes.SequenceEqual("😀"u8));
+        Assert.True(capture.GetValueBytes().SequenceEqual("😀"u8));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     private static Utf8Regex CreateUtf8Regex(string pattern, bool compiled)
         => new(pattern, compiled ? RegexOptions.Compiled | RegexOptions.CultureInvariant : RegexOptions.CultureInvariant);
-
-    private static Regex CreateRuntimeRegex(string pattern, bool compiled)
-        => new(pattern, compiled ? RegexOptions.Compiled | RegexOptions.CultureInvariant : RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-
-    private delegate void MatchByteAccess(in Utf8MatchContext context);
-
-    private delegate void GroupByteAccess(in Utf8GroupContext context);
-
-    private delegate void CaptureByteAccess(in Utf8CaptureContext context);
-
-    private static void AssertByteAccessThrows(MatchByteAccess accessor, in Utf8MatchContext context)
-    {
-        try
-        {
-            accessor(context);
-            throw new Xunit.Sdk.XunitException("Expected match byte access to throw.");
-        }
-        catch (InvalidOperationException)
-        {
-        }
-    }
-
-    private static void AssertByteAccessThrows(GroupByteAccess accessor, in Utf8GroupContext context)
-    {
-        try
-        {
-            accessor(context);
-            throw new Xunit.Sdk.XunitException("Expected group byte access to throw.");
-        }
-        catch (InvalidOperationException)
-        {
-        }
-    }
-
-    private static void AssertByteAccessThrows(CaptureByteAccess accessor, in Utf8CaptureContext context)
-    {
-        try
-        {
-            accessor(context);
-            throw new Xunit.Sdk.XunitException("Expected capture byte access to throw.");
-        }
-        catch (InvalidOperationException)
-        {
-        }
-    }
 }

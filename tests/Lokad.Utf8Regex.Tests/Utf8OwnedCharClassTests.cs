@@ -572,24 +572,8 @@ public sealed class Utf8OwnedCharClassTests
 
     [Theory]
     [MemberData(nameof(DecoderSweepCases))]
-    public void DecoderEndToEndSweepMatchesOracle(string pattern, RegexOptions options, string text)
+    public void DecoderEndToEndSweepMatchesScalarContract(string pattern, RegexOptions options, string text)
     {
-        // R05: end-to-end parity guard for the negated-category wire-decode fix:
-        // shorthands, properties, brackets, and repetitions crossed with ASCII
-        // and astral-adjacent hit/miss texts on IsMatch, Count, and Match of both
-        // lanes. Probe-verified clean with zero divergence.
-        var input = System.Text.Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
-        Assert.Equal(oracle.Matches(text).Count, regex.Count(input));
-        var want = oracle.Match(text);
-        var got = regex.Match(input);
-        Assert.Equal(want.Success, got.Success);
-        if (want.Success)
-        {
-            Assert.Equal(want.Index, got.IndexInUtf16);
-            Assert.Equal(want.Length, got.LengthInUtf16);
-        }
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
     }
 }

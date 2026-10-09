@@ -888,6 +888,18 @@ public sealed partial class Utf8Regex
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
 
+        // This qualified kernel consumes scalar whitespace around an ASCII-only
+        // repeated run and literal. Keep its unlimited, no-token native lane;
+        // metered and cancellation-aware calls retain the shared scalar VM.
+        var boundedSuffixLiteralPlan = _preparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan;
+        if (!cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
+            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null &&
+            boundedSuffixLiteralPlan.SupportsValidatedUtf8Input && !Utf8InputAnalyzer.IsAscii(input))
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            return Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, CreateExecutionBudget());
+        }
+
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceCount(input, ownedProgram, cancellationToken);

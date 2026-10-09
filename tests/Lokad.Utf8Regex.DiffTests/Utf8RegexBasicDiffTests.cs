@@ -6,6 +6,24 @@ namespace Lokad.Utf8Regex.DiffTests;
 public sealed class Utf8RegexIsMatchDiffTests
 {
     [Theory]
+    [InlineData("😀{2,3}", "😀😀", 8, false)]
+    [InlineData("😀{2,3}", "😀😀", 8, true)]
+    [InlineData("[😀😠]+", "😠", 4, false)]
+    [InlineData("[😀😠]+", "😠", 4, true)]
+    public void SupplementaryAtomsUseCompleteScalarRanges(string pattern, string text, int byteLength, bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.Equal((0, byteLength), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((0, text.Length), (match.IndexInUtf16, match.LengthInUtf16));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
     [InlineData("abc", "xxabcxx")]
     [InlineData("abc", "nomatch")]
     [InlineData("", "hello")]
@@ -63,14 +81,13 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData("^\U0001F600+$", "\U0001F600", RegexOptions.CultureInvariant)]
     [InlineData("\U0001F600{1,2}", "\U0001F600", RegexOptions.CultureInvariant)]
     [InlineData("\U0001F600?", "\U0001F600", RegexOptions.CultureInvariant)]
-    public void IsMatchFallsBackAndStillMatchesRuntime(string pattern, string input, RegexOptions options)
+    public void IsMatchMatchesQualifiedScalarComparator(string pattern, string input, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
-
-        var expected = Regex.IsMatch(input, pattern, options);
-        var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
-
-        Assert.Equal(expected, actual);
+        var subject = new Utf8ScalarDiffSubject(input);
+        var expected = subject.Comparator(pattern, options).IsMatch(subject.Projected);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -527,14 +544,15 @@ public sealed class Utf8RegexIsMatchDiffTests
     }
 
     [Fact]
-    public void MatchReturnsNonAlignedCoordinatesForFallbackSupplementaryCase()
+    public void MatchReturnsCompleteScalarCoordinates()
     {
-        var match = new Utf8Regex(".", RegexOptions.CultureInvariant).Match("😀"u8);
-
+        var regex = new Utf8Regex(".", RegexOptions.CultureInvariant);
+        var match = regex.Match("😀"u8);
         Assert.True(match.Success);
-        Assert.False(match.IsByteAligned);
-        Assert.Equal(0, match.IndexInUtf16);
-        Assert.Equal(1, match.LengthInUtf16);
+        Assert.True(match.IsByteAligned);
+        Assert.Equal((0, 4), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((0, 2), (match.IndexInUtf16, match.LengthInUtf16));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]
@@ -867,15 +885,16 @@ public sealed class Utf8RegexIsMatchDiffTests
     }
 
     [Fact]
-    public void AsciiSimplePatternFallsBackForNonAsciiInput()
+    public void AsciiSimplePatternMatchesCompleteNonAsciiScalar()
     {
         const string input = "ab😀cd";
-        var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("ab.cd", options);
-
-        Assert.Equal(
-            Regex.IsMatch(input, "ab.cd", options),
-            regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        var regex = new Utf8Regex("ab.cd", RegexOptions.CultureInvariant);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        Assert.True(regex.IsMatch(bytes));
+        var match = regex.Match(bytes);
+        Assert.Equal((0, 8), (match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal((0, 6), (match.IndexInUtf16, match.LengthInUtf16));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }
 

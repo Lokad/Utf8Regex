@@ -894,9 +894,9 @@ internal static partial class Utf8SearchExecutor
 
     internal static bool MatchesBoundaryRequirements(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)
     {
-        return DotNetUtf8WordBoundary.MatchesRequirement(plan.LeadingBoundary, input, startIndex) &&
+        return Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingBoundary, input, startIndex) &&
             MatchesTrailingLiteralRequirement(in plan, input, startIndex + literalLength) &&
-            DotNetUtf8WordBoundary.MatchesRequirement(plan.TrailingBoundary, input, startIndex + literalLength);
+            Utf8ScalarWordBoundary.MatchesRequirement(plan.TrailingBoundary, input, startIndex + literalLength);
     }
 
     private static bool MatchesTrailingLiteralRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int byteOffset)

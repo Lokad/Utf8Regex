@@ -105,7 +105,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
 
     [Theory]
     [MemberData(nameof(BoundaryCases))]
-    public void BoundaryLiteralFamilyGlobalOperationsMatchDotNet(string pattern, string input)
+    public void BoundaryLiteralFamilyGlobalOperationsMatchScalarContract(string pattern, string input)
     {
         foreach (var compiled in new[] { false, true })
         {
@@ -249,6 +249,29 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
     }
 
+    [Theory]
+    [InlineData(@"\b(?:café|foo|𐐀)\b", 0, false)]
+    [InlineData(@"\b(?:café|foo|𐐀)\b", 0, true)]
+    [InlineData(@"\b(?:-a|a-|𐐀|café)\b", 0, false)]
+    [InlineData(@"\b(?:-a|a-|𐐀|café)\b", 0, true)]
+    [InlineData(@"\B(?:-a|a-|𐐀|café)\B", 6, false)]
+    [InlineData(@"\B(?:-a|a-|𐐀|café)\B", 6, true)]
+    public void DeseretLiteralBoundariesUseWordScalar(string pattern, int byteIndex, bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        foreach (var timeout in new[] { Regex.InfiniteMatchTimeout, TimeSpan.FromSeconds(1) })
+        {
+            var regex = new Utf8Regex(pattern, options, timeout);
+            Assert.Equal(1, regex.Count("𐐀 x𐐀x"u8));
+            var match = regex.Match("𐐀 x𐐀x"u8);
+            Assert.True(match.Success);
+            Assert.Equal((byteIndex, 4), (match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal((byteIndex == 0 ? 0 : 4, 2), (match.IndexInUtf16, match.LengthInUtf16));
+            Assert.Equal(byteIndex == 0 ? "<> x𐐀x" : "𐐀 x<>x", regex.ReplaceToString("𐐀 x𐐀x"u8, "<>"));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
     private static void AssertGlobalParity(
         string pattern,
         string input,
@@ -256,27 +279,41 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         TimeSpan timeout,
         NativeExecutionKind? expectedExecutionKind = NativeExecutionKind.ExactUtf8Literals)
     {
-        var expected = new Regex(pattern, options, timeout);
+        // This frozen literal alphabet uses emoji and Deseret Lu. Distinct unused
+        // proxies preserve literal identity and word membership; ranges map back
+        // to the original bytes. No classes, numeric ranges or other predicates
+        // enter this comparator. Direct Deseret boundary witnesses are below.
+        var subject = new Utf8AsciiScalarOperationAssertions.Subject(input);
+        foreach (var scalar in pattern.EnumerateRunes())
+            Assert.True(scalar.IsBmp || scalar.Value is 0x10400 or 0x1f600);
+        Assert.False(pattern.Contains('\ue000') || pattern.Contains('\u0531'));
+        var projectedPattern = pattern.Replace("\U00010400", "\u0531", StringComparison.Ordinal)
+            .Replace("\U0001f600", "\ue000", StringComparison.Ordinal);
+        var expected = new Regex(projectedPattern, options & ~RegexOptions.Compiled, timeout);
         var actual = new Utf8Regex(pattern, options, timeout);
-        var bytes = Encoding.UTF8.GetBytes(input);
+        Assert.Equal(new Regex(pattern, options & ~RegexOptions.Compiled).GetGroupNumbers(), expected.GetGroupNumbers());
+        var bytes = subject.Input;
 
         if (expectedExecutionKind is { } executionKind)
         {
             Assert.Equal(executionKind, actual.Inspection.ExecutionKind);
         }
-        Assert.Equal(expected.IsMatch(input), actual.IsMatch(bytes));
-        Assert.Equal(expected.Count(input), actual.Count(bytes));
+        Assert.Equal(expected.IsMatch(subject.Projected), actual.IsMatch(bytes));
+        Assert.Equal(expected.Count(subject.Projected), actual.Count(bytes));
 
-        var expectedFirst = expected.Match(input);
+        var expectedFirst = expected.Match(subject.Projected);
         var actualFirst = actual.Match(bytes);
         Assert.Equal(expectedFirst.Success, actualFirst.Success);
-        Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
-        Assert.Equal(expectedFirst.Length, actualFirst.LengthInUtf16);
+        if (expectedFirst.Success)
+        {
+            Assert.Equal(subject.Units(expectedFirst.Index, expectedFirst.Length), (actualFirst.IndexInUtf16, actualFirst.LengthInUtf16));
+            Assert.Equal(subject.Bytes(expectedFirst.Index, expectedFirst.Length), (actualFirst.IndexInBytes, actualFirst.LengthInBytes));
+        }
 
         var expectedMatches = new List<(int Index, int Length)>();
-        foreach (var match in expected.EnumerateMatches(input))
+        foreach (var match in expected.EnumerateMatches(subject.Projected))
         {
-            expectedMatches.Add((match.Index, match.Length));
+            expectedMatches.Add(subject.Units(match.Index, match.Length));
         }
 
         var actualMatches = new List<(int Index, int Length)>();
@@ -288,12 +325,12 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         Assert.Equal(expectedMatches, actualMatches);
 
         var expectedSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
-        foreach (var split in expected.EnumerateSplits(input))
+        foreach (var split in expected.EnumerateSplits(subject.Projected))
         {
-            var (index, length) = split.GetOffsetAndLength(input.Length);
-            var byteIndex = Encoding.UTF8.GetByteCount(input.AsSpan(0, index));
-            var byteLength = Encoding.UTF8.GetByteCount(input.AsSpan(index, length));
-            expectedSplits.Add((index, length, byteIndex, byteLength, input.Substring(index, length)));
+            var (index, length) = split.GetOffsetAndLength(subject.Projected.Length);
+            var (unitIndex, unitLength) = subject.Units(index, length);
+            var (byteIndex, byteLength) = subject.Bytes(index, length);
+            expectedSplits.Add((unitIndex, unitLength, byteIndex, byteLength, subject.Value(index, length)));
         }
 
         var actualSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
@@ -309,7 +346,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
 
         Assert.Equal(expectedSplits, actualSplits);
         Assert.Equal(
-            expected.Replace(input, "<$&>"),
+            subject.Restore(expected.Replace(subject.Projected, "<$&>")),
             Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>")));
     }
 }

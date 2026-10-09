@@ -114,15 +114,14 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
     [InlineData("δοκιμή@παράδειγμα.gr")]
     [InlineData("𐐀@example.org")]
     [InlineData("alpha@example.org.")]
-    public void Utf8WordDelimitedTokenCountMatchesDotNetWordSemantics(string input)
+    public void Utf8WordDelimitedTokenCountUsesScalarWordSemantics(string input)
     {
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
-
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            Assert.Equal(
-                Regex.Count(input, pattern, options),
-                new Utf8Regex(pattern, options).Count(Encoding.UTF8.GetBytes(input)));
+            var regex = new Utf8Regex(pattern, options);
+            Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(input)));
+            Utf8AsciiScalarOperationAssertions.Operations(pattern, options, input);
         }
     }
 

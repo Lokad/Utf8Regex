@@ -23,13 +23,22 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     [InlineData(".", "😀", int.MaxValue, RegexOptions.CultureInvariant)]
     [InlineData("cat|horse", "cat horse fish horse", int.MaxValue, RegexOptions.CultureInvariant)]
     [InlineData(@"\d{2,4}", "1 12 123 1234", int.MaxValue, RegexOptions.CultureInvariant)]
-    public void EnumerateSplitsMatchesRuntime(string pattern, string input, int count, RegexOptions options)
+    public void EnumerateSplitsMatchesScalarContract(string pattern, string input, int count, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
-        var expected = EnumerateRuntimeSplits(input, pattern, count, options);
-        var actual = EnumerateUtf8Splits(utf8Regex, input, count);
-
-        Assert.Equal(expected, actual);
+        var subject = new Utf8ScalarDiffSubject(input);
+        var oracle = subject.Comparator(pattern, options);
+        var expected = new List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(subject.Projected, count))
+        {
+            var (index, length) = range.GetOffsetAndLength(subject.Projected.Length);
+            var (start, units) = subject.Units(index, length);
+            expected.Add((subject.Value(index, length), start, units));
+        }
+        var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(expected, EnumerateUtf8Splits(regex, input, count));
+        foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), count))
+            Assert.True(split.IsByteAligned);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Fact]

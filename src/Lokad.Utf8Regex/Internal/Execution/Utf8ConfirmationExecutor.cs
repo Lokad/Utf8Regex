@@ -94,6 +94,6 @@ internal static class Utf8ConfirmationExecutor
 
     private static bool TryGetAsciiWordBoundary(ReadOnlySpan<byte> input, int byteOffset, out bool isBoundary)
     {
-        return DotNetUtf8WordBoundary.TryGetAsciiBoundary(input, byteOffset, out isBoundary);
+        return Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, byteOffset, out isBoundary);
     }
 }

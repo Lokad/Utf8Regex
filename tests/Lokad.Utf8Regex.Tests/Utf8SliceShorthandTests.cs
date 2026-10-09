@@ -3,12 +3,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 shorthand slice: Unicode `\d\D\w\W\s\S` lower to owned Shorthand
-// programs (ASCII fast paths, BMP category checks, astral leads fail like
-// the oracle halves) with BCL parity and zero fallback-engine
-// construction. Single-shorthand classes fold to their atom. Negated
-// shorthands consume whole non-ASCII scalars, so astral inputs decline to
-// fallback; positive shorthands and BMP inputs stay owned.
+// Unicode shorthands classify complete scalars, including supplementary letters
+// and digits. BMP cases retain the overlapping BCL comparator and route checks.
 public sealed class Utf8SliceShorthandTests
 {
     public static IEnumerable<object?[]> SliceShorthandShapes()
@@ -196,10 +192,10 @@ public sealed class Utf8SliceShorthandTests
 
     public static IEnumerable<object?[]> AstralPositiveCases()
     {
-        yield return new object?[] { "\\d+", "\U000104A0", 0 };
-        yield return new object?[] { "\\w+", "\U00010400", 0 };
+        yield return new object?[] { "\\d+", "\U000104A0", 1 };
+        yield return new object?[] { "\\w+", "\U00010400", 1 };
         yield return new object?[] { "\\s+", "\U00010400", 0 };
-        yield return new object?[] { "\\d+", "1\U000104A02", 2 };
+        yield return new object?[] { "\\d+", "1\U000104A02", 1 };
     }
 
     [Theory]
@@ -208,11 +204,10 @@ public sealed class Utf8SliceShorthandTests
         string pattern, string inputText, int expectedCount)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expectedCount, regex.Count(input));
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.CultureInvariant, inputText, requireSlice: true);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 

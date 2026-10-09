@@ -3,14 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned-cutover differential: every remaining residual shape is compared
-// behaviorally between the current product route and the BCL oracle over a fixed
-// probe corpus plus a deterministic seeded fuzz stream (128 xorshift inputs over
-// a metachar-heavy alphabet) and two astral inputs. Witness depth covers
-// construction verdicts, group metadata, first-match positions, detailed group
-// values and positions, counts, and whole-match replacement. Each row either
-// agrees (null witness) or reproduces its documented divergence below (non-null
-// witness). A vanished witness or a new witness both fail, forcing re-triage.
+// Residual grammar keeps construction, metadata, BMP corpus and seeded fuzz
+// checks against the overlapping BCL contract. The three dot-compound witnesses
+// use the qualified scalar comparator on the two supplementary subjects.
 public sealed class Utf8OwnedCutoverBehaviorTests
 {
     private static readonly string[] ProbeCorpus =
@@ -20,58 +15,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         "axxb", "1", "12", "a1", "1a", " ", "a b", "aBcDe", "AaBb", "x",
         "ax", "xa", "ababa", "aabbaa", ">", "a>", "a>b", "(a)", "(a)(b)",
         "\n", "a\nb", "ab\ncd", "\n\n", "a\rb", "\r\n", "a\n", "\nb",
-    };
-
-    // Machine-derived divergent rows (11 from the first run, 7 from the metadata
-    // and newline extension, 5 from the leak-family sweep, 61 from the residual
-    // census: 84 of 128; 77 of 121 after the 2026-09-26 leading-scope graduation
-    // (40 clean rows serve BCL-exactly, 22 rejoin below under owned serving);
-    // 5 of 43 after the 2026-09-26 numeric-lookbehind graduation (36 numeric plus
-    // 2 phantom rows serve BCL-exactly with null witnesses, entries removed);
-    // 3 of 43 after the 2026-09-26 parser flip (2 widening rows become BCL-exact
-    // construction failures, entries removed);
-    // 2 of 43 after the scoped-folding decline (the (?i:[ab]){2}|(?:a.) folding
-    // witness graduates via BCL-exact fallback);
-    // 0 of 43 after the bounded-verifier split fix (the (?m:) and (?n:) astral
-    // witnesses graduate: scalar-split candidate ends verify BCL-exactly instead of
-    // failing definitively). The folding-compound family is fully graduated; only
-    // per-branch folding coverage remains as explicitly declared migration debt.
-    // - Forward-leak family (9): the fork folds trailing or wrapped content under a
-    //   scoped option and marks trailing nodes, so the product over-matches shapes
-    //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
-    // - Fork-widening family (2, corrected at the 2026-09-26 flip): the fork served
-    //   shapes BCL rejects at construction (balance pop under explicit capture;
-    //   invalid group name inside lookbehind). Construction now throws BCL-exactly;
-    //   Utf8CompileFailureDiffTests pins the errors and the parser batteries pin
-    //   owned-decline plus the BCL verdicts.
-    // - Cross-scope numbering family (5): groups after an n-establishment lose their
-    //   numbers in fork metadata while BCL numbers them. The flip changes the group
-    //   APIs; match outcomes already agree. Includes the unscoped-outside case (?n:a)(b).
-    // - Trailing-dot family (3): a leaked option on a trailing dot makes it match a
-    //   newline (observed for s/i/n marks on input a-newline-b) while BCL dots do not.
-    //   The flip removes those matches.
-    // - Scoped-dot family (6): dots directly under scoped i/m/n match newlines in fork
-    //   behavior while BCL dots do not (singleline dots agree). Same quirk, leading form.
-    // - Numeric-lookbehind family (36, graduated 2026-09-26): numeric-named groups
-    //   after a lookbehind lost their numbers in fork metadata (phantom names) while
-    //   BCL numbers them. The owned parser serves these BCL-exactly (metadata, values,
-    //   counts, replacement over corpus plus fuzz plus astral all agree), so the flip
-    //   changes nothing for them; the rows left the residual set with the entries.
-    // - Folding-compound family (12, fully graduated): folding or dot leaks across
-    //   alternation branches and into compound tails changed what matched. The flip,
-    //   the scoped-folding decline, and the bounded-verifier split fix moved these to
-    //   BCL behavior; the residual rows below keep pinning agreement.
-    // - Loop-alternation family (3): an n-loop alternation with a dot or second scope
-    //   in the other branch diverges on newline inputs. The flip moves it to BCL behavior.
-    // - Phantom-name family (graduated 2026-09-26 with the numeric family): lookbehind
-    //   phantom numbering leaked garbage fork names into the public group APIs while BCL
-    //   reports clean numbers. Owned serving is BCL-exact, so the flip changes nothing
-    //   for them either.
-    private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
-    {
-        // Fully graduated: the last folding-compound witnesses left with the scoped-folding
-        // decline and the bounded-verifier split fix. The set stays as the registry for any
-        // future divergence discovered by the residual batteries below.
     };
 
     [Theory]
@@ -105,14 +48,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     private static void AssertCutoverDisposition(string pattern, RegexOptions options)
     {
         var witness = FindCutoverWitness(pattern, options);
-        if (CutoverDivergentShapes.Contains((pattern, (int)options)))
-        {
-            Assert.NotNull(witness);
-        }
-        else
-        {
-            Assert.Null(witness);
-        }
+        Assert.Null(witness);
     }
 
     // Null when the current product route agrees with BCL over the whole corpus
@@ -176,6 +112,15 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
             string? CheckInput(string input, string tag)
             {
+                // These exported dot compounds distinguish scalar matching from
+                // code-unit matching on both original astral subjects. The helper
+                // keeps captures, bytes, derived ranges, consumers and cancellation.
+                if (input.Any(char.IsSurrogate) && pattern is
+                    "(?n:a){2}|(?:a.)" or "(?i:[ab]){2}|(?:a.)" or "(?m:\\d){2}|(?:a.)")
+                {
+                    Utf8AsciiScalarOperationAssertions.Operations(pattern, options, input);
+                    return null;
+                }
                 var bytes = Encoding.UTF8.GetBytes(input);
                 var expected = b.Match(input);
                 var actual = p.Match(bytes);

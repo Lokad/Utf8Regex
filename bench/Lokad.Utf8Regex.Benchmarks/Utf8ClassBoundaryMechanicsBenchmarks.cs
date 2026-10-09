@@ -83,7 +83,7 @@ public class Utf8ClassBoundaryMechanicsBenchmarks
         var count = 0;
         for (var offset = 0; offset <= _ascii.Length; offset++)
         {
-            count += DotNetUtf8WordBoundary.IsBoundary(_ascii, offset) ? 1 : 0;
+            count += Utf8ScalarWordBoundary.IsBoundary(_ascii, offset) ? 1 : 0;
         }
 
         return count;
@@ -96,7 +96,7 @@ public class Utf8ClassBoundaryMechanicsBenchmarks
         var count = 0;
         foreach (var offset in _unicodeBoundaries)
         {
-            count += DotNetUtf8WordBoundary.IsBoundary(_unicode, offset) ? 1 : 0;
+            count += Utf8ScalarWordBoundary.IsBoundary(_unicode, offset) ? 1 : 0;
         }
 
         return count;

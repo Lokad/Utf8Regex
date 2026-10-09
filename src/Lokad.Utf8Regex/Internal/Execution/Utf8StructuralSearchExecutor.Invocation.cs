@@ -236,7 +236,7 @@ internal static partial class Utf8StructuralSearchExecutor
                     break;
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
                 case Utf8StructuralSearchStageKind.RequireTrailingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input,
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input,
                             stage.Kind == Utf8StructuralSearchStageKind.RequireLeadingBoundary ? start : start + length))
                         return Utf8ExecutionLimitKind.None;
                     break;
@@ -278,11 +278,11 @@ internal static partial class Utf8StructuralSearchExecutor
                     }
                     break;
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Leading.Index))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Leading.Index))
                         return Utf8ExecutionLimitKind.None;
                     break;
                 case Utf8StructuralSearchStageKind.RequireTrailingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Trailing.Index + window.Trailing.Length))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Trailing.Index + window.Trailing.Length))
                         return Utf8ExecutionLimitKind.None;
                     break;
             }

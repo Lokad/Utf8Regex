@@ -256,11 +256,11 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
     }
 
     // Ordered-window kernels keep this owner-local forwarding name at their hot call sites;
-    // the boundary truth itself is centralized in DotNetUtf8WordBoundary.
+    // the boundary truth itself is centralized in Utf8ScalarWordBoundary.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool MatchesBoundaryRequirement(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset)
     {
-        return DotNetUtf8WordBoundary.MatchesRequirement(requirement, input, byteOffset);
+        return Utf8ScalarWordBoundary.MatchesRequirement(requirement, input, byteOffset);
     }
 
     internal static bool IsAsciiWordByte(byte value) => Utf8AsciiBytePredicates.IsWord(value);

@@ -81,23 +81,9 @@ public sealed class Utf8SliceProjectionTests
     [InlineData("a*", "b")]
     [InlineData("a*", "😀")]
     [InlineData("(a+)(b+)", "éaaabbé")]
-    public void OwnedEnumerationMatchesOracle(string pattern, string inputText)
+    public void OwnedEnumerationMatchesScalarContract(string pattern, string inputText)
     {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Matches(inputText);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var actual = new List<(int Index, int Length)>();
-        foreach (var match in regex.EnumerateMatches(input))
-        {
-            actual.Add((match.IndexInUtf16, match.LengthInUtf16));
-        }
-
-        Assert.Equal(oracle.Count, actual.Count);
-        for (var i = 0; i < oracle.Count; i++)
-        {
-            Assert.Equal(oracle[i].Index, actual[i].Index);
-            Assert.Equal(oracle[i].Length, actual[i].Length);
-        }
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.CultureInvariant, inputText, requireSlice: true);
     }
 
     [Fact]

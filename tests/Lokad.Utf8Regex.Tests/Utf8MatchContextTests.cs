@@ -133,38 +133,24 @@ public sealed class Utf8MatchContextTests
     }
 
     [Fact]
-    public void ByteAccessThrowsForNonAlignedEvaluatorMatch()
+    public void ByteAccessPreservesScalarEvaluatorMatch()
     {
         var regex = new Utf8Regex(".", RegexOptions.CultureInvariant);
-
-        _ = regex.ReplaceToString(
-            "😀"u8,
-            0,
-            static (in Utf8MatchContext match, ref int state) =>
+        var replaced = regex.ReplaceToString("😀"u8, 0,
+            static (in Utf8MatchContext match, ref int calls) =>
             {
                 Assert.True(match.Success);
-                Assert.False(match.IsByteAligned);
-                Assert.False(match.TryGetByteRange(out _, out _));
-                Assert.False(match.TryGetValueBytes(out _));
-                try
-                {
-                    _ = match.IndexInBytes;
-                    throw new Xunit.Sdk.XunitException("Expected IndexInBytes to throw.");
-                }
-                catch (InvalidOperationException)
-                {
-                }
-
-                try
-                {
-                    _ = match.LengthInBytes;
-                    throw new Xunit.Sdk.XunitException("Expected LengthInBytes to throw.");
-                }
-                catch (InvalidOperationException)
-                {
-                }
-
+                Assert.Equal((0, 4), (match.IndexInBytes, match.LengthInBytes));
+                Assert.Equal((0, 2), (match.IndexInUtf16, match.LengthInUtf16));
+                Assert.True(match.IsByteAligned);
+                Assert.True(match.TryGetByteRange(out var index, out var length));
+                Assert.Equal((0, 4), (index, length));
+                Assert.True(match.TryGetValueBytes(out var bytes));
+                Assert.True(bytes.SequenceEqual("😀"u8));
+                Assert.Equal(0, calls++);
                 return "ok";
             });
+        Assert.Equal("ok", replaced);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

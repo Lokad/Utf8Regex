@@ -304,19 +304,15 @@ public sealed class Utf8SliceRtlTests
 
     [Theory]
     [InlineData(".", "\U0001F600", true)]
-    [InlineData("a.c", "a\U0001F600c", false)]
+    [InlineData("a.c", "a\U0001F600c", true)]
     [InlineData("^.", "\U0001F600x", true)]
-    public void RtlAstralShapesUseOwnedUnits(string pattern, string inputText, bool expected)
+    public void RtlAstralShapesUseOwnedScalars(string pattern, string inputText, bool expected)
     {
-        // The private unit subject supplies the .NET closing-edge order even
-        // when the winning match splits a scalar. Construction stays lazy.
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
+        var options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
+        var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
-        Assert.Equal(expected, regex.IsMatch(input));
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(inputText)));
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 }
@@ -327,7 +323,7 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "a|ab", "aab", 2 };
         yield return new object?[] { "a|ab", "xaab\U0001F600x", 2 };
         yield return new object?[] { "a+", "xaay\U0001F600", 1 };
-        yield return new object?[] { "x*", "ax\U0001F600b", 6 };
+        yield return new object?[] { "x*", "ax\U0001F600b", 5 };
         yield return new object?[] { "a*", "aaa", 2 };
         yield return new object?[] { "a*", "b", 2 };
         yield return new object?[] { "x*", "abx", 4 };
@@ -338,17 +334,14 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "(?<=a)b", "aab", 1 };
         yield return new object?[] { "(a+)(b+)", "aab", 1 };
         yield return new object?[] { "(a)\\1", "aa", 0 };
-        yield return new object?[] { "x*", "\U0001F600", 3 };
-        yield return new object?[] { "a*", "a\U0001F600a", 5 };
+        yield return new object?[] { "x*", "\U0001F600", 2 };
+        yield return new object?[] { "a*", "a\U0001F600a", 4 };
     }
 
     [Theory]
     [MemberData(nameof(CountCases))]
-    public void OwnedRtlCountMatchesOracle(string pattern, string inputText, int expected)
+    public void OwnedRtlCountMatchesScalarContract(string pattern, string inputText, int expected)
     {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
         foreach (var options in new[]
         {
             RegexOptions.RightToLeft | RegexOptions.CultureInvariant,
@@ -357,7 +350,8 @@ public sealed class Utf8SliceRtlOperationTests
         {
             var regex = new Utf8Regex(pattern, options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
-            Assert.Equal(expected, regex.Count(input));
+            Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+            Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
         }
     }
@@ -488,44 +482,31 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "a|ab", "aab", new int[] { 1, 2, 0, 1 } };
         yield return new object?[] { "a|ab", "xaab\U0001F600x", new int[] { 2, 2, 1, 1 } };
         yield return new object?[] { "a+", "xaay\U0001F600", new int[] { 1, 2 } };
-        yield return new object?[] { "x*", "ax\U0001F600b", new int[] { 5, 0, 4, 0, 3, 0, 1, 1, 1, 0, 0, 0 } };
+        yield return new object?[] { "x*", "ax\U0001F600b", new int[] { 5, 0, 4, 0, 1, 1, 1, 0, 0, 0 } };
         yield return new object?[] { "\\G", "aa", new int[] { 2, 0 } };
         yield return new object?[] { "a+?", "aaa", new int[] { 2, 1, 1, 1, 0, 1 } };
         yield return new object?[] { "a\\G", "aa", new int[] { 1, 1, 0, 1 } };
-        yield return new object?[] { "x*", "\U0001F600", new int[] { 2, 0, 1, 0, 0, 0 } };
-        yield return new object?[] { "a*", "a\U0001F600a", new int[] { 3, 1, 3, 0, 2, 0, 0, 1, 0, 0 } };
+        yield return new object?[] { "x*", "\U0001F600", new int[] { 2, 0, 0, 0 } };
+        yield return new object?[] { "a*", "a\U0001F600a", new int[] { 3, 1, 3, 0, 0, 1, 0, 0 } };
     }
 
     [Theory]
     [MemberData(nameof(EnumerateCases))]
-    public void OwnedRtlEnumerateMatchesOracle(string pattern, string inputText, int[] expected)
+    public void OwnedRtlEnumerationMatchesScalarContract(string pattern, string inputText, int[] expected)
     {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var wanted = new List<string>();
-        foreach (Match match in oracle.Matches(inputText))
-        {
-            wanted.Add(match.Index + ":" + match.Length);
-        }
-
-        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
+        var options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
+        var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var actual = new List<string>();
-        foreach (var match in regex.EnumerateMatches(input))
-        {
-            actual.Add(match.IndexInUtf16 + ":" + match.LengthInUtf16);
-        }
-
-        Assert.Equal(wanted, actual);
         var flat = new List<int>();
-        foreach (var item in actual)
+        foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(inputText)))
         {
-            var parts = item.Split(':');
-            flat.Add(int.Parse(parts[0]));
-            flat.Add(int.Parse(parts[1]));
+            Assert.True(match.IsByteAligned);
+            flat.Add(match.IndexInUtf16);
+            flat.Add(match.LengthInUtf16);
         }
-
-        Assert.Equal(expected, flat.ToArray());
+        Assert.Equal(expected, flat);
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ReplaceCases()
@@ -581,26 +562,25 @@ public sealed class Utf8SliceRtlOperationTests
 
     [Theory]
     [MemberData(nameof(OwnedRtlSplitCases))]
-    public void OwnedRtlSplitsMatchOracle(string pattern, RegexOptions options, string text, int count)
+    public void OwnedRtlSplitsMatchScalarContract(string pattern, RegexOptions options, string text, int count)
     {
-        // R05: right-to-left slice shapes split owned through the descending
-        // cursor with UTF-16 indexes exactly like the BCL oracle (encounter
-        // order, tail piece first), including half-scalar empty matches.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var subject = new Utf8AsciiScalarOperationAssertions.Subject(text);
+        var oracle = Utf8AsciiScalarOperationAssertions.Comparator(pattern, options);
         var regex = new Utf8Regex(pattern, options);
-        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, count))
+        var expected = new List<(string Value, int Index, int Length, int ByteIndex, int ByteLength)>();
+        foreach (var range in oracle.EnumerateSplits(subject.Projected, count))
         {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expected.Add((text[start..end], start, end - start));
+            var (start, length) = range.GetOffsetAndLength(subject.Projected.Length);
+            var (unitStart, unitLength) = subject.Units(start, length);
+            var (byteStart, byteLength) = subject.Bytes(start, length);
+            expected.Add((subject.Value(start, length), unitStart, unitLength, byteStart, byteLength));
         }
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in regex.EnumerateSplits(input, count))
+        var actual = new List<(string Value, int Index, int Length, int ByteIndex, int ByteLength)>();
+        foreach (var split in regex.EnumerateSplits(subject.Input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+            Assert.True(split.IsByteAligned);
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16, split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expected, actual);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
@@ -733,26 +713,9 @@ public sealed class Utf8SliceRtlOperationTests
 
     [Theory]
     [MemberData(nameof(RtlEmptyReplaceDeclineCases))]
-    public void RtlEmptyReplacementKeepsOracleAndOwnsShaping(string pattern, RegexOptions options, string text, string template)
+    public void RtlEmptyReplacementPreservesScalarGaps(string pattern, RegexOptions options, string text, string template)
     {
-        // Reverse discovery expands each match once, retaining half-unit gaps
-        // until the finished output is encoded in its original character order.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, template);
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
-        var bytesRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(expectedBytes, bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-        var stringRegex = new Utf8Regex(pattern, options);
-        Assert.Equal(expected, stringRegex.ReplaceToString(input, template));
-        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-        var destinationRegex = new Utf8Regex(pattern, options);
-        Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text, template, requireSlice: true);
     }
 
     public static IEnumerable<object?[]> FromOffsetCases()
@@ -771,30 +734,19 @@ public sealed class Utf8SliceRtlOperationTests
 
     [Theory]
     [MemberData(nameof(FromOffsetCases))]
-    public void OwnedRtlFromOffsetMatchesOracle(string pattern, string inputText, int startAt, bool expectedSuccess, int expectedStart, int expectedLength)
+    public void OwnedRtlFromOffsetMatchesScalarContract(string pattern, string inputText, int startAt, bool expectedSuccess, int expectedStart, int expectedLength)
     {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var wanted = oracle.Match(inputText, startAt);
-        Assert.Equal(expectedSuccess, wanted.Success);
-        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
+        var options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
+        Utf8AsciiScalarOperationAssertions.Offset(pattern, options, inputText, startAt);
+        var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var found = regex.MatchFromUtf16Offset(input, startAt);
+        var found = regex.MatchFromUtf16Offset(Encoding.UTF8.GetBytes(inputText), startAt);
         Assert.Equal(expectedSuccess, found.Success);
-        Assert.Equal(oracle.IsMatch(inputText, startAt), regex.IsMatchFromUtf16Offset(input, startAt));
-        Assert.Equal(oracle.Matches(inputText, startAt).Count, regex.CountFromUtf16Offset(input, startAt));
         if (expectedSuccess)
         {
-            Assert.Equal(expectedStart, wanted.Index);
-            Assert.Equal(expectedLength, wanted.Length);
             Assert.Equal(expectedStart, found.IndexInUtf16);
             Assert.Equal(expectedLength, found.LengthInUtf16);
-            var detailed = regex.MatchDetailedFromUtf16Offset(input, startAt);
-            Assert.True(detailed.Success);
-            Assert.Equal(expectedStart, detailed.IndexInUtf16);
-            Assert.Equal(expectedLength, detailed.LengthInUtf16);
         }
-
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
@@ -807,9 +759,9 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "a|ab", "xaab\U0001F600x", 0, new int[] { } };
         yield return new object?[] { "a*", "baa", 3, new int[] { 1, 2, 1, 0, 0, 0 } };
         yield return new object?[] { "a*", "baa", 1, new int[] { 1, 0, 0, 0 } };
-        yield return new object?[] { "a+", "xaay\U0001F600aa", 5, new int[] { 1, 2 } };
-        yield return new object?[] { "x*", "ax\U0001F600b", 5, new int[] { 5, 0, 4, 0, 3, 0, 1, 1, 1, 0, 0, 0 } };
-        yield return new object?[] { "a*", "a\U0001F600a", 4, new int[] { 3, 1, 3, 0, 2, 0, 0, 1, 0, 0 } };
+        yield return new object?[] { "a+", "xaay\U0001F600aa", 5, Array.Empty<int>() };
+        yield return new object?[] { "x*", "ax\U0001F600b", 5, new int[] { 5, 0, 4, 0, 1, 1, 1, 0, 0, 0 } };
+        yield return new object?[] { "a*", "a\U0001F600a", 4, new int[] { 3, 1, 3, 0, 0, 1, 0, 0 } };
         yield return new object?[] { "(a|ab){2,3}", "xaabab", 3, new int[] { 1, 2 } };
         yield return new object?[] { "(a|ab){2,3}", "xaabab", 6, new int[] { 1, 5 } };
         yield return new object?[] { "(a|ab){2,3}", "xaabab\U0001F600", 5, new int[] { 1, 4 } };
@@ -818,34 +770,26 @@ public sealed class Utf8SliceRtlOperationTests
 
     [Theory]
     [MemberData(nameof(RtlFromOffsetEnumerateCases))]
-    public void OwnedRtlFromOffsetEnumerateMatchesOracle(string pattern, string inputText, int startAt, int[] expectedFlat)
+    public void OwnedRtlFromOffsetEnumerationMatchesScalarContract(string pattern, string inputText, int startAt, int[] expectedFlat)
     {
-        // R05: right-to-left FromOffset enumeration descends closing edges from
-        // the caller bound (matches ending at or below it, rightmost first),
-        // exactly like the BCL oracle.
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
-        var wanted = new List<string>();
-        foreach (Match match in oracle.Matches(inputText, startAt))
-        {
-            wanted.Add(match.Index + ":" + match.Length);
-        }
+        var options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
+        Utf8AsciiScalarOperationAssertions.Offset(pattern, options, inputText, startAt);
+        var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        var actual = new List<string>();
-        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(input, startAt))
+        var subject = new Utf8AsciiScalarOperationAssertions.Subject(inputText);
+        if (!subject.Utf16Boundaries.Contains(startAt))
         {
-            actual.Add(match.IndexInUtf16 + ":" + match.LengthInUtf16);
+            Assert.Empty(expectedFlat); // The original interior-offset case now rejects all five APIs.
+            return;
         }
-        Assert.Equal(wanted, actual);
         var flat = new List<int>();
-        foreach (var item in actual)
+        foreach (var match in regex.EnumerateMatchesFromUtf16Offset(subject.Input, startAt))
         {
-            var parts = item.Split(':');
-            flat.Add(int.Parse(parts[0]));
-            flat.Add(int.Parse(parts[1]));
+            Assert.True(match.IsByteAligned);
+            flat.Add(match.IndexInUtf16);
+            flat.Add(match.LengthInUtf16);
         }
-        Assert.Equal(expectedFlat, flat.ToArray());
+        Assert.Equal(expectedFlat, flat);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 

@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
 /// R03 projection correctness: ASCII-literal-family patterns on non-ASCII input must
-/// report UTF-16 coordinates through the boundary map (or take BCL verification),
+/// report byte coordinates and derived UTF-16 coordinates at scalar boundaries,
 /// never raw byte offsets. Covers single and alternation literals, ignore-case
 /// literals, empty matches, splits, and from-offset enumeration on BMP and
 /// supplementary text, with an ASCII control row.
@@ -26,60 +26,16 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
     [Theory]
     [MemberData(nameof(LiteralCases))]
-    public void EnumerateMatchesProjectsCoordinatesLikeRuntime(string pattern, RegexOptions options, string text)
+    public void EnumerateMatchesProjectsScalarCoordinates(string pattern, RegexOptions options, string text)
     {
-        var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, options);
-        var runtime = new Regex(pattern, options);
-
-        var expected = new List<(int Index, int Length)>();
-        foreach (Match match in runtime.Matches(text))
-        {
-            expected.Add((match.Index, match.Length));
-        }
-
-        var actual = new List<Utf8ValueMatch>();
-        foreach (var match in regex.EnumerateMatches(input))
-        {
-            actual.Add(match);
-        }
-
-        Assert.Equal(expected.Count, actual.Count);
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Equal(expected[i].Index, actual[i].IndexInUtf16);
-            Assert.Equal(expected[i].Length, actual[i].LengthInUtf16);
-            var aligned = IsScalarBoundary(text, expected[i].Index) &&
-                IsScalarBoundary(text, expected[i].Index + expected[i].Length);
-            Assert.Equal(aligned, actual[i].IsByteAligned);
-            if (aligned)
-            {
-                Assert.Equal(
-                    Encoding.UTF8.GetByteCount(text.Substring(0, expected[i].Index)),
-                    actual[i].IndexInBytes);
-                Assert.Equal(
-                    Encoding.UTF8.GetByteCount(text.Substring(expected[i].Index, expected[i].Length)),
-                    actual[i].LengthInBytes);
-            }
-        }
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
     }
 
     [Theory]
     [MemberData(nameof(LiteralCases))]
-    public void EnumerateSplitsMatchRuntimeValues(string pattern, RegexOptions options, string text)
+    public void EnumerateSplitsPreserveScalarValues(string pattern, RegexOptions options, string text)
     {
-        var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, options);
-        var runtime = new Regex(pattern, options);
-
-        var expected = runtime.Split(text);
-        var actual = new List<string>();
-        foreach (var split in regex.EnumerateSplits(input))
-        {
-            actual.Add(split.GetValueString());
-        }
-
-        Assert.Equal(expected, actual.ToArray());
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
     }
 
     [Fact]
@@ -281,18 +237,4 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         }
     }
 
-    private static bool IsScalarBoundary(string text, int utf16Offset)
-    {
-        if ((uint)utf16Offset > (uint)text.Length)
-        {
-            return false;
-        }
-
-        if (utf16Offset == 0 || utf16Offset == text.Length)
-        {
-            return true;
-        }
-
-        return !(char.IsHighSurrogate(text[utf16Offset - 1]) && char.IsLowSurrogate(text[utf16Offset]));
-    }
 }

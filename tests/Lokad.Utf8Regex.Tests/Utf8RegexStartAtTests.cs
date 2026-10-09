@@ -103,20 +103,9 @@ public sealed class Utf8RegexStartAtTests
     }
 
     [Fact]
-    public void EnumerateMatchesStartAtFallsBackWhenUtf16StartSplitsSurrogatePair()
+    public void FromOffsetRejectsScalarInterior()
     {
-        var regex = new Utf8Regex("a", RegexOptions.CultureInvariant);
-
-        var enumerator = regex.EnumerateMatchesFromUtf16Offset("😀a"u8, 1);
-        Assert.True(enumerator.MoveNext());
-
-        var match = enumerator.Current;
-        Assert.True(match.Success);
-        Assert.True(match.IsByteAligned);
-        Assert.Equal(2, match.IndexInUtf16);
-        Assert.Equal(1, match.LengthInUtf16);
-        Assert.Equal(4, match.IndexInBytes);
-        Assert.Equal(1, match.LengthInBytes);
+        Utf8AsciiScalarOperationAssertions.Offset("a", RegexOptions.CultureInvariant, "😀a", 1);
     }
 
     [Fact]

@@ -51,17 +51,17 @@ internal static class Utf8ScalarNeighbors // PCRE2-INTEGRATION-POINT
     }
 }
 
-internal static class DotNetUtf8WordChar
+internal static class Utf8ScalarWordChar
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsWord(Rune scalar) =>
-        scalar.IsBmp && Internal.FrontEnd.Utf8OwnedCharClass.IsWordChar((char)scalar.Value);
+        Utf8SliceScalarClasses.IsWord(scalar, includeJoiners: false, ecma: false);
 }
 
-internal static class DotNetUtf8WordBoundary
+internal static class Utf8ScalarWordBoundary
 {
     /// <summary>
-    /// Applies a planned boundary requirement using the single .NET-compatible UTF-8 word-boundary policy.
+    /// Applies a planned boundary requirement using the shared Unicode-scalar word-boundary policy.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool MatchesRequirement(
@@ -121,7 +121,7 @@ internal static class DotNetUtf8WordBoundary
     }
 
     private static bool IsWord(Rune scalar) =>
-        scalar.IsBmp && Internal.FrontEnd.Utf8OwnedCharClass.IsBoundaryWordChar((char)scalar.Value);
+        Utf8SliceScalarClasses.IsWord(scalar, includeJoiners: true, ecma: false);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowOffsetOutOfRange() => throw new ArgumentOutOfRangeException("byteOffset");

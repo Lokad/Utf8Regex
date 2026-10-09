@@ -1717,6 +1717,29 @@ public sealed class Utf8RegexConstructionTests
         }
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoundedSuffixScalarWhitespacePreservesValidationAndCancellation(RegexOptions options)
+    {
+        const string pattern = @"\s[a-zA-Z]{0,12}ing\s";
+        var input = Encoding.UTF8.GetBytes("😀\u00a0sing\u2003𐐀");
+        var regex = new Utf8Regex(pattern, options);
+        using var source = new CancellationTokenSource();
+        Assert.Equal(1, regex.Count(input));
+        Assert.Equal(1, regex.Count(input, source.Token));
+        Assert.Equal(1, new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1)).Count(input));
+        foreach (var malformed in new byte[][] { [0xff, .. input], [.. input, 0xff] })
+        {
+            Assert.Throws<ArgumentException>(() => regex.Count(malformed));
+            Assert.Throws<ArgumentException>(() => regex.Count(malformed, source.Token));
+        }
+        source.Cancel();
+        Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.Count(new byte[] { 0xff }, source.Token));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     [Fact]
     public void IgnoreCaseBoundedSuffixLiteralCountMatchesDotNetOnMixedUtf8Input()
     {
@@ -1879,14 +1902,13 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledUnicodeLetterCountMatchesDotNet()
+    public void CompiledUnicodeLetterCountUsesScalarCategories()
     {
         const string pattern = @"\p{L}";
         const string input = "alpha βγ 夏洛克 𐐀 123 _";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
-        var bytes = Encoding.UTF8.GetBytes(input);
-
-        Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
+        Assert.Equal(11, compiled.Count(Encoding.UTF8.GetBytes(input)));
+        Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.Compiled, input);
     }
 
     [Fact]
@@ -1915,17 +1937,17 @@ public sealed class Utf8RegexConstructionTests
     [InlineData("é://host/path", 1)]
     [InlineData("https://hôte.example/路径", 1)]
     [InlineData("https://host.example/a\u00A0http://next.example/b", 2)]
-    [InlineData("𐐀://host/path https://ok.example/a", 1)]
+    [InlineData("𐐀://host/path https://ok.example/a", 2)]
     [InlineData("x://a x://ab x:////", 1)]
     [InlineData("x://ab?query#fragment x://cd##tail", 2)]
-    public void Utf8UriTokenCountMatchesDotNetUnicodeSemantics(string input, int expected)
+    public void Utf8UriTokenCountUsesScalarWordSemantics(string input, int expected)
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         var bytes = Encoding.UTF8.GetBytes(input);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options);
-            Assert.Equal(expected, Regex.Count(input, pattern, options));
+            Utf8AsciiScalarOperationAssertions.Operations(pattern, options, input);
             Assert.Equal(expected, regex.Count(bytes));
         }
     }

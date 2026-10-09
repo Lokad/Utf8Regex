@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.DiffTests;
 
 /// <summary>
 /// R03 first engine slice: MatchFromUtf16Offset answers scalar-boundary starts from the
-/// owned byte-range search and keeps BCL semantics otherwise. Every row compares
+/// owned byte-range search. Interior offsets reject. Every valid row compares
 /// success, UTF-16 coordinates, and byte coordinates (when scalar-aligned) against
 /// the BCL oracle across literal, alternation, class, anchor, lookaround, backreference,
 /// capture, empty-match, Unicode, and right-to-left shapes, including starts inside a
@@ -42,6 +42,26 @@ public sealed class Utf8MatchFromOffsetDiffTests
 
         foreach (var offset in offsets)
         {
+            if (!IsScalarBoundary(text, offset))
+            {
+                using var source = new CancellationTokenSource();
+                foreach (var token in new[] { CancellationToken.None, source.Token })
+                {
+                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
+                        () => { _ = utf8.MatchFromUtf16Offset(input, offset, token); }).ParamName);
+                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
+                        () => { _ = utf8.IsMatchFromUtf16Offset(input, offset, token); }).ParamName);
+                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
+                        () => { _ = utf8.CountFromUtf16Offset(input, offset, token); }).ParamName);
+                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
+                        () => { _ = utf8.MatchDetailedFromUtf16Offset(input, offset, token); }).ParamName);
+                    Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(
+                        () => { _ = utf8.EnumerateMatchesFromUtf16Offset(input, offset, token); }).ParamName);
+                }
+                Assert.False(utf8.Inspection.DebugFallbackRegexIsCreated);
+                Assert.False(utf8.Inspection.DebugAnchoredFallbackRegexIsCreated);
+                continue;
+            }
             var expected = runtime.Match(text, offset);
             var actual = utf8.MatchFromUtf16Offset(input, offset);
 

@@ -411,7 +411,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.RequireBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(instruction.BoundaryRequirement, input, index))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(instruction.BoundaryRequirement, input, index))
                     {
                         return false;
                     }

@@ -96,7 +96,7 @@ internal static class Utf8UriTokenCountExecutor
 
             if (Rune.DecodeFromUtf8(input[scalarStart..schemeStart], out var scalar, out var consumed) != OperationStatus.Done ||
                 consumed != schemeStart - scalarStart ||
-                !DotNetUtf8WordChar.IsWord(scalar))
+                !Utf8ScalarWordChar.IsWord(scalar))
             {
                 break;
             }

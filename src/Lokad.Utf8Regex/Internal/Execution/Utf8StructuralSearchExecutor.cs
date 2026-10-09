@@ -340,7 +340,7 @@ internal static partial class Utf8StructuralSearchExecutor
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex))
                     {
                         return false;
                     }
@@ -348,7 +348,7 @@ internal static partial class Utf8StructuralSearchExecutor
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireTrailingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex + matchLength))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex + matchLength))
                     {
                         return false;
                     }
@@ -412,14 +412,14 @@ internal static partial class Utf8StructuralSearchExecutor
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Leading.Index))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Leading.Index))
                     {
                         return false;
                     }
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireTrailingBoundary:
-                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Trailing.Index + window.Trailing.Length))
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Trailing.Index + window.Trailing.Length))
                     {
                         return false;
                     }

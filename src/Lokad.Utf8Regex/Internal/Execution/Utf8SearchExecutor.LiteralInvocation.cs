@@ -156,8 +156,8 @@ internal static partial class Utf8SearchExecutor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         // Inspect neighbors on the original subject, including after a reverse
         // cursor's end floor. Enumeration bounds do not invent word boundaries.
-        if (!DotNetUtf8WordBoundary.MatchesRequirement(plan.LeadingBoundary, input, candidate) ||
-            !DotNetUtf8WordBoundary.MatchesRequirement(plan.TrailingBoundary, input, candidate + length))
+        if (!Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingBoundary, input, candidate) ||
+            !Utf8ScalarWordBoundary.MatchesRequirement(plan.TrailingBoundary, input, candidate + length))
             return Utf8ExecutionLimitKind.None;
         if (plan.TrailingLiteralUtf8 is { } trailing)
         {

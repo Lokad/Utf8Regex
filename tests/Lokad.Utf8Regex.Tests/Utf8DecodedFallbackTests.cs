@@ -10,8 +10,8 @@ public sealed class Utf8DecodedFallbackTests
     [InlineData("Шерлок Холмс", "xx шерлок холмс yy ШЕРЛОК ХОЛМС", 2)]
     [InlineData("Σ", "σςΣ", 2)]
     [InlineData("K", "kKK", 3)]
-    [InlineData("𐐀", "𐐨𐐀", 1)]
-    public void UnicodeIgnoreCaseFallbackMatchesDotNet(
+    [InlineData("𐐀", "𐐨𐐀", 2)]
+    public void UnicodeIgnoreCaseMatchesScalarContract(
         string pattern,
         string subject,
         int expectedCount)
@@ -21,8 +21,21 @@ public sealed class Utf8DecodedFallbackTests
         var bytes = Encoding.UTF8.GetBytes(subject);
 
         Assert.Equal(expectedCount, regex.Count(bytes));
-        Assert.Equal(new Regex(pattern, options).Count(subject), regex.Count(bytes));
-        Assert.Equal(new Regex(pattern, options).IsMatch(subject), regex.IsMatch(bytes));
+        Assert.True(regex.IsMatch(bytes));
+        if (pattern == "𐐀")
+        {
+            // Deseret case folding is defined over scalars, not surrogate halves.
+            var ranges = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(bytes))
+                ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal([(0, 4), (4, 4)], ranges);
+        }
+        else
+        {
+            Assert.Equal(new Regex(pattern, options).Count(subject), regex.Count(bytes));
+            Assert.Equal(new Regex(pattern, options).IsMatch(subject), regex.IsMatch(bytes));
+        }
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]

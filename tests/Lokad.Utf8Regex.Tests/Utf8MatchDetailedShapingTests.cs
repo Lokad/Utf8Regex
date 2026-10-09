@@ -4,10 +4,9 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R03 detailed shaping: groupless matches project every Match, Group, and Capture
-/// view field from owned spans (BCL still discovers), with full view parity to the
-/// BCL-backed oracle and bounded shaping allocation. Other grouped patterns keep BCL
-/// shaping; grouped single literals are owned in GroupedLiteralDetailedTests.
+/// Detailed views project complete scalars with byte and derived UTF-16 ranges.
+/// The finite comparator preserves this fixture's predicates and scalar identity;
+/// grouped patterns and bounded shaping allocation remain covered below.
 /// </summary>
 public sealed class Utf8MatchDetailedShapingTests
 {
@@ -28,64 +27,25 @@ public sealed class Utf8MatchDetailedShapingTests
 
     [Theory]
     [MemberData(nameof(ShapingCases))]
-    public void DetailedViewsMatchRuntimeShaping(string pattern, RegexOptions options, string text)
+    public void DetailedViewsProjectScalarRanges(string pattern, RegexOptions options, string text)
     {
-        var input = Encoding.UTF8.GetBytes(text);
+        var subject = new Utf8ScalarCaptureFixture.Subject(text);
+        var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
         var utf8 = new Utf8Regex(pattern, options);
-        var expected = new Regex(pattern, options).Match(text);
-        var actual = utf8.MatchDetailed(input);
-
-        Assert.Equal(expected.Success, actual.Success);
-        if (!expected.Success)
+        var expected = oracle.Match(subject.Projected);
+        var actual = utf8.MatchDetailed(subject.Input);
+        Utf8SliceSparseGroupTests.AssertDetailed(oracle, expected, actual, subject);
+        if (expected.Success)
         {
-            Assert.Equal(expected.Groups.Count, actual.GroupCount);
-            Assert.Equal(string.Empty, actual.GetValueString());
-            return;
+            Assert.Equal(1, actual.GroupCount);
+            Assert.True(actual.TryGetGroup(0, out var tryGroup));
+            Assert.Equal(subject.Value(expected.Index, expected.Length), tryGroup.GetValueString());
+            Assert.True(actual.TryGetGroup("0", out var namedGroup));
+            Assert.Equal(subject.Value(expected.Index, expected.Length), namedGroup.GetValueString());
+            Assert.False(actual.TryGetGroup(1, out _));
+            Assert.False(actual.TryGetGroup("missing", out _));
         }
-
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.Equal(expected.Value, actual.GetValueString());
-        Assert.Equal(1, actual.GroupCount);
-
-        var start = expected.Index;
-        var end = start + expected.Length;
-        var aligned = IsScalarBoundary(text, start) && IsScalarBoundary(text, end);
-        Assert.Equal(aligned, actual.IsByteAligned);
-        if (aligned)
-        {
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(0, start)), actual.IndexInBytes);
-            Assert.Equal(Encoding.UTF8.GetByteCount(text.Substring(start, expected.Length)), actual.LengthInBytes);
-        }
-        else
-        {
-            var threw = false;
-            try
-            {
-                _ = actual.IndexInBytes;
-            }
-            catch (InvalidOperationException)
-            {
-                threw = true;
-            }
-
-            Assert.True(threw);
-        }
-
-
-        var group = actual.GetGroup(0);
-        Assert.True(group.Success);
-        Assert.Equal(expected.Index, group.IndexInUtf16);
-        Assert.Equal(expected.Length, group.LengthInUtf16);
-        Assert.Equal(expected.Value, group.GetValueString());
-        Assert.Equal(1, group.CaptureCount);
-        Assert.Equal(expected.Value, group.GetCapture(0).GetValueString());
-        Assert.True(actual.TryGetGroup(0, out var tryGroup));
-        Assert.Equal(expected.Value, tryGroup.GetValueString());
-        Assert.True(actual.TryGetGroup("0", out var namedGroup));
-        Assert.Equal(expected.Value, namedGroup.GetValueString());
-        Assert.False(actual.TryGetGroup(1, out _));
-        Assert.False(actual.TryGetGroup("missing", out _));
+        Assert.False(utf8.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -109,7 +69,7 @@ public sealed class Utf8MatchDetailedShapingTests
     }
 
     [Fact]
-    public void GroupedDetailedKeepsBclShaping()
+    public void GroupedDetailedUsesOwnedShaping()
     {
         const string text = "xxabxx";
         var input = Encoding.UTF8.GetBytes(text);
@@ -153,18 +113,4 @@ public sealed class Utf8MatchDetailedShapingTests
         _ = group.GetCapture(0).GetValueString();
     }
 
-    private static bool IsScalarBoundary(string text, int utf16Offset)
-    {
-        if ((uint)utf16Offset > (uint)text.Length)
-        {
-            return false;
-        }
-
-        if (utf16Offset == 0 || utf16Offset == text.Length)
-        {
-            return true;
-        }
-
-        return !(char.IsHighSurrogate(text[utf16Offset - 1]) && char.IsLowSurrogate(text[utf16Offset]));
-    }
 }

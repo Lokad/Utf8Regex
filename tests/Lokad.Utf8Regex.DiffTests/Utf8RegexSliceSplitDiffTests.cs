@@ -50,17 +50,22 @@ public sealed class Utf8RegexSliceSplitDiffTests
     [InlineData(",", "a\U0001F600,b")]
     [InlineData("a+", "\U0001F600aa\U0001F600")]
     [InlineData("x*|y", "a\U0001F600b")]
-    public void SliceSplitMatchesRuntimeOnAstralInput(string pattern, string input)
+    public void SliceSplitPreservesSupplementaryScalars(string pattern, string input)
     {
-        var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
-        var expected = EnumerateRuntimeSplits(input, pattern, int.MaxValue, options);
-        var actual = EnumerateUtf8Splits(utf8Regex, input, int.MaxValue);
-        Assert.Equal(expected, actual);
-        if (utf8Regex.Inspection.DebugUsesOwnedSliceProgram)
+        var subject = new Utf8ScalarDiffSubject(input);
+        var oracle = subject.Comparator(pattern, RegexOptions.CultureInvariant);
+        var expected = new List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(subject.Projected, int.MaxValue))
         {
-            Assert.False(utf8Regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            var (index, length) = range.GetOffsetAndLength(subject.Projected.Length);
+            var (start, units) = subject.Units(index, length);
+            expected.Add((subject.Value(index, length), start, units));
         }
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal(expected, EnumerateUtf8Splits(regex, input, int.MaxValue));
+        foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), int.MaxValue))
+            Assert.True(split.IsByteAligned);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     private static List<(string Value, int Index, int Length)> EnumerateRuntimeSplits(

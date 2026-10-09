@@ -5,52 +5,21 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValueSplitTests
 {
     [Fact]
-    public void SplitByteAccessThrowsForNonAlignedBoundary()
+    public void SplitByteAccessPreservesScalarBoundaries()
     {
         var regex = new Utf8Regex(".", RegexOptions.CultureInvariant);
-        var aligned = new List<bool>();
-        var values = new List<string>();
-
+        var byteRanges = new List<(int, int)>();
+        var unitRanges = new List<(int, int)>();
         foreach (var split in regex.EnumerateSplits("😀"u8))
         {
-            aligned.Add(split.IsByteAligned);
-            values.Add(split.GetValueString());
-
-            if (!split.IsByteAligned)
-            {
-                try
-                {
-                    _ = split.IndexInBytes;
-                    throw new Xunit.Sdk.XunitException("Expected IndexInBytes to throw.");
-                }
-                catch (InvalidOperationException)
-                {
-                }
-
-                try
-                {
-                    _ = split.LengthInBytes;
-                    throw new Xunit.Sdk.XunitException("Expected LengthInBytes to throw.");
-                }
-                catch (InvalidOperationException)
-                {
-                }
-
-                try
-                {
-                    _ = split.GetValueBytes();
-                    throw new Xunit.Sdk.XunitException("Expected GetValueBytes to throw.");
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            }
+            Assert.True(split.IsByteAligned);
+            Assert.Equal("", split.GetValueString());
+            Assert.True(split.GetValueBytes().IsEmpty);
+            byteRanges.Add((split.IndexInBytes, split.LengthInBytes));
+            unitRanges.Add((split.IndexInUtf16, split.LengthInUtf16));
         }
-
-        Assert.Equal(3, aligned.Count);
-        Assert.Equal(["", "", ""], values);
-        Assert.True(aligned[0]);
-        Assert.False(aligned[1]);
-        Assert.True(aligned[2]);
+        Assert.Equal([(0, 0), (4, 0)], byteRanges);
+        Assert.Equal([(0, 0), (2, 0)], unitRanges);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

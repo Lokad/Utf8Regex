@@ -149,7 +149,7 @@ internal static class Utf8WordDelimitedTokenExecutor
 
         if (Rune.DecodeFromUtf8(input[scalarStart..index], out var scalar, out var consumed) != OperationStatus.Done ||
             consumed != index - scalarStart ||
-            !DotNetUtf8WordChar.IsWord(scalar))
+            !Utf8ScalarWordChar.IsWord(scalar))
         {
             return false;
         }
@@ -185,7 +185,7 @@ internal static class Utf8WordDelimitedTokenExecutor
         }
 
         if (Rune.DecodeFromUtf8(input[index..], out var scalar, out var consumed) != OperationStatus.Done ||
-            !DotNetUtf8WordChar.IsWord(scalar))
+            !Utf8ScalarWordChar.IsWord(scalar))
         {
             return false;
         }

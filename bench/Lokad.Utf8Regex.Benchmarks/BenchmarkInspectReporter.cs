@@ -7111,9 +7111,9 @@ internal static partial class BenchmarkInspectReporter
             return true;
         }
 
-        var isBoundary = DotNetUtf8WordBoundary.TryGetAsciiBoundary(input, byteOffset, out var asciiBoundary)
+        var isBoundary = Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, byteOffset, out var asciiBoundary)
             ? asciiBoundary
-            : DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
+            : Utf8ScalarWordBoundary.IsBoundary(input, byteOffset);
         return requirement == Utf8BoundaryRequirement.Boundary
             ? isBoundary
             : requirement == Utf8BoundaryRequirement.NonBoundary && !isBoundary;

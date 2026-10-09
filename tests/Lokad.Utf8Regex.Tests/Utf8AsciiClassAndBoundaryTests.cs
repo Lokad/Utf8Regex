@@ -136,10 +136,10 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     {
         var utf8 = Encoding.UTF8.GetBytes("aé");
 
-        Assert.True(DotNetUtf8WordBoundary.TryGetAsciiBoundary(utf8, 0, out var atStart));
+        Assert.True(Utf8ScalarWordBoundary.TryGetAsciiBoundary(utf8, 0, out var atStart));
         Assert.True(atStart);
-        Assert.False(DotNetUtf8WordBoundary.TryGetAsciiBoundary(utf8, 1, out _));
-        Assert.False(DotNetUtf8WordBoundary.TryGetAsciiBoundary(utf8, utf8.Length, out _));
+        Assert.False(Utf8ScalarWordBoundary.TryGetAsciiBoundary(utf8, 1, out _));
+        Assert.False(Utf8ScalarWordBoundary.TryGetAsciiBoundary(utf8, utf8.Length, out _));
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
 
     private static void AssertBoundary(byte[] utf8, int byteOffset, int utf16Offset, HashSet<int> boundaries)
     {
-        Assert.Equal(boundaries.Contains(utf16Offset), DotNetUtf8WordBoundary.IsBoundary(utf8, byteOffset));
+        Assert.Equal(boundaries.Contains(utf16Offset), Utf8ScalarWordBoundary.IsBoundary(utf8, byteOffset));
     }
 
     private static string FindRepositoryRoot()
