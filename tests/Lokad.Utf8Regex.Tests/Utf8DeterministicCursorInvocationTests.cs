@@ -31,23 +31,21 @@ public sealed class Utf8DeterministicCursorInvocationTests
 
     [Theory]
     [MemberData(nameof(Modes))]
-    public void RangesPreserveAnchorsRunsCapturesMixedUnitsAndInvocationModes(string pattern, bool compiled, bool finite, bool live)
+    public void RangesPreserveAnchorsRunsCapturesMixedScalarsAndInvocationModes(string pattern, bool compiled, bool finite, bool live)
     {
         var regex = new Utf8Regex(pattern, Options(compiled), finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
         Assert.True(Prepared(regex).StructuralLinearProgram.DeterministicProgram.HasValue);
-        var oracle = new Regex(pattern, Options(compiled));
+        var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, Options(compiled)));
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
         {
-            var input = Encoding.UTF8.GetBytes(text);
+            var subject = new Utf8ScalarCaptureFixture.Subject(text);
+            var input = subject.Input;
             var cursor = regex.EnumerateMatches(input, live ? source.Token : default);
-            foreach (Match expected in oracle.Matches(text))
+            foreach (Match expected in oracle.Matches(subject.Projected))
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((expected.Index, expected.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
-                var byteIndex = Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index));
-                var byteLength = Encoding.UTF8.GetByteCount(expected.Value);
-                if (cursor.Current.IsByteAligned) Assert.Equal((byteIndex, byteLength), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+                Utf8SliceSparseGroupTests.AssertValue(expected, cursor.Current, subject);
             }
             var previous = cursor.Current;
             Assert.False(cursor.MoveNext());

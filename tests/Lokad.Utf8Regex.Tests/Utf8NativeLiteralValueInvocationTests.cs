@@ -242,24 +242,23 @@ public sealed class Utf8NativeLiteralValueInvocationTests
 
     [Theory]
     [MemberData(nameof(ExcludedCases))]
-    public void SemanticExclusionsKeepUnitProgressionCapturesAndFolding(int id, bool compiled)
+    public void SemanticExclusionsKeepScalarProgressionCapturesAndFolding(int id, bool compiled)
     {
         string[] patterns = ["", "\uD83D", "(?<x>t)(?<x>arget)", "(?<7>target)", "(?<x-00>a)", "(?i:k)", "(?-i:A)"];
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (id == 6 ? RegexOptions.IgnoreCase : RegexOptions.None);
         var regex = new Utf8Regex(patterns[id], options, TimeSpan.FromSeconds(10));
-        var oracle = new Regex(patterns[id], options);
+        var oracle = Utf8ScalarCaptureFixture.Project(new Regex(patterns[id], options));
         const string text = "😀 target a K k A a";
-        var input = Encoding.UTF8.GetBytes(text);
+        var subject = new Utf8ScalarCaptureFixture.Subject(text);
+        var input = subject.Input;
         using var source = new CancellationTokenSource();
-        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, source.Token));
-        Assert.Equal(oracle.Count(text), regex.Count(input, source.Token));
-        var expected = oracle.Match(text);
+        Assert.Equal(oracle.IsMatch(subject.Projected), regex.IsMatch(input, source.Token));
+        Assert.Equal(oracle.Count(subject.Projected), regex.Count(input, source.Token));
+        var expected = oracle.Match(subject.Projected);
         var actual = regex.Match(input, source.Token);
-        Assert.Equal(expected.Success, actual.Success);
-        Assert.Equal(expected.Index, actual.IndexInUtf16);
-        Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
+        Utf8SliceSparseGroupTests.AssertValue(expected, actual, subject);
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(patterns[id], options), [text]);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 }

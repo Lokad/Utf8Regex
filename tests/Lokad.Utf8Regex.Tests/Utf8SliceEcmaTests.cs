@@ -63,9 +63,13 @@ public sealed class Utf8SliceEcmaTests
     [InlineData(true, true)]
     public void EcmaSetsAndBoundariesCoverEveryBmpScalar(bool compiled, bool ignoreCase)
     {
-        var text = new string(Enumerable.Range(0, 65536).Where(value => value < 0xd800 || value > 0xdfff)
-            .Select(value => (char)value).ToArray()) + "\U0001f600";
+        var bmp = new string(Enumerable.Range(0, 65536).Where(value => value < 0xd800 || value > 0xdfff)
+            .Select(value => (char)value).ToArray());
+        var text = bmp + "\U0001f600";
         var input = Encoding.UTF8.GetBytes(text);
+        var bytes = new int[bmp.Length + 1];
+        for (var index = 0; index < bmp.Length; index++)
+            bytes[index + 1] = bytes[index] + Rune.GetRuneAt(bmp, index).Utf8SequenceLength;
         var options = RegexOptions.ECMAScript | RegexOptions.CultureInvariant |
             (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
         foreach (var pattern in new[] { @"\d", @"\D", @"\s", @"\S", @"\w", @"\W",
@@ -75,7 +79,10 @@ public sealed class Utf8SliceEcmaTests
             // the owned selection without changing the profile's sets.
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-            var expected = oracle.EnumerateMatches(text);
+            // Keep the entire 63,488-scalar BMP membership sweep unprojected.
+            // Its final U+FFFF is non-word, so adding non-word emoji leaves all
+            // BMP boundary decisions unchanged. Declare the emoji outcome below.
+            var expected = oracle.EnumerateMatches(bmp);
             var actual = regex.EnumerateMatches(input);
             var count = 0;
             while (expected.MoveNext())
@@ -83,11 +90,32 @@ public sealed class Utf8SliceEcmaTests
                 Assert.True(actual.MoveNext());
                 Assert.Equal(expected.Current.Index, actual.Current.IndexInUtf16);
                 Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
+                Assert.True(actual.Current.TryGetByteRange(out var byteIndex, out var byteLength));
+                Assert.Equal((bytes[expected.Current.Index],
+                    bytes[expected.Current.Index + expected.Current.Length] - bytes[expected.Current.Index]),
+                    (byteIndex, byteLength));
+                count++;
+            }
+            if (pattern is @"\D" or @"\S" or @"\W" or @"[\D]" or @"[\S]" or @"[\W]")
+            {
+                Assert.True(actual.MoveNext());
+                Assert.Equal((bmp.Length, 2), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
+                Assert.True(actual.Current.TryGetByteRange(out var byteIndex, out var byteLength));
+                Assert.Equal((bytes[^1], 4), (byteIndex, byteLength));
+                count++;
+            }
+            else if (pattern == @"\B")
+            {
+                Assert.True(actual.MoveNext());
+                Assert.Equal((text.Length, 0), (actual.Current.IndexInUtf16, actual.Current.LengthInUtf16));
+                Assert.True(actual.Current.TryGetByteRange(out var byteIndex, out var byteLength));
+                Assert.Equal((input.Length, 0), (byteIndex, byteLength));
                 count++;
             }
             Assert.False(actual.MoveNext());
             Assert.Equal(count, regex.Count(input));
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         }
     }
 

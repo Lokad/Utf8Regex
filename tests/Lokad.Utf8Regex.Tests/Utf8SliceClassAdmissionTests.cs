@@ -121,6 +121,15 @@ public sealed class Utf8SliceClassAdmissionTests
         Assert.False(actual.MoveNext());
         foreach (var offset in new[] { 0, 1, 2, text.Length })
         {
+            if (offset == 1)
+            {
+                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, offset)).ParamName);
+                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, offset)).ParamName);
+                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, offset)).ParamName);
+                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailedFromUtf16Offset(input, offset)).ParamName);
+                Assert.Equal("utf16Offset", Assert.Throws<ArgumentOutOfRangeException>(() => regex.EnumerateMatchesFromUtf16Offset(input, offset)).ParamName);
+                continue;
+            }
             var match = oracle.Match(text, offset);
             var value = regex.MatchFromUtf16Offset(input, offset);
             Assert.Equal(match.Success, value.Success);
