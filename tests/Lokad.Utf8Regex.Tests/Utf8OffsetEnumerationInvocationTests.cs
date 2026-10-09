@@ -36,22 +36,112 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         foreach (var text in new[] { "", "abc abab aaab aabc ab1d getAlpha setBeta abc\n", "é😀 abc abab 中aaab aabc ab12d getAlpha 😀abc", "abc\nabc\r\nabc" })
         {
             var input = Encoding.UTF8.GetBytes(text);
+            var projection = ProjectFixtureSubject(text);
             for (var floor = 0; floor <= text.Length; floor++)
             {
+                var scalarFloor = Array.IndexOf(projection.Utf16Boundaries, floor);
+                if (scalarFloor < 0)
+                {
+                    var failure = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                    {
+                        _ = live ? regex.EnumerateMatchesFromUtf16Offset(input, floor, source.Token)
+                            : regex.EnumerateMatchesFromUtf16Offset(input, floor);
+                    });
+                    Assert.Equal("utf16Offset", failure.ParamName);
+                    continue;
+                }
                 var cursor = live ? regex.EnumerateMatchesFromUtf16Offset(input, floor, source.Token) : regex.EnumerateMatchesFromUtf16Offset(input, floor);
-                foreach (Match expected in oracle.Matches(text, floor))
+                foreach (Match expected in oracle.Matches(projection.Text, scalarFloor))
                 {
                     Assert.True(cursor.MoveNext());
-                    Assert.Equal((expected.Index, expected.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
-                    if (cursor.Current.IsByteAligned)
-                    {
-                        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.Current.IndexInBytes);
-                        Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), cursor.Current.LengthInBytes);
-                    }
+                    var end = expected.Index + expected.Length;
+                    Assert.True(cursor.Current.IsByteAligned);
+                    Assert.True(cursor.Current.TryGetByteRange(out var index, out var length));
+                    Assert.Equal((projection.ByteBoundaries[expected.Index], projection.ByteBoundaries[end] - projection.ByteBoundaries[expected.Index]),
+                        (index, length));
+                    Assert.Equal((projection.Utf16Boundaries[expected.Index], projection.Utf16Boundaries[end] - projection.Utf16Boundaries[expected.Index]),
+                        (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
                 }
                 Assert.False(cursor.MoveNext());
                 Assert.False(cursor.MoveNext());
             }
+        }
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    // This fixture's grammar has ASCII classes, literals (plus é), dot, captures
+    // and assertions, but no Unicode properties, supplementary literals or ranges.
+    // Its only supplementary subject character is the non-word emoji. Replacing
+    // that scalar by an unused non-word BMP sentinel gives an independent BCL
+    // comparator for this restricted grammar, including global empty progression.
+    // Do not use this projection for arbitrary Unicode classes or casing.
+    private static (string Text, int[] Utf16Boundaries, int[] ByteBoundaries) ProjectFixtureSubject(string text)
+    {
+        var projected = new StringBuilder();
+        var utf16 = new List<int> { 0 };
+        var bytes = new List<int> { 0 };
+        foreach (var scalar in text.EnumerateRunes())
+        {
+            Assert.NotEqual(0xe000, scalar.Value);
+            if (!scalar.IsBmp) Assert.Equal(0x1f600, scalar.Value);
+            projected.Append(scalar.IsBmp ? (char)scalar.Value : '\ue000');
+            utf16.Add(utf16[^1] + scalar.Utf16SequenceLength);
+            bytes.Add(bytes[^1] + scalar.Utf8SequenceLength);
+        }
+        return (projected.ToString(), utf16.ToArray(), bytes.ToArray());
+    }
+
+    public static IEnumerable<object[]> ScalarOffsetWitnesses()
+    {
+        // Byte ranges are specified directly, independently of the projection.
+        (string Pattern, string Text, int Floor, bool Rtl, int[] Ranges)[] rows =
+        [
+            ("", "a😀b", 0, false, [0, 0, 1, 0, 5, 0, 6, 0]),
+            ("", "a😀b", 3, false, [5, 0, 6, 0]),
+            ("", "a😀b", 4, true, [6, 0, 5, 0, 1, 0, 0, 0]),
+            ("", "a😀b", 1, true, [1, 0, 0, 0]),
+            ("a.{0,4}b", "a😀b", 0, false, [0, 6]),
+            ("a.{0,4}b", "a😀b", 4, true, [0, 6]),
+            (@"(?=(.))", "a😀b", 0, false, [0, 0, 1, 0, 5, 0]),
+            (@"(?=(.))", "a😀b", 4, true, [5, 0, 1, 0, 0, 0]),
+            (@"\G(ab)", "😀abab😀", 2, false, [4, 2, 6, 2]),
+            (@"\G(ab)", "😀abab😀", 3, false, []),
+            (@"(ab)\1", "😀abab😀", 2, false, [4, 4]),
+            (@"(?<=a+)b", "😀aaab😀", 2, false, [7, 1]),
+            ("^abc", "😀abc", 2, false, []),
+            (@"abc\z", "😀abc", 2, false, [4, 3]),
+        ];
+        foreach (var row in rows)
+        foreach (var compiled in new[] { false, true })
+            yield return [row.Pattern, row.Text, row.Floor, row.Rtl, row.Ranges, compiled];
+    }
+
+    [Theory]
+    [MemberData(nameof(ScalarOffsetWitnesses))]
+    public void ScalarOffsetResultsHaveDeclaredByteRanges(string pattern, string text, int floor, bool rtl, int[] ranges, bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
+        var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8Regex(pattern, options);
+        using var source = new CancellationTokenSource();
+        var expected = Enumerable.Range(0, ranges.Length / 2).Select(index => (ranges[index * 2], ranges[index * 2 + 1])).ToArray();
+        var projection = ProjectFixtureSubject(text);
+        var scalarFloor = Array.IndexOf(projection.Utf16Boundaries, floor);
+        var projected = new Regex(pattern, options).Matches(projection.Text, scalarFloor)
+            .Select(match => (projection.ByteBoundaries[match.Index], projection.ByteBoundaries[match.Index + match.Length] - projection.ByteBoundaries[match.Index])).ToArray();
+        Assert.Equal(expected, projected);
+        foreach (var token in new[] { CancellationToken.None, source.Token })
+        {
+            var cursor = regex.EnumerateMatchesFromUtf16Offset(input, floor, token);
+            var actual = new List<(int, int)>();
+            while (cursor.MoveNext())
+            {
+                Assert.True(cursor.Current.IsByteAligned);
+                actual.Add((cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+            }
+            Assert.Equal(expected, actual);
+            Assert.False(cursor.MoveNext());
         }
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
@@ -93,7 +183,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("^abc")]
     [InlineData("abc$")]
     [InlineData(@"abc\z")]
-    public void QualifiedForwardCursorsStayNativeWhileHalfAndRtlStartsUseUnits(string pattern)
+    public void QualifiedForwardCursorsRetainNativeRoutesAndRejectInteriorStarts(string pattern)
     {
         foreach (var compiled in new[] { false, true })
         {
@@ -102,8 +192,10 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             var ascii = regex.EnumerateMatchesFromUtf16Offset("abc ab1d getAlpha"u8, 1);
             Assert.False(ascii.DebugIsOwnedSlice);
             var mixed = Encoding.UTF8.GetBytes("é😀 abc ab1d getAlpha");
-            var half = regex.EnumerateMatchesFromUtf16Offset(mixed, 2);
-            Assert.True(half.DebugIsOwnedSlice);
+            var failure = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset(mixed, 2); });
+            Assert.Equal("utf16Offset", failure.ParamName);
+            var forward = regex.EnumerateMatchesFromUtf16Offset(mixed, 3);
+            while (forward.MoveNext()) Assert.True(forward.Current.IsByteAligned);
             var reverse = new Utf8Regex(pattern, options | RegexOptions.RightToLeft).EnumerateMatchesFromUtf16Offset(mixed, 3);
             Assert.True(reverse.DebugIsOwnedSlice);
             using var source = new CancellationTokenSource();
@@ -117,7 +209,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("(?:|ab)")]
     [InlineData(@"(?=(.))")]
     [InlineData(@"\G(ab)")]
-    public void ZeroWidthAndAssertionProgramsKeepTheirUnitContract(string pattern)
+    public void ZeroWidthAndAssertionProgramsRetainOwnedScalarCursors(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var cursor = regex.EnumerateMatchesFromUtf16Offset("abab"u8, 1);
@@ -134,7 +226,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         var token = live ? source.Token : default;
         byte[] malformed = [0xc3, 0xa9, 0xff];
         Assert.Throws<ArgumentException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset(malformed, -1, token); });
-        foreach (var offset in new[] { -1, 4, int.MaxValue })
+        foreach (var offset in new[] { -1, 2, 4, int.MaxValue })
         {
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.EnumerateMatchesFromUtf16Offset("é😀"u8, offset, token); });
             Assert.Equal("utf16Offset", exception.ParamName);
