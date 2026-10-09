@@ -12,11 +12,11 @@ public sealed class Utf8NativeLiteralPreparationTests
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.CultureInvariant, text);
+        var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant, text);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
-    private static Utf8TreeNode One(char value) => new(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
+    private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
     private static string Class(string pattern)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
@@ -241,6 +241,7 @@ public sealed class Utf8NativeLiteralPreparationTests
         var root = Node(Utf8TreeNodeKind.Concatenate, "",
             Node(Utf8TreeNodeKind.Alternate, "", One('A'), One('B')),
             Node(Utf8TreeNodeKind.Alternate, "", One('C'), One('D')));
+        var declining = Node(Utf8TreeNodeKind.Alternate, "", root, One('x'));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         object?[] args = [root, null];
         var method = folded ? "TryExtractInvariantIgnoreCaseAsciiLiteralFamilyStrings" : "TryExtractLiteralFamilyStrings";
@@ -249,7 +250,7 @@ public sealed class Utf8NativeLiteralPreparationTests
             Assert.IsType<string[]>(args[1]));
         var checkpoint = owner.Budget.ObjectCheckpoint;
         var held = owner.Budget.ReservedBytes;
-        args = [Node(Utf8TreeNodeKind.Alternate, "", root, One('x')), null];
+        args = [declining, null];
         Assert.False(Assert.IsType<bool>(Call(method, args)));
         Assert.Empty(Assert.IsType<string[]>(args[1]));
         Assert.Equal(held, owner.Budget.ReservedBytes);

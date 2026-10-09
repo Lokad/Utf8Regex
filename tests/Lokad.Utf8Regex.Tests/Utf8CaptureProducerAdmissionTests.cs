@@ -122,12 +122,21 @@ public sealed class Utf8CaptureProducerAdmissionTests
         using var owner = Utf8ConstructionScope.Enter();
         var tree = Utf8OwnedTreeParser.TryParse("", RegexOptions.None);
         Assert.NotNull(tree);
-        var catalog = owner.Budget.ObjectCheckpoint!;
-        Assert.Same(tree.CaptureCatalog, catalog.Value);
-        var frame = catalog.Previous!;
-        Assert.Equal(typeof(Utf8ConstructionBuffer<>), frame.Value.GetType().GetGenericTypeDefinition());
-        Assert.Null(frame.Previous);
-        Assert.Equal(368ul, owner.Budget.ReservedBytes);
+        Assert.Same(tree, owner.Budget.ObjectCheckpoint!.Value);
+        var roots = new List<object>();
+        ulong loans = 0;
+        for (var root = owner.Budget.ObjectCheckpoint; root is not null; root = root.Previous)
+        {
+            roots.Add(root.Value);
+            loans += root.Bytes;
+        }
+        Assert.Single(roots.OfType<Utf8OwnedRegexTree>());
+        Assert.Single(roots.OfType<Utf8CaptureCatalog>());
+        Assert.Single(roots.Where(static value => value.GetType().IsGenericType &&
+            value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>)));
+        Assert.All(roots, static value => Assert.True(value is Utf8TreeNode or Utf8OwnedRegexTree or Utf8CaptureCatalog ||
+            value.GetType().IsGenericType && value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>)));
+        Assert.Equal(loans + 96, owner.Budget.ReservedBytes); // The two one-element catalog arrays.
     }
 
     [Theory]

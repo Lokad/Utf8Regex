@@ -156,8 +156,8 @@ public sealed class Utf8OwnedFeatureTests
     [InlineData((int)Utf8TreeNodeKind.Setloopatomic)]
     public void LoopKindsNeedNoAncestorFactSet(int kind)
     {
-        var root = new Utf8TreeNode((Utf8TreeNodeKind)kind, RegexOptions.None);
-        var tree = new Utf8OwnedRegexTree(root, 1, null, null, null, RegexOptions.None, null);
+        var root = Utf8TreeNode.Create((Utf8TreeNodeKind)kind, RegexOptions.None);
+        var tree = Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, null, null, false, false);
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new("", RegexOptions.None, "", RegexOptions.None, tree));
         Assert.True(features.HasLoops);
     }

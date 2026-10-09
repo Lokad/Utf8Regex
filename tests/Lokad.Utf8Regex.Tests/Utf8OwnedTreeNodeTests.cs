@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned tree-node structural checks: kind values round-trip, constructors store
+// Owned tree-node structural checks: kind values round-trip, factories store
 // their payloads, and child storage transitions (empty to single to list) keep
 // parent links. Former fork-equivalence pins were removed at the cutover; these
 // pin the owned representation directly.
@@ -56,51 +56,49 @@ public sealed class Utf8OwnedTreeNodeTests
     [MemberData(nameof(KindCases))]
     public void OwnedKindRoundTripsValue(int value)
     {
-        var node = new Utf8TreeNode((Utf8TreeNodeKind)value, RegexOptions.CultureInvariant);
+        var node = Utf8TreeNode.Create((Utf8TreeNodeKind)value, RegexOptions.CultureInvariant);
         Assert.Equal(value, (int)node.Kind);
         Assert.Equal(RegexOptions.CultureInvariant, node.Options);
         Assert.Equal(0, node.ChildCount);
-        Assert.Empty(node.ChildList);
+        Assert.Throws<ArgumentOutOfRangeException>(() => node.Child(0));
     }
 
     [Fact]
-    public void OwnedConstructorsStorePayloads()
+    public void OwnedFactoriesStorePayloads()
     {
-        var charNode = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var charNode = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         Assert.Equal('a', charNode.Ch);
         Assert.Equal(0, charNode.M);
         Assert.Equal(0, charNode.N);
 
-        var textNode = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "ab");
+        var textNode = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "ab");
         Assert.Equal("ab", textNode.Str);
 
-        var rangeNode = new Utf8TreeNode(Utf8TreeNodeKind.Loop, RegexOptions.None, 1, 3);
+        var rangeNode = Utf8TreeNode.Create(Utf8TreeNodeKind.Loop, RegexOptions.None, 1, 3);
         Assert.Equal(1, rangeNode.M);
         Assert.Equal(3, rangeNode.N);
 
-        var slotNode = new Utf8TreeNode(Utf8TreeNodeKind.Capture, RegexOptions.None, 2);
+        var slotNode = Utf8TreeNode.Create(Utf8TreeNodeKind.Capture, RegexOptions.None, 2, 0);
         Assert.Equal(2, slotNode.M);
 
-        textNode.Str2 = "witness";
-        Assert.Equal("witness", textNode.Str2);
     }
 
     [Fact]
     public void OwnedChildStorageKeepsParentLinks()
     {
-        var parent = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
+        var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
         Assert.Equal(0, parent.ChildCount);
-        Assert.Empty(parent.ChildList);
+        Assert.Throws<ArgumentOutOfRangeException>(() => parent.Child(0));
 
         for (var i = 0; i < 3; i++)
         {
-            var child = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, (char)('a' + i));
+            var child = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, (char)('a' + i));
             parent.AddChild(child);
             Assert.Equal(i + 1, parent.ChildCount);
             Assert.Same(parent, parent.Child(i).Parent);
             Assert.Equal((char)('a' + i), parent.Child(i).Ch);
         }
 
-        Assert.Equal(3, parent.ChildList.Count);
+        Assert.Equal(3, parent.ChildCount);
     }
 }

@@ -108,9 +108,9 @@ public sealed class PythonReConstructionAdmissionTests
     [Fact]
     public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
     {
-        // Compiler frames, descriptors and direct IR objects now share this
-        // loan too. Keep a bounded envelope for the original public "cat" retry.
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 16384);
+        // Core tree objects share the compiler/AST/IR loan. The original "cat"
+        // retry peaks below this bounded 24-KiB envelope.
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 24576);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
         Assert.Throws<NotSupportedException>(() =>
@@ -131,9 +131,9 @@ public sealed class PythonReConstructionAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void WideScalarIrCannotBypassTheEnclosingByteOwner(bool bytes)
     {
-        // Preserve the wide denial and original same-owner "cat" recovery while
-        // including newly admitted compiler descriptors, frames and IR objects.
-        const ulong maximumBytes = 16384;
+        // Preserve wide denial and the original same-owner "cat" recovery;
+        // its measured complete tree/AST/IR loan now peaks at 17,760 bytes.
+        const ulong maximumBytes = 24576;
         var pattern = new string('a', 32768);
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);

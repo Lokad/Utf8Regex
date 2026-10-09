@@ -68,7 +68,7 @@ public sealed class Utf8OwnedTreeContinuationTests
         var body = tree.Root.Child(0);
         for (var level = 0; level < depth; level++)
         {
-            var parent = new Utf8TreeNode(kind, RegexOptions.CultureInvariant);
+            var parent = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant);
             parent.M = 1;
             parent.N = kind == Utf8TreeNodeKind.Capture ? -1 : 2;
             parent.Children = body;

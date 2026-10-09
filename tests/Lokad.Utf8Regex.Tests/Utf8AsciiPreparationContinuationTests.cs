@@ -9,9 +9,11 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8AsciiPreparationContinuationTests
 {
     private const RegexOptions Options = RegexOptions.CultureInvariant;
-    private static Utf8TreeNode Text(string value) => new(Utf8TreeNodeKind.Multi, Options, value);
+    private static Utf8TreeNode Text(string value) => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, Options, value);
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
-        => new(kind, Options) { Children = children.ToList() };
+        => Utf8TreeNode.Create(kind: kind, options: Options,
+            ch: '\0', str: null, m: 0, n: 0,
+            children: children.ToList(), parent: null, matchCaseInsensitive: (Options & RegexOptions.IgnoreCase) != 0);
     private static Utf8TreeNode Wrap(Utf8TreeNode node, Utf8TreeNodeKind kind, int depth)
     {
         for (var index = 0; index < depth; index++)
@@ -84,7 +86,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
     public void SingleBranchConcatenationCannotBypassTheWorkBudget(int width, bool accepted)
     {
         var tree = Node(Utf8TreeNodeKind.Concatenate, Enumerable.Range(0, width)
-            .Select(_ => new Utf8TreeNode(Utf8TreeNodeKind.One, Options, 'a')).ToArray());
+            .Select(_ => Utf8TreeNode.Create(Utf8TreeNodeKind.One, Options, 'a')).ToArray());
         Assert.Equal(accepted, Lower(Compiler(), tree, out var branches));
         Assert.Equal(accepted ? width : 0, Literals(branches).Sum(value => value.Length));
     }
@@ -182,7 +184,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
             ?? throw new InvalidOperationException();
         var folded = typeof(Utf8AsciiSimplePatternLowerer).GetMethod("HasCaseClearingGroup", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException();
-        var tail = Wrap(new(Utf8TreeNodeKind.EndZ, Options), Utf8TreeNodeKind.Capture, depth);
+        var tail = Wrap(Utf8TreeNode.Create(Utf8TreeNodeKind.EndZ, Options), Utf8TreeNodeKind.Capture, depth);
         Assert.True(Assert.IsType<bool>(newline.Invoke(null, [Node(Utf8TreeNodeKind.Alternate, tail, tail)])));
         Assert.False(Assert.IsType<bool>(newline.Invoke(null, [Node(Utf8TreeNodeKind.Alternate, tail, Text("a"))])));
         var clearing = Wrap(Node(Utf8TreeNodeKind.Group, Text("a")), Utf8TreeNodeKind.Capture, depth);

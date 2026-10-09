@@ -1156,7 +1156,8 @@ public sealed class Utf8SearchPlanTests
             return line;
         }
 
-        return line + Environment.NewLine + string.Join(Environment.NewLine, node.ChildList.Select(child => DumpNode(child, depth + 1)));
+        return line + Environment.NewLine + string.Join(Environment.NewLine,
+            Enumerable.Range(0, node.ChildCount).Select(index => DumpNode(node.Child(index), depth + 1)));
     }
 
     [Fact]

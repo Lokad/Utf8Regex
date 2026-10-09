@@ -14,12 +14,12 @@ public sealed class Utf8StructuralPlanAdmissionTests
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.CultureInvariant);
+        var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
-    private static Utf8TreeNode Text(string text) => new(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
-    private static Utf8TreeNode One(char value) => new(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
+    private static Utf8TreeNode Text(string text) => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
+    private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
     private static string Class(string pattern)
     {
         var node = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant)!.Root;
@@ -27,14 +27,16 @@ public sealed class Utf8StructuralPlanAdmissionTests
         return node.Str!;
     }
     private static Utf8TreeNode Set(string pattern, int min, int max)
-        => new(Utf8TreeNodeKind.Setloop, RegexOptions.CultureInvariant, Class(pattern)) { M = min, N = max };
+        => Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Setloop, options: RegexOptions.CultureInvariant,
+            ch: '\0', str: Class(pattern), m: min, n: max,
+            children: null, parent: null, matchCaseInsensitive: (RegexOptions.CultureInvariant & RegexOptions.IgnoreCase) != 0);
     private static Utf8TreeNode Repeated(Utf8TreeNode child)
     {
         var node = Node(Utf8TreeNodeKind.Loop, child); node.M = 2; node.N = 4; return node;
     }
     private static Utf8TreeNode Identifier() => Node(Utf8TreeNodeKind.Concatenate,
         Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")), Set("[ \\t]", 1, int.MaxValue),
-        new(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")), Set("[a-z]", 0, int.MaxValue), Text("("));
+        Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")), Set("[a-z]", 0, int.MaxValue), Text("("));
     private static Utf8TreeNode Ordered(string first = "call", string last = "Result", int gap = 3)
         => Node(Utf8TreeNodeKind.Concatenate, Text(first), Set("[\\s\\S]", 0, gap), Text(last));
     private static Utf8TreeNode QuotedBody() => Node(Utf8TreeNodeKind.Concatenate,
@@ -54,14 +56,13 @@ public sealed class Utf8StructuralPlanAdmissionTests
         9 => Node(Utf8TreeNodeKind.Concatenate, Set("[A-Z]", 2, 2), Set("[ \\t]", 1, int.MaxValue),
             Set("[\\s\\S]", 0, 3), Text("Result"), Set("[\\s\\S]", 0, 3), Set("[ \\t]", 1, int.MaxValue), Set("[a-z]", 2, 2)),
         10 => Repeated(
-            Node(Utf8TreeNodeKind.Concatenate, new(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")),
+            Node(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")),
                 Set("[a-z]", 1, int.MaxValue), Set("[ \\t]", 0, int.MaxValue))),
         _ => Node(Utf8TreeNodeKind.Alternate, QuotedBranch(false), QuotedBranch(true)),
     };
     private static Utf8SemanticRegex Semantic(Utf8TreeNode body)
         => new("fixture", RegexOptions.CultureInvariant, "fixture", RegexOptions.CultureInvariant,
-            new Utf8OwnedRegexTree(Node(Utf8TreeNodeKind.Capture, body), 1, null, null, null,
-                RegexOptions.CultureInvariant, CultureInfo.InvariantCulture));
+            Utf8OwnedRegexTree.Create(Node(Utf8TreeNodeKind.Capture, body), 1, null, null, null, RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, null, false, false));
     private static object Input(int route)
     {
         if (route <= 5)

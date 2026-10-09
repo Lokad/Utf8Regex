@@ -9,7 +9,7 @@ public sealed class Utf8RequiredLiteralAdmissionTests
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.None, text);
+        var node = Utf8TreeNode.Create(kind, RegexOptions.None, text);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
@@ -170,7 +170,7 @@ public sealed class Utf8RequiredLiteralAdmissionTests
     public void OutputTransfersArrayAndAcquiredTextWhileBorrowedTextStaysBorrowed(bool one)
     {
         var text = new string('x', 1000);
-        var input = one ? new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'x') : Node(Utf8TreeNodeKind.Multi, text);
+        var input = one ? Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'x') : Node(Utf8TreeNodeKind.Multi, text);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var result = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(input);
         Assert.NotNull(result);

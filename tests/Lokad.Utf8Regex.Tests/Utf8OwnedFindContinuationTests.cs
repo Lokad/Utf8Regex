@@ -12,7 +12,7 @@ public sealed class Utf8OwnedFindContinuationTests
         var body = tree.Root.Child(0);
         for (var level = 0; level < depth; level++)
         {
-            var wrapper = new Utf8TreeNode(kind, tree.Root.Options);
+            var wrapper = Utf8TreeNode.Create(kind, tree.Root.Options);
             wrapper.M = 1;
             wrapper.N = -1;
             wrapper.Children = body;
@@ -71,11 +71,11 @@ public sealed class Utf8OwnedFindContinuationTests
     [InlineData(4097)]
     public void NestedConcatenationKeepsWidthsPrefixAndLastLiteralTie(int depth)
     {
-        Utf8TreeNode body = new(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'a');
+        Utf8TreeNode body = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'a');
         for (var level = 0; level < depth; level++)
         {
-            var suffix = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'b');
-            var concat = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
+            var suffix = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'b');
+            var concat = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
             concat.Children = new List<Utf8TreeNode> { body, suffix };
             body.Parent = concat;
             suffix.Parent = concat;
@@ -97,10 +97,10 @@ public sealed class Utf8OwnedFindContinuationTests
     [InlineData(16385)]
     public void DeepBoundedRepeatsKeepSaturatingWidthsAndOpaqueSearchFacts(int depth)
     {
-        Utf8TreeNode body = new(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab");
+        Utf8TreeNode body = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab");
         for (var level = 0; level < depth; level++)
         {
-            var loop = new Utf8TreeNode(Utf8TreeNodeKind.Loop, RegexOptions.CultureInvariant, 2, 2);
+            var loop = Utf8TreeNode.Create(Utf8TreeNodeKind.Loop, RegexOptions.CultureInvariant, 2, 2);
             loop.Children = body;
             body.Parent = loop;
             body = loop;

@@ -59,7 +59,7 @@ public sealed class Utf8OwnedSearchContinuationTests
 
     private static Utf8TreeNode Parent(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.CultureInvariant, 1, 1);
+        var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant, 1, 1);
         node.Children = children.Length == 1 ? children[0] : new List<Utf8TreeNode>(children);
         foreach (var child in children) child.Parent = node;
         return node;
@@ -83,13 +83,13 @@ public sealed class Utf8OwnedSearchContinuationTests
     [InlineData(16385, 3)]
     public void DeepWidthAndLineFactsUseSequenceSumBranchMaximumAndFiniteRepeat(int depth, int shape)
     {
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "a\r\né");
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "a\r\né");
         for (var index = 0; index < depth; index++)
             node = shape switch
             {
                 0 => Parent(Utf8TreeNodeKind.Concatenate, node),
-                1 => Parent(Utf8TreeNodeKind.Concatenate, node, new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
-                2 => Parent(Utf8TreeNodeKind.Alternate, node, new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
+                1 => Parent(Utf8TreeNodeKind.Concatenate, node, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
+                2 => Parent(Utf8TreeNodeKind.Alternate, node, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
                 _ => Parent(Utf8TreeNodeKind.Loop, node),
             };
         object?[] width = [node, 0, false];
@@ -104,9 +104,9 @@ public sealed class Utf8OwnedSearchContinuationTests
     [Fact]
     public void FailedFirstChildDoesNotEvaluateLaterOverflowingLineBranch()
     {
-        var overflow = Parent(Utf8TreeNodeKind.Loop, new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "\n\n"));
+        var overflow = Parent(Utf8TreeNodeKind.Loop, Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "\n\n"));
         overflow.N = int.MaxValue - 1;
-        var root = Parent(Utf8TreeNodeKind.Concatenate, new Utf8TreeNode(Utf8TreeNodeKind.Backreference, RegexOptions.CultureInvariant), overflow);
+        var root = Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Backreference, RegexOptions.CultureInvariant), overflow);
         object?[] lines = [root, 0];
         Assert.False(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", lines)));
         Assert.Equal(0, Assert.IsType<int>(lines[1]));
@@ -123,8 +123,8 @@ public sealed class Utf8OwnedSearchContinuationTests
     [InlineData(true)]
     public void EmptyNestedPhraseFailsWhileDirectAnchorsAreSkipped(bool nested)
     {
-        var anchor = new Utf8TreeNode(Utf8TreeNodeKind.Bol, RegexOptions.CultureInvariant);
-        var root = Parent(Utf8TreeNodeKind.Concatenate, new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'a'),
+        var anchor = Utf8TreeNode.Create(Utf8TreeNodeKind.Bol, RegexOptions.CultureInvariant);
+        var root = Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'a'),
             nested ? Parent(Utf8TreeNodeKind.Concatenate, anchor) : anchor);
         object?[] args = [root, ""];
         Assert.Equal(!nested, Assert.IsType<bool>(Call("TryExtractAsciiWindowPhrase", args)));
@@ -136,9 +136,9 @@ public sealed class Utf8OwnedSearchContinuationTests
     [InlineData(16385)]
     public void DeepPhraseAndTrailingLiteralRetainForwardAndReverseOrder(int depth)
     {
-        var phrase = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab");
+        var phrase = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab");
         for (var index = 0; index < depth; index++)
-            phrase = Parent(Utf8TreeNodeKind.Concatenate, phrase, new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
+            phrase = Parent(Utf8TreeNodeKind.Concatenate, phrase, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
         object?[] args = [phrase, ""];
         Assert.True(Assert.IsType<bool>(Call("TryExtractAsciiWindowPhrase", args)));
         Assert.Equal("ab" + new string('c', depth), Assert.IsType<string>(args[1]));
@@ -153,9 +153,9 @@ public sealed class Utf8OwnedSearchContinuationTests
     public void PrefixSetsKeepPartialInnerSequenceAndResumeOuterSibling(int depth)
     {
         var root = Parent(Utf8TreeNodeKind.Concatenate,
-            Parent(Utf8TreeNodeKind.Concatenate, new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab"),
-                new Utf8TreeNode(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.CultureInvariant)),
-            new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
+            Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab"),
+                Utf8TreeNode.Create(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.CultureInvariant)),
+            Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
         for (var index = 0; index < depth; index++) root = Parent(Utf8TreeNodeKind.Concatenate, root);
         var sets = new List<Utf8FixedDistanceSet>();
         object?[] args = [root, sets, 0, 0];

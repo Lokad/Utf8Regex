@@ -66,7 +66,7 @@ public sealed class Utf8ScalarIrAdmissionTests
         {
             var balancing = false;
             var lazy = false;
-            var node = new Utf8TreeNode(Utf8TreeNodeKind.Set, RegexOptions.None, wire);
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.None, wire);
             Assert.Null(Utf8OwnedTreeSliceLowerer.TryConvertRoot(node, tree.CaptureCatalog, arena, ref balancing, ref lazy));
             Assert.True(parent.Budget.ReservedBytes > before);
         }
@@ -80,7 +80,7 @@ public sealed class Utf8ScalarIrAdmissionTests
     [InlineData(0ul)] [InlineData(48ul)]
     public void RejectedPreparationFrameAcquiresNoStorage(ulong maximumBytes)
     {
-        var root = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximumBytes);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);

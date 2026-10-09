@@ -12,16 +12,16 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
 
     private static Input Make(int depth)
     {
-        var source = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var source = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         var node = new Utf8ExecutionNode(Utf8ExecutionNodeKind.One, RegexOptions.None, [], "", 'a', 0, 0, 0);
         for (var index = 0; index < depth; index++)
         {
-            var parent = new Utf8TreeNode(Utf8TreeNodeKind.Capture, RegexOptions.None, 1, -1);
+            var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Capture, RegexOptions.None, 1, -1);
             parent.AddChild(source);
             source = parent;
             node = new(Utf8ExecutionNodeKind.Capture, RegexOptions.None, [node], "", '\0', 1, 1, -1);
         }
-        var owned = new Utf8OwnedRegexTree(source, 2, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture);
+        var owned = Utf8OwnedRegexTree.Create(source, 2, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false);
         var semantic = new Utf8SemanticRegex("a", RegexOptions.None, "a", RegexOptions.None, owned);
         var tree = new Utf8ExecutionTree(node);
         var program = Utf8ExecutionProgramLowerer.Lower(tree);

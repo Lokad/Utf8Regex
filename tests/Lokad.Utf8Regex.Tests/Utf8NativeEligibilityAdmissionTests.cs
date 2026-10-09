@@ -25,25 +25,23 @@ public sealed class Utf8NativeEligibilityAdmissionTests
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, RegexOptions options, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, options);
+        var node = Utf8TreeNode.Create(kind, options);
         if (kind == Utf8TreeNodeKind.Capture) { node.M = 0; node.N = -1; }
         foreach (var child in children) node.AddChild(child);
         return node;
     }
 
-    private static Utf8OwnedRegexTree Tree(Utf8TreeNode root) => new(root, Seed.CaptureCount,
-        Seed.CaptureNames, Seed.CaptureNameToNumberMapping, Seed.CaptureNumberSparseMapping,
-        RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, Seed.CaptureCatalog, false, false);
+    private static Utf8OwnedRegexTree Tree(Utf8TreeNode root) => Utf8OwnedRegexTree.Create(root, Seed.CaptureCount, Seed.CaptureNames, Seed.CaptureNameToNumberMapping, Seed.CaptureNumberSparseMapping, RegexOptions.CultureInvariant, CultureInfo.InvariantCulture, Seed.CaptureCatalog, false, false);
 
     private static Utf8OwnedRegexTree Make(int route, int depth)
     {
         var node = route switch
         {
-            2 => Node(Utf8TreeNodeKind.Group, RegexOptions.None, new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a')),
-            3 => Node(Utf8TreeNodeKind.Group, RegexOptions.IgnoreCase, new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.IgnoreCase, 'a')),
+            2 => Node(Utf8TreeNodeKind.Group, RegexOptions.None, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a')),
+            3 => Node(Utf8TreeNodeKind.Group, RegexOptions.IgnoreCase, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.IgnoreCase, 'a')),
             4 => Node(Utf8TreeNodeKind.EndZ, RegexOptions.None),
-            5 => new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"),
-            _ => new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a'),
+            5 => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"),
+            _ => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'),
         };
         if (route == 5)
         {
@@ -221,7 +219,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     {
         var children = Enumerable.Range(0, 4097).Select(_ => route == 4
             ? Node(Utf8TreeNodeKind.EndZ, RegexOptions.None)
-            : new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a')).ToArray();
+            : Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a')).ToArray();
         var tree = Tree(Node(Utf8TreeNodeKind.Alternate, RegexOptions.None, children));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
@@ -239,7 +237,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     public void BorrowedLiteralValidationAdmitsEveryScalarBeforeDecoding()
     {
         var text = string.Concat(Enumerable.Repeat("😀", 100000)) + '\ud800';
-        var tree = Tree(new(Utf8TreeNodeKind.Multi, RegexOptions.None, text));
+        var tree = Tree(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, text));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 1002, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;

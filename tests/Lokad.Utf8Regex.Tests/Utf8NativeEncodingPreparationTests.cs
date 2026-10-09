@@ -13,12 +13,12 @@ public sealed class Utf8NativeEncodingPreparationTests
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.CultureInvariant);
+        var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
-    private static Utf8TreeNode One(char value) => new(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
-    private static Utf8TreeNode Text(string value) => new(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, value);
+    private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
+    private static Utf8TreeNode Text(string value) => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, value);
     private static Utf8TreeNode Wrap(Utf8TreeNode node, int depth)
     {
         for (var index = 0; index < depth; index++) node = Node(Utf8TreeNodeKind.Capture, node);
@@ -33,12 +33,12 @@ public sealed class Utf8NativeEncodingPreparationTests
         { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
     }
     private static Utf8SemanticRegex Semantic(Utf8TreeNode body, string pattern, RegexOptions options)
-        => new(pattern, options, pattern, options, new Utf8OwnedRegexTree(Node(Utf8TreeNodeKind.Capture, body),
-            1, null, null, null, options, CultureInfo.InvariantCulture));
-    private static Utf8TreeNode Input(int route, int depth)
+        => new(pattern, options, pattern, options, Utf8OwnedRegexTree.Create(Node(Utf8TreeNodeKind.Capture, body), 1, null, null, null, options, CultureInfo.InvariantCulture, null, false, false));
+    private sealed record InputValue(Utf8TreeNode Root, Utf8SemanticRegex Semantic);
+    private static InputValue Input(int route, int depth)
     {
         var alternate = Node(Utf8TreeNodeKind.Alternate, One('a'), Text("😀"));
-        return route switch
+        var root = route switch
         {
             2 => Node(Utf8TreeNodeKind.Concatenate, One('é'), Text("😀"), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
             3 or 10 => Node(Utf8TreeNodeKind.Concatenate, Wrap(alternate, depth), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
@@ -49,9 +49,11 @@ public sealed class Utf8NativeEncodingPreparationTests
             9 => Node(Utf8TreeNodeKind.Concatenate, One('é'), Text("😀"), Node(Utf8TreeNodeKind.PositiveLookaround, One('x'))),
             _ => Text("é😀"),
         };
+        return new(root, Semantic(root, route switch { 8 => "a|😀", 9 => "é😀(?=x)", 10 => "(?:a|😀)(?=x)", _ => "é😀" }, RegexOptions.CultureInvariant));
     }
-    private static void Run(int route, Utf8TreeNode root)
+    private static void Run(int route, InputValue input)
     {
+        var root = input.Root;
         var options = RegexOptions.CultureInvariant;
         var name = route switch
         {
@@ -66,10 +68,10 @@ public sealed class Utf8NativeEncodingPreparationTests
         {
             0 => ["(é😀)", null], 1 => ["call|invoke", null], 2 or 3 => [root, options, null, null],
             4 or 5 => [root, null], 6 or 7 => [root, null, null, null],
-            8 => [Semantic(root, "a|😀", options), null, null, null],
-            9 => [Semantic(root, "é😀(?=x)", options), null, null],
-            10 => [Semantic(root, "(?:a|😀)(?=x)", options), options, null, null, null, null],
-            _ => [Semantic(root, "é😀", options), "é😀", options, null],
+            8 => [input.Semantic, null, null, null],
+            9 => [input.Semantic, null, null],
+            10 => [input.Semantic, options, null, null, null, null],
+            _ => [input.Semantic, "é😀", options, null],
         };
         Assert.True(Assert.IsType<bool>(Call(name, args)));
         switch (route)
@@ -137,12 +139,13 @@ public sealed class Utf8NativeEncodingPreparationTests
     public void WrapperDepthDenialUnwindsAndAllowsLaterWork(int route)
     {
         var root = Input(route, 32);
+        var recovered = Input(route, 0);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, root));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, error.ResourceKind); Assert.Equal(9ul, error.Requested);
         Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-        Run(route, Input(route, 0)); Assert.Equal(17, parent.Value);
+        Run(route, recovered); Assert.Equal(17, parent.Value);
     }
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]

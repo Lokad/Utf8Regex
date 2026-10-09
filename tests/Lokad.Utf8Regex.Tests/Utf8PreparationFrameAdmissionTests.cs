@@ -33,8 +33,10 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
     private static Utf8TreeNode FindTree(int depth = 0)
     {
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        for (var index = 0; index < depth; index++) node = new(Utf8TreeNodeKind.Group, RegexOptions.None) { Children = node };
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        for (var index = 0; index < depth; index++) node = Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Group, options: RegexOptions.None,
+            ch: '\0', str: null, m: 0, n: 0,
+            children: node, parent: null, matchCaseInsensitive: (RegexOptions.None & RegexOptions.IgnoreCase) != 0);
         return node;
     }
 

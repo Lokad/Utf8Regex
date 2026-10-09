@@ -16,7 +16,9 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.None, text) { M = 1, N = 1 };
+        var node = Utf8TreeNode.Create(kind: kind, options: RegexOptions.None,
+            ch: '\0', str: text, m: 1, n: 1,
+            children: null, parent: null, matchCaseInsensitive: (RegexOptions.None & RegexOptions.IgnoreCase) != 0);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
@@ -26,7 +28,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     private static Utf8SemanticRegex Semantic(Utf8TreeNode root)
         => new("a", RegexOptions.None, "a", RegexOptions.None,
-            new Utf8OwnedRegexTree(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture));
+            Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false));
 
     private static Input Make(int route, int depth)
     {
@@ -117,6 +119,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     public void ChildDepthDenialRestoresParentAndAllowsRecovery(int route)
     {
         var input = Make(route, 32);
+        var recovered = Make(route, 0);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
@@ -128,7 +131,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         var spent = owner.Budget.WorkSteps;
-        Run(route, Make(route, 0));
+        Run(route, recovered);
         Assert.True(owner.Budget.WorkSteps > spent);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
@@ -270,7 +273,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     [Fact]
     public void FeatureFlagsRetainTheCompleteGrammarCensus()
     {
-        var lookbehind = new Utf8TreeNode(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.RightToLeft);
+        var lookbehind = Utf8TreeNode.Create(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.RightToLeft);
         var root = Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Beginning, ""), Node(Utf8TreeNodeKind.Boundary, ""),
             Node(Utf8TreeNodeKind.Backreference, ""), lookbehind, Node(Utf8TreeNodeKind.Atomic, ""),
             Node(Utf8TreeNodeKind.ExpressionConditional, ""), Node(Utf8TreeNodeKind.Setloop, Digits), Node(Utf8TreeNodeKind.Alternate, ""));

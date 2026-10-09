@@ -11,7 +11,7 @@ public sealed class Utf8ConstructionWorkDepthTests
     [InlineData("(?<x>😀)\\k<x>")] [InlineData("(?i:[é😀-🙏])")]
     public void ParserWorkCutoffsPreserveParentCapacityAndDepth(string pattern)
     {
-        // The frame descriptor and catalog survive in the enclosing owner;
+        // Node, tree, frame and catalog descriptors survive in the enclosing owner;
         // continuation and declaration-array scratch release before returning.
         var frameDescriptor = Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, Array, int)>()
             + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
@@ -23,7 +23,7 @@ public sealed class Utf8ConstructionWorkDepthTests
             work = measured.Budget.WorkSteps;
             retained = measured.Budget.ReservedBytes;
             Assert.True(retained > frameDescriptor);
-            Assert.Same(tree.CaptureCatalog, measured.Budget.ObjectCheckpoint!.Value);
+            Assert.Same(tree, measured.Budget.ObjectCheckpoint!.Value);
             Assert.Equal(0ul, measured.Budget.Depth);
         }
         Assert.InRange(work, 1ul, 2_000_000ul);
@@ -98,8 +98,10 @@ public sealed class Utf8ConstructionWorkDepthTests
     [InlineData(1ul, ulong.MaxValue)] [InlineData(2ul, ulong.MaxValue)]
     public void PreparationFrameDenialRestoresOwnedDepthAndStorageWithoutSpendingCleanupWork(ulong work, ulong depth)
     {
-        var leaf = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        var root = new Utf8TreeNode(Utf8TreeNodeKind.Group, RegexOptions.None) { Children = leaf };
+        var leaf = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var root = Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Group, options: RegexOptions.None,
+            ch: '\0', str: null, m: 0, n: 0,
+            children: leaf, parent: null, matchCaseInsensitive: (RegexOptions.None & RegexOptions.IgnoreCase) != 0);
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, work, depth);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.ComputeByteWidth(root));
         Assert.Equal(depth == 1 ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);

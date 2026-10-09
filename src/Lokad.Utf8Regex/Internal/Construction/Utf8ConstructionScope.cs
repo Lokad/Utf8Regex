@@ -7,8 +7,9 @@ namespace Lokad.Utf8Regex.Internal;
 /// Covered scans, parser/conversion loops, vectors/maps/sorts and preparation
 /// resumes share cumulative work admission; core/Python parser and preparation frames share
 /// live depth admission. Speculative failure never refunds admitted work.
-/// Python parser AST objects and their retaining descriptors share byte admission.
-/// Other parser/IR node objects, strings/descriptors, CLR/JIT metadata and lazy retained
+/// Core tree nodes/containers and Python parser AST objects, with their retaining
+/// descriptors, share byte admission. Other IR node objects, lexical strings/child
+/// storage, CLR/JIT metadata and lazy retained
 /// caches remain outside this partial backstop.</summary>
 internal sealed class Utf8ConstructionScope : IDisposable
 {

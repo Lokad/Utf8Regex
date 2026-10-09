@@ -12,7 +12,7 @@ public sealed class Utf8OwnedFindAdmissionTests
     {
         for (var index = 0; index < depth; index++)
         {
-            var parent = new Utf8TreeNode(Utf8TreeNodeKind.Group, RegexOptions.None);
+            var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None);
             parent.AddChild(node);
             node = parent;
         }
@@ -20,8 +20,8 @@ public sealed class Utf8OwnedFindAdmissionTests
     }
 
     private static Utf8TreeNode Input(int route, int depth) => Wrap(route == 0
-        ? new Utf8TreeNode(Utf8TreeNodeKind.End, RegexOptions.None)
-        : new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a'), depth);
+        ? Utf8TreeNode.Create(Utf8TreeNodeKind.End, RegexOptions.None)
+        : Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'), depth);
 
     private static object? Prepare(int route, Utf8TreeNode node) => route switch
     {
@@ -170,11 +170,11 @@ public sealed class Utf8OwnedFindAdmissionTests
     [InlineData(1)] [InlineData(2)]
     public void LiteralRunByteAndWorkCutoffsRestoreEarlierAcquisitions(int route)
     {
-        var input = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
-        input.AddChild(new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a'));
-        input.AddChild(new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"));
-        input.AddChild(new Utf8TreeNode(Utf8TreeNodeKind.End, RegexOptions.None));
-        input.AddChild(new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "longest"));
+        var input = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
+        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'));
+        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"));
+        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.End, RegexOptions.None));
+        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "longest"));
         var expected = route == 1 ? "a😀" : "longest";
         ulong peak, work;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -230,7 +230,7 @@ public sealed class Utf8OwnedFindAdmissionTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void DeclinedLiteralAndPureAnchorReturnReleaseAllScratch(int route)
     {
-        var input = Wrap(new Utf8TreeNode(Utf8TreeNodeKind.Nothing, RegexOptions.None), 65);
+        var input = Wrap(Utf8TreeNode.Create(Utf8TreeNodeKind.Nothing, RegexOptions.None), 65);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
@@ -248,9 +248,9 @@ public sealed class Utf8OwnedFindAdmissionTests
     [InlineData(1)] [InlineData(2)]
     public void ConcatenatedSupplementaryPatternTextPreservesBorrowedParents(int route)
     {
-        var input = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
-        var first = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀");
-        var last = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var input = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
+        var first = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀");
+        var last = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         input.AddChild(first); input.AddChild(last);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal("😀a", Prepare(route, input));

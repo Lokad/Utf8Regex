@@ -7,20 +7,12 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // provider seam carries one container type with no conversion step.
 internal sealed class Utf8OwnedRegexTree
 {
-    public Utf8OwnedRegexTree(
-        Utf8TreeNode root,
-        int captureCount,
-        string[]? captureNames,
-        IReadOnlyDictionary<string, int>? captureNameToNumberMapping,
-        IReadOnlyDictionary<int, int>? captureNumberSparseMapping,
-        RegexOptions options,
-        CultureInfo? culture)
-        : this(root, captureCount, captureNames, captureNameToNumberMapping,
-            captureNumberSparseMapping, options, culture, null, false, false)
-    {
-    }
+    private readonly record struct ConstructionState(Utf8TreeNode Root, int CaptureCount, CultureInfo? Culture, string[]? CaptureNames,
+        IReadOnlyDictionary<string, int>? CaptureNameToNumberMapping,
+        IReadOnlyDictionary<int, int>? CaptureNumberSparseMapping, RegexOptions Options,
+        Utf8CaptureCatalog? CaptureCatalog, bool UsesLiteralClassBracketSyntax, bool UsesIgnoreCase);
 
-    internal Utf8OwnedRegexTree(
+    internal static Utf8OwnedRegexTree Create(
         Utf8TreeNode root,
         int captureCount,
         string[]? captureNames,
@@ -32,16 +24,26 @@ internal sealed class Utf8OwnedRegexTree
         bool usesLiteralClassBracketSyntax,
         bool usesIgnoreCase)
     {
-        Root = root;
-        CaptureCount = captureCount;
-        CaptureNames = captureNames;
-        CaptureNameToNumberMapping = captureNameToNumberMapping;
-        CaptureNumberSparseMapping = captureNumberSparseMapping;
-        Options = options;
-        Culture = culture;
-        CaptureCatalog = captureCatalog;
-        UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
-        UsesIgnoreCase = usesIgnoreCase;
+        using var scope = Utf8ConstructionScope.Enter();
+        var tree = scope.Budget.AllocateObject(new ConstructionState(root, captureCount, culture, captureNames,
+            captureNameToNumberMapping, captureNumberSparseMapping, options, captureCatalog,
+            usesLiteralClassBracketSyntax, usesIgnoreCase), static state => new Utf8OwnedRegexTree(state));
+        scope.Complete();
+        return tree;
+    }
+
+    private Utf8OwnedRegexTree(ConstructionState state)
+    {
+        Root = state.Root;
+        CaptureCount = state.CaptureCount;
+        CaptureNames = state.CaptureNames;
+        CaptureNameToNumberMapping = state.CaptureNameToNumberMapping;
+        CaptureNumberSparseMapping = state.CaptureNumberSparseMapping;
+        Options = state.Options;
+        Culture = state.Culture;
+        CaptureCatalog = state.CaptureCatalog;
+        UsesLiteralClassBracketSyntax = state.UsesLiteralClassBracketSyntax;
+        UsesIgnoreCase = state.UsesIgnoreCase;
     }
 
     public Utf8TreeNode Root { get; }

@@ -127,7 +127,7 @@ public sealed class Utf8WindowByteBoundsTests
     public void LongPlainClassLineProofIsAdmittedBeforeMembershipScanning()
     {
         var wire = "\0" + (char)32000 + "\0" + string.Concat(Enumerable.Repeat("ab", 16000));
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, wire);
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, wire);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 40000, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var checkpoint = owner.Budget.ObjectCheckpoint;

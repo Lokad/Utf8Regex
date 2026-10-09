@@ -13,12 +13,12 @@ public sealed class Utf8NativeStructuralPreparationTests
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
     {
-        var node = new Utf8TreeNode(kind, RegexOptions.CultureInvariant);
+        var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
-    private static Utf8TreeNode Text(string text) => new(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
-    private static Utf8TreeNode One(char value) => new(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
+    private static Utf8TreeNode Text(string text) => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
+    private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
     private static Utf8TreeNode Wrap(Utf8TreeNode node, int depth)
     {
         for (var index = 0; index < depth; index++) node = Node(Utf8TreeNodeKind.Capture, node);
@@ -34,7 +34,9 @@ public sealed class Utf8NativeStructuralPreparationTests
         return node.Str;
     }
     private static Utf8TreeNode SetLoop(string pattern, int min, int max)
-        => new(Utf8TreeNodeKind.Setloop, RegexOptions.CultureInvariant, Class(pattern)) { M = min, N = max };
+        => Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Setloop, options: RegexOptions.CultureInvariant,
+            ch: '\0', str: Class(pattern), m: min, n: max,
+            children: null, parent: null, matchCaseInsensitive: (RegexOptions.CultureInvariant & RegexOptions.IgnoreCase) != 0);
     private static object? Call(string name, params object?[] args)
     {
         var method = typeof(Utf8NativeExecutionAnalyzer).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
@@ -57,7 +59,7 @@ public sealed class Utf8NativeStructuralPreparationTests
                 Wrap(Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("AKIA"), Text("ASIA")),
                     SetLoop("[A-Z]", 16, 16)), depth), One('\'')),
             _ => Node(Utf8TreeNodeKind.Concatenate, Node(Utf8TreeNodeKind.Alternate, Text("call"), Text("invoke")),
-                SetLoop("[ \\t]", 1, int.MaxValue), new(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")),
+                SetLoop("[ \\t]", 1, int.MaxValue), Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class("[A-Z]")),
                 SetLoop("[a-z]", 0, int.MaxValue), Text("(")),
         };
         return route is 4 or 7 ? root : Wrap(root, depth);
@@ -229,7 +231,7 @@ public sealed class Utf8NativeStructuralPreparationTests
     [Fact]
     public void EverySubtractionWorkCutoffRecoversPartiallyAcquiredSegments()
     {
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
         ulong work;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { Assert.True(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", node, 0))); work = measure.Budget.WorkSteps; }
@@ -247,7 +249,7 @@ public sealed class Utf8NativeStructuralPreparationTests
     [Fact]
     public void SubtractionByteDenialAfterSegmentAcquisitionRestoresTheParent()
     {
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
         using var owner = new Utf8ConstructionScope(0, 640, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("TryGetFiniteLineBreakCount", node, 0));

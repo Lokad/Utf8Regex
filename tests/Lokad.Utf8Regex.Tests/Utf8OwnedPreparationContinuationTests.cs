@@ -25,7 +25,7 @@ public sealed class Utf8OwnedPreparationContinuationTests
         var body = owned.Root.Child(0);
         for (var level = 0; level < depth; level++)
         {
-            var wrapper = new Utf8TreeNode((Utf8TreeNodeKind)wrapperKind, options, 1, -1);
+            var wrapper = Utf8TreeNode.Create((Utf8TreeNodeKind)wrapperKind, options, 1, -1);
             wrapper.Children = body;
             body.Parent = wrapper;
             body = wrapper;

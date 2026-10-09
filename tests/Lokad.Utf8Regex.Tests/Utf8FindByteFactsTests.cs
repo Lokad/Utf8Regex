@@ -101,7 +101,7 @@ public sealed class Utf8FindByteFactsTests
     public void BorrowedScalarValidationAndFixedProofNeverRefundSpentWork(int route)
     {
         var text = string.Concat(Enumerable.Repeat("😀", 100000));
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, text);
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, text);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 1000, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var checkpoint = owner.Budget.ObjectCheckpoint;
@@ -121,7 +121,7 @@ public sealed class Utf8FindByteFactsTests
         using (var recovery = Utf8ConstructionScope.Enter())
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                    Utf8OwnedFindOptimizations.ComputeByteWidth(new(Utf8TreeNodeKind.One, RegexOptions.None, 'a'))).ResourceKind);
+                    Utf8OwnedFindOptimizations.ComputeByteWidth(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'))).ResourceKind);
         Assert.Equal(spent, owner.Budget.WorkSteps);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
     }
@@ -129,7 +129,7 @@ public sealed class Utf8FindByteFactsTests
     [Fact]
     public void NonInvariantCaseBoundsCoverCultureDependentByteWidths()
     {
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.IgnoreCase, 'I');
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.IgnoreCase, 'I');
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1, 2), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
     }
 
@@ -145,7 +145,7 @@ public sealed class Utf8FindByteFactsTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void FixedLiteralProofAdmitsItsRootBeforeAnyAcquisition(int denial)
     {
-        var node = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 48ul : ulong.MaxValue,
             denial == 2 ? 1ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
