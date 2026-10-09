@@ -38,88 +38,101 @@ internal static class Utf8OwnedTreeParser
         // Admit the root before ParserState acquires its remaining collection
         // storage. Context is a value, rather than a separately acquired object.
         var context = new OwnedParseContext(new ParserState(pattern, options));
-        while (frames.Count != 0 && !context.Failed)
+        try
         {
-            construction.Budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            bool suspended;
-            OwnedParseFrame child;
-            try { suspended = Advance(ref context, ref frame, out child); }
-            finally { frames[index] = frame; }
-            if (suspended) frames.Push(child);
-            else frames.Pop();
-        }
-        frames.Dispose(); // Release continuation-array scratch before numbering.
-        var state = context.State;
-        var root = context.Node;
-        if (context.Failed || root is null || state.Position != pattern.Length)
-        {
-            return null;
-        }
-
-        if ((options & RegexOptions.IgnoreCase) == 0 &&
-            state.LeadingContribution != RegexOptions.None &&
-            (state.LeadingGroup is null || !ReferenceEquals(root, state.LeadingGroup)))
-        {
-            // A leading scope that does not cover the whole pattern must not leak
-            // its options onto the top composite: strip the non-covering contribution
-            // instead of declining. Per-node scoping is already BCL-exact and the top
-            // composite options are inert downstream, so serving is safe.
-            state.TreeSeen &= ~state.LeadingContribution;
-        }
-
-        var treeOptions = options | state.TreeSeen;
-        if (root.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate)
-        {
-            var top = new Utf8TreeNode(root.Kind, treeOptions);
-            top.Ch = root.Ch;
-            top.Str = root.Str;
-            top.Str2 = root.Str2;
-            top.M = root.M;
-            top.N = root.N;
-            top.Children = root.Children;
-            if (top.Children is List<Utf8TreeNode> topChildren)
+            while (frames.Count != 0 && !context.Failed)
             {
-                foreach (var topChild in topChildren)
-                {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    topChild.Parent = top;
-                }
+                construction.Budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                bool suspended;
+                OwnedParseFrame child;
+                try { suspended = Advance(ref context, ref frame, out child); }
+                finally { frames[index] = frame; }
+                if (suspended) frames.Push(child);
+                else frames.Pop();
+            }
+            frames.Dispose(); // Release continuation-array scratch before numbering.
+            var state = context.State;
+            var root = context.Node;
+            if (context.Failed || root is null || state.Position != pattern.Length)
+            {
+                return null;
             }
 
-            root = top;
-        }
+            if ((options & RegexOptions.IgnoreCase) == 0 &&
+                state.LeadingContribution != RegexOptions.None &&
+                (state.LeadingGroup is null || !ReferenceEquals(root, state.LeadingGroup)))
+            {
+                // A leading scope that does not cover the whole pattern must not leak
+                // its options onto the top composite: strip the non-covering contribution
+                // instead of declining. Per-node scoping is already BCL-exact and the top
+                // composite options are inert downstream, so serving is safe.
+                state.TreeSeen &= ~state.LeadingContribution;
+            }
 
-        if (!FinishNumbering(
-            ref state,
-            ref root,
-            out var captureCount,
-            out var captureNames,
-            out var captureNameToNumber,
-            out var captureSparseMapping))
+            var treeOptions = options | state.TreeSeen;
+            if (root.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate)
+            {
+                var top = new Utf8TreeNode(root.Kind, treeOptions);
+                top.Ch = root.Ch;
+                top.Str = root.Str;
+                top.Str2 = root.Str2;
+                top.M = root.M;
+                top.N = root.N;
+                top.Children = root.Children;
+                if (top.Children is List<Utf8TreeNode> topChildren)
+                {
+                    foreach (var topChild in topChildren)
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        topChild.Parent = top;
+                    }
+                }
+
+                root = top;
+            }
+
+            bool numbered;
+            int captureCount;
+            string[] captureNames;
+            IReadOnlyDictionary<string, int>? captureNameToNumber;
+            IReadOnlyDictionary<int, int>? captureSparseMapping;
+            try
+            {
+                numbered = FinishNumbering(ref state, ref root, out captureCount, out captureNames,
+                    out captureNameToNumber, out captureSparseMapping);
+            }
+            finally { context.State = state; }
+            if (!numbered) return null;
+
+            var tree = new Utf8TreeNode(Utf8TreeNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
+            tree.M = 0;
+            tree.N = -1;
+            tree.Children = root;
+            root.Parent = tree;
+            var culture = state.ConstructionCulture;
+            construction.Complete();
+            return new Utf8OwnedRegexTree(
+                tree,
+                captureCount,
+                captureNames,
+                captureNameToNumber,
+                captureSparseMapping,
+                treeOptions,
+                culture,
+                state.CaptureCatalog,
+                state.UsesLiteralClassBracketSyntax,
+                state.UsesIgnoreCase);
+
+        }
+        finally
         {
-            return null;
+            context.State.GroupDefinitions?.Dispose();
+            context.State.BackrefFixups?.Dispose();
+            context.State.RequiredSlots?.Dispose();
+            context.State.CapturePositions?.Dispose();
         }
-
-        var tree = new Utf8TreeNode(Utf8TreeNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
-        tree.M = 0;
-        tree.N = -1;
-        tree.Children = root;
-        root.Parent = tree;
-        var culture = state.ConstructionCulture;
-        construction.Complete();
-        return new Utf8OwnedRegexTree(
-            tree,
-            captureCount,
-            captureNames,
-            captureNameToNumber,
-            captureSparseMapping,
-            treeOptions,
-            culture,
-            state.CaptureCatalog,
-            state.UsesLiteralClassBracketSyntax,
-            state.UsesIgnoreCase);
 
         static bool Advance(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
@@ -287,17 +300,17 @@ internal static class Utf8OwnedTreeParser
 
                             if (backrefAtom.Kind == Utf8TreeNodeKind.Empty)
                             {
-                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits, ReferencePosition = state.Position });
+                                state.AddBackrefFixup(new OwnedBackrefFixup(backrefAtom, backrefDigits, state.Position, null, false, false, null));
                             }
                             else if (ReferenceEquals(backrefAtom, tentative))
                             {
-                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position });
+                                state.AddBackrefFixup(new OwnedBackrefFixup(tentative, backrefDigits, state.Position, null, false, false, null));
                             }
                             else if (backrefAtom.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
                                 backrefAtom.ChildCount == 1 &&
                                 ReferenceEquals(backrefAtom.Child(0), tentative))
                             {
-                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, ReferencePosition = state.Position, Wrapper = backrefAtom });
+                                state.AddBackrefFixup(new OwnedBackrefFixup(tentative, backrefDigits, state.Position, null, false, false, backrefAtom));
                             }
 
                             children.Add(backrefAtom);
@@ -325,12 +338,12 @@ internal static class Utf8OwnedTreeParser
 
                             if (namedAtom.Kind == Utf8TreeNodeKind.Empty)
                             {
-                                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedAtom, Name = backrefName });
+                                state.AddBackrefFixup(new OwnedBackrefFixup(namedAtom, null, 0, backrefName, false, false, null));
                                 children.Add(namedAtom);
                                 continue;
                             }
 
-                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedBackref, Name = backrefName });
+                            state.AddBackrefFixup(new OwnedBackrefFixup(namedBackref, null, 0, backrefName, false, false, null));
                             children.Add(namedAtom);
                             continue;
                         }
@@ -1552,7 +1565,7 @@ internal static class Utf8OwnedTreeParser
             node = group;
 
             if (frame.PopName is not null)
-                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = group, Name = frame.PopName, IsPop = true });
+                state.AddBackrefFixup(new OwnedBackrefFixup(group, null, 0, frame.PopName, true, false, null));
 
             if (frame.IsPop)
             {
@@ -1580,7 +1593,7 @@ internal static class Utf8OwnedTreeParser
                     group.M = declared;
                     group.N = -1;
                     node = group;
-                    state.RequiredSlots.Add(declared);
+                    state.RequireSlot(declared);
                     context.Complete(state, node);
                     return false;
                 }
@@ -1591,7 +1604,7 @@ internal static class Utf8OwnedTreeParser
 
                 if (declared != 0)
                 {
-                    state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = groupName, Declared = declared, IsAuto = false, Slot = declared, OpenPosition = frame.OpenPosition });
+                    state.AddGroupDefinition(new OwnedGroupDefinition(node: group, name: groupName, declared: declared, isAuto: false, openPosition: frame.OpenPosition));
                 }
 
                 context.Complete(state, node);
@@ -1621,7 +1634,7 @@ internal static class Utf8OwnedTreeParser
             group.M = -1;
             group.N = -1;
 
-            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = groupName, Declared = -1, IsAuto = true, Slot = -1, OpenPosition = frame.OpenPosition });
+            state.AddGroupDefinition(new OwnedGroupDefinition(node: group, name: groupName, declared: -1, isAuto: true, openPosition: frame.OpenPosition));
 
             context.Complete(state, node);
             return false;
@@ -1810,71 +1823,70 @@ internal static class Utf8OwnedTreeParser
             captureSparseMapping = null;
 
             var budget = Utf8ConstructionScope.CurrentBudget;
-            var definitions = budget.AllocateArray<Utf8CaptureDefinition>(state.GroupDefinitions.Count, false);
+            var groupDefinitions = state.GroupDefinitions;
+            var definitionCount = groupDefinitions?.Count ?? 0;
+            var definitions = budget.AllocateArray<Utf8CaptureDefinition>(definitionCount, false);
             Utf8CaptureCatalog catalog;
             try
             {
-                for (var index = 0; index < definitions.Length; index++)
-                {
-                    budget.ChargeWork(1);
-                    var definition = state.GroupDefinitions[index];
-                    definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
-                }
-                catalog = Utf8CaptureCatalog.Create(state.Groups, definitions, state.RequiredSlots.Count != 0);
+                if (groupDefinitions is not null)
+                    for (var index = 0; index < definitionCount; index++)
+                    {
+                        budget.ChargeWork(1);
+                        var definition = groupDefinitions[index];
+                        definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
+                    }
+                // Opening positions are used only by ECMAScript numeric references.
+                if (definitionCount != 0 && (state.Options & RegexOptions.ECMAScript) != 0)
+                    state.CapturePositions ??= Utf8ConstructionMap<int, int>.Create(budget, EqualityComparer<int>.Default);
+                catalog = Utf8CaptureCatalog.Create(state.Groups, definitions, state.RequiredSlots is { Count: > 0 });
             }
             finally { budget.ReleaseArray(definitions, false); }
             state.CaptureCatalog = catalog;
-            for (var index = 0; index < state.GroupDefinitions.Count; index++)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                var definition = state.GroupDefinitions[index];
-                definition.Slot = catalog.DefinitionNumbers[index];
-                if (definition.IsAuto) definition.Node.M = definition.Slot;
-                if (!state.CapturePositions.TryGetValue(definition.Slot, out var previous) || definition.OpenPosition < previous)
-                    state.CapturePositions[definition.Slot] = definition.OpenPosition;
-            }
-            var slots = new SortedSet<int>(catalog.GroupNumbers);
-            foreach (var required in state.RequiredSlots)
+            if (groupDefinitions is not null)
+                for (var index = 0; index < definitionCount; index++)
                 {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (!slots.Contains(required)) return false;
-            }
+                    budget.ChargeWork(1);
+                    var definition = groupDefinitions[index];
+                    var slot = catalog.DefinitionNumbers[index];
+                    if (definition.IsAuto) definition.Node.M = slot;
+                    state.RecordCapturePosition(slot, definition.OpenPosition);
+                }
+            if (state.RequiredSlots is { } requiredSlots)
+                foreach (var required in requiredSlots.Span)
+                {
+                    budget.ChargeWork(1);
+                    if (catalog.OrdinalFromNumber(required) < 0) return false;
+                }
             captureCount = catalog.GroupNumbers.Length;
             captureNames = catalog.GroupNames;
             captureNameToNumber = catalog.NameToNumber;
             captureSparseMapping = catalog.SparseMapping;
-            var slotByName = new Dictionary<string, int>(StringComparer.Ordinal);
-            for (var index = 0; index < captureCount; index++)
-                {
-                Utf8ConstructionScope.ChargeWork(1);
-                slotByName[captureNames[index]] = catalog.GroupNumbers[index];
-            }
 
             var morphed = false;
-            foreach (var fixup in state.BackrefFixups)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (!ResolveFixup(fixup, slots, slotByName, state.CapturePositions, ref root, ref morphed, state.CaseBehavior))
+            if (state.BackrefFixups is { } fixups)
+                foreach (var fixup in fixups.Span)
                 {
-                    return false;
+                    budget.ChargeWork(1);
+                    if (!ResolveFixup(fixup, catalog, state.CapturePositions, ref root, ref morphed, state.CaseBehavior))
+                        return false;
                 }
-            }
 
             root = MergeLiteralRuns(root);
 
             return true;
         }
 
-        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName,
-            Dictionary<int, int> capturePositions, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
+        static bool ResolveFixup(OwnedBackrefFixup fixup, Utf8CaptureCatalog catalog,
+            Utf8ConstructionMap<int, int>? capturePositions, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
         {
             if (fixup.Digits is not null && !fixup.IsConditional && !fixup.IsPop &&
                 (fixup.Node.Options & RegexOptions.ECMAScript) != 0)
                 return ResolveEcmaNumeric(fixup, fixup.Digits, capturePositions,
-                    slots.Max == int.MaxValue ? int.MaxValue : slots.Max + 1, ref root, ref morphed);
+                    catalog.GroupNumbers[^1] == int.MaxValue ? int.MaxValue : catalog.GroupNumbers[^1] + 1, ref root, ref morphed);
             if (fixup.Node.Kind == Utf8TreeNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
             {
-                return ResolveEmptyFixup(fixup, slots, slotByName, ref root, ref morphed, behavior);
+                return ResolveEmptyFixup(fixup, catalog, ref root, ref morphed, behavior);
             }
 
             if (fixup.IsPop)
@@ -1887,7 +1899,7 @@ internal static class Utf8OwnedTreeParser
 
                 if (IsAllAsciiDigits(popName))
                 {
-                    if (!TryParseGroupNumber(popName, out var popNumber) || !slots.Contains(popNumber))
+                    if (!TryParseGroupNumber(popName, out var popNumber) || catalog.OrdinalFromNumber(popNumber) < 0)
                     {
                         return false;
                     }
@@ -1896,7 +1908,8 @@ internal static class Utf8OwnedTreeParser
                     return true;
                 }
 
-                if (!slotByName.TryGetValue(popName, out var popSlot))
+                var popSlot = catalog.GroupNumberFromName(popName);
+                if (popSlot < 0)
                 {
                     return false;
                 }
@@ -1910,12 +1923,14 @@ internal static class Utf8OwnedTreeParser
                 var lookupName = fixup.Name;
                 if (IsAllAsciiDigits(lookupName))
                 {
-                    if (!TryParseGroupNumber(lookupName, out var numericName) || !slots.Contains(numericName)) return false;
+                    if (!TryParseGroupNumber(lookupName, out var numericName) || catalog.OrdinalFromNumber(numericName) < 0) return false;
                     fixup.Node.M = numericName;
                     return true;
                 }
 
-                if (!slotByName.TryGetValue(lookupName, out var namedSlot))
+                // Numeric reference syntax is handled separately above.
+                var namedSlot = catalog.GroupNumberFromName(lookupName);
+                if (namedSlot < 0)
                 {
                     // Undefined conditional names are expression tests. Their
                     // implicit assertion follows the enclosing direction;
@@ -1954,7 +1969,7 @@ internal static class Utf8OwnedTreeParser
             if (fixup.Digits is not null &&
                 int.TryParse(fixup.Digits, out var backref) &&
                 backref >= 1 &&
-                slots.Contains(backref))
+                catalog.OrdinalFromNumber(backref) >= 0)
             {
                 fixup.Node.M = backref;
                 return true;
@@ -1977,7 +1992,7 @@ internal static class Utf8OwnedTreeParser
             return ResolveOctalFallback(fixup, ref root, ref morphed, behavior);
         }
 
-        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
+        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, Utf8CaptureCatalog catalog, ref Utf8TreeNode root, ref bool morphed, Utf8ScalarCaseBehavior behavior)
         {
             if (fixup.Name is not null)
             {
@@ -1987,12 +2002,12 @@ internal static class Utf8OwnedTreeParser
                 var lookupName = fixup.Name;
                 if (IsAllAsciiDigits(lookupName))
                 {
-                    if (!TryParseGroupNumber(lookupName, out var numericName) || !slots.Contains(numericName)) return false;
+                    if (!TryParseGroupNumber(lookupName, out var numericName) || catalog.OrdinalFromNumber(numericName) < 0) return false;
                     fixup.Node.M = numericName;
                     return true;
                 }
 
-                if (!slotByName.TryGetValue(lookupName, out _))
+                if (catalog.GroupNumberFromName(lookupName) < 0)
                 {
                     return false;
                 }
@@ -2003,7 +2018,7 @@ internal static class Utf8OwnedTreeParser
             if (fixup.Digits is not null &&
                 int.TryParse(fixup.Digits, out var backref) &&
                 backref >= 1 &&
-                slots.Contains(backref))
+                catalog.OrdinalFromNumber(backref) >= 0)
             {
                 return true;
             }
@@ -2044,7 +2059,7 @@ internal static class Utf8OwnedTreeParser
             }
         }
 
-        static bool ResolveEcmaNumeric(OwnedBackrefFixup fixup, string digits, Dictionary<int, int> capturePositions, int captureScanLimit,
+        static bool ResolveEcmaNumeric(OwnedBackrefFixup fixup, string digits, Utf8ConstructionMap<int, int>? capturePositions, int captureScanLimit,
             ref Utf8TreeNode root, ref bool morphed)
         {
             var reference = -1;
@@ -2060,7 +2075,7 @@ internal static class Utf8OwnedTreeParser
                 number = unchecked(number * 10 + digits[index] - '0');
                 if (number > captureScanLimit) break;
                 consumed = index + 1;
-                if (capturePositions.TryGetValue(number, out var position) && position < fixup.ReferencePosition)
+                if (capturePositions is not null && capturePositions.TryGetValue(number, out var position) && position < fixup.ReferencePosition)
                 {
                     reference = number;
                 }
@@ -3020,7 +3035,7 @@ internal static class Utf8OwnedTreeParser
                 branch.Parent = conditional;
             }
             if (frame.Expression is null)
-                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = conditional, Digits = frame.Digits, Name = frame.Name, IsConditional = true });
+                state.AddBackrefFixup(new OwnedBackrefFixup(conditional, frame.Digits, 0, frame.Name, false, true, null));
             context.Complete(state, conditional);
             return false;
         }
@@ -3122,7 +3137,7 @@ internal static class Utf8OwnedTreeParser
                 else
                 {
                     state.Groups++;
-                    state.CapturePositions.TryAdd(state.Groups, frame.OpenPosition);
+                    state.RecordCapturePosition(state.Groups, frame.OpenPosition);
                     if (state.IgnoreNextUnnamedGroup)
                     {
                         frame.Kind = Utf8TreeNodeKind.Group;
@@ -3394,7 +3409,7 @@ internal static class Utf8OwnedTreeParser
         public int Position;
         public int Groups;
         public int ExecutionGroups;
-        public Dictionary<int, int> CapturePositions;
+        public Utf8ConstructionMap<int, int>? CapturePositions;
         public bool IgnoreNextUnnamedGroup;
         public RegexOptions TreeSeen;
         public int Depth0Branch;
@@ -3403,9 +3418,9 @@ internal static class Utf8OwnedTreeParser
         public Utf8TreeNode? LeadingGroup;
         public int ExplicitDepth;
         public int ExpressionBranchDepth;
-        public List<OwnedGroupDefinition> GroupDefinitions;
-        public List<OwnedBackrefFixup> BackrefFixups;
-        public List<int> RequiredSlots;
+        public Utf8ConstructionBuffer<OwnedGroupDefinition>? GroupDefinitions;
+        public Utf8ConstructionBuffer<OwnedBackrefFixup>? BackrefFixups;
+        public Utf8ConstructionBuffer<int>? RequiredSlots;
         public Utf8CaptureCatalog? CaptureCatalog;
         public bool UsesLiteralClassBracketSyntax;
         public bool UsesIgnoreCase;
@@ -3419,7 +3434,7 @@ internal static class Utf8OwnedTreeParser
             Position = 0;
             Groups = 0;
             ExecutionGroups = 0;
-            CapturePositions = new Dictionary<int, int>();
+            CapturePositions = null;
             IgnoreNextUnnamedGroup = false;
             TreeSeen = RegexOptions.None;
             Depth0Branch = 0;
@@ -3428,41 +3443,55 @@ internal static class Utf8OwnedTreeParser
             LeadingGroup = null;
             ExplicitDepth = 0;
             ExpressionBranchDepth = -1;
-            GroupDefinitions = new List<OwnedGroupDefinition>();
-            BackrefFixups = new List<OwnedBackrefFixup>();
-            RequiredSlots = new List<int>();
+            GroupDefinitions = null;
+            BackrefFixups = null;
+            RequiredSlots = null;
             CaptureCatalog = null;
             UsesLiteralClassBracketSyntax = false;
             UsesIgnoreCase = false;
         }
 
+        public void AddGroupDefinition(OwnedGroupDefinition definition) =>
+            (GroupDefinitions ??= Utf8ConstructionBuffer<OwnedGroupDefinition>.Create(Utf8ConstructionScope.CurrentBudget)).Add(definition);
+
+        public void AddBackrefFixup(OwnedBackrefFixup fixup) =>
+            (BackrefFixups ??= Utf8ConstructionBuffer<OwnedBackrefFixup>.Create(Utf8ConstructionScope.CurrentBudget)).Add(fixup);
+
+        public void RequireSlot(int slot) =>
+            (RequiredSlots ??= Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget)).Add(slot);
+
+        public void RecordCapturePosition(int slot, int position)
+        {
+            if ((Options & RegexOptions.ECMAScript) == 0) return;
+            var positions = CapturePositions ??= Utf8ConstructionMap<int, int>.Create(
+                Utf8ConstructionScope.CurrentBudget, EqualityComparer<int>.Default);
+            if (!positions.TryGetValue(slot, out var previous) || position < previous)
+                positions[slot] = position;
+        }
+
         public bool AtEnd => Position >= Pattern.Length;
     }
 
-    // A named or numbered group definition: unnamed groups never appear here.
-    // Auto-named groups take a pending slot that the end pass assigns; explicit
-    // numbers claim their literal slot (zero is a pure alias and is not recorded).
-    private sealed class OwnedGroupDefinition
+    // Transient declaration/fixup fields live in admitted value-array storage.
+    // Nodes/text are borrowed; their separate acquisition remains migration work.
+    private readonly struct OwnedGroupDefinition(Utf8TreeNode node, string name, int declared, bool isAuto, int openPosition)
     {
-        public required Utf8TreeNode Node { get; init; }
-        public string Name = string.Empty;
-        public int Declared = -1;
-        public bool IsAuto;
-        public int Slot;
-        public int OpenPosition = -1;
+        public readonly Utf8TreeNode Node = node;
+        public readonly string Name = name;
+        public readonly int Declared = declared;
+        public readonly bool IsAuto = isAuto;
+        public readonly int OpenPosition = openPosition;
     }
 
-    // A backreference or balance pop awaiting end-pass resolution, when group
-    // numbering is final. Numeric tentatives carry their digit text and an
-    // optional quantified wrapper for the octal outcome.
-    private sealed class OwnedBackrefFixup
+    private readonly struct OwnedBackrefFixup(Utf8TreeNode node, string? digits, int referencePosition,
+        string? name, bool isPop, bool isConditional, Utf8TreeNode? wrapper)
     {
-        public required Utf8TreeNode Node { get; init; }
-        public string? Digits;
-        public int ReferencePosition;
-        public string? Name;
-        public bool IsPop;
-        public bool IsConditional;
-        public Utf8TreeNode? Wrapper;
+        public readonly Utf8TreeNode Node = node;
+        public readonly string? Digits = digits;
+        public readonly int ReferencePosition = referencePosition;
+        public readonly string? Name = name;
+        public readonly bool IsPop = isPop;
+        public readonly bool IsConditional = isConditional;
+        public readonly Utf8TreeNode? Wrapper = wrapper;
     }
 }
