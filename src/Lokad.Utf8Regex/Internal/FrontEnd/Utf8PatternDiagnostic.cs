@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// representation. These diagnostic coordinates do not affect scalar matching.</summary>
 internal readonly record struct Utf8PatternDiagnostic(Utf8PatternError Error, int Offset)
 {
-    internal bool IsSyntaxError => Error is not (Utf8PatternError.None or Utf8PatternError.ClassPayloadCapacity);
+    internal bool IsSyntaxError => Error != Utf8PatternError.None;
 
     internal string Description => Error switch
     {
@@ -20,7 +20,6 @@ internal readonly record struct Utf8PatternDiagnostic(Utf8PatternError Error, in
         Utf8PatternError.InvalidCaptureName => "Invalid capture name or number",
         Utf8PatternError.UndefinedCapture => "A capture reference has no matching declaration",
         Utf8PatternError.InvalidConditional => "Invalid conditional syntax or branch count",
-        Utf8PatternError.ClassPayloadCapacity => "The class payload requires an unserved representation",
         _ => throw new InvalidOperationException("No pattern failure was recorded."),
     };
 
@@ -46,5 +45,4 @@ internal enum Utf8PatternError
     InvalidCaptureName,
     UndefinedCapture,
     InvalidConditional,
-    ClassPayloadCapacity,
 }

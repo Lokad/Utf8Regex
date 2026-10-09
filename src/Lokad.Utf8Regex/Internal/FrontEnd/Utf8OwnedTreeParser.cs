@@ -7,9 +7,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // Authoritative owned grammar for planning and scalar UTF-8 VM lowering.
 // Lexical options, class subtraction, captures and references are resolved
 // once. The VM consumes this tree and its capture catalog without reparsing.
-// Syntax failures return owned diagnostics. Unrepresentable class payloads
-// still decline to transitional construction/execution routing; those limits
-// remain ownership work, rather than new public pattern rejections.
+// Syntax failures return owned diagnostics. Class payloads use full scalar
+// endpoints and integer extents, with admitted storage and no 16-bit length cap.
 // Parsing lives in static locals over an explicit state record, so the debt
 // ceiling sees a single entry point.
 internal static class Utf8OwnedTreeParser
@@ -797,7 +796,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseClass(ref ParserState state, out Utf8TreeNode? node)
         {
             node = null;
-            var wire = new StringBuilder();
+            using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
             var remainingClosers = 0;
             // Subtraction is a single nested chain. Each segment is emitted
             // before its child, then all pending parent closers are consumed.
@@ -807,7 +806,7 @@ internal static class Utf8OwnedTreeParser
             while (true)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (!ParseClassSegment(ref state, wire, out var subtracted)) return false;
+                if (!ParseClassSegment(ref state, data, out var subtracted)) return false;
                 if (!subtracted) break;
                 remainingClosers++;
             }
@@ -820,12 +819,12 @@ internal static class Utf8OwnedTreeParser
                 remainingClosers--;
             }
 
-            node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, wire.ToString());
+            node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
             node.MatchCaseInsensitive = (state.Options & RegexOptions.IgnoreCase) != 0;
             return true;
         }
 
-        static bool ParseClassSegment(ref ParserState state, StringBuilder wire, out bool subtracted)
+        static bool ParseClassSegment(ref ParserState state, Utf8ConstructionBuffer<int> data, out bool subtracted)
         {
             subtracted = false;
             state.Position++;
@@ -901,8 +900,7 @@ internal static class Utf8OwnedTreeParser
                             }
                         }
 
-                        if (!AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior))
-                            return state.Fail(Utf8PatternError.ClassPayloadCapacity);
+                        AppendSegment(data, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
                         subtracted = true;
                         state.Position++;
                         return true;
@@ -970,14 +968,15 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            return AppendSegment(wire, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior)
-                || state.Fail(Utf8PatternError.ClassPayloadCapacity);
+            AppendSegment(data, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
+            return true;
         }
 
-        static bool AppendSegment(StringBuilder wire, bool negated, List<char> units,
+        static void AppendSegment(Utf8ConstructionBuffer<int> data, bool negated, List<char> units,
             List<int> scalarRanges, List<char> categories, bool fold, Utf8ScalarCaseBehavior behavior)
         {
-            var ranges = new List<(int Low, int High)>();
+            var owner = Utf8ConstructionScope.CurrentBudget;
+            using var ranges = Utf8ConstructionBuffer<(int Low, int High)>.Create(owner);
             for (var index = 0; index < units.Count; index += 2)
                 {
                 Utf8ConstructionScope.ChargeWork(1);
@@ -1025,58 +1024,26 @@ internal static class Utf8OwnedTreeParser
                     }
                 }
             }
-            Utf8ConstructionSort.Sort(CollectionsMarshal.AsSpan(ranges),
-                static (left, right) => left.Low.CompareTo(right.Low), Utf8ConstructionScope.CurrentBudget);
-            var merged = new List<(int Low, int High)>();
+            ranges.Sort(static (left, right) => left.Low.CompareTo(right.Low));
+            using var merged = Utf8ConstructionBuffer<(int Low, int High)>.Create(owner);
             foreach (var range in ranges)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (merged.Count != 0 && range.Low < merged[^1].High)
-                    merged[^1] = (merged[^1].Low, Math.Max(merged[^1].High, range.High));
+                if (merged.Count != 0 && range.Low < merged[merged.Count - 1].High)
+                    merged[merged.Count - 1] = (merged[merged.Count - 1].Low, Math.Max(merged[merged.Count - 1].High, range.High));
                 else merged.Add(range);
             }
-            var endpoints = new List<char>();
-            var wideEndpoints = new List<int>();
+            using var endpoints = Utf8ConstructionBuffer<int>.Create(owner);
             foreach (var range in merged)
             {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (range.Low >= 0xD800 && range.High <= 0xE000)
-                {
-                    wideEndpoints.Add(range.Low);
-                    wideEndpoints.Add(range.High);
-                    continue;
-                }
-                if (range.Low < 0x10000)
-                {
-                    endpoints.Add((char)range.Low);
-                    if (range.High < 0x10000) endpoints.Add((char)range.High);
-                }
-                if (range.High > 0x10000)
-                {
-                    wideEndpoints.Add(Math.Max(range.Low, 0x10000));
-                    wideEndpoints.Add(range.High);
-                }
+                owner.ChargeWork(1);
+                endpoints.Add(range.Low); endpoints.Add(range.High);
             }
-            if (wideEndpoints.Count != 0)
-            {
-                if (wideEndpoints.Count > char.MaxValue) return false;
-                Utf8OwnedCharClass.AddScalarRangePredicate(categories, wideEndpoints);
-            }
-            // Existing payload lengths remain bounded construction admission
-            // debt; endpoint values themselves now span the full scalar domain.
-            if (endpoints.Count > char.MaxValue || categories.Count > char.MaxValue) return false;
-            wire.Append(negated ? (char)1 : (char)0);
-            wire.Append((char)endpoints.Count);
-            wire.Append((char)categories.Count);
-            foreach (var endpoint in endpoints) {
-                Utf8ConstructionScope.ChargeWork(1);
-                wire.Append(endpoint);
-            }
-            foreach (var category in categories) {
-                Utf8ConstructionScope.ChargeWork(1);
-                wire.Append(category);
-            }
-            return true;
+            using var predicates = Utf8ConstructionBuffer<int>.Create(owner);
+            if (!Utf8ScalarClass.ImportCategories(CollectionsMarshal.AsSpan(categories), endpoints, predicates))
+                throw new InvalidOperationException("Invalid owned class predicate.");
+            data.Add(negated ? 1 : 0); data.Add(endpoints.Count); data.Add(predicates.Count);
+            data.AddRange(endpoints.Span); data.AddRange(predicates.Span);
         }
 
         static bool ShorthandRangeEndAhead(ref ParserState state)
@@ -1344,14 +1311,21 @@ internal static class Utf8OwnedTreeParser
                 return state.Fail(Utf8PatternError.InvalidProperty);
             }
 
-            Utf8ConstructionScope.ChargeWork((ulong)(state.Pattern.Length - open - 1));
-            var close = state.Pattern.IndexOf('}', open + 1);
-            if (close < 0)
+            // Charge only examined characters. Charging the remaining pattern
+            // at every property made repeated short properties quadratic.
+            var close = open + 1;
+            while (close < state.Pattern.Length)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                if (state.Pattern[close] == '}') break;
+                close++;
+            }
+            if (close == state.Pattern.Length)
             {
                 return state.Fail(Utf8PatternError.InvalidProperty);
             }
 
-            var name = state.Pattern.Substring(open + 1, close - open - 1);
+            var name = Utf8ConstructionScope.CurrentBudget.CopyText(state.Pattern.AsSpan(open + 1, close - open - 1));
             if (!TryResolvePropertyMembers(name, invert, units, categories))
             {
                 return state.Fail(Utf8PatternError.InvalidProperty);

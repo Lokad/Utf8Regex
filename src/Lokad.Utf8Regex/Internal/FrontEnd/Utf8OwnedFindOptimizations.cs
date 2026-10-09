@@ -136,15 +136,15 @@ internal static class Utf8OwnedFindOptimizations
         static ByteWidth Class(Utf8TreeNode node)
         {
             var owner = Utf8ConstructionScope.CurrentBudget;
-            if (node.Str is not { Length: >= 3 } wire) return new(0, null);
-            var ranges = (int)wire[1]; var categories = (int)wire[2];
-            if (wire.Length != 3 + ranges + categories || wire[0] != 0) return new(1, 4);
+            if (node.ScalarClass is not { } scalarClass) return new(0, null);
+            var data = scalarClass.Data;
+            var ranges = data[1]; var categories = data[2];
+            if (data.Length != 3 + ranges + categories || data[0] != 0 || categories != 0) return new(1, 4);
             var minimum = 4; var maximum = 0;
             for (var index = 0; index < ranges; index += 2)
             {
                 owner.ChargeWork(1);
-                var low = (int)wire[3 + index];
-                var high = index + 1 == ranges || wire[4 + index] == 0 ? 65536 : wire[4 + index];
+                var low = data[3 + index]; var high = data[4 + index];
                 var range = Range(low, high);
                 if (range.Maximum is null) return new(0, null);
                 if (node.MatchCaseInsensitive)
@@ -157,24 +157,6 @@ internal static class Utf8OwnedFindOptimizations
                     }
                 }
                 else { minimum = Math.Min(minimum, range.Minimum); maximum = Math.Max(maximum, range.Maximum.Value); }
-            }
-            var position = 3 + ranges;
-            while (position < wire.Length)
-            {
-                owner.ChargeWork(1);
-                if (wire[position++] != Utf8OwnedCharClass.ScalarRangePredicateCode || position == wire.Length) return new(1, 4);
-                var endpoints = wire[position++];
-                if ((endpoints & 1) != 0 || endpoints > (wire.Length - position) / 2) return new(0, null);
-                if (node.MatchCaseInsensitive) return new(1, 4);
-                for (var index = 0; index < endpoints; index += 2)
-                {
-                    owner.ChargeWork(1);
-                    var low = wire[position] | wire[position + 1] << 16;
-                    var high = wire[position + 2] | wire[position + 3] << 16; position += 4;
-                    var range = Range(low, high);
-                    if (range.Maximum is null) return new(0, null);
-                    minimum = Math.Min(minimum, range.Minimum); maximum = Math.Max(maximum, range.Maximum.Value);
-                }
             }
             return maximum == 0 ? new(0, null) : new(minimum, maximum);
         }

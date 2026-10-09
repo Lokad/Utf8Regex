@@ -412,6 +412,16 @@ including discarded parser intermediates, and releases tracking roots when its
 outer scope closes. Failed children restore the parent's object checkpoint and
 byte/depth loans; admitted creation work stays spent. This is conservative live
 construction capacity, not a retained-cache policy or process RSS bound.
+Core scalar classes use integer counts and full scalar range endpoints through
+the exclusive bound U+110000. Payloads larger than 65,535 entries do not decline
+owned matching or become syntax errors. Class data, merge/fold vectors, property
+name text, descriptors and optional native preparation projections share byte/work
+admission, including growth and final-copy overlap. The VM and scalar byte-width
+analysis consume the integer data. Existing qualified native preparation still
+uses a bounded class projection; unavailable projections decline only that native
+tree, while the authoritative scalar tree continues to serve operations. Retiring
+the projection and its consumers remains cleanup work. Initial class member lists,
+other lexical/IR objects and complete retained/cache policies remain uncovered.
 Python parser branch/sequence/class-item arrays, capture/open-group metadata,
 their collection/arena descriptors, and old/new growth and final-copy overlap
 share admission. Completed AST arrays and immutable metadata tables retain their

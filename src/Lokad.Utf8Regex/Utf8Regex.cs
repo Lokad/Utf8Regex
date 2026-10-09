@@ -150,9 +150,9 @@ public sealed partial class Utf8Regex
         var ownedSliceProgram = Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
-        // Syntax failures already have owned diagnostics. Unserved class
-        // representations still need transitional admission and metadata;
-        // this residual BCL construction is migration debt.
+        // Syntax failures already have owned diagnostics. This residual
+        // metadata construction for an absent owned tree is migration debt;
+        // class payload size no longer selects it.
         if (_sliceProgram is null && preparedRegex.SemanticRegex.RuntimeTree is null)
         {
             _ = _program.GroupNumbers.Value;

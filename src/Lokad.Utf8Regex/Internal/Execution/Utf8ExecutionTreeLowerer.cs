@@ -19,6 +19,10 @@ internal static class Utf8ExecutionTreeLowerer
             var frameIndex = frames.Count - 1;
             var frame = frames[frameIndex];
             var node = frame.Node;
+            // This tree supplies existing native preparation consumers. Their
+            // bounded class projection is optional; the authoritative scalar
+            // tree and VM remain available for every admitted large class.
+            if (node.ScalarClass is { NativeProjection: null }) return null;
             if (frame.NextChild < node.ChildCount)
             {
                 frames[frameIndex] = frame with { NextChild = frame.NextChild + 1 };

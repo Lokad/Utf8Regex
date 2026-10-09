@@ -1,10 +1,11 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-// Owned character-class wire queries over the canonical set payload:
+// Temporary native preparation queries over the bounded class projection:
 // negate flag, range length, category length, half-open range pairs,
 // category payload and chained subtraction segments. A final lone range
 // endpoint includes every unit through U+FFFF; zero paired upper bounds
-// likewise mean 65536. Wire facts and .NET matching are qualified separately.
+// likewise mean 65536. The scalar VM consumes Utf8ScalarClass integer data.
+// Retire these queries with their remaining native preparation consumers.
 internal static class Utf8OwnedCharClass
 {
     // A range predicate retains its negation over the scalar domain. Expanding
@@ -12,17 +13,6 @@ internal static class Utf8OwnedCharClass
     internal const char RangePredicateCode = (char)101;
     internal const char ScalarRangePredicateCode = (char)102;
     internal const string AnyScalarClass = "\u0000\u0000\u0006\u0066\u0002\u0000\u0000\u0000\u0011";
-
-    internal static void AddScalarRangePredicate(List<char> categories, IReadOnlyList<int> ranges)
-    {
-        categories.Add(ScalarRangePredicateCode);
-        categories.Add((char)ranges.Count);
-        foreach (var endpoint in ranges)
-        {
-            categories.Add((char)endpoint);
-            categories.Add((char)(endpoint >> 16));
-        }
-    }
 
     internal static void AddRangePredicate(List<char> categories, ReadOnlySpan<ushort> ranges, bool negated)
     {

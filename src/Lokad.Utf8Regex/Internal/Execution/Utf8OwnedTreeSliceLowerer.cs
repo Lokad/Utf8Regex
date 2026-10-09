@@ -84,7 +84,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.Notone:
                     return NotOne(node.Ch, foldCase, arena);
                 case Utf8TreeNodeKind.Set:
-                    return node.Str is { } set ? DecodeClass(set, foldCase, arena) : null;
+                    return node.ScalarClass is { } set ? DecodeClass(set, foldCase, arena) : null;
                 case Utf8TreeNodeKind.Multi:
                     if (node.Str is not { } text) return null;
                     var count = 0;
@@ -141,7 +141,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                             new Utf8SliceNode.LiteralNode(node.Ch, foldCase),
                         Utf8TreeNodeKind.Notoneloop or Utf8TreeNodeKind.Notonelazy or Utf8TreeNodeKind.Notoneloopatomic =>
                             NotOne(node.Ch, foldCase, arena),
-                        _ => node.Str is { } wire ? DecodeClass(wire, foldCase, arena) : null,
+                        _ => node.ScalarClass is { } loopSet ? DecodeClass(loopSet, foldCase, arena) : null,
                     };
                     if (atom is null) return null;
                     var compactRepeat = new Utf8SliceNode.RepeatNode(atom, node.M, node.N,
@@ -239,35 +239,36 @@ internal static class Utf8OwnedTreeSliceLowerer
             return new Utf8SliceNode.CategorySetNode(arena.Allocate<byte>(16, true), true, [], categories, foldCase);
         }
 
-        static Utf8SliceNode? DecodeClass(string wire, bool foldCase, Utf8ConstructionArena arena)
+        static Utf8SliceNode? DecodeClass(Utf8ScalarClass scalarClass, bool foldCase, Utf8ConstructionArena arena)
         {
-            if (wire == Utf8OwnedCharClass.AnyScalarClass) return new Utf8SliceNode.DotNode(true);
-            if (wire == "\u0001\u0002\u0000\n\v") return new Utf8SliceNode.DotNode(false);
+            var data = scalarClass.Data.AsSpan();
+            if (data.SequenceEqual([0, 2, 0, 0, 0x110000])) return new Utf8SliceNode.DotNode(true);
+            if (data.SequenceEqual([1, 2, 0, '\n', '\n' + 1])) return new Utf8SliceNode.DotNode(false);
             var position = 0;
             using var segments = new Utf8ConstructionBuffer<Utf8SliceNode>(arena.Budget);
-            while (position < wire.Length)
+            while (position < data.Length)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (wire.Length - position < 3) return null;
-                var negated = wire[position] != 0;
-                var rangeLength = (int)wire[position + 1];
-                var categoryLength = (int)wire[position + 2];
+                if (data.Length - position < 3) return null;
+                var negated = data[position] != 0;
+                var rangeLength = data[position + 1];
+                var categoryLength = data[position + 2];
                 position += 3;
-                if (rangeLength + categoryLength > wire.Length - position) return null;
+                if ((rangeLength & 1) != 0 || rangeLength < 0 || categoryLength < 0 ||
+                    (long)rangeLength + categoryLength > data.Length - position) return null;
                 using var ranges = new Utf8ConstructionBuffer<(int Low, int High)>(arena.Budget);
                 for (var index = 0; index < rangeLength; index += 2)
                 {
                     Utf8ConstructionScope.ChargeWork(1);
-                    var low = (int)wire[position + index];
-                    var high = index + 1 == rangeLength || wire[position + index + 1] == 0
-                        ? 65536 : wire[position + index + 1];
-                    if (high <= low) return null;
+                    var low = data[position + index];
+                    var high = data[position + index + 1];
+                    if (low < 0 || high > 0x110000 || high <= low) return null;
                     ranges.Add((low, high));
                 }
                 position += rangeLength;
                 using var categories = new Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember>(arena.Budget);
                 using var members = new Utf8ConstructionBuffer<Utf8SliceShorthand>(arena.Budget);
-                if (!DecodeCategories(wire.AsSpan(position, categoryLength), categories, members, arena)) return null;
+                if (!DecodeCategories(data.Slice(position, categoryLength), categories, members, arena)) return null;
                 position += categoryLength;
                 ranges.Sort(static (left, right) => left.Low.CompareTo(right.Low));
                 var mask = arena.Allocate<byte>(16, true);
@@ -313,7 +314,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                         if (hit != (((int)member & 1) != 0)) mask[value >> 3] |= (byte)(1 << (value & 7));
                     }
                 }
-                var shorthand = arena.Take(members, segments.Count != 0 || position < wire.Length);
+                var shorthand = arena.Take(members, segments.Count != 0 || position < data.Length);
                 segments.Add(categories.Count == 0
                     ? new Utf8SliceNode.SetNode(mask, negated, shorthand, foldCase)
                     : new Utf8SliceNode.CategorySetNode(mask, negated, shorthand, arena.Take(categories, true), foldCase));
@@ -328,49 +329,30 @@ internal static class Utf8OwnedTreeSliceLowerer
             ranges.Add(high);
         }
 
-        static bool DecodeCategories(ReadOnlySpan<char> encoded,
+        static bool DecodeCategories(ReadOnlySpan<int> encoded,
             Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember> categories,
             Utf8ConstructionBuffer<Utf8SliceShorthand> members, Utf8ConstructionArena arena)
         {
             for (var index = 0; index < encoded.Length; index++)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (encoded[index] == Utf8OwnedCharClass.ScalarRangePredicateCode)
-                {
-                    if (++index >= encoded.Length) return false;
-                    var length = encoded[index];
-                    if ((length & 1) != 0 || length > (encoded.Length - index - 1) / 2) return false;
-                    var ranges = arena.Allocate<int>(length, true);
-                    for (var range = 0; range < length; range++)
-                    {
-                        Utf8ConstructionScope.ChargeWork(1);
-                        var low = encoded[++index];
-                        ranges[range] = low | encoded[++index] << 16;
-                    }
-                    for (var range = 0; range < length; range += 2)
-                        {
-                        Utf8ConstructionScope.ChargeWork(1);
-                        if (ranges[range] < 0 || ranges[range] >= ranges[range + 1] || ranges[range + 1] > 0x110000) return false;
-                    }
-                    categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarRanges(ranges), false));
-                    continue;
-                }
                 if (encoded[index] == Utf8OwnedCharClass.RangePredicateCode)
                 {
                     if (index + 2 >= encoded.Length) return false;
                     var negated = encoded[++index] != 0;
                     var length = encoded[++index];
-                    if (length > encoded.Length - index - 1) return false;
-                    var ranges = arena.Allocate<int>(length + (length & 1), true);
+                    if (length < 0 || (length & 1) != 0 || length > encoded.Length - index - 1) return false;
+                    var ranges = arena.Allocate<int>(length, true);
                     for (var range = 0; range < length; range++) {
                         Utf8ConstructionScope.ChargeWork(1);
                         ranges[range] = encoded[++index];
                     }
-                    if ((length & 1) != 0) ranges[^1] = 0x10000;
+                    for (var range = 0; range < length; range += 2)
+                        if (ranges[range] < 0 || ranges[range] >= ranges[range + 1] || ranges[range + 1] > 0x110000) return false;
                     categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarRanges(ranges), negated));
                     continue;
                 }
-                var code = (short)encoded[index];
+                var code = encoded[index];
                 if (code is 100 or -100)
                 {
                     members.Add(code > 0 ? Utf8SliceShorthand.Space : Utf8SliceShorthand.NonSpace);
@@ -388,7 +370,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     for (var member = index + 1; member < close; member++)
                     {
                         Utf8ConstructionScope.ChargeWork(1);
-                        var value = (short)encoded[member];
+                        var value = encoded[member];
                         var number = Math.Abs((int)value);
                         if (number is < 1 or > 30) return false;
                         if (value > 0) positive |= 1u << (number - 1);

@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal sealed class Utf8TreeNode
 {
     private readonly record struct ConstructionState(object? Children, Utf8TreeNode? Parent,
-        Utf8TreeNodeKind Kind, RegexOptions Options, bool MatchCaseInsensitive, string? Str, char Ch, int M, int N);
+        Utf8TreeNodeKind Kind, RegexOptions Options, bool MatchCaseInsensitive, object? Payload, char Ch, int M, int N);
 
     public object? Children;
 
@@ -20,7 +20,7 @@ internal sealed class Utf8TreeNode
         Kind = state.Kind;
         Options = state.Options;
         MatchCaseInsensitive = state.MatchCaseInsensitive;
-        Str = state.Str;
+        _payload = state.Payload;
         Ch = state.Ch;
         M = state.M;
         N = state.N;
@@ -35,6 +35,9 @@ internal sealed class Utf8TreeNode
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, string? str) =>
         Create(kind, options, '\0', str, 0, 0, null, null, (options & RegexOptions.IgnoreCase) != 0);
 
+    internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, Utf8ScalarClass scalarClass) =>
+        CreatePayload(kind, options, '\0', scalarClass, 0, 0, null, null, (options & RegexOptions.IgnoreCase) != 0);
+
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, int m, int n) =>
         Create(kind, options, '\0', null, m, n, null, null, (options & RegexOptions.IgnoreCase) != 0);
 
@@ -45,8 +48,18 @@ internal sealed class Utf8TreeNode
         string? str, int m, int n, object? children, Utf8TreeNode? parent, bool matchCaseInsensitive)
     {
         using var scope = Utf8ConstructionScope.Enter();
+        object? payload = IsSet(kind) && str is not null ? (object?)Utf8ScalarClass.TryImport(str) ?? str : str;
+        var node = CreatePayload(kind, options, ch, payload, m, n, children, parent, matchCaseInsensitive);
+        scope.Complete();
+        return node;
+    }
+
+    private static Utf8TreeNode CreatePayload(Utf8TreeNodeKind kind, RegexOptions options, char ch,
+        object? payload, int m, int n, object? children, Utf8TreeNode? parent, bool matchCaseInsensitive)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
         var node = scope.Budget.AllocateObject(new ConstructionState(children, parent, kind, options,
-            matchCaseInsensitive, str, ch, m, n), static state => new Utf8TreeNode(state));
+            matchCaseInsensitive, payload, ch, m, n), static state => new Utf8TreeNode(state));
         scope.Complete();
         return node;
     }
@@ -59,7 +72,16 @@ internal sealed class Utf8TreeNode
     // consumes a partially expanded set and clears IgnoreCase on that node.
     internal bool MatchCaseInsensitive { get; set; }
 
-    public string? Str { get; set; }
+    private object? _payload;
+    internal Utf8ScalarClass? ScalarClass => _payload as Utf8ScalarClass;
+    public string? Str
+    {
+        get => _payload is Utf8ScalarClass scalarClass ? scalarClass.NativeProjection : _payload as string;
+        set => _payload = IsSet(Kind) && value is not null ? (object?)Utf8ScalarClass.TryImport(value) ?? value : value;
+    }
+
+    private static bool IsSet(Utf8TreeNodeKind kind) => kind is Utf8TreeNodeKind.Set or
+        Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic;
 
     public char Ch { get; set; }
 
