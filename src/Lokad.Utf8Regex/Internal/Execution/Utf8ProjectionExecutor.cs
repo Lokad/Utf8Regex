@@ -13,15 +13,27 @@ internal static class Utf8ProjectionExecutor
         return new Utf8ValueMatch(true, true, indexInBytes, lengthInBytes, indexInBytes, lengthInBytes);
     }
 
-    public static Utf8ValueMatch ProjectFallbackVerification(in Utf8FallbackVerificationResult verification)
+    internal static Utf8ExecutionLimitKind TryProjectScalarVerification(ReadOnlySpan<byte> input,
+        Utf8ValidationResult validation, in Utf8ScalarVerificationResult verification,
+        ref Utf8SliceInvocation invocation, out Utf8ValueMatch match)
     {
-        return new Utf8ValueMatch(
-            verification.Success,
-            verification.IsByteAligned,
-            verification.IndexInUtf16,
-            verification.LengthInUtf16,
-            verification.IndexInBytes,
-            verification.LengthInBytes);
+        match = Utf8ValueMatch.NoMatch;
+        if (!verification.Success) return Utf8ExecutionLimitKind.None;
+        var index = verification.IndexInBytes;
+        var length = verification.LengthInBytes;
+        if (!validation.IsAscii)
+        {
+            var breach = Utf8Validation.TryValidate(input[..index], ref invocation, out var prefix);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            breach = Utf8Validation.TryValidate(input.Slice(index, length), ref invocation, out var extent);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            index = prefix.Utf16Length;
+            length = extent.Utf16Length;
+        }
+        var final = invocation.TryChargeInputStep();
+        if (final != Utf8ExecutionLimitKind.None) return final;
+        match = new(true, true, index, length, verification.IndexInBytes, verification.LengthInBytes);
+        return Utf8ExecutionLimitKind.None;
     }
 
     public static Utf8ValueMatch ProjectFallbackRegexMatch(ReadOnlySpan<byte> input, Match match, Utf8BoundaryMap boundaryMap)

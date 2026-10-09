@@ -105,11 +105,10 @@ public sealed class Utf8VerifierProgramAdmissionTests
             Assert.Equal(fields.Select(field => field.FieldType.FullName).Order(), stateFields.Select(field => field.FieldType.FullName).Order());
             Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
         }
-        Assert.Equal(2, typeof(Utf8VerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length);
+        Assert.Equal(3, typeof(Utf8VerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length);
         Assert.Single(typeof(Utf8StructuralVerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
         foreach (var type in new[] { typeof(Utf8NoStructuralVerifierRuntime), typeof(Utf8AsciiStructuralVerifierRuntime),
-            typeof(Utf8ByteSafeLinearVerifierRuntime), typeof(Utf8ByteSafeLazyDfaVerifierRuntime),
-            typeof(Utf8StartFallbackCandidateVerifier), typeof(Utf8BoundedSliceFallbackCandidateVerifier) })
+            typeof(Utf8ByteSafeLinearVerifierRuntime), typeof(Utf8ByteSafeLazyDfaVerifierRuntime) })
             Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
     }
 
@@ -212,6 +211,22 @@ public sealed class Utf8VerifierProgramAdmissionTests
 
 internal static class Utf8VerifierTestPlans
 {
+    internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
+        => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
+            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, p.StructuralLinearProgram, p.SimplePatternPlan,
+                search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
+            search.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, p.StructuralVerifier,
+            p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
+            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
+
+    internal static Utf8PreparedRegex WithFallbackVerifier(Utf8PreparedRegex p, Utf8FallbackVerifierPlan fallback)
+        => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
+            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, fallback, p.StructuralVerifier,
+            p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
+            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
+
     internal static Utf8PreparedRegex WithStructuralVerifier(Utf8StructuralVerifierPlan structuralVerifier)
     {
         var p = Utf8FrontEnd.Compile("a", RegexOptions.CultureInvariant);

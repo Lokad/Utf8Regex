@@ -237,8 +237,7 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime
     private readonly record struct ConstructionState(
         Utf8PreparedRegex RegexPlan,
         Utf8VerifierRuntime VerifierRuntime,
-        Utf8StructuralSearchPlan[] CandidatePlans,
-        Utf8ExecutionProgram Program);
+        Utf8StructuralSearchPlan[] CandidatePlans);
 
     internal static Utf8CompiledFallbackCompiledEngineRuntime Create(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
     {
@@ -250,9 +249,7 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime
             var regexPlan = plan;
             var verifierRuntime = verifier;
             var candidatePlans = regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [];
-            var program = regexPlan.ExecutionProgram
-                ?? throw new InvalidOperationException("Compiled fallback requires an execution program.");
-            var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime, candidatePlans, program),
+            var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime, candidatePlans),
                 static state => new Utf8CompiledFallbackCompiledEngineRuntime(state));
             scope.Complete();
             return result;

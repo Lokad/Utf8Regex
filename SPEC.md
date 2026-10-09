@@ -431,6 +431,22 @@ payloads keep independent loans. Their shared immutable empty cursor state is
 borrowed. Failed preparation restores parent byte/depth/object loans without
 refunding work. These covered acquisitions do not establish complete retained
 cache policies or retire the remaining production BCL consumers.
+Owned candidate verification borrows the cached scalar program and executes on
+the complete validated subject. Conservative candidate ends never truncate
+lookaround/anchor context; successful starts and ends are scalar byte boundaries.
+Verification results retain only byte ranges. Requested UTF-16 match coordinates
+are derived separately under the same invocation, without decoding the subject.
+Capture scratch is admitted before acquisition and released on success, miss,
+breach or cancellation; work, deadline, token and contiguous-anchor origin remain
+with the caller across candidates. Search-guided and compiled candidate matching
+no longer use BCL verification, conditional bypass or count demotion. The decoded
+bounded verifier, duplicate forwarding/program/decoded-state plumbing and demotion
+threshold/route are retired. The search-guided emitter passes the same invocation
+and cached scalar verifier through its generated loop; it retains no decoded
+subject or independent BCL verification path.
+Other production BCL consumers and factory payloads,
+candidate-portfolio search work/storage admission and complete shared policies
+remain uncovered; this does not complete their removal or R07 qualification.
 Python parser branch/sequence/class-item arrays, capture/open-group metadata,
 their collection/arena descriptors, and old/new growth and final-copy overlap
 share admission. Completed AST arrays and immutable metadata tables retain their

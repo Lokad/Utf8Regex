@@ -897,68 +897,44 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime : Ut
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldBypassIsMatch(_regexPlan))
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectRegex);
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
-        }
-
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        invocation.AnchorOriginByte = 0;
         if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget) &&
             _emittedBackend is { } emittedBackend)
-        {
-            return emittedBackend.IsMatch(input);
-        }
+            return emittedBackend.IsMatch(input, validation, ref invocation);
 
         var probe = GetProbeValidation(input, validation);
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
-        return TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out _, out _);
+        return TryFindNextVerifiedMatch(input, probe, 0, ref invocation, out _, out _);
     }
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        invocation.AnchorOriginByte = 0;
         if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget) &&
             _emittedBackend is { } emittedBackend)
-        {
-            return emittedBackend.Count(input);
-        }
+            return emittedBackend.Count(input, validation, ref invocation);
 
         var probe = GetProbeValidation(input, validation);
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
         var count = 0;
         var startIndex = 0;
-        var verifierCount = 0;
-        var verifierInvocations = 0;
         while ((uint)startIndex <= (uint)input.Length &&
             TryFindNextVerifiedMatch(
                 input,
                 probe,
                 startIndex,
-                ref boundaryMap,
-                ref decoded,
-                out var currentVerifierInvocations,
+                ref invocation,
+                out _,
                 out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
-            verifierCount++;
-            verifierInvocations += currentVerifierInvocations;
-            if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCount(verifierCount))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuidedDemoted);
-                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
-            }
-
-            if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCountByInvocations(verifierInvocations))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuidedDemoted);
-                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
-            }
-
-            startIndex = verification.IndexInBytes + Math.Max(verification.LengthInBytes, 1);
+            invocation.AnchorOriginByte = verification.IndexInBytes + verification.LengthInBytes;
+            startIndex = verification.LengthInBytes == 0
+                ? Utf8SliceRunner.AdvancePastScalar(input, verification.IndexInBytes, false)
+                : verification.IndexInBytes + verification.LengthInBytes;
         }
 
         return count;
@@ -967,40 +943,35 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime : Ut
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         var probe = GetProbeValidation(input, validation);
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
-        if (!TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out _, out var verification))
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        invocation.AnchorOriginByte = 0;
+        if (!TryFindNextVerifiedMatch(input, probe, 0, ref invocation, out _, out var verification))
         {
             return Utf8ValueMatch.NoMatch;
         }
 
         Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
-        return new Utf8ValueMatch(
-            verification.Success,
-            verification.IsByteAligned,
-            verification.IndexInUtf16,
-            verification.LengthInUtf16,
-            verification.IndexInBytes,
-            verification.LengthInBytes);
+        var breach = Utf8ProjectionExecutor.TryProjectScalarVerification(input, probe, verification, ref invocation, out var match);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Scalar match projection exceeded {breach}.");
+        return match;
     }
 
     private bool TryFindNextVerifiedMatch(
         ReadOnlySpan<byte> input,
         Utf8ValidationResult probe,
         int startIndex,
-        ref Utf8BoundaryMap? boundaryMap,
-        ref string? decoded,
+        ref Utf8SliceInvocation invocation,
         out int verifierInvocations,
-        out Utf8FallbackVerificationResult verification)
+        out Utf8ScalarVerificationResult verification)
     {
         return Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(
-            _regexPlan.SearchPlan,
+            _regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [],
             _verifierRuntime,
             input,
             probe,
             startIndex,
-            ref boundaryMap,
-            ref decoded,
+            ref invocation,
             out verifierInvocations,
             out verification);
     }
@@ -1012,14 +983,12 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime : Utf8Co
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8StructuralSearchPlan[] _candidatePlans;
-    private readonly Utf8ExecutionProgram _program;
 
     private Utf8CompiledFallbackCompiledEngineRuntime(ConstructionState state)
     {
         _regexPlan = state.RegexPlan;
         _verifierRuntime = state.VerifierRuntime;
         _candidatePlans = state.CandidatePlans;
-        _program = state.Program;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -1036,10 +1005,11 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime : Utf8Co
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackCompiled);
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        invocation.AnchorOriginByte = 0;
         var probe = GetProbeValidation(input, validation);
-        return TryFindNextMatch(input, probe, 0, ref boundaryMap, ref decoded, budget, out _);
+        return Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_candidatePlans, _verifierRuntime,
+            input, probe, 0, ref invocation, out _, out _);
     }
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
@@ -1047,14 +1017,18 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime : Utf8Co
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackCompiled);
         var count = 0;
         var startIndex = 0;
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        invocation.AnchorOriginByte = 0;
         var probe = GetProbeValidation(input, validation);
         while ((uint)startIndex <= (uint)input.Length &&
-               TryFindNextMatch(input, probe, startIndex, ref boundaryMap, ref decoded, budget, out var match))
+               Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_candidatePlans, _verifierRuntime,
+                   input, probe, startIndex, ref invocation, out _, out var match))
         {
             count++;
-            startIndex = match.IndexInBytes + Math.Max(match.LengthInBytes, 1);
+            invocation.AnchorOriginByte = match.IndexInBytes + match.LengthInBytes;
+            startIndex = match.LengthInBytes == 0
+                ? Utf8SliceRunner.AdvancePastScalar(input, match.IndexInBytes, false)
+                : match.IndexInBytes + match.LengthInBytes;
         }
 
         return count;
@@ -1062,28 +1036,26 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime : Utf8Co
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        return Utf8CompiledFallbackMatchProjection.Match(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        invocation.AnchorOriginByte = 0;
+        var probe = GetProbeValidation(input, validation);
+        return TryFindNextMatch(input, probe, 0, ref invocation, out var match) ? match : Utf8ValueMatch.NoMatch;
     }
 
     private bool TryFindNextMatch(
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         int startIndex,
-        ref Utf8BoundaryMap? boundaryMap,
-        ref string? decoded,
-        Utf8ExecutionDeadline budget,
+        ref Utf8SliceInvocation invocation,
         out Utf8ValueMatch match)
     {
         return Utf8CompiledFallbackMatchRouter.TryFindNextMatch(
             _candidatePlans,
             _verifierRuntime,
-            _program,
             input,
             validation,
             startIndex,
-            ref boundaryMap,
-            ref decoded,
-            budget,
+            ref invocation,
             out match);
     }
 }

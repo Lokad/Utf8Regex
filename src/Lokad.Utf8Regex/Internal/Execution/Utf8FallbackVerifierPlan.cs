@@ -46,12 +46,8 @@ internal static class Utf8FallbackVerifierRuntimeFactory
                 ? new Lazy<Regex>(source.CreateAnchored)
                 : null;
             var result = budget.AllocateObject<Utf8FallbackCandidateVerifier.ConstructionState, Utf8FallbackCandidateVerifier>(
-                new(plan, fallbackRegex, anchoredFallbackRegex, options), static state => state.Plan.Mode switch
-                {
-                    Utf8FallbackVerifierMode.AnchoredSliceRegex when state.AnchoredFallbackRegex is not null
-                        => new Utf8BoundedSliceFallbackCandidateVerifier(state),
-                    _ => new Utf8StartFallbackCandidateVerifier(state),
-                });
+                new(plan, fallbackRegex, anchoredFallbackRegex, options),
+                static state => new Utf8FallbackCandidateVerifier(state));
             scope.Complete();
             return result;
         }

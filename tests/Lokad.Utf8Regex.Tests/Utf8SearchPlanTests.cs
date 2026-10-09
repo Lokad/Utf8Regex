@@ -501,7 +501,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void EmittedSearchGuidedFallbackMatchesInterpreterForIsMatchAndCount()
+    public void SearchGuidedOwnedRuntimeMatchesTheOriginalHitAndMissSubjects()
     {
         var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
@@ -509,8 +509,16 @@ public sealed class Utf8SearchPlanTests
         var hit = Encoding.UTF8.GetBytes("zzza123bzzz");
         var miss = Encoding.UTF8.GetBytes("zzza123czzz");
 
+        Assert.False(regex.Inspection.PreparedRegex.SearchPlan.FirstMatchOperation.Projection.HasValue);
         Assert.False(Utf8EmittedSearchGuidedFallback.TryCreate(regex.Inspection.PreparedRegex, verifierRuntime, out var backend));
         Assert.Null(backend);
+        var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.SearchGuidedFallback,
+            Utf8CompiledExecutionBackend.EmittedInstruction), analysis, verifierRuntime, RegexOptions.CultureInvariant);
+        Assert.True(runtime.IsMatch(hit, Utf8Validation.Validate(hit), Utf8ExecutionDeadline.Infinite));
+        Assert.Equal(1, runtime.Count(hit, Utf8Validation.Validate(hit), Utf8ExecutionDeadline.Infinite));
+        Assert.False(runtime.IsMatch(miss, Utf8Validation.Validate(miss), Utf8ExecutionDeadline.Infinite));
+        Assert.Equal(0, runtime.Count(miss, Utf8Validation.Validate(miss), Utf8ExecutionDeadline.Infinite));
+        Assert.False(verifierRuntime.FallbackCandidateVerifier.IsFallbackRegexCreated);
     }
 
     [Fact]
@@ -1040,7 +1048,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void BoundedFallbackVerificationReusesOneDecodedUnicodeSubject()
+    public void BoundedScalarVerificationReusesOnePreparedUnicodeProgram()
     {
         var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
         var validation = Utf8Validation.Validate(input);
@@ -1048,31 +1056,32 @@ public sealed class Utf8SearchPlanTests
             Utf8FallbackVerifierMode.AnchoredSliceRegex,
             requiresCandidateEndCoverage: true,
             requiresTrailingAnchorCoverage: false);
-        var verifier = Utf8FallbackVerifierRuntimeFactory.Create(
-            plan,
-            "(foo)\\1",
-            RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout);
-        Utf8BoundaryMap? map = null;
-        string? decoded = null;
+        var prepared = Utf8VerifierTestPlans.WithFallbackVerifier(
+            Utf8FrontEnd.Compile("(foo)\\1", RegexOptions.CultureInvariant), plan);
+        var verifier = Utf8VerifierRuntime.Create(prepared, "(foo)\\1", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
 
-        Assert.True(verifier.TryVerify(
+        Assert.Equal(Utf8ExecutionLimitKind.None, verifier.TryVerifyCandidate(
             input,
             Utf8StructuralCandidate.Start(2, 8, 6, 0),
             validation,
-            ref map,
-            ref decoded,
+            ref invocation,
             out var first));
-        var sharedDecoded = decoded;
-        Assert.True(verifier.TryVerify(
+        Assert.True(first.Success);
+        var spent = invocation.Budget.Steps;
+        Assert.Equal(Utf8ExecutionLimitKind.None, verifier.TryVerifyCandidate(
             input,
             Utf8StructuralCandidate.Start(10, 16, 6, 0),
             validation,
-            ref map,
-            ref decoded,
+            ref invocation,
             out var second));
 
-        Assert.Same(sharedDecoded, decoded);
+        Assert.True(second.Success);
+        Assert.True(invocation.Budget.Steps > spent);
+        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
+        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Assert.False(verifier.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
         Assert.Equal(2, first.IndexInBytes);
         Assert.Equal(10, second.IndexInBytes);
     }

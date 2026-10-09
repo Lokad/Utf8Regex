@@ -3,16 +3,20 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed class Utf8VerifierRuntime
+internal sealed partial class Utf8VerifierRuntime
 {
     private readonly record struct ConstructionState(
         Utf8StructuralVerifierRuntime StructuralVerifierRuntime,
-        Utf8FallbackCandidateVerifier FallbackCandidateVerifier);
+        Utf8FallbackCandidateVerifier FallbackCandidateVerifier,
+        Utf8PreparedRegex PreparedRegex);
+
+    private readonly Utf8PreparedRegex _preparedRegex;
 
     private Utf8VerifierRuntime(ConstructionState state)
     {
         StructuralVerifierRuntime = state.StructuralVerifierRuntime;
         FallbackCandidateVerifier = state.FallbackCandidateVerifier;
+        _preparedRegex = state.PreparedRegex;
     }
 
     public Utf8StructuralVerifierPlan StructuralVerifierPlan => StructuralVerifierRuntime.Plan;
@@ -30,7 +34,7 @@ internal sealed class Utf8VerifierRuntime
         {
             var structural = Utf8StructuralVerifierRuntimeFactory.Create(regexPlan);
             var fallback = Utf8FallbackVerifierRuntimeFactory.Create(regexPlan.FallbackVerifier, pattern, options, matchTimeout);
-            var result = budget.AllocateObject(new ConstructionState(structural, fallback),
+            var result = budget.AllocateObject(new ConstructionState(structural, fallback, regexPlan),
                 static state => new Utf8VerifierRuntime(state));
             scope.Complete();
             return result;

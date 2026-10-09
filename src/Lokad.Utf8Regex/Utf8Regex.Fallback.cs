@@ -805,10 +805,10 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
     {
-        var validation = Utf8InputAnalyzer.ValidateOnly(input);
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
-        if (!Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchOperation, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out _))
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+        var validation = Utf8Validation.Validate(input, ref invocation);
+        invocation.AnchorOriginByte = 0;
+        if (!Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackSearch.CandidatePlans ?? [], _verifierRuntime, input, validation, 0, ref invocation, out _, out _))
         {
             return false;
         }
@@ -819,17 +819,20 @@ public sealed partial class Utf8Regex
 
     private int CountFallbackViaSearchStarts(ReadOnlySpan<byte> input)
     {
-        var validation = Utf8InputAnalyzer.ValidateOnly(input);
-        Utf8BoundaryMap? boundaryMap = null;
-        string? decoded = null;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+        var validation = Utf8Validation.Validate(input, ref invocation);
+        invocation.AnchorOriginByte = 0;
         var count = 0;
         var startIndex = 0;
         while ((uint)startIndex <= (uint)input.Length &&
-               Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.CountOperation, _verifierRuntime, input, validation, startIndex, ref boundaryMap, ref decoded, out var verification))
+               Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackSearch.CandidatePlans ?? [], _verifierRuntime, input, validation, startIndex, ref invocation, out _, out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
-            startIndex = verification.IndexInBytes + Math.Max(verification.LengthInBytes, 1);
+            invocation.AnchorOriginByte = verification.IndexInBytes + verification.LengthInBytes;
+            startIndex = verification.LengthInBytes == 0
+                ? Utf8SliceRunner.AdvancePastScalar(input, verification.IndexInBytes, false)
+                : verification.IndexInBytes + verification.LengthInBytes;
         }
 
         return count;
