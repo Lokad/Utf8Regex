@@ -382,11 +382,6 @@ internal static partial class BenchmarkInspectReporter
 
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
         {
-            MeasureUtf8CaseLane("FallbackOrdinary", samples, iterations, () =>
-                context.Utf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
-            MeasureUtf8CaseLane("FallbackCompiled", samples, iterations, () =>
-                context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
-
             var nativeOrdinaryLength = context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
                 context.InputBytes,
                 context.Replacement);
@@ -639,9 +634,7 @@ internal static partial class BenchmarkInspectReporter
 
         var expectedSplitCount = CountUtf8Splits(context.Utf8Regex, context.InputBytes);
         if (context.Utf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes) != expectedSplitCount ||
-            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes) != expectedSplitCount ||
-            context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes) != expectedSplitCount ||
-            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes) != expectedSplitCount)
+            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes) != expectedSplitCount)
         {
             throw new InvalidOperationException("UTF-8 Split diagnostic routes disagree on the number of returned values.");
         }
@@ -650,10 +643,6 @@ internal static partial class BenchmarkInspectReporter
             context.Utf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
         MeasureUtf8CaseLane("NativeCountCompiled", samples, iterations, () =>
             context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
-        MeasureUtf8CaseLane("FallbackCountOrdinary", samples, iterations, () =>
-            context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
-        MeasureUtf8CaseLane("FallbackCountCompiled", samples, iterations, () =>
-            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
         MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
             ExecuteValidationOnly(context.InputBytes));
         if (context.Utf8Regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } literal)
@@ -2300,8 +2289,6 @@ internal static partial class BenchmarkInspectReporter
             {
                 Measure("PrimitiveCount", 5, iterations, () => primitive.Count(inputBytes));
             }
-            Measure("Utf8Fallback", 5, iterations, () => utf8Regex.Inspection.DebugCountSplitsViaFallback(inputBytes));
-            Measure("CompiledFallback", 5, iterations, () => utf8Compiled.Inspection.DebugCountSplitsViaFallback(inputBytes));
             Measure("DecodeThenRegex", 5, iterations, () => CountRegexSplitValues(regex, Encoding.UTF8.GetString(inputBytes)));
             Measure("DecodeThenCompiledRegex", 5, iterations, () => CountRegexSplitValues(compiledRegex, Encoding.UTF8.GetString(inputBytes)));
             Measure("PredecodedRegex", 5, iterations, () => CountRegexSplitValues(regex, input));
@@ -2501,7 +2488,6 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("LineWalkModel", iterations, context.ExecuteImportLineWalkModel);
         }
-        Measure("FallbackDirectCount", iterations, context.ExecuteUtf8CountFallbackDirect);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
@@ -2600,7 +2586,6 @@ internal static partial class BenchmarkInspectReporter
         Measure("FallbackCandidates", iterations, context.ExecuteUtf8CountFallbackCandidates);
         Measure("FallbackBoundaryCandidates", iterations, context.ExecuteUtf8CountFallbackBoundaryCandidates);
         Measure("FallbackVerifiedCount", iterations, context.ExecuteUtf8CountFallbackVerified);
-        Measure("FallbackDirectCount", iterations, context.ExecuteUtf8CountFallbackDirect);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
@@ -3306,7 +3291,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("FallbackCandidates", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackCandidates(context.InputBytes));
             Measure("FallbackBoundaryCandidates", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackBoundaryCandidates(context.InputBytes));
             Measure("FallbackVerifiedCount", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackViaSearchStarts(context.InputBytes));
-            Measure("FallbackDirectCount", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackDirect(context.InputBytes));
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.IsMatch)
         {
@@ -3375,8 +3359,6 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 return context.InputBytes.Length;
             });
-            Measure("FallbackReplace", iterations, () => context.Utf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
-            Measure("CompiledFallbackReplace", iterations, () => context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
             Measure("NativeReplace", iterations, () => context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
             Measure("CompiledNativeReplace", iterations, () => context.CompiledUtf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
         }
@@ -3393,8 +3375,6 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 return context.InputBytes.Length;
             });
-            Measure("FallbackSplit", iterations, () => context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
-            Measure("CompiledFallbackSplit", iterations, () => context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
             Measure("NativeSplit", iterations, () => context.Utf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
             Measure("CompiledNativeSplit", iterations, () => context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
         }
@@ -3408,14 +3388,6 @@ internal static partial class BenchmarkInspectReporter
         if (context.Operation == LokadPublicBenchmarkOperation.Replace)
         {
             Measure(
-                "FallbackReplaceAfterApi",
-                iterations,
-                () => context.Utf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
-            Measure(
-                "CompiledFallbackReplaceAfterApi",
-                iterations,
-                () => context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
-            Measure(
                 "NativeReplaceAfterApi",
                 iterations,
                 () => context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
@@ -3426,14 +3398,6 @@ internal static partial class BenchmarkInspectReporter
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.Split)
         {
-            Measure(
-                "FallbackSplitAfterApi",
-                iterations,
-                () => context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
-            Measure(
-                "CompiledFallbackSplitAfterApi",
-                iterations,
-                () => context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
             Measure(
                 "NativeSplitAfterApi",
                 iterations,
@@ -6843,21 +6807,13 @@ internal static partial class BenchmarkInspectReporter
             throw new InvalidOperationException("Replace benchmark routes do not produce equivalent UTF-8 output.");
         }
 
-        var fallbackOrdinaryLength = context.Utf8Regex.Inspection.DebugReplaceViaFallback(
-            context.InputBytes,
-            context.Replacement);
-        var fallbackCompiledLength = context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(
-            context.InputBytes,
-            context.Replacement);
         var nativeOrdinaryLength = context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
             context.InputBytes,
             context.Replacement);
         var nativeCompiledLength = context.CompiledUtf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
             context.InputBytes,
             context.Replacement);
-        if (fallbackOrdinaryLength != expected.Length ||
-            fallbackCompiledLength != expected.Length ||
-            (nativeOrdinaryLength >= 0 && nativeOrdinaryLength != expected.Length) ||
+        if ((nativeOrdinaryLength >= 0 && nativeOrdinaryLength != expected.Length) ||
             (nativeCompiledLength >= 0 && nativeCompiledLength != expected.Length))
         {
             throw new InvalidOperationException("Replace benchmark diagnostic routes do not produce equivalent UTF-8 output lengths.");

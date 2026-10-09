@@ -183,11 +183,6 @@ public sealed partial class Utf8Regex
         return CountFallbackViaSearchStarts(input);
     }
 
-    private int DebugCountFallbackDirect(ReadOnlySpan<byte> input)
-    {
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
-    }
-
     private Utf8ValueMatch DebugMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
         if (RejectsByRequiredPrefilter(input))
@@ -432,24 +427,6 @@ public sealed partial class Utf8Regex
         return splitCount;
     }
 
-    private int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count)
-    {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        var enumerator = new Utf8ValueSplitEnumerator(
-            input,
-            subject.GetDecodedString(),
-            _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-            count,
-            subject.BoundaryMap);
-        var splitCount = 0;
-        foreach (var _ in enumerator)
-        {
-            splitCount++;
-        }
-
-        return splitCount;
-    }
-
     private string DebugLiteralFamilyCaptureMapSummary()
     {
         if (_literalFamilyCaptureMap is not { } map)
@@ -469,15 +446,6 @@ public sealed partial class Utf8Regex
         }
 
         return "whole=[" + string.Join(",", map.WholeMatchGroups) + "];branches=[" + branches.ToString() + "]";
-    }
-
-    private int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement)
-    {
-        Utf8Validation.ThrowIfInvalidOnly(input);
-        return Encoding.UTF8.GetBytes(
-            _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacement)).Length;
     }
 
     private int DebugReplaceViaNativeTextOperations(ReadOnlySpan<byte> input, string replacementText)
@@ -648,9 +616,6 @@ public sealed partial class Utf8Regex
         public int DebugCountFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
             _owner.DebugCountFallbackViaSearchStarts(input);
 
-        public int DebugCountFallbackDirect(ReadOnlySpan<byte> input) =>
-            _owner.DebugCountFallbackDirect(input);
-
         public Utf8ValueMatch DebugMatchViaCompiledEngine(
             ReadOnlySpan<byte> input,
             Utf8ValidationResult validation) =>
@@ -808,15 +773,6 @@ public sealed partial class Utf8Regex
 
         public int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input, int count) =>
             _owner.DebugCountSplitsViaCompiledEngine(input, count);
-
-        public int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input) =>
-            _owner.DebugCountSplitsViaFallback(input, int.MaxValue);
-
-        public int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count) =>
-            _owner.DebugCountSplitsViaFallback(input, count);
-
-        public int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement) =>
-            _owner.DebugReplaceViaFallback(input, replacement);
 
         public int DebugReplaceViaNativeTextOperations(
             ReadOnlySpan<byte> input,

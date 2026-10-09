@@ -245,12 +245,14 @@ public sealed class Utf8DeterministicCursorInvocationTests
     public void ExhaustedNativeCursorKeepsConstantWorkAndChecksTokenAndDeadline(string pattern, bool compiled, bool matches, bool expire)
     {
         var input = Encoding.UTF8.GetBytes(matches ? "ab12 ab34" : new string('x', 32000));
+        // Match production ordering: construction is complete before the
+        // invocation deadline starts. The execution budget remains unchanged.
+        var prepared = Prepared(new Utf8Regex(pattern, Options(compiled)));
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var validation = Utf8Validation.Validate(input, ref invocation);
-        var prepared = Prepared(new Utf8Regex(pattern, Options(compiled)));
         var cursor = new Utf8OperationMatchCursor(input, prepared, invocation, validation.IsAscii);
         while (cursor.MoveNext()) { }
         var previous = cursor.CurrentValueMatch;

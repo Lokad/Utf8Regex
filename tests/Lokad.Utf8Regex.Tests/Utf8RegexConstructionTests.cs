@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using System.Text;
-using System.Reflection;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -1510,31 +1509,21 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorPreservesCompiledOptionOnFallbackVerifierRegex()
+    public void ConstructorPreservesCompiledOptionOnOwnedBalancingProgram()
     {
         const string pattern = "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        var programField = typeof(Utf8Regex).GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.NotNull(programField);
-        var program = programField!.GetValue(compiled);
-        Assert.NotNull(program);
-        var verifierRuntimeProperty = program!.GetType().GetProperty("VerifierRuntime", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        Assert.NotNull(verifierRuntimeProperty);
-        var verifierRuntime = verifierRuntimeProperty!.GetValue(program);
-        Assert.NotNull(verifierRuntime);
-
-        var fallbackVerifierProperty = verifierRuntime!.GetType().GetProperty("FallbackCandidateVerifier", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        Assert.NotNull(fallbackVerifierProperty);
-
-        var fallbackVerifier = fallbackVerifierProperty!.GetValue(verifierRuntime);
-        Assert.NotNull(fallbackVerifier);
-
-        var fallbackRegexProperty = fallbackVerifier!.GetType().GetProperty("FallbackRegex", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        Assert.NotNull(fallbackRegexProperty);
-
-        var fallbackRegex = Assert.IsType<Regex>(fallbackRegexProperty!.GetValue(fallbackVerifier));
-        Assert.True((fallbackRegex.Options & RegexOptions.Compiled) != 0);
+        Assert.True((compiled.Options & RegexOptions.Compiled) != 0);
+        Assert.True(compiled.Inspection.DebugUsesOwnedSliceProgram);
+        var input = Encoding.UTF8.GetBytes("BEGINBEGIN\U0001f600ENDEND");
+        var match = compiled.MatchDetailed(input);
+        Assert.True(match.Success);
+        Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
+        Assert.False(match.GetGroup("open").Success);
+        Assert.Equal(1, compiled.Count(input));
+        Assert.False(compiled.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(compiled.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Fact]

@@ -555,12 +555,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return Utf8Regex.Inspection.DebugCountFallbackViaSearchStarts(InputBytes);
     }
 
-    public int ExecuteUtf8CountFallbackDirect()
-    {
-        EnsureCountModel();
-        return Utf8Regex.Inspection.DebugCountFallbackDirect(InputBytes);
-    }
-
     private int ExecuteUtf8PrefixMatchLoop()
     {
         var total = 0;

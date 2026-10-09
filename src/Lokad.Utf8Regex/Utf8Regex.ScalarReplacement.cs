@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex;
@@ -15,6 +16,10 @@ public sealed partial class Utf8Regex
         // and cancellation for every admitted shape.
         if (_ownedSliceProgram is not null &&
             (UsesRightToLeft() || _ownedSliceProgram.HasContiguousAnchor ||
+             // These structural shapes have no qualified native match cursor;
+             // literal replacements otherwise construct BCL in cursor creation.
+             _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiStructuralTokenWindow or
+                NativeExecutionKind.AsciiStructuralRepeatedSegment or NativeExecutionKind.AsciiStructuralQuotedRelation ||
              ShouldUseFallbackForSimplePatternReplacement(replacement, input)))
             return _ownedSliceProgram;
         return null;

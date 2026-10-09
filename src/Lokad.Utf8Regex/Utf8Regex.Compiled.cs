@@ -130,8 +130,11 @@ public sealed partial class Utf8Regex
             {
                 return scalarIsMatch;
             }
-
-
+            if (_ownedSliceProgram is { } program)
+            {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+                return OwnedSliceIsMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, ref invocation);
+            }
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
         }
 
@@ -168,6 +171,22 @@ public sealed partial class Utf8Regex
 
     private int CountViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        // Ordered-window kernels count byte gaps. Mixed subjects require the
+        // cached scalar program before the internal ASCII router can run.
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !validation.IsAscii)
+        {
+            if (Utf8InputAnalyzer.IsAscii(input))
+            {
+                // A default validation result does not prove the subject is
+                // mixed. Reuse this ASCII proof in the router below.
+                validation = new Utf8ValidationResult(input.Length, input.Length, true, false);
+            }
+            else if (_ownedSliceProgram is { } windowProgram)
+            {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+                return OwnedSliceCountFromByte(input, windowProgram, 0, ref invocation);
+            }
+        }
         // Anchored literal prefixes count directly through the router below: at most one
         // anchored match, byte-exact on every input, so neither BCL fallback applies.
         // Folded prefixes ride the same router arm, which switches on the kind.
@@ -201,8 +220,11 @@ public sealed partial class Utf8Regex
             {
                 return scalarCount;
             }
-
-
+            if (_ownedSliceProgram is { } program)
+            {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+                return OwnedSliceCountFromByte(input, program, program.RightToLeft ? input.Length : 0, ref invocation);
+            }
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
         }
 
@@ -228,10 +250,8 @@ public sealed partial class Utf8Regex
     {
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
-            // R05: scalar-verifiable simple patterns answer owned: the full
-            // scalar scan makes misses definitive without BCL verification, while
-            // projection failures still fall back closed. Anything else keeps the
-            // BCL verification below.
+            // A complete scalar scan makes misses definitive. Other admitted
+            // shapes use the cached scalar program with the same deadline.
             if (Utf8ScalarSimplePatternVerifier.TryFindFirst(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarStart, out var scalarLength))
             {
                 if (scalarStart >= 0 &&
@@ -245,8 +265,11 @@ public sealed partial class Utf8Regex
                     return Utf8ValueMatch.NoMatch;
                 }
             }
-
-
+            if (_ownedSliceProgram is { } program)
+            {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+                return OwnedSliceMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, ref invocation);
+            }
             return MatchFallback(input);
         }
 
@@ -260,23 +283,27 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[]? literal, Utf8ExecutionDeadline budget)
     {
-        // Line-anchored shapes enumerate through the owned cursors (line edges enforced
-        // per candidate); absolute-anchored shapes keep the BCL enumerator until cursor
-        // anchor handling lands. The anchored literal-prefix family bypasses in EnumerateMatches.
+        // Qualified simple kernels keep their native cursor. Remaining anchored
+        // or mixed-subject shapes transfer to the cached scalar program.
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
-            var analysis = Utf8InputAnalyzer.Analyze(input);
-            // R05: scalar-verifiable simple patterns enumerate owned through the
-            // scalar cursor; anything else keeps the BCL enumerator below.
             if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
             {
+                var analysis = Utf8InputAnalyzer.Analyze(input);
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget))
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
-
-
-            return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.Utf16ProjectionMap);
+            if (_ownedSliceProgram is { } program)
+            {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+                if (validation.ByteLength != input.Length)
+                    validation = Utf8Validation.Validate(input, ref invocation);
+                var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
+                return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+            var fallbackAnalysis = Utf8InputAnalyzer.Analyze(input);
+            return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, fallbackAnalysis.Utf16ProjectionMap);
         }
 
         return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(

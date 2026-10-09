@@ -3,12 +3,10 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 split on the slice: segments project the owned match cursor, whose
-// empty-match advancement already follows the BCL search order, so the
-// shared segment/tail/count shaping serves slice shapes with BCL parity.
-// Captured groups never appear as segments (matching EnumerateSplits, not
-// classic Split); non-positive counts keep the BCL tail with identical
-// behavior, including its failure modes.
+// Split segments project the owned scalar match cursor. Captured groups do
+// not appear as segments. Zero count is unlimited, one returns the whole
+// subject, and negative counts fail before any matching begins. Comparators
+// below use subjects and patterns whose code-unit behavior overlaps scalars.
 public sealed class Utf8SliceSplitTests
 {
     // Bare shapes keep native precedence; quantified shapes route owned.

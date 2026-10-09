@@ -943,7 +943,9 @@ public sealed partial class Utf8Regex
                     return orderedWindowCount;
                 }
 
-                // The native separator set is ASCII-only; valid non-ASCII input needs the semantic oracle too.
+                if (_ownedSliceProgram is { } windowProgram)
+                    return OwnedSliceCountFromByte(input, windowProgram, 0, CancellationToken.None);
+                // Unserved scalar representations remain transitional debt.
                 return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
                     Utf8Validation.DecodeStrict(input));
             }
@@ -1110,6 +1112,8 @@ public sealed partial class Utf8Regex
         var validation = Utf8Validation.Validate(input);
         if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
         {
+            if (_ownedSliceProgram is { } program)
+                return OwnedSliceCountFromByte(input, program, 0, cancellationToken);
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
         }
 
@@ -2702,7 +2706,8 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates at most the requested number of split segments.</summary>
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count)
     {
-        if (count >= 0 && GetOwnedSliceProgram(input) is { } ownedProgram)
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (GetOwnedSliceProgram(input) is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
         // R05: right-to-left slice shapes split owned through the same cursor
         // the ascending arm uses, projecting segments descending from the input end
@@ -2890,7 +2895,8 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (count >= 0 && _ownedSliceProgram is { } ownedProgram)
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (_ownedSliceProgram is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, cancellationToken);
         return EnumerateSplits(input, count);
     }

@@ -114,7 +114,6 @@ public sealed class EngineDependencyInventoryTests
             "Utf8FallbackCandidateVerifier.cs",
             "Utf8Regex.Compiled.cs",
             "Utf8Regex.cs",
-            "Utf8Regex.Diagnostics.cs",
             "Utf8Regex.Replacement.cs",
             "Utf8StructuralLinearCompiledRouter.cs",
             "Utf8StructuralLinearProgram.cs",
