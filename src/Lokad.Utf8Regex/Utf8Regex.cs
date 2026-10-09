@@ -1300,12 +1300,12 @@ public sealed partial class Utf8Regex
 
         if (ShouldUseKelvinSignFallback(input))
         {
-            return MatchSemanticFallback(input);
+            return MatchScalarProgram(input);
         }
 
         if (ShouldUseRightToLeftScalarFallback())
         {
-            return MatchSemanticFallback(input);
+            return MatchScalarProgram(input);
         }
 
         if (TryMatchDirectWithoutValidation(input, out var directMatch))

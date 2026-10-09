@@ -16,87 +16,15 @@ namespace Lokad.Utf8Regex;
 /// <summary>Managed fallback execution for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input) => MatchFallback(input, null);
+    private Utf8ValueMatch MatchScalarProgram(ReadOnlySpan<byte> input)
+        => OwnedSliceMatch(input,
+            _ownedSliceProgram ?? throw new InvalidOperationException("Semantic matching requires an owned scalar program."),
+            CancellationToken.None);
 
-    private Utf8ValueMatch MatchSemanticFallback(ReadOnlySpan<byte> input)
+    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input)
     {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
-            analysis.GetDecodedString());
-        return Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, match, analysis.BoundaryMap);
-    }
-
-    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap)
-    {
-        if (RejectsByRequiredPrefilter(input))
-        {
-            return Utf8ValueMatch.NoMatch;
-        }
-
-        // Guided verification only tries scalar-boundary starts, so astral inputs
-        // need shapes whose matches start at scalar boundaries; everything else
-        // verifies through the full BCL decode below.
-        // Startat-guided verification re-pins a leading contiguous anchor (\G) to the
-        // candidate start, manufacturing hits away from the true scan pin
-        // (bounded-span circularity and plain startat alike). Decline the guided branch
-        // for proven \G-headed trees; whole-subject BCL below answers with the pin
-        // intact. Consuming, branching, and quantified heads end the walk unproven
-        // (out of scope for this gate).
-        if (!HasLeadingContiguousAnchor(_preparedRegex.ExecutionTree) && CanGuideFallbackVerification() && OwnedMatchStartsAreScalarAligned(input))
-        {
-            return MatchFallbackViaSearchStarts(input, boundaryMap);
-        }
-
-        var decoded = Encoding.UTF8.GetString(input);
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
-        var map = boundaryMap ?? Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        return Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, match, map);
-        static bool HasLeadingContiguousAnchor(Utf8ExecutionTree? tree)
-        {
-            return tree?.Root is not null && LeadsWithContiguousAnchor(tree.Root) is true;
-        }
-
-        static bool? LeadsWithContiguousAnchor(Utf8ExecutionNode node)
-        {
-            switch (node.Kind)
-            {
-                case Utf8ExecutionNodeKind.Start:
-                    return true;
-                case Utf8ExecutionNodeKind.Concatenate:
-                    foreach (var child in node.Children)
-                    {
-                        var lead = LeadsWithContiguousAnchor(child);
-                        if (lead is not null)
-                        {
-                            return lead;
-                        }
-                    }
-                    return false;
-                case Utf8ExecutionNodeKind.Capture:
-                case Utf8ExecutionNodeKind.Group:
-                case Utf8ExecutionNodeKind.Atomic:
-                    return node.Children.Count == 0
-                        ? null
-                        : node.Children.Count == 1
-                            ? LeadsWithContiguousAnchor(node.Children[0])
-                            : (bool?)false;
-                case Utf8ExecutionNodeKind.Empty:
-                case Utf8ExecutionNodeKind.Bol:
-                case Utf8ExecutionNodeKind.Beginning:
-                case Utf8ExecutionNodeKind.Eol:
-                case Utf8ExecutionNodeKind.EndZ:
-                case Utf8ExecutionNodeKind.End:
-                case Utf8ExecutionNodeKind.Boundary:
-                case Utf8ExecutionNodeKind.NonBoundary:
-                case Utf8ExecutionNodeKind.ECMABoundary:
-                case Utf8ExecutionNodeKind.NonECMABoundary:
-                case Utf8ExecutionNodeKind.PositiveLookaround:
-                case Utf8ExecutionNodeKind.NegativeLookaround:
-                    return null;
-                default:
-                    return false;
-            }
-        }
+        if (RejectsByRequiredPrefilter(input)) return Utf8ValueMatch.NoMatch;
+        return MatchScalarProgram(input);
     }
 
     private bool RejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
@@ -910,22 +838,6 @@ public sealed partial class Utf8Regex
     private int CountFallbackCandidates(ReadOnlySpan<byte> input, bool requireScalarBoundary)
     {
         return Utf8SearchStrategyExecutor.CountFallbackCandidates(_preparedRegex.SearchPlan, input, requireScalarBoundary);
-    }
-
-    private Utf8ValueMatch MatchFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
-        MatchFallbackViaSearchStarts(input, null);
-
-    private Utf8ValueMatch MatchFallbackViaSearchStarts(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap)
-    {
-        var validation = boundaryMap is null ? Utf8InputAnalyzer.ValidateOnly(input) : default;
-        string? decoded = null;
-        if (Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchOperation, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out var verification))
-        {
-            Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
-            return Utf8ProjectionExecutor.ProjectFallbackVerification(verification);
-        }
-
-        return Utf8ValueMatch.NoMatch;
     }
 
     private int FindFirstLiteralViaInterpreter(ReadOnlySpan<byte> input, bool ignoreCase, Utf8ExecutionDeadline budget)

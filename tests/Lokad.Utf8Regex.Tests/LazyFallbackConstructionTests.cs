@@ -530,18 +530,15 @@ public sealed class LazyFallbackConstructionTests
 
     [Theory]
     [InlineData("^a.c", "xxabc")]
-    public void AnchoredFallbackConstructsAnchoredEngine(string pattern, string inputText)
+    public void AnchoredMatchUsesOwnedScalarProgram(string pattern, string inputText)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         _ = regex.Match(input);
-        // Match on anchored shapes without a direct prefix family runs verification
-        // through the anchored engine only: the primary engine is never constructed by
-        // this operation. Bare anchored literals verify directly with neither engine
-        // (see Utf8AnchoredLiteralPrefixTests).
+        // A failed anchored attempt is definitive in the owned scalar program.
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-        Assert.True(regex.Inspection.DebugAnchoredFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
 

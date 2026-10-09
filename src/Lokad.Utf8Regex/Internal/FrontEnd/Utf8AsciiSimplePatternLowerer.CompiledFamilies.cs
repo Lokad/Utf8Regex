@@ -94,8 +94,106 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             aggregateSegments = mergedSegments;
         }
 
+        // Merging constructs a candidate envelope, not a proof of equivalence.
+        // Every length vector must be covered by an original expanded branch:
+        // min/max widening alone loses both gaps and correlations.
+        if (branches.Length > 1 && !IsAnchoredValidatorEnvelopeCovered(aggregateSegments, branches))
+        {
+            // Absent optional fields can coalesce neighboring class runs in
+            // individual branches. Recover their boundaries from the existing
+            // optional-field proof, which requires the complete product of
+            // head lengths and both optional fields.
+            if (!TryExtractAnchoredOptionalFieldPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var optional))
+                return false;
+            aggregateSegments.Clear();
+            aggregateSegments.Add(new(optional.HeadClass, optional.HeadMinCount, optional.HeadMaxCount));
+            aggregateSegments.Add(new(optional.FirstRequiredClass, 1, 1));
+            aggregateSegments.Add(new(optional.OptionalClass, 0, 1));
+            aggregateSegments.Add(new(AsciiCharClass.ForByte(optional.OptionalLiteral), 0, 1));
+            aggregateSegments.Add(new(optional.SecondRequiredClass, 1, 1));
+            aggregateSegments.Add(new(optional.TailClass, optional.TailCount, optional.TailCount));
+            if (!IsAnchoredValidatorEnvelopeCovered(aggregateSegments, branches)) return false;
+        }
+
         validatorPlan = new AsciiSimplePatternAnchoredValidatorPlan([.. aggregateSegments], ignoreCase);
         return validatorPlan.HasValue;
+    }
+
+    private static bool IsAnchoredValidatorEnvelopeCovered(
+        List<AsciiSimplePatternAnchoredValidatorSegment> segments,
+        AsciiSimplePatternToken[][] branches)
+    {
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget;
+        long combinations = 1;
+        foreach (var segment in segments)
+        {
+            owner.ChargeWork(1);
+            var width = (long)segment.MaxLength - segment.MinLength + 1;
+            // Keep this optional proof no larger than the already admitted
+            // expansion. Redundant segment partitions may decline the native
+            // plan; the owned scalar program remains available.
+            if (width <= 0 || combinations > branches.Length / width) return false;
+            combinations *= width;
+        }
+
+        var lengths = owner.AllocateArray<int>(segments.Count, false);
+        try
+        {
+            for (var index = 0; index < lengths.Length; index++) lengths[index] = segments[index].MinLength;
+            while (true)
+            {
+                owner.ChargeWork(1);
+                var covered = false;
+                foreach (var branch in branches)
+                {
+                    owner.ChargeWork(1);
+                    if (CoversLengthVector(branch, segments, lengths, owner))
+                    {
+                        covered = true;
+                        break;
+                    }
+                }
+                if (!covered) return false;
+
+                var dimension = lengths.Length - 1;
+                while (dimension >= 0 && lengths[dimension] == segments[dimension].MaxLength)
+                {
+                    owner.ChargeWork(1);
+                    lengths[dimension] = segments[dimension].MinLength;
+                    dimension--;
+                }
+                if (dimension < 0) return true;
+                lengths[dimension]++;
+            }
+        }
+        finally { owner.ReleaseArray(lengths, false); }
+
+        static bool CoversLengthVector(AsciiSimplePatternToken[] branch,
+            List<AsciiSimplePatternAnchoredValidatorSegment> segments, int[] lengths,
+            Utf8ConstructionBudget owner)
+        {
+            var offset = 0;
+            for (var index = 0; index < segments.Count; index++)
+            {
+                owner.ChargeWork(1);
+                var segment = segments[index];
+                var count = lengths[index];
+                if (count > branch.Length - offset) return false;
+                for (var position = 0; position < count; position++)
+                {
+                    owner.ChargeWork(1);
+                    var token = branch[offset++];
+                    var actual = token.Kind == AsciiSimplePatternTokenKind.Literal
+                        ? AsciiCharClass.ForByte(token.Literal) : token.CharClass;
+                    var candidate = segment.IsLiteral
+                        ? AsciiCharClass.ForByte(segment.Literal[position]) : segment.CharClass;
+                    if ((candidate.LowMask & ~actual.LowMask) != 0 ||
+                        (candidate.HighMask & ~actual.HighMask) != 0) return false;
+                }
+            }
+            return offset == branch.Length;
+        }
     }
 
     private static bool TryMergeAnchoredValidatorSegments(
@@ -300,6 +398,29 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             thirdMax > byte.MaxValue)
         {
             return false;
+        }
+
+        // The specialized date matcher also executes a Cartesian length box.
+        // Require every tuple, rather than treating independent extrema as
+        // sufficient evidence that all combinations are legal.
+        var tupleCount = (long)(firstMax - firstMin + 1) * (secondMax - secondMin + 1) * (thirdMax - thirdMin + 1);
+        if (tupleCount > branches.Length) return false;
+        for (var first = firstMin; first <= firstMax; first++)
+        for (var second = secondMin; second <= secondMax; second++)
+        for (var third = thirdMin; third <= thirdMax; third++)
+        {
+            var covered = false;
+            foreach (var branch in branches)
+            {
+                Utf8ConstructionScope.ChargeWork((ulong)branch.Length + 1);
+                if (TryParseAnchoredBoundedDateBranch(branch, out var a, out var b, out var c, out _, out _) &&
+                    a == first && b == second && c == third)
+                {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered) return false;
         }
 
         plan = new AsciiSimplePatternAnchoredBoundedDatePlan(

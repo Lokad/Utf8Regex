@@ -142,9 +142,7 @@ public sealed partial class Utf8Regex
                 Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out _);
         }
 
-        // R03 balancing: adapter byte-offset entries serve the owned slice
-        // exactly like the UTF-16-offset drivers; the BCL fallback below
-        // keeps shapes the slice declines.
+        // General scalar programs preserve the whole subject's anchor context.
         if (_sliceProgram is not null)
         {
             try
@@ -172,9 +170,16 @@ public sealed partial class Utf8Regex
             }
         }
 
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
-            input.GetDecodedString().AsSpan(),
-            input.Project(start).Value);
+        try
+        {
+            return OwnedSliceIsMatchFromByte(input.Bytes,
+                _ownedSliceProgram ?? throw new InvalidOperationException("Byte-offset matching requires an owned scalar program."),
+                start.Value, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input.Bytes);
+        }
     }
 
     private Utf8ValueMatch MatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
@@ -276,10 +281,16 @@ public sealed partial class Utf8Regex
             }
         }
 
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
-            input.GetDecodedString(),
-            input.Project(start).Value);
-        return CreateValueMatch(input.Bytes, input.BoundaryMap, match);
+        try
+        {
+            return OwnedSliceMatchFromByte(input.Bytes,
+                _ownedSliceProgram ?? throw new InvalidOperationException("Byte-offset matching requires an owned scalar program."),
+                start.Value, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input.Bytes);
+        }
     }
 
     private Utf8MatchContext MatchDetailedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
@@ -327,10 +338,10 @@ public sealed partial class Utf8Regex
             }
         }
 
-        var decoded = input.GetDecodedString();
         if (TryGetOwnedDetailedGroupCount(out var ownedAdapterOffsetGroupCount) &&
             CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
         {
+            var decoded = input.GetDecodedString();
             // R05: line-anchored ASCII detailed matches from the start byte discover
             // through the shared value path (mirroring the zero-offset arm); shaping
             // projects owned spans without BCL verification.
@@ -354,10 +365,16 @@ public sealed partial class Utf8Regex
                 : new Utf8MatchContext(input.Bytes, decoded, input.BoundaryMap, _groupNames, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16);
         }
 
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
-            decoded,
-            input.Project(start).Value);
-        return new Utf8MatchContext(input.Bytes, decoded, match, input.BoundaryMap, _groupNames);
+        try
+        {
+            return OwnedSliceMatchDetailedFromByte(input.Bytes,
+                _ownedSliceProgram ?? throw new InvalidOperationException("Byte-offset detailed matching requires an owned scalar program."),
+                start.Value, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input.Bytes);
+        }
     }
 
     private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
@@ -421,9 +438,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
-            input.GetDecodedString().AsSpan(),
-            input.Project(start).Value);
+        throw new InvalidOperationException("Byte-offset counting requires an owned scalar program.");
     }
 
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
@@ -576,10 +591,10 @@ public sealed partial class Utf8Regex
         var budget = CreateExecutionBudget();
         // R05: exact literals enumerate right-to-left through the reverse-search
         // cursor above; anchored shapes never reach literal kinds, boundary and
-        // trailing requirements stay on the BCL enumerator below, empty literals
+        // trailing requirements use the owned scalar cursor below, empty literals
         // cannot match, non-ASCII literals project through the literal UTF-16 length,
         // and folded shapes stay Kelvin-fenced like the forward cursor.
-        // FromOffset right-to-left starts keep legacy routing.
+        // Other right-to-left starts preserve full context in the scalar cursor.
         if (UsesRightToLeft() &&
             start.Value == input.Bytes.Length &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
@@ -607,13 +622,10 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {
-            var startInUtf16 = input.Project(start);
-            return new Utf8ValueMatchEnumerator(
-                input.Bytes,
-                _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-                input.GetDecodedString(),
-                startInUtf16.Value,
-                input.Utf16ProjectionMap);
+            return OwnedSliceEnumerateMatchesFromUnit(input.Bytes,
+                _ownedSliceProgram ?? throw new InvalidOperationException("Context-sensitive enumeration requires an owned scalar program."),
+                input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
+                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
         if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
@@ -693,8 +705,7 @@ public sealed partial class Utf8Regex
 
             if (_owner.ShouldFallbackForTrailingNewlineAnchoredValidator(bytes, input.Validation))
             {
-                isMatch = _owner._verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
-                    input.GetDecodedString());
+                isMatch = _owner.IsMatchAtByteOffset(input, start);
                 return true;
             }
 

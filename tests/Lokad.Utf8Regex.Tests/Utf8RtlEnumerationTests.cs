@@ -90,10 +90,9 @@ public sealed class Utf8RtlEnumerationTests
 
     [Theory]
     [MemberData(nameof(RtlLiteralEnumerationDeclineCases))]
-    public void RtlLiteralEnumerationDeclineKeepsBclShaping(string pattern, RegexOptions options, string text)
+    public void RtlBoundaryEnumerationUsesOwnedScalarContext(string pattern, RegexOptions options, string text)
     {
-        // This unserved right-to-left boundary shape remains R05 debt.
-        // Retain its result comparison and construction pin until replaced.
+        // Boundary predicates retain full scalar context while enumerating backwards.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options);
@@ -117,6 +116,6 @@ public sealed class Utf8RtlEnumerationTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 }

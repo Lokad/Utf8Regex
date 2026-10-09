@@ -43198,7 +43198,7 @@ public sealed class AsciiSimplePatternTests
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expectedPositions, actualPositions);
-        Assert.True(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(enumerateRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
         var splitRegex = new Utf8Regex(pattern, options);
         var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
