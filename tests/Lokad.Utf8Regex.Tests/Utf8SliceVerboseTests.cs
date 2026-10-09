@@ -91,7 +91,7 @@ public sealed class Utf8SliceVerboseTests
     [InlineData("(?:a ")]
     public void UnterminatedShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant));
     }
 }

@@ -31,6 +31,13 @@ Retain the supported regex grammar and option model, including inline options, `
 
 Adjacent high/low surrogate spellings, raw or escaped, form one scalar within a literal run or one character-class member. Classes order range endpoints by numeric scalar value, including bounds above U+FFFF; descending supplementary bounds throw `ArgumentException`. An unpaired surrogate atom denotes no scalar and cannot match strict UTF-8. It can be repeated zero times, and negating a singleton class containing it admits every valid scalar. Groups, assertions and separate classes cannot join two such atoms into a scalar. Numeric intervals may span the surrogate gap, but matching considers only valid scalars. An explicit `[\u0000-\uffff]` includes BMP scalars; singleline dot includes every scalar plane.
 
+Invalid pattern syntax throws an owned `ArgumentException` naming `pattern`,
+with a reason and an offset in the UTF-16 string pattern. These diagnostic
+coordinates do not change scalar matching or byte result coordinates. BCL parse
+exception types, error enums and messages are comparator observations, not the
+product's diagnostic contract. A valid pattern that exceeds a transitional
+representation is migration debt, rather than invalid syntax.
+
 An empty pattern has one match at every scalar boundary, including both ends:
 Count on `😀` is two, and Count on `a😀b` is four. Non-overlapping discovery
 advances past an empty result by one complete scalar in the selected direction.

@@ -88,7 +88,7 @@ public sealed class Utf8SliceNonBacktrackingTests
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
         Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
     }
 
     public static IEnumerable<object?[]> ParityCases()

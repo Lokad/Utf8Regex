@@ -150,10 +150,9 @@ public sealed partial class Utf8Regex
         var ownedSliceProgram = Utf8SliceParser.TryParse(options, preparedRegex.SemanticRegex.RuntimeTree);
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
-        // Captured lookbehind has an owned tree and scalar program. Declined
-        // grammar still needs construction validation until its owned admission
-        // lands. Resolve metadata now when neither the tree nor the slice serves
-        // the pattern; this residual BCL construction is migration debt.
+        // Syntax failures already have owned diagnostics. Unserved class
+        // representations still need transitional admission and metadata;
+        // this residual BCL construction is migration debt.
         if (_sliceProgram is null && preparedRegex.SemanticRegex.RuntimeTree is null)
         {
             _ = _program.GroupNumbers.Value;
@@ -167,13 +166,10 @@ public sealed partial class Utf8Regex
             _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
         }
 
-        // Declined conditionals validate the same way: BCL rejects malformed
-        // conditionals (extra branches, undefined numbers) at construction while
-        // lazy fallback would defer the failure to first use. The substring gate
-        // is intentionally heuristic (whitespace-split (? ( slips through); only
-        // declined shapes pay the early build, and owned conditionals keep lazy
-        // construction. Malformed patterns already failed above through the front end.
-        if (_sliceProgram is null && pattern.Contains("(?(", StringComparison.Ordinal))
+        // Unserved conditional representations retain transitional validation.
+        // This heuristic gate remains removal debt; parsed native conditionals
+        // already have an owned scalar program and do not construct this engine.
+        if (ownedSliceProgram is null && pattern.Contains("(?(", StringComparison.Ordinal))
         {
             _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
         }

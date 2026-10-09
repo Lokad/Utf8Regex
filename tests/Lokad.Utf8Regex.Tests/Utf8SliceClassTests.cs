@@ -72,7 +72,7 @@ public sealed class Utf8SliceClassTests
     [MemberData(nameof(ReversedClassShapes))]
     public void ReversedClassShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
@@ -92,10 +92,8 @@ public sealed class Utf8SliceClassTests
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
         var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Equal(expected.Error, actual.Error);
-        Assert.Equal(expected.Offset, actual.Offset);
-        Assert.Equal(expected.Message, actual.Message);
+        var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal("pattern", actual.ParamName);
     }
 
     public static IEnumerable<object?[]> IsMatchCases()

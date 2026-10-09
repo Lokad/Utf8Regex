@@ -55,15 +55,13 @@ public sealed class Utf8SliceCaptureCatalogTests
     [InlineData(@"(?<x>a)\k<2>")]
     [InlineData(@"(?<x>a)(?<x>b)\2")]
     [InlineData(@"(?<x>a)(?<x>b)(?(2)c|d)")]
-    public void UndefinedAndMalformedReferencesKeepExactConstructionFailures(string pattern)
+    public void UndefinedAndMalformedReferencesHaveOwnedConstructionFailures(string pattern)
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            Assert.Equal("pattern", actual.ParamName);
         }
     }
 

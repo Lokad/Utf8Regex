@@ -2,10 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.DiffTests;
 
-// R07 compile failures against the oracle: patterns the BCL rejects are
-// rejected here too, with byte-identical BCL RegexParseException identity and
-// messages on every construction route (the fallback verifier constructs the
-// BCL engine, so the oracle reports itself).
+// The oracle checks the overlapping grammar's rejection verdict. Product
+// admission owns its diagnostics and keeps them stable across constructors.
 public sealed class Utf8CompileFailureDiffTests
 {
     [Theory]
@@ -22,41 +20,42 @@ public sealed class Utf8CompileFailureDiffTests
     [InlineData("[\\A]+")]
     [InlineData("[\\z]+")]
     [InlineData("[\\B]+")]
-    public void InvalidPatternsThrowBclExceptionsOnEveryRoute(string pattern)
+    public void InvalidPatternsHaveOwnedFailuresOnEveryRoute(string pattern)
     {
         var options = RegexOptions.CultureInvariant;
         var expected = Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Regex(pattern, options));
         var expectedCompiled = Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Regex(pattern, options | RegexOptions.Compiled));
-        var actual = Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Utf8Regex(pattern, options));
-        var actualCompiled = Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Utf8Regex(pattern, options | RegexOptions.Compiled));
+        var actual = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options));
+        var actualCompiled = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options | RegexOptions.Compiled));
 
-        Assert.Equal(expected.Message, actual.Message);
-        Assert.Equal(expectedCompiled.Message, actualCompiled.Message);
+        Assert.Equal("pattern", actual.ParamName);
+        Assert.Equal("pattern", actualCompiled.ParamName);
+        Assert.Contains("UTF-16 pattern offset", actual.Message);
+        Assert.Equal(actual.Message, actualCompiled.Message);
     }
 
     [Theory]
     [InlineData("(?n:(?<-x>a))", RegexParseError.UndefinedNamedReference, 9)]
     [InlineData("(?<=(?<1a>b))c", RegexParseError.CaptureGroupNameInvalid, 8)]
-    public void FlipWideningPatternsThrowBclExactErrors(string pattern, RegexParseError error, int offset)
+    public void InvalidNamesAndPopsHaveOwnedFailures(string pattern, RegexParseError error, int offset)
     {
-        // Parser-flip conformance fix (2026-09-26): the removed fork accepted these
-        // invalid shapes, so construction must now fail exactly like the .NET 10 oracle
-        // on every string constructor route, ordinary and compiled.
+        // Preserve rejection of these malformed names/pops on every constructor.
+        // Oracle error attributes remain historical grammar evidence.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
-            var actualTimeout = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout));
-            _ = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern));
+            var actual = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options));
+            var actualTimeout = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout));
+            var actualDefault = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern));
 
             Assert.Equal(error, expected.Error);
             Assert.Equal(offset, expected.Offset);
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
-            Assert.Equal(expected.Error, actualTimeout.Error);
-            Assert.Equal(expected.Offset, actualTimeout.Offset);
-            Assert.Equal(expected.Message, actualTimeout.Message);
+            Assert.Equal("pattern", actual.ParamName);
+            Assert.Equal("pattern", actualTimeout.ParamName);
+            Assert.Equal("pattern", actualDefault.ParamName);
+            Assert.Contains("UTF-16 pattern offset", actual.Message);
+            Assert.Equal(actual.Message, actualTimeout.Message);
+            Assert.Equal(actual.Message, actualDefault.Message);
         }
 
     }

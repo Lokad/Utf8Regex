@@ -67,10 +67,8 @@ public sealed class Utf8SliceSparseGroupTests
         try { oracle = new Regex(oraclePattern, oracleOptions, TimeSpan.FromSeconds(10)); }
         catch (RegexParseException expected)
         {
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10)));
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10)));
+            Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
             return;
         }
@@ -283,7 +281,7 @@ public sealed class Utf8SliceSparseGroupTests
     [InlineData(@"(?<12>a)\k<13>")]
     [InlineData(@"(?<12>a)(?<-13>b)")]
     [InlineData(@"(?<12>a)(?<05-12>b)")]
-    public void InvalidNumbersKeepExactConstructionFailures(string pattern)
+    public void InvalidNumbersHaveOwnedConstructionFailures(string pattern)
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant,
             RegexOptions.CultureInvariant | RegexOptions.Compiled,
@@ -291,10 +289,8 @@ public sealed class Utf8SliceSparseGroupTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         }
     }

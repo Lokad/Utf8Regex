@@ -112,7 +112,7 @@ public sealed class Utf8SliceEscapeTests
     [MemberData(nameof(ThrowCases))]
     public void MalformedEscapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
@@ -398,6 +398,6 @@ public sealed class Utf8SliceEscapeTests
     public void InvalidControlEscapesFailConstruction(string pattern)
     {
         Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 }

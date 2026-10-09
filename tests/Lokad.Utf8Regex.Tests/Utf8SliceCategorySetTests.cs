@@ -84,7 +84,7 @@ public sealed class Utf8SliceCategorySetTests
     {
         // Range-bound categories decline the slice (the vendored front end
         // throws ShorthandClassInCharacterRange, so construction fails
-        // BCL-exactly; see RangeBoundEscapesFailConstructionLikeRuntime).
+        // BCL-exactly; see RangeBoundEscapesFailOwnedConstruction).
         yield return new object?[] { "[a-\\p{L}]" };
         yield return new object?[] { "[a-\\P{L}]" };
     }
@@ -121,10 +121,10 @@ public sealed class Utf8SliceCategorySetTests
 
     [Theory]
     [MemberData(nameof(RangeBoundConstructionThrows))]
-    public void RangeBoundEscapesFailConstructionLikeRuntime(string pattern)
+    public void RangeBoundEscapesFailOwnedConstruction(string pattern)
     {
         Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
     [Theory]

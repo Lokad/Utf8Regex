@@ -86,6 +86,10 @@ public sealed class Utf8OwnedCutoverBehaviorTests
                     + "/product-" + (productError is null ? "serves" : "throws-" + productError.GetType().Name);
             }
 
+            if (bclError is RegexParseException && productError.GetType() == typeof(ArgumentException) &&
+                productError is ArgumentException { ParamName: "pattern" } &&
+                productError.Message.Contains("UTF-16 pattern offset", StringComparison.Ordinal)) return null;
+
             if (bclError.GetType() != productError.GetType())
             {
                 return "construct:throw-type " + bclError.GetType().Name + " vs " + productError.GetType().Name;

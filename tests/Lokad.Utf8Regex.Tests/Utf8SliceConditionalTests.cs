@@ -83,10 +83,10 @@ public sealed class Utf8SliceConditionalTests
 
     [Theory]
     [MemberData(nameof(ParserDeclines))]
-    public void ConditionalOutOfRangeShapesFailConstructionLikeRuntime(string pattern)
+    public void ConditionalOutOfRangeShapesFailOwnedConstruction(string pattern)
     {
         Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
     public static IEnumerable<object?[]> ParserShapes()
@@ -494,7 +494,7 @@ public sealed class Utf8SliceConditionalOperationTests
     public void ConditionalExplicitCaptureMismatchThrowsLikeRuntime()
     {
         Assert.Throws<RegexParseException>(() => new Regex("(?n:(a)(b))(?(1)x|y)", RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex("(?n:(a)(b))(?(1)x|y)", RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex("(?n:(a)(b))(?(1)x|y)", RegexOptions.CultureInvariant));
     }
 
     [Theory]

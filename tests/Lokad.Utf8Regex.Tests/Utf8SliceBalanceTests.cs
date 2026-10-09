@@ -74,7 +74,7 @@ public sealed class Utf8SliceBalanceTests
     [InlineData("(?'b-a'y)")]
     public void UndefinedBalanceShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 

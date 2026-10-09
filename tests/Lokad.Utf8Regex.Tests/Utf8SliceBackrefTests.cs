@@ -55,7 +55,7 @@ public sealed class Utf8SliceBackrefTests
     [Fact]
     public void UndefinedBackrefFailsConstruction()
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex("a\\1b", RegexOptions.CultureInvariant));
     }
 
@@ -322,6 +322,6 @@ public sealed class Utf8SliceBackrefTests
     public void InsufficientGroupDigitsFailConstruction(string pattern)
     {
         Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 }

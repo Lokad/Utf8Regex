@@ -90,13 +90,15 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
     }
 
     [Fact]
-    public void OwnedSubtractionDeclinesButBclServesLeadingDashGap()
+    public void LeadingDashWithoutSubtractionOperandUsesOwnedGrammar()
     {
-        // BCL reads a leading dash as a literal while the owned parser declines.
-        Assert.Null(Utf8OwnedTreeParser.TryParse("[-[a]]", RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8OwnedTreeParser.TryParse("[-[a]]", RegexOptions.CultureInvariant));
         var oracle = new Regex("[-[a]]", RegexOptions.CultureInvariant);
         var product = new Utf8Regex("[-[a]]", RegexOptions.CultureInvariant);
         Assert.Equal(oracle.ToString(), product.Pattern);
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(product, oracle, ["-]", "[]", "a]", "a", "-", "[", "😀-]"]);
+        Assert.False(product.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(product.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> NestedBracketNarrowingCases()

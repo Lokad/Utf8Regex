@@ -164,22 +164,22 @@ public sealed class Utf8SliceCategoryTests
 
     [Theory]
     [MemberData(nameof(ConstructionThrows))]
-    public void InvalidCategoryShapesFailConstructionLikeRuntime(string pattern)
+    public void InvalidCategoryShapesFailOwnedConstruction(string pattern)
     {
         Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
     [Theory]
     [InlineData("\\p{Is Greek}+")]
-    public void SpacedPropertyNamesFailConstructionLikeRuntime(string pattern)
+    public void SpacedPropertyNamesFailOwnedConstruction(string pattern)
     {
         // The whitespace stripper keeps \p{...} spans verbatim so the raw
         // name still throws; stripping inside the braces would invent an
         // accepted name.
         var options = RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant;
         Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
     }
 
     public static IEnumerable<object?[]> ParserShapes()

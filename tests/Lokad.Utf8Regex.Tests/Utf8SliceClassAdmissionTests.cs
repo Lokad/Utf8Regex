@@ -208,17 +208,15 @@ public sealed class Utf8SliceClassAdmissionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void DeepClassClosersKeepExactConstructionFailures(bool compiled)
+    public void DeepClassClosersHaveOwnedConstructionFailures(bool compiled)
     {
         var valid = Chain(128, "a", "b");
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         foreach (var pattern in new[] { valid[..^1], valid[..^1] + "c]", valid[..^1] + "-[c]]" })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         }
     }

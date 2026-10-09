@@ -76,7 +76,7 @@ public sealed class Utf8OwnedParserRetirementTests
     [InlineData(@"(?(1 )a|b)(a)")]
     [InlineData(@"(?İ:a)")]
     [InlineData(@"(?ſ:a)")]
-    public void InvalidConditionalAndOptionLexemesKeepExactConstructionErrors(string pattern)
+    public void InvalidConditionalAndOptionLexemesHaveOwnedConstructionErrors(string pattern)
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.IgnorePatternWhitespace;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));

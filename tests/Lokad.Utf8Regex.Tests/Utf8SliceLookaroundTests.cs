@@ -109,7 +109,7 @@ public sealed class Utf8SliceLookaroundTests
     [Fact]
     public void InvalidLookaroundFailsConstruction()
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex("(?P=name)", RegexOptions.CultureInvariant));
     }
 

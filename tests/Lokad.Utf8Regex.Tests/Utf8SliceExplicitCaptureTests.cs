@@ -107,7 +107,7 @@ public sealed class Utf8SliceExplicitCaptureTests
     [InlineData("(a)(?<x>b)\\2")]
     public void UnboundDigitsFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant));
     }
 }

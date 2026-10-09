@@ -174,10 +174,8 @@ public sealed class Utf8OwnedTreeContinuationTests
         foreach (var pattern in new[] { valid[..^1], valid + ")", valid + @"\k<missing>", Nested(31, "(?:", "(?(1)a|b|c)") })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
         }
         Assert.NotNull(Utf8OwnedTreeParser.TryParse(valid, options));

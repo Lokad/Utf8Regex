@@ -3,11 +3,10 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
-/// <summary>R02a slice recognition: ASCII literals, concatenation, ordered
-/// alternation, greedy/lazy repetition, and numbered groups lower to owned
-/// programs (R03 adds dots with Singleline-scoped newline matching); every
-/// other construct or sensitive option declines so existing
-/// routes preserve behavior including construction failures.</summary>
+/// <summary>Scalar program admission for literals, classes, alternatives,
+/// repetition, captures, references, lookarounds and scoped options. Invalid
+/// grammar fails through owned pattern diagnostics; NonBacktracking admits
+/// regular graphs and rejects unsupported constructs deliberately.</summary>
 public sealed class Utf8SliceParserTests
 {
     [Theory]
@@ -157,10 +156,10 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?#c)*")]
     [InlineData("*a")]
     [InlineData("+a")]
-    public void MalformedShapesFailConstructionLikeRuntime(string pattern)
+    public void MalformedShapesHaveOwnedConstructionFailures(string pattern)
     {
         Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
-        Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Utf8Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
     }
 
     [Fact]
@@ -258,8 +257,8 @@ public sealed class Utf8SliceParserTests
     }
 
     [Fact]
-    public void DeclinedShapesStillFailConstructionThroughFallback()
+    public void UnclosedGroupFailsOwnedConstruction()
     {
-        Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Utf8Regex("(a", RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex("(a", RegexOptions.CultureInvariant));
     }
 }

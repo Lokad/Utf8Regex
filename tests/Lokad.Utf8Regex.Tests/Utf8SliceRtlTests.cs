@@ -298,7 +298,7 @@ public sealed class Utf8SliceRtlTests
     [InlineData("[z-a]")]
     public void RtlMalformedShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant));
     }
 

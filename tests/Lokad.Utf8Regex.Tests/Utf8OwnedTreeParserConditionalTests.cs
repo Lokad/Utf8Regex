@@ -71,8 +71,8 @@ public sealed class Utf8OwnedTreeParserConditionalTests
     public void OwnedNonBacktrackingConditionalFailsLikeBcl()
     {
         // BCL NonBacktracking rejects conditionals at construction; the owned
-        // parser still serves the shape while the product fails construction
-        // through the fallback engine exactly like the oracle.
+        // parser still serves the shape while the product rejects it through
+        // the owned NonBacktracking grammar admission.
         var actual = Utf8OwnedTreeParser.TryParse("(a)(?(1)b|c)", RegexOptions.NonBacktracking);
         Assert.NotNull(actual);
         Assert.Equal(2, actual.CaptureCount);

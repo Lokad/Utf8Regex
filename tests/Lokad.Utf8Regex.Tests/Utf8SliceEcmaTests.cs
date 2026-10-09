@@ -128,17 +128,15 @@ public sealed class Utf8SliceEcmaTests
     [InlineData(@"(?<0>a)")]
     [InlineData(@"(?<2147483648>a)")]
     [InlineData(@"(?(2)a|b)")]
-    public void InvalidEcmaPatternsKeepExactConstructionFailures(string pattern)
+    public void InvalidEcmaPatternsHaveOwnedConstructionFailures(string pattern)
     {
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.ECMAScript | RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
-            Assert.Equal(expected.Error, actual.Error);
-            Assert.Equal(expected.Offset, actual.Offset);
-            Assert.Equal(expected.Message, actual.Message);
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         }
     }

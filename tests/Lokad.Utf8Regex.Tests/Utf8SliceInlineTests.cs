@@ -124,10 +124,10 @@ public sealed class Utf8SliceInlineTests
 
     [Theory]
     [MemberData(nameof(ParserDeclines))]
-    public void InlineInvalidShapesFailConstructionLikeRuntime(string pattern)
+    public void InlineInvalidShapesFailOwnedConstruction(string pattern)
     {
         Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
     public static IEnumerable<object?[]> ParserShapes()

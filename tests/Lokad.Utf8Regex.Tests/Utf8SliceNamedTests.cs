@@ -75,7 +75,7 @@ public sealed class Utf8SliceNamedTests
     [InlineData("(?<a>x]")]
     public void InvalidNamedShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 

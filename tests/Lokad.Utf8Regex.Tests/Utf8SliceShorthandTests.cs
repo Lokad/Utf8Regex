@@ -68,7 +68,7 @@ public sealed class Utf8SliceShorthandTests
     [MemberData(nameof(ReversedShorthandShapes))]
     public void ReversedShorthandShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 

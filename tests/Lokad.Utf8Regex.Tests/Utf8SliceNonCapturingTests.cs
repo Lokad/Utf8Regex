@@ -136,7 +136,7 @@ public sealed class Utf8SliceNonCapturingTests
     [InlineData("(?:a|b")]
     public void UnterminatedShapesFailConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(
+        Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 

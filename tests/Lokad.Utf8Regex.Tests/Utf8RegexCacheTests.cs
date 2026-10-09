@@ -92,7 +92,7 @@ public sealed class Utf8RegexCacheTests
 
         for (var i = 0; i < 100; i++)
         {
-            Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd($"(unterminated-{i}", RegexOptions.CultureInvariant));
+            Utf8PatternFailureAssert.Throws(() => Utf8RegexCache.GetOrAdd($"(unterminated-{i}", RegexOptions.CultureInvariant));
         }
 
         Assert.Equal(0, Utf8RegexCache.EntryCount);
@@ -106,7 +106,7 @@ public sealed class Utf8RegexCacheTests
         Assert.True(Utf8Regex.IsMatch("a"u8, "a", RegexOptions.CultureInvariant));
         for (var i = 0; i < 50; i++)
         {
-            Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd($"(unterminated-{i}", RegexOptions.CultureInvariant));
+            Utf8PatternFailureAssert.Throws(() => Utf8RegexCache.GetOrAdd($"(unterminated-{i}", RegexOptions.CultureInvariant));
         }
 
         Assert.True(Utf8Regex.IsMatch("a"u8, "a", RegexOptions.CultureInvariant));
@@ -118,9 +118,9 @@ public sealed class Utf8RegexCacheTests
     {
         Utf8RegexCache.ResetForTests();
 
-        Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
         Assert.Equal(0, Utf8RegexCache.EntryCount);
-        Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
         Assert.Equal(0, Utf8RegexCache.EntryCount);
     }
     [Fact]

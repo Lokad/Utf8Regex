@@ -18,7 +18,8 @@ internal static class Utf8FrontEnd
     {
         var effectiveOptions = options;
         var executionPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref effectiveOptions);
-        var runtimeTree = Utf8RuntimeTreeProvider.TryParse(pattern, options);
+        var runtimeTree = Utf8RuntimeTreeProvider.TryParse(pattern, options, out var diagnostic);
+        if (diagnostic.IsSyntaxError) throw diagnostic.ToException();
         if ((options & RegexOptions.NonBacktracking) != 0 && runtimeTree is not null &&
             Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(runtimeTree.Root) is { } unsupported)
             throw new NotSupportedException($"NonBacktracking does not support {unsupported}.");
