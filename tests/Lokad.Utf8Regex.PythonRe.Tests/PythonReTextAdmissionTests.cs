@@ -44,7 +44,7 @@ public sealed class PythonReTextAdmissionTests
         using var owner = Utf8ConstructionScope.Enter();
         var result = PythonReTranslator.Translate(parse);
         Assert.Equal("g1", result.EmittedGroupNames["é"]);
-        Assert.Equal(new[] { 0, 2, 1 }, result.ManagedNumbersByPython);
+        Assert.Equal(new[] { 0, 2, 1 }, result.CoreNumbersByPython);
         Assert.Equal("(?<g1>a)(b)\\k<g1>", result.NativePattern);
         var retainedStrings = new List<object>();
         for (var allocation = owner.Budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
@@ -68,6 +68,6 @@ public sealed class PythonReTextAdmissionTests
         var regex = new Utf8PythonRegex(pattern);
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(bytes));
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 }

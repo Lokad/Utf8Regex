@@ -1161,7 +1161,7 @@ internal static partial class PythonReBenchmarkReporter
         const PythonReCompileOptions options = PythonReCompileOptions.None;
         var parseResult = new PythonReParser(pattern).Parse(options);
         var translation = PythonReTranslator.Translate(parseResult);
-        var input = Encoding.UTF8.GetBytes("prefix item-123 foo Шерлок suffix");
+        var input = Encoding.UTF8.GetBytes("prefix item-123 foo Ð¨ÐµÑ€Ð»Ð¾Ðº suffix");
         var fullMatchInputUtf8 = Encoding.UTF8.GetBytes(fullMatchInput);
         var fullMatchMissUtf8 = "__pythonre_fullmatch_miss__"u8.ToArray();
         var prepared = new Utf8PythonRegex(pattern, options);
@@ -1246,7 +1246,7 @@ internal static partial class PythonReBenchmarkReporter
     private static int MeasureFullMatchStartOffset(int iterations, int samples)
     {
         const string pattern = @"async\s+Task<";
-        var prefix = new string('x', 65_536) + "é";
+        var prefix = new string('x', 65_536) + "Ã©";
         var subject = prefix + "async Task<";
         var missSubject = prefix + "async Nope<";
         var input = Encoding.UTF8.GetBytes(subject);
@@ -1265,7 +1265,7 @@ internal static partial class PythonReBenchmarkReporter
         var managedMiss = managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length));
         if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length ||
             pythonDetailedMiss.Success || !managedResult || managedMiss ||
-            !pythonRegex.DebugHasScalarFullProgram || pythonRegex.DebugIsManagedFullRegexValueCreated)
+            !pythonRegex.DebugHasScalarFullProgram || !pythonRegex.DebugUsesOwnedSlice)
         {
             throw new InvalidOperationException("PythonRe start-offset FullMatch diagnostic failed its parity or backend precondition.");
         }
@@ -1319,7 +1319,7 @@ internal static partial class PythonReBenchmarkReporter
     private static int MeasureEmptyGlobalShapes(int iterations, int samples)
     {
         const string pattern = "needle|needle-long";
-        var prefix = new string('x', 65_536) + "é";
+        var prefix = new string('x', 65_536) + "Ã©";
         var subject = prefix + " no matching token";
         var hitSubject = prefix + string.Concat(Enumerable.Repeat(" needle-long", 256));
         var progressivePrefix = prefix + " ";
@@ -1345,13 +1345,13 @@ internal static partial class PythonReBenchmarkReporter
             .ScalarValues.Select(Encoding.UTF8.GetString).ToArray();
         var progressiveCount = progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes);
 
-        if (pythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.ManagedRegex ||
+        if (pythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.Utf8Regex ||
             pythonRegex.FindAll(input, startOffsetInBytes).Length != 0 ||
             pythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length != 0 ||
             pythonRegex.Count(input, startOffsetInBytes) != 0 ||
-            capturedPythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.ManagedRegex ||
+            capturedPythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.Utf8Regex ||
             capturedPythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
             capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             managedRegex.Match(subject, prefix.Length).Success ||
@@ -2453,7 +2453,7 @@ internal sealed class PythonReBenchmarkContext
             "strict UTF-8 validation; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges",
         PythonReBenchmarkOperation.FullMatch => DescribeBackend(
             _pythonRegex.DebugFullMatchBackend,
-            _pythonRegex.DebugUtf8FullMatchExecutionKind,
+            "OwnedScalar",
             "full-match value ranges"),
         PythonReBenchmarkOperation.SearchDetailed => DescribeBackend(
             _pythonRegex.DebugSearchBackend,
@@ -2472,50 +2472,31 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugUtf8ExecutionKind,
             "Python-style count progression from a nonzero byte offset"),
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesOptionalExactCaptureFindAllFastPath =>
-            "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct optional exact-capture string shaping",
-        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSingleTrailingCaptureFindAllFastPath =>
-            "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping",
-        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSeparatedCaptureTupleFindAllFastPath =>
-            "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct separated-capture tuple shaping",
+            "owned scalar VM; direct optional exact-capture string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesRepeatedExactStringFindAllFastPath =>
             _pythonRegex.DebugUsesCountedRepeatedExactStringFindAllFastPath
                 ? "Utf8Regex; exact-literal count; repeated immutable string shaping"
                 : "Utf8Regex; exact-literal range enumeration; repeated immutable string shaping",
-        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesAsciiGreedyStarFindAllFastPath =>
-            "strict UTF-8 validation; direct ASCII greedy-star progression; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _captureCount > 0 =>
-            "strict UTF-8 decode; .NET Regex; findall string shaping",
+            "owned scalar VM; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(
             _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "findall string shaping"),
         PythonReBenchmarkOperation.FindAllStringsFromOffset =>
-            _pythonRegex.DebugUsesAsciiGreedyStarFindAllFastPath
-                ? "strict UTF-8 validation; direct ASCII greedy-star progression from a nonzero byte offset; findall string shaping"
-                : DescribeBackend(
-                    _pythonRegex.DebugFindAllBackend,
-                    _pythonRegex.DebugUtf8ExecutionKind,
-                    "findall string shaping from a nonzero byte offset"),
+            "owned scalar VM or qualified native literal enumeration; findall string shaping from a nonzero byte offset",
         PythonReBenchmarkOperation.FindAllUtf8 when _captureCount > 0 =>
-            "strict UTF-8 decode; .NET Regex; findall UTF-8 shaping",
+            "owned scalar VM; findall UTF-8 shaping",
         PythonReBenchmarkOperation.FindAllUtf8 => DescribeBackend(
             _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "findall UTF-8 shaping"),
         PythonReBenchmarkOperation.FindIterDetailed =>
-            "strict UTF-8 decode; .NET Regex; detailed iteration shaping",
+            "owned scalar VM; detailed iteration shaping",
         PythonReBenchmarkOperation.FindAllStructural => DescribeBackend(
             _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "group-zero structural match shaping"),
-        PythonReBenchmarkOperation.ReplaceString or
-            PythonReBenchmarkOperation.SubnString
-            when _pythonRegex.DebugUsesManagedEmptyReplacementFastPath =>
-            "strict UTF-8 decode; direct .NET Regex greedy exact-repeat replacement; string shaping",
-        PythonReBenchmarkOperation.ReplaceUtf8 or
-            PythonReBenchmarkOperation.SubnUtf8
-            when _pythonRegex.DebugUsesManagedEmptyReplacementFastPath =>
-            "strict UTF-8 decode; direct .NET Regex greedy exact-repeat replacement; UTF-8 shaping",
         PythonReBenchmarkOperation.ReplaceString or
             PythonReBenchmarkOperation.ReplaceStringLimited or
             PythonReBenchmarkOperation.SubnString =>
@@ -2530,26 +2511,24 @@ internal sealed class PythonReBenchmarkContext
                 _pythonRegex.DebugUtf8ExecutionKind,
                 "replacement; UTF-8 shaping"),
         PythonReBenchmarkOperation.SubnEvaluatorString =>
-            "strict UTF-8 decode; .NET Regex callback replacement; string shaping",
+            "owned scalar VM; callback replacement; string shaping",
         PythonReBenchmarkOperation.ReplaceEvaluatorString =>
-            "strict UTF-8 decode; .NET Regex callback replacement; string shaping without count",
+            "owned scalar VM; callback replacement; string shaping without count",
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
-            "strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping",
+            "owned scalar VM; callback replacement; UTF-8 shaping",
         PythonReBenchmarkOperation.SplitStrings =>
-            "strict UTF-8 decode; .NET Regex split; string shaping",
+            "owned scalar VM; split; string shaping",
         PythonReBenchmarkOperation.SplitStringsLimited =>
-            "strict UTF-8 decode; .NET Regex bounded split; string shaping",
+            "owned scalar VM; bounded split; string shaping",
         PythonReBenchmarkOperation.SplitDetailed =>
-            "strict UTF-8 decode; .NET Regex split; item-metadata shaping",
+            "owned scalar VM; split; item-metadata shaping",
         _ => throw new ArgumentOutOfRangeException(),
     };
 
     private static string DescribeBackend(
         PythonReDirectBackendKind backend,
         string? executionKind,
-        string projection) => backend == PythonReDirectBackendKind.Utf8Regex
-            ? $"Utf8Regex/{executionKind ?? "unknown"}; {projection}"
-            : $"strict UTF-8 decode; .NET Regex; {projection}";
+        string projection) => $"{backend}/{executionKind ?? "OwnedScalar"}; {projection}";
 
     internal PythonReBenchmarkBatch MeasurePythonReBatch(int iterations)
     {

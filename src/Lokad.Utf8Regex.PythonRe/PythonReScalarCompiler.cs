@@ -20,7 +20,7 @@ internal static class PythonReScalarCompiler
         internal Utf8SliceNode? Yes;
     }
 
-    internal static Utf8SliceProgram? Compile(PythonReParseResult parse,
+    internal static Utf8SliceProgram Compile(PythonReParseResult parse,
         PythonReTranslation translation, bool fullMatch)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -34,7 +34,6 @@ internal static class PythonReScalarCompiler
             var frame = frames[frameIndex];
             var node = frame.Node;
             var completed = true;
-            var declined = false;
             ConversionFrame child = default;
             try
             {
@@ -117,7 +116,7 @@ internal static class PythonReScalarCompiler
                             nodes[node] = group.Kind switch
                             {
                                 PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing =>
-                                    PythonReScalarNodeFactory.Capture(translation.ManagedNumbersByPython[group.GroupNumber] - 1, body),
+                                    PythonReScalarNodeFactory.Capture(translation.CoreNumbersByPython[group.GroupNumber] - 1, body),
                                 PythonReGroupKind.PositiveLookbehind => PythonReScalarNodeFactory.Lookbehind(body, true),
                                 PythonReGroupKind.NegativeLookbehind => PythonReScalarNodeFactory.Lookbehind(body, false),
                                 PythonReGroupKind.PositiveLookahead => PythonReScalarNodeFactory.Lookahead(body, true),
@@ -128,10 +127,10 @@ internal static class PythonReScalarCompiler
                         }
                         break;
                     case PythonReNumericBackreferenceNode reference:
-                        nodes[node] = PythonReScalarNodeFactory.Backref(translation.ManagedNumbersByPython[reference.GroupNumber] - 1, reference.LowerScalar);
+                        nodes[node] = PythonReScalarNodeFactory.Backref(translation.CoreNumbersByPython[reference.GroupNumber] - 1, reference.LowerScalar);
                         break;
                     case PythonReNamedBackreferenceNode reference:
-                        nodes[node] = PythonReScalarNodeFactory.Backref(translation.ManagedNumbersByPython[parse.NamedGroups[reference.Name]] - 1, reference.LowerScalar);
+                        nodes[node] = PythonReScalarNodeFactory.Backref(translation.CoreNumbersByPython[parse.NamedGroups[reference.Name]] - 1, reference.LowerScalar);
                         break;
                     case PythonReConditionalNode conditional:
                         if (frame.Stage == 0)
@@ -156,7 +155,7 @@ internal static class PythonReScalarCompiler
                         var number = conditional.Reference.Kind == PythonReConditionalReferenceKind.GroupNumber
                             ? conditional.Reference.GroupNumber
                             : parse.NamedGroups[conditional.Reference.GroupName ?? throw new InvalidOperationException("Conditional name missing.")];
-                        nodes[node] = PythonReScalarNodeFactory.Conditional(translation.ManagedNumbersByPython[number] - 1,
+                        nodes[node] = PythonReScalarNodeFactory.Conditional(translation.CoreNumbersByPython[number] - 1,
                             frame.Yes ?? throw new InvalidOperationException("Conditional yes branch is missing."), no);
                         break;
                     default:
@@ -166,17 +165,17 @@ internal static class PythonReScalarCompiler
                         var atomOptions = RegexOptions.CultureInvariant
                             | ((frame.Options & PythonReCompileOptions.Multiline) != 0 ? RegexOptions.Multiline : RegexOptions.None);
                         var tree = Utf8OwnedTreeParser.TryParse(fragment, atomOptions);
-                        if (tree?.CaptureCatalog is not { } catalog) { declined = true; break; }
+                        if (tree?.CaptureCatalog is not { } catalog)
+                            throw new InvalidOperationException("The validated Python atom has no owned scalar tree: " + fragment);
                         var balancing = false;
                         var lazyCaptures = false;
                         if (Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures) is not { } atom)
-                            declined = true;
+                            throw new InvalidOperationException("The validated Python atom has no owned scalar lowering: " + fragment);
                         else nodes[node] = atom;
                         break;
                 }
             }
             finally { frames[frameIndex] = frame; }
-            if (declined) return null;
             if (completed) frames.Pop();
             else frames.Push(child);
         }
@@ -203,9 +202,11 @@ internal static class PythonReScalarCompiler
             }
         }
         foreach (var named in parse.NamedGroups)
-            names[translation.ManagedNumbersByPython[named.Value]] = translation.EmittedGroupNames[named.Key];
-        var program = Utf8SliceLowerer.Lower(root, names, false, false, false);
-        if (program is not null) { arena.Complete(); construction.Complete(); }
+            names[translation.CoreNumbersByPython[named.Value]] = translation.EmittedGroupNames[named.Key];
+        var program = Utf8SliceLowerer.Lower(root, names, false, false, false)
+            ?? throw new InvalidOperationException("The validated Python tree has no owned scalar program.");
+        arena.Complete();
+        construction.Complete();
         return program;
     }
 }

@@ -43,24 +43,14 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (!(_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan) &&
-            TryMatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var scalarGroups, out _))
-            return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
-
-        // PLAN.md C08: native value paths skip positive-lookbehind verification (core literal plans drop the assertion while detailed paths verify); keep lookbehind patterns on verified routes.
-        if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
+        if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
-            ValidateStartOffset(input, startOffsetInBytes);
-            var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
-                ? _utf8Regex.Match(input, cancellationToken)
-                : _utf8Regex.MatchFromUtf16Offset(
-                    input,
-                    GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes),
-                    cancellationToken);
+            var match = _utf8Regex.Match(input, cancellationToken);
             return Utf8PythonValueMatchFromUtf8Regex(input, match);
         }
-
-        return SearchViaManagedRegex(input, startOffsetInBytes);
+        MatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var groups, out _);
+        return groups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, groups[0]);
     }
 
     /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -103,30 +93,15 @@ public sealed partial class Utf8PythonRegex
                     EndOffsetInUtf16 = end,
                 });
         }
-
-        if (!(_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan) &&
-            TryMatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var scalarGroups, out _))
-            return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
-
-        if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
+        if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
-            ValidateStartOffset(input, startOffsetInBytes);
-            var startOffsetInUtf16 = startOffsetInBytes == 0
-                ? 0
-                : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
-                ? _utf8Regex.Match(input, cancellationToken)
-                : _utf8Regex.MatchFromUtf16Offset(input, startOffsetInUtf16, cancellationToken);
-            if (!match.Success || match.IndexInUtf16 != startOffsetInUtf16)
-            {
-                return default;
-            }
-
+            var match = _utf8Regex.Match(input, cancellationToken);
+            if (!match.Success || match.IndexInUtf16 != 0) return default;
             return Utf8PythonValueMatchFromUtf8Regex(input, match);
         }
-
-        var context = MatchDetailed(input, startOffsetInBytes);
-        return context.Value;
+        MatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var groups, out _);
+        return groups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, groups[0]);
     }
 
     /// <summary>Matches exactly at a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -178,27 +153,8 @@ public sealed partial class Utf8PythonRegex
                 EndOffsetInUtf16 = validation.Utf16Length,
             });
         }
-
-        if (TryMatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _))
-            return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
-
-        var utf8FullRegex = GetUtf8FullRegex();
-        if (utf8FullRegex is not null && (!_hasLookbehind || utf8FullRegex.Inspection.DebugUsesOwnedSliceProgram))
-        {
-            // PLAN.md C08: match the whole subject from the start offset so `^` keeps the real start and lookbehind keeps its prefix; the `\G` wrapper pins the span while `\z` pins the end.
-            var match = utf8FullRegex.MatchFromUtf16Offset(
-                input,
-                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes),
-                cancellationToken);
-            if (!match.Success)
-            {
-                return default;
-            }
-
-            return Utf8PythonValueMatchFromUtf8Regex(input, match);
-        }
-
-        return FullMatchViaManagedRegex(input, startOffsetInBytes);
+        MatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _);
+        return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
     }
 
     /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation before matching begins.</summary>
@@ -229,64 +185,13 @@ public sealed partial class Utf8PythonRegex
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.Count(input, cancellationToken);
-
-        if (ScalarProgram is { } ownedProgram)
-            return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ownedProgram, cancellationToken);
-
-        var subject = Decode(input);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        if (!_canMatchEmpty)
-        {
-            if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram) && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
-            {
-                var ownedCount = 0;
-                var ownedCountFirst = true;
-                var ownedCountDeclined = false;
-                try
-                {
-                    while (ownedCountCursor.MoveNext())
-                    {
-                        var ownedCountMatch = ownedCountCursor.CurrentValueMatch;
-                        if (!ownedCountMatch.Success || ownedCountMatch.IndexInUtf16 < startOffsetInUtf16)
-                        {
-                            continue;
-                        }
-
-                        var ownedCountBranch = ownedCountCursor.LastLiteralFamilyBranchId;
-                        if (ownedCountFirst)
-                        {
-                            ownedCountFirst = false;
-                            if (ownedCountBranch < 0 || (uint)ownedCountBranch >= (uint)ownedCountMap.BranchGroups.Length)
-                            {
-                                ownedCountDeclined = true;
-                                break;
-                            }
-                        }
-
-                        ownedCount++;
-                    }
-                }
-                catch (Utf8ExecutionDeadlineExpiredException)
-                {
-                    throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
-                }
-
-                if (!ownedCountDeclined)
-                {
-                    return ownedCount;
-                }
-            }
-
-            return _managedRegex.Value.Count(subject, startOffsetInUtf16);
-        }
-
-        return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16);
+        return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ScalarProgram, cancellationToken);
     }
 
     private int CountOwnedSlicePythonStyle(ReadOnlySpan<byte> input, int startOffsetInBytes,
         Utf8SliceProgram program, CancellationToken cancellationToken)
     {
-        var cursor = new PythonReScalarMatchCursor(input, program, _managedGroupNumbersByPythonGroup,
+        var cursor = new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
             startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
         try
         {

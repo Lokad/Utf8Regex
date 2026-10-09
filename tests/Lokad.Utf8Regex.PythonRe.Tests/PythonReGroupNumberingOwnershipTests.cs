@@ -63,6 +63,6 @@ public sealed class PythonReGroupNumberingOwnershipTests
             expected[pair.Value] = managed.GroupNumberFromName(translation.EmittedGroupNames[pair.Key]);
         }
 
-        Assert.Equal(expected, translation.ManagedNumbersByPython);
+        Assert.Equal(expected, translation.CoreNumbersByPython);
     }
 }

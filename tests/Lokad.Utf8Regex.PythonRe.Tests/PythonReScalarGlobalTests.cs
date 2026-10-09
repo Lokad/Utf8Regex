@@ -90,8 +90,8 @@ public sealed partial class PythonReScalarGlobalTests
             Assert.Equal(resultText, regex.SubnToString(input, 0, evaluator, limit, start, token).ResultText);
             Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Subn(input, 0, evaluator, limit, start, token).ResultBytes));
             Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Subn(input, 0, utf8Evaluator, limit, start, token).ResultBytes));
-            Assert.False(regex.DebugIsManagedRegexValueCreated);
-            Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+            Assert.True(regex.DebugUsesOwnedSlice);
+            Assert.True(regex.DebugUsesOwnedSlice);
         }
     }
 
@@ -133,7 +133,7 @@ public sealed partial class PythonReScalarGlobalTests
         }
         finally { session.Complete(); }
         Assert.Single(regex.FindIterDetailed("\U0001f600\U0001f600"u8));
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -151,6 +151,6 @@ public sealed partial class PythonReScalarGlobalTests
         });
         Assert.InRange(calls, 1, 2);
         Assert.Equal(regex.MatchTimeout, failure.MatchTimeout);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 }

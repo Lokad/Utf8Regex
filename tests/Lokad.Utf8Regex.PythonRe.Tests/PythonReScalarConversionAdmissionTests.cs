@@ -114,7 +114,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     }
 
     [Fact]
-    public void ScalarConversionDeclineRollsBackItsObjectsAndRetainsSpentWork()
+    public void InvalidInternalAtomRollsBackItsObjectsAndRetainsSpentWork()
     {
         var parse = new PythonReParser("").Parse(PythonReCompileOptions.None)
             with { Root = new PythonReRawNode(@"\C", PythonReRawKind.Escape) };
@@ -122,7 +122,8 @@ public sealed class PythonReScalarConversionAdmissionTests
         using var owner = Utf8ConstructionScope.Enter();
         var parent = PythonReAstFactory.Literal('p');
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        Assert.Null(PythonReScalarCompiler.Compile(parse, translation, false));
+        Assert.Throws<InvalidOperationException>(() => PythonReScalarCompiler.Compile(parse, translation, false));
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(@"\C"));
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         Assert.Same(parent, checkpoint?.Value);

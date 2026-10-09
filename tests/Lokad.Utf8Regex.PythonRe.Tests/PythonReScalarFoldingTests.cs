@@ -31,8 +31,7 @@ public sealed partial class PythonReScalarFoldingTests
             Assert.Equal(Encoding.UTF8.GetByteCount(first), match.Groups[1].EndOffsetInBytes);
             Assert.Equal(first, match.Groups[1].ValueText);
         }
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -50,8 +49,8 @@ public sealed partial class PythonReScalarFoldingTests
                 $"literal U+{row.Captured:X}/U+{row.Referenced:X}");
             Assert.False(negative.FullMatch(Encoding.UTF8.GetBytes(second)).Success);
             Assert.True(literal.FullMatch(Encoding.UTF8.GetBytes(first)).Success);
-            Assert.False(literal.DebugIsManagedRegexValueCreated);
-            Assert.False(negative.DebugIsManagedFullRegexValueCreated);
+            Assert.True(literal.DebugUsesOwnedSlice);
+            Assert.True(negative.DebugUsesOwnedSlice);
         }
     }
 
@@ -99,7 +98,7 @@ public sealed partial class PythonReScalarFoldingTests
         }
         finally { session.Complete(); }
         Assert.True(regex.FullMatch("KK"u8).Success);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]

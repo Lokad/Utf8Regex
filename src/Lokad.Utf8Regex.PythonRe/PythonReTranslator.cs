@@ -20,66 +20,16 @@ internal static partial class PythonReTranslator
         return GetWidth(node, parseResult).Min == 0;
     }
 
-    public static bool CanMatchNonEmpty(PythonReNode node, PythonReParseResult parseResult)
-    {
-        var max = GetWidth(node, parseResult).Max;
-        return max > 0;
-    }
+    public static bool CanMatchNonEmpty(PythonReNode node, PythonReParseResult parseResult) =>
+        GetWidth(node, parseResult).Max > 0;
 
     // Native FindAll over UTF-8 is admissible only when alternation order is
     // unobservable: prefix-free exact literals guarantee at most one branch
     // matches at any position, so a literal-family candidate scan cannot diverge
-    // from ordered-alternation semantics. Conditionals stay managed. The facade
+    // from ordered-alternation semantics. Conditionals use the scalar program. The facade
     // additionally requires no empty match. Pinned by
     // FindAllCanUseUtf8RegexBackendForPrefixFreeLiteralAlternation.
     public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
-
-    // Managed Split is admissible only for structurally mandatory captures:
-    // .NET reports an unmatched group as "" while Python reports None, so
-    // optional or alternated captures take the manual loop. Unnamed-only keeps
-    // managed numbers identical to Python slots (PLAN.md C07); the facade
-    // additionally requires no empty match, or astral-free input at the call
-    // site, because Regex.Split advances empty matches by UTF-16 unit while
-    // Python advances by scalar. Pinned by
-    // ManagedSplitFastPathRequiresMandatoryUnnamedCaptures.
-
-    public static bool CanUseManagedSplitFastPath(PythonReNode node) => CapturesAreMandatory(node);
-
-    public static bool CanUseManagedEmptyReplacementFastPath(PythonReNode node) =>
-        node is PythonReQuantifierNode
-        {
-            Inner: var repeated,
-            Min: 0,
-            Max: null or > 0,
-            Flavor: PythonReQuantifierFlavor.Greedy,
-        } &&
-        TryGetExactLiteral(repeated, out var literal) &&
-        literal.Length > 0;
-
-    public static bool TryGetAsciiGreedyStarFindAllByte(
-        PythonReNode node,
-        PythonReCompileOptions options,
-        out byte repeatedByte)
-    {
-        if ((options & PythonReCompileOptions.IgnoreCase) == 0 &&
-            node is PythonReQuantifierNode
-            {
-                Inner: var repeated,
-                Min: 0,
-                Max: null,
-                Flavor: PythonReQuantifierFlavor.Greedy,
-            } &&
-            TryGetExactLiteral(repeated, out var literal) &&
-            literal is [var character] &&
-            character <= 0x7f)
-        {
-            repeatedByte = (byte)character;
-            return true;
-        }
-
-        repeatedByte = default;
-        return false;
-    }
 
     public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
 
@@ -98,54 +48,12 @@ internal static partial class PythonReTranslator
         return false;
     }
 
-    public static bool TryGetSingleTrailingCapturePrefixLength(PythonReNode node, out int prefixLength)
-    {
-        if (node is PythonReGroupNode
-            {
-                Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
-            })
-        {
-            prefixLength = 0;
-            return true;
-        }
-
-        if (node is not PythonReSequenceNode { Elements.Count: > 0 } sequence ||
-            sequence.Elements[^1] is not PythonReGroupNode
-            {
-                Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
-            })
-        {
-            prefixLength = 0;
-            return false;
-        }
-
-        var length = 0;
-        for (var index = 0; index < sequence.Elements.Count - 1; index++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (!TryGetExactLiteral(sequence.Elements[index], out var segment))
-            {
-                prefixLength = 0;
-                return false;
-            }
-
-            length = checked(length + segment.Length);
-        }
-
-        prefixLength = length;
-        return true;
-    }
-
     public static bool TryGetOptionalExactCaptureFindAllPlan(
         PythonReNode node,
         PythonReCompileOptions options,
-        out string captureValue,
-        out int presentMatchLength,
-        out int absentMatchLength)
+        out string captureValue)
     {
         captureValue = string.Empty;
-        presentMatchLength = 0;
-        absentMatchLength = 0;
         if ((options & PythonReCompileOptions.IgnoreCase) != 0 ||
             node is not PythonReSequenceNode sequence)
         {
@@ -207,43 +115,7 @@ internal static partial class PythonReTranslator
             return false;
         }
 
-        absentMatchLength = fixedLength;
-        presentMatchLength = checked(fixedLength + captureValue.Length);
         return true;
-    }
-
-    public static bool TryGetSeparatedCaptureTupleSeparator(PythonReNode node, out char separator)
-    {
-        if (node is PythonReSequenceNode
-            {
-                Elements.Count: 3,
-                Elements:
-                [
-                    PythonReGroupNode
-                    {
-                        Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
-                        Inner: var first,
-                    },
-                    var separatorNode,
-                    PythonReGroupNode
-                    {
-                        Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
-                        Inner: var second,
-                    },
-                ],
-            } &&
-            TryGetExactLiteral(separatorNode, out var literal) &&
-            literal is [var candidate] &&
-            IsAsciiPunctuation(candidate) &&
-            IsNonEmptyAsciiWordClassRepeat(first) &&
-            IsNonEmptyAsciiWordClassRepeat(second))
-        {
-            separator = candidate;
-            return true;
-        }
-
-        separator = default;
-        return false;
     }
 
     public static bool TryGetAsciiLiteralPrefixDigitRepeat(
@@ -376,21 +248,21 @@ internal static partial class PythonReTranslator
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
         var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups, arena);
         using var builder = Utf8ConstructionText.Create();
-        // PLAN.md C07: .NET numbers unnamed groups first (opening-paren order), then named groups (opening-paren order), while Python numbers strictly by opening paren. Precompute the Python-slot to managed-number permutation once; the facade proves the same rule via GroupNumberFromName at runtime.
-        var managedNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), true);
-        var namedPythonGroups = arena.Allocate<bool>(managedNumbersByPython.Length, false);
+        // PLAN.md C07: .NET numbers unnamed groups first (opening-paren order), then named groups (opening-paren order), while Python numbers strictly by opening paren. Precompute the Python-slot to core-slot permutation for the owned scalar program.
+        var coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), true);
+        var namedPythonGroups = arena.Allocate<bool>(coreNumbersByPython.Length, false);
         foreach (var number in parseResult.NamedGroups.Values)
         {
             construction.Budget.ChargeWork(1);
             namedPythonGroups[number] = true;
         }
-        var nextManagedGroup = 1;
+        var nextCoreGroup = 1;
         for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
         {
             Utf8ConstructionScope.ChargeWork(1);
             if (!namedPythonGroups[pythonGroup])
             {
-                managedNumbersByPython[pythonGroup] = nextManagedGroup++;
+                coreNumbersByPython[pythonGroup] = nextCoreGroup++;
             }
         }
 
@@ -399,14 +271,14 @@ internal static partial class PythonReTranslator
             Utf8ConstructionScope.ChargeWork(1);
             if (namedPythonGroups[pythonGroup])
             {
-                managedNumbersByPython[pythonGroup] = nextManagedGroup++;
+                coreNumbersByPython[pythonGroup] = nextCoreGroup++;
             }
         }
 
-        AppendTree(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, false);
+        AppendTree(parseResult.Root, builder, emittedGroupNames, coreNumbersByPython, false);
         var translatedPattern = builder.ToText();
         builder.Clear();
-        AppendTree(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython, true);
+        AppendTree(parseResult.Root, builder, emittedGroupNames, coreNumbersByPython, true);
         var nativePattern = builder.ToText();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
@@ -419,14 +291,11 @@ internal static partial class PythonReTranslator
 
         var result = new PythonReTranslation(translatedPattern, nativePattern, ToRegexOptions(parseResult.Options),
             ToRegexOptions(parseResult.Options) & ~RegexOptions.IgnoreCase, parseResult.CaptureGroupCount,
-            emittedGroupNames, managedNumbersByPython);
+            emittedGroupNames, coreNumbersByPython);
         arena.Complete();
         construction.Complete();
         return result;
     }
-
-
-    private static bool CapturesAreMandatory(PythonReNode node) => InspectSelection(node, InspectionKind.MandatoryCaptures);
 
     private static void ValidateConditionalReference(
         PythonReConditionalReference reference,
@@ -546,7 +415,7 @@ internal static partial class PythonReTranslator
         }
     }
 
-    private static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult)
+    internal static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult)
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var widths = Utf8ConstructionMap<PythonReNode, PythonReWidth>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
@@ -647,55 +516,6 @@ internal static partial class PythonReTranslator
         if (complete) construction.Complete();
         return complete;
     }
-
-    // The tuple splitter divides each managed match at the first ASCII separator, so a capture qualifies when none of its members can equal that separator. PLAN.md C05 IgnoreCase expansion adds non-ASCII fold partners (U+0130, `_EXTRA_CASES` members) to ASCII classes; those can never equal ASCII punctuation, and capture text still matches through the fully expanded managed regex. Only ASCII members need the word check, and ranges are scanned over their ASCII prefix alone so admission stays bounded for astral runs.
-    private static bool IsNonEmptyAsciiWordClassRepeat(PythonReNode node)
-    {
-        if (node is not PythonReQuantifierNode
-            {
-                Inner: PythonReCharacterClassNode { IsNegated: false } characterClass,
-                Min: > 0,
-            })
-        {
-            return false;
-        }
-
-        for (var itemIndex = 0; itemIndex < characterClass.Items.Count; itemIndex++)
-        {
-            var item = characterClass.Items[itemIndex];
-            Utf8ConstructionScope.ChargeWork(1);
-            switch (item)
-            {
-                case PythonReCharacterClassLiteralItem literal when IsAsciiWordCharacter(literal.Scalar) || literal.Scalar > 0x7F:
-                    break;
-
-                case PythonReCharacterClassRangeItem range
-                    when range.StartScalar <= range.EndScalar &&
-                         range.StartScalar >= 0:
-                    for (var scalar = range.StartScalar; scalar <= Math.Min(range.EndScalar, 0x7F); scalar++)
-                    {
-                        Utf8ConstructionScope.ChargeWork(1);
-                        if (!IsAsciiWordCharacter(scalar))
-                        {
-                            return false;
-                        }
-                    }
-
-                    break;
-
-                default:
-                    return false;
-            }
-        }
-
-        return characterClass.Items.Count > 0;
-    }
-
-    private static bool IsAsciiPunctuation(char value) =>
-        value is >= '\u0021' and <= '\u007E' && !IsAsciiWordCharacter(value);
-
-    private static bool IsAsciiWordCharacter(int value) =>
-        value is >= '0' and <= '9' or >= 'A' and <= 'Z' or '_' or >= 'a' and <= 'z';
 
     private static void AppendCharacterClass(PythonReCharacterClassNode node, Utf8ConstructionText builder, bool native)
     {
@@ -953,4 +773,4 @@ internal readonly record struct PythonReTranslation(
     RegexOptions NativeRegexOptions,
     int CaptureGroupCount,
     IReadOnlyDictionary<string, string> EmittedGroupNames,
-    int[] ManagedNumbersByPython);
+    int[] CoreNumbersByPython);

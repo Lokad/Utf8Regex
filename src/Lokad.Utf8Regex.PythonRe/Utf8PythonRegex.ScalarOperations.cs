@@ -9,16 +9,12 @@ internal delegate byte[] PythonReScalarReplacementFactory<TState>(ReadOnlySpan<b
 /// <summary>Shared scalar discovery for Python global operations.</summary>
 public sealed partial class Utf8PythonRegex
 {
-    private bool TryCreateScalarCursor(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken, out PythonReScalarMatchCursor cursor)
+    private PythonReScalarMatchCursor CreateScalarCursor(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        CancellationToken cancellationToken)
     {
-        cursor = default;
-        if (ScalarProgram is not { } program)
-            return false;
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        cursor = new PythonReScalarMatchCursor(input, program, _managedGroupNumbersByPythonGroup,
+        return new PythonReScalarMatchCursor(input, ScalarProgram, _coreGroupNumbersByPythonGroup,
             startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
-        return true;
     }
 
     private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -29,17 +25,16 @@ public sealed partial class Utf8PythonRegex
         // The cursor validates the whole subject inside the owning invocation.
     }
 
-    private bool TryMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+    private void MatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         int kind, bool materializeValues, CancellationToken cancellationToken,
         out PythonReGroupData[] groups, out Utf8PythonDetailedMatchData detailed)
     {
         groups = [];
         detailed = default;
         var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
-        if (program is null) return false;
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var cursor = new PythonReScalarMatchCursor(input, program,
-            _managedGroupNumbersByPythonGroup, startOffsetInBytes, MatchTimeout,
+            _coreGroupNumbersByPythonGroup, startOffsetInBytes, MatchTimeout,
             _translation.Pattern, cancellationToken);
         try
         {
@@ -49,16 +44,16 @@ public sealed partial class Utf8PythonRegex
                 else groups = cursor.SnapshotGroups();
             }
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }
 
-    private bool TryFindIterScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+    private void FindIterScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonDetailedMatchData[] matches)
     {
         matches = [];
-        if (!TryCreateScalarCursor(input, startOffsetInBytes, cancellationToken, out var cursor)) return false;
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             List<Utf8PythonDetailedMatchData> list = [];
@@ -69,16 +64,16 @@ public sealed partial class Utf8PythonRegex
             }
             matches = list.ToArray();
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }
 
-    private bool TryFindAllScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+    private void FindAllScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonMatchData[] matches)
     {
         matches = [];
-        if (!TryCreateScalarCursor(input, startOffsetInBytes, cancellationToken, out var cursor)) return false;
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             List<Utf8PythonMatchData> list = [];
@@ -96,16 +91,16 @@ public sealed partial class Utf8PythonRegex
             }
             matches = list.ToArray();
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }
 
-    private bool TryFindAllScalarStrings(ReadOnlySpan<byte> input, int startOffsetInBytes,
+    private void FindAllScalarStrings(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonFindAllResult result)
     {
         result = default;
-        if (!TryCreateScalarCursor(input, startOffsetInBytes, cancellationToken, out var cursor)) return false;
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             List<string> scalars = [];
@@ -139,16 +134,16 @@ public sealed partial class Utf8PythonRegex
                 ScalarValues = scalars.ToArray(), TupleValues = tuples.ToArray(),
             };
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }
 
-    private bool TryFindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
+    private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonFindAllUtf8Result result)
     {
         result = default;
-        if (!TryCreateScalarCursor(input, startOffsetInBytes, cancellationToken, out var cursor)) return false;
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             List<byte[]> scalars = [];
@@ -181,17 +176,17 @@ public sealed partial class Utf8PythonRegex
                 ScalarValues = scalars.ToArray(), TupleValues = tuples.ToArray(),
             };
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }
 
-    private bool TrySplitScalar(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes,
+    private void SplitScalar(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes,
         CancellationToken cancellationToken, bool stringsOnly, out Utf8PythonSplitItem[] items, out string?[] values)
     {
         items = [];
         values = [];
-        if (!TryCreateScalarCursor(input, startOffsetInBytes, cancellationToken, out var cursor)) return false;
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             List<Utf8PythonSplitItem> parts = [];
@@ -226,17 +221,17 @@ public sealed partial class Utf8PythonRegex
                 }
             }
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }
 
-    private bool TrySubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
+    private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
         PythonReScalarReplacementFactory<TState> replacementFactory, int count, int startOffsetInBytes,
         CancellationToken cancellationToken, out Utf8PythonSubnUtf8Result result)
     {
         result = default;
-        if (!TryCreateScalarCursor(input, startOffsetInBytes, cancellationToken, out var cursor)) return false;
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             var builder = new ArrayBufferWriter<byte>();
@@ -256,7 +251,7 @@ public sealed partial class Utf8PythonRegex
             cursor.AppendBytes(builder, input[last..]);
             result = new Utf8PythonSubnUtf8Result { ResultBytes = builder.WrittenSpan.ToArray(), ReplacementCount = replaced };
             cursor.Checkpoint();
-            return true;
+            return;
         }
         finally { cursor.Dispose(); }
     }

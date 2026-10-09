@@ -1,11 +1,3 @@
-using System.Buffers;
-using System.Text;
-using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Caching;
-using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
-
 namespace Lokad.Utf8Regex.PythonRe;
 
 // PLAN.md D09: detailed match entry points, split from the Python facade along the detailed-match ownership boundary.
@@ -21,23 +13,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext SearchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (TryMatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var scalarGroups, out _))
-            return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
-
-        if (_utf8Regex is not null)
-        {
-            ValidateStartOffset(input, startOffsetInBytes);
-            var utf8StartOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            var utf8Match = _utf8Regex.MatchDetailedFromUtf16Offset(input, utf8StartOffsetInUtf16);
-            return CreateMatchContextFromUtf8(input, utf8Match);
-        }
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Decode(input);
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
-        return CreateMatchContext(input, match, indexMap);
+        MatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var scalarGroups, out _);
+        return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
     }
 
     /// <summary>Finds the first capture context at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -60,33 +37,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (TryMatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var scalarGroups, out _))
-            return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
-
-        if (_utf8Regex is not null)
-        {
-            ValidateStartOffset(input, startOffsetInBytes);
-            var utf8StartOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            var utf8Match = _utf8Regex.MatchDetailedFromUtf16Offset(input, utf8StartOffsetInUtf16);
-            if (!utf8Match.Success || utf8Match.IndexInUtf16 != utf8StartOffsetInUtf16)
-            {
-                return default;
-            }
-
-            return CreateMatchContextFromUtf8(input, utf8Match);
-        }
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Decode(input);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
-        if (!match.Success || match.Index != startOffsetInUtf16)
-        {
-            return default;
-        }
-
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateMatchContext(input, match, indexMap);
+        MatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var scalarGroups, out _);
+        return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
     }
 
     /// <summary>Matches at a zero-based UTF-8 byte offset and exposes its capture context, observing cancellation before matching begins.</summary>
@@ -109,36 +61,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext FullMatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (TryMatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _))
-            return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var utf8FullRegex = GetUtf8FullRegex();
-        if (utf8FullRegex is not null)
-        {
-            // Whole subject from the start offset: see FullMatch for the pos contract. Native detailed paths verify lookbehind, so they stay available here.
-            var utf8Match = utf8FullRegex.MatchDetailedFromUtf16Offset(
-                input,
-                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-            if (!utf8Match.Success)
-            {
-                return default;
-            }
-
-            return CreateMatchContextFromUtf8(input, utf8Match);
-        }
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Decode(input);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _lazyManagedFullRegex.Value.Match(subject, startOffsetInUtf16);
-        if (!match.Success)
-        {
-            return default;
-        }
-
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateMatchContext(input, match, indexMap);
+        MatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _);
+        return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
     }
 
     /// <summary>Matches the complete UTF-8 suffix and exposes its capture context, observing cancellation before matching begins.</summary>
@@ -227,23 +151,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData SearchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (TryMatchScalar(input, startOffsetInBytes, 0, true, cancellationToken, out _, out var scalarData))
-            return scalarData;
-
-        if (_utf8Regex is not null)
-        {
-            ValidateStartOffset(input, startOffsetInBytes);
-            var utf8StartOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            var utf8Match = _utf8Regex.MatchDetailedFromUtf16Offset(input, utf8StartOffsetInUtf16);
-            return CreateDetailedMatchDataFromUtf8(input, utf8Match);
-        }
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Decode(input);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateDetailedMatchData(input, match, indexMap);
+        MatchScalar(input, startOffsetInBytes, 0, true, cancellationToken, out _, out var scalarData);
+        return scalarData;
     }
 
     /// <summary>Finds and materializes capture data after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -266,33 +175,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData MatchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (TryMatchScalar(input, startOffsetInBytes, 1, true, cancellationToken, out _, out var scalarData))
-            return scalarData;
-
-        if (_utf8Regex is not null)
-        {
-            ValidateStartOffset(input, startOffsetInBytes);
-            var utf8StartOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            var utf8Match = _utf8Regex.MatchDetailedFromUtf16Offset(input, utf8StartOffsetInUtf16);
-            if (!utf8Match.Success || utf8Match.IndexInUtf16 != utf8StartOffsetInUtf16)
-            {
-                return default;
-            }
-
-            return CreateDetailedMatchDataFromUtf8(input, utf8Match);
-        }
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Decode(input);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
-        if (!match.Success || match.Index != startOffsetInUtf16)
-        {
-            return default;
-        }
-
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateDetailedMatchData(input, match, indexMap);
+        MatchScalar(input, startOffsetInBytes, 1, true, cancellationToken, out _, out var scalarData);
+        return scalarData;
     }
 
     /// <summary>Matches at a zero-based UTF-8 byte offset and materializes all capture data, observing cancellation before matching begins.</summary>
@@ -315,36 +199,8 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData FullMatchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (TryMatchScalar(input, startOffsetInBytes, 2, true, cancellationToken, out _, out var scalarData))
-            return scalarData;
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var utf8FullRegex = GetUtf8FullRegex();
-        if (utf8FullRegex is not null)
-        {
-            // Whole subject from the start offset: see FullMatch for the pos contract. Native detailed paths verify lookbehind, so they stay available here.
-            var utf8Match = utf8FullRegex.MatchDetailedFromUtf16Offset(
-                input,
-                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-            if (!utf8Match.Success)
-            {
-                return default;
-            }
-
-            return CreateDetailedMatchDataFromUtf8(input, utf8Match);
-        }
-
-        ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Decode(input);
-        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _lazyManagedFullRegex.Value.Match(subject, startOffsetInUtf16);
-        if (!match.Success)
-        {
-            return default;
-        }
-
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateDetailedMatchData(input, match, indexMap);
+        MatchScalar(input, startOffsetInBytes, 2, true, cancellationToken, out _, out var scalarData);
+        return scalarData;
     }
 
     /// <summary>Matches the complete UTF-8 suffix and materializes all capture data, observing cancellation before matching begins.</summary>

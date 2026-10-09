@@ -939,14 +939,6 @@ internal sealed partial class PythonReParser
 
     private char Consume() => _pattern[_position++];
 
-    private void Expect(char ch)
-    {
-        if (!TryConsume(ch))
-        {
-            throw Error($"missing {ch}");
-        }
-    }
-
     private void ExpectGroupEnd(int groupStart, string message)
     {
         if (!TryConsume(')'))

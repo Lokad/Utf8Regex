@@ -67,8 +67,7 @@ public sealed class PythonReScalarRenderingTests
         }
         Assert.Equal(expected ? new[] { subject } : [], regex.FindAllToStrings(input).ScalarValues);
         Assert.DoesNotContain(PythonReParser.ManagedUnicodeScalarPattern, regex.DebugNativePattern);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -83,7 +82,7 @@ public sealed class PythonReScalarRenderingTests
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(expected, regex.FullMatch(input).Success);
         Assert.Equal(expected ? new[] { subject } : [], regex.FindAllToStrings(input).ScalarValues);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -97,8 +96,7 @@ public sealed class PythonReScalarRenderingTests
         Assert.Equal("\U00010400", group.GetValueString());
         Assert.Equal(0, group.Value.StartOffsetInBytes);
         Assert.Equal(4, group.Value.EndOffsetInBytes);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -109,7 +107,7 @@ public sealed class PythonReScalarRenderingTests
         var regex = new Utf8PythonRegex(pattern);
         Assert.True(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
         Assert.Equal(2, regex.Count("😀"u8));
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]

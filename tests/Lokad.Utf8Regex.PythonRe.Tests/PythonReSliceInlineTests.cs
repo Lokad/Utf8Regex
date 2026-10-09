@@ -35,7 +35,7 @@ public sealed class PythonReSliceInlineTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(translated, regex.DebugTranslatedPattern);
         AssertOwnedBackends(regex);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -56,7 +56,7 @@ public sealed class PythonReSliceInlineTests
         Assert.Equal("(?:[Aa])+", regex.DebugTranslatedPattern);
         Assert.True(regex.DebugUsesOwnedSlice);
         Assert.True(regex.FullMatch("aA"u8).Success);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class PythonReSliceInlineTests
         var input = Utf8("xababx");
         Assert.Equal("abab", regex.Search(input).GetValueString());
         Assert.Equal(1, regex.Count(input));
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> SearchCases()
@@ -107,7 +107,7 @@ public sealed class PythonReSliceInlineTests
             Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
         }
 
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -133,7 +133,7 @@ public sealed class PythonReSliceInlineTests
             Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
         }
 
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -150,7 +150,7 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -167,7 +167,7 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -185,7 +185,7 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Fact]
@@ -200,6 +200,6 @@ public sealed class PythonReSliceInlineTests
         Assert.Equal("aBB", detailed.GetGroup(0).GetValueString());
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
         AssertOwnedBackends(regex);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

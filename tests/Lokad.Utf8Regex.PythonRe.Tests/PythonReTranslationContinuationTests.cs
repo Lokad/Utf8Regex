@@ -26,8 +26,7 @@ public sealed class PythonReTranslationContinuationTests
             Assert.Equal(depth + 1, result.Groups.Length);
             Assert.Equal("😀", result.Groups[depth].ValueText);
         }
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.InRange(construction.Budget.PeakDepth, 1ul, 131072ul);
         Assert.Equal(0ul, construction.Budget.Depth);
     }
@@ -60,7 +59,7 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(result.Success);
         Assert.Equal((4, 6), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
         Assert.Equal("é", result.Groups[1].ValueText);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -72,10 +71,9 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(PythonReTranslator.TryGetCaseSensitiveExactLiteral(parse.Root, parse.Options, out var literal));
         Assert.Equal("éab", literal);
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
-        Assert.True(PythonReTranslator.CanUseManagedSplitFastPath(parse.Root));
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal("éab", regex.SearchToString("xéabz"u8));
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object[]> Walkers()
@@ -149,16 +147,16 @@ public sealed class PythonReTranslationContinuationTests
     }
 
     [Theory]
-    [InlineData("(?:a|b)", true)] [InlineData("(?:a|ab)", true)]
-    [InlineData("(a)?", false)] [InlineData("(?=(a))a", false)]
+    [InlineData("(?:a|b)", true)] [InlineData("(?:a|ab)", false)]
+    [InlineData("(a)?", true)] [InlineData("(?=(a))a", true)]
     [InlineData("(?:a)+", true)] [InlineData("(a)+", true)]
-    [InlineData("(a)(?(1)b|c)", true)]
-    public void DeepOptionalCaptureAndIterationDecisionsKeepTheirConservativeRules(string fragment, bool mandatory)
+    [InlineData("(a)(?(1)b|c)", false)]
+    public void DeepIterationDecisionsKeepTheirConservativeRules(string fragment, bool iterationSafe)
     {
         const int depth = 4097;
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + fragment + new string(')', depth);
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        Assert.Equal(mandatory, PythonReTranslator.CanUseManagedSplitFastPath(parse.Root));
+        Assert.Equal(iterationSafe, PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
         var simple = new PythonReParser(fragment).Parse(PythonReCompileOptions.None);
         Assert.Equal(PythonReTranslator.CanUseUtf8IterationFastPath(simple.Root), PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
     }
@@ -191,7 +189,7 @@ public sealed class PythonReTranslationContinuationTests
         var parse = new PythonReParser(pattern.ToString()).Parse(PythonReCompileOptions.None);
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 100_000, ulong.MaxValue);
         Assert.False(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
-        Assert.True(PythonReTranslator.CanMatchNonEmpty(parse.Root, parse));
+        Assert.True(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.InRange(scope.Budget.WorkSteps, 1ul, 100_000ul);
@@ -202,7 +200,7 @@ public sealed class PythonReTranslationContinuationTests
     {
         var parse = new PythonReParser("a{2147483647}|b{2147483647}").Parse(PythonReCompileOptions.None);
         Assert.False(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
-        Assert.True(PythonReTranslator.CanMatchNonEmpty(parse.Root, parse));
+        Assert.True(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         Assert.Equal("(?<=a{2147483647}|b{2147483647})", PythonReTranslator.Translate(
             new PythonReParser("(?<=a{2147483647}|b{2147483647})").Parse(PythonReCompileOptions.None)).NativePattern);
     }
@@ -229,18 +227,18 @@ public sealed class PythonReTranslationContinuationTests
     {
         var parse = new PythonReParser("(?:)*").Parse(PythonReCompileOptions.None);
         Assert.True(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
-        Assert.False(PythonReTranslator.CanMatchNonEmpty(parse.Root, parse));
+        Assert.False(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         var regex = new Utf8PythonRegex("(?<=(?:)*)x");
         Assert.Equal("x", regex.SearchToString("😀x"u8));
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     private static object Run(int operation, PythonReParseResult parse) => operation switch
     {
         0 => PythonReTranslator.CanMatchEmpty(parse.Root, parse),
-        1 => PythonReTranslator.CanMatchNonEmpty(parse.Root, parse),
+        1 => PythonReTranslator.GetWidth(parse.Root, parse).Max > 0,
         2 => PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root),
-        3 => PythonReTranslator.CanUseManagedSplitFastPath(parse.Root),
+        3 => PythonReTranslator.GetWidth(parse.Root, parse),
         4 => PythonReTranslator.IsExactLiteral(parse.Root),
         5 => PythonReTranslator.Translate(parse),
         _ => PythonReTranslator.RenderNativeAtom(parse.Root),

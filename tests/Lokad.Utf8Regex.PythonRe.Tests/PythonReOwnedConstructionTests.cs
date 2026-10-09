@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 [Collection(PythonReGlobalSettingsCollection.Name)]
-public sealed class PythonReManagedConstructionTests
+public sealed class PythonReOwnedConstructionTests
 {
     public static IEnumerable<object?[]> FreshCases()
     {
@@ -26,37 +26,36 @@ public sealed class PythonReManagedConstructionTests
 
     [Theory]
     [MemberData(nameof(FreshCases))]
-    public void FreshInstanceConstructsNoManagedEngine(string pattern)
+    public void FreshInstanceHasAnOwnedScalarProgram(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
     [InlineData("cat|horse", "cat horse")]
     [InlineData("(cat|horse)", "cat horse")]
-    public void Utf8BackedOperationsConstructNoManagedEngine(string pattern, string inputText)
+    public void ValueOperationsUseOwnedExecution(string pattern, string inputText)
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
         Assert.True(regex.IsMatch(input));
         Assert.True(regex.Search(input).Success);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
     [InlineData("[a-z]+", "xxabcxx")]
     [InlineData("(a)(b)", "xxabxx")]
     [InlineData("(?<=a)b", "xab")]
-    public void ScalarGlobalOperationsConstructNoManagedEngine(string pattern, string inputText)
+    public void ScalarGlobalOperationsRetainOwnedCaptureAndLookbehindContext(string pattern, string inputText)
     {
         // Scalar global discovery retains captures and full lookbehind context
         // without constructing the former managed engine.
         var regex = new Utf8PythonRegex(pattern);
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.NotEmpty(regex.FindIterDetailed(input));
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

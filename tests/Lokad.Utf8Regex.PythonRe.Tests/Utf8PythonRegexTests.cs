@@ -349,7 +349,7 @@ public sealed class Utf8PythonRegexTests
         Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
         Assert.True(managed.DebugIsScalarFullProgramValueCreated);
         Assert.True(managed.DebugHasScalarFullProgram);
-        Assert.False(managed.DebugIsManagedFullRegexValueCreated);
+        Assert.True(managed.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -713,9 +713,9 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("x*|(?:(a+)+$)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
 
-        Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAll(input));
-        Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -888,9 +888,9 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("x*|y");
         string[] expected = ["", "y", ""];
 
-        Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(expected, regex.FindAll("y"u8).Select(static match => match.ValueText).ToArray());
-        Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(expected, regex.FindAllToStrings("y"u8).ScalarValues);
         Assert.Equal(
             expected,
@@ -938,8 +938,8 @@ public sealed class Utf8PythonRegexTests
         var repeated = new Utf8PythonRegex("x*");
         var grouped = new Utf8PythonRegex("(?:ab)*");
 
-        Assert.True(repeated.DebugUsesManagedEmptyReplacementFastPath);
-        Assert.True(grouped.DebugUsesManagedEmptyReplacementFastPath);
+        Assert.True(repeated.DebugUsesOwnedSlice);
+        Assert.True(grouped.DebugUsesOwnedSlice);
         Assert.Equal("-a-b--d-", repeated.ReplaceToString("abxd"u8, "-"));
         Assert.Equal("-a-b--d-", System.Text.Encoding.UTF8.GetString(repeated.Replace("abxd"u8, "-")));
         var repeatedSubn = repeated.SubnToString("abxd"u8, "-");
@@ -957,8 +957,8 @@ public sealed class Utf8PythonRegexTests
         var alternation = new Utf8PythonRegex("x*|y");
         var reluctant = new Utf8PythonRegex("x*?");
 
-        Assert.False(alternation.DebugUsesManagedEmptyReplacementFastPath);
-        Assert.False(reluctant.DebugUsesManagedEmptyReplacementFastPath);
+        Assert.True(alternation.DebugUsesOwnedSlice);
+        Assert.False(reluctant.DebugUsesOptionalExactCaptureFindAllFastPath);
         Assert.Equal("---", alternation.ReplaceToString("y"u8, "-"));
         Assert.Equal("-----", reluctant.ReplaceToString("xx"u8, "-"));
     }
@@ -972,7 +972,7 @@ public sealed class Utf8PythonRegexTests
         var all = regex.FindAllToStrings(input);
         var afterFirst = regex.FindAllToStrings(input, startOffsetInBytes: "skip item-12 "u8.Length);
 
-        Assert.True(regex.DebugUsesSingleTrailingCaptureFindAllFastPath);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(["12", "345", "6"], all.ScalarValues);
         Assert.Equal(["345", "6"], afterFirst.ScalarValues);
     }
@@ -1089,7 +1089,7 @@ public sealed class Utf8PythonRegexTests
 
         var result = regex.FindAllToStrings(System.Text.Encoding.UTF8.GetBytes(input));
 
-        Assert.False(regex.DebugUsesSingleTrailingCaptureFindAllFastPath);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal([first, second], result.ScalarValues);
     }
 
@@ -1102,7 +1102,7 @@ public sealed class Utf8PythonRegexTests
         var all = regex.FindAllToStrings(input);
         var afterFirst = regex.FindAllToStrings(input, startOffsetInBytes: "skip abc-12 "u8.Length);
 
-        Assert.True(regex.DebugUsesSeparatedCaptureTupleFindAllFastPath);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal([["abc", "12"], ["DEF", "345"], ["ghi", "6"]], all.TupleValues);
         Assert.Equal([["DEF", "345"], ["ghi", "6"]], afterFirst.TupleValues);
     }
@@ -1121,7 +1121,7 @@ public sealed class Utf8PythonRegexTests
 
         var result = regex.FindAllToStrings(System.Text.Encoding.UTF8.GetBytes(input));
 
-        Assert.False(regex.DebugUsesSeparatedCaptureTupleFindAllFastPath);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal([[first, second]], result.TupleValues);
     }
 
@@ -1776,7 +1776,7 @@ public sealed class Utf8PythonRegexTests
         var parts = regex.SplitToStrings(":a:b::c"u8);
 
         Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSplitBackend);
-        Assert.False(regex.DebugUsesManagedSplitFastPath);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", ":", "a", ":", "b", "::", "c"], parts);
     }
 
@@ -1784,28 +1784,28 @@ public sealed class Utf8PythonRegexTests
     public void ScalarSplitPreservesMandatoryOptionalAndEmptyCaptures()
     {
         var mandatory = new Utf8PythonRegex(@"(:+)");
-        Assert.False(mandatory.DebugUsesManagedSplitFastPath);
+        Assert.True(mandatory.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", ":", "a", ":", "b::c"], mandatory.SplitToStrings(":a:b::c"u8, maxSplit: 2));
         Assert.Equal<string?[]>(["", ":", "a", ":", "b"], mandatory.SplitToStrings("π :a:b"u8, maxSplit: 0, startOffsetInBytes: "π "u8.Length));
 
         var nestedMandatory = new Utf8PythonRegex(@"((?:a|b)+)-([0-9]+)");
-        Assert.False(nestedMandatory.DebugUsesManagedSplitFastPath);
+        Assert.True(nestedMandatory.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["x", "ab", "12", "y"], nestedMandatory.SplitToStrings("xab-12y"u8));
 
         var optional = new Utf8PythonRegex(@"(a)?b");
-        Assert.False(optional.DebugUsesManagedSplitFastPath);
+        Assert.True(optional.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", null, " ", "a", ""], optional.SplitToStrings("b ab"u8));
 
         var alternated = new Utf8PythonRegex(@"(b)|(:+)");
-        Assert.False(alternated.DebugUsesManagedSplitFastPath);
+        Assert.True(alternated.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", null, ":", "a", "b", null, ""], alternated.SplitToStrings(":ab"u8));
 
-        Assert.False(new Utf8PythonRegex(@"(?P<separator>:+)").DebugUsesManagedSplitFastPath);
-        Assert.False(new Utf8PythonRegex(@"(:*)").DebugUsesManagedSplitFastPath);
-        Assert.False(new Utf8PythonRegex("").DebugUsesManagedSplitFastPath);
-        Assert.False(new Utf8PythonRegex(@"(?=:)").DebugUsesManagedSplitFastPath);
-        Assert.False(new Utf8PythonRegex(@"\b|:+").DebugUsesManagedSplitFastPath);
-        Assert.False(new Utf8PythonRegex("x*|y").DebugUsesManagedSplitFastPath);
+        Assert.True(new Utf8PythonRegex(@"(?P<separator>:+)").DebugUsesOwnedSlice);
+        Assert.True(new Utf8PythonRegex(@"(:*)").DebugUsesOwnedSlice);
+        Assert.True(new Utf8PythonRegex("").DebugUsesOwnedSlice);
+        Assert.True(new Utf8PythonRegex(@"(?=:)").DebugUsesOwnedSlice);
+        Assert.True(new Utf8PythonRegex(@"\b|:+").DebugUsesOwnedSlice);
+        Assert.True(new Utf8PythonRegex("x*|y").DebugUsesOwnedSlice);
 
         var asciiBoundary = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
         Assert.True(asciiBoundary.DebugUsesOwnedSlice);

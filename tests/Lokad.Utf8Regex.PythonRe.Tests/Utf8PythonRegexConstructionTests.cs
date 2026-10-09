@@ -7,13 +7,13 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class Utf8PythonRegexConstructionTests
 {
     [Fact]
-    public void ScalarFullRegexIsCreatedLazilyWithoutManagedFullEngine()
+    public void ScalarFullProgramIsCreatedLazily()
     {
         var regex = new Utf8PythonRegex("(?<=ab)c");
 
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.False(regex.FullMatch("abc"u8).Success);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
@@ -27,16 +27,16 @@ public sealed class Utf8PythonRegexConstructionTests
     }
 
     [Fact]
-    public void Utf8BackedFullMatchDoesNotCreateManagedFullRegex()
+    public void Utf8BackedFullMatchUsesTheScalarFullProgram()
     {
         var regex = new Utf8PythonRegex("foo");
 
         Assert.True(regex.FullMatch("foo"u8).Success);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
-    public void NonFullMatchOperationsDoNotCreateManagedFullRegex()
+    public void NonFullMatchOperationsDoNotCreateTheScalarFullProgram()
     {
         var regex = new Utf8PythonRegex("foo");
 
@@ -44,7 +44,7 @@ public sealed class Utf8PythonRegexConstructionTests
         Assert.Equal(2, regex.Count("foo xx foo"u8));
         Assert.True(regex.Search("xxfoo"u8).Success);
         Assert.True(regex.Match("foo xx"u8).Success);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]

@@ -36,7 +36,7 @@ public sealed class PythonReCountOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
         Assert.Equal(regex.FindAll(input, startOffsetInBytes).Length, regex.Count(input, startOffsetInBytes));
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Fact]
@@ -60,6 +60,6 @@ public sealed class PythonReCountOwnershipTests
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

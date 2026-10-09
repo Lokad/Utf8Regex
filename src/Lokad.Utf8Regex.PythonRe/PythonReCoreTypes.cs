@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -13,63 +12,8 @@ public readonly struct PythonReNameEntry
     public int Number { get; init; }
 }
 
-internal readonly struct PythonReUtf8IndexMap
-{
-    private readonly int[]? _byteOffsetsByUtf16Index;
-
-    private PythonReUtf8IndexMap(int[] byteOffsetsByUtf16Index)
-    {
-        _byteOffsetsByUtf16Index = byteOffsetsByUtf16Index;
-    }
-
-    public static PythonReUtf8IndexMap Create(ReadOnlySpan<byte> input, string decoded)
-    {
-        if (input.Length == decoded.Length)
-        {
-            return default;
-        }
-
-        var offsets = new int[decoded.Length + 1];
-        var utf16Index = 0;
-        var byteOffset = 0;
-        while (utf16Index < decoded.Length)
-        {
-            offsets[utf16Index] = byteOffset;
-            var value = decoded[utf16Index];
-            if (char.IsHighSurrogate(value) &&
-                utf16Index + 1 < decoded.Length &&
-                char.IsLowSurrogate(decoded[utf16Index + 1]))
-            {
-                offsets[utf16Index + 1] = byteOffset;
-                utf16Index += 2;
-                byteOffset += 4;
-                offsets[utf16Index] = byteOffset;
-                continue;
-            }
-
-            byteOffset += value <= 0x7f ? 1 : value <= 0x7ff ? 2 : 3;
-            utf16Index++;
-            offsets[utf16Index] = byteOffset;
-        }
-
-        if (byteOffset != input.Length)
-        {
-            throw new InvalidOperationException("The decoded subject does not map back to its UTF-8 input.");
-        }
-
-        return new PythonReUtf8IndexMap(offsets);
-    }
-
-    public int GetByteOffset(int utf16Index) => _byteOffsetsByUtf16Index is null
-        ? utf16Index
-        : _byteOffsetsByUtf16Index[utf16Index];
-}
-
 internal readonly struct PythonReGroupData
 {
-    private const int NonContiguousByteStartSentinel = 1;
-    private const int NonContiguousByteEndSentinel = 0;
-
     public int Number { get; init; }
 
     public bool Success { get; init; }
@@ -83,69 +27,6 @@ internal readonly struct PythonReGroupData
     public int EndOffsetInUtf16 { get; init; }
 
     public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
-
-    public static PythonReGroupData FromUtf16(
-        int number,
-        Group group,
-        PythonReUtf8IndexMap indexMap) => FromUtf16(number, group, indexMap, 0);
-
-    public static PythonReGroupData FromUtf16(
-        int number,
-        Group group,
-        PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset)
-    {
-        if (!group.Success)
-        {
-            return new PythonReGroupData
-            {
-                Number = number,
-                Success = false,
-            };
-        }
-
-        var startOffsetInUtf16 = utf16BaseOffset + group.Index;
-        var endOffsetInUtf16 = startOffsetInUtf16 + group.Length;
-        return new PythonReGroupData
-        {
-            Number = number,
-            Success = true,
-            StartOffsetInBytes = indexMap.GetByteOffset(startOffsetInUtf16),
-            EndOffsetInBytes = indexMap.GetByteOffset(endOffsetInUtf16),
-            StartOffsetInUtf16 = startOffsetInUtf16,
-            EndOffsetInUtf16 = endOffsetInUtf16,
-        };
-    }
-
-    public static PythonReGroupData FromUtf8Group(int number, Utf8GroupContext group) =>
-        FromUtf8Group(number, group, 0, 0);
-
-    public static PythonReGroupData FromUtf8Group(
-        int number,
-        Utf8GroupContext group,
-        int byteBaseOffset,
-        int utf16BaseOffset)
-    {
-        if (!group.Success)
-        {
-            return new PythonReGroupData
-            {
-                Number = number,
-                Success = false,
-            };
-        }
-
-        var hasContiguousByteRange = group.TryGetByteRange(out var indexInBytes, out var lengthInBytes);
-        return new PythonReGroupData
-        {
-            Number = number,
-            Success = true,
-            StartOffsetInBytes = hasContiguousByteRange ? byteBaseOffset + indexInBytes : NonContiguousByteStartSentinel,
-            EndOffsetInBytes = hasContiguousByteRange ? byteBaseOffset + indexInBytes + lengthInBytes : NonContiguousByteEndSentinel,
-            StartOffsetInUtf16 = utf16BaseOffset + group.IndexInUtf16,
-            EndOffsetInUtf16 = utf16BaseOffset + group.IndexInUtf16 + group.LengthInUtf16,
-        };
-    }
 
     public static PythonReGroupData FromUtf8Match(Utf8ValueMatch match) => FromUtf8Match(match, 0, 0);
 
@@ -163,13 +44,14 @@ internal readonly struct PythonReGroupData
             };
         }
 
-        var hasContiguousByteRange = match.TryGetByteRange(out var indexInBytes, out var lengthInBytes);
+        if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+            throw new InvalidOperationException("Owned scalar matches must have a complete UTF-8 byte range.");
         return new PythonReGroupData
         {
             Number = 0,
             Success = true,
-            StartOffsetInBytes = hasContiguousByteRange ? byteBaseOffset + indexInBytes : NonContiguousByteStartSentinel,
-            EndOffsetInBytes = hasContiguousByteRange ? byteBaseOffset + indexInBytes + lengthInBytes : NonContiguousByteEndSentinel,
+            StartOffsetInBytes = byteBaseOffset + indexInBytes,
+            EndOffsetInBytes = byteBaseOffset + indexInBytes + lengthInBytes,
             StartOffsetInUtf16 = utf16BaseOffset + match.IndexInUtf16,
             EndOffsetInUtf16 = utf16BaseOffset + match.IndexInUtf16 + match.LengthInUtf16,
         };
@@ -185,14 +67,7 @@ internal static class PythonReValueTextExtractor
             return string.Empty;
         }
 
-        if (data.HasContiguousByteRange)
-        {
-            return Encoding.UTF8.GetString(input[data.StartOffsetInBytes..data.EndOffsetInBytes]);
-        }
-
-        // PLAN.md C06: scalar atoms keep every supported match on scalar boundaries, so offsets slice directly. The former rune-index reinterpretation masked half-unit engine ranges while leaving offsets split; delimited astral routes now surface consistently instead of silently repaired.
-        var decoded = Encoding.UTF8.GetString(input);
-        return decoded[data.StartOffsetInUtf16..data.EndOffsetInUtf16];
+        return Encoding.UTF8.GetString(input[data.StartOffsetInBytes..data.EndOffsetInBytes]);
     }
 
     public static byte[] GetValueBytes(ReadOnlySpan<byte> input, PythonReGroupData data)
@@ -202,12 +77,7 @@ internal static class PythonReValueTextExtractor
             return [];
         }
 
-        if (data.HasContiguousByteRange)
-        {
-            return input[data.StartOffsetInBytes..data.EndOffsetInBytes].ToArray();
-        }
-
-        return Encoding.UTF8.GetBytes(GetValueString(input, data));
+        return input[data.StartOffsetInBytes..data.EndOffsetInBytes].ToArray();
     }
 }
 

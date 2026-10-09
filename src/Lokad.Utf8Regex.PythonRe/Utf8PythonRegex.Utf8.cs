@@ -12,25 +12,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>UTF-8 backend engines for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
-    private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
-
-    private Utf8Regex? CreateUtf8FullRegex()
-    {
-        try
-        {
-            var regex = new Utf8Regex(
-                @"\G(?:" + _translation.NativePattern + @")\z",
-                _translation.NativeRegexOptions,
-                MatchTimeout);
-            return regex.Inspection.AvailableOwnedSliceProgram is not null ||
-                regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;
-        }
-        catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
-        {
-            return null;
-        }
-    }
-
     private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, out Utf8PythonMatchData[] matches)
     {
         if (!TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
@@ -69,7 +50,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         out PythonReUtf8MatchRangeBuffer ranges)
     {
-        if (_findAllBackend != PythonReDirectBackendKind.Utf8Regex || _utf8Regex is null || (!_hasLookbehind && !Utf8SliceExecutionApplies))
+        if (_utf8Regex is null)
         {
             ranges = default;
             return false;

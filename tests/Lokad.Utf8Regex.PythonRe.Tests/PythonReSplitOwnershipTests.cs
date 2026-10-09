@@ -43,7 +43,7 @@ public sealed class PythonReSplitOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var actual = regex.SplitToStrings(input, maxSplit, startOffsetInBytes);
         Assert.Equal(expected, actual);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -54,7 +54,7 @@ public sealed class PythonReSplitOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var items = regex.SplitDetailed(input, maxSplit, startOffsetInBytes);
         Assert.Equal(expected, items.Select(static item => item.ValueText).ToArray());
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class PythonReSplitOwnershipTests
             Assert.Equal(expected[i].Group, items[i].CaptureGroupNumber);
         }
 
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> ManagedCases()
@@ -101,6 +101,6 @@ public sealed class PythonReSplitOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var actual = regex.SplitToStrings(input, maxSplit, startOffsetInBytes);
         Assert.Equal(expected, actual);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

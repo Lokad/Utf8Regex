@@ -64,7 +64,6 @@ public sealed class PythonReScalarCompilerContinuationTests
         Assert.Equal((0, 4), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
         Assert.Contains("x", regex.GetGroupNames());
         Assert.Equal("\U0001f600", result.Groups[scoped ? 1 : depth + 1].ValueText);
-        Assert.False(regex.DebugIsManagedRegexValueCreated);
-        Assert.False(regex.DebugIsManagedFullRegexValueCreated);
+        Assert.True(regex.DebugUsesOwnedSlice);
     }
 }

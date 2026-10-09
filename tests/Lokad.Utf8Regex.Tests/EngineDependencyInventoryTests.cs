@@ -23,18 +23,15 @@ public sealed class EngineDependencyInventoryTests
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        // R05 baseline (2026-09-22, after PCRE2 managed-plumbing deletion): 3 construction sites.
-        // - Utf8FallbackVerifierPlan.cs x2: core fallbackRegex + anchoredFallbackRegex.
-        //   Purpose: candidate verification, IsMatch/Match/Count/Replace fallback, group metadata.
-        //   Replacement owner: R03 (core engine independence).
-        // - Utf8PythonRegex.Managed.cs x1: lazy _managedRegex construction (R04: was unconditional).
-        //   Purpose: PythonRe managed-backend lanes only; utf8-backed lanes never construct it.
-        //   Replacement owner: R04 (PythonRe migration).
+        // R05 migration baseline: only the two core root/anchored factories remain.
+        // PythonRe has no BCL engine or BCL result plumbing; its consumed-assembly
+        // metadata guard lives in PythonReEngineArchitectureTests.
+        // The remaining core factories serve admission and residual dispatch.
         // Former ValidateOptions probe in Utf8Regex.cs is owned since R00 and must not regress.
         // Former PCRE2 managed-compat probe in Utf8Pcre2Regex.cs is deleted since R05 and must not regress.
-        Assert.Equal(3, hits.Length);
+        Assert.Equal(2, hits.Length);
         Assert.Equal(2, hits.Count(static hit => hit.Contains("Utf8FallbackVerifierPlan.cs", StringComparison.Ordinal)));
-        Assert.Equal(1, hits.Count(static hit => hit.Contains("Utf8PythonRegex.Managed.cs", StringComparison.Ordinal)));
+        Assert.DoesNotContain(hits, static hit => hit.Contains("Lokad.Utf8Regex.PythonRe", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Pcre2Regex.cs", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Regex.cs", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8RegexSyntax.cs", StringComparison.Ordinal));
@@ -131,21 +128,15 @@ public sealed class EngineDependencyInventoryTests
         Assert.Equal(new[] { "Utf8ValueSplitEnumerator.cs" }, FilesContaining("Regex.ValueSplitEnumerator"));
         Assert.Equal(new[] { "Utf8OperationMatchCursor.cs" }, FilesContaining("Regex.ValueMatchEnumerator"));
 
-        // 3. PythonRe managed execution lives only in the PythonRe adapter. Core must never see it.
-        //    Purpose: translated search, full-match, iteration, split, substitution. Owner: R04.
+        // 3. PythonRe managed execution has been removed; no descriptor may return.
         var managedHits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => File.ReadLines(path).Any(line => line.Contains("_managedRegex", StringComparison.Ordinal)))
             .ToArray();
-        Assert.NotEmpty(managedHits);
-        foreach (var file in managedHits)
-        {
-            Assert.Contains("Lokad.Utf8Regex.PythonRe", file, StringComparison.Ordinal);
-        }
+        Assert.Empty(managedHits);
 
-        // 4. BCL Match chaining via NextMatch: core evaluator loop and PythonRe FindIter (PCRE2 global loop deleted in R05).
-        //    Owners: R03 (core) and R04 (adapters).
-        Assert.Equal(new[] { "Utf8PythonRegex.FindIter.cs", "Utf8Regex.cs" }, FilesContaining(".NextMatch()"));
+        // 4. Only the transitional core evaluator loop still chains BCL matches.
+        Assert.Equal(new[] { "Utf8Regex.cs" }, FilesContaining(".NextMatch()"));
 
         // 5. BCL result plumbing holders. Owner: R02/R03 (owned match/group/capture storage).
         Assert.Equal(new[] { "Utf8MatchContext.cs" }, FilesContaining("Match? _match"));
@@ -187,7 +178,7 @@ public sealed class EngineDependencyInventoryTests
 
         var pythonDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex.PythonRe");
         Assert.Equal(
-            new[] { "Utf8PythonRegex.Detailed.cs", "Utf8PythonRegex.FindAll.cs", "Utf8PythonRegex.FindIter.cs", "Utf8PythonRegex.Split.cs", "Utf8PythonRegex.Substitution.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
+            new[] { "Utf8PythonRegex.FindAll.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
             NamesIn(pythonDirectory, "_utf8Regex", "new Utf8Regex("));
 
         var coreDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex");

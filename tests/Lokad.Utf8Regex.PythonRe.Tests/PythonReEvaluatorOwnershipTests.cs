@@ -38,7 +38,7 @@ public sealed class PythonReEvaluatorOwnershipTests
         var subn = regex.SubnToString(input, 0, static (int state, Utf8PythonDetailedMatchData match) => "[" + match.Value.ValueText + "]", count, startOffsetInBytes);
         Assert.Equal(expectedText, subn.ResultText);
         Assert.Equal(expectedCount, subn.ReplacementCount);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -50,7 +50,7 @@ public sealed class PythonReEvaluatorOwnershipTests
         var subn = regex.Subn(input, 0, static (int state, Utf8PythonDetailedMatchData match) => Encoding.UTF8.GetBytes("[" + match.Value.ValueText + "]"), count, startOffsetInBytes);
         Assert.Equal(expectedText, Encoding.UTF8.GetString(subn.ResultBytes));
         Assert.Equal(expectedCount, subn.ReplacementCount);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -66,7 +66,7 @@ public sealed class PythonReEvaluatorOwnershipTests
             count,
             startOffsetInBytes);
         Assert.Equal(expectedCount, subn.ReplacementCount);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ManagedCases()
@@ -86,6 +86,6 @@ public sealed class PythonReEvaluatorOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var subn = regex.SubnToString(input, 0, static (int state, Utf8PythonDetailedMatchData match) => "[" + match.Value.ValueText + "]", count, startOffsetInBytes);
         Assert.Equal(regex.Count(input), subn.ReplacementCount);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

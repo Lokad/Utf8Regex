@@ -13,12 +13,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <remarks>The adapter preserves Python operation shaping while exposing both UTF-8 byte and UTF-16 coordinate projections.</remarks>
 public sealed partial class Utf8PythonRegex
 {
-    private delegate byte[] Utf8ReplacementBytesFactory<TState>(
-        ReadOnlySpan<byte> source,
-        Match match,
-        PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset,
-        TState state);
     private readonly record struct PythonReUtf8MatchRange(
         int IndexInBytes,
         int LengthInBytes,
@@ -85,41 +79,22 @@ public sealed partial class Utf8PythonRegex
 
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
-    private readonly Utf8SliceProgram? _scalarProgram;
-    private readonly Lazy<Utf8SliceProgram?> _lazyScalarFullProgram;
+    private readonly Utf8SliceProgram _scalarProgram;
+    private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
-    private readonly Lazy<Utf8Regex?>? _lazyUtf8FullRegex;
-    private readonly Lazy<Regex>? _lazyManagedNonEmptyAtSamePositionRegex;
-    private readonly Lazy<Regex> _managedRegex;
-    private readonly Lazy<Regex> _lazyManagedFullRegex;
     private readonly PythonReTranslation _translation;
-    private readonly int[] _managedGroupNumbersByPythonGroup;
-    private readonly bool _groupNumberingIsIdentity;
-    private readonly bool _hasLookbehind;
+    private readonly int[] _coreGroupNumbersByPythonGroup;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
-    private readonly bool _canMatchNonEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
-    private readonly bool _canUseManagedSplitFastPath;
-    private readonly bool _canUseManagedEmptyReplacementFastPath;
-    private readonly int _singleTrailingCapturePrefixLength;
     private readonly string? _optionalExactCaptureFindAllValue;
-    private readonly int _optionalExactCapturePresentMatchLength;
-    private readonly int _optionalExactCaptureAbsentMatchLength;
-    private readonly char? _separatedCaptureTupleSeparator;
     private readonly string? _repeatedExactFindAllString;
-    private readonly byte? _asciiGreedyStarFindAllByte;
     private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchSuffix;
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
-    private readonly PythonReDirectBackendKind _searchBackend;
-    private readonly PythonReDirectBackendKind _matchBackend;
-    private readonly PythonReDirectBackendKind _countBackend;
-    private readonly PythonReDirectBackendKind _findAllBackend;
-    private readonly PythonReDirectBackendKind _replaceBackend;
     private const int ReplacementPlanCacheCapacity = 16;
     private readonly Utf8BoundedPreparationCache<string, PythonReReplacementPlan> _replacementPlanCache = new(ReplacementPlanCacheCapacity);
 
@@ -207,39 +182,14 @@ public sealed partial class Utf8PythonRegex
         var parser = PythonReParser.Create(pattern);
         var parseResult = parser.Parse(options);
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
-        _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root, parseResult);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
-        _canUseManagedSplitFastPath =
-            (!_canMatchEmpty &&
-                (parseResult.CaptureGroupCount == 0 ||
-                    parseResult.NamedGroups.Count == 0 && PythonReTranslator.CanUseManagedSplitFastPath(parseResult.Root))) ||
-            (!_canMatchNonEmpty && parseResult.CaptureGroupCount == 0);
-        _canUseManagedEmptyReplacementFastPath =
-            parseResult.CaptureGroupCount == 0 &&
-            PythonReTranslator.CanUseManagedEmptyReplacementFastPath(parseResult.Root);
-        _singleTrailingCapturePrefixLength = !_canMatchEmpty &&
-            parseResult.CaptureGroupCount == 1 &&
-            PythonReTranslator.TryGetSingleTrailingCapturePrefixLength(parseResult.Root, out var capturePrefixLength)
-                ? capturePrefixLength
-                : -1;
-        var optionalCapturePresentMatchLength = 0;
-        var optionalCaptureAbsentMatchLength = 0;
         _optionalExactCaptureFindAllValue = !_canMatchEmpty &&
             parseResult.CaptureGroupCount == 1 &&
             PythonReTranslator.TryGetOptionalExactCaptureFindAllPlan(
                 parseResult.Root,
                 parseResult.Options,
-                out var optionalCaptureValue,
-                out optionalCapturePresentMatchLength,
-                out optionalCaptureAbsentMatchLength)
+                out var optionalCaptureValue)
                 ? optionalCaptureValue
-                : null;
-        _optionalExactCapturePresentMatchLength = optionalCapturePresentMatchLength;
-        _optionalExactCaptureAbsentMatchLength = optionalCaptureAbsentMatchLength;
-        _separatedCaptureTupleSeparator = !_canMatchEmpty &&
-            parseResult.CaptureGroupCount == 2 &&
-            PythonReTranslator.TryGetSeparatedCaptureTupleSeparator(parseResult.Root, out var captureSeparator)
-                ? captureSeparator
                 : null;
         _repeatedExactFindAllString = !_canMatchEmpty &&
             parseResult.CaptureGroupCount == 0 &&
@@ -248,14 +198,6 @@ public sealed partial class Utf8PythonRegex
                 parseResult.Options,
                 out var exactFindAllString)
                 ? exactFindAllString
-                : null;
-        _asciiGreedyStarFindAllByte = MatchTimeout == Timeout.InfiniteTimeSpan &&
-            parseResult.CaptureGroupCount == 0 &&
-            PythonReTranslator.TryGetAsciiGreedyStarFindAllByte(
-                parseResult.Root,
-                parseResult.Options,
-                out var asciiGreedyStarFindAllByte)
-                ? asciiGreedyStarFindAllByte
                 : null;
         _asciiLiteralPrefixDigitMatchPrefix = MatchTimeout == Timeout.InfiniteTimeSpan &&
             parseResult.CaptureGroupCount == 0 &&
@@ -284,31 +226,8 @@ public sealed partial class Utf8PythonRegex
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _translation = PythonReTranslator.Translate(parseResult);
         _scalarProgram = PythonReScalarCompiler.Compile(parseResult, _translation, false);
-        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram?>(() => PythonReScalarCompiler.Compile(parseResult, _translation, true), LazyThreadSafetyMode.ExecutionAndPublication);
-        _hasLookbehind = parseResult.HasLookbehind;
-        // R04: the translator precomputes the Python-slot to managed-number permutation, so the
-        // BCL group query (and its engine construction) is gone; the managed engine itself
-        // constructs lazily on first managed-backend use.
-        _managedRegex = new Lazy<Regex>(() => CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout), LazyThreadSafetyMode.ExecutionAndPublication);
-        // PLAN.md C08: `\G` pins the full match to the requested start offset (Python `pos` semantics with intact prefix context); `\A` would pin the real start and forbid pos > 0. Every caller below passes the start offset explicitly.
-        _lazyManagedFullRegex = new Lazy<Regex>(() => CreateManagedRegex(@"\G(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout), LazyThreadSafetyMode.ExecutionAndPublication);
-        if (_canMatchEmpty && _canMatchNonEmpty)
-        {
-            _lazyManagedNonEmptyAtSamePositionRegex = new Lazy<Regex>(
-                CreateManagedNonEmptyAtSamePositionRegex,
-                LazyThreadSafetyMode.ExecutionAndPublication);
-        }
-        _managedGroupNumbersByPythonGroup = _translation.ManagedNumbersByPython;
-        // PLAN.md C07: every consumer below indexes Python slots; managed numbers only appear at the engine boundary through this permutation.
-        _groupNumberingIsIdentity = true;
-        for (var pythonGroup = 0; pythonGroup < _managedGroupNumbersByPythonGroup.Length; pythonGroup++)
-        {
-            if (_managedGroupNumbersByPythonGroup[pythonGroup] != pythonGroup)
-            {
-                _groupNumberingIsIdentity = false;
-                break;
-            }
-        }
+        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.Compile(parseResult, _translation, true), LazyThreadSafetyMode.ExecutionAndPublication);
+        _coreGroupNumbersByPythonGroup = _translation.CoreNumbersByPython;
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
         _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
@@ -317,17 +236,10 @@ public sealed partial class Utf8PythonRegex
         try
         {
             _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.NativeRegexOptions, MatchTimeout);
-            if (_utf8Regex.Inspection.AvailableOwnedSliceProgram is not null ||
-                _utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
-            {
-                _lazyUtf8FullRegex = new Lazy<Utf8Regex?>(
-                    CreateUtf8FullRegex,
-                    LazyThreadSafetyMode.ExecutionAndPublication);
-            }
         }
         catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
         {
-            // Fall back to managed Regex if the translated pattern cannot be executed by Utf8Regex.
+            // The optional core fast path may be unavailable; the profile scalar program serves the grammar.
         }
 
         _canUseZeroOffsetUtf8SearchValueFastPath =
@@ -337,20 +249,6 @@ public sealed partial class Utf8PythonRegex
         _canUseZeroOffsetUtf8ValueFastPath =
             _canUseZeroOffsetUtf8SearchValueFastPath &&
             _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
-        _searchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
-        _matchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
-        var utf8ServesCount = _utf8Regex is not null &&
-            (!_canMatchEmpty || _utf8Regex.Inspection.AvailableOwnedSliceProgram is not null);
-        _countBackend = utf8ServesCount
-            ? PythonReDirectBackendKind.Utf8Regex
-            : PythonReDirectBackendKind.ManagedRegex;
-        _findAllBackend = Utf8SliceExecutionApplies || _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
-            ? PythonReDirectBackendKind.Utf8Regex
-            : PythonReDirectBackendKind.ManagedRegex;
-        _replaceBackend = Utf8SliceExecutionApplies || _canUseZeroOffsetUtf8ValueFastPath
-            ? PythonReDirectBackendKind.Utf8Regex
-            : PythonReDirectBackendKind.ManagedRegex;
-
         ResourcePolicy = resourcePolicy;
         construction.Complete();
     }
@@ -390,37 +288,15 @@ public sealed partial class Utf8PythonRegex
     // PLAN.md C09: returned arrays are caller-owned; never expose the compiled backing storage. Empty entry arrays stay shared: they have no slots to mutate.
     public string[] GetGroupNames() => (string[])_groupNames.Clone();
 
-    // PLAN.md D02: single owner for the nonempty same-position retry guard; shapers and the managed progression cursor share it.
-    internal static bool TryMatchNonEmptyAtSamePosition(
-        Lazy<Regex>? nonEmptyMatcher,
-        string subject,
-        int utf16Position,
-        out Match match)
-    {
-        if (nonEmptyMatcher is null ||
-            (uint)utf16Position >= (uint)subject.Length)
-        {
-            match = System.Text.RegularExpressions.Match.Empty;
-            return false;
-        }
-
-        match = nonEmptyMatcher.Value.Match(subject, utf16Position);
-        return match.Success && match.Index == utf16Position && match.Length != 0;
-    }
-
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
-    internal PythonReDirectBackendKind DebugSearchBackend => Utf8SliceExecutionApplies ? PythonReDirectBackendKind.Utf8Regex : _searchBackend;
+    internal PythonReDirectBackendKind DebugSearchBackend => PythonReDirectBackendKind.Utf8Regex;
 
-    internal PythonReDirectBackendKind DebugMatchBackend => Utf8SliceExecutionApplies ? PythonReDirectBackendKind.Utf8Regex : _matchBackend;
+    internal PythonReDirectBackendKind DebugMatchBackend => PythonReDirectBackendKind.Utf8Regex;
 
-    internal PythonReDirectBackendKind DebugFullMatchBackend => GetUtf8FullRegex() is not null
-        ? PythonReDirectBackendKind.Utf8Regex
-        : PythonReDirectBackendKind.ManagedRegex;
+    internal PythonReDirectBackendKind DebugFullMatchBackend => PythonReDirectBackendKind.Utf8Regex;
 
-    internal PythonReDirectBackendKind DebugCountBackend => _countBackend;
-
-    internal bool DebugUsesManagedEmptyReplacementFastPath => _canUseManagedEmptyReplacementFastPath;
+    internal PythonReDirectBackendKind DebugCountBackend => PythonReDirectBackendKind.Utf8Regex;
 
     internal int DebugReplacementPlanCacheEntryCount => _replacementPlanCache.Count;
 
@@ -428,30 +304,16 @@ public sealed partial class Utf8PythonRegex
 
     // Exact profile classes and lexical reference lowerings come from the Python
     // AST, independently of residual native selectors or BCL case flags.
-    private Utf8SliceProgram? ScalarProgram => _scalarProgram;
+    private Utf8SliceProgram ScalarProgram => _scalarProgram;
 
-    private bool Utf8SliceExecutionApplies => ScalarProgram is not null;
-
-    internal bool DebugUsesOwnedSlice => Utf8SliceExecutionApplies;
+    internal bool DebugUsesOwnedSlice => _scalarProgram is not null;
 
     internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;
 
     internal bool DebugUsesZeroOffsetUtf8SearchValueFastPath =>
         _canUseZeroOffsetUtf8SearchValueFastPath;
 
-    internal string? DebugUtf8FullMatchExecutionKind =>
-        GetUtf8FullRegex()?.Inspection.ExecutionKind.ToString();
-
     internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
-
-    internal bool DebugIsManagedNonEmptyAtSamePositionRegexValueCreated =>
-        _lazyManagedNonEmptyAtSamePositionRegex?.IsValueCreated ?? false;
-
-    internal bool DebugIsManagedFullRegexValueCreated =>
-        _lazyManagedFullRegex.IsValueCreated;
-
-    internal bool DebugIsManagedRegexValueCreated =>
-        _managedRegex.IsValueCreated;
 
     internal bool DebugHasScalarFullProgram => _lazyScalarFullProgram.Value is not null;
 
@@ -461,32 +323,22 @@ public sealed partial class Utf8PythonRegex
 
     internal string DebugDescribeExecutionPlan()
     {
-        return $"Search={_searchBackend}, Match={_matchBackend}, " +
-               $"FullMatch={DebugFullMatchBackend}, Count={_countBackend}";
+        return $"Search={DebugSearchBackend}, Match={DebugMatchBackend}, " +
+               $"FullMatch={DebugFullMatchBackend}, Count={DebugCountBackend}";
     }
 
-    internal PythonReDirectBackendKind DebugFindAllBackend => _findAllBackend;
+    internal PythonReDirectBackendKind DebugFindAllBackend => PythonReDirectBackendKind.Utf8Regex;
 
-    internal PythonReDirectBackendKind DebugReplaceBackend => _replaceBackend;
+    internal PythonReDirectBackendKind DebugReplaceBackend => PythonReDirectBackendKind.Utf8Regex;
 
-    internal PythonReDirectBackendKind DebugSplitBackend => Utf8SliceExecutionApplies
-        ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
-
-    internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath && !Utf8SliceExecutionApplies;
-
-    internal bool DebugUsesSingleTrailingCaptureFindAllFastPath => _singleTrailingCapturePrefixLength >= 0;
+    internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.Utf8Regex;
 
     internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _optionalExactCaptureFindAllValue is not null;
 
-    internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
-
     internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
 
-    internal bool DebugUsesAsciiGreedyStarFindAllFastPath => _asciiGreedyStarFindAllByte.HasValue;
-
     internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath =>
-        _repeatedExactFindAllString is not null &&
-        _findAllBackend == PythonReDirectBackendKind.Utf8Regex;
+        _repeatedExactFindAllString is not null && _utf8Regex is not null;
 
     internal bool DebugUsesAsciiLiteralPrefixDigitMatchFastPath =>
         _asciiLiteralPrefixDigitMatchPrefix is not null;
@@ -496,9 +348,6 @@ public sealed partial class Utf8PythonRegex
 
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;
-
-    private static string Decode(ReadOnlySpan<byte> input)
-        => DecodeUtf8(input, nameof(input));
 
     private static string DecodeUtf8(ReadOnlySpan<byte> input, string parameterName)
     {
@@ -511,9 +360,6 @@ public sealed partial class Utf8PythonRegex
             throw new ArgumentException("The input must be valid UTF-8.", parameterName, ex);
         }
     }
-
-    internal static int AdvancePastScalar(string subject, int utf16Position) =>
-        checked(utf16Position + Rune.GetRuneAt(subject, utf16Position).Utf16SequenceLength);
 
     private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
@@ -536,19 +382,9 @@ public sealed partial class Utf8PythonRegex
                 "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
         }
 
-        if (ScalarProgram is not null) return;
-
-        try
-        {
-            _ = s_strictUtf8Encoding.GetCharCount(input[..startOffsetInBytes]);
-        }
-        catch (DecoderFallbackException ex)
-        {
-            throw new ArgumentException("The input must be valid UTF-8.", nameof(input), ex);
-        }
     }
 
-    // PLAN.md C07: public names follow Python slot order, not managed order. Unnamed slots keep their number as their name, matching both engines.
+    // Public names follow Python slot order; the optional core route has its own slot permutation.
     private static string[] GetPublicGroupNames(int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
     {
         var namesByPythonGroup = new string?[captureGroupCount + 1];
@@ -583,46 +419,9 @@ public sealed partial class Utf8PythonRegex
         return entries.ToArray();
     }
 
-    private static int GetUtf8RuneLength(byte firstByte)
-    {
-        if ((firstByte & 0b1000_0000) == 0)
-        {
-            return 1;
-        }
-
-        if ((firstByte & 0b1110_0000) == 0b1100_0000)
-        {
-            return 2;
-        }
-
-        if ((firstByte & 0b1111_0000) == 0b1110_0000)
-        {
-            return 3;
-        }
-
-        return 4;
-    }
-
-    private static void AppendUtf8(ArrayBufferWriter<byte> builder, ReadOnlySpan<byte> value)
-    {
-        if (value.IsEmpty)
-        {
-            return;
-        }
-
-        value.CopyTo(builder.GetSpan(value.Length));
-        builder.Advance(value.Length);
-    }
 }
 
 internal enum PythonReDirectBackendKind
 {
-    ManagedRegex,
     Utf8Regex,
-}
-
-internal readonly record struct PythonReManagedMatchSnapshot(PythonReGroupData[] Groups)
-{
-    public Utf8PythonMatchContext ToContext(ReadOnlySpan<byte> input, PythonReNameEntry[] nameEntries)
-        => new(input, Groups, nameEntries);
 }

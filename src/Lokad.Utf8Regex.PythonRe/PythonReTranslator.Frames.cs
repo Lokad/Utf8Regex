@@ -4,11 +4,10 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal static partial class PythonReTranslator
 {
-    private enum InspectionKind { References, Lookbehind, MandatoryCaptures, Iteration, Literal }
-    private struct InspectionFrame(PythonReNode node, bool forbidCapture)
+    private enum InspectionKind { References, Lookbehind, Iteration, Literal }
+    private struct InspectionFrame(PythonReNode node)
     {
         internal readonly PythonReNode Node = node;
-        internal readonly bool ForbidCapture = forbidCapture;
         internal int Index = -1;
     }
 
@@ -30,7 +29,7 @@ internal static partial class PythonReTranslator
         // Translation owns the width map across this walk. Roll it back only
         // after its arrays are disposed by Translate, never in a nested scope.
         var budget = Utf8ConstructionScope.CurrentBudget;
-        using var frames = Utf8ConstructionFrames<InspectionFrame>.Create(budget, new(node, false));
+        using var frames = Utf8ConstructionFrames<InspectionFrame>.Create(budget, new(node));
         while (frames.Count != 0)
         {
             budget.ChargeWork(1);
@@ -55,8 +54,6 @@ internal static partial class PythonReTranslator
                 else if (kind == InspectionKind.Lookbehind && current is PythonReGroupNode
                     { Kind: PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind } behind)
                     EnsureFixedWidth(behind.Inner, parseResult, widths ?? throw new InvalidOperationException("Width storage is missing."));
-                else if (kind == InspectionKind.MandatoryCaptures && frame.ForbidCapture && current is PythonReGroupNode
-                    { Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing }) return false;
                 else if (kind == InspectionKind.Iteration)
                 {
                     if (current is PythonReConditionalNode) return false;
@@ -77,13 +74,11 @@ internal static partial class PythonReTranslator
                 frame.Index = 0;
             }
             PythonReNode? child = null;
-            var forbid = frame.ForbidCapture;
             switch (current)
             {
                 case PythonReAlternationNode alternation when frame.Index < alternation.Branches.Count:
                     budget.ChargeWork(1);
                     child = alternation.Branches[frame.Index++];
-                    if (kind == InspectionKind.MandatoryCaptures) forbid = true;
                     break;
                 case PythonReSequenceNode sequence when frame.Index < sequence.Elements.Count:
                     budget.ChargeWork(1);
@@ -91,22 +86,17 @@ internal static partial class PythonReTranslator
                     break;
                 case PythonReQuantifierNode repeat when frame.Index++ == 0:
                     child = repeat.Inner;
-                    if (kind == InspectionKind.MandatoryCaptures) forbid |= repeat.Min == 0;
                     break;
                 case PythonReGroupNode group when frame.Index++ == 0:
                     child = group.Inner;
-                    if (kind == InspectionKind.MandatoryCaptures)
-                        forbid |= group.Kind is PythonReGroupKind.PositiveLookahead or PythonReGroupKind.NegativeLookahead
-                            or PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind;
                     break;
                 case PythonReConditionalNode conditional:
                     child = frame.Index++ switch { 0 => conditional.YesBranch, 1 => conditional.NoBranch, _ => null };
-                    if (kind == InspectionKind.MandatoryCaptures) forbid = true;
                     break;
             }
             frames[index] = frame;
             if (child is null) frames.Pop();
-            else frames.Push(new(child, forbid));
+            else frames.Push(new(child));
         }
         return true;
     }
@@ -212,7 +202,7 @@ internal static partial class PythonReTranslator
     }
 
     private static void AppendTree(PythonReNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython, bool native)
+        IReadOnlyDictionary<string, string> emittedGroupNames, int[] coreNumbersByPython, bool native)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
         using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node));
@@ -221,7 +211,7 @@ internal static partial class PythonReTranslator
             budget.ChargeWork(1);
             var index = frames.Count - 1;
             var frame = frames[index];
-            var complete = ResumeRender(ref frame, builder, emittedGroupNames, managedNumbersByPython, native, out var child);
+            var complete = ResumeRender(ref frame, builder, emittedGroupNames, coreNumbersByPython, native, out var child);
             frames[index] = frame;
             if (complete) frames.Pop();
             else frames.Push(child);

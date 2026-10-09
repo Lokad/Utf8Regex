@@ -33,7 +33,7 @@ public sealed class PythonReSliceConditionalTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         AssertOwnedBackends(regex);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -60,7 +60,7 @@ public sealed class PythonReSliceConditionalTests
         }
 
         AssertOwnedBackends(regex);
-        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
