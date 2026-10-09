@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Globalization;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
@@ -12,8 +11,8 @@ internal sealed class Utf8OwnedRegexTree
         Utf8TreeNode root,
         int captureCount,
         string[]? captureNames,
-        Hashtable? captureNameToNumberMapping,
-        Hashtable? captureNumberSparseMapping,
+        IReadOnlyDictionary<string, int>? captureNameToNumberMapping,
+        IReadOnlyDictionary<int, int>? captureNumberSparseMapping,
         RegexOptions options,
         CultureInfo? culture)
         : this(root, captureCount, captureNames, captureNameToNumberMapping,
@@ -25,8 +24,8 @@ internal sealed class Utf8OwnedRegexTree
         Utf8TreeNode root,
         int captureCount,
         string[]? captureNames,
-        Hashtable? captureNameToNumberMapping,
-        Hashtable? captureNumberSparseMapping,
+        IReadOnlyDictionary<string, int>? captureNameToNumberMapping,
+        IReadOnlyDictionary<int, int>? captureNumberSparseMapping,
         RegexOptions options,
         CultureInfo? culture,
         Utf8CaptureCatalog? captureCatalog,
@@ -53,9 +52,9 @@ internal sealed class Utf8OwnedRegexTree
 
     public string[]? CaptureNames { get; }
 
-    public Hashtable? CaptureNameToNumberMapping { get; }
+    public IReadOnlyDictionary<string, int>? CaptureNameToNumberMapping { get; }
 
-    public Hashtable? CaptureNumberSparseMapping { get; }
+    public IReadOnlyDictionary<int, int>? CaptureNumberSparseMapping { get; }
 
     public RegexOptions Options { get; }
 

@@ -167,7 +167,7 @@ public sealed class Utf8LinearRuntimeContinuationTests
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => program.TryMatch("abx"u8, 0, deadline, out _, out _));
         var plan = new Utf8StructuralVerifierPlan(Utf8StructuralVerifierKind.ByteSafeLinearProgram, default,
             new(program, Utf8ByteSafeLinearCompileFailureKind.None), default, null, default);
-        var runtime = Utf8StructuralVerifierRuntimeFactory.Create(plan);
+        var runtime = Utf8StructuralVerifierRuntimeFactory.Create(Utf8VerifierTestPlans.WithStructuralVerifier(plan));
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => runtime.TryMatch("abx"u8, 0, 0, deadline, out _));
         Assert.True(program.TryMatch("abx"u8, 0, out _));
     }

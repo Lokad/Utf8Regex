@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -395,7 +394,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
             Assert.False(product.Inspection.DebugFallbackRegexIsCreated);
         }
     }
-    private static void AssertGroupNameMapping(Regex oracle, Hashtable? actual)
+    private static void AssertGroupNameMapping(Regex oracle, IReadOnlyDictionary<string, int>? actual)
     {
         var names = oracle.GetGroupNames();
         if (actual is null)
@@ -408,11 +407,11 @@ public sealed class Utf8OwnedTreeParserGroupTests
         foreach (var name in names)
         {
             Assert.True(actual.ContainsKey(name), "Missing name mapping: " + name);
-            Assert.Equal(oracle.GroupNumberFromName(name), (int)actual[name]!);
+            Assert.Equal(oracle.GroupNumberFromName(name), actual[name]);
         }
     }
 
-    private static void AssertGroupNumberMapping(Regex oracle, Hashtable? actual)
+    private static void AssertGroupNumberMapping(Regex oracle, IReadOnlyDictionary<int, int>? actual)
     {
         var numbers = oracle.GetGroupNumbers();
         if (actual is null)
@@ -426,9 +425,9 @@ public sealed class Utf8OwnedTreeParserGroupTests
         }
 
         Assert.Equal(numbers.Length, actual.Count);
-        foreach (DictionaryEntry entry in actual)
+        foreach (var entry in actual)
         {
-            Assert.Equal((int)entry.Key, numbers[(int)entry.Value!]);
+            Assert.Equal(entry.Key, numbers[entry.Value]);
         }
     }
 }

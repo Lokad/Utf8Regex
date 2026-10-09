@@ -1,13 +1,19 @@
+using Lokad.Utf8Regex.Internal.Planning;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal abstract class Utf8StructuralVerifierRuntime
 {
-    protected Utf8StructuralVerifierRuntime(Utf8StructuralVerifierPlan plan)
+    internal readonly record struct ConstructionState(Utf8PreparedRegex RegexPlan);
+
+    private readonly Utf8PreparedRegex _regexPlan;
+
+    protected Utf8StructuralVerifierRuntime(ConstructionState state)
     {
-        Plan = plan;
+        _regexPlan = state.RegexPlan;
     }
 
-    public Utf8StructuralVerifierPlan Plan { get; }
+    public Utf8StructuralVerifierPlan Plan => _regexPlan.StructuralVerifier;
 
     /// <summary>
     /// Verifies a structural candidate beginning at <paramref name="matchIndex"/>
@@ -20,8 +26,8 @@ internal abstract class Utf8StructuralVerifierRuntime
 
 internal sealed class Utf8NoStructuralVerifierRuntime : Utf8StructuralVerifierRuntime
 {
-    public Utf8NoStructuralVerifierRuntime(Utf8StructuralVerifierPlan plan)
-        : base(plan)
+    internal Utf8NoStructuralVerifierRuntime(ConstructionState state)
+        : base(state)
     {
     }
 
@@ -34,8 +40,8 @@ internal sealed class Utf8NoStructuralVerifierRuntime : Utf8StructuralVerifierRu
 
 internal sealed class Utf8AsciiStructuralVerifierRuntime : Utf8StructuralVerifierRuntime
 {
-    public Utf8AsciiStructuralVerifierRuntime(Utf8StructuralVerifierPlan plan)
-        : base(plan)
+    internal Utf8AsciiStructuralVerifierRuntime(ConstructionState state)
+        : base(state)
     {
     }
 
@@ -47,8 +53,8 @@ internal sealed class Utf8AsciiStructuralVerifierRuntime : Utf8StructuralVerifie
 
 internal sealed class Utf8ByteSafeLinearVerifierRuntime : Utf8StructuralVerifierRuntime
 {
-    public Utf8ByteSafeLinearVerifierRuntime(Utf8StructuralVerifierPlan plan)
-        : base(plan)
+    internal Utf8ByteSafeLinearVerifierRuntime(ConstructionState state)
+        : base(state)
     {
     }
 
@@ -85,8 +91,8 @@ internal sealed class Utf8ByteSafeLinearVerifierRuntime : Utf8StructuralVerifier
 
 internal sealed class Utf8ByteSafeLazyDfaVerifierRuntime : Utf8StructuralVerifierRuntime
 {
-    public Utf8ByteSafeLazyDfaVerifierRuntime(Utf8StructuralVerifierPlan plan)
-        : base(plan)
+    internal Utf8ByteSafeLazyDfaVerifierRuntime(ConstructionState state)
+        : base(state)
     {
     }
 

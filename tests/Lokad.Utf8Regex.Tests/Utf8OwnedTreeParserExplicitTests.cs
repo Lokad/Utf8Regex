@@ -158,7 +158,7 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         }
     }
 
-    private static void AssertGroupNameMapping(Regex oracle, System.Collections.Hashtable? actual)
+    private static void AssertGroupNameMapping(Regex oracle, IReadOnlyDictionary<string, int>? actual)
     {
         var names = oracle.GetGroupNames();
         if (actual is null)
@@ -171,11 +171,11 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         foreach (var name in names)
         {
             Assert.True(actual.ContainsKey(name), "Missing name mapping: " + name);
-            Assert.Equal(oracle.GroupNumberFromName(name), (int)actual[name]!);
+            Assert.Equal(oracle.GroupNumberFromName(name), actual[name]);
         }
     }
 
-    private static void AssertGroupNumberMapping(Regex oracle, System.Collections.Hashtable? actual)
+    private static void AssertGroupNumberMapping(Regex oracle, IReadOnlyDictionary<int, int>? actual)
     {
         var numbers = oracle.GetGroupNumbers();
         if (actual is null)
@@ -189,9 +189,9 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         }
 
         Assert.Equal(numbers.Length, actual.Count);
-        foreach (System.Collections.DictionaryEntry entry in actual)
+        foreach (var entry in actual)
         {
-            Assert.Equal((int)entry.Key, numbers[(int)entry.Value!]);
+            Assert.Equal(entry.Key, numbers[entry.Value]);
         }
     }
 

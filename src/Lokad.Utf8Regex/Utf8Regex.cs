@@ -406,7 +406,7 @@ public sealed partial class Utf8Regex
         if (name is null) throw new ArgumentNullException(nameof(name));
         if (_sliceProgram?.CaptureCatalog is { } catalog) return catalog.GroupNumberFromName(name);
 
-        return _program.GroupMetadata?.GroupNumberFromName(name)
+        return _program.CaptureCatalog?.GroupNumberFromName(name)
             ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
     }
 
@@ -420,7 +420,7 @@ public sealed partial class Utf8Regex
             return (uint)ordinal < (uint)names.Length ? names[ordinal] : string.Empty;
         }
 
-        return _program.GroupMetadata?.GroupNameFromNumber(i)
+        return _program.CaptureCatalog?.GroupNameFromNumber(i)
             ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNameFromNumber(i);
     }
 
@@ -432,7 +432,7 @@ public sealed partial class Utf8Regex
             return _sliceProgram.GroupNames.AsSpan().ToArray();
         }
 
-        return _program.GroupMetadata?.GroupNames.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
+        return _program.CaptureCatalog?.GroupNames.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
     }
 
     /// <summary>Returns the group numbers defined by the expression, including group zero.</summary>
@@ -443,7 +443,7 @@ public sealed partial class Utf8Regex
             return _sliceProgram.GroupNumbers.AsSpan().ToArray();
         }
 
-        return _program.GroupMetadata?.GroupNumbers.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
+        return _program.CaptureCatalog?.GroupNumbers.AsSpan().ToArray() ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
     }
 
     /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>

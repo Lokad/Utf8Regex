@@ -5,17 +5,17 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8VerifierRuntime
 {
-    public Utf8VerifierRuntime(
-        Utf8StructuralVerifierPlan structuralVerifierPlan,
-        Utf8StructuralVerifierRuntime structuralVerifierRuntime,
-        Utf8FallbackCandidateVerifier fallbackCandidateVerifier)
+    private readonly record struct ConstructionState(
+        Utf8StructuralVerifierRuntime StructuralVerifierRuntime,
+        Utf8FallbackCandidateVerifier FallbackCandidateVerifier);
+
+    private Utf8VerifierRuntime(ConstructionState state)
     {
-        StructuralVerifierPlan = structuralVerifierPlan;
-        StructuralVerifierRuntime = structuralVerifierRuntime;
-        FallbackCandidateVerifier = fallbackCandidateVerifier;
+        StructuralVerifierRuntime = state.StructuralVerifierRuntime;
+        FallbackCandidateVerifier = state.FallbackCandidateVerifier;
     }
 
-    public Utf8StructuralVerifierPlan StructuralVerifierPlan { get; }
+    public Utf8StructuralVerifierPlan StructuralVerifierPlan => StructuralVerifierRuntime.Plan;
 
     public Utf8StructuralVerifierRuntime StructuralVerifierRuntime { get; }
 
@@ -23,9 +23,18 @@ internal sealed class Utf8VerifierRuntime
 
     public static Utf8VerifierRuntime Create(Utf8PreparedRegex regexPlan, string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
-        return new Utf8VerifierRuntime(
-            regexPlan.StructuralVerifier,
-            Utf8StructuralVerifierRuntimeFactory.Create(regexPlan.StructuralVerifier),
-            Utf8FallbackVerifierRuntimeFactory.Create(regexPlan.FallbackVerifier, pattern, options, matchTimeout));
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            var structural = Utf8StructuralVerifierRuntimeFactory.Create(regexPlan);
+            var fallback = Utf8FallbackVerifierRuntimeFactory.Create(regexPlan.FallbackVerifier, pattern, options, matchTimeout);
+            var result = budget.AllocateObject(new ConstructionState(structural, fallback),
+                static state => new Utf8VerifierRuntime(state));
+            scope.Complete();
+            return result;
+        }
+        finally { budget.LeaveDepth(); }
     }
 }

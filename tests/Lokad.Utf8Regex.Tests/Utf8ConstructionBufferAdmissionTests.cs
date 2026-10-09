@@ -67,8 +67,13 @@ public sealed class Utf8ConstructionBufferAdmissionTests
     [InlineData("(?<x>[😀-🙏]|[é-\uFFFF])", false)]
     public void RetainedGraphArraysAndDescriptorsExactlyMatchTheLoweringByteLoan(string pattern, bool nonBacktracking)
     {
+        // Lowering borrows the catalog from the already closed parser owner.
+        // Catalog acquisition has its own byte/work/depth cutoff controls.
+        var options = nonBacktracking ? RegexOptions.NonBacktracking : RegexOptions.None;
+        var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
+        Assert.NotNull(tree);
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
-        var program = Utf8SliceParser.TryParse(pattern, nonBacktracking ? RegexOptions.NonBacktracking : RegexOptions.None);
+        var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
         Assert.NotNull(program);
         var retained = Utf8ScalarIrAdmissionTests.CountOwnedGraphArrays(program);
         var descriptors = Utf8ScalarIrAdmissionTests.CountOwnedConstructionDescriptors(scope.Budget);

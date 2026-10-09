@@ -107,6 +107,8 @@ public sealed class EngineDependencyInventoryTests
         //    The linear compiled router left this set in R05 once its RightToLeft
         //    predicates read cached fallback options instead of constructing the engine.
         //    The structural window router fails closed to BCL on non-ASCII input (R05).
+        //    Program metadata callbacks borrow the existing metadata/verifier;
+        //    residual BCL metadata queries live in Utf8FallbackCandidateVerifier.
         var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
         var expectedFallbackFiles = new[]
         {
@@ -119,7 +121,6 @@ public sealed class EngineDependencyInventoryTests
             "Utf8Regex.Diagnostics.cs",
             "Utf8Regex.Fallback.cs",
             "Utf8Regex.Replacement.cs",
-            "Utf8RegexProgram.cs",
             "Utf8StructuralLinearCompiledRouter.cs",
             "Utf8StructuralLinearProgram.cs",
         };

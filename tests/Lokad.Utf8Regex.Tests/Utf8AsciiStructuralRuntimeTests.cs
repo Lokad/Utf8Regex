@@ -128,7 +128,7 @@ public sealed class Utf8AsciiStructuralRuntimeTests
             [AsciiStructuralVerifierStep.ConsumeSeparator(ASet, 1), AsciiStructuralVerifierStep.Accept()], []);
         var plan = new Utf8StructuralVerifierPlan(Utf8StructuralVerifierKind.AsciiStructuralProgram,
             program, default, default, null, default);
-        var runtime = Utf8StructuralVerifierRuntimeFactory.Create(plan);
+        var runtime = Utf8StructuralVerifierRuntimeFactory.Create(Utf8VerifierTestPlans.WithStructuralVerifier(plan));
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(10));
         Thread.Sleep(50);
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => runtime.TryMatch("aaa"u8, 0, 0, deadline, out _));

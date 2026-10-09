@@ -9,12 +9,16 @@ internal abstract class Utf8FallbackCandidateVerifier
 {
     // R03: BCL engines construct lazily so owned routes never construct them; the first
     // fallback use pays the construction cost once (thread-safe).
-    protected Utf8FallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex, RegexOptions fallbackOptions)
+    internal readonly record struct ConstructionState(
+        Utf8FallbackVerifierPlan Plan, Lazy<Regex> FallbackRegex,
+        Lazy<Regex>? AnchoredFallbackRegex, RegexOptions FallbackOptions);
+
+    protected Utf8FallbackCandidateVerifier(ConstructionState state)
     {
-        Plan = plan;
-        FallbackOptions = fallbackOptions;
-        _fallbackRegex = fallbackRegex;
-        _anchoredFallbackRegex = anchoredFallbackRegex;
+        Plan = state.Plan;
+        FallbackOptions = state.FallbackOptions;
+        _fallbackRegex = state.FallbackRegex;
+        _anchoredFallbackRegex = state.AnchoredFallbackRegex;
     }
 
     public Utf8FallbackVerifierPlan Plan { get; }
@@ -34,9 +38,15 @@ internal abstract class Utf8FallbackCandidateVerifier
     public bool IsFallbackRegexCreated => _fallbackRegex.IsValueCreated;
 
     public bool IsAnchoredFallbackRegexCreated => _anchoredFallbackRegex?.IsValueCreated ?? false;
+
+    internal int[] GetGroupNumbers() => FallbackRegex.GetGroupNumbers();
+
+    internal string[] GetGroupNames() => FallbackRegex.GetGroupNames();
+
     /// <summary>
-    /// Verifies one conservative byte-range candidate against the authoritative
-    /// managed regex. The complete subject must already be valid UTF-8 and the
+    /// Verifies one conservative byte-range candidate against the transitional
+    /// BCL regex. This migration route does not establish scalar acceptance.
+    /// The complete subject must already be valid UTF-8 and the
     /// candidate must use admitted byte boundaries. The shared map and decoded
     /// subject are created at most once and returned through their references.
     /// A false result is definitive for this candidate, not for later ones.
@@ -132,8 +142,8 @@ internal abstract class Utf8FallbackCandidateVerifier
 
 internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidateVerifier
 {
-    public Utf8StartFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex, RegexOptions fallbackOptions)
-        : base(plan, fallbackRegex, anchoredFallbackRegex, fallbackOptions)
+    internal Utf8StartFallbackCandidateVerifier(ConstructionState state)
+        : base(state)
     {
     }
 
@@ -182,8 +192,8 @@ internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidate
 
 internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCandidateVerifier
 {
-    public Utf8BoundedSliceFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex> anchoredFallbackRegex, RegexOptions fallbackOptions)
-        : base(plan, fallbackRegex, anchoredFallbackRegex, fallbackOptions)
+    internal Utf8BoundedSliceFallbackCandidateVerifier(ConstructionState state)
+        : base(state)
     {
     }
 

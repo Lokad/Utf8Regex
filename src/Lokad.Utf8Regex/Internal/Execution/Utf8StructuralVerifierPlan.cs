@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Planning;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal enum Utf8StructuralVerifierKind : byte
@@ -48,14 +50,24 @@ internal readonly struct Utf8StructuralVerifierPlan
 
 internal static class Utf8StructuralVerifierRuntimeFactory
 {
-    public static Utf8StructuralVerifierRuntime Create(Utf8StructuralVerifierPlan plan)
+    public static Utf8StructuralVerifierRuntime Create(Utf8PreparedRegex regexPlan)
     {
-        return plan.Kind switch
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            Utf8StructuralVerifierKind.AsciiStructuralProgram => new Utf8AsciiStructuralVerifierRuntime(plan),
-            Utf8StructuralVerifierKind.ByteSafeLinearProgram => new Utf8ByteSafeLinearVerifierRuntime(plan),
-            Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram => new Utf8ByteSafeLazyDfaVerifierRuntime(plan),
-            _ => new Utf8NoStructuralVerifierRuntime(plan),
-        };
+            var result = budget.AllocateObject<Utf8StructuralVerifierRuntime.ConstructionState, Utf8StructuralVerifierRuntime>(
+                new(regexPlan), static state => state.RegexPlan.StructuralVerifier.Kind switch
+                {
+                    Utf8StructuralVerifierKind.AsciiStructuralProgram => new Utf8AsciiStructuralVerifierRuntime(state),
+                    Utf8StructuralVerifierKind.ByteSafeLinearProgram => new Utf8ByteSafeLinearVerifierRuntime(state),
+                    Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram => new Utf8ByteSafeLazyDfaVerifierRuntime(state),
+                    _ => new Utf8NoStructuralVerifierRuntime(state),
+                });
+            scope.Complete();
+            return result;
+        }
+        finally { budget.LeaveDepth(); }
     }
 }

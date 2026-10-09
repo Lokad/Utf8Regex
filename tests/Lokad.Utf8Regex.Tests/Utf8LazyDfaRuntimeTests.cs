@@ -130,7 +130,7 @@ public sealed class Utf8LazyDfaRuntimeTests
         var program = RepeatedByte();
         var plan = new Utf8StructuralVerifierPlan(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, default, default,
             new(program, Utf8ByteSafeLazyDfaCompileFailureKind.None), null, default);
-        var runtime = Utf8StructuralVerifierRuntimeFactory.Create(plan);
+        var runtime = Utf8StructuralVerifierRuntimeFactory.Create(Utf8VerifierTestPlans.WithStructuralVerifier(plan));
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(10));
         Thread.Sleep(30);
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => runtime.TryMatch("a"u8, 0, 0, deadline, out _));

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -1802,24 +1801,30 @@ internal static class Utf8OwnedTreeParser
             ref Utf8TreeNode root,
             out int captureCount,
             out string[] captureNames,
-            out Hashtable? captureNameToNumber,
-            out Hashtable? captureSparseMapping)
+            out IReadOnlyDictionary<string, int>? captureNameToNumber,
+            out IReadOnlyDictionary<int, int>? captureSparseMapping)
         {
             captureCount = 0;
             captureNames = [];
             captureNameToNumber = null;
             captureSparseMapping = null;
 
-            var definitions = new Utf8CaptureDefinition[state.GroupDefinitions.Count];
-            for (var index = 0; index < definitions.Length; index++)
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            var definitions = budget.AllocateArray<Utf8CaptureDefinition>(state.GroupDefinitions.Count, false);
+            Utf8CaptureCatalog catalog;
+            try
             {
-                Utf8ConstructionScope.ChargeWork(1);
-                var definition = state.GroupDefinitions[index];
-                definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
+                for (var index = 0; index < definitions.Length; index++)
+                {
+                    budget.ChargeWork(1);
+                    var definition = state.GroupDefinitions[index];
+                    definitions[index] = new Utf8CaptureDefinition(definition.Name, definition.Declared, definition.IsAuto, definition.OpenPosition);
+                }
+                catalog = Utf8CaptureCatalog.Create(state.Groups, definitions, state.RequiredSlots.Count != 0);
             }
-            var catalog = new Utf8CaptureCatalog(state.Groups, definitions, state.RequiredSlots.ToArray());
+            finally { budget.ReleaseArray(definitions, false); }
             state.CaptureCatalog = catalog;
-            for (var index = 0; index < definitions.Length; index++)
+            for (var index = 0; index < state.GroupDefinitions.Count; index++)
             {
                 Utf8ConstructionScope.ChargeWork(1);
                 var definition = state.GroupDefinitions[index];

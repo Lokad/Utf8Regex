@@ -11,16 +11,19 @@ public sealed class Utf8ConstructionWorkDepthTests
     [InlineData("(?<x>😀)\\k<x>")] [InlineData("(?i:[é😀-🙏])")]
     public void ParserWorkCutoffsPreserveParentCapacityAndDepth(string pattern)
     {
-        // The admitted frame-buffer descriptor remains in the enclosing owner;
-        // continuation-array scratch is released before capture numbering.
+        // The frame descriptor and catalog survive in the enclosing owner;
+        // continuation and declaration-array scratch release before returning.
         var frameDescriptor = Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, Array, int)>()
             + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
-        ulong work;
+        ulong work, retained;
         using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+            var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+            Assert.NotNull(tree);
             work = measured.Budget.WorkSteps;
-            Assert.Equal(frameDescriptor, measured.Budget.ReservedBytes);
+            retained = measured.Budget.ReservedBytes;
+            Assert.True(retained > frameDescriptor);
+            Assert.Same(tree.CaptureCatalog, measured.Budget.ObjectCheckpoint!.Value);
             Assert.Equal(0ul, measured.Budget.Depth);
         }
         Assert.InRange(work, 1ul, 2_000_000ul);
@@ -34,7 +37,7 @@ public sealed class Utf8ConstructionWorkDepthTests
             var parent = scope.Budget.AllocateArray<byte>(1, false);
             scope.Budget.EnterDepth();
             var failure = Record.Exception(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-            Assert.Equal(cutoff < work ? 48ul : 48 + frameDescriptor, scope.Budget.ReservedBytes);
+            Assert.Equal(cutoff < work ? 48ul : 48 + retained, scope.Budget.ReservedBytes);
             Assert.Equal(1ul, scope.Budget.Depth);
             Assert.True(scope.Budget.WorkSteps <= cutoff + 1);
             if (cutoff < work)
