@@ -452,7 +452,9 @@ internal sealed class Utf8AlternationBranchSpanMap
         internal readonly Utf8ConstructionBuffer<int> Starts = starts;
         internal readonly Utf8ConstructionBuffer<int> Lengths = lengths;
 
-        internal static NestedEntry Create(Utf8CaptureMapConstruction storage, string text = "")
+        internal static NestedEntry Create(Utf8CaptureMapConstruction storage) => Create(storage, string.Empty);
+
+        internal static NestedEntry Create(Utf8CaptureMapConstruction storage, string text)
         {
             var groups = storage.Buffer<int>();
             var starts = storage.Buffer<int>();

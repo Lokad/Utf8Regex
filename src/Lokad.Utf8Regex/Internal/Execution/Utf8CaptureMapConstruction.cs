@@ -42,7 +42,8 @@ internal sealed class Utf8CaptureMapConstruction(
         catch { value.Dispose(); throw; }
     }
 
-    internal T[] Allocate<T>(int count, bool retained = true) => arrays.Allocate<T>(count, retained);
+    internal T[] Allocate<T>(int count) => Allocate<T>(count, true);
+    internal T[] Allocate<T>(int count, bool retained) => arrays.Allocate<T>(count, retained);
 
     internal T[] Copy<T>(Utf8ConstructionBuffer<T> values)
     {
