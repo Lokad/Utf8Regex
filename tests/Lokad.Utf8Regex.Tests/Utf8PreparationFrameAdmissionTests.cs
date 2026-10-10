@@ -9,6 +9,8 @@ public sealed class Utf8PreparationFrameAdmissionTests
     private static readonly Func<Utf8ExecutionNode, bool> ContainsCapture =
         (typeof(Utf8Regex).GetMethod("ContainsCapture", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
         ?? throw new InvalidOperationException()).CreateDelegate<Func<Utf8ExecutionNode, bool>>();
+    private static readonly Utf8SliceProgram CaptureProgram;
+    static Utf8PreparationFrameAdmissionTests() => CaptureProgram = Utf8FrontEnd.Compile("(a)", RegexOptions.None).ScalarProgram!;
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static Utf8ExecutionNode Node(Utf8ExecutionNodeKind kind, Utf8ExecutionNode[]? children = null,
         int capture = 0, string text = "", char ch = 'a', int minimum = 0, int maximum = 1) =>
@@ -45,9 +47,9 @@ public sealed class Utf8PreparationFrameAdmissionTests
         0 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Minimum,
         1 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Maximum,
         2 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
-        3 => Utf8GroupedLiteralSpanTable.TryCreate(execution),
+        3 => Utf8GroupedLiteralSpanTable.TryCreate(execution, CaptureProgram),
         7 => ContainsCapture(execution.Root),
-        _ => Utf8AlternationBranchSpanMap.TryCreate(execution),
+        _ => Utf8AlternationBranchSpanMap.TryCreate(execution, CaptureProgram),
     };
 
     public static IEnumerable<object[]> RootDenials()
@@ -158,12 +160,12 @@ public sealed class Utf8PreparationFrameAdmissionTests
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        Assert.Null(Utf8GroupedLiteralSpanTable.TryCreate(execution));
+        Assert.Null(Utf8GroupedLiteralSpanTable.TryCreate(execution, CaptureProgram));
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.WorkSteps > 2);
-        using (var recovery = Utf8ConstructionScope.Enter()) Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(Tree(3)));
+        using (var recovery = Utf8ConstructionScope.Enter()) Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(Tree(3), CaptureProgram));
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }

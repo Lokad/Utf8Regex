@@ -58,8 +58,11 @@ internal sealed class Utf8GroupedLiteralSpanTable
 
     public int[] AbsentLengthsInLiteral { get; }
 
-    public static Utf8GroupedLiteralSpanTable? TryCreate(Utf8ExecutionTree? tree)
+    public static Utf8GroupedLiteralSpanTable? TryCreate(Utf8ExecutionTree? tree, Utf8SliceProgram captureProgram)
     {
+        // Stateful declarations use the owned capture-history engine.
+        // No slot renumbering or independent numbering scan is needed here.
+        if (captureProgram.HasBalancing || captureProgram.HasSharedCaptureDeclarations || captureProgram.HasExplicitCaptureNumbers) return null;
         using var construction = Utf8ConstructionScope.Enter();
         var result = Create(tree);
         if (result is not null) construction.Complete();
@@ -84,25 +87,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
                 return null;
             }
 
-            // Owned-tree capture numbers diverge from BCL group numbers for nested named
-            // captures; translate every recorded group up front so shaping projects BCL
-            // slots, declining on any numbering surprise.
-            var slots = Utf8BclSlotTranslator.TryCreateMap(root.Children[0]);
-            if (slots is null)
-            {
-                return null;
-            }
-
-            for (var i = 0; i < walker.Groups.Count; i++)
-            {
-                if (!slots.TryGetValue(walker.Groups[i], out var slot))
-                {
-                    return null;
-                }
-
-                walker.Groups[i] = slot;
-            }
-
+            // The shared catalog finalized these capture identities before lowering.
             if (!walker.LoopSeen)
             {
                 return new Utf8GroupedLiteralSpanTable(

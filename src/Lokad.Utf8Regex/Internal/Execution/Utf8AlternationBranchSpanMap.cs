@@ -50,8 +50,11 @@ internal sealed class Utf8AlternationBranchSpanMap
 
     public int[][] BranchLengths { get; }
 
-    public static Utf8AlternationBranchSpanMap? TryCreate(Utf8ExecutionTree? tree)
+    public static Utf8AlternationBranchSpanMap? TryCreate(Utf8ExecutionTree? tree, Utf8SliceProgram captureProgram)
     {
+        // The lowering tree already carries the catalog's final group numbers.
+        // Stateful declarations use full owned capture histories.
+        if (captureProgram.HasBalancing || captureProgram.HasSharedCaptureDeclarations || captureProgram.HasExplicitCaptureNumbers) return null;
         using var construction = Utf8ConstructionScope.Enter();
         var result = Create(tree);
         if (result is not null) construction.Complete();
@@ -91,7 +94,7 @@ internal sealed class Utf8AlternationBranchSpanMap
             // instead of the whole-match list above.
             if (SkipsToCountedLoop(node))
             {
-                return TryCreateExactCountPatterns(root.Children[0], node, wholeMatchGroups);
+                return TryCreateExactCountPatterns(node, wholeMatchGroups);
             }
 
             Utf8ExecutionNode? alternate = null;
@@ -99,19 +102,19 @@ internal sealed class Utf8AlternationBranchSpanMap
             CountAlternates(node, ref alternate, ref alternateCount);
             if (alternateCount == 0)
             {
-                return TryCreateLoopPatterns(root.Children[0], node, wholeMatchGroups);
+                return TryCreateLoopPatterns(node, wholeMatchGroups);
             }
 
             if (alternateCount == 1 && alternate is not null && alternate.Children.Count > 0)
             {
-                var single = TryCreateSingleAlternate(root.Children[0], node, alternate, wholeMatchGroups);
+                var single = TryCreateSingleAlternate(node, alternate, wholeMatchGroups);
                 if (single is not null)
                 {
                     return single;
                 }
             }
 
-            return TryCreateNestedPatterns(root.Children[0], node, wholeMatchGroups, alternateCount);
+            return TryCreateNestedPatterns(node, wholeMatchGroups, alternateCount);
 
         }
     }
@@ -132,12 +135,11 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateExactCountPatterns(
-        Utf8ExecutionNode body,
         Utf8ExecutionNode node,
         List<int> wholeMatchGroups)
     {
         // Unwrap captures around the loop itself: every one takes its span from
-        // the last iteration exactly like BCL (a repeated capture never spans
+        // the last iteration (a repeated capture never spans
         // the whole match), while outer whole-match wrappers were already
         // collected above. Captures inside alternation branches stay out.
         var lastIterationGroups = new List<int>();
@@ -213,7 +215,7 @@ internal sealed class Utf8AlternationBranchSpanMap
             }
         }
 
-        // Cross iterations leftmost-major: BCL backtracks the last iteration
+        // Cross iterations leftmost-major: ordered choice unwinds the last iteration
         // first, so earlier iterations vary slowest and source order holds
         // within each iteration (greedy and lazy enumerate identically for
         // fixed counts). More than 64 combinations decline like elsewhere.
@@ -242,22 +244,7 @@ internal sealed class Utf8AlternationBranchSpanMap
             return null;
         }
 
-        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
-        if (slots is null)
-        {
-            return null;
-        }
-
-        var translatedWhole = new int[wholeMatchGroups.Count];
-        for (var i = 0; i < wholeMatchGroups.Count; i++)
-        {
-            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
-            {
-                return null;
-            }
-
-            translatedWhole[i] = wholeSlot;
-        }
+        var wholeGroups = wholeMatchGroups.ToArray();
 
         var branchExpansions = new string[entries.Count];
         var branchGroups = new int[entries.Count][];
@@ -275,12 +262,7 @@ internal sealed class Utf8AlternationBranchSpanMap
             var lengths = new int[lastIterationGroups.Count];
             for (var i = 0; i < lastIterationGroups.Count; i++)
             {
-                if (!slots.TryGetValue(lastIterationGroups[i], out var slot))
-                {
-                    return null;
-                }
-
-                groups[i] = slot;
+                groups[i] = lastIterationGroups[i];
                 starts[i] = entries[entry].LastStart;
                 lengths[i] = entries[entry].LastLength;
             }
@@ -292,7 +274,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         }
 
         return new Utf8AlternationBranchSpanMap(
-            translatedWhole,
+            wholeGroups,
             branchExpansions,
             branchGroups,
             branchStarts,
@@ -352,7 +334,6 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateSingleAlternate(
-        Utf8ExecutionNode body,
         Utf8ExecutionNode node,
         Utf8ExecutionNode alternate,
         List<int> wholeMatchGroups)
@@ -387,41 +368,10 @@ internal sealed class Utf8AlternationBranchSpanMap
             return null;
         }
 
-        // Owned-tree capture numbers diverge from BCL group numbers for nested named
-        // captures; translate every recorded group (branch spans and whole-match
-        // wrappers) up front so shaping projects BCL slots, declining on surprise.
-        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
-        if (slots is null)
-        {
-            return null;
-        }
-
-        var translatedWhole = new int[wholeMatchGroups.Count];
-        for (var i = 0; i < wholeMatchGroups.Count; i++)
-        {
-            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
-            {
-                return null;
-            }
-
-            translatedWhole[i] = wholeSlot;
-        }
-
-        for (var branch = 0; branch < branchGroups.Length; branch++)
-        {
-            for (var i = 0; i < branchGroups[branch].Length; i++)
-            {
-                if (!slots.TryGetValue(branchGroups[branch][i], out var branchSlot))
-                {
-                    return null;
-                }
-
-                branchGroups[branch][i] = branchSlot;
-            }
-        }
+        var wholeGroups = wholeMatchGroups.ToArray();
 
         return new Utf8AlternationBranchSpanMap(
-            translatedWhole,
+            wholeGroups,
             branchExpansions,
             branchGroups,
             branchStarts,
@@ -429,19 +379,18 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateNestedPatterns(
-        Utf8ExecutionNode body,
         Utf8ExecutionNode node,
         List<int> wholeMatchGroups,
         int alternateCount)
     {
         // Nested divergent alternations and loops inside alternation branches expand
-        // recursively into one flat BCL-ordered entry list: sequential children combine
+        // into one flat ordered entry list: sequential children combine
         // leftmost-major with each child's preference-ordered options in turn, alternate
         // branches concatenate in source order, and (0,1) loops list present options
         // before absent when greedy and absent before present when lazy, mirroring the
         // probed backtracking order. Nested loops, other bounds, empty entries, and more
         // than 64 entries decline; shapes without any alternate already ran the single
-        // and loop paths, so a null map keeps the existing BCL routes.
+        // and loop paths, so a null map selects the owned scalar capture route.
         if (alternateCount < 1)
         {
             return null;
@@ -477,40 +426,10 @@ internal sealed class Utf8AlternationBranchSpanMap
             return null;
         }
 
-        // Same BCL slot translation as the single-alternation path: owned-tree capture
-        // numbers diverge from BCL group numbers for nested named captures.
-        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
-        if (slots is null)
-        {
-            return null;
-        }
-
-        var translatedWhole = new int[wholeMatchGroups.Count];
-        for (var i = 0; i < wholeMatchGroups.Count; i++)
-        {
-            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
-            {
-                return null;
-            }
-
-            translatedWhole[i] = wholeSlot;
-        }
-
-        for (var branch = 0; branch < branchGroups.Length; branch++)
-        {
-            for (var i = 0; i < branchGroups[branch].Length; i++)
-            {
-                if (!slots.TryGetValue(branchGroups[branch][i], out var branchSlot))
-                {
-                    return null;
-                }
-
-                branchGroups[branch][i] = branchSlot;
-            }
-        }
+        var wholeGroups = wholeMatchGroups.ToArray();
 
         return new Utf8AlternationBranchSpanMap(
-            translatedWhole,
+            wholeGroups,
             branchExpansions,
             branchGroups,
             branchStarts,
@@ -686,7 +605,6 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateLoopPatterns(
-        Utf8ExecutionNode body,
         Utf8ExecutionNode node,
         List<int> wholeMatchGroups)
     {
@@ -694,7 +612,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         // alternation. Single loops belong to the span table; deeper counts need another route.
         // Six bounds the eager per-pattern expansion (64 patterns) while covering
         // the witnessed five-loop debt; the ordering rule below is count-generic.
-        // Stored pattern order is the BCL choice order (per-loop preference with the
+        // Stored pattern order follows scalar choice (per-loop preference with the
         // rightmost loop unwinding first), so the shared first-ordinal-match shaping
         // attributes exactly like the oracle.
         var greedy = new List<bool>();
@@ -729,38 +647,10 @@ internal sealed class Utf8AlternationBranchSpanMap
             return null;
         }
 
-        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
-        if (slots is null)
-        {
-            return null;
-        }
-
-        var translatedWhole = new int[wholeMatchGroups.Count];
-        for (var i = 0; i < wholeMatchGroups.Count; i++)
-        {
-            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
-            {
-                return null;
-            }
-
-            translatedWhole[i] = wholeSlot;
-        }
-
-        for (var pattern = 0; pattern < groups.Length; pattern++)
-        {
-            for (var i = 0; i < groups[pattern].Length; i++)
-            {
-                if (!slots.TryGetValue(groups[pattern][i], out var branchSlot))
-                {
-                    return null;
-                }
-
-                groups[pattern][i] = branchSlot;
-            }
-        }
+        var wholeGroups = wholeMatchGroups.ToArray();
 
         return new Utf8AlternationBranchSpanMap(
-            translatedWhole,
+            wholeGroups,
             expansions,
             groups,
             starts,

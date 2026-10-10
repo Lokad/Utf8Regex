@@ -136,11 +136,6 @@ public sealed partial class Utf8Regex
                 out var packedNibbleLiteralFamilyCountStrategy)
                     ? packedNibbleLiteralFamilyCountStrategy
                     : null;
-        _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
-        _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
-        _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
-        _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
-        _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // scalar slice. Instruction-capacity exhaustion fails in owned admission;
         // pattern nesting and resource failure do not select a BCL engine.
@@ -149,6 +144,11 @@ public sealed partial class Utf8Regex
         var ownedSliceProgram = preparedRegex.ScalarProgram
             ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
         _ownedSliceProgram = ownedSliceProgram;
+        _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
+        _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
+        _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
+        _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
+        _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
             Utf8PreparedRegex preparedRegex,

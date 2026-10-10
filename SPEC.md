@@ -386,6 +386,8 @@ Rules for these extensions:
 The architecture must keep these invariants:
 
 * one owned semantic front-end for the declared scalar language
+* one shared catalog of final capture identities, consumed unchanged by execution
+  and capture shaping; no independent BCL capture-number translation
 * separate lowerings for candidate search and full execution
 * scalar-aware UTF-8 subject traversal and primary byte ranges
 * native `RightToLeft`; never emulate it by reversing the input

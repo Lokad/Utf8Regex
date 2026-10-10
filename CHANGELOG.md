@@ -19,6 +19,14 @@
 
 ## Development history
 
+- Remove the redundant BCL capture-slot translator and its five numbering-map
+  reconstructions. Grouped-literal and alternation capture maps use the final
+  identities assigned by the shared owned catalog. Their existing scalar
+  program supplies shared, explicit-number and balancing eligibility before
+  scratch allocation; these declarations keep the owned capture-history route.
+  Named/numeric/nested/duplicate captures and complete scalar ranges remain
+  qualified. Remaining capture-map storage admission is still migration work.
+
 - Replace the eight fixed executor SearchValues holders with immutable value
   tables sharing the owned byte-mask/SIMD kernel. Pattern-dependent sets retain
   their admission and descriptor ownership. The ASCII category table borrows
