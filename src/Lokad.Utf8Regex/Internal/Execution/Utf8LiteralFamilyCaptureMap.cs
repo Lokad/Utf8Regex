@@ -22,7 +22,7 @@ internal sealed class Utf8LiteralFamilyCaptureMap
             return null;
 
         using var construction = Utf8ConstructionScope.Enter();
-        using var storage = Utf8CaptureMapConstruction.Create(construction.Budget);
+        using var storage = Utf8ConstructionSession.Create(construction.Budget);
         var whole = storage.Buffer<int>();
         var node = Unwrap(root.Children[0], whole, storage.Budget);
         int[][] branches;

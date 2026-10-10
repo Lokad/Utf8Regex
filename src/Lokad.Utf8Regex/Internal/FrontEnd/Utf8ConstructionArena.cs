@@ -34,6 +34,22 @@ internal sealed class Utf8ConstructionArena : IDisposable
     internal T[] Take<T>(Utf8ConstructionBuffer<T> buffer, bool retained) => Track(buffer.Take(), retained);
     internal T[] Adopt<T>(T[] array, bool retained) => Track(array, retained);
 
+    // A producer can acquire speculative payloads first, then retain exactly
+    // the arrays reached by its successful result. Shared empties are borrowed.
+    internal void Retain(Array array)
+    {
+        if (array.Length == 0) return;
+        for (var index = 0; index < _allocations.Count; index++)
+        {
+            budget.ChargeWork(1);
+            var allocation = _allocations[index];
+            if (!ReferenceEquals(allocation.Array, array)) continue;
+            _allocations[index] = allocation with { Retained = true };
+            return;
+        }
+        throw new InvalidOperationException("Only a producer's admitted array can transfer from scratch to retained storage.");
+    }
+
     private T[] Track<T>(T[] array, bool retained)
     {
         if (array.Length == 0) return array;

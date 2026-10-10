@@ -64,12 +64,12 @@ internal sealed class Utf8GroupedLiteralSpanTable
         // No slot renumbering or independent numbering scan is needed here.
         if (captureProgram.HasBalancing || captureProgram.HasSharedCaptureDeclarations || captureProgram.HasExplicitCaptureNumbers) return null;
         using var construction = Utf8ConstructionScope.Enter();
-        using var storage = Utf8CaptureMapConstruction.Create(construction.Budget);
+        using var storage = Utf8ConstructionSession.Create(construction.Budget);
         var result = Create(tree, storage);
         if (result is not null) { storage.Complete(); construction.Complete(); }
         return result;
 
-        static Utf8GroupedLiteralSpanTable? Create(Utf8ExecutionTree? tree, Utf8CaptureMapConstruction storage)
+        static Utf8GroupedLiteralSpanTable? Create(Utf8ExecutionTree? tree, Utf8ConstructionSession storage)
         {
             if (tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
                 root.Children.Count != 1)
@@ -141,7 +141,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
         }
     }
 
-    private static Utf8GroupedLiteralSpanTable Allocate(Utf8CaptureMapConstruction storage,
+    private static Utf8GroupedLiteralSpanTable Allocate(Utf8ConstructionSession storage,
         int total, int[] groups, int[] starts, int[] lengths, bool optional,
         int withoutLoop, int[] absentStarts, int[] absentLengths) =>
         storage.Budget.AllocateObject((total, groups, starts, lengths, optional, withoutLoop, absentStarts, absentLengths),
@@ -163,7 +163,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
             Groups = groups; Starts = starts; Lengths = lengths; InLoop = inLoop;
         }
 
-        internal static SpanWalker Create(Utf8CaptureMapConstruction storage, int position)
+        internal static SpanWalker Create(Utf8ConstructionSession storage, int position)
         {
             var groups = storage.Buffer<int>();
             var starts = storage.Buffer<int>();
@@ -190,7 +190,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
             internal int End;
         }
 
-        internal bool TryWalk(Utf8CaptureMapConstruction storage, Utf8ExecutionNode node, bool inLoop, bool inAlternate)
+        internal bool TryWalk(Utf8ConstructionSession storage, Utf8ExecutionNode node, bool inLoop, bool inAlternate)
         {
             var budget = storage.Budget;
             using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, this, inLoop, inAlternate, 0));
@@ -218,7 +218,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
         // Branch frames precede admitted scratch walkers and their vectors.
         // The factory owns their payloads through the final projection copy.
         private static bool Advance(ref Frame frame, SpanWalker? completedChild,
-            Utf8CaptureMapConstruction storage, out Frame? child)
+            Utf8ConstructionSession storage, out Frame? child)
         {
             var budget = storage.Budget;
             child = null;

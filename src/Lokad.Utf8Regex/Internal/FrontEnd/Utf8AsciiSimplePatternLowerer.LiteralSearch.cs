@@ -55,14 +55,17 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     current.Count * literalBytes.Length > MaxExpandedBranches) return false;
                 using var expanded = Utf8ConstructionBuffer<byte[]>.Create(owner);
                 foreach (var prefix in current)
-                foreach (var value in literalBytes)
                 {
                     owner.ChargeWork(1);
-                    var next = owner.AllocateArray<byte>(checked(prefix.Length + 1), false);
-                    owner.ChargeWork((ulong)prefix.Length + 1);
-                    prefix.CopyTo(next, 0); next[^1] = value; expanded.Add(next);
+                    foreach (var value in literalBytes)
+                    {
+                        owner.ChargeWork(1);
+                        var next = owner.AllocateArray<byte>(checked(prefix.Length + 1), false);
+                        owner.ChargeWork((ulong)prefix.Length + 1);
+                        prefix.CopyTo(next, 0); next[^1] = value; expanded.Add(next);
+                    }
                 }
-                foreach (var prefix in current) owner.ReleaseArray(prefix, false);
+                foreach (var prefix in current) { Utf8ConstructionScope.ChargeWork(1); owner.ReleaseArray(prefix, false); }
                 current.Clear(); current.AddRange(expanded.Span); owner.ReleaseArray(literalBytes, false);
             }
             literals = current.Take(); construction.Complete(); return true;
@@ -141,8 +144,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     {
         foreach (var tokens in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             for (var i = 0; i < tokens.Length; i++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 var token = tokens[i];
                 switch (token.Kind)
                 {
@@ -161,14 +166,16 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
     }
 
-    private static void NormalizeFixedChecksForIgnoreCase(AsciiFixedLiteralCheck[] fixedChecks)
+    private static void NormalizeFixedChecksForIgnoreCase(Utf8ConstructionSession storage, AsciiFixedLiteralCheck[] fixedChecks)
     {
         for (var i = 0; i < fixedChecks.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var literal = fixedChecks[i].Literal;
-            var normalized = new byte[literal.Length];
+            var normalized = storage.Allocate<byte>(literal.Length, false);
             for (var j = 0; j < literal.Length; j++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 normalized[j] = Internal.Search.AsciiSearch.FoldCase(literal[j]);
             }
 
@@ -177,6 +184,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static void ExtractSearchLiterals(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[][] branches,
         out int searchLiteralOffset,
         out byte[][] searchLiterals,
@@ -184,11 +192,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     {
         if (branches.Length == 1)
         {
-            ExtractSingleBranchSearch(branches[0], out searchLiteralOffset, out searchLiterals, out fixedLiteralChecks);
+            ExtractSingleBranchSearch(storage, branches[0], out searchLiteralOffset, out searchLiterals, out fixedLiteralChecks);
             return;
         }
 
-        if (TryExtractAlternationPrefixes(branches, out searchLiterals))
+        if (TryExtractAlternationPrefixes(storage, branches, out searchLiterals))
         {
             searchLiteralOffset = 0;
             fixedLiteralChecks = [];
@@ -201,12 +209,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static void ExtractSingleBranchSearch(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[] tokens,
         out int searchLiteralOffset,
         out byte[][] searchLiterals,
         out AsciiFixedLiteralCheck[] fixedLiteralChecks)
     {
-        var runs = ExtractLiteralRuns(tokens);
+        var runs = ExtractLiteralRuns(storage, tokens);
         if (runs.Count == 0)
         {
             searchLiteralOffset = 0;
@@ -218,6 +227,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var bestIndex = 0;
         for (var i = 1; i < runs.Count; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (runs[i].Literal.Length > runs[bestIndex].Literal.Length ||
                 (runs[i].Literal.Length == runs[bestIndex].Literal.Length && runs[i].Offset > runs[bestIndex].Offset))
             {
@@ -226,11 +236,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
 
         searchLiteralOffset = runs[bestIndex].Offset;
-        searchLiterals = [runs[bestIndex].Literal];
+        searchLiterals = storage.Allocate<byte[]>(1, false);
+        searchLiterals[0] = runs[bestIndex].Literal;
 
-        var checks = new List<AsciiFixedLiteralCheck>(Math.Min(3, runs.Count - 1));
+        var checks = storage.Buffer<AsciiFixedLiteralCheck>();
         for (var i = 0; i < runs.Count; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (i == bestIndex)
             {
                 continue;
@@ -243,15 +255,16 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             }
         }
 
-        fixedLiteralChecks = [.. checks];
+        fixedLiteralChecks = storage.Copy(checks, false);
     }
 
-    private static bool TryExtractAlternationPrefixes(AsciiSimplePatternToken[][] branches, out byte[][] prefixes)
+    private static bool TryExtractAlternationPrefixes(Utf8ConstructionSession storage, AsciiSimplePatternToken[][] branches, out byte[][] prefixes)
     {
-        prefixes = new byte[branches.Length][];
+        prefixes = storage.Allocate<byte[]>(branches.Length, false);
         for (var i = 0; i < branches.Length; i++)
         {
-            var run = ExtractLeadingLiteral(branches[i]);
+            Utf8ConstructionScope.ChargeWork(1);
+            var run = ExtractLeadingLiteral(storage, branches[i]);
             if (run.Length == 0)
             {
                 prefixes = [];
@@ -264,13 +277,14 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static List<LiteralRun> ExtractLiteralRuns(AsciiSimplePatternToken[] tokens)
+    private static Utf8ConstructionBuffer<LiteralRun> ExtractLiteralRuns(Utf8ConstructionSession storage, AsciiSimplePatternToken[] tokens)
     {
-        var runs = new List<LiteralRun>();
+        var runs = storage.Buffer<LiteralRun>();
         var currentStart = -1;
 
         for (var i = 0; i <= tokens.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var isLiteral = i < tokens.Length && tokens[i].Kind == AsciiSimplePatternTokenKind.Literal;
             if (isLiteral)
             {
@@ -288,9 +302,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             }
 
             var length = i - currentStart;
-            var bytes = new byte[length];
+            var bytes = storage.Allocate<byte>(length, false);
             for (var j = 0; j < length; j++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 bytes[j] = tokens[currentStart + j].Literal;
             }
 
@@ -301,11 +316,12 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return runs;
     }
 
-    private static byte[] ExtractLeadingLiteral(AsciiSimplePatternToken[] tokens)
+    private static byte[] ExtractLeadingLiteral(Utf8ConstructionSession storage, AsciiSimplePatternToken[] tokens)
     {
         var length = 0;
         while (length < tokens.Length && tokens[length].Kind == AsciiSimplePatternTokenKind.Literal)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             length++;
         }
 
@@ -314,25 +330,27 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return [];
         }
 
-        var bytes = new byte[length];
+        var bytes = storage.Allocate<byte>(length, false);
         for (var i = 0; i < length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             bytes[i] = tokens[i].Literal;
         }
 
         return bytes;
     }
 
-    private static byte[] ExtractFullLiteral(IReadOnlyList<AsciiSimplePatternToken> tokens)
+    private static byte[] ExtractFullLiteral(Utf8ConstructionSession storage, ReadOnlySpan<AsciiSimplePatternToken> tokens)
     {
-        if (tokens.Count == 0)
+        if (tokens.Length == 0)
         {
             return [];
         }
 
-        var bytes = new byte[tokens.Count];
-        for (var i = 0; i < tokens.Count; i++)
+        var bytes = storage.Allocate<byte>(tokens.Length, false);
+        for (var i = 0; i < tokens.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (tokens[i].Kind != AsciiSimplePatternTokenKind.Literal)
             {
                 return [];

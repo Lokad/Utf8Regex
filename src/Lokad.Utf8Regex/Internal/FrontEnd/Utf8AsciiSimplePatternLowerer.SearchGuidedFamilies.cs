@@ -6,6 +6,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
     private static bool TryExtractBoundedSuffixLiteralPlan(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[][] branches,
         bool isStartAnchored,
         bool isEndAnchored,
@@ -24,7 +25,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             firstBranch[0].CharClass.IsEmpty ||
             firstBranch[^1].Kind != AsciiSimplePatternTokenKind.CharClass ||
             firstBranch[^1].CharClass.IsEmpty ||
-            !TryExtractTrailingLiteral(firstBranch, out var literalStart, out var literalUtf8) ||
+            !TryExtractTrailingLiteral(storage, firstBranch, out var literalStart, out var literalUtf8) ||
             literalStart < 1 ||
             !TryGetUniformRepeatedClass(
                 firstBranch,
@@ -43,6 +44,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var maxLength = minLength;
         for (var i = 1; i < branches.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var branch = branches[i];
             if (branch.Length < literalUtf8.Length + 2 ||
                 branch[0].Kind != AsciiSimplePatternTokenKind.CharClass ||
@@ -53,8 +55,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 branch[^1].CharClass.IsEmpty ||
                 !suffixCharClass.HasSameDefinition(branch[^1].CharClass) ||
                 branch[^1].ScalarClassKind != firstBranch[^1].ScalarClassKind ||
-                !TryExtractTrailingLiteral(branch, out var nextLiteralStart, out var nextLiteralUtf8) ||
-                !nextLiteralUtf8.AsSpan().SequenceEqual(literalUtf8))
+                !TryExtractTrailingLiteral(storage, branch, out var nextLiteralStart, out var nextLiteralUtf8) ||
+                !SameLiteral(nextLiteralUtf8, literalUtf8))
             {
                 return false;
             }
@@ -97,6 +99,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static bool TryExtractTrailingLiteral(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[] tokens,
         out int literalStart,
         out byte[] literalUtf8)
@@ -112,6 +115,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var start = endExclusive;
         while (start > 0 && tokens[start - 1].Kind == AsciiSimplePatternTokenKind.Literal)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             start--;
         }
 
@@ -121,9 +125,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
 
         literalStart = start;
-        literalUtf8 = new byte[endExclusive - start];
+        literalUtf8 = storage.Allocate<byte>(endExclusive - start, false);
         for (var i = 0; i < literalUtf8.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             literalUtf8[i] = tokens[start + i].Literal;
         }
 
@@ -131,6 +136,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static bool TryExtractSymmetricLiteralWindowPlan(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[][] branches,
         bool isStartAnchored,
         bool isEndAnchored,
@@ -147,12 +153,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var minGap = int.MaxValue;
         var maxGap = int.MinValue;
         bool? gapSameLine = null;
-        var direction0Gaps = new HashSet<int>();
-        var direction1Gaps = new HashSet<int>();
+        using var direction0Gaps = Utf8ConstructionMap<int, byte>.Create(storage.Budget, EqualityComparer<int>.Default);
+        using var direction1Gaps = Utf8ConstructionMap<int, byte>.Create(storage.Budget, EqualityComparer<int>.Default);
 
         for (var i = 0; i < branches.Length; i++)
         {
-            if (TryParseLiteralGapLiteralBranch(branches[i], out var leadingLiteral, out var trailingLiteral, out var branchGapCount, out var branchGapSameLine))
+            Utf8ConstructionScope.ChargeWork(1);
+            if (TryParseLiteralGapLiteralBranch(storage, branches[i], out var leadingLiteral, out var trailingLiteral, out var branchGapCount, out var branchGapSameLine))
             {
                 if (literalA is null)
                 {
@@ -161,7 +168,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     minGap = branchGapCount;
                     maxGap = branchGapCount;
                     gapSameLine = branchGapSameLine;
-                    direction0Gaps.Add(branchGapCount);
+                    direction0Gaps[branchGapCount] = 0;
                     continue;
                 }
 
@@ -173,24 +180,24 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 minGap = Math.Min(minGap, branchGapCount);
                 maxGap = Math.Max(maxGap, branchGapCount);
 
-                if (leadingLiteral.AsSpan().SequenceEqual(literalA) &&
-                    trailingLiteral.AsSpan().SequenceEqual(literalB))
+                if (SameLiteral(leadingLiteral, literalA) &&
+                    SameLiteral(trailingLiteral, literalB))
                 {
-                    direction0Gaps.Add(branchGapCount);
+                    direction0Gaps[branchGapCount] = 0;
                     continue;
                 }
 
-                if (leadingLiteral.AsSpan().SequenceEqual(literalB) &&
-                    trailingLiteral.AsSpan().SequenceEqual(literalA))
+                if (SameLiteral(leadingLiteral, literalB) &&
+                    SameLiteral(trailingLiteral, literalA))
                 {
-                    direction1Gaps.Add(branchGapCount);
+                    direction1Gaps[branchGapCount] = 0;
                     continue;
                 }
 
                 return false;
             }
 
-            if (!TryExtractFullLiteral(branches[i], out var fullLiteral))
+            if (!TryExtractFullLiteral(storage, branches[i], out var fullLiteral))
             {
                 return false;
             }
@@ -200,17 +207,17 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 return false;
             }
 
-            if (fullLiteral.AsSpan().SequenceEqual(Concat(literalA, literalB)))
+            if (EqualsConcat(fullLiteral, literalA, literalB))
             {
-                direction0Gaps.Add(0);
+                direction0Gaps[0] = 0;
                 minGap = Math.Min(minGap, 0);
                 maxGap = Math.Max(maxGap, 0);
                 continue;
             }
 
-            if (fullLiteral.AsSpan().SequenceEqual(Concat(literalB, literalA)))
+            if (EqualsConcat(fullLiteral, literalB, literalA))
             {
-                direction1Gaps.Add(0);
+                direction1Gaps[0] = 0;
                 minGap = Math.Min(minGap, 0);
                 maxGap = Math.Max(maxGap, 0);
                 continue;
@@ -233,7 +240,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         for (var gap = minGap; gap <= maxGap; gap++)
         {
-            if (!direction0Gaps.Contains(gap) || !direction1Gaps.Contains(gap))
+            Utf8ConstructionScope.ChargeWork(1);
+            if (!direction0Gaps.ContainsKey(gap) || !direction1Gaps.ContainsKey(gap))
             {
                 return false;
             }
@@ -241,10 +249,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         var anchorOffset = SelectSymmetricWindowAnchorOffset(literalA, literalB);
         SelectSymmetricWindowFilterOffsets(literalA, literalB, anchorOffset, out var firstFilterOffset, out var secondFilterOffset);
+        var pair = storage.Allocate<byte[]>(2, false);
+        pair[0] = literalA;
+        pair[1] = literalB;
         plan = new AsciiSimplePatternSymmetricLiteralWindowPlan(
             literalA,
             literalB,
-            AsciiSearch.CreateExactLiteralSearchData([literalA, literalB]),
+            AsciiSearch.CreateExactLiteralSearchData(pair),
             anchorOffset,
             literalA[anchorOffset],
             literalB[anchorOffset],
@@ -268,6 +279,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         for (var offset = 0; offset <= maxSharedOffset; offset++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (literalA[offset] == literalB[offset])
             {
                 continue;
@@ -354,6 +366,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var maxOffset = Math.Min(literalA.Length, literalB.Length) - 1;
         for (var delta = 0; delta <= maxOffset; delta++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var lower = preferredOffset - delta;
             if (lower >= minOffset &&
                 lower <= maxOffset &&
@@ -382,6 +395,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static bool TryParseLiteralGapLiteralBranch(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[] tokens,
         out byte[] leadingLiteral,
         out byte[] trailingLiteral,
@@ -396,6 +410,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var leadingLength = 0;
         while (leadingLength < tokens.Length && tokens[leadingLength].Kind == AsciiSimplePatternTokenKind.Literal)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             leadingLength++;
         }
 
@@ -407,6 +422,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var trailingStart = tokens.Length;
         while (trailingStart > leadingLength && tokens[trailingStart - 1].Kind == AsciiSimplePatternTokenKind.Literal)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             trailingStart--;
         }
 
@@ -418,22 +434,25 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         gapCount = trailingStart - leadingLength;
         for (var i = leadingLength; i < trailingStart; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (tokens[i].Kind != AsciiSimplePatternTokenKind.Dot)
             {
                 return false;
             }
         }
 
-        leadingLiteral = new byte[leadingLength];
+        leadingLiteral = storage.Allocate<byte>(leadingLength, false);
         for (var i = 0; i < leadingLength; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             leadingLiteral[i] = tokens[i].Literal;
         }
 
         var trailingLength = tokens.Length - trailingStart;
-        trailingLiteral = new byte[trailingLength];
+        trailingLiteral = storage.Allocate<byte>(trailingLength, false);
         for (var i = 0; i < trailingLength; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             trailingLiteral[i] = tokens[trailingStart + i].Literal;
         }
 
@@ -441,11 +460,12 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryExtractFullLiteral(AsciiSimplePatternToken[] tokens, out byte[] literal)
+    private static bool TryExtractFullLiteral(Utf8ConstructionSession storage, AsciiSimplePatternToken[] tokens, out byte[] literal)
     {
-        literal = new byte[tokens.Length];
+        literal = storage.Allocate<byte>(tokens.Length, false);
         for (var i = 0; i < tokens.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (tokens[i].Kind != AsciiSimplePatternTokenKind.Literal)
             {
                 literal = [];
@@ -458,11 +478,16 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return literal.Length > 0;
     }
 
-    private static byte[] Concat(byte[] left, byte[] right)
+    private static bool SameLiteral(byte[] left, byte[] right)
     {
-        var combined = new byte[left.Length + right.Length];
-        left.CopyTo(combined, 0);
-        right.CopyTo(combined, left.Length);
-        return combined;
+        Utf8ConstructionScope.ChargeWork((ulong)Math.Min(left.Length, right.Length));
+        return left.AsSpan().SequenceEqual(right);
+    }
+
+    private static bool EqualsConcat(byte[] full, byte[] left, byte[] right)
+    {
+        if ((long)left.Length + right.Length != full.Length) return false;
+        Utf8ConstructionScope.ChargeWork((ulong)full.Length);
+        return full.AsSpan(0, left.Length).SequenceEqual(left) && full.AsSpan(left.Length).SequenceEqual(right);
     }
 }

@@ -23,17 +23,36 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     {
         simplePatternPlan = default;
         searchFacts = default;
+        if (semanticRegex.RuntimeTree?.Root is not { Kind: Utf8TreeNodeKind.Capture, ChildCount: 1 }) return false;
+        using var construction = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(construction.Budget);
+        var preparation = construction.Budget.AllocateObject((MaxPreparationWork, MaxPreparationOutput),
+            static state => new Utf8PreparationBudget(state.MaxPreparationWork, state.MaxPreparationOutput));
+        if (!CreatePlan(storage, semanticRegex, options, preparation, out var result, out var facts)) return false;
+        RetainPlanArrays(storage, result);
+        storage.Complete();
+        construction.Complete();
+        simplePatternPlan = result;
+        searchFacts = facts;
+        return true;
+    }
 
-        var preparationBudget = new Utf8PreparationBudget(MaxPreparationWork, MaxPreparationOutput);
+    private static bool CreatePlan(Utf8ConstructionSession storage, Utf8SemanticRegex semanticRegex,
+        RegexOptions options, Utf8PreparationBudget preparationBudget,
+        out AsciiSimplePatternPlan simplePatternPlan, out Utf8SearchFacts searchFacts)
+    {
+        simplePatternPlan = default;
+        searchFacts = default;
+
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
             root.Kind != Utf8TreeNodeKind.Capture ||
             root.ChildCount != 1 ||
-            !TryLowerBranches(root.Child(0), preparationBudget, 0, out var loweredBranches))
+            !TryLowerBranches(storage, root.Child(0), preparationBudget, 0, out var loweredBranches))
         {
             return false;
         }
 
-        if (loweredBranches.Length == 0 || loweredBranches[0].Tokens.Count == 0)
+        if (loweredBranches.Count == 0 || loweredBranches[0].Tokens.Count == 0)
         {
             return false;
         }
@@ -45,8 +64,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var isAbsoluteStartAnchored = loweredBranches[0].IsAbsoluteStartAnchored;
         var isAbsoluteEndAnchored = loweredBranches[0].IsAbsoluteEndAnchored;
         var allowsTrailingNewlineBeforeEnd = AllowsTrailingNewlineBeforeEnd(root.Child(0));
-        for (var i = 1; i < loweredBranches.Length; i++)
+        for (var i = 1; i < loweredBranches.Count; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (loweredBranches[i].Tokens.Count == 0 ||
                 loweredBranches[i].IsStartAnchored != isStartAnchored ||
                 loweredBranches[i].IsEndAnchored != isEndAnchored ||
@@ -57,8 +77,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             }
         }
 
-        var branches = loweredBranches.Select(static branch => branch.Tokens.ToArray()).ToArray();
-        var allFixedChecks = loweredBranches.SelectMany(static branch => branch.FixedChecks).ToArray();
+        var branches = storage.Allocate<AsciiSimplePatternToken[]>(loweredBranches.Count, false);
+        var checks = storage.Buffer<AsciiFixedLiteralCheck>();
+        for (var index = 0; index < loweredBranches.Count; index++)
+        {
+            storage.Budget.ChargeWork(1);
+            branches[index] = storage.Copy(loweredBranches[index].Tokens, false);
+            checks.AddRange(loweredBranches[index].FixedChecks.Span);
+        }
+        var allFixedChecks = storage.Copy(checks, false);
         if (!TryGetLengthBounds(branches, out var minLength, out _) || minLength == 0)
         {
             return false;
@@ -75,19 +102,25 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             NormalizeBranchesForIgnoreCase(branches);
         }
 
-        ExtractSearchLiterals(branches, out var searchLiteralOffset, out var searchLiterals, out var fixedLiteralChecks);
+        ExtractSearchLiterals(storage, branches, out var searchLiteralOffset, out var searchLiterals, out var fixedLiteralChecks);
         if (allFixedChecks.Length > 0)
         {
             if (ignoreCase)
             {
-                NormalizeFixedChecksForIgnoreCase(allFixedChecks);
+                NormalizeFixedChecksForIgnoreCase(storage, allFixedChecks);
             }
 
-            fixedLiteralChecks = fixedLiteralChecks.Length == 0
-                ? allFixedChecks
-                : [.. fixedLiteralChecks, .. allFixedChecks];
+            if (fixedLiteralChecks.Length == 0) fixedLiteralChecks = allFixedChecks;
+            else
+            {
+                var combined = storage.Buffer<AsciiFixedLiteralCheck>();
+                combined.AddRange(fixedLiteralChecks);
+                combined.AddRange(allFixedChecks);
+                fixedLiteralChecks = storage.Copy(combined, false);
+            }
         }
 
+        storage.Budget.ChargeWork((ulong)branches.Length);
         simplePatternPlan = new AsciiSimplePatternPlan(
             branches,
             searchLiteralOffset,
@@ -100,7 +133,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             IsUtf8ByteSafe(branches),
             TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default,
             anchoredHeadTailRunPlan: default,
-            anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
+            anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(storage, branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
                 ? anchoredValidatorPlan
                 : default,
             anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
@@ -109,19 +142,19 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             anchoredOptionalFieldPlan: TryExtractAnchoredOptionalFieldPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredOptionalFieldPlan)
                 ? anchoredOptionalFieldPlan
                 : default,
-            repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(branches, ignoreCase, out var repeatedDigitGroupPlan)
+            repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(storage, branches, ignoreCase, out var repeatedDigitGroupPlan)
                 ? repeatedDigitGroupPlan
                 : default,
             boundedSuffixLiteralPlan: !ignoreCase &&
                 TryExtractBoundedSuffixLiteralPlan(
-                    branches,
+                    storage, branches,
                     isStartAnchored,
                     isEndAnchored,
                     allowUnicodeWhitespace: (options & RegexOptions.ECMAScript) == 0,
                     out var boundedSuffixLiteralPlan)
                 ? boundedSuffixLiteralPlan
                 : default,
-            symmetricLiteralWindowPlan: TryExtractSymmetricLiteralWindowPlan(branches, isStartAnchored, isEndAnchored, out var symmetricLiteralWindowPlan)
+            symmetricLiteralWindowPlan: TryExtractSymmetricLiteralWindowPlan(storage, branches, isStartAnchored, isEndAnchored, out var symmetricLiteralWindowPlan)
                 ? symmetricLiteralWindowPlan
                 : default,
             isAbsoluteStartAnchored: isAbsoluteStartAnchored,
@@ -144,6 +177,29 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         };
 
         return true;
+    }
+
+    private static void RetainPlanArrays(Utf8ConstructionSession storage, AsciiSimplePatternPlan plan)
+    {
+        storage.Retain(plan.Branches);
+        foreach (var branch in plan.Branches) { Utf8ConstructionScope.ChargeWork(1); storage.Retain(branch); }
+        storage.Retain(plan.SearchLiterals);
+        foreach (var literal in plan.SearchLiterals) { Utf8ConstructionScope.ChargeWork(1); storage.Retain(literal); }
+        storage.Retain(plan.FixedLiteralChecks);
+        foreach (var check in plan.FixedLiteralChecks) { Utf8ConstructionScope.ChargeWork(1); storage.Retain(check.Literal); }
+        if (plan.AnchoredValidatorPlan.HasValue)
+        {
+            storage.Retain(plan.AnchoredValidatorPlan.Segments);
+            foreach (var segment in plan.AnchoredValidatorPlan.Segments)
+                { Utf8ConstructionScope.ChargeWork(1); if (segment.IsLiteral) storage.Retain(segment.Literal); }
+        }
+        if (plan.RepeatedDigitGroupPlan.HasValue) storage.Retain(plan.RepeatedDigitGroupPlan.SeparatorBytes);
+        if (plan.BoundedSuffixLiteralPlan.HasValue) storage.Retain(plan.BoundedSuffixLiteralPlan.LiteralUtf8);
+        if (plan.SymmetricLiteralWindowPlan.HasValue)
+        {
+            storage.Retain(plan.SymmetricLiteralWindowPlan.FirstLiteralUtf8);
+            storage.Retain(plan.SymmetricLiteralWindowPlan.SecondLiteralUtf8);
+        }
     }
 
     private static bool HasCaseClearingGroup(Utf8TreeNode node) => HasGroupWithCase(node, false);
@@ -180,8 +236,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     {
         foreach (var branch in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             foreach (var token in branch)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (token.Kind == AsciiSimplePatternTokenKind.Dot || token.RequiresAsciiInput)
                 {
                     return false;
@@ -213,6 +271,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         for (var i = start + 1; i < endExclusive; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (tokens[i].Kind != AsciiSimplePatternTokenKind.CharClass ||
                 tokens[i].CharClass.IsEmpty ||
                 !firstCharClass.HasSameDefinition(tokens[i].CharClass) ||
@@ -239,9 +298,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerLiteralText(string? text, Utf8PreparationBudget budget, out List<AsciiSimplePatternToken> tokens)
+    private static bool TryLowerLiteralText(Utf8ConstructionSession storage, string? text, Utf8PreparationBudget budget, out Utf8ConstructionBuffer<AsciiSimplePatternToken> tokens)
     {
-        tokens = [];
+        tokens = storage.Buffer<AsciiSimplePatternToken>();
         if (text is null || !budget.TryReserve(text.Length, text.Length))
         {
             return false;
@@ -249,11 +308,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         foreach (var ch in text)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (ch > 0x7F) return false;
         }
 
-        tokens = new List<AsciiSimplePatternToken>(text.Length);
-        foreach (var ch in text) tokens.Add(new AsciiSimplePatternToken((byte)ch));
+        foreach (var ch in text) { Utf8ConstructionScope.ChargeWork(1); tokens.Add(new AsciiSimplePatternToken((byte)ch)); }
 
         return true;
     }
@@ -264,6 +323,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         maxLength = 0;
         foreach (var branch in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (branch.Length == 0)
             {
                 return false;
@@ -284,8 +344,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private readonly record struct LoweredBranch(
-        List<AsciiSimplePatternToken> Tokens,
-        List<AsciiFixedLiteralCheck> FixedChecks,
+        Utf8ConstructionBuffer<AsciiSimplePatternToken> Tokens,
+        Utf8ConstructionBuffer<AsciiFixedLiteralCheck> FixedChecks,
         bool IsStartAnchored,
         bool IsEndAnchored,
         bool IsAbsoluteStartAnchored,

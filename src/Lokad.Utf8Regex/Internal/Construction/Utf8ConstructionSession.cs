@@ -1,18 +1,18 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal;
 
-// Projection factories share the enclosing construction authority. Scratch
-// vectors/text release on every exit; completed arrays and map descriptors keep
+// Pattern and projection factories share the enclosing construction authority. Scratch
+// vectors/text release on every exit; completed arrays and retained descriptors keep
 // their loans. The scope, rather than this session, owns speculative rollback.
-internal sealed class Utf8CaptureMapConstruction(
+internal sealed class Utf8ConstructionSession(
     Utf8ConstructionBudget budget,
     Utf8ConstructionArena arrays,
     Utf8ConstructionBuffer<IDisposable> scratch) : IDisposable
 {
     internal Utf8ConstructionBudget Budget => budget;
 
-    internal static Utf8CaptureMapConstruction Create(Utf8ConstructionBudget owner)
+    internal static Utf8ConstructionSession Create(Utf8ConstructionBudget owner)
     {
         owner.EnterDepth();
         Utf8ConstructionArena? arrays = null;
@@ -22,7 +22,7 @@ internal sealed class Utf8CaptureMapConstruction(
             arrays = Utf8ConstructionArena.Create(owner);
             scratch = Utf8ConstructionBuffer<IDisposable>.Create(owner);
             return owner.AllocateObject((owner, arrays, scratch), static state =>
-                new Utf8CaptureMapConstruction(state.owner, state.arrays, state.scratch));
+                new Utf8ConstructionSession(state.owner, state.arrays, state.scratch));
         }
         catch
         {
@@ -45,12 +45,19 @@ internal sealed class Utf8CaptureMapConstruction(
     internal T[] Allocate<T>(int count) => Allocate<T>(count, true);
     internal T[] Allocate<T>(int count, bool retained) => arrays.Allocate<T>(count, retained);
 
-    internal T[] Copy<T>(Utf8ConstructionBuffer<T> values)
+    internal void Retain(Array array) => arrays.Retain(array);
+
+    internal T[] Copy<T>(Utf8ConstructionBuffer<T> values, bool retained)
     {
-        var result = Allocate<T>(values.Count);
+        var result = Allocate<T>(values.Count, retained);
         budget.ChargeWork((ulong)values.Count);
         values.Span.CopyTo(result);
         return result;
+    }
+
+    internal T[] Copy<T>(Utf8ConstructionBuffer<T> values)
+    {
+        return Copy(values, true);
     }
 
     internal string Concat(string left, string right)

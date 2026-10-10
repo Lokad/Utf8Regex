@@ -54,12 +54,12 @@ internal sealed class Utf8AlternationBranchSpanMap
         // Stateful declarations use full owned capture histories.
         if (captureProgram.HasBalancing || captureProgram.HasSharedCaptureDeclarations || captureProgram.HasExplicitCaptureNumbers) return null;
         using var construction = Utf8ConstructionScope.Enter();
-        using var storage = Utf8CaptureMapConstruction.Create(construction.Budget);
+        using var storage = Utf8ConstructionSession.Create(construction.Budget);
         var result = Create(tree, storage);
         if (result is not null) { storage.Complete(); construction.Complete(); }
         return result;
 
-        static Utf8AlternationBranchSpanMap? Create(Utf8ExecutionTree? tree, Utf8CaptureMapConstruction storage)
+        static Utf8AlternationBranchSpanMap? Create(Utf8ExecutionTree? tree, Utf8ConstructionSession storage)
         {
             if (tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
                 root.Children.Count != 1)
@@ -136,7 +136,7 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateExactCountPatterns(
-        Utf8CaptureMapConstruction storage,
+        Utf8ConstructionSession storage,
         Utf8ExecutionNode node,
         Utf8ConstructionBuffer<int> wholeMatchGroups)
     {
@@ -288,14 +288,14 @@ internal sealed class Utf8AlternationBranchSpanMap
             branchLengths);
     }
 
-    private static Utf8AlternationBranchSpanMap Allocate(Utf8CaptureMapConstruction storage,
+    private static Utf8AlternationBranchSpanMap Allocate(Utf8ConstructionSession storage,
         int[] whole, string[] expansions, int[][] groups, int[][] starts, int[][] lengths) =>
         storage.Budget.AllocateObject((whole, expansions, groups, starts, lengths), static state =>
             new Utf8AlternationBranchSpanMap(state.whole, state.expansions, state.groups, state.starts, state.lengths));
 
     // Pattern interoperability text only. Every continuation and copy is admitted;
     // no recursive walker or growable BCL builder is needed.
-    private static bool TryReadLiteralRun(Utf8CaptureMapConstruction storage, Utf8ExecutionNode node, out string text)
+    private static bool TryReadLiteralRun(Utf8ConstructionSession storage, Utf8ExecutionNode node, out string text)
     {
         text = string.Empty;
         var builder = storage.Text();
@@ -335,14 +335,14 @@ internal sealed class Utf8AlternationBranchSpanMap
         Utf8ConstructionBuffer<int> wholeMatchGroups)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        using var storage = Utf8CaptureMapConstruction.Create(construction.Budget);
+        using var storage = Utf8ConstructionSession.Create(construction.Budget);
         var result = CreateSingleAlternate(storage, node, alternate, wholeMatchGroups);
         if (result is not null) { storage.Complete(); construction.Complete(); }
         return result;
     }
 
     private static Utf8AlternationBranchSpanMap? CreateSingleAlternate(
-        Utf8CaptureMapConstruction storage, Utf8ExecutionNode node,
+        Utf8ConstructionSession storage, Utf8ExecutionNode node,
         Utf8ExecutionNode alternate, Utf8ConstructionBuffer<int> wholeMatchGroups)
     {
         var branchExpansions = storage.Allocate<string>(alternate.Children.Count);
@@ -386,7 +386,7 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateNestedPatterns(
-        Utf8CaptureMapConstruction storage,
+        Utf8ConstructionSession storage,
         Utf8ExecutionNode node,
         Utf8ConstructionBuffer<int> wholeMatchGroups,
         int alternateCount)
@@ -452,9 +452,9 @@ internal sealed class Utf8AlternationBranchSpanMap
         internal readonly Utf8ConstructionBuffer<int> Starts = starts;
         internal readonly Utf8ConstructionBuffer<int> Lengths = lengths;
 
-        internal static NestedEntry Create(Utf8CaptureMapConstruction storage) => Create(storage, string.Empty);
+        internal static NestedEntry Create(Utf8ConstructionSession storage) => Create(storage, string.Empty);
 
-        internal static NestedEntry Create(Utf8CaptureMapConstruction storage, string text)
+        internal static NestedEntry Create(Utf8ConstructionSession storage, string text)
         {
             var groups = storage.Buffer<int>();
             var starts = storage.Buffer<int>();
@@ -464,7 +464,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         }
     }
 
-    private static Utf8ConstructionBuffer<NestedEntry> Single(Utf8CaptureMapConstruction storage, string text)
+    private static Utf8ConstructionBuffer<NestedEntry> Single(Utf8ConstructionSession storage, string text)
     {
         var result = storage.Buffer<NestedEntry>();
         result.Add(NestedEntry.Create(storage, text));
@@ -480,7 +480,7 @@ internal sealed class Utf8AlternationBranchSpanMap
         internal Utf8ConstructionBuffer<NestedEntry>? Entries;
     }
 
-    private static Utf8ConstructionBuffer<NestedEntry>? TryExpandNested(Utf8CaptureMapConstruction storage, Utf8ExecutionNode node, bool inLoop)
+    private static Utf8ConstructionBuffer<NestedEntry>? TryExpandNested(Utf8ConstructionSession storage, Utf8ExecutionNode node, bool inLoop)
     {
         var budget = storage.Budget;
         using var frames = Utf8ConstructionFrames<ExpansionFrame>.Create(budget, new(node, inLoop));
@@ -506,7 +506,7 @@ internal sealed class Utf8AlternationBranchSpanMap
     // entries are copied into final projections, never consumed with Take.
     private static bool Expand(ref ExpansionFrame frame,
         Utf8ConstructionMap<Utf8ExecutionNode, Utf8ConstructionBuffer<NestedEntry>> results,
-        Utf8CaptureMapConstruction storage, out ExpansionFrame? child)
+        Utf8ConstructionSession storage, out ExpansionFrame? child)
     {
         var budget = storage.Budget;
         child = null;
@@ -633,7 +633,7 @@ internal sealed class Utf8AlternationBranchSpanMap
     }
 
     private static Utf8AlternationBranchSpanMap? TryCreateLoopPatterns(
-        Utf8CaptureMapConstruction storage,
+        Utf8ConstructionSession storage,
         Utf8ExecutionNode node,
         Utf8ConstructionBuffer<int> wholeMatchGroups)
     {
@@ -757,7 +757,7 @@ internal sealed class Utf8AlternationBranchSpanMap
             Expansion = expansion; Groups = groups; Starts = starts; Lengths = lengths;
         }
 
-        internal static LiteralWalker Create(Utf8CaptureMapConstruction storage, int loopCount,
+        internal static LiteralWalker Create(Utf8ConstructionSession storage, int loopCount,
             int presentMask, Utf8ExecutionNode? alternate, int branch)
         {
             var expansion = storage.Text();
@@ -778,7 +778,7 @@ internal sealed class Utf8AlternationBranchSpanMap
             internal int Start;
         }
 
-        internal bool TryWalk(Utf8CaptureMapConstruction storage, Utf8ExecutionNode node, bool inLoop)
+        internal bool TryWalk(Utf8ConstructionSession storage, Utf8ExecutionNode node, bool inLoop)
         {
             var budget = storage.Budget;
             using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, inLoop));

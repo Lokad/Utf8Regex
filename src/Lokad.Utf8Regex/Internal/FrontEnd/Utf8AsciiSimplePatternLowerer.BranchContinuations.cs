@@ -4,52 +4,62 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    // These are private speculative limits, not the public constructor ledger.
-    // Lists, projected plans and subsequent native preparation still need aggregate accounting.
-    private sealed class BranchLowerer(Utf8PreparationBudget budget)
+    // Private optimizer limits qualify eligibility; the parent construction
+    // owner independently admits all actual work, storage and live depth.
+    private sealed class BranchLowerer(Utf8PreparationBudget budget, Utf8ConstructionSession storage)
     {
-        private Utf8SliceInvocation _invocation = new(new Utf8ExecutionLimits(1_048_576, 0, 64 * 1024 * 1024),
-            Regex.InfiniteMatchTimeout, CancellationToken.None);
-        private readonly record struct Continuation(Utf8TreeNode Node, int ChildDepth, int NextChild,
-            List<LoweredBranch>? Accumulated);
-
-        internal bool TryLower(Utf8TreeNode node, int depth, out LoweredBranch[] branches)
+        private struct Frame(Utf8TreeNode node, int depth)
         {
-            branches = [];
-            var pending = new Utf8InvocationStateBuffer<Continuation>();
-            try
-            {
-                while (true)
-                {
-                    if (depth > MaxLoweringDepth || !budget.TryReserve(1, 0) ||
-                        _invocation.Budget.TryNoteDepth((uint)depth + 1) != Utf8ExecutionLimitKind.None ||
-                        _invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) return false;
+            internal readonly Utf8TreeNode Node = node;
+            internal readonly int Depth = depth;
+            internal int Stage;
+            internal int Index;
+            internal Utf8ConstructionBuffer<LoweredBranch>? Accumulated;
+        }
 
-                    LoweredBranch[] result;
+        internal static BranchLowerer Create(Utf8PreparationBudget budget, Utf8ConstructionSession storage) =>
+            storage.Budget.AllocateObject((budget, storage), static state => new BranchLowerer(state.budget, state.storage));
+
+        internal bool TryLower(Utf8TreeNode node, int depth, out Utf8ConstructionBuffer<LoweredBranch> branches)
+        {
+            branches = storage.Buffer<LoweredBranch>();
+            using var frames = Utf8ConstructionFrames<Frame>.Create(storage.Budget, new(node, depth));
+            Utf8ConstructionBuffer<LoweredBranch>? completed = null;
+            while (frames.Count != 0)
+            {
+                storage.Budget.ChargeWork(1);
+                var index = frames.Count - 1;
+                var frame = frames[index];
+                node = frame.Node;
+                Utf8ConstructionBuffer<LoweredBranch>? result = null;
+                Frame? child = null;
+                if (frame.Stage == 0)
+                {
+                    if (frame.Depth > MaxLoweringDepth || !budget.TryReserve(1, 0)) return false;
+                    frame.Stage = 1;
                     switch (node.Kind)
                     {
                         case Utf8TreeNodeKind.Capture:
                         case Utf8TreeNodeKind.Group:
                             if (node.ChildCount != 1) return false;
-                            node = node.Child(0);
-                            depth++;
-                            continue;
+                            child = new(node.Child(0), frame.Depth + 1);
+                            break;
                         case Utf8TreeNodeKind.Empty:
-                            result = [new([], [], false, false, false, false)];
+                            result = SingleBranch(storage, EmptyBranch(storage));
                             break;
                         case Utf8TreeNodeKind.Bol:
                         case Utf8TreeNodeKind.Beginning:
                         case Utf8TreeNodeKind.Start:
-                            // Beginning is absolute; Start is the contiguous origin.
-                            // This plan's downstream origin handling remains separately audited.
-                            result = [new([], [], true, false,
-                                node.Kind is Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start, false)];
+                            result = SingleBranch(storage, EmptyBranch(storage) with {
+                                IsStartAnchored = true,
+                                IsAbsoluteStartAnchored = node.Kind is Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start });
                             break;
                         case Utf8TreeNodeKind.Eol:
                         case Utf8TreeNodeKind.EndZ:
                         case Utf8TreeNodeKind.End:
-                            result = [new([], [], false, true, false,
-                                node.Kind is Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End)];
+                            result = SingleBranch(storage, EmptyBranch(storage) with {
+                                IsEndAnchored = true,
+                                IsAbsoluteEndAnchored = node.Kind is Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.End });
                             break;
                         case Utf8TreeNodeKind.One:
                         case Utf8TreeNodeKind.Oneloop:
@@ -62,102 +72,101 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                                 if (!TryLowerLiteral(node.Ch, out token)) return false;
                             }
                             else if (!Utf8ScalarAsciiProjector.TryCreateToken(node.ScalarClass, out token)) return false;
-                            result = [new([token], [], false, false, false, false)];
+                            var branch = EmptyBranch(storage);
+                            branch.Tokens.Add(token);
+                            result = SingleBranch(storage, branch);
                             if ((node.Kind is Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Setloop) &&
-                                !TryExpandFiniteRepeat(result, node.M, node.N, budget, out result)) return false;
+                                !TryExpandFiniteRepeat(storage, result, node.M, node.N, budget, out result)) return false;
                             break;
                         case Utf8TreeNodeKind.Multi:
-                            if (!TryLowerLiteralText(node.Str, budget, out var tokens)) return false;
-                            result = [new(tokens, [], false, false, false, false)];
+                            if (!TryLowerLiteralText(storage, node.Str, budget, out var tokens)) return false;
+                            result = SingleBranch(storage, new(tokens, storage.Buffer<AsciiFixedLiteralCheck>(), false, false, false, false));
                             break;
                         case Utf8TreeNodeKind.Loop:
                             if (node.ChildCount != 1 || node.N == int.MaxValue || node.N < node.M) return false;
-                            if (pending.TryPush(new(node, depth + 1, 1, null), ref _invocation) != Utf8ExecutionLimitKind.None) return false;
-                            node = node.Child(0);
-                            depth++;
-                            continue;
+                            child = new(node.Child(0), frame.Depth + 1);
+                            break;
                         case Utf8TreeNodeKind.PositiveLookaround:
-                            // The former helper and its child each consumed one depth unit.
-                            if (depth + 1 > MaxLoweringDepth || node.ChildCount != 1 ||
+                            if (frame.Depth + 1 > MaxLoweringDepth || node.ChildCount != 1 ||
                                 (node.Options & RegexOptions.RightToLeft) != 0) return false;
-                            if (pending.TryPush(new(node, depth + 2, 1, null), ref _invocation) != Utf8ExecutionLimitKind.None) return false;
-                            node = node.Child(0);
-                            depth += 2;
-                            continue;
+                            child = new(node.Child(0), frame.Depth + 2);
+                            break;
                         case Utf8TreeNodeKind.Concatenate:
                         case Utf8TreeNodeKind.Alternate:
-                            if (depth + 1 > MaxLoweringDepth) return false;
-                            var accumulated = node.Kind == Utf8TreeNodeKind.Concatenate
-                                ? new List<LoweredBranch> { new([], [], false, false, false, false) }
-                                : new List<LoweredBranch>(Math.Min(node.ChildCount, MaxExpandedBranches));
-                            if (node.ChildCount == 0)
-                            {
-                                result = [.. accumulated];
-                                break;
-                            }
-                            if (pending.TryPush(new(node, depth + 2, 1, accumulated), ref _invocation) != Utf8ExecutionLimitKind.None) return false;
-                            node = node.Child(0);
-                            depth += 2;
-                            continue;
+                            if (frame.Depth + 1 > MaxLoweringDepth) return false;
+                            frame.Accumulated = storage.Buffer<LoweredBranch>();
+                            if (node.Kind == Utf8TreeNodeKind.Concatenate) frame.Accumulated.Add(EmptyBranch(storage));
+                            if (node.ChildCount == 0) result = frame.Accumulated;
+                            else child = new(node.Child(0), frame.Depth + 2);
+                            break;
                         default:
                             return false;
                     }
-
-                    var descend = false;
-                    while (pending.Count != 0)
+                }
+                else
+                {
+                    var value = completed ?? throw new InvalidOperationException("Missing completed branch continuation.");
+                    switch (node.Kind)
                     {
-                        if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) return false;
-                        var continuation = pending[pending.Count - 1];
-                        pending.Pop();
-                        if (continuation.Node.Kind == Utf8TreeNodeKind.Loop)
-                        {
-                            if (!TryExpandFiniteRepeat(result, continuation.Node.M, continuation.Node.N, budget, out result)) return false;
-                            continue;
-                        }
-                        if (continuation.Node.Kind == Utf8TreeNodeKind.PositiveLookaround)
-                        {
-                            if (result.Length != 1) return false;
-                            var child = result[0];
-                            if (child.IsStartAnchored || child.IsEndAnchored || child.FixedChecks.Count != 0 ||
-                                !budget.TryReserve(child.Tokens.Count, child.Tokens.Count)) return false;
-                            var literal = ExtractFullLiteral(child.Tokens);
-                            if (literal.Length == 0) return false;
-                            result = [new([], [new AsciiFixedLiteralCheck(0, literal)], false, false, false, false)];
-                            continue;
-                        }
-
-                        var branchesSoFar = continuation.Accumulated ?? throw new InvalidOperationException("Missing branch continuation.");
-                        if (continuation.Node.Kind == Utf8TreeNodeKind.Alternate)
-                        {
-                            if (result.Length > MaxExpandedBranches - branchesSoFar.Count ||
-                                !budget.TryReserve(result.Length, result.Length)) return false;
-                            branchesSoFar.AddRange(result);
-                        }
-                        else if (branchesSoFar.Count == 1 && result.Length == 1 &&
-                            !branchesSoFar[0].IsStartAnchored && !branchesSoFar[0].IsEndAnchored &&
-                            !result[0].IsStartAnchored && !result[0].IsEndAnchored)
-                        {
-                            if (!TryAppendBranch(branchesSoFar[0], result[0], budget)) return false;
-                        }
-                        else if (!TryConcatenate(branchesSoFar, result, budget, out branchesSoFar)) return false;
-
-                        if (continuation.NextChild < continuation.Node.ChildCount)
-                        {
-                            if (pending.TryPush(continuation with { NextChild = continuation.NextChild + 1,
-                                Accumulated = branchesSoFar }, ref _invocation) != Utf8ExecutionLimitKind.None) return false;
-                            node = continuation.Node.Child(continuation.NextChild);
-                            depth = continuation.ChildDepth;
-                            descend = true;
+                        case Utf8TreeNodeKind.Capture:
+                        case Utf8TreeNodeKind.Group:
+                            result = value;
                             break;
-                        }
-                        result = [.. branchesSoFar];
+                        case Utf8TreeNodeKind.Loop:
+                            if (!TryExpandFiniteRepeat(storage, value, node.M, node.N, budget, out result)) return false;
+                            break;
+                        case Utf8TreeNodeKind.PositiveLookaround:
+                            if (value.Count != 1) return false;
+                            var branch = value[0];
+                            if (branch.IsStartAnchored || branch.IsEndAnchored || branch.FixedChecks.Count != 0 ||
+                                !budget.TryReserve(branch.Tokens.Count, branch.Tokens.Count)) return false;
+                            var literal = ExtractFullLiteral(storage, branch.Tokens.Span);
+                            if (literal.Length == 0) return false;
+                            var checkedBranch = EmptyBranch(storage);
+                            checkedBranch.FixedChecks.Add(new(0, literal));
+                            result = SingleBranch(storage, checkedBranch);
+                            break;
+                        default:
+                            var accumulated = frame.Accumulated ?? throw new InvalidOperationException("Missing branch accumulation.");
+                            if (node.Kind == Utf8TreeNodeKind.Alternate)
+                            {
+                                if (value.Count > MaxExpandedBranches - accumulated.Count ||
+                                    !budget.TryReserve(value.Count, value.Count)) return false;
+                                accumulated.AddRange(value.Span);
+                            }
+                            else if (accumulated.Count == 1 && value.Count == 1 &&
+                                !accumulated[0].IsStartAnchored && !accumulated[0].IsEndAnchored &&
+                                !value[0].IsStartAnchored && !value[0].IsEndAnchored)
+                            {
+                                if (!TryAppendBranch(accumulated[0], value[0], budget)) return false;
+                            }
+                            else if (!TryConcatenate(storage, accumulated, value, budget, out accumulated)) return false;
+                            frame.Accumulated = accumulated;
+                            if (++frame.Index < node.ChildCount) child = new(node.Child(frame.Index), frame.Depth + 2);
+                            else result = accumulated;
+                            break;
                     }
-                    if (descend) continue;
-                    branches = result;
-                    return true;
+                }
+                frames[index] = frame;
+                if (child is { } pending) frames.Push(pending);
+                else
+                {
+                    completed = result ?? throw new InvalidOperationException("Missing branch result.");
+                    frames.Pop();
                 }
             }
-            finally { pending.Release(ref _invocation); }
+            branches = completed ?? throw new InvalidOperationException("Missing lowered root.");
+            return true;
         }
+    }
+
+    private static LoweredBranch EmptyBranch(Utf8ConstructionSession storage) =>
+        new(storage.Buffer<AsciiSimplePatternToken>(), storage.Buffer<AsciiFixedLiteralCheck>(), false, false, false, false);
+
+    private static Utf8ConstructionBuffer<LoweredBranch> SingleBranch(Utf8ConstructionSession storage, LoweredBranch branch)
+    {
+        var result = storage.Buffer<LoweredBranch>();
+        result.Add(branch);
+        return result;
     }
 }

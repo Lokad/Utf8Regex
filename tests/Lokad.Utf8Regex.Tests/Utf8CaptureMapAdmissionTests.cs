@@ -50,7 +50,7 @@ public sealed class Utf8CaptureMapAdmissionTests
         for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
         {
             descriptorBytes += loan.Bytes;
-            if (loan.Value.GetType().FullName?.StartsWith("Lokad.Utf8Regex.Internal.Execution.", StringComparison.Ordinal) != true)
+            if (loan.Value.GetType().FullName?.StartsWith("Lokad.Utf8Regex.Internal.", StringComparison.Ordinal) != true)
                 continue;
             var stateBytes = 0ul;
             foreach (var field in loan.Value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))

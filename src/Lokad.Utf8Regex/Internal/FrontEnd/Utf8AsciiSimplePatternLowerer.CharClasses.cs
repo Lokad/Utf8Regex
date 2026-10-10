@@ -28,6 +28,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var maxLength = branches[0].Length;
         for (var i = 0; i < branches.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             var branch = branches[i];
             if (branch.Length == 0)
             {
@@ -46,6 +47,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
             for (var j = 0; j < branch.Length; j++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (branch[j].Kind != AsciiSimplePatternTokenKind.CharClass ||
                     branch[j].CharClass.IsEmpty ||
                     !firstClass.HasSameDefinition(branch[j].CharClass))

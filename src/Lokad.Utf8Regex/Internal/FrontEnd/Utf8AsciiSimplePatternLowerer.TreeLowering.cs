@@ -3,8 +3,9 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    private static bool TryLowerBranches(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
-        => new BranchLowerer(budget).TryLower(node, depth, out branches);
+    private static bool TryLowerBranches(Utf8ConstructionSession storage, Utf8TreeNode node,
+        Utf8PreparationBudget budget, int depth, out Utf8ConstructionBuffer<LoweredBranch> branches)
+        => BranchLowerer.Create(budget, storage).TryLower(node, depth, out branches);
 
     private static bool AllowsTrailingNewlineBeforeEnd(Utf8TreeNode node)
     {
@@ -53,29 +54,32 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         => count <= int.MaxValue && budget.TryReserve((int)count, (int)count);
 
     private static bool TryConcatenate(
-        List<LoweredBranch> leftBranches,
-        IReadOnlyList<LoweredBranch> rightBranches,
+        Utf8ConstructionSession storage,
+        Utf8ConstructionBuffer<LoweredBranch> leftBranches,
+        Utf8ConstructionBuffer<LoweredBranch> rightBranches,
         Utf8PreparationBudget budget,
-        out List<LoweredBranch> combined)
+        out Utf8ConstructionBuffer<LoweredBranch> combined)
     {
         if (leftBranches.Count == 0 || rightBranches.Count == 0)
         {
-            combined = [];
+            combined = storage.Buffer<LoweredBranch>();
             return false;
         }
 
         if (!budget.TryReserveProduct(leftBranches.Count, rightBranches.Count, MaxExpandedBranches, out var product))
         {
-            combined = [];
+            combined = storage.Buffer<LoweredBranch>();
             return false;
         }
 
-        combined = new List<LoweredBranch>(product);
+        combined = storage.Buffer<LoweredBranch>();
         foreach (var left in leftBranches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             foreach (var right in rightBranches)
             {
-                if (!TryCombineBranches(left, right, budget, out var branch))
+                Utf8ConstructionScope.ChargeWork(1);
+                if (!TryCombineBranches(storage, left, right, budget, out var branch))
                 {
                     return false;
                 }
@@ -91,16 +95,17 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     {
         if (!TryReserveBranchCells(budget, (long)right.Tokens.Count + right.FixedChecks.Count)) return false;
         var leftLength = left.Tokens.Count;
-        left.Tokens.AddRange(right.Tokens);
+        left.Tokens.AddRange(right.Tokens.Span);
         foreach (var check in right.FixedChecks)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             left.FixedChecks.Add(new AsciiFixedLiteralCheck(leftLength + check.Offset, check.Literal));
         }
 
         return true;
     }
 
-    private static bool TryCombineBranches(LoweredBranch left, LoweredBranch right, Utf8PreparationBudget budget, out LoweredBranch branch)
+    private static bool TryCombineBranches(Utf8ConstructionSession storage, LoweredBranch left, LoweredBranch right, Utf8PreparationBudget budget, out LoweredBranch branch)
     {
         if (right.IsStartAnchored && (left.IsStartAnchored || left.IsEndAnchored || left.Tokens.Count != 0))
         {
@@ -120,14 +125,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        var combinedTokens = new List<AsciiSimplePatternToken>(left.Tokens.Count + right.Tokens.Count);
-        combinedTokens.AddRange(left.Tokens);
-        combinedTokens.AddRange(right.Tokens);
+        var combinedTokens = storage.Buffer<AsciiSimplePatternToken>();
+        combinedTokens.AddRange(left.Tokens.Span);
+        combinedTokens.AddRange(right.Tokens.Span);
 
-        var combinedChecks = new List<AsciiFixedLiteralCheck>(left.FixedChecks.Count + right.FixedChecks.Count);
-        combinedChecks.AddRange(left.FixedChecks);
+        var combinedChecks = storage.Buffer<AsciiFixedLiteralCheck>();
+        combinedChecks.AddRange(left.FixedChecks.Span);
         foreach (var check in right.FixedChecks)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             combinedChecks.Add(new AsciiFixedLiteralCheck(left.Tokens.Count + check.Offset, check.Literal));
         }
 
@@ -142,13 +148,14 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static bool TryExpandFiniteRepeat(
-        IReadOnlyList<LoweredBranch> repeatedBranches,
+        Utf8ConstructionSession storage,
+        Utf8ConstructionBuffer<LoweredBranch> repeatedBranches,
         int minCount,
         int maxCount,
         Utf8PreparationBudget budget,
-        out LoweredBranch[] branches)
+        out Utf8ConstructionBuffer<LoweredBranch> branches)
     {
-        branches = [];
+        branches = storage.Buffer<LoweredBranch>();
         if (minCount < 0 || maxCount < minCount || maxCount == int.MaxValue)
         {
             return false;
@@ -161,13 +168,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        var variants = new List<LoweredBranch>();
+        var variants = storage.Buffer<LoweredBranch>();
         for (var count = maxCount; count >= minCount; count--)
         {
-            var expanded = new List<LoweredBranch> { new([], [], false, false, false, false) };
+            Utf8ConstructionScope.ChargeWork(1);
+            var expanded = SingleBranch(storage, EmptyBranch(storage));
             for (var i = 0; i < count; i++)
             {
-                if (!TryConcatenate(expanded, repeatedBranches, budget, out expanded))
+                Utf8ConstructionScope.ChargeWork(1);
+                if (!TryConcatenate(storage, expanded, repeatedBranches, budget, out expanded))
                 {
                     return false;
                 }
@@ -177,10 +186,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             {
                 return false;
             }
-            variants.AddRange(expanded);
+            variants.AddRange(expanded.Span);
         }
 
-        branches = [.. variants];
+        branches = variants;
         return true;
     }
 

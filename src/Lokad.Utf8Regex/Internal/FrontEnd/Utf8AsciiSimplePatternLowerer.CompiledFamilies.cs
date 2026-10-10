@@ -4,6 +4,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
     private static bool TryExtractAnchoredValidatorPlan(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[][] branches,
         bool isStartAnchored,
         bool isEndAnchored,
@@ -21,18 +22,20 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        List<AsciiSimplePatternAnchoredValidatorSegment> aggregateSegments = [];
+        var aggregateSegments = storage.Buffer<AsciiSimplePatternAnchoredValidatorSegment>();
         var isFirstBranch = true;
         foreach (var tokens in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (tokens.Length == 0)
             {
                 return false;
             }
 
-            var segments = new List<AsciiSimplePatternAnchoredValidatorSegment>();
+            var segments = storage.Buffer<AsciiSimplePatternAnchoredValidatorSegment>();
             for (var i = 0; i < tokens.Length;)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 var token = tokens[i];
                 if (token.Kind == AsciiSimplePatternTokenKind.Dot)
                 {
@@ -45,12 +48,14 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     i++;
                     while (i < tokens.Length && tokens[i].Kind == AsciiSimplePatternTokenKind.Literal)
                     {
+                        Utf8ConstructionScope.ChargeWork(1);
                         i++;
                     }
 
-                    var literal = new byte[i - start];
+                    var literal = storage.Allocate<byte>(i - start, false);
                     for (var j = 0; j < literal.Length; j++)
                     {
+                        Utf8ConstructionScope.ChargeWork(1);
                         literal[j] = tokens[start + j].Literal;
                     }
 
@@ -72,6 +77,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     !tokens[i].CharClass.IsEmpty &&
                     charClass.HasSameDefinition(tokens[i].CharClass))
                 {
+                    Utf8ConstructionScope.ChargeWork(1);
                     runLength++;
                     i++;
                 }
@@ -86,7 +92,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 continue;
             }
 
-            if (!TryMergeAnchoredValidatorSegments(aggregateSegments, segments, ignoreCase, out var mergedSegments))
+            if (!TryMergeAnchoredValidatorSegments(storage, aggregateSegments, segments, ignoreCase, out var mergedSegments))
             {
                 return false;
             }
@@ -115,12 +121,12 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             if (!IsAnchoredValidatorEnvelopeCovered(aggregateSegments, branches)) return false;
         }
 
-        validatorPlan = new AsciiSimplePatternAnchoredValidatorPlan([.. aggregateSegments], ignoreCase);
+        validatorPlan = new AsciiSimplePatternAnchoredValidatorPlan(storage.Copy(aggregateSegments, false), ignoreCase);
         return validatorPlan.HasValue;
     }
 
     private static bool IsAnchoredValidatorEnvelopeCovered(
-        List<AsciiSimplePatternAnchoredValidatorSegment> segments,
+        Utf8ConstructionBuffer<AsciiSimplePatternAnchoredValidatorSegment> segments,
         AsciiSimplePatternToken[][] branches)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -140,7 +146,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var lengths = owner.AllocateArray<int>(segments.Count, false);
         try
         {
-            for (var index = 0; index < lengths.Length; index++) lengths[index] = segments[index].MinLength;
+            for (var index = 0; index < lengths.Length; index++) { Utf8ConstructionScope.ChargeWork(1); lengths[index] = segments[index].MinLength; }
             while (true)
             {
                 owner.ChargeWork(1);
@@ -170,7 +176,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         finally { owner.ReleaseArray(lengths, false); }
 
         static bool CoversLengthVector(AsciiSimplePatternToken[] branch,
-            List<AsciiSimplePatternAnchoredValidatorSegment> segments, int[] lengths,
+            Utf8ConstructionBuffer<AsciiSimplePatternAnchoredValidatorSegment> segments, int[] lengths,
             Utf8ConstructionBudget owner)
         {
             var offset = 0;
@@ -196,74 +202,70 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
     }
 
-    private static bool TryMergeAnchoredValidatorSegments(
-        List<AsciiSimplePatternAnchoredValidatorSegment> aggregate,
-        List<AsciiSimplePatternAnchoredValidatorSegment> next,
-        bool ignoreCase,
-        out List<AsciiSimplePatternAnchoredValidatorSegment> merged)
+    private struct MergeFrame(int aggregate, int next, int restoreCount)
     {
-        merged = [];
-        var failed = new HashSet<(int AggregateIndex, int NextIndex)>();
-        return TryMergeAnchoredValidatorSegmentsCore(aggregate, 0, next, 0, ignoreCase, merged, failed);
+        internal readonly int Aggregate = aggregate;
+        internal readonly int Next = next;
+        internal readonly int RestoreCount = restoreCount;
+        internal int Stage;
     }
 
-    private static bool TryMergeAnchoredValidatorSegmentsCore(
-        List<AsciiSimplePatternAnchoredValidatorSegment> aggregate,
-        int aggregateIndex,
-        List<AsciiSimplePatternAnchoredValidatorSegment> next,
-        int nextIndex,
-        bool ignoreCase,
-        List<AsciiSimplePatternAnchoredValidatorSegment> merged,
-        HashSet<(int AggregateIndex, int NextIndex)> failed)
+    private static bool TryMergeAnchoredValidatorSegments(Utf8ConstructionSession storage,
+        Utf8ConstructionBuffer<AsciiSimplePatternAnchoredValidatorSegment> aggregate,
+        Utf8ConstructionBuffer<AsciiSimplePatternAnchoredValidatorSegment> next, bool ignoreCase,
+        out Utf8ConstructionBuffer<AsciiSimplePatternAnchoredValidatorSegment> merged)
     {
-        if (aggregateIndex == aggregate.Count && nextIndex == next.Count)
+        merged = storage.Buffer<AsciiSimplePatternAnchoredValidatorSegment>();
+        using var frames = Utf8ConstructionFrames<MergeFrame>.Create(storage.Budget, new(0, 0, 0));
+        using var seen = Utf8ConstructionMap<(int, int), byte>.Create(storage.Budget, EqualityComparer<(int, int)>.Default);
+        while (frames.Count != 0)
         {
-            return true;
-        }
-
-        if (!failed.Add((aggregateIndex, nextIndex)))
-        {
-            return false;
-        }
-
-        if (aggregateIndex < aggregate.Count &&
-            nextIndex < next.Count &&
-            TryMergeAnchoredValidatorSegmentPair(aggregate[aggregateIndex], next[nextIndex], ignoreCase, out var mergedSegment))
-        {
-            merged.Add(mergedSegment);
-            if (TryMergeAnchoredValidatorSegmentsCore(aggregate, aggregateIndex + 1, next, nextIndex + 1, ignoreCase, merged, failed))
+            storage.Budget.ChargeWork(1);
+            var index = frames.Count - 1;
+            var frame = frames[index];
+            var a = frame.Aggregate;
+            var n = frame.Next;
+            if (frame.Stage == 0)
             {
-                return true;
+                if (a == aggregate.Count && n == next.Count) return true;
+                if (!Note(seen, (a, n))) { frames.Pop(); continue; }
             }
-
-            merged.RemoveAt(merged.Count - 1);
-        }
-
-        if (aggregateIndex < aggregate.Count &&
-            TryOptionalizeAnchoredValidatorSegment(aggregate[aggregateIndex], ignoreCase, out var optionalAggregate))
-        {
-            merged.Add(optionalAggregate);
-            if (TryMergeAnchoredValidatorSegmentsCore(aggregate, aggregateIndex + 1, next, nextIndex, ignoreCase, merged, failed))
+            // Unwind only the last attempted extension, preserving the original
+            // pair/optional-left/optional-right DFS order and visited-pair memo.
+            while (merged.Count > frame.RestoreCount) { Utf8ConstructionScope.ChargeWork(1); merged.Pop(); }
+            AsciiSimplePatternAnchoredValidatorSegment segment;
+            MergeFrame? child = null;
+            switch (frame.Stage++)
             {
-                return true;
+                case 0:
+                    if (a < aggregate.Count && n < next.Count &&
+                        TryMergeAnchoredValidatorSegmentPair(aggregate[a], next[n], ignoreCase, out segment))
+                    { merged.Add(segment); child = new(a + 1, n + 1, merged.Count); }
+                    break;
+                case 1:
+                    if (a < aggregate.Count && TryOptionalizeAnchoredValidatorSegment(aggregate[a], ignoreCase, out segment))
+                    { merged.Add(segment); child = new(a + 1, n, merged.Count); }
+                    break;
+                case 2:
+                    if (n < next.Count && TryOptionalizeAnchoredValidatorSegment(next[n], ignoreCase, out segment))
+                    { merged.Add(segment); child = new(a, n + 1, merged.Count); }
+                    break;
+                default:
+                    frames.Pop();
+                    continue;
             }
-
-            merged.RemoveAt(merged.Count - 1);
+            frames[index] = frame;
+            if (child is { } pending) frames.Push(pending);
         }
-
-        if (nextIndex < next.Count &&
-            TryOptionalizeAnchoredValidatorSegment(next[nextIndex], ignoreCase, out var optionalNext))
-        {
-            merged.Add(optionalNext);
-            if (TryMergeAnchoredValidatorSegmentsCore(aggregate, aggregateIndex, next, nextIndex + 1, ignoreCase, merged, failed))
-            {
-                return true;
-            }
-
-            merged.RemoveAt(merged.Count - 1);
-        }
-
+        merged.Clear();
         return false;
+    }
+
+    private static bool Note<TKey>(Utf8ConstructionMap<TKey, byte> seen, TKey key) where TKey : notnull
+    {
+        if (seen.ContainsKey(key)) return false;
+        seen[key] = 0;
+        return true;
     }
 
     private static bool TryMergeAnchoredValidatorSegmentPair(
@@ -274,7 +276,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     {
         if (current.IsLiteral && incoming.IsLiteral)
         {
-            if (current.Literal.AsSpan().SequenceEqual(incoming.Literal))
+            if (SameLiteral(current.Literal, incoming.Literal))
             {
                 merged = current;
                 return true;
@@ -359,6 +361,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         foreach (var branch in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!TryParseAnchoredBoundedDateBranch(
                 branch,
                 out var firstCount,
@@ -406,21 +409,29 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var tupleCount = (long)(firstMax - firstMin + 1) * (secondMax - secondMin + 1) * (thirdMax - thirdMin + 1);
         if (tupleCount > branches.Length) return false;
         for (var first = firstMin; first <= firstMax; first++)
-        for (var second = secondMin; second <= secondMax; second++)
-        for (var third = thirdMin; third <= thirdMax; third++)
         {
-            var covered = false;
-            foreach (var branch in branches)
+            Utf8ConstructionScope.ChargeWork(1);
+            for (var second = secondMin; second <= secondMax; second++)
             {
-                Utf8ConstructionScope.ChargeWork((ulong)branch.Length + 1);
-                if (TryParseAnchoredBoundedDateBranch(branch, out var a, out var b, out var c, out _, out _) &&
-                    a == first && b == second && c == third)
+                Utf8ConstructionScope.ChargeWork(1);
+                for (var third = thirdMin; third <= thirdMax; third++)
                 {
-                    covered = true;
-                    break;
+                    Utf8ConstructionScope.ChargeWork(1);
+                    var covered = false;
+                    foreach (var branch in branches)
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        Utf8ConstructionScope.ChargeWork((ulong)branch.Length + 1);
+                        if (TryParseAnchoredBoundedDateBranch(branch, out var a, out var b, out var c, out _, out _) &&
+                            a == first && b == second && c == third)
+                        {
+                            covered = true;
+                            break;
+                        }
+                    }
+                    if (!covered) return false;
                 }
             }
-            if (!covered) return false;
         }
 
         plan = new AsciiSimplePatternAnchoredBoundedDatePlan(
@@ -475,6 +486,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 TryGetPositiveCharClass(branch[index], out var candidateHeadClass) &&
                 headClass.HasSameDefinition(candidateHeadClass))
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 headCount++;
                 index++;
             }
@@ -493,6 +505,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 TryGetPositiveCharClass(branch[index], out var candidateTailClass) &&
                 tailClass.HasSameDefinition(candidateTailClass))
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 tailCount++;
                 index++;
             }
@@ -526,6 +539,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 TryGetPositiveCharClass(branch[index], out var candidateHeadClass) &&
                 headClass.HasSameDefinition(candidateHeadClass))
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 headCount++;
                 index++;
             }
@@ -556,6 +570,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
             for (var i = 0; i < tailCount; i++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (!TryConsumeExpectedCharClass(branch, ref index, tailClass))
                 {
                     return false;
@@ -617,6 +632,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var longest = branches[0];
         foreach (var branch in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (branch.Length > longest.Length)
             {
                 longest = branch;
@@ -640,9 +656,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
 
         var headMinCount = int.MaxValue;
-        var combinations = new HashSet<(int HeadCount, bool HasOptionalClass, bool HasOptionalLiteral)>();
+        using var combinations = Utf8ConstructionMap<(int, bool, bool), byte>.Create(Utf8ConstructionScope.CurrentBudget, EqualityComparer<(int, bool, bool)>.Default);
         foreach (var branch in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!TryParseBranch(
                 branch,
                 headClass,
@@ -655,7 +672,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 out var headCount,
                 out var hasOptionalClass,
                 out var hasOptionalLiteral) ||
-                !combinations.Add((headCount, hasOptionalClass, hasOptionalLiteral)))
+                !Note(combinations, (headCount, hasOptionalClass, hasOptionalLiteral)))
             {
                 return false;
             }
@@ -674,10 +691,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         for (var headCount = headMinCount; headCount <= headMaxCount; headCount++)
         {
-            if (!combinations.Contains((headCount, false, false)) ||
-                !combinations.Contains((headCount, false, true)) ||
-                !combinations.Contains((headCount, true, false)) ||
-                !combinations.Contains((headCount, true, true)))
+            Utf8ConstructionScope.ChargeWork(1);
+            if (!combinations.ContainsKey((headCount, false, false)) ||
+                !combinations.ContainsKey((headCount, false, true)) ||
+                !combinations.ContainsKey((headCount, true, false)) ||
+                !combinations.ContainsKey((headCount, true, true)))
             {
                 return false;
             }
@@ -697,6 +715,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     }
 
     private static bool TryExtractRepeatedDigitGroupPlan(
+        Utf8ConstructionSession storage,
         AsciiSimplePatternToken[][] branches,
         bool ignoreCase,
         out AsciiSimplePatternRepeatedDigitGroupPlan plan)
@@ -716,6 +735,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var trailingMaxDigits = 0;
         foreach (var branch in branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (!TryParseRepeatedDigitGroupBranch(
                 branch,
                 out var branchDigitClass,
@@ -754,11 +774,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        var separatorBytes = separatorClass.GetPositiveMatchBytes();
-        if (separatorBytes.Length == 0 || separatorBytes.Length > 4)
-        {
-            return false;
-        }
+        Span<byte> separatorScratch = stackalloc byte[128];
+        storage.Budget.ChargeWork(128);
+        var separatorCount = separatorClass.CopyMatchBytes(separatorScratch);
+        if (separatorCount == 0 || separatorCount > 4) return false;
+        var separatorBytes = storage.Allocate<byte>(separatorCount, false);
+        storage.Budget.ChargeWork((ulong)separatorCount);
+        separatorScratch[..separatorCount].CopyTo(separatorBytes);
 
         plan = new AsciiSimplePatternRepeatedDigitGroupPlan(
             (byte)repeatedGroupCount,
@@ -797,6 +819,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             !branch[separatorIndex].CharClass.IsEmpty &&
             firstDigitClass.HasSameDefinition(branch[separatorIndex].CharClass))
         {
+            Utf8ConstructionScope.ChargeWork(1);
             separatorIndex++;
         }
 
@@ -819,6 +842,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             !branch[cursor + groupDigitCount].CharClass.IsEmpty &&
             separatorClass.HasSameDefinition(branch[cursor + groupDigitCount].CharClass))
         {
+            Utf8ConstructionScope.ChargeWork(1);
             repeatedGroupCount++;
             cursor += groupDigitCount + 1;
         }
@@ -848,6 +872,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         for (var i = 0; i < length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (branch[start + i].Kind != AsciiSimplePatternTokenKind.CharClass ||
                 branch[start + i].CharClass.IsEmpty ||
                 !digitClass.HasSameDefinition(branch[start + i].CharClass))
@@ -895,6 +920,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             tokens[index].CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
             predicateKind == AsciiCharClassPredicateKind.Digit)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             count++;
             index++;
         }

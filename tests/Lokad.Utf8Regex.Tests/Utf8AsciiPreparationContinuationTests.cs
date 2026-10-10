@@ -25,30 +25,52 @@ public sealed class Utf8AsciiPreparationContinuationTests
         return node;
     }
 
-    private static object Compiler()
+    private sealed class CompilerState
     {
-        var type = typeof(Utf8AsciiSimplePatternLowerer).GetNestedType("BranchLowerer", BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException();
-        return Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-            null, [new Utf8PreparationBudget(4096, 4096)], null) ?? throw new InvalidOperationException();
+        internal Utf8ConstructionBudget? Budget;
     }
-    private static Utf8SliceInvocation Invocation(object compiler)
-        => Assert.IsType<Utf8SliceInvocation>(compiler.GetType().GetField("_invocation", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(compiler));
-    private static void SetInvocation(object compiler, Utf8SliceInvocation invocation)
-        => (compiler.GetType().GetField("_invocation", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException()).SetValue(compiler, invocation);
-    private static bool Lower(object compiler, Utf8TreeNode node, out Array branches)
+    private readonly record struct BranchSnapshot(List<AsciiSimplePatternToken> Tokens, List<AsciiFixedLiteralCheck> FixedChecks);
+    private static CompilerState Compiler() => new();
+    private static Utf8ConstructionBudget Invocation(CompilerState compiler) => compiler.Budget ?? throw new InvalidOperationException();
+    private static bool Lower(CompilerState compiler, Utf8TreeNode node, out Array branches)
     {
-        object?[] arguments = [node, 0, null];
-        var found = Assert.IsType<bool>((compiler.GetType().GetMethod("TryLower", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException()).Invoke(compiler, arguments));
-        branches = Assert.IsAssignableFrom<Array>(arguments[2]);
+        using var construction = Utf8ConstructionScope.Enter();
+        compiler.Budget = construction.Budget;
+        using var storage = Internal.Utf8ConstructionSession.Create(construction.Budget);
+        var preparation = construction.Budget.AllocateObject((4096, 4096),
+            static limits => new Utf8PreparationBudget(limits.Item1, limits.Item2));
+        object?[] arguments = [storage, node, preparation, 0, null];
+        bool found;
+        try
+        {
+            found = Assert.IsType<bool>((typeof(Utf8AsciiSimplePatternLowerer)
+                .GetMethod("TryLowerBranches", BindingFlags.NonPublic | BindingFlags.Static)
+                ?? throw new InvalidOperationException()).Invoke(null, arguments));
+        }
+        catch (TargetInvocationException failure) when (failure.InnerException is not null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure.InnerException).Throw();
+            throw;
+        }
+        // Snapshot witnesses before session disposal; the production buffers never
+        // escape this test owner. Private optimizer declines remain empty results.
+        branches = found ? ReadBuffer<object>(arguments[4] ?? throw new InvalidOperationException())
+            .Select(value => new BranchSnapshot(ReadBuffer<AsciiSimplePatternToken>(Property<object>(value, "Tokens")),
+                ReadBuffer<AsciiFixedLiteralCheck>(Property<object>(value, "FixedChecks")))).ToArray() : [];
         return found;
     }
+    private static List<T> ReadBuffer<T>(object value)
+    {
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        var count = Assert.IsType<int>(value.GetType().GetProperty("Count", flags)?.GetValue(value));
+        var item = value.GetType().GetProperty("Item", flags) ?? throw new InvalidOperationException();
+        return Enumerable.Range(0, count).Select(index => (T)(item.GetValue(value, [index])
+            ?? throw new InvalidOperationException())).ToList();
+    }
     private static T Property<T>(object value, string name)
-        => Assert.IsType<T>(value.GetType().GetProperty(name)?.GetValue(value));
+        => (T)(value.GetType().GetProperty(name)?.GetValue(value) ?? throw new InvalidOperationException());
     private static string[] Literals(Array branches)
-        => branches.Cast<object>().Select(branch => Encoding.ASCII.GetString(Property<List<AsciiSimplePatternToken>>(branch, "Tokens")
+        => branches.Cast<BranchSnapshot>().Select(branch => Encoding.ASCII.GetString(branch.Tokens
             .Select(token => token.Literal).ToArray())).ToArray();
 
     public static IEnumerable<object[]> DepthCases()
@@ -68,7 +90,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         var compiler = Compiler();
         Assert.Equal(accepted, Lower(compiler, Wrap(Text("a"), (Utf8TreeNodeKind)kind, depth), out var branches));
         Assert.Equal(accepted ? new[] { "a" } : [], Literals(branches));
-        Assert.Equal(0UL, Invocation(compiler).Ledger.ReservedBytes);
+        Assert.Equal(0UL, Invocation(compiler).ReservedBytes);
     }
     [Theory]
     [InlineData(4095, true)]
@@ -136,25 +158,33 @@ public sealed class Utf8AsciiPreparationContinuationTests
         var baseline = Compiler();
         Assert.True(Lower(baseline, tree, out _));
         var measured = Invocation(baseline);
-        Assert.True(measured.Budget.PeakWorkingBytes > 0);
-        var limits = Enumerable.Range(1, checked((int)measured.Budget.Steps - 1))
-            .Select(value => new Utf8ExecutionLimits((ulong)value, 0, 0))
-            .Concat(Enumerable.Range(1, checked((int)measured.Budget.PeakDepth - 1)).Select(value => new Utf8ExecutionLimits(0, (uint)value, 0)))
-            .Concat(new[] { new Utf8ExecutionLimits(0, 0, 1), new Utf8ExecutionLimits(0, 0, measured.Budget.PeakWorkingBytes - 1) });
+        Assert.True(measured.PeakBytes > 0);
+        var limits = Enumerable.Range(0, checked((int)measured.WorkSteps))
+            .Select(value => (Bytes: ulong.MaxValue, Work: (ulong)value, Depth: ulong.MaxValue,
+                Kind: Utf8ResourceLimitKind.ConstructionWorkSteps))
+            .Concat(Enumerable.Range(0, checked((int)measured.PeakDepth)).Select(value =>
+                (Bytes: ulong.MaxValue, Work: ulong.MaxValue, Depth: (ulong)value,
+                    Kind: Utf8ResourceLimitKind.ConstructionDepth)))
+            .Concat(new[] { (Bytes: 7ul, Work: ulong.MaxValue, Depth: ulong.MaxValue, Kind: Utf8ResourceLimitKind.ConstructionBytes),
+                (Bytes: measured.PeakBytes + 6, Work: ulong.MaxValue, Depth: ulong.MaxValue, Kind: Utf8ResourceLimitKind.ConstructionBytes) });
         foreach (var limit in limits)
         {
-            var compiler = Compiler();
-            SetInvocation(compiler, new(limit, Regex.InfiniteMatchTimeout, CancellationToken.None));
-            Assert.False(Lower(compiler, tree, out var branches));
-            Assert.Empty(branches);
-            Assert.Equal(0UL, Invocation(compiler).Ledger.ReservedBytes);
+            using var owner = new Utf8ConstructionScope(0, limit.Bytes, limit.Work, limit.Depth);
+            owner.Budget.ReserveBytes(7);
+            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Lower(Compiler(), tree, out _));
+            Assert.Equal(limit.Kind, failure.ResourceKind);
+            Assert.True(failure.Requested > failure.Limit);
+            Assert.Equal(7ul, owner.Budget.ReservedBytes);
+            Assert.Equal(0ul, owner.Budget.Reserved);
+            Assert.Equal(0ul, owner.Budget.Depth);
+            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         }
-        var recovery = Compiler();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        SetInvocation(recovery, invocation);
-        Assert.True(Lower(recovery, tree, out _));
-        Assert.Equal(7UL, Invocation(recovery).Ledger.ReservedBytes);
+        using var recovery = Utf8ConstructionScope.Enter();
+        recovery.Budget.ReserveBytes(7);
+        Assert.True(Lower(Compiler(), tree, out _));
+        Assert.Equal(7ul, recovery.Budget.ReservedBytes);
+        Assert.Equal(0ul, recovery.Budget.Depth);
     }
     [Theory]
     [InlineData(false)]
@@ -164,17 +194,23 @@ public sealed class Utf8AsciiPreparationContinuationTests
         using var clock = Utf8DeadlineTestClock.Start();
         var compiler = Compiler();
         using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
+        var tree = Wrap(Text("a"), Utf8TreeNodeKind.Concatenate, 100);
+        using var owner = Utf8ConstructionScope.Enter();
+        owner.Budget.ReserveBytes(7);
+        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var deadline = Utf8ExecutionDeadline.Start(expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        owner.Budget.Deadline = deadline;
+        owner.Budget.CancellationToken = source.Token;
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(250); else source.Cancel(); };
-        SetInvocation(compiler, invocation);
-        var failure = Assert.Throws<TargetInvocationException>(() => Lower(compiler,
-            Wrap(Text("a"), Utf8TreeNodeKind.Concatenate, 100), out _));
-        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure.InnerException);
-        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure.InnerException).CancellationToken);
+        owner.Budget.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(250); else source.Cancel(); };
+        var failure = Record.Exception(() => Lower(compiler, tree, out _));
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.True(entered);
-        Assert.Equal(0UL, Invocation(compiler).Ledger.ReservedBytes);
+        Assert.Same(deadline, owner.Budget.Deadline);
+        Assert.Equal(7ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
     }
     [Theory]
     [InlineData(65)]
