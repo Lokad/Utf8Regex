@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
@@ -24,10 +25,19 @@ public sealed class PythonReParserCollectionAdmissionTests
         using var scalars = PythonReScalarSet.Create(owner.Budget);
         for (var warm = 0; warm < 1000; warm++) scalars.Add(0x1f600);
         var held = owner.Budget.ReservedBytes;
+        var allocated = MeasureDuplicateSparseAdds(scalars);
+        Assert.Equal(0, allocated);
+        Assert.Equal(held, owner.Budget.ReservedBytes);
+    }
+
+    // Keep assertion initialization and caller instrumentation outside the
+    // allocation interval. The measured loop and exact zero limit stay intact.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureDuplicateSparseAdds(PythonReScalarSet scalars)
+    {
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var repeat = 0; repeat < 10000; repeat++) scalars.Add(0x1f600);
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.Equal(held, owner.Budget.ReservedBytes);
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     [Fact]

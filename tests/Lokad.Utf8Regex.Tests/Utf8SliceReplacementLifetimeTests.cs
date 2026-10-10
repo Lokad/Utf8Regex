@@ -124,6 +124,7 @@ public sealed class Utf8SliceReplacementLifetimeTests
     [MemberData(nameof(ReplacementSurfaces))]
     public void DeadlineAfterVmEntryUsesThePublicTimeoutIdentity(string operation, string replacement)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var text = new string('a', 5000) + "!";
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
@@ -139,7 +140,7 @@ public sealed class Utf8SliceReplacementLifetimeTests
                 if (!entered)
                 {
                     entered = true;
-                    Thread.Sleep(250);
+                    clock.Advance(250);
                 }
             });
             try

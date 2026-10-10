@@ -108,6 +108,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     [MemberData(nameof(InterruptedCases))]
     public void LongSearchComparisonAndTrailingPredicatePollOriginalInvocation(bool reverse, string phase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var literal = Encoding.UTF8.GetBytes(phase == "compare" ? new string('a', 160000) + "b" : "target");
         var trailing = phase == "trailing" ? Encoding.UTF8.GetBytes(new string('z', 160000)) : [];
         var input = Encoding.UTF8.GetBytes(phase switch {
@@ -118,7 +119,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var entered = false;
-        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); } };
+        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } };
         var index = -1;
         void Run() => Utf8SearchExecutor.TryFindLiteral(plan, input, 0, input.Length, reverse, ref invocation, out index);
         if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(Run);
@@ -326,13 +327,14 @@ public sealed class Utf8NativeLiteralInvocationTests
     [InlineData(true, true)]
     public void PublicCancellationOrTimeoutAfterConstructionOccursInsideNativeMoveNext(bool compiled, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var armed = false;
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(_ => { if (armed && !entered) { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); } });
+        var session = Utf8SearchDiagnosticsSession.Start(_ => { if (armed && !entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } });
         try
         {
             var enumerator = regex.EnumerateMatches(input, source.Token);

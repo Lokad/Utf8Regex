@@ -110,12 +110,13 @@ public sealed class Utf8SplitProjectionInvocationTests
     [InlineData(true)]
     public void ProjectionCancellationAndDeadlineObserveExactAuthorityAndRollback(bool deadline)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var input = Encoding.UTF8.GetBytes(new string('é', 200000));
         var validation = Utf8Validation.Validate(input);
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
-        invocation.CheckpointHook = _ => { if (deadline) Thread.Sleep(250); else source.Cancel(); };
+        invocation.CheckpointHook = _ => { if (deadline) clock.Advance(250); else source.Cancel(); };
         Assert.True(invocation.Ledger.TryReserve(7));
         var map = default(Utf8BoundaryMap);
         ulong bytes = 0;

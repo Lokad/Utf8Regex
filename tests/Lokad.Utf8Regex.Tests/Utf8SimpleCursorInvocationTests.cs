@@ -114,6 +114,7 @@ public sealed class Utf8SimpleCursorInvocationTests
     [MemberData(nameof(CompleteCases))]
     public void OffsetFactoryUsesFullSubjectAnchorsAndOriginalDeadline(string pattern, bool compiled)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex(pattern, Options(compiled));
         var prepared = Prepared(regex);
         const string text = "ab1d ab12d xyAz a1 ab2 ZZ 123 Abc\nab1d\nxyBz\nAbc\nX9\n";
@@ -133,7 +134,7 @@ public sealed class Utf8SimpleCursorInvocationTests
         }
         var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
         var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, budget, 0, 0);
-        Thread.Sleep(250);
+        clock.Advance(250);
         Exception? observed = null;
         try { _ = timed.MoveNext(); } catch (Exception exception) { observed = exception; }
         Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);
@@ -150,6 +151,7 @@ public sealed class Utf8SimpleCursorInvocationTests
     [MemberData(nameof(PhaseCases))]
     public void ValidationCandidateScanVerifierAndGapProjectionObserveInterruption(bool compiled, string phase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         // Stay inside the existing speculative preparation budget. Sixty
         // repeated tokens still reach a checkpoint during this verifier.
         var pattern = phase == "verifier" ? @"(?:ab[0-9]{60}|ab[A-Z])" : @"ab[0-9]{1,2}d";
@@ -167,7 +169,7 @@ public sealed class Utf8SimpleCursorInvocationTests
                 phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0 ||
                 phase == "projection" && Utf8SearchDiagnosticsSession.Current!.VerifierMatches == 0) return;
             entered = true;
-            if (expire) Thread.Sleep(250); else source.Cancel();
+            if (expire) clock.Advance(250); else source.Cancel();
         });
         try
         {
@@ -199,6 +201,7 @@ public sealed class Utf8SimpleCursorInvocationTests
     [MemberData(nameof(LifetimeCases))]
     public void LaterMovesAndTerminalResultsKeepOriginalTokenAndDeadline(string pattern, bool compiled, bool mixed, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var text = (mixed ? "é😀 " : "") + Texts[2];
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
@@ -206,7 +209,7 @@ public sealed class Utf8SimpleCursorInvocationTests
         var cursor = regex.EnumerateMatches(input, source.Token);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
-        if (expire) Thread.Sleep(250); else source.Cancel();
+        if (expire) clock.Advance(250); else source.Cancel();
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         if (expire)
@@ -247,6 +250,7 @@ public sealed class Utf8SimpleCursorInvocationTests
     [MemberData(nameof(TerminalCases))]
     public void ExhaustedNativeCursorKeepsConstantWorkAndChecksTokenAndDeadline(string pattern, bool compiled, bool matches, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var input = Encoding.UTF8.GetBytes(matches ? "ab1d AB ab12d CD" : new string('x', 32000));
         // Preparation precedes invocation in the public API. Its construction
         // work must not consume this terminal-cursor control's execution budget.
@@ -263,7 +267,7 @@ public sealed class Utf8SimpleCursorInvocationTests
         var terminal = cursor.DebugInvocationSteps;
         for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
         Assert.Equal(3UL, cursor.DebugInvocationSteps - terminal);
-        if (expire) Thread.Sleep(250); else source.Cancel();
+        if (expire) clock.Advance(250); else source.Cancel();
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);
@@ -280,10 +284,11 @@ public sealed class Utf8SimpleCursorInvocationTests
     [InlineData(true, true)]
     public void EntryDeadlineIncludesIdleTimeBeforeFirstMove(bool compiled, bool mixed)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var input = Encoding.UTF8.GetBytes(mixed ? "é😀 ab1d ab12d" : "ab1d ab12d");
         var regex = new Utf8Regex(Patterns[0], Options(compiled), TimeSpan.FromMilliseconds(200));
         var cursor = regex.EnumerateMatches(input);
-        Thread.Sleep(250);
+        clock.Advance(250);
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         var timeout = Assert.IsType<RegexMatchTimeoutException>(observed);

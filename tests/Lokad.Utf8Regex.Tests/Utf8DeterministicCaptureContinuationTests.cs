@@ -126,6 +126,7 @@ public sealed class Utf8DeterministicCaptureContinuationTests
     [InlineData(true)]
     public void LongLiteralBlocksPollCancellationAndDeadlineAndClearUnpublishedCaptures(bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var text = new string('a', 256 * 1024);
         var prepared = Utf8FrontEnd.Compile("(" + text + ")", RegexOptions.CultureInvariant);
         Assert.NotNull(prepared.ExecutionProgram);
@@ -135,7 +136,7 @@ public sealed class Utf8DeterministicCaptureContinuationTests
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) Thread.Sleep(50); else source.Cancel(); };
+        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(50); else source.Cancel(); };
         if (expire)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
                 Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, prepared.ExecutionProgram, 0, captures, ref invocation, out _, out _));
@@ -214,6 +215,7 @@ public sealed class Utf8DeterministicCaptureContinuationTests
     [MemberData(nameof(CheckpointCases))]
     public void LiveTokensSelectTheOwnedLoopAndPreserveFailureIdentityAndRecovery(string operation, bool compiled, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         const string pattern = "ab.c";
         // This is normally a native fixed-pattern plan. The small ASCII subject
         // reaches step 64 in candidate matching, after validation and mapping.
@@ -234,7 +236,7 @@ public sealed class Utf8DeterministicCaptureContinuationTests
                 return;
             }
             entered = true;
-            if (expire) Thread.Sleep(150);
+            if (expire) clock.Advance(150);
             else source.Cancel();
         });
         try

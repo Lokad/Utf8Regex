@@ -89,6 +89,7 @@ public sealed class Utf8AsciiStructuralRuntimeTests
     [InlineData(4, true)]
     public void LongAtomsAndSuffixCandidateScanningObserveTokenAndDeadline(int family, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var (program, input) = Case(family, 256 * 1024);
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
@@ -102,7 +103,7 @@ public sealed class Utf8AsciiStructuralRuntimeTests
             if (!entered)
             {
                 entered = true;
-                if (expire) Thread.Sleep(250);
+                if (expire) clock.Advance(250);
                 else source.Cancel();
             }
         };

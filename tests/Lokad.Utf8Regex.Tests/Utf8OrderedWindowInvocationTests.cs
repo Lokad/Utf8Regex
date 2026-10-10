@@ -199,6 +199,7 @@ public sealed class Utf8OrderedWindowInvocationTests
     [MemberData(nameof(InterruptedCases))]
     public void PublicWindowPhasesCarryEntryInvocationAndMapCancellationOrExpiry(bool separator, bool compiled, string operation, string phase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var pattern = separator ? @"a\s+b" : @"a.{0,200000}b";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
@@ -215,7 +216,7 @@ public sealed class Utf8OrderedWindowInvocationTests
             if (entered || phase == "confirmation" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
             if (phase == "validation") Assert.True(steps <= validationSteps);
             entered = true;
-            if (expire) Thread.Sleep(250); else source.Cancel();
+            if (expire) clock.Advance(250); else source.Cancel();
         });
         try
         {
@@ -284,6 +285,7 @@ public sealed class Utf8OrderedWindowInvocationTests
     [InlineData(true)]
     public void TerminalWindowCursorKeepsConstantWorkAndChecksTokenOrOriginalDeadline(bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var prepared = Prepared(new Utf8Regex(@"a\s+b", RegexOptions.CultureInvariant));
         using var source = new CancellationTokenSource();
         var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200)) : Utf8ExecutionDeadline.Infinite;
@@ -294,7 +296,7 @@ public sealed class Utf8OrderedWindowInvocationTests
         var terminalSteps = cursor.DebugInvocationSteps;
         for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
         Assert.InRange(cursor.DebugInvocationSteps - terminalSteps, 3UL, 6UL);
-        if (expire) Thread.Sleep(250); else source.Cancel();
+        if (expire) clock.Advance(250); else source.Cancel();
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);

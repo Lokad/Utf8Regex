@@ -28,6 +28,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     public void PublicValuesPollDuringValidationAndSearchAndMapOriginalFailure(
         string pattern, bool compiled, string operation, bool validationPhase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (pattern == "TARGET" ? RegexOptions.IgnoreCase : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
@@ -42,7 +43,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
             if (entered || !validationPhase && steps <= validationSteps) return;
             entered = true;
-            if (expire) Thread.Sleep(250);
+            if (expire) clock.Advance(250);
             else source.Cancel();
         });
         try
@@ -212,6 +213,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true, true)]
     public void RuntimeProjectionRetainsTheDeadlineUsedForDiscovery(bool reverse, bool folded)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var plan = Prepared(regex);
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "target");
@@ -223,7 +225,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         var runtime = Utf8LiteralCompiledEngineRuntime.Create(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (!entered && steps > searchSteps) { entered = true; Thread.Sleep(250); }
+            if (!entered && steps > searchSteps) { entered = true; clock.Advance(250); }
         });
         try
         {

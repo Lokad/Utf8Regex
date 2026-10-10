@@ -246,12 +246,13 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("(ab)\\1")]
     public void DeadlineAndTokenRemainActiveBetweenMovesAndAfterEof(string pattern)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var input = Encoding.UTF8.GetBytes("abc abab ab1d abc");
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(200));
         var cursor = regex.EnumerateMatchesFromUtf16Offset(input, 0);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
-        Thread.Sleep(250);
+        clock.Advance(250);
         var expired = false;
         try { _ = cursor.MoveNext(); }
         catch (RegexMatchTimeoutException exception)

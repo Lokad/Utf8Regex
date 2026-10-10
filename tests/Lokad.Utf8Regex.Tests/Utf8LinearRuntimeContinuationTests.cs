@@ -177,13 +177,14 @@ public sealed class Utf8LinearRuntimeContinuationTests
     [InlineData(true)]
     public void LongAtomsCheckDeadlineWhileTheyAreExecuting(bool loop)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var input = Enumerable.Repeat((byte)'a', 256 * 1024).ToArray();
         var step = loop ? Utf8ByteSafeLinearVerifierStep.LoopByte((byte)'a', 1, -1)
             : Utf8ByteSafeLinearVerifierStep.MatchText(input);
         var program = new Utf8ByteSafeLinearVerifierProgram([step, Utf8ByteSafeLinearVerifierStep.Accept()]);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(200), CancellationToken.None);
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; Thread.Sleep(250); };
+        invocation.CheckpointHook = _ => { entered = true; clock.Advance(250); };
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => program.TryMatch(input, 0, ref invocation, out _, out _, out _));
         Assert.True(entered);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);

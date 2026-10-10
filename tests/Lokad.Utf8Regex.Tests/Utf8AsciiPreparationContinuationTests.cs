@@ -161,12 +161,13 @@ public sealed class Utf8AsciiPreparationContinuationTests
     [InlineData(true)]
     public void DescentCancellationAndDeadlineReleasePendingFrames(bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var compiler = Compiler();
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); };
+        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(250); else source.Cancel(); };
         SetInvocation(compiler, invocation);
         var failure = Assert.Throws<TargetInvocationException>(() => Lower(compiler,
             Wrap(Text("a"), Utf8TreeNodeKind.Concatenate, 100), out _));

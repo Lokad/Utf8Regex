@@ -240,6 +240,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true, true)]
     public void PublicMoveNextPollsInsideNativeFamilyAfterConstruction(bool compiled, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
@@ -250,7 +251,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         {
             if (!armed || entered) return;
             entered = true;
-            if (expire) Thread.Sleep(250);
+            if (expire) clock.Advance(250);
             else source.Cancel();
         });
         try
@@ -309,6 +310,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [MemberData(nameof(InterruptedCases))]
     public void LongFamilyPhasesRetainOriginalTokenDeadlineAndCallerLease(bool reverse, string phase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var payload = Encoding.UTF8.GetBytes(new string('a', 200000));
         var plan = phase == "compare" ? Plan([payload, "needle"u8.ToArray()]) :
@@ -323,7 +325,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         {
             if (entered) return;
             entered = true;
-            if (expire) Thread.Sleep(250);
+            if (expire) clock.Advance(250);
             else source.Cancel();
         };
         var failed = false;
@@ -349,6 +351,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [MemberData(nameof(DeadlineOperations))]
     public void DeadlineAwarePublicFamilyOperationsExpireInsideLongDiscovery(string pattern, bool compiled, string operation)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
             TimeSpan.FromMilliseconds(200));
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
@@ -358,7 +361,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (!entered && steps > validationSteps) { entered = true; Thread.Sleep(250); }
+            if (!entered && steps > validationSteps) { entered = true; clock.Advance(250); }
         });
         try
         {
@@ -386,11 +389,12 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true, "match")]
     public void ValidationRetainsOriginalFamilyDeadlineUntilValueOperationFinishes(bool compiled, string operation)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
             TimeSpan.FromMilliseconds(200));
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(_ => { if (!entered) { entered = true; Thread.Sleep(250); } });
+        var session = Utf8SearchDiagnosticsSession.Start(_ => { if (!entered) { entered = true; clock.Advance(250); } });
         try
         {
             var timeout = Assert.Throws<RegexMatchTimeoutException>(() =>

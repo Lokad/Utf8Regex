@@ -272,6 +272,7 @@ public sealed class Utf8StructuralInvocationTests
     [MemberData(nameof(InterruptedOperations))]
     public void PublicStructuralPhasesRetainEntryTokenDeadlineAndMappedFailure(bool method, bool compiled, string operation, string phase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var pattern = method ? @"\b(?:LogError|LogWarning|LogInformation)\s*\(" : @"(?:get|set)[A-Z][A-Za-z0-9_]*";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
@@ -288,7 +289,7 @@ public sealed class Utf8StructuralInvocationTests
             if (entered || phase == "search" && steps <= validationSteps ||
                 phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
             entered = true;
-            if (expire) Thread.Sleep(250);
+            if (expire) clock.Advance(250);
             else source.Cancel();
         });
         try
@@ -487,6 +488,7 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(true)]
     public void CrLfCrossingEveryBlockBoundaryCannotSkipLineScanTokenOrDeadlineCheckpoints(bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var gap = string.Concat(Enumerable.Repeat(new string('x', 2047) + "\r\n", 200));
         var input = Encoding.UTF8.GetBytes("target" + gap + "end");
         var window = new PreparedWindowMatch(new(0, 6, 0), new(input.Length - 3, 3, 0));
@@ -494,7 +496,7 @@ public sealed class Utf8StructuralInvocationTests
         var invocation = new Utf8SliceInvocation(new(0, 0, 7), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var entered = false;
-        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); } };
+        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } };
         var accepted = false;
         void Run() => Utf8StructuralSearchExecutor.TrySatisfyWindowRequirements(input,
             [Utf8StructuralSearchStage.RequireWithinLineSpan(int.MaxValue)], window, ref invocation, out accepted);

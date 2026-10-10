@@ -153,6 +153,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     [MemberData(nameof(PhaseCases))]
     public void EnumerationEntryAndOneLongMoveCarryValidationSearchAndVerifierInterruption(bool method, bool compiled, string phase, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var pattern = method ? Patterns[2] : Patterns[0];
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
@@ -168,7 +169,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
                 phase == "verifier" && Utf8SearchDiagnosticsSession.Current!.VerifierInvocations == 0) return;
             if (phase == "validation") Assert.True(steps <= validation.Budget.Steps);
             entered = true;
-            if (expire) Thread.Sleep(250); else source.Cancel();
+            if (expire) clock.Advance(250); else source.Cancel();
         });
         try
         {
@@ -200,6 +201,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     [MemberData(nameof(LifetimeCases))]
     public void InterruptionBetweenAcceptedMatchesRetainsOriginalDeadlineTokenAndCurrent(string pattern, bool compiled, bool mixed, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
         var text = mixed ? "é😀 " + Texts[^1] : Texts[^1];
@@ -208,7 +210,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         var cursor = regex.EnumerateMatches(input, source.Token);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
-        if (expire) Thread.Sleep(250); else source.Cancel();
+        if (expire) clock.Advance(250); else source.Cancel();
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         if (expire) Assert.IsType<RegexMatchTimeoutException>(observed);
@@ -253,11 +255,12 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     [InlineData(true, true)]
     public void TimeBeforeFirstMoveCountsAgainstTheOriginalEntryDeadline(bool compiled, bool mixed)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex(Patterns[0], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), TimeSpan.FromMilliseconds(200));
         var text = mixed ? "é😀 getAlpha setBeta" : "getAlpha setBeta";
         var input = Encoding.UTF8.GetBytes(text);
         var cursor = regex.EnumerateMatches(input);
-        Thread.Sleep(250);
+        clock.Advance(250);
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         var timeout = Assert.IsType<RegexMatchTimeoutException>(observed);
@@ -272,6 +275,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
     [MemberData(nameof(TerminalCases))]
     public void TerminalCursorReplayUsesConstantWorkAndChecksOriginalTokenAndDeadline(bool compiled, bool matches, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex(Patterns[0], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(matches ? "getAlpha setBeta" : new string('x', 32000));
         using var source = new CancellationTokenSource();
@@ -284,7 +288,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         var terminal = cursor.DebugInvocationSteps;
         for (var i = 0; i < 3; i++) Assert.False(cursor.MoveNext());
         Assert.InRange(cursor.DebugInvocationSteps - terminal, 3UL, 6UL);
-        if (expire) Thread.Sleep(250); else source.Cancel();
+        if (expire) clock.Advance(250); else source.Cancel();
         Exception? observed = null;
         try { _ = cursor.MoveNext(); } catch (Exception exception) { observed = exception; }
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);

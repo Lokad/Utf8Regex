@@ -137,6 +137,7 @@ public sealed class Utf8SliceAssertionContinuationTests
     [Fact]
     public void DeadlineDuringUnwindKeepsItsAuthorityAndReturnsOwnedArrays()
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var program = Deep(65, repeats: true);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
@@ -149,7 +150,7 @@ public sealed class Utf8SliceAssertionContinuationTests
             if (!entered && invocation.Budget.PeakDepth >= baseline.Budget.PeakDepth)
             {
                 entered = true;
-                Thread.Sleep(250);
+                clock.Advance(250);
             }
         };
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>

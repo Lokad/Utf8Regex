@@ -123,13 +123,14 @@ public sealed class Utf8LazyDfaRuntimeTests
     [InlineData(true)]
     public void LongRuntimeChecksTokenAndDeadlineBeforePublishing(bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var program = RepeatedByte();
         var input = Enumerable.Repeat((byte)'a', 256 * 1024).ToArray();
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); };
+        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(250); else source.Cancel(); };
         if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => program.TryMatch(input, 0, ref invocation, out _, out _));
         else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => program.TryMatch(input, 0, ref invocation, out _, out _)).CancellationToken);
         Assert.True(entered);

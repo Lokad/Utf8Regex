@@ -96,13 +96,14 @@ public sealed class Utf8NativeProjectionInvocationTests
     [InlineData(true, true)]
     public void LongValidationAndProjectionPollOriginalTokenAndDeadline(bool project, bool expire)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var gap = Encoding.UTF8.GetBytes(new string('中', 160000));
         byte[] input = [.. gap, .. "abc"u8.ToArray()];
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         var entered = false;
-        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) Thread.Sleep(250); else source.Cancel(); } };
+        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } };
         var match = Utf8ValueMatch.NoMatch;
         var nextBytes = 0;
         var nextUnits = 0;
@@ -170,6 +171,7 @@ public sealed class Utf8NativeProjectionInvocationTests
     [InlineData(8)]
     public void NativeCursorProjectionRetainsItsAlreadyExpiredDeadline(int family)
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var pattern = family switch { 2 or 8 => "中", 3 or 4 => "target|other", 5 => "ta[rg]get", _ => "target" };
         var options = RegexOptions.CultureInvariant | (family is 1 or 4 or 7 ? RegexOptions.IgnoreCase : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
@@ -185,7 +187,7 @@ public sealed class Utf8NativeProjectionInvocationTests
             8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, false, true),
             _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, Utf8Validation.Validate(input), budget),
         };
-        Thread.Sleep(250);
+        clock.Advance(250);
         var expired = false;
         try { _ = cursor.MoveNext(); }
         catch (Utf8ExecutionDeadlineExpiredException) { expired = true; }
