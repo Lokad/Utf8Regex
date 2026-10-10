@@ -21,12 +21,16 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     private static readonly string[] Patterns = ["abc", "café", "", "foo|bar", "zoo|apple|cat", "a|z", "ab|ac",
         "aaaaa|bbbbb|ccccc", "abc|def|ghi|jkl", "中文词|日本人|韩国人", "中文|日本", "中|日", "😀|😃", "éé|öü",
         "foo(?=bar)", "中(?=文)", @"\b(?:foo|bar)\b", "foo|foobar", "a0x|a1y|b0x|b1y"];
-    public static IEnumerable<object[]> Shapes() => from pattern in Patterns from reverse in new[] { false, true }
-        select new object[] { pattern, reverse };
+    public static IEnumerable<object[]> Shapes() => from pattern in Patterns
+                                                    from reverse in new[] { false, true }
+                                                    select new object[] { pattern, reverse };
     public static IEnumerable<object[]> Cutoffs() => from pattern in new[] { "abc", "foo|bar", "中|日", "foo(?=bar)" }
-        from factory in new[] { false, true } from bytes in new[] { false, true } select new object[] { pattern, factory, bytes };
+                                                     from factory in new[] { false, true }
+                                                     from bytes in new[] { false, true }
+                                                     select new object[] { pattern, factory, bytes };
     public static IEnumerable<object[]> Depths() => from pattern in new[] { "abc", "foo|bar", "中文|日本", "foo(?=bar)" }
-        from depth in Enumerable.Range(0, 9) select new object[] { pattern, depth };
+                                                    from depth in Enumerable.Range(0, 9)
+                                                    select new object[] { pattern, depth };
 
     [Fact]
     public void TransferStateCoversEveryRuntimeAndCompositeFieldWithoutUnusedEnumerationState()
@@ -50,7 +54,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     public void SortedFirstByteStateBorrowsOnlyEligiblePayloadsAndDeclinesBeforeAcquisition(string pattern, bool reverse)
     {
         var plan = Plan(pattern);
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var runtime = Create(plan, reverse);
         var candidates = plan.SearchPlan.AlternateLiteralsUtf8;
         var eligible = !reverse && plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
@@ -68,7 +72,10 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
             Assert.Equal(expected.Select(v => v[0]).ToArray(), search.Values.ToArray());
             Assert.Equal(candidates.SequenceEqual(expected), ReferenceEquals(candidates, literals));
         }
-        Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth);
+        // Scalar/native payloads stay borrowed; an eligible emitted counter now
+        // retains its independently admitted runtime code capacity.
+        Assert.Equal(Field(runtime, "_emittedLiteralFamilyCounter") is not null, owner.Budget.Reserved > 0);
+        Assert.Equal(0ul, owner.Budget.Depth);
     }
 
     private static Utf8CompiledEngineRuntime Build(Utf8PreparedRegex plan, bool factory, Utf8VerifierRuntime verifier) => factory
@@ -80,16 +87,19 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     public void EveryRootAndFactoryCutoffPreservesBorrowedParentsAndSpentWork(string pattern, bool factory, bool bytes)
     {
         var plan = Plan(pattern); var verifier = Utf8VerifierRuntime.Create(plan);
-        ulong peak, work, loan;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        ulong peak, work, loan, slots;
+        // Emitted IL now shares the owner. Leave that axis funded while sweeping
+        // every byte/work cutoff; separate emission tests sweep instruction slots.
+        using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value)); _ = Build(plan, factory, verifier);
             peak = funded.Budget.PeakBytes - 112; work = funded.Budget.WorkSteps - 2; loan = funded.Budget.ReservedBytes;
+            slots = funded.Budget.Reserved;
         }
         var successes = 0;
         for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 112 + allowance : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 112 + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
             var error = Record.Exception(() => _ = Build(plan, factory, verifier));
@@ -99,11 +109,16 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
                 Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(0ul, owner.Budget.Reserved);
             }
-            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
+            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
+            if (error is null) Assert.Equal(slots, owner.Budget.Reserved);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
         }
-        Assert.Equal(1, successes);
+        // Tighter byte capacity may select smaller growth extents while still
+        // retaining exactly the same output. Work cutoffs have one exact success.
+        if (bytes) Assert.True(successes >= 1);
+        else Assert.Equal(1, successes);
     }
 
     [Theory]
@@ -111,9 +126,9 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     public void RootDepthDenialAndNestedFailureRestoreAllChildLoans(string pattern, int depth)
     {
         var plan = Plan(pattern); ulong required;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { _ = Create(plan, false); required = funded.Budget.PeakDepth; }
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
         var error = Record.Exception(() => _ = Create(plan, false));
         if ((ulong)depth < required)
@@ -150,7 +165,8 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OrdinaryAndCompiledFamiliesKeepScalarByteRangesAcrossPublicOperations(bool compiled)
     {
         foreach (var pattern in new[] { "foo|bar", "zoo|apple|cat", "中文词|日本人|韩国人", "😀|😃", "foo(?=bar)", "中(?=文)" })

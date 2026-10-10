@@ -19,6 +19,16 @@
 
 ## Development history
 
+- Dynamic-method emission now owns IL, label/fixup/local/token tables, dispatch
+  scratch, stack analysis and wrappers under the shared construction budget.
+  Structural class and kernel-lowering arrays use the same owner; borrowed
+  literals keep their existing loans. Managed runtime copies and complete
+  delegate state are admitted, including conservative serialized-IL instruction
+  capacity. Failures restore parent loans, and cancellation/deadline checks
+  retain the caller's authority through delegate publication. CLR/JIT metadata
+  and complete public resource/default/retained policies remain outside this
+  covered producer.
+
 - Byte-safe DFA construction now admits graph storage and descriptors into the
   parent construction budget. Pending NFA and closure frames share depth, and
   graph/proof work remains spent after optimizer declines. Shared resource

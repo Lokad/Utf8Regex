@@ -56,14 +56,22 @@ internal sealed class Utf8EmittedKernelMatcher
         Utf8PreparedRegex regexPlan,
         out Utf8EmittedKernelMatcher? matcher)
     {
-        matcher = null;
-        if (!Utf8EmittedKernelLowerer.TryLower(regexPlan, out var kernelPlan))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
+            matcher = null;
+            if (!Utf8EmittedKernelLowerer.TryLower(regexPlan, out var kernelPlan))
+            {
+                return false;
+            }
 
-        matcher = Create(kernelPlan);
-        return true;
+            matcher = Create(kernelPlan);
+            scope.Complete();
+            return true;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     internal static bool TryCreate(
@@ -71,14 +79,22 @@ internal sealed class Utf8EmittedKernelMatcher
         Utf8SearchPlan searchPlan,
         out Utf8EmittedKernelMatcher? matcher)
     {
-        matcher = null;
-        if (!Utf8EmittedKernelLowerer.TryLower(familyPlan, searchPlan, out var kernelPlan))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
+            matcher = null;
+            if (!Utf8EmittedKernelLowerer.TryLower(familyPlan, searchPlan, out var kernelPlan))
+            {
+                return false;
+            }
 
-        matcher = Create(kernelPlan);
-        return true;
+            matcher = Create(kernelPlan);
+            scope.Complete();
+            return true;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     private static Utf8EmittedKernelMatcher Create(Utf8EmittedKernelPlan plan)
@@ -90,7 +106,7 @@ internal sealed class Utf8EmittedKernelMatcher
             var search = plan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
                 ? PreparedByteSet.CreateOwned(plan.FindOptimization.AnchorBytes) : null;
             // The wrapper and byte set have explicit field-state admission.
-            // CLR/JIT method metadata and lowering still require separate qualification.
+            // CLR/JIT resolution metadata remains excluded; lowered managed payloads are admitted.
             var state = new ConstructionState(plan, search, CompileFindNext(plan), CompileCount(plan));
             var result = budget.AllocateObject(state, static value => new Utf8EmittedKernelMatcher(value));
             scope.Complete();
@@ -190,31 +206,37 @@ internal sealed class Utf8EmittedKernelMatcher
 
     private static FindNextDelegate CompileFindNext(Utf8EmittedKernelPlan plan)
     {
-        var dynamicMethod = new DynamicMethod(
-            $"Utf8Regex_Emit_{plan.Kind}_FindNext",
-            typeof(int),
-            [typeof(Utf8EmittedKernelMatcher), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int).MakeByRefType()],
-            typeof(Utf8EmittedKernelMatcher),
-            skipVisibility: false);
+        var name = plan.Kind switch
+        {
+            Utf8EmittedKernelKind.UpperWordIdentifierFamily => "Utf8Regex_Emit_UpperWordIdentifierFamily_FindNext",
+            Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix => "Utf8Regex_Emit_SharedPrefixAsciiWhitespaceSuffix_FindNext",
+            Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow => "Utf8Regex_Emit_OrderedAsciiWhitespaceLiteralWindow_FindNext",
+            _ => throw new InvalidOperationException("No emitted kernel name exists for the plan.")
+        };
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create(name, typeof(int), typeof(Utf8EmittedKernelMatcher),
+            typeof(Utf8EmittedKernelMatcher), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int).MakeByRefType());
 
-        EmitCore(dynamicMethod.GetILGenerator(), plan, forCount: false);
+        EmitCore(dynamicMethod, plan, forCount: false);
         return dynamicMethod.CreateDelegate<FindNextDelegate>();
     }
 
     private static CountDelegate CompileCount(Utf8EmittedKernelPlan plan)
     {
-        var dynamicMethod = new DynamicMethod(
-            $"Utf8Regex_Emit_{plan.Kind}_Count",
-            typeof(int),
-            [typeof(Utf8EmittedKernelMatcher), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedKernelMatcher),
-            skipVisibility: false);
+        var name = plan.Kind switch
+        {
+            Utf8EmittedKernelKind.UpperWordIdentifierFamily => "Utf8Regex_Emit_UpperWordIdentifierFamily_Count",
+            Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix => "Utf8Regex_Emit_SharedPrefixAsciiWhitespaceSuffix_Count",
+            Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow => "Utf8Regex_Emit_OrderedAsciiWhitespaceLiteralWindow_Count",
+            _ => throw new InvalidOperationException("No emitted kernel name exists for the plan.")
+        };
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create(name, typeof(int), typeof(Utf8EmittedKernelMatcher),
+            typeof(Utf8EmittedKernelMatcher), typeof(ReadOnlySpan<byte>));
 
-        EmitCore(dynamicMethod.GetILGenerator(), plan, forCount: true);
+        EmitCore(dynamicMethod, plan, forCount: true);
         return dynamicMethod.CreateDelegate<CountDelegate>();
     }
 
-    private static void EmitCore(ILGenerator il, Utf8EmittedKernelPlan plan, bool forCount)
+    private static void EmitCore(Utf8DynamicIlBuilder il, Utf8EmittedKernelPlan plan, bool forCount)
     {
         switch (plan.Kind)
         {
@@ -235,7 +257,7 @@ internal sealed class Utf8EmittedKernelMatcher
         }
     }
 
-    private static void EmitUpperWordIdentifierCore(ILGenerator il, Utf8EmittedKernelPlan plan, bool forCount)
+    private static void EmitUpperWordIdentifierCore(Utf8DynamicIlBuilder il, Utf8EmittedKernelPlan plan, bool forCount)
     {
         var emitter = new Utf8IlEmitter(il, s_getSpanLengthMethod, s_getSpanItemMethod);
         var offsetLocal = emitter.DeclareLocal<int>();
@@ -246,7 +268,7 @@ internal sealed class Utf8EmittedKernelMatcher
         var separatorCountLocal = emitter.DeclareLocal<int>();
         var valueLocal = emitter.DeclareLocal<byte>();
         var relativeIndexLocal = emitter.DeclareLocal<int>();
-        var countLocal = forCount ? emitter.DeclareLocal<int>() : null;
+        Utf8IlLocal? countLocal = forCount ? emitter.DeclareLocal<int>() : null;
 
         var searchLoopLabel = emitter.DefineLabel();
         var continueScanLabel = emitter.DefineLabel();
@@ -400,13 +422,13 @@ internal sealed class Utf8EmittedKernelMatcher
     private static void EmitUpperWordIdentifierPrefixDispatch(
         Utf8IlEmitter emitter,
         Utf8EmittedKernelPlan plan,
-        LocalBuilder anchorIndexLocal,
-        LocalBuilder matchIndexLocal,
-        LocalBuilder prefixLengthLocal,
-        LocalBuilder inputLengthLocal,
-        LocalBuilder valueLocal,
-        Label matchedLabel,
-        Label failureLabel)
+        Utf8IlLocal anchorIndexLocal,
+        Utf8IlLocal matchIndexLocal,
+        Utf8IlLocal prefixLengthLocal,
+        Utf8IlLocal inputLengthLocal,
+        Utf8IlLocal valueLocal,
+        Utf8IlLabel matchedLabel,
+        Utf8IlLabel failureLabel)
     {
         var anchorOffset = plan.FindOptimization.AnchorOffset;
         var prefixes = plan.Prefixes;
@@ -449,11 +471,11 @@ internal sealed class Utf8EmittedKernelMatcher
         Utf8IlEmitter emitter,
         byte[] prefix,
         int anchorOffset,
-        LocalBuilder matchIndexLocal,
-        LocalBuilder prefixLengthLocal,
-        LocalBuilder inputLengthLocal,
-        Label successLabel,
-        Label failureLabel)
+        Utf8IlLocal matchIndexLocal,
+        Utf8IlLocal prefixLengthLocal,
+        Utf8IlLocal inputLengthLocal,
+        Utf8IlLabel successLabel,
+        Utf8IlLabel failureLabel)
     {
         var passLengthLabel = emitter.DefineLabel();
         var suffixMatchedLabel = emitter.DefineLabel();
@@ -472,7 +494,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.Emit(OpCodes.Br, successLabel);
     }
 
-    private static void EmitSharedPrefixSuffixCore(ILGenerator il, Utf8EmittedKernelPlan plan, bool forCount)
+    private static void EmitSharedPrefixSuffixCore(Utf8DynamicIlBuilder il, Utf8EmittedKernelPlan plan, bool forCount)
     {
         var emitter = new Utf8IlEmitter(il, s_getSpanLengthMethod, s_getSpanItemMethod);
         var offsetLocal = emitter.DeclareLocal<int>();
@@ -483,7 +505,7 @@ internal sealed class Utf8EmittedKernelMatcher
         var discriminatorIndexLocal = emitter.DeclareLocal<int>();
         var indexLocal = emitter.DeclareLocal<int>();
         var valueLocal = emitter.DeclareLocal<byte>();
-        var countLocal = forCount ? emitter.DeclareLocal<int>() : null;
+        Utf8IlLocal? countLocal = forCount ? emitter.DeclareLocal<int>() : null;
 
         var searchLoopLabel = emitter.DefineLabel();
         var notFoundLabel = emitter.DefineLabel();
@@ -586,14 +608,14 @@ internal sealed class Utf8EmittedKernelMatcher
 
         void EmitSharedPrefixSuffixMatcher(
             Utf8IlEmitter e,
-            LocalBuilder matchIndex,
-            LocalBuilder matchedLength,
-            LocalBuilder inputLength,
-            LocalBuilder discriminatorIndex,
-            LocalBuilder index,
-            LocalBuilder value,
-            Label success,
-            Label failure)
+            Utf8IlLocal matchIndex,
+            Utf8IlLocal matchedLength,
+            Utf8IlLocal inputLength,
+            Utf8IlLocal discriminatorIndex,
+            Utf8IlLocal index,
+            Utf8IlLocal value,
+            Utf8IlLabel success,
+            Utf8IlLabel failure)
         {
             var pastLeadingBoundaryLabel = e.DefineLabel();
 
@@ -665,12 +687,12 @@ internal sealed class Utf8EmittedKernelMatcher
         Utf8IlEmitter emitter,
         Utf8EmittedKernelPlan plan,
         byte[] literal,
-        LocalBuilder matchIndexLocal,
-        LocalBuilder inputLengthLocal,
-        LocalBuilder indexLocal,
-        LocalBuilder valueLocal,
-        Label successLabel,
-        Label failureLabel)
+        Utf8IlLocal matchIndexLocal,
+        Utf8IlLocal inputLengthLocal,
+        Utf8IlLocal indexLocal,
+        Utf8IlLocal valueLocal,
+        Utf8IlLabel successLabel,
+        Utf8IlLabel failureLabel)
     {
         var commonPrefixLength = plan.FindOptimization.CommonPrefix.Length;
 
@@ -700,7 +722,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.Emit(OpCodes.Br, whitespaceLoopLabel);
     }
 
-    private static void EmitOrderedAsciiWhitespaceLiteralWindowCore(ILGenerator il, Utf8EmittedKernelPlan plan, bool forCount)
+    private static void EmitOrderedAsciiWhitespaceLiteralWindowCore(Utf8DynamicIlBuilder il, Utf8EmittedKernelPlan plan, bool forCount)
     {
         if (plan.MaxGap > 0)
         {
@@ -718,7 +740,7 @@ internal sealed class Utf8EmittedKernelMatcher
         var matchedLengthLocal = emitter.DeclareLocal<int>();
         var inputLengthLocal = emitter.DeclareLocal<int>();
         var valueLocal = emitter.DeclareLocal<byte>();
-        var countLocal = forCount ? emitter.DeclareLocal<int>() : null;
+        Utf8IlLocal? countLocal = forCount ? emitter.DeclareLocal<int>() : null;
 
         var searchLoopLabel = emitter.DefineLabel();
         var notFoundLabel = emitter.DefineLabel();
@@ -887,7 +909,7 @@ internal sealed class Utf8EmittedKernelMatcher
         }
     }
 
-    private static void EmitBoundedOrderedAsciiWhitespaceLiteralWindowCore(ILGenerator il, Utf8EmittedKernelPlan plan, bool forCount)
+    private static void EmitBoundedOrderedAsciiWhitespaceLiteralWindowCore(Utf8DynamicIlBuilder il, Utf8EmittedKernelPlan plan, bool forCount)
     {
         var emitter = new Utf8IlEmitter(il, s_getSpanLengthMethod, s_getSpanItemMethod);
         var searchFromLocal = emitter.DeclareLocal<int>();
@@ -900,7 +922,7 @@ internal sealed class Utf8EmittedKernelMatcher
         var indexLocal = emitter.DeclareLocal<int>();
         var valueLocal = emitter.DeclareLocal<byte>();
         var matchedLengthLocal = emitter.DeclareLocal<int>();
-        var countLocal = forCount ? emitter.DeclareLocal<int>() : null;
+        Utf8IlLocal? countLocal = forCount ? emitter.DeclareLocal<int>() : null;
 
         var searchLoopLabel = emitter.DefineLabel();
         var leadingSearchLoopLabel = emitter.DefineLabel();
@@ -1053,7 +1075,7 @@ internal sealed class Utf8EmittedKernelMatcher
         }
     }
 
-    private static LocalBuilder RequireCountLocal(LocalBuilder? countLocal)
+    private static Utf8IlLocal RequireCountLocal(Utf8IlLocal? countLocal)
     {
         return countLocal ?? throw new InvalidOperationException("A count program requires a count local.");
     }

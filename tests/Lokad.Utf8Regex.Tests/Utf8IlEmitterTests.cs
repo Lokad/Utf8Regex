@@ -19,13 +19,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanLoadSpanLengthAndConstants()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_LengthPlusConstant",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_LengthPlusConstant", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
 
         il.LoadInputLength();
         il.LdcI4(7);
@@ -39,13 +34,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanLoadInputByteWithOffset()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_LoadInputByteOffset",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_LoadInputByteOffset", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var indexLocal = il.DeclareLocal<int>();
 
         il.LoadArg(2);
@@ -60,13 +50,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanBranchOnAsciiClassifications()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_ClassifyAsciiByte",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_ClassifyAsciiByte", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var indexLocal = il.DeclareLocal<int>();
         var valueLocal = il.DeclareLocal<byte>();
         var whitespaceLabel = il.DefineLabel();
@@ -114,13 +99,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanEnsureAvailableAndCompareLiteral()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_EnsureAvailableLiteral",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_EnsureAvailableLiteral", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var indexLocal = il.DeclareLocal<int>();
         var lengthLocal = il.DeclareLocal<int>();
         var enoughLabel = il.DefineLabel();
@@ -153,13 +133,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanAddToLocalAndStoreDifference()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_AddToLocalDifference",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_AddToLocalDifference", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var leftLocal = il.DeclareLocal<int>();
         var rightLocal = il.DeclareLocal<int>();
         var diffLocal = il.DeclareLocal<int>();
@@ -180,13 +155,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanDispatchOnByteValues()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_ByteDispatch",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_ByteDispatch", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var indexLocal = il.DeclareLocal<int>();
         var valueLocal = il.DeclareLocal<byte>();
         var aLabel = il.DefineLabel();
@@ -220,13 +190,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanClampAndStoreDerivedLocals()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_ClampAndDerivedLocals",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_ClampAndDerivedLocals", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var sourceLocal = il.DeclareLocal<int>();
         var leftLocal = il.DeclareLocal<int>();
         var rightLocal = il.DeclareLocal<int>();
@@ -248,13 +213,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanBranchOnLocalComparisons()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_LocalComparisonBranch",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_LocalComparisonBranch", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var leftLocal = il.DeclareLocal<int>();
         var rightLocal = il.DeclareLocal<int>();
         var lessLabel = il.DefineLabel();
@@ -292,13 +252,8 @@ public sealed class Utf8IlEmitterTests
     [Fact]
     public void Utf8IlEmitterCanClassifyAsciiNewlines()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_Test_NewlineClassification",
-            typeof(int),
-            [typeof(object), typeof(ReadOnlySpan<byte>), typeof(int)],
-            typeof(Utf8IlEmitterTests),
-            skipVisibility: false);
-        var il = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_Test_NewlineClassification", typeof(int), typeof(Utf8IlEmitterTests), typeof(object), typeof(ReadOnlySpan<byte>), typeof(int));
+        var il = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod);
         var indexLocal = il.DeclareLocal<int>();
         var valueLocal = il.DeclareLocal<byte>();
         var newlineLabel = il.DefineLabel();

@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Search;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -50,20 +51,26 @@ internal sealed class Utf8EmittedDeterministicMatcher
     internal static bool TryCreate(Utf8StructuralLinearProgram program, out Utf8EmittedDeterministicMatcher? matcher)
     {
         matcher = null;
-        if (!Utf8EmitStructuralCompiler.CanCompile(program))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
+            if (!Utf8EmitStructuralCompiler.CanCompile(program))
+            {
+                return false;
+            }
 
-        var deterministicProgram = program.DeterministicProgram;
-        var charClasses = CollectCharClasses(deterministicProgram);
-        var findNext = Utf8EmitStructuralCompiler.CompileFindNext(program, charClasses);
-        matcher = new Utf8EmittedDeterministicMatcher(
-            findNext,
-            deterministicProgram.SearchLiterals[0],
-            charClasses,
-            deterministicProgram.IgnoreCase);
-        return true;
+            var deterministicProgram = program.DeterministicProgram;
+            var charClasses = CollectCharClasses(deterministicProgram);
+            var findNext = Utf8EmitStructuralCompiler.CompileFindNext(program, charClasses);
+            matcher = budget.AllocateObject((findNext, literal: deterministicProgram.SearchLiterals[0],
+                charClasses, ignoreCase: deterministicProgram.IgnoreCase), static state =>
+                new Utf8EmittedDeterministicMatcher(state.findNext, state.literal, state.charClasses, state.ignoreCase));
+            scope.Complete();
+            return true;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     internal int FindNext(ReadOnlySpan<byte> input, int startIndex, out int matchedLength) => _findNext(this, input, startIndex, out matchedLength);
@@ -89,24 +96,30 @@ internal sealed class Utf8EmittedDeterministicMatcher
 
     private static AsciiCharClass[] CollectCharClasses(Utf8AsciiDeterministicProgram program)
     {
-        var classes = new List<AsciiCharClass>();
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        using var classes = Utf8ConstructionBuffer<AsciiCharClass>.Create(budget);
+        using var unique = Utf8ConstructionMap<AsciiCharClass, bool>.Create(budget, EqualityComparer<AsciiCharClass>.Default);
         foreach (var check in program.FixedWidthChecks)
         {
-            if (!check.CharClass.IsEmpty)
+            budget.ChargeWork(1);
+            if (!check.CharClass.IsEmpty && !unique.ContainsKey(check.CharClass))
             {
+                unique.Add(check.CharClass, true);
                 classes.Add(check.CharClass);
             }
         }
 
         foreach (var step in program.Steps)
         {
-            if (!step.CharClass.IsEmpty)
+            budget.ChargeWork(1);
+            if (!step.CharClass.IsEmpty && !unique.ContainsKey(step.CharClass))
             {
+                unique.Add(step.CharClass, true);
                 classes.Add(step.CharClass);
             }
         }
 
-        return [.. classes.Distinct()];
+        return classes.Take();
     }
 
     private static int FindSearchLiteral(Utf8EmittedDeterministicMatcher matcher, ReadOnlySpan<byte> input, int searchFrom)
@@ -147,6 +160,7 @@ internal sealed class Utf8EmittedDeterministicMatcher
 
             foreach (var check in program.DeterministicProgram.FixedWidthChecks)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (check.Kind is not
                     (Utf8AsciiDeterministicFixedWidthCheckKind.Literal or
                      Utf8AsciiDeterministicFixedWidthCheckKind.AnyByte or
@@ -165,15 +179,10 @@ internal sealed class Utf8EmittedDeterministicMatcher
         {
             var deterministicProgram = program.DeterministicProgram;
             var fixedWidthChecks = deterministicProgram.FixedWidthChecks;
-            var charClassIndexes = CreateCharClassIndexMap(charClasses);
-            var dynamicMethod = new DynamicMethod(
-                "Utf8Regex_EmitDeterministicFindNext",
-                typeof(int),
-                [typeof(Utf8EmittedDeterministicMatcher), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int).MakeByRefType()],
-                typeof(Utf8EmittedDeterministicMatcher),
-                skipVisibility: false);
+            using var charClassIndexes = CreateCharClassIndexMap(charClasses);
+            using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitDeterministicFindNext", typeof(int), typeof(Utf8EmittedDeterministicMatcher), typeof(Utf8EmittedDeterministicMatcher), typeof(ReadOnlySpan<byte>), typeof(int), typeof(int).MakeByRefType());
 
-            var il = dynamicMethod.GetILGenerator();
+            var il = dynamicMethod;
             var searchFromLocal = il.DeclareLocal(typeof(int));
             var relativeLocal = il.DeclareLocal(typeof(int));
             var absoluteAnchorLocal = il.DeclareLocal(typeof(int));
@@ -238,6 +247,7 @@ internal sealed class Utf8EmittedDeterministicMatcher
 
             for (var i = 0; i < fixedWidthChecks.Length; i++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 var check = fixedWidthChecks[i];
                 var continueLabel = il.DefineLabel();
 
@@ -322,18 +332,23 @@ internal sealed class Utf8EmittedDeterministicMatcher
             return dynamicMethod.CreateDelegate<FindNextDelegate>();
         }
 
-        private static Dictionary<AsciiCharClass, int> CreateCharClassIndexMap(AsciiCharClass[] charClasses)
+        private static Utf8ConstructionMap<AsciiCharClass, int> CreateCharClassIndexMap(AsciiCharClass[] charClasses)
         {
-            var map = new Dictionary<AsciiCharClass, int>();
-            for (var i = 0; i < charClasses.Length; i++)
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            var map = Utf8ConstructionMap<AsciiCharClass, int>.Create(budget, EqualityComparer<AsciiCharClass>.Default);
+            try
             {
-                map[charClasses[i]] = i;
+                for (var i = 0; i < charClasses.Length; i++)
+                {
+                    budget.ChargeWork(1);
+                    map[charClasses[i]] = i;
+                }
+                return map;
             }
-
-            return map;
+            catch { map.Dispose(); throw; }
         }
 
-        private static void EmitLdcI4(ILGenerator il, int value)
+        private static void EmitLdcI4(Utf8DynamicIlBuilder il, int value)
         {
             switch (value)
             {

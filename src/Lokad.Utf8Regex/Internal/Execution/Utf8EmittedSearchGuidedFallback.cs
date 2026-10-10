@@ -39,17 +39,22 @@ internal sealed class Utf8EmittedSearchGuidedFallback
     internal static bool TryCreate(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, out Utf8EmittedSearchGuidedFallback? backend)
     {
         backend = null;
-        if (!Utf8CompiledBackendCapability.CanUseEmittedSearchGuidedFallback(regexPlan))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
+            if (!Utf8CompiledBackendCapability.CanUseEmittedSearchGuidedFallback(regexPlan))
+            {
+                return false;
+            }
 
-        backend = new Utf8EmittedSearchGuidedFallback(
-            regexPlan.SearchPlan,
-            verifierRuntime,
-            CompileIsMatch(),
-            CompileCount());
-        return true;
+            backend = budget.AllocateObject((search: regexPlan.SearchPlan, verifierRuntime, isMatch: CompileIsMatch(), count: CompileCount()),
+                static state => new Utf8EmittedSearchGuidedFallback(state.search, state.verifierRuntime, state.isMatch, state.count));
+            scope.Complete();
+            return true;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     internal bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation) => _isMatch(this, input, validation, ref invocation);
@@ -85,14 +90,9 @@ internal sealed class Utf8EmittedSearchGuidedFallback
 
     private static IsMatchDelegate CompileIsMatch()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitSearchGuidedFallbackIsMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedSearchGuidedFallback), typeof(ReadOnlySpan<byte>), typeof(Utf8ValidationResult), typeof(Utf8SliceInvocation).MakeByRefType()],
-            typeof(Utf8EmittedSearchGuidedFallback),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitSearchGuidedFallbackIsMatch", typeof(bool), typeof(Utf8EmittedSearchGuidedFallback), typeof(Utf8EmittedSearchGuidedFallback), typeof(ReadOnlySpan<byte>), typeof(Utf8ValidationResult), typeof(Utf8SliceInvocation).MakeByRefType());
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var verificationLocal = il.DeclareLocal(typeof(Utf8ScalarVerificationResult));
 
         il.Emit(OpCodes.Ldarg_0);
@@ -109,14 +109,9 @@ internal sealed class Utf8EmittedSearchGuidedFallback
 
     private static CountDelegate CompileCount()
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitSearchGuidedFallbackCount",
-            typeof(int),
-            [typeof(Utf8EmittedSearchGuidedFallback), typeof(ReadOnlySpan<byte>), typeof(Utf8ValidationResult), typeof(Utf8SliceInvocation).MakeByRefType()],
-            typeof(Utf8EmittedSearchGuidedFallback),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitSearchGuidedFallbackCount", typeof(int), typeof(Utf8EmittedSearchGuidedFallback), typeof(Utf8EmittedSearchGuidedFallback), typeof(ReadOnlySpan<byte>), typeof(Utf8ValidationResult), typeof(Utf8SliceInvocation).MakeByRefType());
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var verificationLocal = il.DeclareLocal(typeof(Utf8ScalarVerificationResult));
         var countLocal = il.DeclareLocal(typeof(int));
         var startIndexLocal = il.DeclareLocal(typeof(int));

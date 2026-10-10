@@ -33,20 +33,31 @@ internal sealed class Utf8EmittedWholeMatcher
         bool allowTrailingNewline,
         out Utf8EmittedWholeMatcher? matcher)
     {
-        matcher = null;
-        if (!CanCreate(plan))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
+            matcher = null;
+            if (!CanCreate(plan))
+            {
+                return false;
+            }
 
-        var compiled = Compile(plan, allowTrailingNewline);
-        if (!Validate(compiled))
+            var compiled = Compile(plan, allowTrailingNewline);
+            if (!Validate(compiled))
+            {
+                return false;
+            }
+
+            matcher = budget.AllocateObject(compiled, static value => new Utf8EmittedWholeMatcher(value));
+            scope.Complete();
+            return true;
+        }
+        finally
         {
-            return false;
+            budget.LeaveDepth();
         }
-
-        matcher = new Utf8EmittedWholeMatcher(compiled);
-        return true;
     }
 
     internal static bool TryCreate(
@@ -54,101 +65,107 @@ internal sealed class Utf8EmittedWholeMatcher
         bool allowTrailingNewline,
         out Utf8EmittedWholeMatcher? matcher)
     {
-        matcher = null;
-        if (!plan.HasValue ||
-            plan.SecondFieldMinCount == 0 ||
-            plan.ThirdFieldMinCount == 0 ||
-            plan.FirstFieldMaxCount < plan.FirstFieldMinCount ||
-            plan.SecondFieldMaxCount < plan.SecondFieldMinCount ||
-            plan.ThirdFieldMaxCount < plan.ThirdFieldMinCount)
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
-
-        var candidateCount =
-            (plan.FirstFieldMaxCount - plan.FirstFieldMinCount + 1) *
-            (plan.SecondFieldMaxCount - plan.SecondFieldMinCount + 1) *
-            (plan.ThirdFieldMaxCount - plan.ThirdFieldMinCount + 1);
-        var maximumLength =
-            plan.FirstFieldMaxCount +
-            plan.SecondFieldMaxCount +
-            plan.ThirdFieldMaxCount +
-            2;
-        if (candidateCount > 32 || maximumLength > 64)
-        {
-            return false;
-        }
-
-        var compiled = CompileBoundedDate();
-        if (!Validate(compiled))
-        {
-            return false;
-        }
-
-        matcher = new Utf8EmittedWholeMatcher(compiled);
-        return true;
-
-        MatchDelegate CompileBoundedDate()
-        {
-            var dynamicMethod = new DynamicMethod(
-                "Utf8Regex_EmitAnchoredBoundedDateMatch",
-                typeof(int),
-                [typeof(ReadOnlySpan<byte>)],
-                typeof(Utf8EmittedWholeMatcher),
-                skipVisibility: false);
-
-            var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
-            var inputLengthLocal = emitter.DeclareLocal<int>();
-            var effectiveLengthLocal = emitter.DeclareLocal<int>();
-            var zeroIndexLocal = emitter.DeclareLocal<int>();
-            var valueLocal = emitter.DeclareLocal<byte>();
-
-            emitter.LoadInputLength();
-            emitter.StoreLocal(inputLengthLocal);
-            emitter.LoadLocal(inputLengthLocal);
-            emitter.StoreLocal(effectiveLengthLocal);
-            emitter.LdcI4(0);
-            emitter.StoreLocal(zeroIndexLocal);
-
-            if (allowTrailingNewline)
+            matcher = null;
+            if (!plan.HasValue ||
+                plan.SecondFieldMinCount == 0 ||
+                plan.ThirdFieldMinCount == 0 ||
+                plan.FirstFieldMaxCount < plan.FirstFieldMinCount ||
+                plan.SecondFieldMaxCount < plan.SecondFieldMinCount ||
+                plan.ThirdFieldMaxCount < plan.ThirdFieldMinCount)
             {
-                emitter.EmitTrimSingleTrailingLf(inputLengthLocal, effectiveLengthLocal, valueLocal);
+                return false;
             }
 
-            for (var firstCount = (int)plan.FirstFieldMaxCount; firstCount >= plan.FirstFieldMinCount; firstCount--)
+            var candidateCount =
+                (plan.FirstFieldMaxCount - plan.FirstFieldMinCount + 1) *
+                (plan.SecondFieldMaxCount - plan.SecondFieldMinCount + 1) *
+                (plan.ThirdFieldMaxCount - plan.ThirdFieldMinCount + 1);
+            var maximumLength =
+                plan.FirstFieldMaxCount +
+                plan.SecondFieldMaxCount +
+                plan.ThirdFieldMaxCount +
+                2;
+            if (candidateCount > 32 || maximumLength > 64)
             {
-                for (var secondCount = (int)plan.SecondFieldMaxCount; secondCount >= plan.SecondFieldMinCount; secondCount--)
+                return false;
+            }
+
+            var compiled = CompileBoundedDate();
+            if (!Validate(compiled))
+            {
+                return false;
+            }
+
+            matcher = budget.AllocateObject(compiled, static value => new Utf8EmittedWholeMatcher(value));
+            scope.Complete();
+            return true;
+
+            MatchDelegate CompileBoundedDate()
+            {
+                using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAnchoredBoundedDateMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
+
+                var emitter = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
+                var inputLengthLocal = emitter.DeclareLocal<int>();
+                var effectiveLengthLocal = emitter.DeclareLocal<int>();
+                var zeroIndexLocal = emitter.DeclareLocal<int>();
+                var valueLocal = emitter.DeclareLocal<byte>();
+
+                emitter.LoadInputLength();
+                emitter.StoreLocal(inputLengthLocal);
+                emitter.LoadLocal(inputLengthLocal);
+                emitter.StoreLocal(effectiveLengthLocal);
+                emitter.LdcI4(0);
+                emitter.StoreLocal(zeroIndexLocal);
+
+                if (allowTrailingNewline)
                 {
-                    for (var thirdCount = (int)plan.ThirdFieldMaxCount; thirdCount >= plan.ThirdFieldMinCount; thirdCount--)
+                    emitter.EmitTrimSingleTrailingLf(inputLengthLocal, effectiveLengthLocal, valueLocal);
+                }
+
+                for (var firstCount = (int)plan.FirstFieldMaxCount; firstCount >= plan.FirstFieldMinCount; firstCount--)
+                {
+                    for (var secondCount = (int)plan.SecondFieldMaxCount; secondCount >= plan.SecondFieldMinCount; secondCount--)
                     {
-                        EmitCandidate(firstCount, secondCount, thirdCount);
+                        for (var thirdCount = (int)plan.ThirdFieldMaxCount; thirdCount >= plan.ThirdFieldMinCount; thirdCount--)
+                        {
+                            EmitCandidate(firstCount, secondCount, thirdCount);
+                        }
                     }
                 }
+
+                emitter.EmitReturnInt(-1);
+                return dynamicMethod.CreateDelegate<MatchDelegate>();
+
+                void EmitCandidate(int firstCount, int secondCount, int thirdCount)
+                {
+                    var candidateLength = firstCount + secondCount + thirdCount + 2;
+                    var nextCandidateLabel = emitter.DefineLabel();
+                    var matchingLengthLabel = emitter.DefineLabel();
+                    emitter.LoadLocal(effectiveLengthLocal);
+                    emitter.LdcI4(candidateLength);
+                    emitter.Emit(OpCodes.Beq, matchingLengthLabel);
+                    emitter.Emit(OpCodes.Br, nextCandidateLabel);
+                    emitter.MarkLabel(matchingLengthLabel);
+
+                    var offset = 0;
+                    EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, firstCount, nextCandidateLabel);
+                    EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.SeparatorByte, nextCandidateLabel);
+                    EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, secondCount, nextCandidateLabel);
+                    EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.SecondSeparatorByte, nextCandidateLabel);
+                    EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, thirdCount, nextCandidateLabel);
+                    emitter.EmitReturnInt(candidateLength);
+                    emitter.MarkLabel(nextCandidateLabel);
+                }
             }
-
-            emitter.EmitReturnInt(-1);
-            return dynamicMethod.CreateDelegate<MatchDelegate>();
-
-            void EmitCandidate(int firstCount, int secondCount, int thirdCount)
-            {
-                var candidateLength = firstCount + secondCount + thirdCount + 2;
-                var nextCandidateLabel = emitter.DefineLabel();
-                var matchingLengthLabel = emitter.DefineLabel();
-                emitter.LoadLocal(effectiveLengthLocal);
-                emitter.LdcI4(candidateLength);
-                emitter.Emit(OpCodes.Beq, matchingLengthLabel);
-                emitter.Emit(OpCodes.Br, nextCandidateLabel);
-                emitter.MarkLabel(matchingLengthLabel);
-
-                var offset = 0;
-                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, firstCount, nextCandidateLabel);
-                EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.SeparatorByte, nextCandidateLabel);
-                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, secondCount, nextCandidateLabel);
-                EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.SecondSeparatorByte, nextCandidateLabel);
-                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, thirdCount, nextCandidateLabel);
-                emitter.EmitReturnInt(candidateLength);
-                emitter.MarkLabel(nextCandidateLabel);
-            }
+        }
+        finally
+        {
+            budget.LeaveDepth();
         }
     }
 
@@ -157,224 +174,230 @@ internal sealed class Utf8EmittedWholeMatcher
         bool allowTrailingNewline,
         out Utf8EmittedWholeMatcher? matcher)
     {
-        matcher = null;
-        var candidateCount = (plan.HeadMaxCount - plan.HeadMinCount + 1) * 4;
-        var maximumLength = plan.HeadMaxCount + plan.TailCount + 4;
-        if (!plan.HasValue ||
-            candidateCount > 32 ||
-            maximumLength > 64 ||
-            !CanEmit(plan.HeadClass) ||
-            !CanEmit(plan.FirstRequiredClass) ||
-            !CanEmit(plan.OptionalClass) ||
-            !CanEmit(plan.SecondRequiredClass) ||
-            !CanEmit(plan.TailClass))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
-
-        var compiled = CompileOptionalField();
-        if (!Validate(compiled))
-        {
-            return false;
-        }
-
-        matcher = new Utf8EmittedWholeMatcher(compiled);
-        return true;
-
-        static bool CanEmit(AsciiCharClass charClass)
-        {
-            if (charClass.TryGetKnownPredicateKind(out var predicateKind) &&
-                predicateKind != AsciiCharClassPredicateKind.None)
+            matcher = null;
+            var candidateCount = (plan.HeadMaxCount - plan.HeadMinCount + 1) * 4;
+            var maximumLength = plan.HeadMaxCount + plan.TailCount + 4;
+            if (!plan.HasValue ||
+                candidateCount > 32 ||
+                maximumLength > 64 ||
+                !CanEmit(plan.HeadClass) ||
+                !CanEmit(plan.FirstRequiredClass) ||
+                !CanEmit(plan.OptionalClass) ||
+                !CanEmit(plan.SecondRequiredClass) ||
+                !CanEmit(plan.TailClass))
             {
-                return true;
+                return false;
             }
 
-            return charClass is { Negated: false } &&
-                charClass.Count is > 0 and <= MaxSmallPositiveSetSize;
-        }
-
-        MatchDelegate CompileOptionalField()
-        {
-            var dynamicMethod = new DynamicMethod(
-                "Utf8Regex_EmitAnchoredOptionalFieldMatch",
-                typeof(int),
-                [typeof(ReadOnlySpan<byte>)],
-                typeof(Utf8EmittedWholeMatcher),
-                skipVisibility: false);
-
-            var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
-            var inputLengthLocal = emitter.DeclareLocal<int>();
-            var effectiveLengthLocal = emitter.DeclareLocal<int>();
-            var zeroIndexLocal = emitter.DeclareLocal<int>();
-            var valueLocal = emitter.DeclareLocal<byte>();
-
-            emitter.LoadInputLength();
-            emitter.StoreLocal(inputLengthLocal);
-            emitter.LoadLocal(inputLengthLocal);
-            emitter.StoreLocal(effectiveLengthLocal);
-            emitter.LdcI4(0);
-            emitter.StoreLocal(zeroIndexLocal);
-
-            if (allowTrailingNewline)
+            var compiled = CompileOptionalField();
+            if (!Validate(compiled))
             {
-                emitter.EmitTrimSingleTrailingLf(inputLengthLocal, effectiveLengthLocal, valueLocal);
+                return false;
             }
 
-            for (var headCount = (int)plan.HeadMaxCount; headCount >= plan.HeadMinCount; headCount--)
+            matcher = budget.AllocateObject(compiled, static value => new Utf8EmittedWholeMatcher(value));
+            scope.Complete();
+            return true;
+
+            static bool CanEmit(AsciiCharClass charClass)
             {
-                EmitCandidate(headCount, hasOptionalClass: true, hasOptionalLiteral: true);
-                EmitCandidate(headCount, hasOptionalClass: true, hasOptionalLiteral: false);
-                EmitCandidate(headCount, hasOptionalClass: false, hasOptionalLiteral: true);
-                EmitCandidate(headCount, hasOptionalClass: false, hasOptionalLiteral: false);
-            }
-
-            emitter.EmitReturnInt(-1);
-            return dynamicMethod.CreateDelegate<MatchDelegate>();
-
-            void EmitCandidate(int headCount, bool hasOptionalClass, bool hasOptionalLiteral)
-            {
-                var candidateLength = headCount + plan.TailCount + 2 +
-                    (hasOptionalClass ? 1 : 0) +
-                    (hasOptionalLiteral ? 1 : 0);
-                var nextCandidateLabel = emitter.DefineLabel();
-                var matchingLengthLabel = emitter.DefineLabel();
-                emitter.LoadLocal(effectiveLengthLocal);
-                emitter.LdcI4(candidateLength);
-                emitter.Emit(OpCodes.Beq, matchingLengthLabel);
-                emitter.Emit(OpCodes.Br, nextCandidateLabel);
-                emitter.MarkLabel(matchingLengthLabel);
-
-                var offset = 0;
-                for (var i = 0; i < headCount; i++)
-                {
-                    EmitCharClass(plan.HeadClass, ref offset, nextCandidateLabel);
-                }
-
-                EmitCharClass(plan.FirstRequiredClass, ref offset, nextCandidateLabel);
-                if (hasOptionalClass)
-                {
-                    EmitCharClass(plan.OptionalClass, ref offset, nextCandidateLabel);
-                }
-
-                if (hasOptionalLiteral)
-                {
-                    EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.OptionalLiteral, nextCandidateLabel);
-                }
-
-                EmitCharClass(plan.SecondRequiredClass, ref offset, nextCandidateLabel);
-                for (var i = 0; i < plan.TailCount; i++)
-                {
-                    EmitCharClass(plan.TailClass, ref offset, nextCandidateLabel);
-                }
-
-                emitter.EmitReturnInt(candidateLength);
-                emitter.MarkLabel(nextCandidateLabel);
-            }
-
-            void EmitCharClass(AsciiCharClass charClass, ref int offset, Label failureLabel)
-            {
-                var matchedLabel = emitter.DefineLabel();
-                emitter.LoadInputByte(zeroIndexLocal, offset++);
-                emitter.StoreLocal(valueLocal);
                 if (charClass.TryGetKnownPredicateKind(out var predicateKind) &&
                     predicateKind != AsciiCharClassPredicateKind.None)
                 {
-                    emitter.EmitPredicateBranch(predicateKind, valueLocal, matchedLabel, failureLabel);
-                }
-                else
-                {
-                    emitter.EmitSmallPositiveSetBranch(charClass.GetPositiveMatchBytes(), valueLocal, matchedLabel, failureLabel);
+                    return true;
                 }
 
-                emitter.MarkLabel(matchedLabel);
+                return charClass is { Negated: false } &&
+                    charClass.Count is > 0 and <= MaxSmallPositiveSetSize;
+            }
+
+            MatchDelegate CompileOptionalField()
+            {
+                using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAnchoredOptionalFieldMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
+
+                var emitter = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
+                var inputLengthLocal = emitter.DeclareLocal<int>();
+                var effectiveLengthLocal = emitter.DeclareLocal<int>();
+                var zeroIndexLocal = emitter.DeclareLocal<int>();
+                var valueLocal = emitter.DeclareLocal<byte>();
+
+                emitter.LoadInputLength();
+                emitter.StoreLocal(inputLengthLocal);
+                emitter.LoadLocal(inputLengthLocal);
+                emitter.StoreLocal(effectiveLengthLocal);
+                emitter.LdcI4(0);
+                emitter.StoreLocal(zeroIndexLocal);
+
+                if (allowTrailingNewline)
+                {
+                    emitter.EmitTrimSingleTrailingLf(inputLengthLocal, effectiveLengthLocal, valueLocal);
+                }
+
+                for (var headCount = (int)plan.HeadMaxCount; headCount >= plan.HeadMinCount; headCount--)
+                {
+                    EmitCandidate(headCount, hasOptionalClass: true, hasOptionalLiteral: true);
+                    EmitCandidate(headCount, hasOptionalClass: true, hasOptionalLiteral: false);
+                    EmitCandidate(headCount, hasOptionalClass: false, hasOptionalLiteral: true);
+                    EmitCandidate(headCount, hasOptionalClass: false, hasOptionalLiteral: false);
+                }
+
+                emitter.EmitReturnInt(-1);
+                return dynamicMethod.CreateDelegate<MatchDelegate>();
+
+                void EmitCandidate(int headCount, bool hasOptionalClass, bool hasOptionalLiteral)
+                {
+                    var candidateLength = headCount + plan.TailCount + 2 +
+                        (hasOptionalClass ? 1 : 0) +
+                        (hasOptionalLiteral ? 1 : 0);
+                    var nextCandidateLabel = emitter.DefineLabel();
+                    var matchingLengthLabel = emitter.DefineLabel();
+                    emitter.LoadLocal(effectiveLengthLocal);
+                    emitter.LdcI4(candidateLength);
+                    emitter.Emit(OpCodes.Beq, matchingLengthLabel);
+                    emitter.Emit(OpCodes.Br, nextCandidateLabel);
+                    emitter.MarkLabel(matchingLengthLabel);
+
+                    var offset = 0;
+                    for (var i = 0; i < headCount; i++)
+                    {
+                        EmitCharClass(plan.HeadClass, ref offset, nextCandidateLabel);
+                    }
+
+                    EmitCharClass(plan.FirstRequiredClass, ref offset, nextCandidateLabel);
+                    if (hasOptionalClass)
+                    {
+                        EmitCharClass(plan.OptionalClass, ref offset, nextCandidateLabel);
+                    }
+
+                    if (hasOptionalLiteral)
+                    {
+                        EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.OptionalLiteral, nextCandidateLabel);
+                    }
+
+                    EmitCharClass(plan.SecondRequiredClass, ref offset, nextCandidateLabel);
+                    for (var i = 0; i < plan.TailCount; i++)
+                    {
+                        EmitCharClass(plan.TailClass, ref offset, nextCandidateLabel);
+                    }
+
+                    emitter.EmitReturnInt(candidateLength);
+                    emitter.MarkLabel(nextCandidateLabel);
+                }
+
+                void EmitCharClass(AsciiCharClass charClass, ref int offset, Utf8IlLabel failureLabel)
+                {
+                    var matchedLabel = emitter.DefineLabel();
+                    emitter.LoadInputByte(zeroIndexLocal, offset++);
+                    emitter.StoreLocal(valueLocal);
+                    if (charClass.TryGetKnownPredicateKind(out var predicateKind) &&
+                        predicateKind != AsciiCharClassPredicateKind.None)
+                    {
+                        emitter.EmitPredicateBranch(predicateKind, valueLocal, matchedLabel, failureLabel);
+                    }
+                    else
+                    {
+                        emitter.EmitSmallPositiveSetBranch(charClass, valueLocal, matchedLabel, failureLabel);
+                    }
+
+                    emitter.MarkLabel(matchedLabel);
+                }
             }
         }
+        finally { budget.LeaveDepth(); }
     }
 
     internal static bool TryCreate(
         AsciiSimplePatternRepeatedDigitGroupPlan plan,
         out Utf8EmittedWholeMatcher? matcher)
     {
-        matcher = null;
-        if (!plan.HasValue ||
-            plan.TrailingMaxDigits < plan.TrailingMinDigits ||
-            plan.RepeatedGroupCount > 4 ||
-            plan.GroupDigitCount > 4 ||
-            plan.TrailingMaxDigits > 4 ||
-            plan.SeparatorBytes.Length is 0 or > MaxSmallPositiveSetSize)
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
-
-        var candidateCount = plan.TrailingMaxDigits - plan.TrailingMinDigits + 1;
-        if (candidateCount > 32 || plan.MaximumLength > 64)
-        {
-            return false;
-        }
-
-        var compiled = CompileRepeatedDigitGroup();
-        if (!Validate(compiled))
-        {
-            return false;
-        }
-
-        matcher = new Utf8EmittedWholeMatcher(compiled);
-        return true;
-
-        MatchDelegate CompileRepeatedDigitGroup()
-        {
-            var dynamicMethod = new DynamicMethod(
-                "Utf8Regex_EmitRepeatedDigitGroupMatch",
-                typeof(int),
-                [typeof(ReadOnlySpan<byte>)],
-                typeof(Utf8EmittedWholeMatcher),
-                skipVisibility: false);
-
-            var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
-            var inputLengthLocal = emitter.DeclareLocal<int>();
-            var zeroIndexLocal = emitter.DeclareLocal<int>();
-            var valueLocal = emitter.DeclareLocal<byte>();
-
-            emitter.LoadInputLength();
-            emitter.StoreLocal(inputLengthLocal);
-            emitter.LdcI4(0);
-            emitter.StoreLocal(zeroIndexLocal);
-
-            for (var trailingCount = (int)plan.TrailingMaxDigits; trailingCount >= plan.TrailingMinDigits; trailingCount--)
+            matcher = null;
+            if (!plan.HasValue ||
+                plan.TrailingMaxDigits < plan.TrailingMinDigits ||
+                plan.RepeatedGroupCount > 4 ||
+                plan.GroupDigitCount > 4 ||
+                plan.TrailingMaxDigits > 4 ||
+                plan.SeparatorBytes.Length is 0 or > MaxSmallPositiveSetSize)
             {
-                var candidateLength = plan.RepeatedGroupCount * (plan.GroupDigitCount + 1) + trailingCount;
-                var nextCandidateLabel = emitter.DefineLabel();
-                var matchingLengthLabel = emitter.DefineLabel();
-                emitter.LoadLocal(inputLengthLocal);
-                emitter.LdcI4(candidateLength);
-                emitter.Emit(OpCodes.Beq, matchingLengthLabel);
-                emitter.Emit(OpCodes.Br, nextCandidateLabel);
-                emitter.MarkLabel(matchingLengthLabel);
+                return false;
+            }
 
-                var offset = 0;
-                for (var group = 0; group < plan.RepeatedGroupCount; group++)
+            var candidateCount = plan.TrailingMaxDigits - plan.TrailingMinDigits + 1;
+            if (candidateCount > 32 || plan.MaximumLength > 64)
+            {
+                return false;
+            }
+
+            var compiled = CompileRepeatedDigitGroup();
+            if (!Validate(compiled))
+            {
+                return false;
+            }
+
+            matcher = budget.AllocateObject(compiled, static value => new Utf8EmittedWholeMatcher(value));
+            scope.Complete();
+            return true;
+
+            MatchDelegate CompileRepeatedDigitGroup()
+            {
+                using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitRepeatedDigitGroupMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
+
+                var emitter = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
+                var inputLengthLocal = emitter.DeclareLocal<int>();
+                var zeroIndexLocal = emitter.DeclareLocal<int>();
+                var valueLocal = emitter.DeclareLocal<byte>();
+
+                emitter.LoadInputLength();
+                emitter.StoreLocal(inputLengthLocal);
+                emitter.LdcI4(0);
+                emitter.StoreLocal(zeroIndexLocal);
+
+                for (var trailingCount = (int)plan.TrailingMaxDigits; trailingCount >= plan.TrailingMinDigits; trailingCount--)
                 {
-                    EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, plan.GroupDigitCount, nextCandidateLabel);
-                    EmitSeparator(ref offset, nextCandidateLabel);
+                    var candidateLength = plan.RepeatedGroupCount * (plan.GroupDigitCount + 1) + trailingCount;
+                    var nextCandidateLabel = emitter.DefineLabel();
+                    var matchingLengthLabel = emitter.DefineLabel();
+                    emitter.LoadLocal(inputLengthLocal);
+                    emitter.LdcI4(candidateLength);
+                    emitter.Emit(OpCodes.Beq, matchingLengthLabel);
+                    emitter.Emit(OpCodes.Br, nextCandidateLabel);
+                    emitter.MarkLabel(matchingLengthLabel);
+
+                    var offset = 0;
+                    for (var group = 0; group < plan.RepeatedGroupCount; group++)
+                    {
+                        EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, plan.GroupDigitCount, nextCandidateLabel);
+                        EmitSeparator(ref offset, nextCandidateLabel);
+                    }
+
+                    EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, trailingCount, nextCandidateLabel);
+                    emitter.EmitReturnInt(candidateLength);
+                    emitter.MarkLabel(nextCandidateLabel);
                 }
 
-                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, trailingCount, nextCandidateLabel);
-                emitter.EmitReturnInt(candidateLength);
-                emitter.MarkLabel(nextCandidateLabel);
-            }
+                emitter.EmitReturnInt(-1);
+                return dynamicMethod.CreateDelegate<MatchDelegate>();
 
-            emitter.EmitReturnInt(-1);
-            return dynamicMethod.CreateDelegate<MatchDelegate>();
-
-            void EmitSeparator(ref int offset, Label failureLabel)
-            {
-                var matchedLabel = emitter.DefineLabel();
-                emitter.LoadInputByte(zeroIndexLocal, offset++);
-                emitter.StoreLocal(valueLocal);
-                emitter.EmitSmallPositiveSetBranch(plan.SeparatorBytes, valueLocal, matchedLabel, failureLabel);
-                emitter.MarkLabel(matchedLabel);
+                void EmitSeparator(ref int offset, Utf8IlLabel failureLabel)
+                {
+                    var matchedLabel = emitter.DefineLabel();
+                    emitter.LoadInputByte(zeroIndexLocal, offset++);
+                    emitter.StoreLocal(valueLocal);
+                    emitter.EmitSmallPositiveSetBranch(plan.SeparatorBytes, valueLocal, matchedLabel, failureLabel);
+                    emitter.MarkLabel(matchedLabel);
+                }
             }
         }
+        finally { budget.LeaveDepth(); }
     }
 
     internal int MatchWhole(ReadOnlySpan<byte> input) => _match(input);
@@ -388,6 +411,7 @@ internal sealed class Utf8EmittedWholeMatcher
 
         foreach (var segment in plan.Segments)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (segment.IsLiteral)
             {
                 continue;
@@ -420,14 +444,9 @@ internal sealed class Utf8EmittedWholeMatcher
 
     private static MatchDelegate Compile(AsciiSimplePatternAnchoredValidatorPlan plan, bool allowTrailingNewline)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitAnchoredValidatorMatch",
-            typeof(int),
-            [typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedWholeMatcher),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAnchoredValidatorMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
 
-        var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
+        var emitter = new Utf8IlEmitter(dynamicMethod, s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
         var inputLengthLocal = emitter.DeclareLocal<int>();
         var effectiveLengthLocal = emitter.DeclareLocal<int>();
         var indexLocal = emitter.DeclareLocal<int>();
@@ -518,7 +537,7 @@ internal sealed class Utf8EmittedWholeMatcher
                 }
                 else
                 {
-                    emitter.EmitSmallPositiveSetBranch(segment.CharClass.GetPositiveMatchBytes(), valueLocal, nextRunLabel, failLabel);
+                    emitter.EmitSmallPositiveSetBranch(segment.CharClass, valueLocal, nextRunLabel, failLabel);
                 }
 
                 emitter.MarkLabel(nextRunLabel);
@@ -539,11 +558,11 @@ internal sealed class Utf8EmittedWholeMatcher
 
     private static void EmitDigitRun(
         Utf8IlEmitter emitter,
-        LocalBuilder zeroIndexLocal,
-        LocalBuilder valueLocal,
+        Utf8IlLocal zeroIndexLocal,
+        Utf8IlLocal valueLocal,
         ref int offset,
         int count,
-        Label failureLabel)
+        Utf8IlLabel failureLabel)
     {
         for (var i = 0; i < count; i++)
         {
@@ -557,11 +576,11 @@ internal sealed class Utf8EmittedWholeMatcher
 
     private static void EmitLiteral(
         Utf8IlEmitter emitter,
-        LocalBuilder zeroIndexLocal,
-        LocalBuilder valueLocal,
+        Utf8IlLocal zeroIndexLocal,
+        Utf8IlLocal valueLocal,
         ref int offset,
         byte literal,
-        Label failureLabel)
+        Utf8IlLabel failureLabel)
     {
         var matchedLabel = emitter.DefineLabel();
         emitter.LoadInputByte(zeroIndexLocal, offset++);
@@ -574,6 +593,7 @@ internal sealed class Utf8EmittedWholeMatcher
     {
         try
         {
+            Utf8ConstructionScope.ChargeWork(10);
             _ = match(ReadOnlySpan<byte>.Empty);
             _ = match([0]);
             _ = match("A0f"u8);

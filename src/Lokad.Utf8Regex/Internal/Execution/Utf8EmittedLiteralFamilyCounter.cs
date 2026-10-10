@@ -77,26 +77,17 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     private readonly Utf8BoundaryRequirement _leadingBoundary;
     private readonly Utf8BoundaryRequirement _trailingBoundary;
 
-    private Utf8EmittedLiteralFamilyCounter(
-        Utf8SearchPlan plan,
-        Utf8SearchOperationPlan countProgram,
-        Utf8SearchOperationPlan firstMatchProgram,
-        Utf8BoundaryRequirement leadingBoundary,
-        Utf8BoundaryRequirement trailingBoundary,
-        CountDelegate count,
-        CountDelegate? asciiValidatedCount,
-        IsMatchDelegate isMatch,
-        TryMatchDelegate tryMatch)
+    private readonly record struct ConstructionState(Utf8SearchPlan Plan,
+        Utf8SearchOperationPlan CountProgram, Utf8SearchOperationPlan FirstMatchProgram,
+        Utf8BoundaryRequirement LeadingBoundary, Utf8BoundaryRequirement TrailingBoundary,
+        CountDelegate Count, CountDelegate? AsciiValidatedCount, IsMatchDelegate IsMatch, TryMatchDelegate TryMatch);
+
+    private Utf8EmittedLiteralFamilyCounter(ConstructionState state)
     {
-        _plan = plan;
-        _countProgram = countProgram;
-        _firstMatchProgram = firstMatchProgram;
-        _leadingBoundary = leadingBoundary;
-        _trailingBoundary = trailingBoundary;
-        _count = count;
-        _asciiValidatedCount = asciiValidatedCount;
-        _isMatch = isMatch;
-        _tryMatch = tryMatch;
+        _plan = state.Plan; _countProgram = state.CountProgram; _firstMatchProgram = state.FirstMatchProgram;
+        _leadingBoundary = state.LeadingBoundary; _trailingBoundary = state.TrailingBoundary;
+        _count = state.Count; _asciiValidatedCount = state.AsciiValidatedCount;
+        _isMatch = state.IsMatch; _tryMatch = state.TryMatch;
     }
 
     internal static bool CanCreate(Utf8SearchPlan plan, Utf8SearchOperationPlan countProgram, Utf8SearchOperationPlan firstMatchProgram)
@@ -142,49 +133,62 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         Utf8PreparedRegex regexPlan,
         out Utf8EmittedLiteralFamilyCounter? counter)
     {
-        counter = null;
-        if (!CanCreateBoundaryOnlyStructuralFamily(regexPlan))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        byte[][]? singleLiteralBuckets = null;
+        try
         {
-            return false;
-        }
+            counter = null;
+            if (!CanCreateBoundaryOnlyStructuralFamily(regexPlan))
+            {
+                return false;
+            }
 
-        var searchPlan = regexPlan.SearchPlan;
-        var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
-        var singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(searchPlan, out var loweredLiterals) ? loweredLiterals : null;
-        var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(searchPlan, out var commonPrefix, out var prefixLiterals)
-            ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
-            : ((byte[] CommonPrefix, byte[][] Literals)?)null;
-        counter = new Utf8EmittedLiteralFamilyCounter(
-            searchPlan,
-            searchPlan.CountOperation,
-            searchPlan.FirstMatchOperation,
-            familyPlan.LeadingBoundary,
-            familyPlan.TrailingBoundary,
-            CompileCount(
-                requiresConfirmation: true,
-                useAsciiBoundaryOnlyFastConfirmation: true,
-                retryOverlappingAfterRejection: false,
-                singleLiteralBuckets,
-                singleBucketPrefixFamily),
-            singleBucketPrefixFamily is { } fusedPrefixFamily &&
-            CanFuseAsciiValidation(fusedPrefixFamily.CommonPrefix, fusedPrefixFamily.Literals)
-                ? CompileAsciiValidatedSingleBucketPrefixCount(
-                    fusedPrefixFamily.CommonPrefix,
-                    fusedPrefixFamily.Literals)
-                : null,
-            CompileIsMatch(
-                requiresConfirmation: true,
-                useAsciiBoundaryOnlyFastConfirmation: true,
-                retryOverlappingAfterRejection: false,
-                singleLiteralBuckets,
-                singleBucketPrefixFamily),
-            CompileTryMatch(
-                requiresConfirmation: true,
-                useAsciiBoundaryOnlyFastConfirmation: true,
-                retryOverlappingAfterRejection: false,
-                singleLiteralBuckets,
-                singleBucketPrefixFamily));
-        return true;
+            var searchPlan = regexPlan.SearchPlan;
+            var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
+            singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(searchPlan, out var loweredLiterals) ? loweredLiterals : null;
+            var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(searchPlan, out var commonPrefix, out var prefixLiterals)
+                ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
+                : ((byte[] CommonPrefix, byte[][] Literals)?)null;
+            counter = budget.AllocateObject(new ConstructionState(
+                searchPlan,
+                searchPlan.CountOperation,
+                searchPlan.FirstMatchOperation,
+                familyPlan.LeadingBoundary,
+                familyPlan.TrailingBoundary,
+                CompileCount(
+                    requiresConfirmation: true,
+                    useAsciiBoundaryOnlyFastConfirmation: true,
+                    retryOverlappingAfterRejection: false,
+                    singleLiteralBuckets,
+                    singleBucketPrefixFamily),
+                singleBucketPrefixFamily is { } fusedPrefixFamily &&
+                CanFuseAsciiValidation(fusedPrefixFamily.CommonPrefix, fusedPrefixFamily.Literals)
+                    ? CompileAsciiValidatedSingleBucketPrefixCount(
+                        fusedPrefixFamily.CommonPrefix,
+                        fusedPrefixFamily.Literals)
+                    : null,
+                CompileIsMatch(
+                    requiresConfirmation: true,
+                    useAsciiBoundaryOnlyFastConfirmation: true,
+                    retryOverlappingAfterRejection: false,
+                    singleLiteralBuckets,
+                    singleBucketPrefixFamily),
+                CompileTryMatch(
+                    requiresConfirmation: true,
+                    useAsciiBoundaryOnlyFastConfirmation: true,
+                    retryOverlappingAfterRejection: false,
+                    singleLiteralBuckets,
+                    singleBucketPrefixFamily)), static state => new Utf8EmittedLiteralFamilyCounter(state));
+            scope.Complete();
+            return true;
+        }
+        finally
+        {
+            if (singleLiteralBuckets is not null) budget.ReleaseArray(singleLiteralBuckets, false);
+            budget.LeaveDepth();
+        }
     }
 
     internal static bool TryCreate(
@@ -193,43 +197,56 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         Utf8SearchOperationPlan firstMatchProgram,
         out Utf8EmittedLiteralFamilyCounter? counter)
     {
-        counter = null;
-        if (!CanCreate(plan, countProgram, firstMatchProgram))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        byte[][]? singleLiteralBuckets = null;
+        try
         {
-            return false;
-        }
+            counter = null;
+            if (!CanCreate(plan, countProgram, firstMatchProgram))
+            {
+                return false;
+            }
 
-        var canUseFastConfirmation = CanUseAsciiBoundaryOnlyFastConfirmation(plan, countProgram, firstMatchProgram);
-        var singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(plan, out var loweredLiterals) ? loweredLiterals : null;
-        var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(plan, out var commonPrefix, out var prefixLiterals)
-            ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
-            : ((byte[] CommonPrefix, byte[][] Literals)?)null;
-        counter = new Utf8EmittedLiteralFamilyCounter(
-            plan,
-            countProgram,
-            firstMatchProgram,
-            plan.LeadingBoundary,
-            plan.TrailingBoundary,
-            CompileCount(
-                countProgram.Confirmation.HasValue,
-                canUseFastConfirmation,
-                plan.HasAlternateLiteralProperStartOverlap,
-                singleLiteralBuckets,
-                singleBucketPrefixFamily),
-            asciiValidatedCount: null,
-            CompileIsMatch(
-                firstMatchProgram.Confirmation.HasValue,
-                canUseFastConfirmation,
-                plan.HasAlternateLiteralProperStartOverlap,
-                singleLiteralBuckets,
-                singleBucketPrefixFamily),
-            CompileTryMatch(
-                firstMatchProgram.Confirmation.HasValue,
-                canUseFastConfirmation,
-                plan.HasAlternateLiteralProperStartOverlap,
-                singleLiteralBuckets,
-                singleBucketPrefixFamily));
-        return true;
+            var canUseFastConfirmation = CanUseAsciiBoundaryOnlyFastConfirmation(plan, countProgram, firstMatchProgram);
+            singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(plan, out var loweredLiterals) ? loweredLiterals : null;
+            var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(plan, out var commonPrefix, out var prefixLiterals)
+                ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
+                : ((byte[] CommonPrefix, byte[][] Literals)?)null;
+            counter = budget.AllocateObject(new ConstructionState(
+                plan,
+                countProgram,
+                firstMatchProgram,
+                plan.LeadingBoundary,
+                plan.TrailingBoundary,
+                CompileCount(
+                    countProgram.Confirmation.HasValue,
+                    canUseFastConfirmation,
+                    plan.HasAlternateLiteralProperStartOverlap,
+                    singleLiteralBuckets,
+                    singleBucketPrefixFamily),
+                AsciiValidatedCount: null,
+                CompileIsMatch(
+                    firstMatchProgram.Confirmation.HasValue,
+                    canUseFastConfirmation,
+                    plan.HasAlternateLiteralProperStartOverlap,
+                    singleLiteralBuckets,
+                    singleBucketPrefixFamily),
+                CompileTryMatch(
+                    firstMatchProgram.Confirmation.HasValue,
+                    canUseFastConfirmation,
+                    plan.HasAlternateLiteralProperStartOverlap,
+                    singleLiteralBuckets,
+                    singleBucketPrefixFamily)), static state => new Utf8EmittedLiteralFamilyCounter(state));
+            scope.Complete();
+            return true;
+        }
+        finally
+        {
+            if (singleLiteralBuckets is not null) budget.ReleaseArray(singleLiteralBuckets, false);
+            budget.LeaveDepth();
+        }
     }
 
     internal int Count(ReadOnlySpan<byte> input) => _count(this, input);
@@ -389,40 +406,51 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static bool TryGetSmallSingleLiteralBuckets(Utf8SearchPlan plan, out byte[][] literals)
     {
-        literals = [];
-
-        if (plan.Kind is not (Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals) ||
-            !plan.AlternateLiteralSearch.HasValue ||
-            plan.MultiLiteralSearch.Kind is not (PreparedMultiLiteralKind.ExactDirect or PreparedMultiLiteralKind.ExactEarliest))
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return false;
-        }
+            literals = [];
 
-        var search = plan.AlternateLiteralSearch.Value;
-        if (search.Strategy != PreparedLiteralSetStrategy.SingleLiteralBuckets)
-        {
-            return false;
-        }
-
-        var buckets = search.SearchData.Buckets;
-        if (buckets.Length is < 2 or > 3)
-        {
-            return false;
-        }
-
-        literals = new byte[buckets.Length][];
-        for (var i = 0; i < buckets.Length; i++)
-        {
-            if (buckets[i].Literals.Length != 1)
+            if (plan.Kind is not (Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals) ||
+                !plan.AlternateLiteralSearch.HasValue ||
+                plan.MultiLiteralSearch.Kind is not (PreparedMultiLiteralKind.ExactDirect or PreparedMultiLiteralKind.ExactEarliest))
             {
-                literals = [];
                 return false;
             }
 
-            literals[i] = buckets[i].Literals[0];
-        }
+            var search = plan.AlternateLiteralSearch.Value;
+            if (search.Strategy != PreparedLiteralSetStrategy.SingleLiteralBuckets)
+            {
+                return false;
+            }
 
-        return true;
+            var buckets = search.SearchData.Buckets;
+            if (buckets.Length is < 2 or > 3)
+            {
+                return false;
+            }
+
+            foreach (var bucket in buckets)
+            {
+                budget.ChargeWork(1);
+                if (bucket.Literals.Length != 1) return false;
+            }
+            literals = budget.AllocateArray<byte[]>(buckets.Length, false);
+            for (var i = 0; i < buckets.Length; i++)
+            {
+                budget.ChargeWork(1);
+                literals[i] = buckets[i].Literals[0];
+            }
+
+            scope.Complete();
+            return true;
+        }
+        finally
+        {
+            budget.LeaveDepth();
+        }
     }
 
     private static bool TryGetSmallSingleBucketPrefixFamily(Utf8SearchPlan plan, out byte[] commonPrefix, out byte[][] literals)
@@ -524,14 +552,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         bool useAsciiBoundaryOnlyFastConfirmation,
         bool retryOverlappingAfterRejection)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyCount",
-            typeof(int),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyCount", typeof(int), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var stateLocal = il.DeclareLocal(typeof(PreparedMultiLiteralScanState));
         var indexLocal = il.DeclareLocal(typeof(int));
         var matchedLengthLocal = il.DeclareLocal(typeof(int));
@@ -595,14 +618,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         bool useAsciiBoundaryOnlyFastConfirmation,
         bool retryOverlappingAfterRejection)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyIsMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyIsMatch", typeof(bool), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var stateLocal = il.DeclareLocal(typeof(PreparedMultiLiteralScanState));
         var indexLocal = il.DeclareLocal(typeof(int));
         var matchedLengthLocal = il.DeclareLocal(typeof(int));
@@ -659,14 +677,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         bool useAsciiBoundaryOnlyFastConfirmation,
         bool retryOverlappingAfterRejection)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyTryMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyTryMatch", typeof(bool), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>), typeof(int).MakeByRefType(), typeof(int).MakeByRefType());
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var stateLocal = il.DeclareLocal(typeof(PreparedMultiLiteralScanState));
         var indexLocal = il.DeclareLocal(typeof(int));
         var matchedLengthLocal = il.DeclareLocal(typeof(int));
@@ -732,14 +745,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static CountDelegate CompileSingleLiteralBucketCount(bool useAsciiBoundaryOnlyFastConfirmation, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyBucketCount",
-            typeof(int),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyBucketCount", typeof(int), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var e = new Utf8IlEmitter(il, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleLiteralBucketBody(
             e,
@@ -753,14 +761,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static IsMatchDelegate CompileSingleLiteralBucketIsMatch(bool useAsciiBoundaryOnlyFastConfirmation, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyBucketIsMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyBucketIsMatch", typeof(bool), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var e = new Utf8IlEmitter(il, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleLiteralBucketBody(
             e,
@@ -774,14 +777,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static TryMatchDelegate CompileSingleLiteralBucketTryMatch(bool useAsciiBoundaryOnlyFastConfirmation, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyBucketTryMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyBucketTryMatch", typeof(bool), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>), typeof(int).MakeByRefType(), typeof(int).MakeByRefType());
 
-        var il = dynamicMethod.GetILGenerator();
+        var il = dynamicMethod;
         var e = new Utf8IlEmitter(il, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleLiteralBucketBody(
             e,
@@ -795,14 +793,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static CountDelegate CompileSingleBucketPrefixCount(bool useAsciiBoundaryOnlyFastConfirmation, byte[] commonPrefix, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyPrefixCount",
-            typeof(int),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyPrefixCount", typeof(int), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var e = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_spanLengthMethod, s_spanItemMethod);
+        var e = new Utf8IlEmitter(dynamicMethod, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleBucketPrefixBody(
             e,
             commonPrefix,
@@ -817,14 +810,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static CountDelegate CompileAsciiValidatedSingleBucketPrefixCount(byte[] commonPrefix, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitAsciiValidatedLiteralFamilyPrefixCount",
-            typeof(int),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAsciiValidatedLiteralFamilyPrefixCount", typeof(int), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var e = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_spanLengthMethod, s_spanItemMethod);
+        var e = new Utf8IlEmitter(dynamicMethod, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleBucketPrefixBody(
             e,
             commonPrefix,
@@ -839,14 +827,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static IsMatchDelegate CompileSingleBucketPrefixIsMatch(bool useAsciiBoundaryOnlyFastConfirmation, byte[] commonPrefix, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyPrefixIsMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyPrefixIsMatch", typeof(bool), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>));
 
-        var e = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_spanLengthMethod, s_spanItemMethod);
+        var e = new Utf8IlEmitter(dynamicMethod, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleBucketPrefixBody(
             e,
             commonPrefix,
@@ -861,14 +844,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static TryMatchDelegate CompileSingleBucketPrefixTryMatch(bool useAsciiBoundaryOnlyFastConfirmation, byte[] commonPrefix, byte[][] literals)
     {
-        var dynamicMethod = new DynamicMethod(
-            "Utf8Regex_EmitLiteralFamilyPrefixTryMatch",
-            typeof(bool),
-            [typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()],
-            typeof(Utf8EmittedLiteralFamilyCounter),
-            skipVisibility: false);
+        using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitLiteralFamilyPrefixTryMatch", typeof(bool), typeof(Utf8EmittedLiteralFamilyCounter), typeof(Utf8EmittedLiteralFamilyCounter), typeof(ReadOnlySpan<byte>), typeof(int).MakeByRefType(), typeof(int).MakeByRefType());
 
-        var e = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_spanLengthMethod, s_spanItemMethod);
+        var e = new Utf8IlEmitter(dynamicMethod, s_spanLengthMethod, s_spanItemMethod);
         EmitSingleBucketPrefixBody(
             e,
             commonPrefix,
@@ -893,7 +871,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         var inputLengthLocal = e.DeclareLocal<int>();
         var candidateLocal = e.DeclareLocal<int>();
         var currentByteLocal = e.DeclareLocal<int>();
-        var countLocal = countMatches ? e.DeclareLocal<int>() : null;
+        Utf8IlLocal? countLocal = countMatches ? e.DeclareLocal<int>() : null;
 
         e.LoadInputLength();
         e.StoreLocal(inputLengthLocal);
@@ -911,8 +889,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         var successLabel = e.DefineLabel();
         var failureReturnLabel = e.DefineLabel();
         var nextCandidateLabel = e.DefineLabel();
-        var perLiteralLabels = new Label[literals.Length];
-        var confirmLabels = new Label[literals.Length];
+        var perLiteralLabels = e.AllocateScratch<Utf8IlLabel>(literals.Length);
+        var confirmLabels = e.AllocateScratch<Utf8IlLabel>(literals.Length);
         for (var i = 0; i < perLiteralLabels.Length; i++)
         {
             perLiteralLabels[i] = e.DefineLabel();
@@ -941,7 +919,13 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
         e.LoadInputByte(candidateLocal);
         e.StoreLocal(currentByteLocal);
-        e.EmitByteDispatch(currentByteLocal, literals.Select(static literal => literal[0]).ToArray(), perLiteralLabels, retryLabel);
+        var firstBytes = e.AllocateScratch<byte>(literals.Length);
+        for (var index = 0; index < literals.Length; index++)
+        {
+            e.ChargeWork(1);
+            firstBytes[index] = literals[index][0];
+        }
+        e.EmitByteDispatch(currentByteLocal, firstBytes, perLiteralLabels, retryLabel);
 
         for (var i = 0; i < literals.Length; i++)
         {
@@ -1008,19 +992,19 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     private static void EmitMatchedLengthDispatch(
         Utf8IlEmitter e,
         byte[][] literals,
-        LocalBuilder candidateLocal,
-        LocalBuilder currentByteLocal,
+        Utf8IlLocal candidateLocal,
+        Utf8IlLocal currentByteLocal,
         MethodInfo confirmMethod,
         bool returnOnFirstMatch,
         bool countMatches,
         bool storeMatchResult,
-        LocalBuilder? countLocal,
-        LocalBuilder searchFromLocal,
-        Label retryLabel,
-        Label failureReturnLabel,
-        Label continueLabel)
+        Utf8IlLocal? countLocal,
+        Utf8IlLocal searchFromLocal,
+        Utf8IlLabel retryLabel,
+        Utf8IlLabel failureReturnLabel,
+        Utf8IlLabel continueLabel)
     {
-        var confirmedLabels = new Label[literals.Length];
+        var confirmedLabels = e.AllocateScratch<Utf8IlLabel>(literals.Length);
         for (var i = 0; i < confirmedLabels.Length; i++)
         {
             confirmedLabels[i] = e.DefineLabel();
@@ -1041,10 +1025,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             e.Emit(OpCodes.Brfalse, retryLabel);
             if (countMatches)
             {
-            e.LoadLocal(RequireCountLocal(countLocal));
+                e.LoadLocal(RequireCountLocal(countLocal));
                 e.LdcI4(1);
                 e.Emit(OpCodes.Add);
-            e.StoreLocal(RequireCountLocal(countLocal));
+                e.StoreLocal(RequireCountLocal(countLocal));
                 e.LoadLocal(candidateLocal);
                 e.LdcI4(literal.Length);
                 e.Emit(OpCodes.Add);
@@ -1090,7 +1074,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         var inputLengthLocal = e.DeclareLocal<int>();
         var candidateLocal = e.DeclareLocal<int>();
         var currentByteLocal = e.DeclareLocal<int>();
-        var countLocal = countMatches ? e.DeclareLocal<int>() : null;
+        Utf8IlLocal? countLocal = countMatches ? e.DeclareLocal<int>() : null;
 
         e.LoadInputLength();
         e.StoreLocal(inputLengthLocal);
@@ -1109,8 +1093,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         var successLabel = e.DefineLabel();
         var failureReturnLabel = e.DefineLabel();
         var invalidAsciiReturnLabel = e.DefineLabel();
-        var perLiteralLabels = new Label[literals.Length];
-        var confirmLabels = new Label[literals.Length];
+        var perLiteralLabels = e.AllocateScratch<Utf8IlLabel>(literals.Length);
+        var confirmLabels = e.AllocateScratch<Utf8IlLabel>(literals.Length);
         for (var i = 0; i < perLiteralLabels.Length; i++)
         {
             perLiteralLabels[i] = e.DefineLabel();
@@ -1242,7 +1226,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         e.Emit(OpCodes.Br, failureReturnLabel);
     }
 
-    private static LocalBuilder RequireCountLocal(LocalBuilder? countLocal)
+    private static Utf8IlLocal RequireCountLocal(Utf8IlLocal? countLocal)
     {
         return countLocal ?? throw new InvalidOperationException("A count program requires a count local.");
     }
@@ -1251,9 +1235,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         Utf8IlEmitter e,
         byte[] commonPrefix,
         byte[][] literals,
-        LocalBuilder currentByteLocal,
-        ReadOnlySpan<Label> labels,
-        Label retryLabel)
+        Utf8IlLocal currentByteLocal,
+        ReadOnlySpan<Utf8IlLabel> labels,
+        Utf8IlLabel retryLabel)
     {
         for (var i = 0; i < literals.Length; i++)
         {

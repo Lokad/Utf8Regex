@@ -973,8 +973,27 @@ payloads and its complete strategy field state, and releases the prefilter's
 temporary reference vector. It prepares shared-anchor storage only when the
 SIMD prefilter declines. The scalar fallback remains available without intrinsics.
 Declines release speculative capacity/depth while work remains spent.
-Emitted matcher wrapper storage is admitted; CLR/JIT metadata, kernel lowering
-and other adapter program/AST storage remain separate unqualified debt.
+Owned dynamic-method construction shares the enclosing budget for serialized IL,
+labels, branch fixups, locals, method/type token caches, temporary dispatch vectors,
+stack-analysis queues and complete builder/wrapper descriptors. Structural class
+collection uses owned vectors/maps; literal dispatch and kernel-lowering metadata
+admit their acquired arrays while borrowing existing literal payloads. Every
+growth and final copy admits overlapping extents. Labels/locals and the emitter
+are value carriers; no ILGenerator, LocalBuilder, SignatureHelper or independent
+construction owner retains a second set of library program buffers.
+Serialized IL byte capacity conservatively counts against the provisional
+instruction-capacity gate, including the managed runtime code copy. Parameter,
+code and local-signature managed copies are admitted separately before CLR calls.
+Complete delegate field state and its retaining descriptor are admitted before
+publication. Owned code, fixup and stack walks spend shared work; pending stack
+analysis frames share live depth. Resource failures, cancellation and deadlines
+restore child capacity/depth/object loans while preserving spent work. The same
+interruption authority is checked again after opaque delegate creation.
+CLR reflection records, token resolver internals, dynamic-method metadata and
+native JIT storage remain the named runtime-metadata exclusion, distinct from
+these admitted managed arrays. Complete adapter program/AST storage, public
+construction controls/defaults and retained policies remain unqualified. This
+covered producer does not establish a process RSS or cumulative GC bound.
 Byte-safe DFA construction shares the enclosing construction owner for its
 compiler and graph descriptors, deterministic vectors, NFA states and edges,
 closure keys, work queues, transition buckets and maps. Graph growth and final
@@ -987,7 +1006,7 @@ deadlines propagate instead of selecting an unmetered route. Failed children
 restore the parent's capacity and depth; successful graphs transfer their final
 arrays. Internal construction interruption authority belongs to the shared
 owner; complete public construction/invocation policy remains unqualified.
-Fixed global BCL SearchValues state and upstream preparation/emission
+Fixed global BCL SearchValues state and remaining upstream preparation
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
