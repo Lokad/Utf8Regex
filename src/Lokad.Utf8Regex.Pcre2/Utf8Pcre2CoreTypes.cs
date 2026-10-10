@@ -646,6 +646,8 @@ public delegate void Pcre2MatchEvaluator<TState>(
     ref TState state);
 
 /// <summary>Represents a stateful callback that returns UTF-16 replacement text for one PCRE2 match.</summary>
+/// <remarks>Each return is encoded independently as UTF-8. Valid surrogate pairs within
+/// that string denote one scalar; unpaired surrogates become U+FFFD.</remarks>
 public delegate string Pcre2Utf16MatchEvaluator<TState>(
     in Utf8Pcre2MatchContext match,
     ref TState state);

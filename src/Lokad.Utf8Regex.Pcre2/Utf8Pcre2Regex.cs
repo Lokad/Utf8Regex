@@ -751,21 +751,8 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Replaces matches through a UTF-8 callback using explicit start and per-match options.</summary>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (TryReplaceUsingLiteralDriver(
-                input,
-                state,
-                evaluator,
-                startOffsetInBytes,
-                matchOptions,
-                out var literalResult))
-        {
-            return literalResult;
-        }
-
-        return Encoding.UTF8.GetBytes(ReplaceWithUtf8Evaluator(input, state, evaluator, startOffsetInBytes, matchOptions));
-    }
+        => ReplaceCallback(input, state, new Pcre2ByteCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
+            CancellationToken.None, false).Bytes;
 
     /// <summary>Replaces matches through a UTF-8 callback using explicit start and per-match options, observing cancellation before matching begins.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
@@ -777,26 +764,8 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="cancellationToken">The token to observe before matching begins.</param>
     /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (TryReplaceUsingLiteralDriver(
-                input,
-                state,
-                (in Utf8Pcre2MatchContext context, ref global::Lokad.Utf8Regex.Utf8ReplacementWriter writer, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); evaluator(in context, ref writer, ref s); },
-                startOffsetInBytes,
-                matchOptions,
-                out var literalResult))
-        {
-            return literalResult;
-        }
-
-        return Encoding.UTF8.GetBytes(ReplaceWithUtf8Evaluator(
-            input,
-            state,
-            (in Utf8Pcre2MatchContext context, ref global::Lokad.Utf8Regex.Utf8ReplacementWriter writer, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); evaluator(in context, ref writer, ref s); },
-            startOffsetInBytes,
-            matchOptions));
-    }
+        => ReplaceCallback(input, state, new Pcre2ByteCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
+            cancellationToken, false).Bytes;
 
     /// <summary>Replaces matches using a PCRE2 replacement template and returns UTF-16 text.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
@@ -844,21 +813,8 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Replaces matches through a UTF-16 callback using explicit start and per-match options.</summary>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (TryReplaceToStringViaLiteralDriver(
-                input,
-                state,
-                evaluator,
-                startOffsetInBytes,
-                matchOptions,
-                out var literalResult))
-        {
-            return literalResult;
-        }
-
-        return ReplaceWithUtf16Evaluator(input, state, evaluator, startOffsetInBytes, matchOptions);
-    }
+        => ReplaceCallback(input, state, new Pcre2StringCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
+            CancellationToken.None, true).Text;
 
     /// <summary>Replaces matches through a UTF-16 callback using explicit start and per-match options, observing cancellation before matching begins.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
@@ -870,26 +826,8 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="cancellationToken">The token to observe before matching begins.</param>
     /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (TryReplaceToStringViaLiteralDriver(
-                input,
-                state,
-                (in Utf8Pcre2MatchContext context, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); return evaluator(in context, ref s); },
-                startOffsetInBytes,
-                matchOptions,
-                out var literalResult))
-        {
-            return literalResult;
-        }
-
-        return ReplaceWithUtf16Evaluator(
-            input,
-            state,
-            (in Utf8Pcre2MatchContext context, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); return evaluator(in context, ref s); },
-            startOffsetInBytes,
-            matchOptions);
-    }
+        => ReplaceCallback(input, state, new Pcre2StringCallback<TState>(evaluator), startOffsetInBytes, matchOptions,
+            cancellationToken, true).Text;
 
     /// <summary>Attempts to write a UTF-8 replacement result into a caller-provided destination.</summary>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten)
@@ -1810,301 +1748,6 @@ public sealed partial class Utf8Pcre2Regex
 
     private static NotSupportedException CreateUnsupportedReplacementException()
         => CreateUnsupportedReplacementException(null);
-
-    private bool TryReplaceUsingLiteralDriver<TState>(
-        ReadOnlySpan<byte> input,
-        TState state,
-        Pcre2MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions,
-        out byte[] result)
-    {
-        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram &&
-            sliceProgram.SliceProgram.GroupCount > 0)
-        {
-            result = [];
-            return false;
-        }
-
-        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            (backtrackingProgram.Program.CaptureSlotCount > 1 ||
-             backtrackingProgram.Program.SuppressesUnresetEmptyMatches))
-        {
-            result = [];
-            return false;
-        }
-
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateCursor(
-                _program,
-                subject,
-                start,
-                matchOptions,
-                out var cursor))
-        {
-            result = [];
-            return false;
-        }
-
-        var output = new ArrayBufferWriter<byte>(input.Length);
-        var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter(output);
-        var groups = new Pcre2GroupData[1];
-        var sourcePosition = 0;
-        while (cursor.MoveNext())
-        {
-            var match = cursor.Current;
-            writer.Append(input[sourcePosition..match.StartOffsetInBytes]);
-            groups[0] = match;
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries);
-            evaluator(in context, ref writer, ref state);
-            sourcePosition = match.EndOffsetInBytes;
-        }
-
-        writer.Append(input[sourcePosition..]);
-        result = writer.GetValidatedBytes().ToArray();
-        return true;
-    }
-
-    private bool TryReplaceToStringViaLiteralDriver<TState>(
-        ReadOnlySpan<byte> input,
-        TState state,
-        Pcre2Utf16MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions,
-        out string result)
-    {
-        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram &&
-            sliceProgram.SliceProgram.GroupCount > 0)
-        {
-            result = string.Empty;
-            return false;
-        }
-
-        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            (backtrackingProgram.Program.CaptureSlotCount > 1 ||
-             backtrackingProgram.Program.SuppressesUnresetEmptyMatches))
-        {
-            result = string.Empty;
-            return false;
-        }
-
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateCursor(
-                _program,
-                validated,
-                start,
-                matchOptions,
-                out var cursor))
-        {
-            result = string.Empty;
-            return false;
-        }
-
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length);
-        var groups = new Pcre2GroupData[1];
-        var sourcePosition = 0;
-        while (cursor.MoveNext())
-        {
-            var match = cursor.Current;
-            builder.Append(subject, sourcePosition, match.StartOffsetInUtf16 - sourcePosition);
-            groups[0] = match;
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries);
-            builder.Append(evaluator(in context, ref state));
-            sourcePosition = match.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, sourcePosition, subject.Length - sourcePosition);
-        result = builder.ToString();
-        return true;
-    }
-
-    private string ReplaceWithUtf8Evaluator<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-    {
-        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
-        {
-            return ReplaceBacktrackingWithUtf8Evaluator(
-                input,
-                backtrackingProgram.Program,
-                state,
-                evaluator,
-                startOffsetInBytes,
-                matchOptions);
-        }
-
-        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
-        {
-            return ReplaceSliceWithEvaluator(input, sliceProgram, state, evaluator, startOffsetInBytes);
-        }
-
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length);
-        var position = 0;
-
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
-        while (enumerator.MoveNext())
-        {
-            var value = enumerator.Current;
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
-            var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
-            evaluator(in context, ref writer, ref state);
-            builder.Append(writer.ToValidatedString());
-            position = value.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return builder.ToString();
-    }
-
-    // Slice-Replace evaluators must project each global yield through a
-    // same-start re-query (CaptureGroupsAt): re-deriving contexts with
-    // first-match MatchDetailed loses the same-position non-empty retry,
-    // so empty-then-nonempty yields project the empty match instead of
-    // the retried one. Both evaluator flavors share this loop; the UTF-16
-    // flavor adapts through the UTF-8 evaluator shape.
-    private string ReplaceSliceWithEvaluator<TState>(
-        ReadOnlySpan<byte> input,
-        Pcre2SliceDirectProgram sliceProgram,
-        TState state,
-        Pcre2MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes)
-    {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var cursor = new Pcre2SliceGlobalMatchCursor(
-            sliceProgram.SliceProgram,
-            validated,
-            start,
-            _program.Request,
-            CancellationToken.None);
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length);
-        var position = 0;
-        while (cursor.MoveNext())
-        {
-            var range = cursor.Current;
-            var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
-            var value = groups[0];
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, null);
-            var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
-            evaluator(in context, ref writer, ref state);
-            builder.Append(writer.ToValidatedString());
-            position = value.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return builder.ToString();
-    }
-
-    private string ReplaceWithUtf16Evaluator<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-    {
-        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
-        {
-            return ReplaceBacktrackingWithUtf16Evaluator(
-                input,
-                backtrackingProgram.Program,
-                state,
-                evaluator,
-                startOffsetInBytes,
-                matchOptions);
-        }
-
-        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
-        {
-            return ReplaceSliceWithEvaluator(
-                input,
-                sliceProgram,
-                state,
-                (in Utf8Pcre2MatchContext context, ref global::Lokad.Utf8Regex.Utf8ReplacementWriter writer, ref TState s) => writer.Append(evaluator(in context, ref s).AsSpan()),
-                startOffsetInBytes);
-        }
-
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length);
-        var position = 0;
-
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
-        while (enumerator.MoveNext())
-        {
-            var value = enumerator.Current;
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
-            builder.Append(evaluator(in context, ref state));
-            position = value.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return builder.ToString();
-    }
-
-    private string ReplaceBacktrackingWithUtf8Evaluator<TState>(
-        ReadOnlySpan<byte> input,
-        Pcre2BacktrackingProgram program,
-        TState state,
-        Pcre2MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions)
-    {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
-            program,
-            _program.CandidateSearchPlan,
-            validated,
-            start,
-            matchOptions,
-            _program.Request);
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length);
-        var position = 0;
-        while (cursor.MoveNext())
-        {
-            var groups = cursor.ProjectCurrentCaptures();
-            var value = groups[0];
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, cursor.Current.Mark);
-            var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
-            evaluator(in context, ref writer, ref state);
-            builder.Append(writer.ToValidatedString());
-            position = value.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return builder.ToString();
-    }
-
-    private string ReplaceBacktrackingWithUtf16Evaluator<TState>(
-        ReadOnlySpan<byte> input,
-        Pcre2BacktrackingProgram program,
-        TState state,
-        Pcre2Utf16MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions)
-    {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
-            program,
-            _program.CandidateSearchPlan,
-            validated,
-            start,
-            matchOptions,
-            _program.Request);
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length);
-        var position = 0;
-        while (cursor.MoveNext())
-        {
-            var groups = cursor.ProjectCurrentCaptures();
-            var value = groups[0];
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, cursor.Current.Mark);
-            builder.Append(evaluator(in context, ref state));
-            position = value.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return builder.ToString();
-    }
 
     private Pcre2ReplacementTemplateWriter CreateTemplateWriter(ReadOnlySpan<byte> input, CancellationToken token)
         => new(input, NameEntries, _program.Request.DefaultLimits.HeapLimitInBytes, _program.Request.MatchTimeout, token);
