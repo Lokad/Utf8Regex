@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -7,6 +9,120 @@ namespace Lokad.Utf8Regex.Tests;
 // family against hardcoded expectations across the probed shape catalog.
 public sealed class Utf8OwnedRequiredLiteralsTests
 {
+    [Fact]
+    public void RequiredFamiliesPreserveDisjunctionsAndExactScalarCaseProofs()
+    {
+        foreach (var row in new (string Pattern, string[]? Family)[]
+        {
+            ("[ab](foo|bar)|[cd](foo|baz)", null),
+            ("[ab](foo|bar)|[cd](foo|bar)", ["bar", "foo"]),
+            ("[ab](foo|bar)|[cd]foo", ["bar", "foo"]),
+            ("[ab]foo|[cd](foo|bar)", null),
+            ("(?i:ab)|cd", null),
+            ("😀|🙏", ["😀", "🙏"]),
+            ("(?i:😀)x", ["x"]),
+        })
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
+        {
+            var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
+            Assert.NotNull(tree);
+            Assert.Equal(row.Family, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root));
+        }
+        foreach (var text in new[] { "\ud800", "a\udfff", "ab", "K", "😀" })
+        {
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, text);
+            Assert.Null(Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(node));
+        }
+        var invalid = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, '\ud800');
+        Assert.Null(Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(invalid));
+        var identity = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, "123!");
+        Assert.Equal(["123!"], Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(identity));
+    }
+
+    [Fact]
+    public void RequiredFamiliesCoverIndependentScalarVmMatches()
+    {
+        var cases = RequiredCases().Select(row => (Pattern: Assert.IsType<string>(row[0]), Options: Assert.IsType<RegexOptions>(row[1])))
+            .Concat(new (string Pattern, RegexOptions Options)[]
+            {
+                ("[ab](foo|bar)|[cd](foo|baz)", RegexOptions.CultureInvariant),
+                ("[ab](foo|bar)|[cd](foo|bar)", RegexOptions.CultureInvariant),
+                ("[ab]foo|[cd](foo|bar)", RegexOptions.CultureInvariant),
+                ("(?i:ab)|cd", RegexOptions.CultureInvariant),
+                ("(?i:😀)x", RegexOptions.CultureInvariant),
+                ("😀|🙏", RegexOptions.CultureInvariant),
+            });
+        var subjects = new[] { "", "a", "b", "ab", "abc", "cd", "abcd", "ef", "abcde", "abab", "ababcd", "abababcdcd",
+            "abXcd", "ac", "ad", "bd", "bc", "def", "foobar", "abar", "bbar", "cfoo", "dbar", "dbaz", "AB", "Abcd",
+            "😀", "🙏", "😀x", "🙏x", "x😀y", "longliteralrun", "import \"x\"", "a\nb", "fooxbar", "!!xbar" }
+            .Select(Encoding.UTF8.GetBytes).ToArray();
+        var observed = 0;
+        foreach (var row in cases)
+        foreach (var rtl in new[] { RegexOptions.None, RegexOptions.RightToLeft })
+        {
+            var options = row.Options | rtl;
+            var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
+            Assert.NotNull(tree);
+            var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root);
+            if (family is null) continue;
+            Assert.NotEmpty(family);
+            var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
+            Assert.NotNull(program);
+            var starts = new int[program.GroupCount];
+            var ends = new int[program.GroupCount];
+            foreach (var input in subjects)
+            for (var boundary = 0; boundary <= input.Length; boundary++)
+            {
+                if (boundary < input.Length && (input[boundary] & 0xc0) == 0x80) continue;
+                var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(100_000, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+                // Probe scalar VM positions directly, bypassing every search fact.
+                var match = Utf8SliceRunner.TryMatchAt(program, input, boundary, starts, ends, true, ref invocation);
+                Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
+                if (!match.IsMatch) continue;
+                observed++;
+                var value = Encoding.UTF8.GetString(input.AsSpan(Math.Min(boundary, match.EndIndex), Math.Abs(boundary - match.EndIndex)));
+                Assert.True(family.Any(member => value.Contains(member, StringComparison.Ordinal)), $"Uncovered required family: {row.Pattern} / {options}: {value}");
+            }
+        }
+        Assert.True(observed > 100);
+    }
+
+    [Fact]
+    public void PublicRequiredAndWindowSearchKeepScalarAlternativesAndScopedCase()
+    {
+        foreach (var row in new (string Pattern, string Subject)[]
+        {
+            ("[ab](foo|bar)|[cd](foo|baz)", "abar"),
+            ("[ab](foo|bar)|[cd](foo|baz)", "dbaz"),
+            ("[ab](foo|bar)|[cd](foo|bar)", "dbar"),
+            ("[ab]foo|[cd](foo|bar)", "dbar"),
+            ("(?i:ab)|cd", "AB"),
+            ("(?:foo|!!).{0,2}bar", "!!xbar"),
+            ("(?:foo|!!).{0,2}bar", "fooxbar"),
+            ("foo.{0,2}(?i:bar)", "foo😀BAR"),
+            ("(?i:foo).{0,2}bar", "FOO😀bar"),
+            ("😀(foo|bar)|🙏(foo|baz)", "🙏baz"),
+            ("(foo\\s+bar).{0,2}baz", "foo            barbaz"),
+            ("(?:foo\\s+bar|!!).{0,2}baz", "foo\tbarbaz"),
+            ("(?:foo\\s+bar|!!).{0,2}baz", "foo\u00a0barbaz"),
+            ("((foo)(bar))(baz)?", "foobar"),
+        })
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft,
+            RegexOptions.Compiled | RegexOptions.RightToLeft })
+        {
+            var input = Encoding.UTF8.GetBytes(row.Subject);
+            var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | mode);
+            Assert.True(regex.IsMatch(input), $"{row.Pattern} / {mode}: {row.Subject}");
+            Assert.Equal(1, regex.Count(input));
+            var first = regex.Match(input);
+            Assert.True(first.Success);
+            Assert.Equal((0, input.Length), (first.IndexInBytes, first.LengthInBytes));
+            var matches = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(input)) matches.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal([(0, input.Length)], matches);
+        }
+    }
+
     public static IEnumerable<object?[]> RequiredCases()
     {
         yield return new object?[] { "abc", RegexOptions.CultureInvariant, new string[] { "abc" } };

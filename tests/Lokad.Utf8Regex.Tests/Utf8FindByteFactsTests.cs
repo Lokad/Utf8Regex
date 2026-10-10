@@ -7,6 +7,180 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FindByteFactsTests
 {
+    [Fact]
+    public void MandatoryLiteralFactsCoverIndependentScalarMatchesAndByteWidths()
+    {
+        var cases = Utf8OwnedFindOptimizationsTests.LiteralCases().Select(row =>
+            (Pattern: Assert.IsType<string>(row[0]), Options: RegexOptions.CultureInvariant))
+            .Concat(Utf8OwnedFindOptimizationsTests.PrefixCases().Select(row =>
+                (Assert.IsType<string>(row[0]), Assert.IsType<RegexOptions>(row[1]))))
+            .Concat(new[] { (".ab|.c", RegexOptions.CultureInvariant),
+                ("(?i:ab)|cd", RegexOptions.CultureInvariant), ("😀[ab]cd", RegexOptions.CultureInvariant),
+                ("(?i:K)[ab]cd", RegexOptions.CultureInvariant), ("(?i:😀)", RegexOptions.CultureInvariant),
+                ("x(?:ab|)y", RegexOptions.CultureInvariant), ("[😀🙏]{2}x", RegexOptions.CultureInvariant),
+                ("(a)?(?(1)bc|d)", RegexOptions.CultureInvariant), ("(?(?=a)ab|cd)", RegexOptions.CultureInvariant) })
+            .Select(row => (Pattern: row.Item1, Options: row.Item2)).Distinct().ToArray();
+        var subjects = new[] { "", "a", "b", "c", "ab", "cd", "ef", "def", "abc", "Ab", "AB", "aB", "Cd",
+            "!ab!c", "aXbcdef", "abcde", "foobar", "foobaz", "aaaaaaaab", "abababcdcd", "abcabcabcdcd",
+            "xay", "xy", "xabcy", "xababy", "😀", "😀acd", "😀bcd", "😀😀x", "😀🙏x", "🙏😀x",
+            "Kacd", "Kacd", "kacd", "x😀😀y", "a\nb", "\0", "ad", "bd", "bc", "d" }
+            .Select(Encoding.UTF8.GetBytes).ToArray();
+        var observed = 0;
+        foreach (var row in cases)
+        foreach (var rtl in new[] { RegexOptions.None, RegexOptions.RightToLeft })
+        {
+            // ECMAScript forbids RTL; keep the catalog's valid option profile.
+            if ((row.Options & RegexOptions.ECMAScript) != 0 && rtl != RegexOptions.None) continue;
+            var options = row.Options | rtl;
+            var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
+            Assert.NotNull(tree);
+            var leading = Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root);
+            var mandatory = Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root);
+            var fixedLiteral = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(tree.Root);
+            var widths = Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
+            var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
+            Assert.NotNull(program);
+            var starts = new int[program.GroupCount];
+            var ends = new int[program.GroupCount];
+            foreach (var input in subjects)
+            for (var boundary = 0; boundary <= input.Length; boundary++)
+            {
+                if (boundary < input.Length && (input[boundary] & 0xc0) == 0x80) continue;
+                var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(100_000, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+                // Direct VM probes never consult Find facts or candidate search.
+                var match = Utf8SliceRunner.TryMatchAt(program, input, boundary, starts, ends, true, ref invocation);
+                Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
+                if (!match.IsMatch) continue;
+                observed++;
+                var start = Math.Min(boundary, match.EndIndex);
+                var length = Math.Abs(boundary - match.EndIndex);
+                var value = Encoding.UTF8.GetString(input.AsSpan(start, length));
+                Assert.True(length >= widths.Minimum, $"Unsound minimum: {row.Pattern} / {options}");
+                if (widths.Maximum is int maximum) Assert.True(length <= maximum);
+                if (leading is not null) Assert.True(value.StartsWith(leading, StringComparison.Ordinal), $"Unsound leading literal: {row.Pattern} / {options}");
+                if (mandatory is not null) Assert.True(value.Contains(mandatory, StringComparison.Ordinal), $"Unsound mandatory literal: {row.Pattern} / {options}");
+                if (fixedLiteral is { } fact)
+                {
+                    Assert.InRange(fact.Distance, 0, length);
+                    Assert.True(input.AsSpan(start + fact.Distance, length - fact.Distance).StartsWith(Encoding.UTF8.GetBytes(fact.Literal)),
+                        $"Unsound fixed-byte literal: {row.Pattern} / {options}");
+                }
+            }
+        }
+        Assert.True(observed > 100);
+    }
+
+    [Fact]
+    public void PublicSearchKeepsEveryAlternativeAndScopedCaseAtScalarByteRanges()
+    {
+        var rows = new (string Pattern, string Subject, (int Start, int Length)[] Matches)[]
+        {
+            (".ab|.c", "!ab!c", [(0, 3), (3, 2)]),
+            ("(?:ab|)", "X", [(0, 0), (1, 0)]),
+            ("(?i)ab|cd", "!AB!CD", [(1, 2), (4, 2)]),
+            ("(?i:ab)|cd", "!AB!cd", [(1, 2), (4, 2)]),
+            (".(?i:ab)|.cd", "!AB!cd", [(0, 3), (3, 3)]),
+            ("(?i:ab)c", "!ABc!aBc", [(1, 3), (5, 3)]),
+            ("😀[ab]cd", "!😀acd!😀bcd", [(1, 7), (9, 7)]),
+            ("(?i:K)[ab]cd", "!kacd!Kbcd", [(1, 4), (6, 6)]),
+            ("[😀🙏]{2}x", "!😀🙏x!🙏😀x", [(1, 9), (11, 9)]),
+            ("ab.|ab\\d", "!ab7!abX", [(1, 3), (5, 3)]),
+        };
+        foreach (var row in rows)
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft,
+            RegexOptions.Compiled | RegexOptions.RightToLeft })
+        {
+            var input = Encoding.UTF8.GetBytes(row.Subject);
+            var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | mode);
+            var expected = (mode & RegexOptions.RightToLeft) == 0 ? row.Matches : row.Matches.Reverse().ToArray();
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(expected.Length, regex.Count(input));
+            var actual = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(expected, actual);
+            var first = regex.Match(input);
+            Assert.True(first.Success);
+            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
+        }
+    }
+
+    [Fact]
+    public void ExactLiteralProducersDeclineMalformedTextAndChangingCaseFibers()
+    {
+        foreach (var text in new[] { "\ud800", "\udfff", "a\ud800b", "\udc00😀" })
+        {
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node));
+        }
+        foreach (var value in new[] { '\ud800', '\udfff' })
+        {
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(node));
+        }
+        foreach (var text in new[] { "ab", "K", "I", "😀" })
+        {
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, text);
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(node));
+            Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node));
+        }
+        var punctuation = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, "12!😀");
+        Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(punctuation));
+        punctuation.Str = "12!";
+        Assert.Equal("12!", Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(punctuation));
+        Assert.Equal("12!", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(punctuation));
+        var unknown = Utf8TreeNode.Create((Utf8TreeNodeKind)255, RegexOptions.None);
+        Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(0, null), Utf8OwnedFindOptimizations.ComputeByteWidth(unknown));
+    }
+
+    [Fact]
+    public void LiteralCertificatesRecoverEveryWorkCutoffWithParentLoansIntact()
+    {
+        foreach (var pattern in new[] { "a😀b", "ab.|ab\\d", "(?i:ab)c", "😀[ab]cd" })
+        {
+            var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+            Assert.NotNull(tree);
+            for (var route = 0; route < 4; route++)
+            {
+                ulong work;
+                object? expected;
+                using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+                {
+                    expected = ProduceLiteral(tree.Root, route);
+                    work = measured.Budget.WorkSteps;
+                }
+                Assert.InRange(work, 1ul, 10_000ul);
+                for (ulong cutoff = 0; cutoff <= work; cutoff++)
+                {
+                    using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
+                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
+                    var checkpoint = owner.Budget.ObjectCheckpoint;
+                    Exception? failure;
+                    using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.Equal(expected, ProduceLiteral(tree.Root, route)));
+                    if (cutoff == work) Assert.Null(failure);
+                    else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+                    Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                    Assert.Equal(0ul, owner.Budget.Reserved);
+                    Assert.Equal(0ul, owner.Budget.Depth);
+                    Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                    Assert.Equal(17, parent.Value);
+                    Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
+                }
+            }
+        }
+
+        static object? ProduceLiteral(Utf8TreeNode node, int route) => route switch
+        {
+            0 => Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(node),
+            1 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(node),
+            2 => Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node),
+            _ => Utf8OwnedFindOptimizations.ComputeByteWidth(node),
+        };
+    }
+
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
 
     [Fact]

@@ -43,6 +43,9 @@ public sealed class Utf8ByteSafeCompilerFrameAdmissionTests
 
     private static void Run(int route, Utf8ExecutionTree tree, Utf8ByteSafeLinearVerifierStep[] steps)
     {
+        // These probes discard their outputs. Returned program arrays otherwise
+        // stay funded by the caller's owner for as long as that owner is active.
+        using var discarded = Utf8ConstructionScope.Enter();
         if (route == 0) Assert.True(Utf8ByteSafeLinearVerifierProgram.Compile(tree).Succeeded);
         else Assert.Equal(2, Minimum(steps));
     }
@@ -167,11 +170,14 @@ public sealed class Utf8ByteSafeCompilerFrameAdmissionTests
         var checkpoint = owner.Budget.ObjectCheckpoint;
         Run(0, tree, steps);
         Run(1, tree, steps);
-        var result = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree);
-        Assert.True(result.Succeeded);
-        Assert.True(result.Program.TryMatch("ab1ab2"u8, 0, out var length, out var defer));
-        Assert.Equal(6, length);
-        Assert.False(defer);
+        using (var discarded = Utf8ConstructionScope.Enter())
+        {
+            var result = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree);
+            Assert.True(result.Succeeded);
+            Assert.True(result.Program.TryMatch("ab1ab2"u8, 0, out var length, out var defer));
+            Assert.Equal(6, length);
+            Assert.False(defer);
+        }
         Assert.True(owner.Budget.PeakBytes > 2048);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);

@@ -157,11 +157,23 @@ public sealed class Utf8OwnedSearchContinuationTests
                 Utf8TreeNode.Create(Utf8TreeNodeKind.PositiveLookaround, RegexOptions.CultureInvariant)),
             Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
         for (var index = 0; index < depth; index++) root = Parent(Utf8TreeNodeKind.Concatenate, root);
-        var sets = new List<Utf8FixedDistanceSet>();
-        object?[] args = [root, sets, 0, 0];
-        Assert.True(Assert.IsType<bool>(Call("TryAppendDeterministicPrefixSets", args)));
-        Assert.Equal(3, Assert.IsType<int>(args[2]));
+        object?[] args = [root, 0, null];
+        Assert.True(Assert.IsType<bool>(Call("TryExtractDeterministicPrefixSets", args)));
+        var sets = Assert.IsType<Utf8FixedDistanceSet[]>(args[2]);
+        Assert.Equal(3, sets[^1].Distance + 1);
         Assert.Equal(new[] { 0, 1, 2 }, sets.Select(static set => set.Distance));
         Assert.Equal(new[] { "a", "b", "c" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
+        // A known assertion consumes zero bytes. An unknown inner atom has no
+        // fixed width and cannot permit the same continuation at any depth.
+        var opaque = Parent(Utf8TreeNodeKind.Concatenate,
+            Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab"),
+                Utf8TreeNode.Create(Utf8TreeNodeKind.Unknown, RegexOptions.CultureInvariant)),
+            Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
+        for (var index = 0; index < depth; index++) opaque = Parent(Utf8TreeNodeKind.Concatenate, opaque);
+        args = [opaque, 0, null];
+        Assert.True(Assert.IsType<bool>(Call("TryExtractDeterministicPrefixSets", args)));
+        sets = Assert.IsType<Utf8FixedDistanceSet[]>(args[2]);
+        Assert.Equal(new[] { 0, 1 }, sets.Select(static set => set.Distance));
+        Assert.Equal(new[] { "a", "b" }, sets.Select(static set => System.Text.Encoding.ASCII.GetString(set.ByteSet.GetMatchBytes())));
     }
 }

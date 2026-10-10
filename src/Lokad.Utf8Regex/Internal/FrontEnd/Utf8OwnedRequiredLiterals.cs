@@ -1,7 +1,9 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Required literal families guide native search. Clean alternatives keep their
-// ordinally sorted branches; dirty top-level alternatives keep common members.
+// ordinally sorted branches; dirty top-level alternatives keep a whole family
+// that covers a mandatory family in every branch. Families are disjunctions:
+// intersecting individual members cannot prove that a match contains one.
 // Nested dirty alternatives and opaque nodes contribute nothing. Selection uses
 // pattern-text length as a heuristic, never as a scalar matching width.
 internal static class Utf8OwnedRequiredLiterals
@@ -58,9 +60,9 @@ internal static class Utf8OwnedRequiredLiterals
             return best;
         }
 
-        static int TotalLength(string[] family, Utf8ConstructionBudget budget)
+        static long TotalLength(string[] family, Utf8ConstructionBudget budget)
         {
-            var total = 0;
+            long total = 0;
             foreach (var member in family) { budget.ChargeWork(1); total += member.Length; }
             return total;
         }
@@ -80,16 +82,16 @@ internal static class Utf8OwnedRequiredLiterals
                     frame = frame with { Entered = true };
                     switch (node.Kind)
                     {
-                        case Utf8TreeNodeKind.One:
+                        case Utf8TreeNodeKind.One when Utf8OwnedFindOptimizations.IsExactLiteral(node):
                             var one = arena.Allocate<string>(1, false);
                             one[0] = budget.CopyText([node.Ch]);
                             families.Add(one);
                             break;
                         case Utf8TreeNodeKind.Multi:
-                            if (!string.IsNullOrEmpty(node.Str))
+                            if (node.Str is { } text && Utf8OwnedFindOptimizations.IsExactLiteral(node))
                             {
                                 var multi = arena.Allocate<string>(1, false);
-                                multi[0] = node.Str;
+                                multi[0] = text;
                                 families.Add(multi);
                             }
                             break;
@@ -124,6 +126,7 @@ internal static class Utf8OwnedRequiredLiterals
 
         static string[]? UnionCleanBranches(Utf8TreeNode node, Utf8ConstructionBudget budget, Utf8ConstructionArena arena)
         {
+            if (node.ChildCount == 0) return null;
             using var result = Utf8ConstructionBuffer<string>.Create(budget);
             for (var i = 0; i < node.ChildCount; i++)
             {
@@ -144,46 +147,52 @@ internal static class Utf8OwnedRequiredLiterals
 
         static string[]? BestCommonFamily(Utf8TreeNode node, Utf8ConstructionBudget budget, Utf8ConstructionArena arena)
         {
-            using var members = Utf8ConstructionBuffer<Utf8ConstructionMap<string, bool>>.Create(budget);
-            using var candidates = Utf8ConstructionBuffer<string>.Create(budget);
-            using var common = Utf8ConstructionBuffer<string>.Create(budget);
-            try
+            if (node.ChildCount == 0) return null;
+            using var candidates = Utf8ConstructionBuffer<string[]>.Create(budget);
+            CollectInto(node.Child(0), candidates, true, budget, arena);
+            for (var branch = 1; branch < node.ChildCount && candidates.Count != 0; branch++)
             {
-                for (var i = 0; i < node.ChildCount; i++)
+                budget.ChargeWork(1);
+                using var families = Utf8ConstructionBuffer<string[]>.Create(budget);
+                CollectInto(node.Child(branch), families, true, budget, arena);
+                var kept = 0;
+                for (var index = 0; index < candidates.Count; index++)
                 {
                     budget.ChargeWork(1);
-                    var set = Utf8ConstructionMap<string, bool>.Create(budget, StringComparer.Ordinal);
-                    // Publish before populating so every acquired table is released
-                    // by the unmetered finally path, including partial branches.
-                    members.Add(set);
-                    using var families = Utf8ConstructionBuffer<string[]>.Create(budget);
-                    CollectInto(node.Child(i), families, true, budget, arena);
+                    var candidate = candidates[index];
+                    var covered = false;
                     foreach (var family in families)
-                        foreach (var member in family)
-                        {
-                            budget.ChargeWork(1);
-                            if (set.ContainsKey(member)) continue;
-                            set[member] = true;
-                            if (i == 0) candidates.Add(member);
-                        }
-                }
-                if (members.Count == 0) return null;
-                foreach (var candidate in candidates)
-                {
-                    budget.ChargeWork(1);
-                    var shared = true;
-                    for (var i = 1; i < members.Count; i++)
                     {
                         budget.ChargeWork(1);
-                        if (!members[i].ContainsKey(candidate)) { shared = false; break; }
+                        if (Covers(candidate, family)) { covered = true; break; }
                     }
-                    if (shared) common.Add(candidate);
+                    if (covered) candidates[kept++] = candidate;
                 }
-                if (common.Count == 0) return null;
-                common.Sort(CompareOrdinal);
-                return arena.Take(common, false);
+                while (candidates.Count > kept) { budget.ChargeWork(1); candidates.Pop(); }
             }
-            finally { foreach (var set in members) set.Dispose(); }
+            return candidates.Count == 0 ? null : BestByTotalLength(candidates, budget);
+
+            // A candidate disjunction covers a branch when it contains every
+            // member of at least one mandatory family of that branch. Sorted
+            // borrowed arrays permit a metered merge without flattening maps.
+            static bool Covers(string[] candidate, string[] required)
+            {
+                if (candidate.Length == 0 || required.Length == 0) return false;
+                var index = 0;
+                foreach (var member in required)
+                {
+                    while (index < candidate.Length)
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        var order = CompareOrdinal(candidate[index], member);
+                        if (order > 0) return false;
+                        if (order == 0) break;
+                        index++;
+                    }
+                    if (index == candidate.Length) return false;
+                }
+                return true;
+            }
         }
 
         static string? BranchText(Utf8TreeNode node, Utf8ConstructionBudget budget)
@@ -199,8 +208,8 @@ internal static class Utf8OwnedRequiredLiterals
             }
             return node.Kind switch
             {
-                Utf8TreeNodeKind.One => budget.CopyText([node.Ch]),
-                Utf8TreeNodeKind.Multi => string.IsNullOrEmpty(node.Str) ? null : node.Str,
+                Utf8TreeNodeKind.One when Utf8OwnedFindOptimizations.IsExactLiteral(node) => budget.CopyText([node.Ch]),
+                Utf8TreeNodeKind.Multi when Utf8OwnedFindOptimizations.IsExactLiteral(node) => node.Str,
                 _ => null,
             };
         }

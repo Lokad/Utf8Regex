@@ -1,13 +1,11 @@
-using System.Buffers;
-
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal readonly struct PreparedAsciiDelimitedTokenSearch
 {
     private readonly Utf8AsciiLiteralFinder _delimiterFinder;
-    private readonly SearchValues<byte> _headSearchValues;
-    private readonly SearchValues<byte> _middleSearchValues;
-    private readonly SearchValues<byte> _tailSearchValues;
+    private readonly AsciiCharClass _headMask;
+    private readonly AsciiCharClass _middleMask;
+    private readonly AsciiCharClass _tailMask;
     private readonly byte _secondaryDelimiter;
 
     public PreparedAsciiDelimitedTokenSearch(
@@ -17,12 +15,21 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
         ReadOnlySpan<byte> middleCharSetUtf8,
         ReadOnlySpan<byte> tailCharSetUtf8)
     {
-        _delimiterFinder = new Utf8AsciiLiteralFinder(delimiterUtf8);
-        _headSearchValues = SearchValues.Create(headCharSetUtf8);
-        _middleSearchValues = SearchValues.Create(middleCharSetUtf8);
-        _tailSearchValues = SearchValues.Create(tailCharSetUtf8);
-        _secondaryDelimiter = secondaryDelimiterUtf8[0];
-        DelimiterLength = delimiterUtf8.Length;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork((ulong)headCharSetUtf8.Length + (ulong)middleCharSetUtf8.Length + (ulong)tailCharSetUtf8.Length);
+            _headMask = AsciiCharClass.FromBytes(headCharSetUtf8);
+            _middleMask = AsciiCharClass.FromBytes(middleCharSetUtf8);
+            _tailMask = AsciiCharClass.FromBytes(tailCharSetUtf8);
+            _secondaryDelimiter = secondaryDelimiterUtf8[0];
+            _delimiterFinder = new Utf8AsciiLiteralFinder(delimiterUtf8);
+            DelimiterLength = delimiterUtf8.Length;
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     public int DelimiterLength { get; }
@@ -47,7 +54,7 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
         while (_delimiterFinder.TryFindNext(input, searchFrom, out var delimiterIndex))
         {
             var tokenStart = delimiterIndex;
-            while (tokenStart > searchFrom && _headSearchValues.Contains(input[tokenStart - 1]))
+            while (tokenStart > searchFrom && _headMask.Contains(input[tokenStart - 1]))
             {
                 tokenStart--;
             }
@@ -60,7 +67,7 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
 
             var middleStart = delimiterIndex + DelimiterLength;
             if ((uint)middleStart >= (uint)input.Length ||
-                !_middleSearchValues.Contains(input[middleStart]))
+                !_middleMask.Contains(input[middleStart]))
             {
                 searchFrom = delimiterIndex + 1;
                 continue;
@@ -99,7 +106,7 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
         while (_delimiterFinder.TryFindNext(input, searchFrom, out var delimiterIndex))
         {
             var tokenStart = delimiterIndex;
-            while (tokenStart > searchFrom && _headSearchValues.Contains(input[tokenStart - 1]))
+            while (tokenStart > searchFrom && _headMask.Contains(input[tokenStart - 1]))
             {
                 tokenStart--;
             }
@@ -112,7 +119,7 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
 
             var middleStart = delimiterIndex + DelimiterLength;
             if ((uint)middleStart >= (uint)input.Length ||
-                !_middleSearchValues.Contains(input[middleStart]))
+                !_middleMask.Contains(input[middleStart]))
             {
                 searchFrom = delimiterIndex + 1;
                 continue;
@@ -141,8 +148,8 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
     private bool IsPotentialTailByte(byte value)
     {
         return value == _secondaryDelimiter ||
-            _middleSearchValues.Contains(value) ||
-            _tailSearchValues.Contains(value);
+            _middleMask.Contains(value) ||
+            _tailMask.Contains(value);
     }
 
     private bool TryFindTailSplit(ReadOnlySpan<byte> input, int middleStart, int tokenEnd)
@@ -157,7 +164,7 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
             var tailStart = secondaryIndex + 1;
             if ((uint)tailStart >= (uint)input.Length ||
                 tailStart >= tokenEnd ||
-                !_tailSearchValues.Contains(input[tailStart]))
+                !_tailMask.Contains(input[tailStart]))
             {
                 continue;
             }
@@ -165,7 +172,7 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
             var isTail = true;
             for (var index = tailStart; index < tokenEnd; index++)
             {
-                if (!_tailSearchValues.Contains(input[index]))
+                if (!_tailMask.Contains(input[index]))
                 {
                     isTail = false;
                     break;

@@ -5,6 +5,41 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8RequiredLiteralAdmissionTests
 {
+    [Fact]
+    public void WholeFamilyCertificatesRecoverEveryWorkCutoffAndDeclineWithoutRetainedLoans()
+    {
+        foreach (var pattern in new[] { "[ab](foo|bar)|[cd](foo|bar)", "[ab](foo|bar)|[cd](foo|baz)", "(?i:😀)x", "😀|🙏" })
+        {
+            var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+            Assert.NotNull(tree);
+            string[]? expected;
+            ulong work;
+            using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+            {
+                expected = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root);
+                work = measured.Budget.WorkSteps;
+            }
+            Assert.InRange(work, 1ul, 10_000ul);
+            for (ulong cutoff = 0; cutoff <= work; cutoff++)
+            {
+                using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
+                var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
+                var checkpoint = owner.Budget.ObjectCheckpoint;
+                Exception? failure;
+                using (var child = Utf8ConstructionScope.Enter())
+                    failure = Record.Exception(() => Assert.Equal(expected, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root)));
+                if (cutoff == work) Assert.Null(failure);
+                else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+                Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                Assert.Equal(0ul, owner.Budget.Depth);
+                Assert.Equal(0ul, owner.Budget.Reserved);
+                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(17, parent.Value);
+                Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
+            }
+        }
+    }
+
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)

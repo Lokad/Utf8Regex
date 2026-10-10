@@ -16,15 +16,25 @@ internal readonly struct Utf8AsciiLiteralFinder
 
     public Utf8AsciiLiteralFinder(ReadOnlySpan<byte> literal)
     {
-        _literal = literal.ToArray();
-        _kind = literal.Length switch
+        if (literal.IsEmpty) { _literal = []; _kind = Utf8AsciiLiteralFinderKind.Empty; return; }
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            0 => Utf8AsciiLiteralFinderKind.Empty,
-            1 => Utf8AsciiLiteralFinderKind.SingleByte,
-            2 => Utf8AsciiLiteralFinderKind.DoubleByte,
-            <= 8 => Utf8AsciiLiteralFinderKind.FirstByteThenTail,
-            _ => Utf8AsciiLiteralFinderKind.SpanIndexOf,
-        };
+            _literal = budget.AllocateArray<byte>(literal.Length, false);
+            budget.ChargeWork((ulong)literal.Length);
+            literal.CopyTo(_literal);
+            _kind = literal.Length switch
+            {
+                1 => Utf8AsciiLiteralFinderKind.SingleByte,
+                2 => Utf8AsciiLiteralFinderKind.DoubleByte,
+                <= 8 => Utf8AsciiLiteralFinderKind.FirstByteThenTail,
+                _ => Utf8AsciiLiteralFinderKind.SpanIndexOf,
+            };
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     public ReadOnlySpan<byte> Literal => _literal;

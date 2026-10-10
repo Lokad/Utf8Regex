@@ -54,9 +54,9 @@ public sealed class Utf8DeterministicPreparationAdmissionTests
         switch (route)
         {
             case 0:
-                var prefix = new StringBuilder();
-                Call(anchor, "AppendDeterministicLeadingAscii", node, prefix);
-                Assert.StartsWith("ab", prefix.ToString());
+                var prefix = Utf8ExecutionPrefixFamilies.Find(node);
+                Assert.NotNull(prefix);
+                Assert.StartsWith("ab", Assert.Single(prefix));
                 break;
             case 1:
                 Assert.True(Assert.IsType<bool>(Call(anchor, "TryGetLeadingAsciiByteMask", node, 0ul, 0ul)));
@@ -65,11 +65,10 @@ public sealed class Utf8DeterministicPreparationAdmissionTests
                 Assert.True(Assert.IsType<bool>(Call(anchor, "IsByteSafeNode", node)));
                 break;
             case 3:
-                Assert.NotEmpty(Assert.IsType<List<string>>(Call(anchor, "TryExtractLeadingAsciiLiteralsCore", node)));
+                Assert.NotEmpty(Utf8ExecutionPrefixFamilies.Find(node) ?? []);
                 break;
             case 4:
-                Assert.True(Assert.IsType<bool>(Call(typeof(Utf8DeterministicVerifierGuards), "TryAppendPrefixGuards",
-                    node, new List<Utf8DeterministicByteGuard>(), 0, 0)));
+                Assert.NotEmpty(Assert.IsType<Utf8DeterministicByteGuard[]>(Call(typeof(Utf8DeterministicVerifierGuards), "TryExtractPrefixGuards", node, 0)));
                 break;
             case 5:
                 object?[] args = [new[] { "a000", "A000" }, null];
@@ -189,17 +188,28 @@ public sealed class Utf8DeterministicPreparationAdmissionTests
             Node(Utf8ExecutionNodeKind.Multi, "c"));
         var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None,
             new Utf8SearchFactData { FallbackStartTransform = new(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace) }));
+        var ascii = Node(Utf8ExecutionNodeKind.Concatenate, "", root.Children[0],
+            Node(Utf8ExecutionNodeKind.Loop, "", Node(Utf8ExecutionNodeKind.Group, "", Node(Utf8ExecutionNodeKind.Set, @"[\t-\r ]"))),
+            root.Children[2], root.Children[3], root.Children[4]);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
         var slice = Assert.IsType<ValueTuple<Utf8ExecutionNode, int>>(Call(typeof(Utf8DeterministicVerifierGuards), "SkipLeadingAsciiWhitespacePrefix", root));
         Assert.Same(root, slice.Item1);
+        Assert.Equal(0, slice.Item2);
+        Assert.False(Utf8DeterministicVerifierGuards.Create(new(root), plan).HasValue);
+        slice = Assert.IsType<ValueTuple<Utf8ExecutionNode, int>>(Call(typeof(Utf8DeterministicVerifierGuards), "SkipLeadingAsciiWhitespacePrefix", ascii));
+        Assert.Same(ascii, slice.Item1);
         Assert.Equal(3, slice.Item2);
-        var guards = Utf8DeterministicVerifierGuards.Create(new(root), plan);
-        Assert.NotNull(guards.PrefixGuards);
-        Assert.Equal(new[] { 0, 1, 2 }, guards.PrefixGuards.Select(static guard => guard.Offset));
-        Assert.True(guards.Matches(" \tabc"u8, 0));
-        Assert.False(guards.Matches(" \tabx"u8, 0));
+        using (var discarded = Utf8ConstructionScope.Enter())
+        {
+            var guards = Utf8DeterministicVerifierGuards.Create(new(ascii), plan);
+            Assert.NotNull(guards.PrefixGuards);
+            Assert.Equal(new[] { 0, 1 }, guards.PrefixGuards.Select(static guard => guard.Offset));
+            Assert.True(guards.Matches(" \tabc"u8, 0));
+            Assert.True(guards.Matches(" \tabx"u8, 0)); // opaque width cannot certify c
+            Assert.False(guards.Matches(" \taxx"u8, 0));
+        }
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -241,7 +251,7 @@ public sealed class Utf8DeterministicPreparationAdmissionTests
         Assert.Equal(-1, folded.AsSpan(1).IndexOfAnyExcept((byte)'0'));
         Assert.Equal(bytes, owner.Budget.PeakBytes);
         Assert.Equal(bytes, owner.Budget.ReservedBytes);
-        Assert.Equal(4ul * width + 2, owner.Budget.WorkSteps);
+        Assert.Equal(4ul * width + 3, owner.Budget.WorkSteps); // one distinct-member comparison
         Assert.Equal(0ul, owner.Budget.Depth);
         owner.Budget.ReleaseArray(folded, instructions: false);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);

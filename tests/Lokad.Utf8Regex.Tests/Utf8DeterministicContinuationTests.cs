@@ -84,7 +84,7 @@ public sealed class Utf8DeterministicContinuationTests
         var root = Node(Utf8ExecutionNodeKind.Set, ascii ? @"[\t-\r ]" : @"\s");
         for (var index = 0; index < depth; index++)
             root = Node(Utf8ExecutionNodeKind.Loop, "", Node(Utf8ExecutionNodeKind.Group, "", root));
-        Assert.True(Assert.IsType<bool>(Call(typeof(Utf8DeterministicVerifierGuards), "IsAsciiWhitespaceLoop", root)));
+        Assert.Equal(ascii, Assert.IsType<bool>(Call(typeof(Utf8DeterministicVerifierGuards), "IsAsciiWhitespaceLoop", root)));
         object?[] args = [root, 0UL, 0UL];
         Assert.Equal(ascii, Assert.IsType<bool>(Call(typeof(Utf8DeterministicAnchorSearch), "TryGetLeadingAsciiByteMask", args)));
         var expected = new[] { (byte)' ', (byte)'\t', (byte)'\n', (byte)'\r', (byte)'\v', (byte)'\f' }
@@ -101,8 +101,8 @@ public sealed class Utf8DeterministicContinuationTests
         object?[] args = [root, 0UL, 0UL];
         Assert.False(Assert.IsType<bool>(Call(typeof(Utf8DeterministicAnchorSearch), "TryGetLeadingAsciiByteMask", args)));
         Assert.Equal(0UL, Assert.IsType<ulong>(args[1]));
-        Assert.Equal(1UL << ('c' - 64), Assert.IsType<ulong>(args[2]));
-        Assert.Null(Call(typeof(Utf8DeterministicAnchorSearch), "TryExtractLeadingAsciiLiteralsCore", root));
+        Assert.Equal(0UL, Assert.IsType<ulong>(args[2]));
+        Assert.Null(Utf8ExecutionPrefixFamilies.Find(root));
     }
 
     [Theory]
@@ -115,8 +115,8 @@ public sealed class Utf8DeterministicContinuationTests
         var family = Node(Utf8ExecutionNodeKind.Alternate, "", branches);
         var root = Node(Utf8ExecutionNodeKind.Concatenate, "", Node(Utf8ExecutionNodeKind.Multi, "pre"), family,
             Node(Utf8ExecutionNodeKind.Multi, "post"));
-        var result = Assert.IsType<List<string>>(Call(typeof(Utf8DeterministicAnchorSearch), "TryExtractLeadingAsciiLiteralsCore", root));
-        Assert.Equal(overCap ? new[] { "pre" } : Enumerable.Range(0, 32).Select(static index => "prex" + index + "post"), result);
+        var result = Assert.IsType<string[]>(Utf8ExecutionPrefixFamilies.Find(root));
+        Assert.Equal(overCap ? new[] { "pre" } : Enumerable.Range(0, 32).Select(static index => "prex" + index + "post").Order(StringComparer.Ordinal), result);
     }
 
     [Fact]
@@ -126,9 +126,7 @@ public sealed class Utf8DeterministicContinuationTests
             Node(Utf8ExecutionNodeKind.Concatenate, "", Node(Utf8ExecutionNodeKind.Multi, "ab"),
                 Node(Utf8ExecutionNodeKind.Empty, ""), Node(Utf8ExecutionNodeKind.Multi, "unused")),
             Node(Utf8ExecutionNodeKind.Multi, "c"));
-        var prefix = new StringBuilder();
-        Call(typeof(Utf8DeterministicAnchorSearch), "AppendDeterministicLeadingAscii", root, prefix);
-        Assert.Equal("abc", prefix.ToString());
+        Assert.Equal("abunusedc", Assert.Single(Utf8ExecutionPrefixFamilies.Find(root) ?? []));
     }
 
     [Fact]
@@ -138,9 +136,9 @@ public sealed class Utf8DeterministicContinuationTests
             .Select(static index => Node(Utf8ExecutionNodeKind.Multi, "x" + index)).ToArray());
         var right = Node(Utf8ExecutionNodeKind.Alternate, "", Node(Utf8ExecutionNodeKind.Multi, "a"), Node(Utf8ExecutionNodeKind.Multi, "b"));
         var product = Node(Utf8ExecutionNodeKind.Concatenate, "", left, right);
-        Assert.Null(Call(typeof(Utf8DeterministicAnchorSearch), "TryExtractLeadingAsciiLiteralsCore", product));
+        Assert.Equal(Enumerable.Range(0, 32).Select(static index => "x" + index).Order(StringComparer.Ordinal), Utf8ExecutionPrefixFamilies.Find(product));
         var root = Node(Utf8ExecutionNodeKind.Concatenate, "", Node(Utf8ExecutionNodeKind.Multi, "pre"), product,
             Node(Utf8ExecutionNodeKind.Multi, "unused"));
-        Assert.Equal(new[] { "pre" }, Assert.IsType<List<string>>(Call(typeof(Utf8DeterministicAnchorSearch), "TryExtractLeadingAsciiLiteralsCore", root)));
+        Assert.Equal(Enumerable.Range(0, 32).Select(static index => "prex" + index).Order(StringComparer.Ordinal), Utf8ExecutionPrefixFamilies.Find(root));
     }
 }

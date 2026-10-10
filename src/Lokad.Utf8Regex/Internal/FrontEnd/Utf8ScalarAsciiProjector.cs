@@ -88,6 +88,37 @@ internal static class Utf8ScalarAsciiProjector
             TryProjectAsciiDefinition(scalarClass, out charClass);
     }
 
+    // A byte candidate must cover the complete lexical case fiber. Wider
+    // equivalents (for example Kelvin sign for K) require the scalar lane.
+    // Non-invariant preparation covers every supported culture behavior.
+    internal static bool TryCloseAsciiCaseFiber(AsciiCharClass definition, bool folded,
+        RegexOptions options, out AsciiCharClass charClass)
+    {
+        charClass = definition;
+        if (!folded) return !definition.IsEmpty;
+        ulong low = definition.ActualLowMask, high = definition.ActualHighMask;
+        var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
+        for (var value = 0; value < 128; value++)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (!definition.Contains((byte)value)) continue;
+            for (var behavior = 0; behavior <= lastBehavior; behavior++)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value,
+                    (Utf8ScalarCaseBehavior)behavior))
+                {
+                    Utf8ConstructionScope.ChargeWork(1);
+                    if (equivalent >= 128) { charClass = default; return false; }
+                    if (equivalent < 64) low |= 1UL << equivalent;
+                    else high |= 1UL << (equivalent - 64);
+                }
+            }
+        }
+        charClass = new AsciiCharClass(low, high);
+        return !charClass.IsEmpty;
+    }
+
     // Construction queries may inspect any owned class on the ASCII domain.
     // This does not qualify Unicode execution by the native byte interpreter.
     // All ranges, predicates and right-associated subtraction stay borrowed;

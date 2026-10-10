@@ -3,8 +3,9 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Search preparation over borrowed grammar. The facts holder, covering prefix
 // ropes/families/frames/results and fixed-set state use shared construction
-// admission. Remaining literal/width producers and retained-policy qualification
-// still have their separate cleanup gates.
+// admission. Leading/longest literals are exact mandatory scalar fragments;
+// fixed distances require byte-width proofs. Broader preparation producers and
+// retained-policy qualification still have their separate cleanup gates.
 internal sealed class Utf8OwnedFindFacts
 {
     private readonly record struct ConstructionState(bool IsFixedLength, int MinRequiredLength,

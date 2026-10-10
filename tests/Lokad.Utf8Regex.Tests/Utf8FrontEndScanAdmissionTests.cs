@@ -82,6 +82,9 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     private static void Run(int route, Input input)
     {
+        // These scan controls discard their outputs. Materialized phrase/text
+        // loans now transfer correctly; release them with this outer scope.
+        using var discarded = Utf8ConstructionScope.Enter();
         var analyzer = typeof(Utf8FrontEndSearchAnalyzer);
         switch (route)
         {
@@ -91,7 +94,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
             case 3: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteScalarWindowByteWidth", input.Find, 0, false))); break;
             case 4: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteLineBreakCount", input.Find, 0))); break;
             case 5: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractTrailingLiteral", input.Find, ""))); break;
-            case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryAppendDeterministicPrefixSets", input.Find, new List<Utf8FixedDistanceSet>(), 0, 0))); break;
+            case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractDeterministicPrefixSets", input.Find, 0, null))); break;
             case 7: Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", input.Execution, new List<bool>()))); break;
             case 8: Call(typeof(Utf8AlternationBranchSpanMap), "CountAlternates", input.Execution, null, 0); break;
             case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
@@ -222,19 +225,22 @@ public sealed class Utf8FrontEndScanAdmissionTests
         var slice = Assert.IsType<ValueTuple<Utf8TreeNode, int>>(Call(typeof(Utf8FrontEndSearchAnalyzer), "SkipLeadingAsciiWhitespacePrefix", root));
         Assert.Same(root, slice.Item1);
         Assert.Equal(3, slice.Item2);
-        var sets = new List<Utf8FixedDistanceSet>();
-        object?[] args = [slice.Item1, sets, 0, slice.Item2];
-        Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryAppendDeterministicPrefixSets", args)));
-        Assert.Equal(4, args[2]);
-        Assert.Equal(new[] { 0, 1, 2, 3 }, sets.Select(static set => set.Distance));
-        Assert.Equal(new[] { "a", "b", "0123456789", "c" }, sets.Select(static set =>
+        using (var discarded = Utf8ConstructionScope.Enter())
         {
-            // Inspection borrows scratch; acquiring fresh class arrays would
-            // change the live owner whose rollback this fixture verifies.
-            Span<byte> bytes = stackalloc byte[128];
-            var count = set.ByteSet.CopyMatchBytes(bytes);
-            return System.Text.Encoding.ASCII.GetString(bytes[..count]);
-        }));
+            object?[] args = [slice.Item1, slice.Item2, null];
+            Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryExtractDeterministicPrefixSets", args)));
+            var sets = Assert.IsType<Utf8FixedDistanceSet[]>(args[2]);
+            Assert.Equal(4, sets[^1].Distance + 1);
+            Assert.Equal(new[] { 0, 1, 2, 3 }, sets.Select(static set => set.Distance));
+            Assert.Equal(new[] { "a", "b", "0123456789", "c" }, sets.Select(static set =>
+            {
+                // Inspection borrows scratch; acquiring fresh class arrays would
+                // change the live owner whose rollback this fixture verifies.
+                Span<byte> bytes = stackalloc byte[128];
+                var count = set.ByteSet.CopyMatchBytes(bytes);
+                return System.Text.Encoding.ASCII.GetString(bytes[..count]);
+            }));
+        }
         for (var index = 0; index < root.ChildCount; index++) Assert.Same(root, root.Child(index).Parent);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);

@@ -137,7 +137,7 @@ public sealed class Utf8ByteSafeCompilerContinuationTests
         args = [root, 0UL, 0UL];
         Assert.False(Assert.IsType<bool>(Call(Compiler(), "TryGetLeadingAsciiByteMask", args)));
         Assert.Equal(0UL, args[1]);
-        Assert.Equal(1UL << ('a' - 64), args[2]);
+        Assert.Equal(0UL, args[2]);
     }
 
     [Fact]

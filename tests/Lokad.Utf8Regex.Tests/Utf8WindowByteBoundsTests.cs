@@ -9,6 +9,126 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8WindowByteBoundsTests
 {
+    [Fact]
+    public void LeadingWindowFamiliesKeepPunctuationBranchesAndAdmitEveryWorkCutoff()
+    {
+        var semantic = Utf8FrontEnd.Compile("(?:foo|!!).{0,2}bar", RegexOptions.CultureInvariant).SemanticRegex;
+        var facts = Utf8FrontEndSearchAnalyzer.Analyze(semantic);
+        Assert.Equal(["foo", "!!"], facts.OrderedWindowLeadingLiteralsUtf8.Select(Encoding.UTF8.GetString));
+        var partial = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Compile("(foo\\s+bar).{0,2}baz", RegexOptions.CultureInvariant).SemanticRegex);
+        Assert.Equal(["foo"], partial.OrderedWindowLeadingLiteralsUtf8.Select(Encoding.UTF8.GetString));
+        Assert.Null(partial.OrderedWindowMaxGap);
+        var optional = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Compile("((foo)(bar))(baz)?", RegexOptions.CultureInvariant).SemanticRegex);
+        Assert.Empty(optional.OrderedWindowLeadingLiteralsUtf8);
+        var method = typeof(Utf8FrontEndSearchAnalyzer).GetMethod("TryExtractLeadingWindowPhrases", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        foreach (var pattern in new[] { "foo", "foo|!!|foo", "(foo)(bar)" })
+        {
+            var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+            Assert.NotNull(tree);
+            ulong work;
+            string[] expected;
+            using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+            {
+                expected = Invoke(tree.Root)!;
+                Assert.NotNull(expected);
+                work = measured.Budget.WorkSteps;
+                Assert.True(measured.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(expected.Length));
+            }
+            Assert.InRange(work, 1ul, 10_000ul);
+            for (ulong cutoff = 0; cutoff <= work; cutoff++)
+            {
+                using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
+                var parent = owner.Budget.AllocateArray<byte>(1, false);
+                var checkpoint = owner.Budget.ObjectCheckpoint;
+                Exception? failure;
+                using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.Equal(expected, Invoke(tree.Root)));
+                if (cutoff == work) Assert.Null(failure);
+                else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+                Assert.Equal(48ul, owner.Budget.ReservedBytes);
+                Assert.Equal(0ul, owner.Budget.Depth);
+                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Single(parent);
+                Assert.InRange(owner.Budget.WorkSteps, 1ul, cutoff + 1);
+            }
+            foreach (var depth in new[] { false, true })
+            {
+                using var owner = new Utf8ConstructionScope(0, depth ? ulong.MaxValue : 48, ulong.MaxValue, depth ? 0ul : ulong.MaxValue);
+                var parent = owner.Budget.AllocateArray<byte>(1, false);
+                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Invoke(tree.Root));
+                Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+                Assert.Equal(48ul, owner.Budget.ReservedBytes);
+                Assert.Equal(48ul, owner.Budget.PeakBytes);
+                Assert.Equal(0ul, owner.Budget.Depth);
+                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Single(parent);
+            }
+        }
+        var folded = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, "foo");
+        Assert.Null(Invoke(folded));
+
+        string[]? Invoke(Utf8TreeNode node)
+        {
+            object?[] arguments = [node, null];
+            try { return Assert.IsType<bool>(method.Invoke(null, arguments)) ? Assert.IsType<string[]>(arguments[1]) : null; }
+            catch (TargetInvocationException error) when (error.InnerException is { } inner)
+            { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
+        }
+    }
+
+    [Fact]
+    public void OrderedWindowFactsCoverIndependentScalarVmMatchesAndGapBounds()
+    {
+        var patterns = new[] { "(?:foo|!!).{0,2}bar", "(foo\\s+bar).{0,2}baz", "(?:foo\\s+bar|!!).{0,2}baz",
+            "((foo)(bar))(baz)?", "foo.{0,2}(?i:bar)", "(?i:foo).{0,2}bar", "(?:first|second)[😀-🙏]{1,2}last",
+            "(?:first|second)(?i:k){1,2}last", "(?:first|second)[^\\r\\n]{0,2}last", "foo(bar)(baz)",
+            "(?:foo|bar).{0,2}baz", "foo\\s*bar", "\\s*# [Nn][Oo][Qq][Aa]", "(?:foo|!!)xbar" };
+        var subjects = new[] { "fooxbar", "!!xbar", "!!xbar!fooxbar", "foo😀bar", "foo😀BAR", "FOO😀bar",
+            "foobar", "foobarbaz", "foo\tbarbaz", "foo            barbaz", "foo\u00a0barbaz", "!!xbaz",
+            "first😀last", "second😀🙏last", "firstKlast", "secondkKlast", "firsté😀last", "first\nlast", "# NOQA" }
+            .Select(Encoding.UTF8.GetBytes).ToArray();
+        var observed = 0;
+        foreach (var pattern in patterns)
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
+        {
+            var semantic = Utf8FrontEnd.Compile(pattern, options).SemanticRegex;
+            var facts = Utf8FrontEndSearchAnalyzer.Analyze(semantic);
+            if (facts.OrderedWindowLeadingLiteralsUtf8.Length == 0 || facts.OrderedWindowTrailingLiteralUtf8.Length == 0) continue;
+            var program = Utf8OwnedTreeSliceLowerer.TryLower(semantic.RuntimeTree!, options);
+            Assert.NotNull(program);
+            var starts = new int[program.GroupCount];
+            var ends = new int[program.GroupCount];
+            foreach (var input in subjects)
+            for (var boundary = 0; boundary <= input.Length; boundary++)
+            {
+                if (boundary < input.Length && (input[boundary] & 0xc0) == 0x80) continue;
+                var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(100_000, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+                var match = Utf8SliceRunner.TryMatchAt(program, input, boundary, starts, ends, true, ref invocation);
+                Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
+                if (!match.IsMatch) continue;
+                observed++;
+                var value = input.AsSpan(Math.Min(boundary, match.EndIndex), Math.Abs(boundary - match.EndIndex));
+                var covered = false;
+                foreach (var leading in facts.OrderedWindowLeadingLiteralsUtf8)
+                for (var offset = 0; offset + leading.Length <= value.Length; offset++)
+                {
+                    if (!value[offset..].StartsWith(leading)) continue;
+                    for (var end = offset + leading.Length; end + facts.OrderedWindowTrailingLiteralUtf8.Length <= value.Length; end++)
+                    {
+                        if (!value[end..].StartsWith(facts.OrderedWindowTrailingLiteralUtf8)) continue;
+                        var gap = value.Slice(offset + leading.Length, end - offset - leading.Length);
+                        if (facts.OrderedWindowMaxGap is int maximum && gap.Length > maximum) continue;
+                        if (facts.OrderedWindowSameLine && (gap.Contains((byte)'\n') || gap.Contains((byte)'\r'))) continue;
+                        covered = true;
+                    }
+                }
+                Assert.True(covered, $"Uncovered ordered window: {pattern} / {options}");
+            }
+        }
+        Assert.True(observed > 10);
+    }
+
     public static IEnumerable<object[]> Bounds()
     {
         var rows = new (string Pattern, int? Maximum, bool Excludes)[]

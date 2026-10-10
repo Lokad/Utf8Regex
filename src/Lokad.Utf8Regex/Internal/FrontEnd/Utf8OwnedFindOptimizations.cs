@@ -26,7 +26,7 @@ internal static class Utf8OwnedFindOptimizations
         switch (node.Kind)
         {
             case Utf8TreeNodeKind.One:
-                return Scalar(node.Ch, node.MatchCaseInsensitive, node.Options);
+                return ComputeScalarByteWidth(node.Ch, node.MatchCaseInsensitive, node.Options);
             case Utf8TreeNodeKind.Multi:
                 if (node.Str is not { } text) return new(0, null);
                 long low = 0, high = 0;
@@ -35,7 +35,7 @@ internal static class Utf8OwnedFindOptimizations
                     budget.ChargeWork(1);
                     if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
                         return new(0, null);
-                    var atom = Scalar(scalar.Value, node.MatchCaseInsensitive, node.Options);
+                    var atom = ComputeScalarByteWidth(scalar.Value, node.MatchCaseInsensitive, node.Options);
                     low += atom.Minimum; high += atom.Maximum.GetValueOrDefault(); offset += consumed;
                 }
                 return Bounds(low, high);
@@ -46,7 +46,7 @@ internal static class Utf8OwnedFindOptimizations
             case Utf8TreeNodeKind.Oneloop:
             case Utf8TreeNodeKind.Onelazy:
             case Utf8TreeNodeKind.Oneloopatomic:
-                return Repeat(Scalar(node.Ch, node.MatchCaseInsensitive, node.Options), node.M, node.N);
+                return Repeat(ComputeScalarByteWidth(node.Ch, node.MatchCaseInsensitive, node.Options), node.M, node.N);
             case Utf8TreeNodeKind.Notoneloop:
             case Utf8TreeNodeKind.Notonelazy:
             case Utf8TreeNodeKind.Notoneloopatomic:
@@ -87,8 +87,24 @@ internal static class Utf8OwnedFindOptimizations
             case Utf8TreeNodeKind.Backreference:
             case Utf8TreeNodeKind.Unknown:
                 return new(0, null);
-            default:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Eol:
+            case Utf8TreeNodeKind.Boundary:
+            case Utf8TreeNodeKind.NonBoundary:
+            case Utf8TreeNodeKind.Beginning:
+            case Utf8TreeNodeKind.Start:
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.End:
+            case Utf8TreeNodeKind.Nothing:
+            case Utf8TreeNodeKind.Empty:
+            case Utf8TreeNodeKind.PositiveLookaround:
+            case Utf8TreeNodeKind.NegativeLookaround:
+            case Utf8TreeNodeKind.ECMABoundary:
+            case Utf8TreeNodeKind.NonECMABoundary:
+            case Utf8TreeNodeKind.UpdateBumpalong:
                 return new(0, 0);
+            default:
+                return new(0, null);
         }
 
         static int CapMinimum(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
@@ -99,29 +115,6 @@ internal static class Utf8OwnedFindOptimizations
             if (minimum < 0 || maximum < minimum) return new(0, null);
             return new(CapMinimum((long)body.Minimum * minimum), maximum == 0 || body.Maximum == 0 ? 0 :
                 maximum == int.MaxValue || body.Maximum is null ? null : CapMaximum((long)body.Maximum.Value * maximum));
-        }
-        static ByteWidth Scalar(int scalar, bool folded, RegexOptions options)
-        {
-            var owner = Utf8ConstructionScope.CurrentBudget; owner.ChargeWork(1);
-            if (!Rune.IsValid(scalar)) return new(0, null);
-            var width = new Rune(scalar).Utf8SequenceLength;
-            if (!folded) return new(width, width);
-            // Supplementary equivalence uses runtime scalar casing, not this BMP
-            // table. Keep sound bounds without assuming cross-plane closure.
-            if (scalar > 0xffff) return new(1, 4);
-            var low = width; var high = width;
-            var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
-            for (var behavior = 0; behavior <= lastBehavior; behavior++)
-            {
-                owner.ChargeWork(1);
-                foreach (var equivalent in Internal.Execution.Utf8SliceCaseEquivalences.GetEquivalents((char)scalar,
-                    (Internal.Execution.Utf8ScalarCaseBehavior)behavior))
-                {
-                    owner.ChargeWork(1); var bytes = new Rune(equivalent).Utf8SequenceLength;
-                    low = Math.Min(low, bytes); high = Math.Max(high, bytes);
-                }
-            }
-            return new(low, high);
         }
         static ByteWidth Range(int low, int high)
         {
@@ -153,7 +146,7 @@ internal static class Utf8OwnedFindOptimizations
                     if (high - low > 128) return new(1, 4);
                     for (var value = low; value < high; value++)
                     {
-                        var scalar = Scalar(value, true, node.Options);
+                        var scalar = ComputeScalarByteWidth(value, true, node.Options);
                         minimum = Math.Min(minimum, scalar.Minimum); maximum = Math.Max(maximum, scalar.Maximum.GetValueOrDefault());
                     }
                 }
@@ -161,6 +154,30 @@ internal static class Utf8OwnedFindOptimizations
             }
             return maximum == 0 ? new(0, null) : new(minimum, maximum);
         }
+    }
+
+    internal static ByteWidth ComputeScalarByteWidth(int scalar, bool folded, RegexOptions options)
+    {
+        var owner = Utf8ConstructionScope.CurrentBudget; owner.ChargeWork(1);
+        if (!Rune.IsValid(scalar)) return new(0, null);
+        var width = new Rune(scalar).Utf8SequenceLength;
+        if (!folded) return new(width, width);
+        // Supplementary equivalence uses runtime scalar casing, not this BMP
+        // table. Keep sound bounds without assuming cross-plane closure.
+        if (scalar > 0xffff) return new(1, 4);
+        var low = width; var high = width;
+        var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
+        for (var behavior = 0; behavior <= lastBehavior; behavior++)
+        {
+            owner.ChargeWork(1);
+            foreach (var equivalent in Internal.Execution.Utf8SliceCaseEquivalences.GetEquivalents((char)scalar,
+                (Internal.Execution.Utf8ScalarCaseBehavior)behavior))
+            {
+                owner.ChargeWork(1); var bytes = new Rune(equivalent).Utf8SequenceLength;
+                low = Math.Min(low, bytes); high = Math.Max(high, bytes);
+            }
+        }
+        return new(low, high);
     }
 
     public static Utf8TreeNodeKind FindTrailingAnchor(Utf8TreeNode node)
@@ -186,6 +203,48 @@ internal static class Utf8OwnedFindOptimizations
                 return Utf8TreeNodeKind.Unknown;
         }
     }
+    // These are exact mandatory fragments, not a representative spelling of a
+    // branch or a case fiber. Their pattern text must encode complete scalars.
+    // Trees keep logical subject order even when the VM executes right to left.
+    internal static bool IsExactLiteral(Utf8TreeNode node)
+    {
+        if (node.Kind == Utf8TreeNodeKind.One) return ExactScalar(node.Ch, node);
+        if (node.Kind != Utf8TreeNodeKind.Multi || node.Str is not { Length: > 0 } text) return false;
+        // Admit the bounded pattern-text scan before it runs. Supplementary
+        // pairs are text interoperability storage, not matching coordinates.
+        Utf8ConstructionScope.ChargeWork((ulong)text.Length);
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
+                !ExactScalar(scalar.Value, node)) return false;
+            offset += consumed;
+        }
+        return true;
+
+        static bool ExactScalar(int value, Utf8TreeNode node)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (!Rune.IsValid(value)) return false;
+            if (!node.MatchCaseInsensitive) return true;
+            // The BMP table proves identity. Supplementary folded literals use
+            // scalar runtime casing and cannot acquire an identity certificate
+            // from this table, so decline this optional exact-search fact.
+            if (value > 0xffff) return false;
+            var last = (node.Options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
+            for (var behavior = 0; behavior <= last; behavior++)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value,
+                    (Utf8ScalarCaseBehavior)behavior))
+                {
+                    Utf8ConstructionScope.ChargeWork(1);
+                    if (equivalent != value) return false;
+                }
+            }
+            return true;
+        }
+    }
+
     public static string? TryExtractLeadingLiteral(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -201,8 +260,8 @@ internal static class Utf8OwnedFindOptimizations
         budget.ChargeWork(1);
         var result = node.Kind switch
         {
-            Utf8TreeNodeKind.One => budget.CopyText([node.Ch]),
-            Utf8TreeNodeKind.Multi => string.IsNullOrEmpty(node.Str) ? null : node.Str,
+            Utf8TreeNodeKind.One when IsExactLiteral(node) => budget.CopyText([node.Ch]),
+            Utf8TreeNodeKind.Multi when IsExactLiteral(node) => node.Str,
             Utf8TreeNodeKind.Concatenate => LeadingRun(node),
             _ => null,
         };
@@ -217,11 +276,11 @@ internal static class Utf8OwnedFindOptimizations
             {
                 budget.ChargeWork(1);
                 var child = parent.Child(i);
-                if (child.Kind == Utf8TreeNodeKind.One)
+                if (child.Kind == Utf8TreeNodeKind.One && IsExactLiteral(child))
                 {
                     run.Append(child.Ch);
                 }
-                else if (child.Kind == Utf8TreeNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                else if (child.Kind == Utf8TreeNodeKind.Multi && IsExactLiteral(child))
                 {
                     run.Append(child.Str);
                 }
@@ -252,17 +311,17 @@ internal static class Utf8OwnedFindOptimizations
         {
             switch (node.Kind)
             {
-                case Utf8TreeNodeKind.One:
+                case Utf8TreeNodeKind.One when IsExactLiteral(node):
                     return Utf8ConstructionScope.CurrentBudget.CopyText([node.Ch]);
-                case Utf8TreeNodeKind.Multi:
-                    return string.IsNullOrEmpty(node.Str) ? null : node.Str;
+                case Utf8TreeNodeKind.Multi when IsExactLiteral(node):
+                    return node.Str;
                 case Utf8TreeNodeKind.Capture:
                 case Utf8TreeNodeKind.Group:
                     return node.ChildCount == 1 ? values[node.Child(0)] : null;
                 case Utf8TreeNodeKind.Concatenate:
                     return LongestRun(node);
                 case Utf8TreeNodeKind.Alternate:
-                    return LongestBranch(node);
+                    return CommonBranchLiteral(node);
                 default:
                     return null;
             }
@@ -276,11 +335,11 @@ internal static class Utf8OwnedFindOptimizations
                 {
                     budget.ChargeWork(1);
                     var child = parent.Child(i);
-                    if (child.Kind == Utf8TreeNodeKind.One)
+                    if (child.Kind == Utf8TreeNodeKind.One && IsExactLiteral(child))
                     {
                         run.Append(child.Ch);
                     }
-                    else if (child.Kind == Utf8TreeNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                    else if (child.Kind == Utf8TreeNodeKind.Multi && IsExactLiteral(child))
                     {
                         run.Append(child.Str);
                     }
@@ -298,16 +357,23 @@ internal static class Utf8OwnedFindOptimizations
                 return Longer(best, run.ToText());
             }
 
-            string? LongestBranch(Utf8TreeNode parent)
+            string? CommonBranchLiteral(Utf8TreeNode parent)
             {
-                string? best = null;
+                // Each child fact is independently mandatory. Equality is a
+                // linear proof that one is shared by every branch; selecting
+                // the longest spelling from only one branch can miss matches.
+                if (parent.ChildCount == 0) return null;
+                var common = values[parent.Child(0)];
+                if (common is null) return null;
                 for (var i = 0; i < parent.ChildCount; i++)
                 {
-                    Utf8ConstructionScope.CurrentBudget.ChargeWork(1);
-                    best = Longer(best, values[parent.Child(i)]);
+                    Utf8ConstructionScope.ChargeWork(1);
+                    var candidate = values[parent.Child(i)];
+                    if (candidate is null || candidate.Length != common.Length) return null;
+                    Utf8ConstructionScope.ChargeWork((ulong)common.Length);
+                    if (!string.Equals(common, candidate, StringComparison.Ordinal)) return null;
                 }
-
-                return best;
+                return common;
             }
 
             static string? Longer(string? left, string? right)
@@ -372,36 +438,6 @@ internal static class Utf8OwnedFindOptimizations
         construction.Complete();
         return (best, bestDistance);
 
-        static bool IsExactLiteral(Utf8TreeNode node)
-        {
-            if (!node.MatchCaseInsensitive) return true;
-            if (node.Kind == Utf8TreeNodeKind.One) return Identity(node.Ch, node.Options);
-            if (node.Str is not { } text) return false;
-            for (var offset = 0; offset < text.Length;)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
-                    !scalar.IsBmp || !Identity((char)scalar.Value, node.Options)) return false;
-                offset += consumed;
-            }
-            return true;
-
-            static bool Identity(char value, RegexOptions options)
-            {
-                var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
-                for (var behavior = 0; behavior <= lastBehavior; behavior++)
-                {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    foreach (var equivalent in Internal.Execution.Utf8SliceCaseEquivalences.GetEquivalents(value,
-                        (Internal.Execution.Utf8ScalarCaseBehavior)behavior))
-                    {
-                        Utf8ConstructionScope.ChargeWork(1);
-                        if (equivalent != value) return false;
-                    }
-                }
-                return true;
-            }
-        }
     }
 
     public readonly record struct OwnedSet(int Distance, AsciiCharClass CharClass);

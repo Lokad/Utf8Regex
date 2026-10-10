@@ -42,7 +42,8 @@ public sealed class Utf8OwnedPreparationContinuationTests
         while (pending.TryPop(out var pair))
         {
             nodeCount++;
-            Assert.Equal(pair.Source.Options, pair.Copy.Options);
+            Assert.Equal(pair.Source.Options & ~RegexOptions.IgnoreCase, pair.Copy.Options & ~RegexOptions.IgnoreCase);
+            Assert.Equal(pair.Source.MatchCaseInsensitive, (pair.Copy.Options & RegexOptions.IgnoreCase) != 0);
             if (pair.Source.ScalarClass is { } scalarClass)
             {
                 Assert.Same(scalarClass, pair.Copy.Payload);

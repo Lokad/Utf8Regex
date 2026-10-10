@@ -55,6 +55,9 @@ public sealed class Utf8VerifierScanAdmissionTests
 
     private static void Run(int route, Input input)
     {
+        // These probes discard successful payloads; close their loan scope
+        // before inspecting the measured parent's accounting.
+        using var discarded = Utf8ConstructionScope.Enter();
         object?[] args = route switch
         {
             0 => [input.Root, null],
@@ -187,17 +190,20 @@ public sealed class Utf8VerifierScanAdmissionTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        object?[] args = [optional, null, false];
-        Assert.True(Assert.IsType<bool>(Call("TryExtractAlternationTexts", args)));
-        Assert.True(Assert.IsType<bool>(args[2]));
-        Assert.Equal(new[] { "ab" + new string('c', 65), "xy" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString));
-        args = [outer, 0ul, 0ul];
-        Assert.False(Assert.IsType<bool>(Call("TryGetLeadingAsciiByteMask", args)));
-        Assert.Equal(0ul, args[1]);
-        Assert.Equal(1ul << ('c' - 64), args[2]);
-        args = [Node(Utf8ExecutionNodeKind.Concatenate, "", body, Node(Utf8ExecutionNodeKind.Unsupported, "")), null];
-        Assert.False(Assert.IsType<bool>(Call("TryExtractFixedAsciiText", args)));
-        Assert.Empty(Assert.IsType<byte[]>(args[1]));
+        using (var discarded = Utf8ConstructionScope.Enter())
+        {
+            object?[] args = [optional, null, false];
+            Assert.True(Assert.IsType<bool>(Call("TryExtractAlternationTexts", args)));
+            Assert.True(Assert.IsType<bool>(args[2]));
+            Assert.Equal(new[] { "ab" + new string('c', 65), "xy" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString));
+            args = [outer, 0ul, 0ul];
+            Assert.False(Assert.IsType<bool>(Call("TryGetLeadingAsciiByteMask", args)));
+            Assert.Equal(0ul, args[1]);
+            Assert.Equal(0ul, args[2]);
+            args = [Node(Utf8ExecutionNodeKind.Concatenate, "", body, Node(Utf8ExecutionNodeKind.Unsupported, "")), null];
+            Assert.False(Assert.IsType<bool>(Call("TryExtractFixedAsciiText", args)));
+            Assert.Empty(Assert.IsType<byte[]>(args[1]));
+        }
         Assert.True(owner.Budget.PeakBytes > 2048);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -212,8 +218,29 @@ public sealed class Utf8VerifierScanAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff, ulong.MaxValue);
             var failure = Record.Exception(() => Assert.True(Utf8DeterministicAnchorSearch.TryGetAsciiBytes("abc", out _)));
-            if (cutoff < 6) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-            else Assert.Null(failure);
+            // The original six-step controls cannot acquire the now-admitted
+            // payload: scan, array acquisition and copy each cost three steps.
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+            Assert.InRange(owner.Budget.WorkSteps, 0ul, cutoff);
+            Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        }
+        for (var cutoff = 7ul; cutoff <= 9; cutoff++)
+        {
+            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff, ulong.MaxValue);
+            byte[] payload = [];
+            var failure = Record.Exception(() => Assert.True(Utf8DeterministicAnchorSearch.TryGetAsciiBytes("abc", out payload)));
+            if (cutoff < 9)
+            {
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+                Assert.Equal(0ul, owner.Budget.ReservedBytes);
+            }
+            else
+            {
+                Assert.Null(failure);
+                Assert.Equal(48ul, owner.Budget.ReservedBytes);
+                owner.Budget.ReleaseArray(payload, false);
+                Assert.Equal(0ul, owner.Budget.ReservedBytes);
+            }
             Assert.InRange(owner.Budget.WorkSteps, 0ul, cutoff);
         }
         using var decline = new Utf8ConstructionScope(0, ulong.MaxValue, 2, ulong.MaxValue);

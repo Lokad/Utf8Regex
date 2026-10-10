@@ -18,7 +18,7 @@ public sealed class Utf8SearchPlanTests
         var plan = new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start,
             [Utf8StructuralSearchStage.FindLiteralFamily(new PreparedSearcher(new PreparedSubstringSearch("!"u8.ToArray(), false), false)),
              Utf8StructuralSearchStage.TransformCandidateStart(new(2, Utf8FallbackStartTransformKind.None)),
-             Utf8StructuralSearchStage.YieldStart()]).WithFixedSets([first, second]);
+             Utf8StructuralSearchStage.YieldStart()]).WithVerificationGuards(new(null, null, 0, [first, second], 0, false));
         var guards = plan.Stages.Where(static stage => stage.HasSet).ToArray();
         Assert.Equal(2, guards.Length);
         Assert.Equal(first.ByteSet, guards[0].Set);
@@ -218,11 +218,22 @@ public sealed class Utf8SearchPlanTests
 
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
+        // Neither foo nor bar is mandatory across both branches. The shared
+        // covering credential family remains the required prefilter.
+        Assert.Equal(Utf8SearchKind.None, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(PreparedSearcherKind.MultiLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
         Assert.True(regex.Inspection.SearchPlan.PrefilterPlan.HasValue);
         Assert.True(regex.Inspection.SearchPlan.FallbackSearch.HasRequiredPrefilter);
         Assert.Equal(["AIDA", "AKIA", "AROA", "ASIA"], regex.Inspection.SearchPlan.RequiredPrefilterAlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
+        foreach (var subject in new[] { "fooASIA" + new string('A', 56), new string('A', 40) + "barASIA" + new string('A', 16) })
+        {
+            var input = Encoding.UTF8.GetBytes(subject);
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(1, regex.Count(input));
+            var match = regex.Match(input);
+            Assert.True(match.Success);
+            Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
+        }
     }
 
     [Fact]
@@ -616,7 +627,18 @@ public sealed class Utf8SearchPlanTests
     public void RuffNoqaRealPatternUsesByteSafeInterpreterLaneWithStructuralStarts()
     {
         const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
+        var scalarAnalysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
+        // Unicode whitespace does not certify the six-byte ASCII inverse
+        // transform. Keep the original grammar and qualify its scalar route.
+        Assert.Equal(Utf8SearchKind.None, scalarAnalysis.SearchPlan.Kind);
+        Assert.False(scalarAnalysis.SearchPlan.HasFallbackCandidates);
+        Assert.False(scalarAnalysis.StructuralSearchPlan.HasValue);
+        Assert.Equal(Utf8FallbackStartTransformKind.None, scalarAnalysis.SearchPlan.FallbackStartTransform.Kind);
+        Assert.Null(scalarAnalysis.SearchPlan.FixedDistanceSets);
+        var original = new Utf8Regex(pattern);
+        Assert.NotNull(original.Inspection.PreparedRegex.ScalarProgram);
+        // The same structural assertions remain for the complete ASCII control.
+        var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, analysis.SearchPlan.Kind);
@@ -684,7 +706,21 @@ public sealed class Utf8SearchPlanTests
     public void StructuralSearchPlanCanApplyFallbackStartTransform()
     {
         const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
+        var scalarAnalysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
+        Assert.False(scalarAnalysis.StructuralSearchPlan.HasValue);
+        foreach (var subject in new[] { "   # NOQA: ABC123", "\u00a0# NOQA: ABC123", "\u2003# NOQA: ABC123" })
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
+        {
+            var regex = new Utf8Regex(pattern, mode);
+            var bytes = Encoding.UTF8.GetBytes(subject);
+            Assert.True(regex.IsMatch(bytes));
+            Assert.Equal(1, regex.Count(bytes));
+            var match = regex.Match(bytes);
+            Assert.Equal((0, bytes.Length), (match.IndexInBytes, match.LengthInBytes));
+            var detailed = regex.MatchDetailed(bytes);
+            Assert.Equal((0, bytes.Length), (detailed.IndexInBytes, detailed.LengthInBytes));
+        }
+        var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
         var input = Encoding.UTF8.GetBytes("   # NOQA: ABC123");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
 
@@ -898,8 +934,8 @@ public sealed class Utf8SearchPlanTests
             ignoreCase: false);
         var plans = new[]
         {
-            Utf8StructuralSearchPlan.CreateStartPlan(searcher).WithExactLength(5),
-            Utf8StructuralSearchPlan.CreateStartPlan(searcher).WithExactLength(4),
+            Utf8StructuralSearchPlan.CreateStartPlan(searcher, exactLength: 5),
+            Utf8StructuralSearchPlan.CreateStartPlan(searcher, exactLength: 4),
         };
         var input = Encoding.UTF8.GetBytes("a---a----");
 

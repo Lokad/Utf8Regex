@@ -66,9 +66,11 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void CanExecuteAcceptsSelectiveStructuralStartFallbackPattern()
     {
-        var analysis = Utf8FrontEnd.Compile(
-            "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)",
-            RegexOptions.None);
+        const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
+        var scalar = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
+        Assert.False(Utf8ByteSafeInterpreterExecutor.CanExecute(scalar));
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(scalar).Kind);
+        var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
         Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis));
@@ -520,13 +522,16 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeVerifierPlanKeepsLinearVerifierForRuffNoqaRealShape()
     {
-        var analysis = Utf8FrontEnd.Compile(
-            "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)",
-            RegexOptions.None);
+        const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
+        var scalar = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
+        Assert.Equal(Utf8StructuralVerifierKind.None, scalar.StructuralVerifier.Kind);
+        Assert.False(scalar.StructuralVerifier.ByteSafeLazyDfaProgram.HasValue);
+        var analysis = Utf8FrontEnd.Compile(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
         var verifierPlan = analysis.StructuralVerifier;
 
-        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, verifierPlan.Kind);
-        Assert.True(verifierPlan.ByteSafeLazyDfaProgram.HasValue);
+        // The complete ASCII control lowers directly to the linear byte lane.
+        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLinearProgram, verifierPlan.Kind);
+        Assert.True(verifierPlan.ByteSafeLinearProgram.HasValue);
     }
 
     [Fact]
@@ -544,12 +549,25 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void Utf8RegexUsesLazyDfaVerifierForRuffNoqaRealShape()
     {
-        var regex = new Utf8Regex(
-            "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)",
-            RegexOptions.None);
+        const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
+        var original = new Utf8Regex(pattern, RegexOptions.None);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, original.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralVerifierKind.None, original.Inspection.StructuralVerifierPlan.Kind);
+        Assert.NotNull(original.Inspection.PreparedRegex.ScalarProgram);
+        foreach (var subject in new[] { "   # NOQA: ABC123", "\u00a0# NOQA: ABC123", "\u2003# NOQA: ABC123" })
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
+            Assert.True(original.IsMatch(bytes));
+            Assert.Equal(1, original.Count(bytes));
+            var match = original.Match(bytes);
+            Assert.Equal((0, bytes.Length), (match.IndexInBytes, match.LengthInBytes));
+            var detailed = original.MatchDetailed(bytes);
+            Assert.Equal((0, bytes.Length), (detailed.IndexInBytes, detailed.LengthInBytes));
+        }
+        var regex = new Utf8Regex(pattern.Replace("\\s", "[\\t-\\r ]", StringComparison.Ordinal), RegexOptions.None);
 
         Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, regex.Inspection.StructuralVerifierPlan.Kind);
-        Assert.True(regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue);
+        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLinearProgram, regex.Inspection.StructuralVerifierPlan.Kind);
+        Assert.True(regex.Inspection.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue);
     }
 }

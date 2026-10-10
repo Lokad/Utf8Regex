@@ -53,7 +53,7 @@ internal readonly struct Utf8SearchPlan
             : null;
         AlternateLiteralsUtf8 = alternateLiteralsUtf8;
         AlternateLiteralUtf16Lengths = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.ExactUtf8Literals
-            ? [.. alternateLiteralsUtf8.Select(static literal => Utf8Validation.Validate(literal).Utf16Length)]
+            ? CreateAlternateLiteralUtf16Lengths(alternateLiteralsUtf8)
             : null;
         AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
             ? new PreparedLiteralSetSearch(alternateLiteralsUtf8)
@@ -96,11 +96,9 @@ internal readonly struct Utf8SearchPlan
             PreparedSearcher,
             WindowSearch,
             fixedDistanceSets,
-            fallbackStartTransform)
-            .WithBoundaryRequirements(leadingBoundary, trailingBoundary)
-            .WithTrailingLiteral(trailingLiteralUtf8)
-            .WithExactLength(exactRequiredLength)
-            .WithMaxLength(maxPossibleLength);
+            fallbackStartTransform,
+            leadingBoundary, trailingBoundary, trailingLiteralUtf8,
+            exactRequiredLength, maxPossibleLength);
         StructuralSearchPlan = structuralSearchPlan;
         PrefilterPlan = new Utf8PrefilterPlan(
             requiredPrefilterSearcher,
@@ -144,7 +142,42 @@ internal readonly struct Utf8SearchPlan
             ProjectionPlan);
     }
 
-    public static Utf8SearchPlan Prepare(Utf8SearchFacts facts) => new(facts);
+    public static Utf8SearchPlan Prepare(Utf8SearchFacts facts)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork(1);
+            var plan = new Utf8SearchPlan(facts);
+            scope.Complete();
+            return plan;
+        }
+        finally { budget.LeaveDepth(); }
+    }
+
+    // Derived string-coordinate cache only. The engine discovers byte extents
+    // over scalars; this table avoids re-reading each matched literal when a
+    // caller requests UTF-16 interoperability coordinates.
+    private static int[] CreateAlternateLiteralUtf16Lengths(byte[][] literals)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            var lengths = budget.AllocateArray<int>(literals.Length, false);
+            for (var index = 0; index < literals.Length; index++)
+            {
+                budget.ChargeWork(1 + (ulong)literals[index].Length);
+                lengths[index] = Utf8Validation.Validate(literals[index]).Utf16Length;
+            }
+            scope.Complete();
+            return lengths;
+        }
+        finally { budget.LeaveDepth(); }
+    }
 
     private static T[]? NullIfEmpty<T>(T[] values) => values.Length == 0 ? null : values;
 
@@ -407,37 +440,36 @@ internal readonly struct Utf8SearchPlan
 
     private static Utf8StructuralSearchPlan[]? CreateRequiredWindowPrefilterPlans(Utf8WindowSearchFacts[]? requiredWindowPrefilters)
     {
-        if (requiredWindowPrefilters is not { Length: > 0 } windowInfos)
+        if (requiredWindowPrefilters is not { Length: > 0 } windowInfos) return null;
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        var count = 0;
+        foreach (var info in windowInfos)
         {
-            return null;
+            budget.ChargeWork(1);
+            // Both endpoints must qualify before either child acquires storage.
+            if (CanPrepare(info.Leading) && CanPrepare(info.Trailing)) count = checked(count + 1);
         }
-
-        var plans = new List<Utf8StructuralSearchPlan>(windowInfos.Length);
-        foreach (var windowInfo in windowInfos)
+        if (count == 0) return null;
+        var plans = budget.AllocateArray<Utf8StructuralSearchPlan>(count, false);
+        var index = 0;
+        foreach (var info in windowInfos)
         {
-            if (!windowInfo.HasValue)
-            {
-                continue;
-            }
-
-            var leading = CreatePreparedSearcher(windowInfo.Leading);
-            var trailing = CreatePreparedSearcher(windowInfo.Trailing);
-            if (!leading.HasValue || !trailing.HasValue)
-            {
-                continue;
-            }
-
-            var plan = Utf8StructuralSearchPlan.CreateWindowPlanWithOptionalLineSpan(
-                new PreparedWindowSearch(leading, trailing, windowInfo.MaxGap, sameLine: false),
-                windowInfo.MaxLines);
-            if (plan.HasValue)
-            {
-                plans.Add(plan);
-            }
+            budget.ChargeWork(1);
+            if (!CanPrepare(info.Leading) || !CanPrepare(info.Trailing)) continue;
+            var leading = CreatePreparedSearcher(info.Leading);
+            var trailing = CreatePreparedSearcher(info.Trailing);
+            plans[index++] = Utf8StructuralSearchPlan.CreateWindowPlanWithOptionalLineSpan(
+                new PreparedWindowSearch(leading, trailing, info.MaxGap, sameLine: false), info.MaxLines);
         }
-
-        return plans.Count > 0 ? [.. plans] : null;
+        return plans;
     }
+
+    private static bool CanPrepare(Utf8PreparedSearcherInfo info) => info.Kind switch
+    {
+        Utf8PreparedSearcherInfoKind.LiteralFamily => info.AlternateLiteralsUtf8 is { Length: > 0 },
+        Utf8PreparedSearcherInfoKind.QuotedAsciiRun => info.QuotedAsciiSet.HasValue && info.QuotedAsciiLength > 0,
+        _ => false,
+    };
 
     private static Utf8StructuralSearchPlan[]? CreateFallbackRequiredWindowPrefilterPlans(
         byte[][]? requiredPrefilterAlternateLiteralsUtf8,
@@ -445,27 +477,17 @@ internal readonly struct Utf8SearchPlan
         int secondaryRequiredPrefilterQuotedAsciiLength)
     {
         if (requiredPrefilterAlternateLiteralsUtf8 is not { Length: > 0 } literals ||
-            !secondaryRequiredPrefilterQuotedAsciiSet.HasValue ||
-            secondaryRequiredPrefilterQuotedAsciiLength <= 0)
-        {
-            return null;
-        }
-
+            !secondaryRequiredPrefilterQuotedAsciiSet.HasValue || secondaryRequiredPrefilterQuotedAsciiLength <= 0) return null;
+        var plans = Utf8ConstructionScope.CurrentBudget.AllocateArray<Utf8StructuralSearchPlan>(2, false);
         var family = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
         var quoted = new PreparedSearcher(new PreparedQuotedAsciiRunSearch(
-            secondaryRequiredPrefilterQuotedAsciiSet,
-            secondaryRequiredPrefilterQuotedAsciiLength));
-
-        return
-        [
-            Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(
-                new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false),
-                5,
-                new Utf8FallbackStartTransform(1, Utf8FallbackStartTransformKind.None)),
-            Utf8StructuralSearchPlan.CreateWindowPlanWithLineSpan(
-                new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false),
-                5),
-        ];
+            secondaryRequiredPrefilterQuotedAsciiSet, secondaryRequiredPrefilterQuotedAsciiLength));
+        plans[0] = Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(
+            new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false), 5,
+            new Utf8FallbackStartTransform(1, Utf8FallbackStartTransformKind.None));
+        plans[1] = Utf8StructuralSearchPlan.CreateWindowPlanWithLineSpan(
+            new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false), 5);
+        return plans;
     }
 
     private static PreparedSearcher CreatePreparedSearcher(Utf8PreparedSearcherInfo searcherInfo)
@@ -486,7 +508,9 @@ internal readonly struct Utf8SearchPlan
     {
         if (structuralSearchPlan.HasValue)
         {
-            return [structuralSearchPlan];
+            var plans = Utf8ConstructionScope.CurrentBudget.AllocateArray<Utf8StructuralSearchPlan>(1, false);
+            plans[0] = structuralSearchPlan;
+            return plans;
         }
 
         return requiredWindowPrefilterPlans is { Length: > 0 }

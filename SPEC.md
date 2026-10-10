@@ -535,25 +535,75 @@ resource failure, without refunding work. The shared yield-based preparation
 driver and its heap iterator continuations are removed; the two duplicate
 literal walkers share one implementation. These frames borrow existing root
 walkers, strings, builders and result collections, whose separate admission is
-still incomplete. The byte-safe verifier compiler also uses admitted value
-continuations and a temporary minimum-length memo. Root depth/storage precede
-memo and builder acquisition; child frames admit before nested builders, and
-all admitted scratch releases on success, decline or failure without refunding
-work. Its former heap compiler context, request objects and six yield iterators
-are removed. Its fixed-text/alternation cursors and leading-mask unions now
-use admitted frames too, with saved child cursors and failed-child mask rollback.
-Shared wrapper unwrapping and ASCII validation/copy, plus compiler suffix and
-prefix comparisons, spend cumulative construction work. Successful/declined
-scan scratch releases descriptors, arrays and depth without refunding work.
+still incomplete. The byte-safe verifier compiler uses admitted value
+continuations, step builders, a temporary minimum-length memo and a temporary
+payload registry. Root depth/storage precede descriptor acquisition; child
+frames admit before nested builders. Capture, group and atomic wrappers consume
+actual depth and preserve their enclosing variable-loop permission. Only proved
+terminal or disjoint continuations admit variable loops; optional alternatives
+and terminal alternatives require prefix-free arms. Optional arms and a required
+following literal must have neither prefix relation: a longer optional arm can
+otherwise hide a shorter successful path. Zero width alone does not certify a
+greedy endpoint. Admitted continuation proofs require that a failed assertion
+cannot become true at an earlier iteration endpoint or skipped optional arm.
+Non-multiline end conditions preserve endpoint order; multiline end proofs
+exclude LF from iteration starts. Boundary proofs use complete first/last scalar
+sets, positive minimum repetition and uniform word membership. Nullable whole
+suffixes qualify their empty-path assertions as well as first-set disjointness.
+Contiguous origins after a variable choice and unproved assertion rewinds use
+owned scalar execution.
+First/last facts share admitted value continuations, include all nullable starts
+or ends and invalidate every partial union when a branch or case fiber is
+unproved. The continuation proof borrows existing nodes, admits real wrapper
+depth and scratch, and unwinds pure proof loans without refunding work.
+Alternative minimum-width scans spend shared
+work before each visit. Successful compilation transfers the arrays reachable
+from the returned step/text/alternative graph. Collapsed subprograms and unused
+probe payloads release their loans after memo references are dropped; scratch
+arrays and live depth unwind on every exit without refunding work. Temporary
+object descriptors remain funded until their construction owner closes. Native
+step arrays use byte admission; this does not close the shared instruction and
+default-policy gates. The compiler is a stack value borrowing its memo and
+registry; its former heap context, request objects, six yield iterators and
+unadmitted step lists are removed. Prefix/text/alternative producers use admitted
+arrays and complete lexical scalar proofs; speculative producers transfer
+successful loans before the caller registers them. Nullable following masks
+include every nullable child and every possible following first scalar.
+Candidate preparation admits its search-plan roots, final structural stage
+vectors, required-window and fallback candidate vectors. Selected structural
+plans include transforms, boundary requirements, literal guards and bounds in
+one final vector. Verification enrichment borrows the original plan and inserts
+all prefix, fixed-literal, canonical class and minimum-length guards in one
+admitted copy. Class cardinality and single-member guards read canonical masks
+without acquiring member arrays. Invalid required windows decline before either
+endpoint searcher acquires storage. Derived literal UTF-16 lengths are an admitted
+interoperability cache; discovery continues over scalar boundaries and byte
+extents. The discarded intermediate stage copies, separate enrichment methods
+and unused fixed-set candidate-searcher producer are removed. Failed byte, work
+or depth admission restores the parent loans and live depth without work refunds.
+These selected producers do not close opaque preparation, whole-portfolio or
+common instruction/default-policy qualification.
+Prepared delimited and structured ASCII token searches derive membership from
+canonical masks instead of retained opaque SearchValues. Their roots admit real
+depth and definition scans before copying literal-finder bytes; failed admission
+restores parent loans and depth without work refunds. Raw token operations prepare
+one shared matcher per invocation and unwind its temporary literal loan. The two
+duplicated raw matchers and repeated per-match preparation are removed. Structured
+tokens preserve independent greedy first/second body runs, including disjoint
+classes and overlapping splits. Optional delimiter absence uses nullable byte
+state, so NUL is a complete scalar and a present delimiter followed by an empty
+star class still consumes the delimiter. These selected token carriers do not
+close upstream char-set payload classification, the complete search portfolio,
+other opaque search preparation or common invocation/resource policy.
 Deterministic prefix, literal-family, leading-mask, byte-safety and guard walks
 also use admitted value frames and metered visits, comparisons and ASCII copies.
-They preserve local partial-prefix stops and completed-sibling masks. Whitespace
+Incomplete branches invalidate whole-family proofs and partial mask unions.
+Whitespace
 guard preparation borrows the remaining children instead of manufacturing a
 node/array. Ignore-case anchor validation has no input-sized stack scratch; it
 admits only the successful folded byte array and transfers that loan to its
-enclosing construction owner. Other program/text arrays, builders and preparation
-scans retain separate
-admission work. ASCII class projections defer non-ASCII subjects to
+enclosing construction owner. Other preparation producers retain separate
+admission work. Qualified ASCII replay intersections defer non-ASCII subjects to
 scalar execution; surrogate-half class membership does not determine loop
 admission or minimum scalar counts.
 Front-end quoted-run/quote checks, window phrases, finite byte widths and line

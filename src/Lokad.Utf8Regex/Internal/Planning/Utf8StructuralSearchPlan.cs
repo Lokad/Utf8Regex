@@ -1,7 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
-using System.Buffers;
-using System.Text;
+using System.Numerics;
 
 namespace Lokad.Utf8Regex.Internal.Planning;
 
@@ -170,360 +169,212 @@ internal readonly struct Utf8StructuralSearchPlan
     public bool HasValue => Stages is { Length: > 0 };
 
     public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind,
-        int distance,
-        bool canGuideFallbackStarts,
-        PreparedSearcher preparedSearcher,
-        PreparedWindowSearch windowSearch,
-        Utf8FixedDistanceSet[]? fixedDistanceSets,
-        Utf8FallbackStartTransform fallbackStartTransform)
-    {
-        return Create(
-            kind,
-            distance,
-            canGuideFallbackStarts,
-            literalUtf8: null,
-            preparedSearcher,
-            windowSearch,
-            fixedDistanceSets,
-            fallbackStartTransform);
-    }
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts,
+        PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch,
+        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
+        => Create(kind, distance, canGuideFallbackStarts, null, preparedSearcher,
+            windowSearch, fixedDistanceSets, fallbackStartTransform);
 
     public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind,
-        int distance,
-        bool canGuideFallbackStarts,
-        byte[]? literalUtf8,
-        PreparedSearcher preparedSearcher,
-        PreparedWindowSearch windowSearch,
-        Utf8FixedDistanceSet[]? fixedDistanceSets,
-        Utf8FallbackStartTransform fallbackStartTransform)
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8,
+        PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch,
+        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
+        => Create(kind, distance, canGuideFallbackStarts, literalUtf8, preparedSearcher,
+            windowSearch, fixedDistanceSets, fallbackStartTransform, default, default, null, null, null);
+
+    public static Utf8StructuralSearchPlan Create(
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8,
+        PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch,
+        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform,
+        Utf8BoundaryRequirement leadingBoundary,
+        Utf8BoundaryRequirement trailingBoundary,
+        byte[]? trailingLiteralUtf8, int? exactLength, int? maxLength)
     {
-        var effectiveStartTransform = kind switch
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar
-                => fallbackStartTransform.WithAdditionalOffset(distance),
-            _ => fallbackStartTransform,
-        };
+            budget.ChargeWork(1);
+            var transform = kind is Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar
+                ? fallbackStartTransform.WithAdditionalOffset(distance) : fallbackStartTransform;
+            Utf8StructuralSearchStage first;
+            Utf8StructuralSearchYieldKind yieldKind;
+            if (preparedSearcher.HasValue && (canGuideFallbackStarts || transform.HasValue ||
+                kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral or
+                    Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals))
+            {
+                first = Utf8StructuralSearchStage.FindLiteralFamily(preparedSearcher);
+                yieldKind = Utf8StructuralSearchYieldKind.Start;
+            }
+            else if (kind == Utf8SearchKind.FixedDistanceAsciiLiteral && literalUtf8 is { Length: > 0 })
+            {
+                first = Utf8StructuralSearchStage.FindAscii(PreparedAsciiFindPlan.CreateFixedDistanceLiteral(literalUtf8, distance));
+                transform = fallbackStartTransform;
+                yieldKind = Utf8StructuralSearchYieldKind.Start;
+            }
+            else if (kind == Utf8SearchKind.FixedDistanceAsciiSets && fixedDistanceSets is { Length: > 0 })
+            {
+                first = Utf8StructuralSearchStage.FindAscii(PreparedAsciiFindPlan.CreateFixedDistanceSet(fixedDistanceSets));
+                transform = fallbackStartTransform;
+                yieldKind = Utf8StructuralSearchYieldKind.Start;
+            }
+            else if (windowSearch.HasValue)
+            {
+                first = Utf8StructuralSearchStage.FindWindow(windowSearch);
+                transform = default;
+                yieldKind = Utf8StructuralSearchYieldKind.Window;
+            }
+            else return default;
 
-        if (preparedSearcher.HasValue &&
-            (canGuideFallbackStarts ||
-             effectiveStartTransform.HasValue ||
-             kind is Utf8SearchKind.ExactAsciiLiteral or
-                 Utf8SearchKind.AsciiFoldedByteLiteral or
-                 Utf8SearchKind.ExactAsciiLiterals or
-                 Utf8SearchKind.AsciiFoldedByteLiterals or
-                 Utf8SearchKind.ExactUtf8Literals))
-        {
-            return CreateStart(preparedSearcher, effectiveStartTransform);
+            var result = Build(first, yieldKind, transform, leadingBoundary, trailingBoundary,
+                trailingLiteralUtf8, exactLength, maxLength, null);
+            scope.Complete();
+            return result;
         }
-
-        if (kind == Utf8SearchKind.FixedDistanceAsciiLiteral &&
-            literalUtf8 is { Length: > 0 } fixedLiteral)
-        {
-            return CreateAsciiFind(
-                Execution.PreparedAsciiFindPlan.CreateFixedDistanceLiteral(fixedLiteral, distance),
-                fallbackStartTransform);
-        }
-
-        if (kind == Utf8SearchKind.FixedDistanceAsciiSets &&
-            fixedDistanceSets is { Length: > 0 })
-        {
-            return CreateAsciiFind(
-                Execution.PreparedAsciiFindPlan.CreateFixedDistanceSet(fixedDistanceSets),
-                fallbackStartTransform);
-        }
-
-        if (windowSearch.HasValue)
-        {
-            return CreateWindow(windowSearch, default);
-        }
-
-        return default;
+        finally { budget.LeaveDepth(); }
     }
 
     public static Utf8StructuralSearchPlan CreateStartPlan(PreparedSearcher searcher)
-    {
-        return searcher.HasValue
-            ? CreateStart(searcher, default)
-            : default;
-    }
+        => CreateStartPlan(searcher, null);
 
-    public static Utf8StructuralSearchPlan CreateWindowPlan(PreparedWindowSearch windowSearch) =>
-        CreateWindowPlan(windowSearch, maxLines: null, default);
+    public static Utf8StructuralSearchPlan CreateStartPlan(PreparedSearcher searcher, int? exactLength)
+        => searcher.HasValue ? Build(Utf8StructuralSearchStage.FindLiteralFamily(searcher),
+            Utf8StructuralSearchYieldKind.Start, default, default, default, null, exactLength, null, null) : default;
 
-    public static Utf8StructuralSearchPlan CreateWindowPlanWithOptionalLineSpan(
-        PreparedWindowSearch windowSearch,
-        int? maxLines) =>
-        CreateWindowPlan(windowSearch, maxLines, default);
+    public static Utf8StructuralSearchPlan CreateWindowPlan(PreparedWindowSearch windowSearch)
+        => CreateWindowPlan(windowSearch, null, default);
 
-    public static Utf8StructuralSearchPlan CreateWindowPlanWithLineSpan(
-        PreparedWindowSearch windowSearch,
-        int maxLines) =>
-        CreateWindowPlan(windowSearch, maxLines, default);
+    public static Utf8StructuralSearchPlan CreateWindowPlanWithOptionalLineSpan(PreparedWindowSearch windowSearch, int? maxLines)
+        => CreateWindowPlan(windowSearch, maxLines, default);
+
+    public static Utf8StructuralSearchPlan CreateWindowPlanWithLineSpan(PreparedWindowSearch windowSearch, int maxLines)
+        => CreateWindowPlan(windowSearch, maxLines, default);
 
     public static Utf8StructuralSearchPlan CreateTransformedWindowPlanWithLineSpan(
-        PreparedWindowSearch windowSearch,
-        int maxLines,
-        Utf8FallbackStartTransform startTransform) =>
-        CreateWindowPlan(windowSearch, maxLines, startTransform);
+        PreparedWindowSearch windowSearch, int maxLines, Utf8FallbackStartTransform startTransform)
+        => CreateWindowPlan(windowSearch, maxLines, startTransform);
 
     private static Utf8StructuralSearchPlan CreateWindowPlan(
-        PreparedWindowSearch windowSearch,
-        int? maxLines,
-        Utf8FallbackStartTransform startTransform)
+        PreparedWindowSearch windowSearch, int? maxLines, Utf8FallbackStartTransform startTransform)
+        => windowSearch.HasValue ? Build(Utf8StructuralSearchStage.FindWindow(windowSearch),
+            Utf8StructuralSearchYieldKind.Window, startTransform, default, default, null, null, null, maxLines) : default;
+
+    // Construct the selected plan once, including its bounds and assertions.
+    // Searchers and literal payloads retain their own loans; this owns only the
+    // final stage vector. Native stages share byte admission, not scalar VM slots.
+    private static Utf8StructuralSearchPlan Build(
+        Utf8StructuralSearchStage first, Utf8StructuralSearchYieldKind yieldKind,
+        Utf8FallbackStartTransform transform, Utf8BoundaryRequirement leading,
+        Utf8BoundaryRequirement trailing, byte[]? trailingLiteral,
+        int? exactLength, int? maxLength, int? maxLines)
     {
-        if (!windowSearch.HasValue)
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return default;
+            budget.ChargeWork(1);
+            var start = yieldKind == Utf8StructuralSearchYieldKind.Start;
+            var gapValue = first.WindowSearch.MaxGap.GetValueOrDefault();
+            var lineValue = maxLines.GetValueOrDefault();
+            var exactValue = exactLength.GetValueOrDefault();
+            var maxValue = maxLength.GetValueOrDefault();
+            var trailingBytes = trailingLiteral ?? [];
+            var gap = !start && gapValue > 0;
+            var sameLine = !start && first.WindowSearch.SameLine;
+            var lines = !start && lineValue > 0;
+            var literal = start && trailingBytes.Length > 0;
+            var exact = start && exactValue > 0;
+            var bound = start && !exact && maxValue > 0;
+            var count = 2 + (transform.HasValue ? 1 : 0) + (gap ? 1 : 0) + (sameLine ? 1 : 0) + (lines ? 1 : 0)
+                + (leading != Utf8BoundaryRequirement.None ? 1 : 0) + (trailing != Utf8BoundaryRequirement.None ? 1 : 0)
+                + (literal ? 1 : 0) + (exact ? 1 : 0) + (bound ? 1 : 0);
+            var stages = budget.AllocateArray<Utf8StructuralSearchStage>(count, false);
+            var index = 0;
+            stages[index++] = first;
+            if (transform.HasValue) stages[index++] = Utf8StructuralSearchStage.TransformCandidateStart(transform);
+            if (gap) stages[index++] = Utf8StructuralSearchStage.RequireWithinByteSpan(gapValue);
+            if (sameLine) stages[index++] = Utf8StructuralSearchStage.RequireWithinLineSpan(1);
+            if (lines) stages[index++] = Utf8StructuralSearchStage.RequireWithinLineSpan(lineValue);
+            if (leading != Utf8BoundaryRequirement.None) stages[index++] = Utf8StructuralSearchStage.RequireLeadingBoundary(leading);
+            if (trailing != Utf8BoundaryRequirement.None) stages[index++] = Utf8StructuralSearchStage.RequireTrailingBoundary(trailing);
+            if (literal) stages[index++] = Utf8StructuralSearchStage.RequireTrailingLiteral(trailingBytes);
+            if (exact) stages[index++] = Utf8StructuralSearchStage.RequireExactLength(exactValue);
+            if (bound) stages[index++] = Utf8StructuralSearchStage.BoundMaxLength(maxValue);
+            stages[index] = start ? Utf8StructuralSearchStage.YieldStart() : Utf8StructuralSearchStage.YieldWindow();
+            scope.Complete();
+            return new(yieldKind, stages);
         }
-
-        var plan = CreateWindow(windowSearch, startTransform);
-        if (maxLines is > 0)
-        {
-            plan = plan.WithLineSpan(maxLines.Value);
-        }
-
-        return plan;
+        finally { budget.LeaveDepth(); }
     }
 
-    public Utf8StructuralSearchPlan WithPrefixGuards(Execution.Utf8DeterministicByteGuard[]? prefixGuards)
+    // The original plan may still be retained by its caller. Borrow it and all
+    // guard payloads, and transfer one new vector rather than a chain of copies.
+    public Utf8StructuralSearchPlan WithVerificationGuards(Utf8DeterministicVerifierGuards guards)
     {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            prefixGuards is not { Length: > 0 })
+        if (YieldKind != Utf8StructuralSearchYieldKind.Start || Stages is not { Length: > 0 } stages) return this;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return this;
+            var yieldIndex = FindLastYield(stages, Utf8StructuralSearchStageKind.YieldStart, budget);
+            if (yieldIndex < 0) return this;
+            var count = guards.PrefixGuards?.Length ?? 0;
+            if (guards.PrefixGuards is { } prefix)
+                foreach (var guard in prefix)
+                {
+                    budget.ChargeWork(1);
+                    if (guard.Literal is null && guard.CharClass is null)
+                        throw new InvalidOperationException("A deterministic byte guard requires a literal or set.");
+                }
+            var fixedBytes = guards.FixedLiteralUtf8 ?? [];
+            var literal = fixedBytes.Length > 0;
+            if (literal) count = checked(count + 1);
+            if (guards.FixedDistanceSets is { } sets)
+                foreach (var set in sets)
+                { budget.ChargeWork(1); if (!set.ByteSet.Negated && !set.ByteSet.IsEmpty) count = checked(count + 1); }
+            if (guards.MinRequiredLength > 0) count = checked(count + 1);
+            if (count == 0) return this;
+            var enriched = budget.AllocateArray<Utf8StructuralSearchStage>(checked(stages.Length + count), false);
+            budget.ChargeWork((ulong)stages.Length);
+            Array.Copy(stages, 0, enriched, 0, yieldIndex);
+            var index = yieldIndex;
+            if (guards.PrefixGuards is { } prefixGuards)
+                foreach (var guard in prefixGuards)
+                {
+                    if (guard.Literal is { } value) enriched[index++] = Utf8StructuralSearchStage.RequireByteAtOffset(guard.Offset, value);
+                    else if (guard.CharClass is { } set) enriched[index++] = Utf8StructuralSearchStage.RequireAsciiClassAtOffset(guard.Offset, set);
+                    else throw new InvalidOperationException("A deterministic byte guard requires a literal or set.");
+                }
+            if (literal) enriched[index++] = Utf8StructuralSearchStage.RequireLiteralAtOffset(guards.FixedLiteralOffset, fixedBytes);
+            if (guards.FixedDistanceSets is { } fixedSets)
+                foreach (var set in fixedSets)
+                {
+                    budget.ChargeWork(1);
+                    if (set.ByteSet.Negated || set.ByteSet.IsEmpty) continue;
+                    // Canonical masks answer cardinality and the sole byte without
+                    // acquiring a projected member array.
+                    enriched[index++] = set.ByteSet.Count == 1
+                        ? Utf8StructuralSearchStage.RequireByteAtOffset(set.Distance, set.ByteSet.LowMask != 0
+                            ? (byte)BitOperations.TrailingZeroCount(set.ByteSet.LowMask)
+                            : (byte)(64 + BitOperations.TrailingZeroCount(set.ByteSet.HighMask)))
+                        : Utf8StructuralSearchStage.RequireAsciiClassAtOffset(set.Distance, set.ByteSet);
+                }
+            if (guards.MinRequiredLength > 0) enriched[index++] = Utf8StructuralSearchStage.RequireMinLength(guards.MinRequiredLength);
+            Array.Copy(stages, yieldIndex, enriched, index, stages.Length - yieldIndex);
+            scope.Complete();
+            return new(YieldKind, enriched);
         }
-
-        var yieldIndex = Array.FindLastIndex(stages, static stage => stage.Kind == Utf8StructuralSearchStageKind.YieldStart);
-        if (yieldIndex < 0)
-        {
-            return this;
-        }
-
-        var enriched = new Utf8StructuralSearchStage[stages.Length + prefixGuards.Length];
-        Array.Copy(stages, 0, enriched, 0, yieldIndex);
-        for (var i = 0; i < prefixGuards.Length; i++)
-        {
-            var guard = prefixGuards[i];
-            if (guard.Literal is { } literal)
-            {
-                enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireByteAtOffset(guard.Offset, literal);
-            }
-            else if (guard.CharClass is { } set)
-            {
-                enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireAsciiClassAtOffset(guard.Offset, set);
-            }
-            else
-            {
-                throw new InvalidOperationException("A deterministic byte guard requires a literal or set.");
-            }
-        }
-
-        Array.Copy(stages, yieldIndex, enriched, yieldIndex + prefixGuards.Length, stages.Length - yieldIndex);
-        return new Utf8StructuralSearchPlan(YieldKind, enriched);
+        finally { budget.LeaveDepth(); }
     }
 
-    public Utf8StructuralSearchPlan WithFixedLiteral(byte[]? literalUtf8, int byteOffset)
+    private static int FindLastYield(Utf8StructuralSearchStage[] stages, Utf8StructuralSearchStageKind kind, Utf8ConstructionBudget budget)
     {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            literalUtf8 is not { Length: > 0 })
-        {
-            return this;
-        }
-
-        return InsertBeforeYield(stages, Utf8StructuralSearchStage.RequireLiteralAtOffset(byteOffset, literalUtf8));
-    }
-
-    public Utf8StructuralSearchPlan WithFixedSets(Utf8FixedDistanceSet[]? fixedDistanceSets)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            fixedDistanceSets is not { Length: > 0 })
-        {
-            return this;
-        }
-
-        var enriched = stages;
-        foreach (var set in fixedDistanceSets)
-        {
-            if (set.ByteSet.Negated || set.ByteSet.GetPositiveMatchBytes() is not { Length: > 0 } chars)
-            {
-                continue;
-            }
-
-            Utf8StructuralSearchPlan updated;
-            if (chars.Length == 1)
-            {
-                updated = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireByteAtOffset(set.Distance, chars[0]));
-            }
-            else
-            {
-                updated = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireAsciiClassAtOffset(set.Distance, set.ByteSet));
-            }
-
-            if (updated.Stages is { } updatedStages)
-            {
-                enriched = updatedStages;
-            }
-        }
-
-        return new Utf8StructuralSearchPlan(YieldKind, enriched);
-    }
-
-    public Utf8StructuralSearchPlan WithMinLength(int minLength)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            minLength <= 0)
-        {
-            return this;
-        }
-
-        return InsertBeforeYield(stages, Utf8StructuralSearchStage.RequireMinLength(minLength));
-    }
-
-    public Utf8StructuralSearchPlan WithBoundaryRequirements(
-        Utf8BoundaryRequirement leadingBoundary,
-        Utf8BoundaryRequirement trailingBoundary)
-    {
-        if (Stages is not { Length: > 0 } stages ||
-            (leadingBoundary == Utf8BoundaryRequirement.None && trailingBoundary == Utf8BoundaryRequirement.None))
-        {
-            return this;
-        }
-
-        var enriched = this;
-        if (leadingBoundary != Utf8BoundaryRequirement.None)
-        {
-            if (enriched.Stages is not { } leadingStages)
-            {
-                throw new InvalidOperationException("A boundary-enriched structural plan requires stages.");
-            }
-
-            enriched = enriched.InsertBeforeYield(leadingStages, Utf8StructuralSearchStage.RequireLeadingBoundary(leadingBoundary));
-        }
-
-        if (trailingBoundary != Utf8BoundaryRequirement.None)
-        {
-            if (enriched.Stages is not { } trailingStages)
-            {
-                throw new InvalidOperationException("A boundary-enriched structural plan requires stages.");
-            }
-
-            enriched = enriched.InsertBeforeYield(trailingStages, Utf8StructuralSearchStage.RequireTrailingBoundary(trailingBoundary));
-        }
-
-        return enriched;
-    }
-
-    public Utf8StructuralSearchPlan WithLineSpan(int maxLines)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Window ||
-            Stages is not { Length: > 0 } stages ||
-            maxLines <= 0)
-        {
-            return this;
-        }
-
-        return InsertBeforeYield(stages, Utf8StructuralSearchStage.RequireWithinLineSpan(maxLines));
-    }
-
-    public Utf8StructuralSearchPlan WithTrailingLiteral(byte[]? trailingLiteralUtf8)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            trailingLiteralUtf8 is not { Length: > 0 })
-        {
-            return this;
-        }
-
-        return InsertBeforeYield(stages, Utf8StructuralSearchStage.RequireTrailingLiteral(trailingLiteralUtf8));
-    }
-
-    public Utf8StructuralSearchPlan WithExactLength(int? exactLength)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            exactLength is not int value ||
-            value <= 0)
-        {
-            return this;
-        }
-
-        return InsertBeforeYield(stages, Utf8StructuralSearchStage.RequireExactLength(value));
-    }
-
-    public Utf8StructuralSearchPlan WithMaxLength(int? maxLength)
-    {
-        if (YieldKind != Utf8StructuralSearchYieldKind.Start ||
-            Stages is not { Length: > 0 } stages ||
-            maxLength is not int value ||
-            value <= 0 ||
-            RequiresCandidateEndCoverage)
-        {
-            return this;
-        }
-
-        return InsertBeforeYield(stages, Utf8StructuralSearchStage.BoundMaxLength(value));
-    }
-
-    private static Utf8StructuralSearchPlan CreateStart(PreparedSearcher searcher, Utf8FallbackStartTransform startTransform)
-    {
-        var stageCount = startTransform.HasValue ? 3 : 2;
-        var stages = new Utf8StructuralSearchStage[stageCount];
-        stages[0] = Utf8StructuralSearchStage.FindLiteralFamily(searcher);
-        var stageIndex = 1;
-        if (startTransform.HasValue)
-        {
-            stages[stageIndex++] = Utf8StructuralSearchStage.TransformCandidateStart(startTransform);
-        }
-
-        stages[stageIndex] = Utf8StructuralSearchStage.YieldStart();
-        return new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start, stages);
-    }
-
-    private static Utf8StructuralSearchPlan CreateAsciiFind(Execution.PreparedAsciiFindPlan findPlan, Utf8FallbackStartTransform startTransform)
-    {
-        var stageCount = startTransform.HasValue ? 3 : 2;
-        var stages = new Utf8StructuralSearchStage[stageCount];
-        stages[0] = Utf8StructuralSearchStage.FindAscii(findPlan);
-        var stageIndex = 1;
-        if (startTransform.HasValue)
-        {
-            stages[stageIndex++] = Utf8StructuralSearchStage.TransformCandidateStart(startTransform);
-        }
-
-        stages[stageIndex] = Utf8StructuralSearchStage.YieldStart();
-        return new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start, stages);
-    }
-
-    private static Utf8StructuralSearchPlan CreateWindow(PreparedWindowSearch windowSearch, Utf8FallbackStartTransform startTransform)
-    {
-        var stages = new List<Utf8StructuralSearchStage>(4)
-        {
-            Utf8StructuralSearchStage.FindWindow(windowSearch),
-        };
-
-        if (startTransform.HasValue)
-        {
-            stages.Add(Utf8StructuralSearchStage.TransformCandidateStart(startTransform));
-        }
-
-        if (windowSearch.MaxGap is int maxGap && maxGap > 0)
-        {
-            stages.Add(Utf8StructuralSearchStage.RequireWithinByteSpan(maxGap));
-        }
-
-        if (windowSearch.SameLine)
-        {
-            stages.Add(Utf8StructuralSearchStage.RequireWithinLineSpan(1));
-        }
-
-        stages.Add(Utf8StructuralSearchStage.YieldWindow());
-        return new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Window, [.. stages]);
+        for (var index = stages.Length - 1; index >= 0; index--)
+        { budget.ChargeWork(1); if (stages[index].Kind == kind) return index; }
+        return -1;
     }
 
     public bool ProducesBoundedCandidates
@@ -578,50 +429,7 @@ internal readonly struct Utf8StructuralSearchPlan
         }
     }
 
-    private static bool TryCreateFixedSetCandidateSearcher(Utf8FixedDistanceSet[]? fixedDistanceSets, out PreparedSearcher searcher, out int distance)
-    {
-        searcher = default;
-        distance = 0;
-        if (fixedDistanceSets is not { Length: > 0 } sets)
-        {
-            return false;
-        }
 
-        var primary = sets[0];
-        if (primary.ByteSet.Negated)
-        {
-            return false;
-        }
-
-        if (primary.ByteSet.GetPositiveMatchBytes() is not { Length: > 0 } chars)
-        {
-            return false;
-        }
-
-        distance = primary.Distance;
-        searcher = chars.Length == 1
-            ? new PreparedSearcher(new PreparedSubstringSearch([chars[0]], ignoreCase: false), ignoreCase: false)
-            : new PreparedSearcher(new PreparedMultiLiteralSearch([.. chars.Select(static ch => new byte[] { ch })], ignoreCase: false));
-        return true;
-    }
-
-    private Utf8StructuralSearchPlan InsertBeforeYield(Utf8StructuralSearchStage[] stages, Utf8StructuralSearchStage stage)
-    {
-        var yieldKind = YieldKind == Utf8StructuralSearchYieldKind.Window
-            ? Utf8StructuralSearchStageKind.YieldWindow
-            : Utf8StructuralSearchStageKind.YieldStart;
-        var yieldIndex = Array.FindLastIndex(stages, existing => existing.Kind == yieldKind);
-        if (yieldIndex < 0)
-        {
-            return this;
-        }
-
-        var enriched = new Utf8StructuralSearchStage[stages.Length + 1];
-        Array.Copy(stages, 0, enriched, 0, yieldIndex);
-        enriched[yieldIndex] = stage;
-        Array.Copy(stages, yieldIndex, enriched, yieldIndex + 1, stages.Length - yieldIndex);
-        return new Utf8StructuralSearchPlan(YieldKind, enriched);
-    }
 }
 
 internal readonly record struct Utf8StructuralCandidate(

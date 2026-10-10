@@ -33,10 +33,7 @@ internal static class Utf8RegexPreparer
             var deterministicAnchor = Utf8DeterministicAnchorSearch.Create(tree, searchPlan);
             var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);
             var structuralSearchPlan = searchPlan.StructuralSearchPlan
-                .WithPrefixGuards(deterministicGuards.PrefixGuards)
-                .WithFixedLiteral(deterministicGuards.FixedLiteralUtf8, deterministicGuards.FixedLiteralOffset)
-                .WithFixedSets(deterministicGuards.FixedDistanceSets)
-                .WithMinLength(deterministicGuards.MinRequiredLength);
+                .WithVerificationGuards(deterministicGuards);
             if (!structuralSearchPlan.HasValue &&
                 analyzedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                 searchPlan.PreparedSearcher.HasValue)

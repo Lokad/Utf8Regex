@@ -22,17 +22,30 @@ public sealed class Utf8LazyDfaRuntimeTests
     {
         var prepared = Utf8FrontEnd.Compile(pattern, options);
         var linear = Utf8ByteSafeLinearVerifierProgram.Compile(prepared.ExecutionTree);
-        Assert.True(linear.Succeeded);
+        // Starting the optional arm with LF can cross a multiline end position.
+        // The first-arm-only kernel cannot skip that arm after the end assertion
+        // fails. Keep this original grammar row and qualify its scalar route.
+        var needsAssertionRewind = pattern == @"a(?:\nb)?(?m:$)";
+        Assert.Equal(!needsAssertionRewind, linear.Succeeded);
         var dfa = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linear.Program);
-        Assert.True(dfa.Succeeded);
+        Assert.Equal(!needsAssertionRewind, dfa.Succeeded);
+        var tree = Utf8OwnedTreeParser.TryParse(pattern, options); Assert.NotNull(tree);
+        var owned = Utf8OwnedTreeSliceLowerer.TryLower(tree, options); Assert.NotNull(owned);
+        var starts = new int[owned.GroupCount]; var ends = new int[owned.GroupCount];
         var oracle = new Regex(pattern, options);
         foreach (var text in new[] { "", "ab12", "ab12\n", "ab12\n\n", "ab12\nrest", "\nab12\n", "zab12", "ab1x",
-            "abcd", "abcdefef", "abcdefef\n", "\nabef\nrest", "abcdcdefcd", "abcxef", "ab", "a\nx", "a\nb\nrest", "a\nb", "\na\nx" })
+            "abcd", "abcdefef", "abcdefef\n", "\nabef\nrest", "abcdcdefcd", "abcxef", "ab", "a\nx", "a\nb\nrest", "a\nb", "\na\nx", "a\nbx" })
         foreach (var start in Enumerable.Range(0, text.Length + 1))
         {
             var expected = oracle.Match(text, start);
             var input = Encoding.ASCII.GetBytes(text);
             var expectedHit = expected.Success && expected.Index == start;
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None) { AnchorOriginByte = start };
+            var scalar = Utf8SliceRunner.TryMatchAt(owned, input, start, starts, ends, true, ref invocation);
+            Assert.Equal(Utf8ExecutionLimitKind.None, scalar.Breach);
+            Assert.Equal(expectedHit, scalar.IsMatch);
+            if (expectedHit) Assert.Equal(expected.Length, scalar.EndIndex - start);
+            if (needsAssertionRewind) continue;
             Assert.Equal(expectedHit, linear.Program.TryMatch(input, start, out var linearLength, out var fallback));
             Assert.False(fallback);
             Assert.Equal(expectedHit, dfa.Program.TryMatch(input, start, out var dfaLength));
