@@ -21,7 +21,7 @@ $sourceRevision = (& git -C $repositoryRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw "Could not resolve the candidate source revision." }
 [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
 
-$attemptName = "$version-$([DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ'))-$([Guid]::NewGuid().ToString('N'))"
+$attemptName = [Guid]::NewGuid().ToString("N").Substring(0, 12)
 $attemptRoot = Join-Path $artifactsRoot "scalar-candidate-attempts/$attemptName"
 [void] (New-Item -ItemType Directory -Path $attemptRoot)
 $feed = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "feed")).FullName
@@ -106,9 +106,16 @@ try {
         "Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests",
         "Lokad.Utf8Regex.Pcre2.Tests", "Lokad.Utf8Regex.PythonRe.Tests"
     )) {
-        $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$testProjectName")).FullName
+        # Short storage names keep dependency paths below legacy Windows limits.
+        $consumerName = switch ($testProjectName) {
+            "Lokad.Utf8Regex.Tests" { "core" }
+            "Lokad.Utf8Regex.DiffTests" { "diff" }
+            "Lokad.Utf8Regex.Pcre2.Tests" { "pcre2" }
+            "Lokad.Utf8Regex.PythonRe.Tests" { "pythonre" }
+        }
+        $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$consumerName")).FullName
         $testDirectory = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "tests")).FullName
-        $cache = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "package-cache")).FullName
+        $cache = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "cache")).FullName
         $packageIds = @("Lokad.Utf8Regex")
         if ($testProjectName -match '^Lokad\.Utf8Regex\.(Pcre2|PythonRe)\.Tests$') {
             $packageIds += "Lokad.Utf8Regex.$($Matches[1])"
@@ -152,9 +159,9 @@ try {
         $consumerRecords.Add([ordered]@{
             TestProject = $testProjectName; Total = [int]$counts.total; Passed = [int]$counts.passed; Failed = [int]$counts.failed
             ProjectReferences = 0; Packages = $identities
-            ResultsRelativePath = "consumers/$testProjectName/results/qualified.trx"
+            ResultsRelativePath = "consumers/$consumerName/results/qualified.trx"
             ResultsSha256 = (Get-FileHash -LiteralPath (Join-Path $resultsDirectory "qualified.trx") -Algorithm SHA256).Hash
-            LockRelativePath = "consumers/$testProjectName/tests/packages.lock.json"
+            LockRelativePath = "consumers/$consumerName/tests/packages.lock.json"
             LockSha256 = (Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash
         })
     }
@@ -202,7 +209,7 @@ $patterns
     }
     [void] (New-Item -ItemType Directory -Path (Split-Path -Parent $candidateRoot) -Force)
     if (Test-Path -LiteralPath $candidateRoot) { throw "Candidate appeared during qualification; refusing to overwrite it." }
-    Move-Item -LiteralPath $attemptRoot -Destination $candidateRoot
+    [IO.Directory]::Move($attemptRoot, $candidateRoot)
     Write-Host "Qualified immutable scalar candidate: $candidateRoot"
 }
 finally {

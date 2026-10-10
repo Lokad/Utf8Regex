@@ -5,7 +5,7 @@
 function Invoke-DotNet {
     param([string[]] $Arguments)
 
-    & dotnet @Arguments
+    & dotnet @Arguments | Out-Host
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet $($Arguments -join ' ') failed with exit code $LASTEXITCODE."
     }
@@ -445,6 +445,9 @@ $sourceMapping
         $testArguments = @("test", $testProjectPath, "-c", $Configuration, "--no-restore", "--tl:off", "--nologo", "-v", "minimal")
         if ($TestResultsDirectory) {
             $testArguments += @("--logger", "trx;LogFileName=qualified.trx", "--results-directory", $TestResultsDirectory)
+        }
+        if ($PinQualifiedPackageSources) {
+            $testArguments += @("--disable-build-servers", "/m:1", "/nodeReuse:false", "/p:UseSharedCompilation=false")
         }
         Invoke-DotNet $testArguments
     }
