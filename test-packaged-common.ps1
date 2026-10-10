@@ -365,7 +365,9 @@ function Invoke-IsolatedConsumerTests {
         [string]$Configuration,
         [string]$SourceTestProjectName,
         [string[]]$PackageIds,
-        [string]$Version
+        [string]$Version,
+        [switch]$PinQualifiedPackageSources,
+        [string]$TestResultsDirectory
     )
 
     $sourceTests = Join-Path (Join-Path $RepositoryRoot "tests") $SourceTestProjectName
@@ -393,7 +395,7 @@ function Invoke-IsolatedConsumerTests {
     foreach ($packageId in $PackageIds) {
         $reference = $testProject.CreateElement("PackageReference")
         $reference.SetAttribute("Include", $packageId)
-        $reference.SetAttribute("Version", $Version)
+        $reference.SetAttribute("Version", $(if ($PinQualifiedPackageSources) { "[$Version]" } else { $Version }))
         [void] $packageGroup.AppendChild($reference)
     }
     [void] $testProject.Project.AppendChild($packageGroup)
@@ -404,14 +406,32 @@ function Invoke-IsolatedConsumerTests {
     }
 
     $nugetConfigPath = Join-Path $QualificationRoot "NuGet.Config"
+    $sourceMapping = ""
+    if ($PinQualifiedPackageSources) {
+        $patterns = @($PackageIds | ForEach-Object {
+            '      <package pattern="' + [Security.SecurityElement]::Escape($_) + '" />'
+        }) -join [Environment]::NewLine
+        $sourceMapping = @"
+  <packageSourceMapping>
+    <packageSource key="qualified-packages">
+$patterns
+    </packageSource>
+    <packageSource key="nuget.org">
+      <package pattern="*" />
+    </packageSource>
+  </packageSourceMapping>
+"@
+    }
+    $escapedPackageDirectory = [Security.SecurityElement]::Escape($PackageDirectory)
     $nugetConfig = @"
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
-    <add key="qualified-packages" value="$PackageDirectory" />
+    <add key="qualified-packages" value="$escapedPackageDirectory" />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
   </packageSources>
+$sourceMapping
 </configuration>
 "@
     $nugetConfig | Set-Content -LiteralPath $nugetConfigPath -Encoding utf8
@@ -419,8 +439,14 @@ function Invoke-IsolatedConsumerTests {
     $previousPackageCache = $env:NUGET_PACKAGES
     try {
         $env:NUGET_PACKAGES = $PackageCache
-        Invoke-DotNet @("restore", $testProjectPath, "--configfile", $nugetConfigPath, "--tl:off", "-v", "minimal")
-        Invoke-DotNet @("test", $testProjectPath, "-c", $Configuration, "--no-restore", "--tl:off", "--nologo", "-v", "minimal")
+        $restoreArguments = @("restore", $testProjectPath, "--configfile", $nugetConfigPath, "--tl:off", "-v", "minimal")
+        if ($PinQualifiedPackageSources) { $restoreArguments += "--use-lock-file" }
+        Invoke-DotNet $restoreArguments
+        $testArguments = @("test", $testProjectPath, "-c", $Configuration, "--no-restore", "--tl:off", "--nologo", "-v", "minimal")
+        if ($TestResultsDirectory) {
+            $testArguments += @("--logger", "trx;LogFileName=qualified.trx", "--results-directory", $TestResultsDirectory)
+        }
+        Invoke-DotNet $testArguments
     }
     finally {
         $env:NUGET_PACKAGES = $previousPackageCache
