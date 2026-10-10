@@ -24,6 +24,9 @@ public sealed class PythonReParserCollectionAdmissionTests
         using var owner = Utf8ConstructionScope.Enter();
         using var scalars = PythonReScalarSet.Create(owner.Budget);
         for (var warm = 0; warm < 1000; warm++) scalars.Add(0x1f600);
+        // Warm the measured helper too: its first-call instrumentation is not
+        // duplicate-member storage. Keep the actual interval and zero exact.
+        _ = MeasureDuplicateSparseAdds(scalars);
         var held = owner.Budget.ReservedBytes;
         var allocated = MeasureDuplicateSparseAdds(scalars);
         Assert.Equal(0, allocated);
