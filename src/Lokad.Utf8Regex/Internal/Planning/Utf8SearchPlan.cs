@@ -7,6 +7,8 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchPlan
 {
+    private readonly Utf8StructuralSearchPlan[]? _fallbackCandidatePlans;
+
     private Utf8SearchPlan(Utf8SearchFacts facts)
     {
         var kind = facts.Kind;
@@ -31,13 +33,7 @@ internal readonly struct Utf8SearchPlan
         var maxPossibleLength = facts.MaxPossibleLength;
         var leadingBoundary = facts.LeadingBoundary;
         var trailingBoundary = facts.TrailingBoundary;
-        NativeCandidateSource = default;
-        FallbackCandidateSource = default;
-        ConfirmationPlan = default;
         ProjectionPlan = default;
-        CountOperation = default;
-        FirstMatchOperation = default;
-        EnumerationOperation = default;
         Kind = kind;
         LiteralUtf8 = literalUtf8;
         CanGuideFallbackStarts = canGuideFallbackStarts;
@@ -55,10 +51,14 @@ internal readonly struct Utf8SearchPlan
         AlternateLiteralUtf16Lengths = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.ExactUtf8Literals
             ? CreateAlternateLiteralUtf16Lengths(alternateLiteralsUtf8)
             : null;
-        AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
-            ? new PreparedLiteralSetSearch(alternateLiteralsUtf8)
-            : null;
         MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
+        // Direct portfolios already own the exact tables used by compatibility
+        // consumers. Borrow them instead of acquiring the same payload twice.
+        AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
+            ? MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactDirect
+                ? MultiLiteralSearch.ExactSearch
+                : new PreparedLiteralSetSearch(alternateLiteralsUtf8)
+            : null;
         AlternateIgnoreCaseLiteralSearch = MultiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase
             ? MultiLiteralSearch.IgnoreCaseSearch
             : null;
@@ -78,8 +78,8 @@ internal readonly struct Utf8SearchPlan
             CreateRequiredWindowPrefilterPlans(requiredWindowPrefilters) ??
             CreateFallbackRequiredWindowPrefilterPlans(
                 requiredPrefilterAlternateLiteralsUtf8,
-                secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength);
+                requiredPrefilterSearcher,
+                secondaryRequiredPrefilterSearcher);
         OrderedWindowMaxGap = orderedWindowMaxGap;
         OrderedWindowSameLine = orderedWindowSameLine;
         FallbackStartTransform = fallbackStartTransform;
@@ -104,42 +104,14 @@ internal readonly struct Utf8SearchPlan
             requiredPrefilterSearcher,
             secondaryRequiredPrefilterSearcher,
             requiredWindowPrefilterPlans);
-        FallbackSearch = new Utf8FallbackSearchPlan(
-            PrefilterPlan,
-            CreateFallbackCandidatePlans(structuralSearchPlan, requiredWindowPrefilterPlans));
+        _fallbackCandidatePlans = CreateFallbackCandidatePlans(structuralSearchPlan, requiredWindowPrefilterPlans);
         Distance = distance;
         MinRequiredLength = minRequiredLength;
         ExactRequiredLength = exactRequiredLength;
         MaxPossibleLength = maxPossibleLength;
         LeadingBoundary = leadingBoundary;
         TrailingBoundary = trailingBoundary;
-        NativeCandidateSource = HasPreparedSearcher
-            ? Utf8CandidateSearchPlan.FromPreparedSearcher(
-                PreparedSearcher,
-                Utf8SearchSemantics.CandidateScan,
-                PortfolioKind)
-            : Utf8CandidateSearchPlan.FromStructuralSearch(
-                StructuralSearchPlan,
-                Utf8SearchSemantics.CandidateScan,
-                PortfolioKind);
-        FallbackCandidateSource = FallbackSearch.CandidateSource;
-        ConfirmationPlan = CreateConfirmationPlan();
         ProjectionPlan = CreateProjectionPlan(Kind);
-        CountOperation = Utf8SearchStrategySelector.Create(
-            this,
-            Utf8SearchSemantics.CountMatches,
-            ConfirmationPlan,
-            default);
-        FirstMatchOperation = Utf8SearchStrategySelector.Create(
-            this,
-            Utf8SearchSemantics.FirstMatch,
-            ConfirmationPlan,
-            default);
-        EnumerationOperation = Utf8SearchStrategySelector.Create(
-            this,
-            Utf8SearchSemantics.EnumerateMatches,
-            ConfirmationPlan,
-            ProjectionPlan);
     }
 
     public static Utf8SearchPlan Prepare(Utf8SearchFacts facts)
@@ -209,23 +181,30 @@ internal readonly struct Utf8SearchPlan
 
     public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; }
 
-    public Utf8FallbackSearchPlan FallbackSearch { get; }
+    public Utf8FallbackSearchPlan FallbackSearch => new(PrefilterPlan, _fallbackCandidatePlans);
 
     public Utf8PrefilterPlan PrefilterPlan { get; }
 
-    public Utf8CandidateSearchPlan NativeCandidateSource { get; }
+    public Utf8CandidateSearchPlan NativeCandidateSource => HasPreparedSearcher
+        ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, Utf8SearchSemantics.CandidateScan, PortfolioKind)
+        : Utf8CandidateSearchPlan.FromStructuralSearch(StructuralSearchPlan, Utf8SearchSemantics.CandidateScan, PortfolioKind);
 
-    public Utf8CandidateSearchPlan FallbackCandidateSource { get; }
+    public Utf8CandidateSearchPlan FallbackCandidateSource =>
+        Utf8CandidateSearchPlan.FromStructuralSearchSet(_fallbackCandidatePlans,
+            Utf8SearchSemantics.CandidateScan with { RequiresConfirmation = true });
 
-    public Utf8ConfirmationPlan ConfirmationPlan { get; }
+    public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
     public Utf8ProjectionPlan ProjectionPlan { get; }
 
-    public Utf8SearchOperationPlan CountOperation { get; }
+    public Utf8SearchOperationPlan CountOperation =>
+        Utf8SearchStrategySelector.Create(this, Utf8SearchSemantics.CountMatches, ConfirmationPlan, default);
 
-    public Utf8SearchOperationPlan FirstMatchOperation { get; }
+    public Utf8SearchOperationPlan FirstMatchOperation =>
+        Utf8SearchStrategySelector.Create(this, Utf8SearchSemantics.FirstMatch, ConfirmationPlan, default);
 
-    public Utf8SearchOperationPlan EnumerationOperation { get; }
+    public Utf8SearchOperationPlan EnumerationOperation =>
+        Utf8SearchStrategySelector.Create(this, Utf8SearchSemantics.EnumerateMatches, ConfirmationPlan, ProjectionPlan);
 
     public PreparedSearcher RequiredPrefilterSearcher => PrefilterPlan.PrimarySearcher;
 
@@ -253,7 +232,7 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
 
-    public Utf8StructuralSearchPlan[]? FallbackCandidatePlans => FallbackSearch.CandidatePlans;
+    public Utf8StructuralSearchPlan[]? FallbackCandidatePlans => _fallbackCandidatePlans;
 
     public int Distance { get; }
 
@@ -289,7 +268,7 @@ internal readonly struct Utf8SearchPlan
 
     public bool HasWindowSearch => WindowSearch.HasValue;
 
-    public bool HasFallbackCandidates => FallbackSearch.HasCandidates;
+    public bool HasFallbackCandidates => _fallbackCandidatePlans is { Length: > 0 };
 
     public bool HasBoundaryRequirements =>
         LeadingBoundary != Utf8BoundaryRequirement.None ||
@@ -473,15 +452,18 @@ internal readonly struct Utf8SearchPlan
 
     private static Utf8StructuralSearchPlan[]? CreateFallbackRequiredWindowPrefilterPlans(
         byte[][]? requiredPrefilterAlternateLiteralsUtf8,
-        Utf8SearchAsciiSet secondaryRequiredPrefilterQuotedAsciiSet,
-        int secondaryRequiredPrefilterQuotedAsciiLength)
+        in PreparedSearcher requiredPrefilterSearcher,
+        in PreparedSearcher secondaryRequiredPrefilterSearcher)
     {
         if (requiredPrefilterAlternateLiteralsUtf8 is not { Length: > 0 } literals ||
-            !secondaryRequiredPrefilterQuotedAsciiSet.HasValue || secondaryRequiredPrefilterQuotedAsciiLength <= 0) return null;
+            !secondaryRequiredPrefilterSearcher.HasValue) return null;
         var plans = Utf8ConstructionScope.CurrentBudget.AllocateArray<Utf8StructuralSearchPlan>(2, false);
-        var family = new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
-        var quoted = new PreparedSearcher(new PreparedQuotedAsciiRunSearch(
-            secondaryRequiredPrefilterQuotedAsciiSet, secondaryRequiredPrefilterQuotedAsciiLength));
+        // A separate mandatory literal takes priority over the family in the
+        // primary prefilter. Only a primary family supplies this window source.
+        var family = requiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral
+            ? requiredPrefilterSearcher
+            : new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
+        var quoted = secondaryRequiredPrefilterSearcher;
         plans[0] = Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(
             new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false), 5,
             new Utf8FallbackStartTransform(1, Utf8FallbackStartTransformKind.None));

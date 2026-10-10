@@ -20,7 +20,8 @@ internal enum Utf8SearchObservabilityKind : byte
 /// <summary>
 /// Complete immutable disposition for one regex operation. Candidate discovery,
 /// optional prefiltering, confirmation, projection, and observability are selected
-/// once during preparation rather than rebuilt at every call site.
+/// from canonical prepared sources. Runtime owners can retain this view when
+/// they execute it repeatedly; the search plan need not store duplicate copies.
 /// </summary>
 internal readonly struct Utf8SearchOperationPlan
 {

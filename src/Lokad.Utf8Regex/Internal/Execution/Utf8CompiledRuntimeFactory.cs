@@ -16,9 +16,7 @@ internal static class Utf8CompiledRuntimeFactory
         budget.EnterDepth();
         try
         {
-            if ((compiledEngine.Kind == Utf8CompiledEngineKind.ByteSafeLinear ||
-                 compiledEngine.Kind == Utf8CompiledEngineKind.CompiledFallback) &&
-                ShouldPreferFallbackRegexRuntime(compiledEngine.Kind, regexPlan, budget))
+            if (ShouldUseDirectScalarRuntime(compiledEngine.Kind, regexPlan, budget))
             {
                 compiledEngine = new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex);
             }
@@ -61,14 +59,15 @@ internal static class Utf8CompiledRuntimeFactory
         finally { budget.LeaveDepth(); }
     }
 
-    public static RegexOptions NormalizeDirectRouteOptions(RegexOptions options) => options & ~RegexOptions.Compiled;
-
-    private static bool ShouldPreferFallbackRegexRuntime(
+    // These are preparation hints for owned scalar execution. Preserve the
+    // existing reason gate and runtime choices; no subject or BCL engine is used.
+    private static bool ShouldUseDirectScalarRuntime(
         Utf8CompiledEngineKind engineKind,
         Utf8PreparedRegex regexPlan,
         Utf8ConstructionBudget budget)
     {
-        if (regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
+        if (engineKind is not (Utf8CompiledEngineKind.ByteSafeLinear or Utf8CompiledEngineKind.CompiledFallback) ||
+            regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
             !string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal))
         {
             return false;
@@ -106,7 +105,9 @@ internal static class Utf8CompiledRuntimeFactory
         for (var i = 0; i < literal.Length; i++)
         {
             budget.ChargeWork(1);
-            var offset = searchPlan.Distance + i;
+            // A guard's Int32 offset cannot certify an extent that wraps past
+            // the subject coordinate domain. Compare the borrowed facts widely.
+            var offset = (long)searchPlan.Distance + i;
             var covered = false;
             foreach (var guard in prefixGuards)
             {

@@ -67,9 +67,6 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
             {
                 owner.ChargeWork(1);
                 var trailing = HasPairedTrailingLiterals ? TrailingLiteralsUtf8[i] : trailingLiteralUtf8;
-                // The exact short-needle constructor runs at most three scans.
-                // It borrows the byte payload and acquires no secondary arrays.
-                owner.ChargeWork(3ul * (ulong)trailing.Length);
                 TrailingSearchers[i] = new PreparedSearcher(new PreparedSubstringSearch(trailing, false), false);
                 var currentSeparator = BranchSeparators.Length > 0 ? BranchSeparators[i] : separator;
                 var leading = HasPairedTrailingLiterals ? LeadingLiteralsUtf8[i] : leadingLiteralUtf8;

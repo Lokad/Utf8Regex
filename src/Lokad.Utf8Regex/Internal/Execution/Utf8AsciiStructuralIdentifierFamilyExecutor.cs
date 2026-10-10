@@ -700,7 +700,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         int separatorMinCount)
     {
         var count = 0;
-        var search = new PreparedSubstringSearch(suffixLiteral, ignoreCase: false);
+        var search = familyPlan.SuffixParts[0].LiteralSearch;
         var offset = 0;
 
         while (offset <= input.Length - suffixLiteral.Length)

@@ -1122,15 +1122,14 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
             }
             else
             {
-                var trailingSearch = new PreparedSubstringSearch(plan.TrailingLiteralUtf8, ignoreCase: false);
-                var relative = trailingSearch.IndexOf(input[searchFrom..]);
+                var relative = plan.TrailingSearchers[0].FindFirst(input[searchFrom..]);
                 if (relative < 0)
                 {
                     return false;
                 }
 
                 trailingIndex = searchFrom + relative;
-                matchedLength = trailingSearch.Length;
+                matchedLength = plan.TrailingLiteralUtf8.Length;
             }
 
             searchFrom = trailingIndex + 1;

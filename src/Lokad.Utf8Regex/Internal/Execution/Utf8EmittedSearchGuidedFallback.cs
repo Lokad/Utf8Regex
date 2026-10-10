@@ -65,7 +65,7 @@ internal sealed class Utf8EmittedSearchGuidedFallback
         out Utf8ScalarVerificationResult verification)
     {
         return Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(
-            backend._searchPlan.FallbackSearch.CandidatePlans ?? [],
+            backend._searchPlan.FallbackCandidatePlans ?? [],
             backend._verifierRuntime,
             input,
             validation,

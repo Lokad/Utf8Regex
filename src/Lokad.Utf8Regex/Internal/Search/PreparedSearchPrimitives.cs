@@ -12,7 +12,6 @@ internal enum PreparedIgnoreCaseSearchTier : byte
     None = 0,
     ShortLiteral = 1,
     VectorAnchored = 2,
-    PackedPair = 3,
 }
 
 internal enum PreparedExactSearchTier : byte
@@ -23,7 +22,6 @@ internal enum PreparedExactSearchTier : byte
     SpanIndexOf = 3,
 }
 
-internal readonly record struct PreparedIgnoreCasePackedPair(byte FoldedByte1, int Index1, byte FoldedByte2, int Index2);
 
 internal readonly struct PreparedByteSearch
 {
@@ -99,38 +97,63 @@ internal readonly struct PreparedSubstringSearch
     private readonly byte[]? _foldedNeedle;
     private readonly int[]? _ignoreCaseShiftTable;
     private readonly int _ignoreCasePreferredCompareIndex;
-    private readonly PreparedIgnoreCasePackedPair _ignoreCasePackedPair;
     private readonly PreparedExactSearchTier _exactTier;
     private readonly AsciiAnchorSelection _exactAnchors;
 
     public PreparedSubstringSearch(byte[] needle, bool ignoreCase)
     {
+        this = default;
         Needle = needle;
         IgnoreCase = ignoreCase;
         _exactTier = !ignoreCase ? DetermineExactTier(needle.Length) : PreparedExactSearchTier.None;
-        _exactAnchors = !ignoreCase &&
-                        needle.Length is >= 4 and <= 16 &&
-                        AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(needle, ignoreCase: false, out var exactAnchors)
-            ? exactAnchors
-            : default;
-        var foldedNeedle = ignoreCase ? CreateFoldedNeedle(needle) : null;
-        _foldedNeedle = foldedNeedle;
-        _ignoreCaseShiftTable = ignoreCase && needle.Length >= 3 && foldedNeedle is not null
-            ? CreateIgnoreCaseShiftTable(foldedNeedle)
-            : null;
-        _ignoreCasePreferredCompareIndex = ignoreCase && needle.Length >= 9 && foldedNeedle is not null
-            ? GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], foldedNeedle.Length - 1)
-            : -1;
-        if (ignoreCase && needle.Length > 10 && foldedNeedle is not null && TryCreateIgnoreCasePackedPair(foldedNeedle, out var packedPair))
-        {
-            _ignoreCasePackedPair = packedPair;
-        }
-        else
-        {
-            _ignoreCasePackedPair = default;
-        }
+        _ignoreCasePreferredCompareIndex = -1;
 
-        IgnoreCaseTier = DetermineIgnoreCaseTier();
+        // These kernels only borrow the needle; they perform no preparation scans.
+        if (needle.Length <= 1 || !ignoreCase && needle.Length is not (>= 4 and <= 16))
+            return;
+
+        using var construction = Utf8ConstructionScope.Enter();
+        var owner = construction.Budget; owner.EnterDepth();
+        try
+        {
+            if (!ignoreCase)
+            {
+                owner.ChargeWork(3ul * (ulong)needle.Length);
+                if (AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(needle, false, out var anchors))
+                    _exactAnchors = anchors;
+                construction.Complete();
+                return;
+            }
+
+            // The caller already owns the immutable needle. A canonical folded
+            // needle can be borrowed; uppercase ASCII needs one final owned copy.
+            owner.ChargeWork((ulong)needle.Length);
+            var foldedNeedle = needle;
+            if (needle.AsSpan().IndexOfAnyInRange((byte)'A', (byte)'Z') >= 0)
+            {
+                foldedNeedle = owner.AllocateArray<byte>(needle.Length, false);
+                owner.ChargeWork((ulong)needle.Length);
+                for (var i = 0; i < needle.Length; i++)
+                    foldedNeedle[i] = AsciiSearch.FoldCase(needle[i]);
+            }
+            _foldedNeedle = foldedNeedle;
+
+            // Forward searches of up to eight bytes use the short kernel.
+            // Reverse searches still need folded bytes, but never the shift table.
+            if (needle.Length >= 9)
+            {
+                var shifts = owner.AllocateArray<int>(256, false);
+                owner.ChargeWork(256);
+                shifts.AsSpan().Fill(needle.Length);
+                owner.ChargeWork((ulong)needle.Length - 1);
+                for (var i = 0; i < needle.Length - 1; i++)
+                    shifts[foldedNeedle[i]] = needle.Length - 1 - i;
+                _ignoreCaseShiftTable = shifts;
+                _ignoreCasePreferredCompareIndex = GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], needle.Length - 1, owner);
+            }
+            construction.Complete();
+        }
+        finally { owner.LeaveDepth(); }
     }
 
     public byte[] Needle { get; }
@@ -139,7 +162,9 @@ internal readonly struct PreparedSubstringSearch
 
     public int Length => Needle.Length;
 
-    public PreparedIgnoreCaseSearchTier IgnoreCaseTier { get; }
+    public PreparedIgnoreCaseSearchTier IgnoreCaseTier => !IgnoreCase
+        ? PreparedIgnoreCaseSearchTier.None
+        : Needle.Length <= 8 ? PreparedIgnoreCaseSearchTier.ShortLiteral : PreparedIgnoreCaseSearchTier.VectorAnchored;
 
     public int IndexOf(ReadOnlySpan<byte> input)
     {
@@ -294,16 +319,7 @@ internal readonly struct PreparedSubstringSearch
         var index = 0;
         while (index <= input.Length - Length)
         {
-            int found;
-            switch (tier)
-            {
-                case PreparedIgnoreCaseSearchTier.PackedPair:
-                    found = IndexOfIgnoreCasePackedPairWithMetrics(input[index..], ref candidateCount, ref verifyCount);
-                    break;
-                default:
-                    found = IndexOfIgnoreCaseWithMetrics(input[index..], _ignoreCasePreferredCompareIndex, ref candidateCount, ref verifyCount);
-                    break;
-            }
+            var found = IndexOfIgnoreCaseWithMetrics(input[index..], _ignoreCasePreferredCompareIndex, ref candidateCount, ref verifyCount);
 
             if (found < 0)
             {
@@ -590,11 +606,6 @@ internal readonly struct PreparedSubstringSearch
             return AsciiSearch.IndexOfIgnoreCase(input, Needle);
         }
 
-        if (IgnoreCaseTier == PreparedIgnoreCaseSearchTier.PackedPair)
-        {
-            return IndexOfIgnoreCasePackedPair(input);
-        }
-
         var foldedNeedle = _foldedNeedle ?? Needle;
         if (Needle.Length >= 4 && TryIndexOfIgnoreCaseFirstLastVector(input, foldedNeedle, _ignoreCasePreferredCompareIndex, out var vectorIndex))
         {
@@ -660,11 +671,6 @@ internal readonly struct PreparedSubstringSearch
         if (Needle.Length <= 8)
         {
             return AsciiSearch.IndexOfIgnoreCase(input, Needle);
-        }
-
-        if (IgnoreCaseTier == PreparedIgnoreCaseSearchTier.PackedPair)
-        {
-            return IndexOfIgnoreCasePackedPairWithMetrics(input, ref candidateCount, ref verifyCount);
         }
 
         var foldedNeedle = _foldedNeedle ?? Needle;
@@ -745,317 +751,6 @@ internal readonly struct PreparedSubstringSearch
         return IndexOfIgnoreCaseWithMetrics(input, ref candidateCount, ref verifyCount);
     }
 
-    private int IndexOfIgnoreCasePackedPair(ReadOnlySpan<byte> input)
-    {
-        var foldedNeedle = _foldedNeedle ?? Needle;
-        if (!TryGetCaseVariants(_ignoreCasePackedPair.FoldedByte1, out var lower, out var upper))
-        {
-            lower = _ignoreCasePackedPair.FoldedByte1;
-            upper = _ignoreCasePackedPair.FoldedByte1;
-        }
-
-        var searchIndex = 0;
-        while (searchIndex <= input.Length - Length)
-        {
-            var relative = lower == upper
-                ? input[searchIndex..].IndexOf(lower)
-                : input[searchIndex..].IndexOfAny(lower, upper);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            var found = searchIndex + relative;
-            var candidate = found - _ignoreCasePackedPair.Index1;
-            if (candidate >= 0 &&
-                candidate <= input.Length - Length &&
-                AsciiSearch.FoldCase(input[candidate + _ignoreCasePackedPair.Index2]) == _ignoreCasePackedPair.FoldedByte2 &&
-                MatchesFoldedTailSkippingIndexes(input, candidate, foldedNeedle, _ignoreCasePackedPair.Index1, _ignoreCasePackedPair.Index2))
-            {
-                return candidate;
-            }
-
-            searchIndex = found + 1;
-        }
-
-        return -1;
-    }
-
-    private int IndexOfIgnoreCasePackedPairWithMetrics(ReadOnlySpan<byte> input, ref int candidateCount, ref int verifyCount)
-    {
-        var foldedNeedle = _foldedNeedle ?? Needle;
-        if (!TryGetCaseVariants(_ignoreCasePackedPair.FoldedByte1, out var lower, out var upper))
-        {
-            lower = _ignoreCasePackedPair.FoldedByte1;
-            upper = _ignoreCasePackedPair.FoldedByte1;
-        }
-
-        var searchIndex = 0;
-        while (searchIndex <= input.Length - Length)
-        {
-            var relative = lower == upper
-                ? input[searchIndex..].IndexOf(lower)
-                : input[searchIndex..].IndexOfAny(lower, upper);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            var found = searchIndex + relative;
-            var candidate = found - _ignoreCasePackedPair.Index1;
-            if (candidate >= 0 && candidate <= input.Length - Length)
-            {
-                candidateCount++;
-                if (AsciiSearch.FoldCase(input[candidate + _ignoreCasePackedPair.Index2]) == _ignoreCasePackedPair.FoldedByte2 &&
-                    MatchesFoldedTailSkippingIndexes(input, candidate, foldedNeedle, _ignoreCasePackedPair.Index1, _ignoreCasePackedPair.Index2))
-                {
-                    verifyCount++;
-                    return candidate;
-                }
-
-                verifyCount++;
-            }
-
-            searchIndex = found + 1;
-        }
-
-        return -1;
-    }
-
-    private static bool TryIndexOfIgnoreCaseFirstLastVector(ReadOnlySpan<byte> input, ReadOnlySpan<byte> foldedNeedle, out int index)
-    {
-        index = -1;
-
-#if NET
-        var needleLength = foldedNeedle.Length;
-        if (needleLength > input.Length)
-        {
-            return true;
-        }
-
-        var lastIndex = needleLength - 1;
-        ref var searchSpace = ref MemoryMarshal.GetReference(input);
-        var firstFolded = foldedNeedle[0];
-        var compareIndex = GetPreferredCompareIndex(foldedNeedle, firstFolded, lastIndex);
-
-        var lastFolded = foldedNeedle[compareIndex];
-        if (!CanUseCaseBitVectorAnchors(firstFolded, lastFolded))
-        {
-            return false;
-        }
-
-        var maxCandidateStart = input.Length - needleLength;
-        var foldMask128 = Vector128.Create((byte)0x20);
-        if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
-        {
-            var foldMask256 = Vector256.Create((byte)0x20);
-            var firstVector = Vector256.Create(firstFolded);
-            var lastVector = Vector256.Create(lastFolded);
-            nint offset = 0;
-            var searchLimit = input.Length - compareIndex;
-            var finalVectorOffset = searchLimit - Vector256<byte>.Count;
-
-            while (offset <= finalVectorOffset)
-            {
-                var firstCompare = Vector256.Equals(
-                    firstVector,
-                    Vector256.BitwiseOr(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset), foldMask256));
-                var lastCompare = Vector256.Equals(
-                    lastVector,
-                    Vector256.BitwiseOr(Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + compareIndex)), foldMask256));
-                var candidates = (firstCompare & lastCompare).ExtractMostSignificantBits();
-                while (candidates != 0)
-                {
-                    var candidateOffset = BitOperations.TrailingZeroCount(candidates);
-                    var candidate = (int)(offset + candidateOffset);
-                    if (candidate <= maxCandidateStart &&
-                        MatchesFoldedTailPreferred(input, candidate, foldedNeedle, compareIndex))
-                    {
-                        index = candidate;
-                        return true;
-                    }
-
-                    candidates &= candidates - 1;
-                }
-
-                offset += Vector256<byte>.Count;
-                if (offset > finalVectorOffset && offset < searchLimit)
-                {
-                    offset = finalVectorOffset;
-                }
-            }
-
-            return true;
-        }
-
-        if (Vector128.IsHardwareAccelerated && input.Length - lastIndex >= Vector128<byte>.Count)
-        {
-            var firstVector = Vector128.Create(firstFolded);
-            var lastVector = Vector128.Create(lastFolded);
-            nint offset = 0;
-            var searchLimit = input.Length - compareIndex;
-            var finalVectorOffset = searchLimit - Vector128<byte>.Count;
-
-            while (offset <= finalVectorOffset)
-            {
-                var firstCompare = Vector128.Equals(
-                    firstVector,
-                    Vector128.BitwiseOr(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset), foldMask128));
-                var lastCompare = Vector128.Equals(
-                    lastVector,
-                    Vector128.BitwiseOr(Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + compareIndex)), foldMask128));
-                uint candidates = (firstCompare & lastCompare).ExtractMostSignificantBits();
-                while (candidates != 0)
-                {
-                    var candidateOffset = BitOperations.TrailingZeroCount(candidates);
-                    var candidate = (int)(offset + candidateOffset);
-                    if (candidate <= maxCandidateStart &&
-                        MatchesFoldedTailPreferred(input, candidate, foldedNeedle, compareIndex))
-                    {
-                        index = candidate;
-                        return true;
-                    }
-
-                    candidates &= candidates - 1;
-                }
-
-                offset += Vector128<byte>.Count;
-                if (offset > finalVectorOffset && offset < searchLimit)
-                {
-                    offset = finalVectorOffset;
-                }
-            }
-
-            return true;
-        }
-#endif
-
-        return false;
-    }
-
-    private static bool TryIndexOfIgnoreCaseFirstLastVector(ReadOnlySpan<byte> input, ReadOnlySpan<byte> foldedNeedle, out int index, ref int candidateCount, ref int verifyCount)
-    {
-        index = -1;
-
-#if NET
-        var needleLength = foldedNeedle.Length;
-        if (needleLength > input.Length)
-        {
-            return true;
-        }
-
-        var lastIndex = needleLength - 1;
-        ref var searchSpace = ref MemoryMarshal.GetReference(input);
-        var firstFolded = foldedNeedle[0];
-        var compareIndex = GetPreferredCompareIndex(foldedNeedle, firstFolded, lastIndex);
-
-        var lastFolded = foldedNeedle[compareIndex];
-        if (!CanUseCaseBitVectorAnchors(firstFolded, lastFolded))
-        {
-            return false;
-        }
-
-        var maxCandidateStart = input.Length - needleLength;
-        var foldMask128 = Vector128.Create((byte)0x20);
-        if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
-        {
-            var foldMask256 = Vector256.Create((byte)0x20);
-            var firstVector = Vector256.Create(firstFolded);
-            var lastVector = Vector256.Create(lastFolded);
-            nint offset = 0;
-            var searchLimit = input.Length - compareIndex;
-            var finalVectorOffset = searchLimit - Vector256<byte>.Count;
-
-            while (offset <= finalVectorOffset)
-            {
-                var firstCompare = Vector256.Equals(
-                    firstVector,
-                    Vector256.BitwiseOr(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset), foldMask256));
-                var lastCompare = Vector256.Equals(
-                    lastVector,
-                    Vector256.BitwiseOr(Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + compareIndex)), foldMask256));
-                var candidates = (firstCompare & lastCompare).ExtractMostSignificantBits();
-                while (candidates != 0)
-                {
-                    var candidateOffset = BitOperations.TrailingZeroCount(candidates);
-                    var candidate = (int)(offset + candidateOffset);
-                    if (candidate <= maxCandidateStart)
-                    {
-                        candidateCount++;
-                        if (MatchesFoldedTailPreferred(input, candidate, foldedNeedle, compareIndex))
-                        {
-                            verifyCount++;
-                            index = candidate;
-                            return true;
-                        }
-
-                        verifyCount++;
-                    }
-
-                    candidates &= candidates - 1;
-                }
-
-                offset += Vector256<byte>.Count;
-                if (offset > finalVectorOffset && offset < searchLimit)
-                {
-                    offset = finalVectorOffset;
-                }
-            }
-
-            return true;
-        }
-
-        if (Vector128.IsHardwareAccelerated && input.Length - lastIndex >= Vector128<byte>.Count)
-        {
-            var firstVector = Vector128.Create(firstFolded);
-            var lastVector = Vector128.Create(lastFolded);
-            nint offset = 0;
-            var searchLimit = input.Length - compareIndex;
-            var finalVectorOffset = searchLimit - Vector128<byte>.Count;
-
-            while (offset <= finalVectorOffset)
-            {
-                var firstCompare = Vector128.Equals(
-                    firstVector,
-                    Vector128.BitwiseOr(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset), foldMask128));
-                var lastCompare = Vector128.Equals(
-                    lastVector,
-                    Vector128.BitwiseOr(Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + compareIndex)), foldMask128));
-                uint candidates = (firstCompare & lastCompare).ExtractMostSignificantBits();
-                while (candidates != 0)
-                {
-                    var candidateOffset = BitOperations.TrailingZeroCount(candidates);
-                    var candidate = (int)(offset + candidateOffset);
-                    if (candidate <= maxCandidateStart)
-                    {
-                        candidateCount++;
-                        if (MatchesFoldedTailPreferred(input, candidate, foldedNeedle, compareIndex))
-                        {
-                            verifyCount++;
-                            index = candidate;
-                            return true;
-                        }
-
-                        verifyCount++;
-                    }
-
-                    candidates &= candidates - 1;
-                }
-
-                offset += Vector128<byte>.Count;
-                if (offset > finalVectorOffset && offset < searchLimit)
-                {
-                    offset = finalVectorOffset;
-                }
-            }
-
-            return true;
-        }
-#endif
-
-        return false;
-    }
-
     private static bool TryIndexOfIgnoreCaseFirstLastVector(ReadOnlySpan<byte> input, ReadOnlySpan<byte> foldedNeedle, int preferredCompareIndex, out int index)
     {
         var candidateCount = 0;
@@ -1077,7 +772,7 @@ internal readonly struct PreparedSubstringSearch
         var lastIndex = needleLength - 1;
         if ((uint)preferredCompareIndex >= (uint)needleLength || preferredCompareIndex == 0)
         {
-            preferredCompareIndex = GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], lastIndex);
+            preferredCompareIndex = GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], lastIndex, null);
         }
 
         ref var searchSpace = ref MemoryMarshal.GetReference(input);
@@ -1288,29 +983,6 @@ internal readonly struct PreparedSubstringSearch
         return -1;
     }
 
-    private static byte[] CreateFoldedNeedle(ReadOnlySpan<byte> needle)
-    {
-        var folded = new byte[needle.Length];
-        for (var i = 0; i < needle.Length; i++)
-        {
-            folded[i] = AsciiSearch.FoldCase(needle[i]);
-        }
-
-        return folded;
-    }
-
-    private static int[] CreateIgnoreCaseShiftTable(ReadOnlySpan<byte> foldedNeedle)
-    {
-        var shiftTable = new int[256];
-        shiftTable.AsSpan().Fill(foldedNeedle.Length);
-        for (var i = 0; i < foldedNeedle.Length - 1; i++)
-        {
-            shiftTable[foldedNeedle[i]] = foldedNeedle.Length - 1 - i;
-        }
-
-        return shiftTable;
-    }
-
     private static bool MatchesFoldedTail(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> foldedNeedle)
     {
         if (index + foldedNeedle.Length > input.Length)
@@ -1372,15 +1044,20 @@ internal readonly struct PreparedSubstringSearch
         return true;
     }
 
-    private static int GetPreferredCompareIndex(ReadOnlySpan<byte> foldedNeedle, byte firstFolded, int lastIndex)
+    private static int GetPreferredCompareIndex(ReadOnlySpan<byte> foldedNeedle, byte firstFolded, int lastIndex,
+        Utf8ConstructionBudget? owner)
     {
+        owner?.ChargeWork(3ul * (ulong)foldedNeedle.Length);
         if (AsciiSearch.TryGetDotNetLikeAsciiAnchorSelection(foldedNeedle, ignoreCase: true, out var anchors) &&
             anchors.Anchor2 > 0)
         {
             return anchors.Anchor2;
         }
 
+        owner?.ChargeWork(256);
         Span<int> counts = stackalloc int[256];
+        counts.Clear();
+        owner?.ChargeWork((ulong)foldedNeedle.Length);
         for (var i = 0; i < foldedNeedle.Length; i++)
         {
             counts[foldedNeedle[i]]++;
@@ -1389,6 +1066,7 @@ internal readonly struct PreparedSubstringSearch
         var compareIndex = -1;
         var rarestCount = int.MaxValue;
         var bestRarityScore = int.MinValue;
+        owner?.ChargeWork((ulong)foldedNeedle.Length - 1);
         for (var i = 1; i < foldedNeedle.Length; i++)
         {
             if (foldedNeedle[i] == firstFolded)
@@ -1416,93 +1094,6 @@ internal readonly struct PreparedSubstringSearch
         return (int)(AsciiSearch.GetDotNetLikeAsciiFrequency(folded) * -1000f);
     }
 
-    private PreparedIgnoreCaseSearchTier DetermineIgnoreCaseTier()
-    {
-        if (!IgnoreCase)
-        {
-            return PreparedIgnoreCaseSearchTier.None;
-        }
-
-        if (Needle.Length <= 8)
-        {
-            return PreparedIgnoreCaseSearchTier.ShortLiteral;
-        }
-
-        if (ShouldUsePackedPairTier())
-        {
-            return PreparedIgnoreCaseSearchTier.PackedPair;
-        }
-
-        return PreparedIgnoreCaseSearchTier.VectorAnchored;
-    }
-
-    private bool ShouldUsePackedPairTier()
-    {
-        if (_ignoreCasePackedPair.Index1 <= 0 ||
-            _ignoreCasePackedPair.Index2 <= 0 ||
-            _ignoreCasePackedPair.Index1 == _ignoreCasePreferredCompareIndex)
-        {
-            return false;
-        }
-
-        var primaryScore = GetStaticIgnoreCaseRarityScore(_ignoreCasePackedPair.FoldedByte1);
-        var secondaryScore = GetStaticIgnoreCaseRarityScore(_ignoreCasePackedPair.FoldedByte2);
-        return Needle.Length >= 12 && primaryScore >= 18 && secondaryScore >= 12;
-    }
-
-    private static bool TryCreateIgnoreCasePackedPair(ReadOnlySpan<byte> foldedNeedle, out PreparedIgnoreCasePackedPair pair)
-    {
-        pair = default;
-        if (foldedNeedle.Length <= 2)
-        {
-            return false;
-        }
-
-        Span<int> counts = stackalloc int[256];
-        for (var i = 0; i < foldedNeedle.Length; i++)
-        {
-            counts[foldedNeedle[i]]++;
-        }
-
-        var bestIndex1 = -1;
-        var bestIndex2 = -1;
-        var bestScore1 = int.MinValue;
-        var bestScore2 = int.MinValue;
-        for (var i = 1; i < foldedNeedle.Length; i++)
-        {
-            var score = GetStaticIgnoreCaseRarityScore(foldedNeedle[i]) * 100 - counts[foldedNeedle[i]] * 10 + i;
-            if (score > bestScore1)
-            {
-                bestScore2 = bestScore1;
-                bestIndex2 = bestIndex1;
-                bestScore1 = score;
-                bestIndex1 = i;
-            }
-            else if (i != bestIndex1 && score > bestScore2)
-            {
-                bestScore2 = score;
-                bestIndex2 = i;
-            }
-        }
-
-        if (bestIndex1 < 0 || bestIndex2 < 0)
-        {
-            return false;
-        }
-
-        if (bestIndex2 < bestIndex1)
-        {
-            (bestIndex1, bestIndex2) = (bestIndex2, bestIndex1);
-        }
-
-        pair = new PreparedIgnoreCasePackedPair(
-            foldedNeedle[bestIndex1],
-            bestIndex1,
-            foldedNeedle[bestIndex2],
-            bestIndex2);
-        return true;
-    }
-
     private static bool TryGetCaseVariants(byte folded, out byte lower, out byte upper)
     {
         lower = folded;
@@ -1527,26 +1118,4 @@ internal readonly struct PreparedSubstringSearch
         => TryGetCaseVariants(firstFolded, out _, out _) &&
            TryGetCaseVariants(compareFolded, out _, out _);
 
-    private static bool MatchesFoldedTailSkippingIndexes(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> foldedNeedle, int skipIndex1, int skipIndex2)
-    {
-        if (index + foldedNeedle.Length > input.Length)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < foldedNeedle.Length; i++)
-        {
-            if (i == skipIndex1 || i == skipIndex2)
-            {
-                continue;
-            }
-
-            if (AsciiSearch.FoldCase(input[index + i]) != foldedNeedle[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }

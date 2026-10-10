@@ -248,7 +248,7 @@ internal sealed partial class Utf8CompiledFallbackCompiledEngineRuntime
         {
             var regexPlan = plan;
             var verifierRuntime = verifier;
-            var candidatePlans = regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [];
+            var candidatePlans = regexPlan.SearchPlan.FallbackCandidatePlans ?? [];
             var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime, candidatePlans),
                 static state => new Utf8CompiledFallbackCompiledEngineRuntime(state));
             scope.Complete();

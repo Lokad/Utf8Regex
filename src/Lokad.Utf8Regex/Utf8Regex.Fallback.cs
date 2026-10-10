@@ -791,7 +791,7 @@ public sealed partial class Utf8Regex
 
     private bool CanGuideFallbackVerification()
     {
-        return _preparedRegex.SearchPlan.FallbackSearch.HasCandidates;
+        return _preparedRegex.SearchPlan.HasFallbackCandidates;
     }
 
     private bool IsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
@@ -799,7 +799,7 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
         var validation = Utf8Validation.Validate(input, ref invocation);
         invocation.AnchorOriginByte = 0;
-        if (!Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackSearch.CandidatePlans ?? [], _verifierRuntime, input, validation, 0, ref invocation, out _, out _))
+        if (!Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackCandidatePlans ?? [], _verifierRuntime, input, validation, 0, ref invocation, out _, out _))
         {
             return false;
         }
@@ -816,7 +816,7 @@ public sealed partial class Utf8Regex
         var count = 0;
         var startIndex = 0;
         while ((uint)startIndex <= (uint)input.Length &&
-               Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackSearch.CandidatePlans ?? [], _verifierRuntime, input, validation, startIndex, ref invocation, out _, out var verification))
+               Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackCandidatePlans ?? [], _verifierRuntime, input, validation, startIndex, ref invocation, out _, out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;

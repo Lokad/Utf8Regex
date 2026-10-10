@@ -967,7 +967,7 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime : Ut
         out Utf8ScalarVerificationResult verification)
     {
         return Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(
-            _regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [],
+            _regexPlan.SearchPlan.FallbackCandidatePlans ?? [],
             _verifierRuntime,
             input,
             probe,

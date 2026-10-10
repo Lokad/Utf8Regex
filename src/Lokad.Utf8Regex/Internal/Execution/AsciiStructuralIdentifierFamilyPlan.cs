@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -132,24 +133,26 @@ internal enum AsciiStructuralSuffixPartKind : byte
 
 internal readonly struct AsciiStructuralSuffixPart
 {
-    private readonly byte[]? _literalUtf8;
+    private readonly PreparedSubstringSearch _literalSearch;
     private readonly AsciiCharClass _separatorCharClass;
 
     private AsciiStructuralSuffixPart(
         AsciiStructuralSuffixPartKind kind,
-        byte[] literalUtf8,
+        PreparedSubstringSearch literalSearch,
         AsciiCharClass separatorCharClass,
         int separatorMinCount)
     {
         Kind = kind;
-        _literalUtf8 = literalUtf8;
+        _literalSearch = literalSearch;
         _separatorCharClass = separatorCharClass;
         SeparatorMinCount = separatorMinCount;
     }
 
     public AsciiStructuralSuffixPartKind Kind { get; }
 
-    public byte[] LiteralUtf8 => _literalUtf8 ?? [];
+    public byte[] LiteralUtf8 => _literalSearch.Needle ?? [];
+
+    internal PreparedSubstringSearch LiteralSearch => _literalSearch;
 
     public AsciiCharClass SeparatorCharClass => _separatorCharClass;
 
@@ -160,9 +163,9 @@ internal readonly struct AsciiStructuralSuffixPart
     public bool IsSeparator => Kind == AsciiStructuralSuffixPartKind.Separator;
 
     public static AsciiStructuralSuffixPart CreateLiteral(byte[] literalUtf8) =>
-        new(AsciiStructuralSuffixPartKind.Literal, literalUtf8, default, 0);
+        new(AsciiStructuralSuffixPartKind.Literal, new PreparedSubstringSearch(literalUtf8, false), default, 0);
 
     public static AsciiStructuralSuffixPart CreateSeparator(AsciiCharClass separatorCharClass, int separatorMinCount) =>
-        new(AsciiStructuralSuffixPartKind.Separator, [], separatorCharClass, separatorMinCount);
+        new(AsciiStructuralSuffixPartKind.Separator, default, separatorCharClass, separatorMinCount);
 }
 

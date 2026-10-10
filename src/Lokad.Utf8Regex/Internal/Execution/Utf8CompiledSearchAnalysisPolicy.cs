@@ -61,7 +61,7 @@ internal static class Utf8CompiledSearchAnalysisPolicy
     public static bool CanUseCompiledFallback(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.ExecutionProgram is not null &&
-            regexPlan.SearchPlan.FallbackSearch.CandidatePlans is { Length: > 0 } &&
+            regexPlan.SearchPlan.FallbackCandidatePlans is { Length: > 0 } &&
             !regexPlan.ScalarVerifier.RequiresCandidateEndCoverage &&
             !regexPlan.ScalarVerifier.RequiresTrailingAnchorCoverage &&
             string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal) &&

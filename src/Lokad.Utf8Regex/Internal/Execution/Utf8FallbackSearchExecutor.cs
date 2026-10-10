@@ -49,7 +49,7 @@ internal static class Utf8FallbackSearchExecutor
 
     public static int CountCandidates(Utf8SearchPlan searchPlan, ReadOnlySpan<byte> input, bool requireScalarBoundary)
     {
-        if (searchPlan.FallbackSearch.CandidatePlans is not { Length: > 0 } candidatePlans)
+        if (searchPlan.FallbackCandidatePlans is not { Length: > 0 } candidatePlans)
         {
             return 0;
         }

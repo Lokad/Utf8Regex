@@ -676,7 +676,17 @@ equals sign, honors optional segment/value backtracking, preserves CR and negati
 value classes, and returns the exact final-LF extent. Duplicate URL suffix delegates
 and caches are removed. Positive ASCII definition queries borrow canonical
 endpoints instead of replaying a full scalar token. This qualification does not
-close the fallback-preference, whole-search, retained or common-policy gates.
+close the whole-search, retained or common-policy gates.
+Compiled runtime preference borrows the admitted plan, candidate literal and
+ordered prefix guards. Existing runtime-kind and reason gates retain their choices;
+short weak prefilters and exact-length/window exclusions use constant queries.
+Fixed-distance coverage compares wide byte offsets, so wrapped Int32 coordinates
+cannot certify a prefix. Each visited literal byte and guard consumes construction
+work without copying inputs or retaining a policy object. Selection shares the
+factory's depth and cumulative budget; child failure restores parent loans and
+depth while consumed scan work remains charged. The unused direct-route option
+normalizer and the preference method's former BCL-engine name are removed. This
+is an owned scalar execution hint, not an alternate matching contract.
 Deterministic prefix, literal-family, leading-mask, byte-safety and guard walks
 also use admitted value frames and metered visits, comparisons and ASCII copies.
 Incomplete branches invalidate whole-family proofs and partial mask unions.
@@ -920,8 +930,39 @@ leading-segment preflights, primitive minimum-length scanning and composite copi
 share the owner. The top-level factory constructs only its selected literal or
 nonliteral implementation, without a discarded second runtime. Unused runtime
 enumeration state, duplicate ASCII scanning and obsolete family-wide BMP helpers
-are removed. Other runtime objects, fallback preference scans, opaque state and
+are removed. Other runtime objects, opaque state and
 dynamic emission remain separate unqualified construction debt.
+Substring preparation borrows exact needles and meters short exact anchor scans.
+Folded candidate searches receive admitted ASCII needles; their folded bytes are
+borrowed when already canonical, otherwise one final copy is admitted. Empty and
+single-byte searches acquire no folded payload, and short searches retain no
+unused shift table. Longer searches admit the final 256-entry shift table and
+meter folding, filling, preferred-index histogram clearing, scoring and anchor
+selection under the shared construction root. Failed children restore parent capacity and depth
+while consumed work remains spent. Reverse folded searches keep the bytes needed
+to verify complete candidates. Ordered-window and reverse-suffix execution borrow
+prepared literal searches instead of rebuilding them per operation. A suffix
+part stores its canonical prepared search by value rather than a duplicate
+literal-array field; admitted suffix arrays use that actual element stride.
+Runtime tier selection, anchor scores and tie-breaking remain the same. The
+packed-pair experiment is retired: its production thresholds cannot be met by
+the current byte-frequency scores. Remove its retained pair, scoring and matcher
+code, enum member and three forced benchmark probes. Derive the remaining
+none/short/vector tier from the existing options and needle length, without
+retaining another policy field. Repeated-anchor candidates remain covered by
+independent first/last/count oracles on the live kernels. These byte candidate
+kernels do not define Unicode case folding; the scalar engine
+owns non-ASCII folding and complete-scalar verification.
+Search dispositions borrow canonical prefilter sources and the admitted fallback
+candidate vector. The search plan derives candidate, confirmation and operation
+views using constant queries instead of retaining duplicate payload and policy
+copies. The selector takes a readonly reference and evaluates each source once;
+these getters acquire no arrays, objects, work or depth. Runtime owners can retain
+a consumed operation view. Preserve source priority, semantics, confirmation,
+projection and observability choices. The small projection marker remains stored
+to preserve the distinction between a default plan and a prepared empty plan;
+UTF-16 projection remains derived interoperability metadata. Admission of objects
+that embed the plan follows its actual reduced field extent.
 Other opaque BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.

@@ -915,11 +915,8 @@ internal static partial class BenchmarkInspectReporter
                     if (ignoreCaseSearch.Length > 10)
                     {
                         Measure("VectorAnchoredCount", iterations, () => ExecutePreparedSubstringCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.VectorAnchored));
-                        Measure("PackedPairCount", iterations, () => ExecutePreparedSubstringCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.PackedPair));
                         Measure("VectorAnchoredCandidates", iterations, () => ExecutePreparedSubstringCandidateCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.VectorAnchored));
-                        Measure("PackedPairCandidates", iterations, () => ExecutePreparedSubstringCandidateCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.PackedPair));
                         Measure("VectorAnchoredVerifications", iterations, () => ExecutePreparedSubstringVerificationCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.VectorAnchored));
-                        Measure("PackedPairVerifications", iterations, () => ExecutePreparedSubstringVerificationCountWithTier(ignoreCaseSearch, benchmarkCase.InputBytes, PreparedIgnoreCaseSearchTier.PackedPair));
                     }
                 }
                 break;
