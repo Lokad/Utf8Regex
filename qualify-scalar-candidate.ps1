@@ -135,6 +135,17 @@ try {
         }
         [xml] $project = Get-Content -LiteralPath (Join-Path $testDirectory "$testProjectName.csproj")
         if ($project.SelectNodes("//ProjectReference").Count -ne 0) { throw "Project reference remained in $testProjectName." }
+        [xml] $sourceProject = Get-Content -LiteralPath (Join-Path $repositoryRoot "tests/$testProjectName/$testProjectName.csproj")
+        $linkedSources = @(foreach ($compile in @($sourceProject.SelectNodes("//Compile[@Include and @Link]"))) {
+            $sourcePath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot "tests/$testProjectName/$($compile.GetAttribute('Include'))"))
+            $detachedPath = Join-Path $consumerRoot "linked-source/$($compile.GetAttribute('Link'))"
+            $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+            if ((Get-FileHash -LiteralPath $detachedPath -Algorithm SHA256).Hash -ne $sourceHash) {
+                throw "Linked fixture source changed for $testProjectName."
+            }
+            [ordered]@{ Source = [IO.Path]::GetRelativePath($repositoryRoot, $sourcePath)
+                RelativePath = "consumers/$consumerName/linked-source/$($compile.GetAttribute('Link'))"; Sha256 = $sourceHash }
+        })
         $lockPath = Join-Path $testDirectory "packages.lock.json"
         $packageLock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json -AsHashtable
         $identities = @(foreach ($packageId in $packageIds) {
@@ -159,6 +170,7 @@ try {
         $consumerRecords.Add([ordered]@{
             TestProject = $testProjectName; Total = [int]$counts.total; Passed = [int]$counts.passed; Failed = [int]$counts.failed
             ProjectReferences = 0; Packages = $identities
+            LinkedSources = $linkedSources
             ResultsRelativePath = "consumers/$consumerName/results/qualified.trx"
             ResultsSha256 = (Get-FileHash -LiteralPath (Join-Path $resultsDirectory "qualified.trx") -Algorithm SHA256).Hash
             LockRelativePath = "consumers/$consumerName/tests/packages.lock.json"

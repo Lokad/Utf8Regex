@@ -387,6 +387,22 @@ function Invoke-IsolatedConsumerTests {
 
     $testProjectPath = Join-Path $TestDirectory ($SourceTestProjectName + ".csproj")
     [xml] $testProject = Get-Content -LiteralPath $testProjectPath
+    # Keep linked fixture helpers inside the detached qualification tree.
+    # PythonRe links four benchmark catalog/provenance sources this way.
+    $linkedRoot = [IO.Path]::GetFullPath((Join-Path $QualificationRoot "linked-source"))
+    $linkedPrefix = $linkedRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    $repositoryPrefix = [IO.Path]::GetFullPath($RepositoryRoot).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    foreach ($compile in @($testProject.SelectNodes("//Compile[@Include and @Link]"))) {
+        $sourcePath = [IO.Path]::GetFullPath((Join-Path $sourceTests $compile.GetAttribute("Include")))
+        $destinationPath = [IO.Path]::GetFullPath((Join-Path $linkedRoot $compile.GetAttribute("Link")))
+        if (!$sourcePath.StartsWith($repositoryPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+            !$destinationPath.StartsWith($linkedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Linked fixture source escaped its repository or qualification directory."
+        }
+        [void] (New-Item -ItemType Directory -Path (Split-Path -Parent $destinationPath) -Force)
+        Copy-Item -LiteralPath $sourcePath -Destination $destinationPath
+        $compile.SetAttribute("Include", [IO.Path]::GetRelativePath($TestDirectory, $destinationPath))
+    }
     @($testProject.SelectNodes("//ProjectReference")) | ForEach-Object {
         [void] $_.ParentNode.RemoveChild($_)
     }
