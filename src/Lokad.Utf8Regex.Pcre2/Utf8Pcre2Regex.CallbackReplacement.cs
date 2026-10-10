@@ -2,6 +2,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
+/// <summary>Shapes PCRE2 evaluator replacements over original UTF-8 byte ranges.</summary>
 public sealed partial class Utf8Pcre2Regex
 {
     private interface IPcre2CallbackExpansion<TState>
