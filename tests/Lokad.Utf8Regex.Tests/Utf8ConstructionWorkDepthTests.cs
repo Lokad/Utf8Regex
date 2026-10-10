@@ -57,6 +57,13 @@ public sealed class Utf8ConstructionWorkDepthTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(4)] [InlineData(8)]
     public void NestedParserFramesRejectBeforeExceedingDepthAndRecover(int maximum)
     {
+        ulong recoveryDepth;
+        using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        {
+            Assert.NotNull(Utf8OwnedTreeParser.TryParse("", RegexOptions.None));
+            // The lexical storage owner and every live continuation share depth.
+            recoveryDepth = measured.Budget.PeakDepth;
+        }
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, (ulong)maximum);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
@@ -67,7 +74,16 @@ public sealed class Utf8ConstructionWorkDepthTests
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.True(scope.Budget.WorkSteps > 0);
-        if (maximum >= 2) Assert.NotNull(Utf8OwnedTreeParser.TryParse("", RegexOptions.None));
+        if ((ulong)maximum >= recoveryDepth) Assert.NotNull(Utf8OwnedTreeParser.TryParse("", RegexOptions.None));
+        else
+        {
+            var recoveryFailure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                Utf8OwnedTreeParser.TryParse("", RegexOptions.None));
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, recoveryFailure.ResourceKind);
+            Assert.Equal((ulong)maximum + 1, recoveryFailure.Requested);
+            Assert.Equal(0ul, scope.Budget.Depth);
+            Assert.Equal(48ul, scope.Budget.ReservedBytes);
+        }
         scope.Budget.ReleaseArray(parent, false);
     }
 
