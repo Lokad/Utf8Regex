@@ -60,7 +60,7 @@ public sealed class Utf8OwnedSearchContinuationTests
     private static Utf8TreeNode Parent(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
     {
         var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant, 1, 1);
-        node.Children = children.Length == 1 ? children[0] : new List<Utf8TreeNode>(children);
+        node.Children = children.Length == 1 ? children[0] : children;
         foreach (var child in children) child.Parent = node;
         return node;
     }

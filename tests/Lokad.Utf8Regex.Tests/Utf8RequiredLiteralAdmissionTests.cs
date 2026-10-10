@@ -45,7 +45,7 @@ public sealed class Utf8RequiredLiteralAdmissionTests
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
         var node = Utf8TreeNode.Create(kind, RegexOptions.None, text);
-        foreach (var child in children) node.AddChild(child);
+        foreach (var child in children) node.WithChild(child);
         return node;
     }
 

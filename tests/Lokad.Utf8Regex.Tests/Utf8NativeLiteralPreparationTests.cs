@@ -13,7 +13,7 @@ public sealed class Utf8NativeLiteralPreparationTests
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
         var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant, text);
-        foreach (var child in children) node.AddChild(child);
+        foreach (var child in children) node.WithChild(child);
         return node;
     }
     private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
@@ -142,7 +142,7 @@ public sealed class Utf8NativeLiteralPreparationTests
         var root = Node(Utf8TreeNodeKind.Concatenate, "",
             Node(Utf8TreeNodeKind.Alternate, "", One('a'), One('b')),
             Node(Utf8TreeNodeKind.Alternate, "", One('c'), One('d')));
-        for (var index = 0; index < 8; index++) root.AddChild(Node(Utf8TreeNodeKind.Alternate, "", One('e'), One('f')));
+        for (var index = 0; index < 8; index++) root.WithChild(Node(Utf8TreeNodeKind.Alternate, "", One('e'), One('f')));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static n => new ParentValue(n));
         var checkpoint = owner.Budget.ObjectCheckpoint;

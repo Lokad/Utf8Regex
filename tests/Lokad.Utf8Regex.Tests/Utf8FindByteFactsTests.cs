@@ -381,9 +381,9 @@ public sealed class Utf8FindByteFactsTests
         Assert.NotNull(scalar);
         var repeat = Utf8TreeNode.CreateSetRepeat(scalar.Root.Child(0), RegexOptions.CultureInvariant, 9, 9, false);
         var concat = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
-        concat.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x'));
-        concat.AddChild(repeat);
-        concat.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'y'));
+        concat.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x'));
+        concat.WithChild(repeat);
+        concat.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'y'));
         Assert.Equal(new[] { "x" + string.Concat(Enumerable.Repeat("😀", 7)) },
             Utf8OwnedFindOptimizations.FindAlternatePrefixes(concat, RegexOptions.CultureInvariant));
 

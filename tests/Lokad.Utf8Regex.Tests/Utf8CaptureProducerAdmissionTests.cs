@@ -132,9 +132,11 @@ public sealed class Utf8CaptureProducerAdmissionTests
         }
         Assert.Single(roots.OfType<Utf8OwnedRegexTree>());
         Assert.Single(roots.OfType<Utf8CaptureCatalog>());
-        Assert.Single(roots.Where(static value => value.GetType().IsGenericType &&
-            value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>)));
-        Assert.All(roots, static value => Assert.True(value is Utf8TreeNode or Utf8OwnedRegexTree or Utf8CaptureCatalog ||
+        Assert.DoesNotContain(roots, static value => value.GetType().IsGenericType &&
+            value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>) &&
+            value.GetType().GetGenericArguments()[0].Name is "OwnedGroupDefinition" or "OwnedBackrefFixup" or "Int32");
+        Assert.All(roots, static value => Assert.True(value is Utf8TreeNode or Utf8OwnedRegexTree or Utf8CaptureCatalog or
+            Utf8ConstructionSession or Utf8ConstructionArena or Utf8ConstructionText ||
             value.GetType().IsGenericType && value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>)));
         Assert.Equal(loans + 96, owner.Budget.ReservedBytes); // The two one-element catalog arrays.
     }

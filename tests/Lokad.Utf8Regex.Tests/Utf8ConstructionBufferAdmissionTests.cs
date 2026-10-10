@@ -86,14 +86,27 @@ public sealed class Utf8ConstructionBufferAdmissionTests
     public void NestedConstructionCannotResetByteCapacityAndFailedChildRecovers()
     {
         const string pattern = "(?<x>a?)*b";
-        ulong peak;
+        ulong peak, recoveryPeak;
         using (var measured = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity))
         {
             Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking));
             peak = measured.Budget.PeakBytes;
         }
-        using var parent = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, peak);
+        using (var measured = Utf8ConstructionScope.Enter())
+        {
+            Assert.NotNull(Utf8SliceParser.TryParse("", RegexOptions.None));
+            recoveryPeak = measured.Budget.PeakBytes;
+        }
+        // Fresh reference-keyed graphs and capacity-clamped growth need not
+        // repeat an unlimited run's peak. Fund the first graph with headroom,
+        // then retain an explicit live blocker to test aggregate child denial.
+        var cap = 2 * Math.Max(peak, recoveryPeak);
+        using var parent = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, cap);
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking));
+        var headroom = recoveryPeak + 512;
+        Assert.True(headroom < parent.Budget.ReservedBytes);
+        var payload = checked((int)((cap - parent.Budget.ReservedBytes - headroom - 32) & ~15ul));
+        var blocker = parent.Budget.AllocateArray<byte>(payload, false);
         var held = parent.Budget.ReservedBytes;
         var heldSlots = parent.Budget.Reserved;
         using (var child = Utf8ConstructionScope.Enter())
@@ -102,12 +115,14 @@ public sealed class Utf8ConstructionBufferAdmissionTests
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-            Assert.Equal(peak, failure.Limit);
+            Assert.Equal(cap, failure.Limit);
             Assert.Equal(held, parent.Budget.ReservedBytes);
             Assert.Equal(heldSlots, parent.Budget.Reserved);
         }
         Assert.Equal(held, parent.Budget.ReservedBytes);
         Assert.NotNull(Utf8SliceParser.TryParse("", RegexOptions.None));
+        GC.KeepAlive(blocker);
+        Assert.True(parent.Budget.PeakBytes <= cap);
     }
 
     [Theory]

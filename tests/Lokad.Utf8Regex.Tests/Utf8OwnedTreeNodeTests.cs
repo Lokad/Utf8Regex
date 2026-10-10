@@ -86,19 +86,19 @@ public sealed class Utf8OwnedTreeNodeTests
     [Fact]
     public void OwnedChildStorageKeepsParentLinks()
     {
-        var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
-        Assert.Equal(0, parent.ChildCount);
-        Assert.Throws<ArgumentOutOfRangeException>(() => parent.Child(0));
-
-        for (var i = 0; i < 3; i++)
-        {
-            var child = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, (char)('a' + i));
-            parent.AddChild(child);
-            Assert.Equal(i + 1, parent.ChildCount);
-            Assert.Same(parent, parent.Child(i).Parent);
-            Assert.Equal((char)('a' + i), parent.Child(i).Ch);
-        }
-
+        var empty = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
+        Assert.Equal(0, empty.ChildCount);
+        Assert.Throws<ArgumentOutOfRangeException>(() => empty.Child(0));
+        var parsed = Utf8OwnedTreeParser.TryParse("(a)(b)(c)", RegexOptions.None);
+        Assert.NotNull(parsed);
+        var parent = parsed.Root.Child(0);
         Assert.Equal(3, parent.ChildCount);
+        Assert.IsType<Utf8TreeNode[]>(parent.Children);
+        for (var index = 0; index < parent.ChildCount; index++)
+        {
+            var child = parent.Child(index);
+            Assert.Same(parent, child.Parent);
+            Assert.Equal((char)('a' + index), child.Child(0).Ch);
+        }
     }
 }

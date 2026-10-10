@@ -13,12 +13,16 @@ internal static class Utf8FrontEnd
 
     internal static Utf8PreparedRegex Compile(string pattern, RegexOptions options, RegexOptions scalarOptions)
     {
+        using var owner = Utf8ConstructionScope.Enter();
         var analysis = Analyze(pattern, options);
-        return Utf8RegexPreparer.Prepare(analysis, scalarOptions);
+        var result = Utf8RegexPreparer.Prepare(analysis, scalarOptions);
+        owner.Complete();
+        return result;
     }
 
     internal static Utf8RegexAnalysis Analyze(string pattern, RegexOptions options)
     {
+        using var owner = Utf8ConstructionScope.Enter();
         var effectiveOptions = options;
         var executionPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref effectiveOptions);
         var runtimeTree = Utf8RuntimeTreeProvider.TryParse(pattern, options, out var diagnostic);
@@ -33,6 +37,7 @@ internal static class Utf8FrontEnd
             effectiveOptions,
             runtimeTree);
         var analysis = Utf8FrontEndAnalyzer.Analyze(semanticRegex, executionPattern, effectiveOptions);
+        owner.Complete();
         return analysis;
     }
 }

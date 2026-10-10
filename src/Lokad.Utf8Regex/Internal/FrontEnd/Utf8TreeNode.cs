@@ -89,7 +89,8 @@ internal sealed class Utf8TreeNode
     {
         null => 0,
         Utf8TreeNode => 1,
-        List<Utf8TreeNode> list => list.Count,
+        Utf8TreeNode[] nodes => nodes.Length,
+        Utf8ConstructionBuffer<Utf8TreeNode> scratch => scratch.Count,
         _ => throw new InvalidOperationException("Unexpected child storage."),
     };
 
@@ -98,31 +99,11 @@ internal sealed class Utf8TreeNode
         return Children switch
         {
             Utf8TreeNode child when index == 0 => child,
-            List<Utf8TreeNode> list => list[index],
+            Utf8TreeNode[] nodes => nodes[index],
+            Utf8ConstructionBuffer<Utf8TreeNode> scratch => scratch[index],
             null => throw new ArgumentOutOfRangeException(nameof(index)),
             _ => throw new InvalidOperationException("Unexpected child storage."),
         };
     }
 
-    public Utf8TreeNode AddChild(Utf8TreeNode child)
-    {
-        child.Parent = this;
-
-        switch (Children)
-        {
-            case null:
-                Children = child;
-                break;
-            case Utf8TreeNode existing:
-                Children = new List<Utf8TreeNode>(4) { existing, child };
-                break;
-            case List<Utf8TreeNode> list:
-                list.Add(child);
-                break;
-            default:
-                throw new InvalidOperationException("Unexpected child storage.");
-        }
-
-        return this;
-    }
 }

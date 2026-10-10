@@ -13,7 +13,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
         => Utf8TreeNode.Create(kind: kind, options: Options,
             ch: '\0', str: null, m: 0, n: 0,
-            children: children.ToList(), parent: null, matchCaseInsensitive: (Options & RegexOptions.IgnoreCase) != 0);
+            children: children, parent: null, matchCaseInsensitive: (Options & RegexOptions.IgnoreCase) != 0);
     private static Utf8TreeNode Wrap(Utf8TreeNode node, Utf8TreeNodeKind kind, int depth)
     {
         for (var index = 0; index < depth; index++)

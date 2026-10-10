@@ -89,7 +89,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         for (var index = 0; index < depth; index++)
         {
             var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Capture, RegexOptions.None, 1, -1);
-            parent.AddChild(source);
+            parent.WithChild(source);
             source = parent;
             node = new(Utf8ExecutionNodeKind.Capture, RegexOptions.None, [node], "", '\0', 1, 1, -1);
         }

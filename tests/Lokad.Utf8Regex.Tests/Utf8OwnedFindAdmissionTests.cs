@@ -13,7 +13,7 @@ public sealed class Utf8OwnedFindAdmissionTests
         for (var index = 0; index < depth; index++)
         {
             var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None);
-            parent.AddChild(node);
+            parent.WithChild(node);
             node = parent;
         }
         return node;
@@ -171,10 +171,10 @@ public sealed class Utf8OwnedFindAdmissionTests
     public void LiteralRunByteAndWorkCutoffsRestoreEarlierAcquisitions(int route)
     {
         var input = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
-        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'));
-        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"));
-        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.End, RegexOptions.None));
-        input.AddChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "longest"));
+        input.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a'));
+        input.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀"));
+        input.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.End, RegexOptions.None));
+        input.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "longest"));
         var expected = route == 1 ? "a😀" : "longest";
         ulong peak, work;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -251,7 +251,7 @@ public sealed class Utf8OwnedFindAdmissionTests
         var input = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
         var first = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, "😀");
         var last = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        input.AddChild(first); input.AddChild(last);
+        input.WithChild(first); input.WithChild(last);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Equal("😀a", Prepare(route, input));
         Assert.Same(input, first.Parent);

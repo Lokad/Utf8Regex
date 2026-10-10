@@ -13,6 +13,8 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         return owner.AllocateObject((owner, buffer), static state => new Utf8ConstructionText(state.owner, state.buffer));
     }
     internal int Length => characters.Count;
+    internal char this[int index] => characters[index];
+    internal void Truncate(int length) => characters.Truncate(length);
     internal Utf8ConstructionText Append(char value)
     {
         budget.ChargeWork(1);
@@ -66,6 +68,7 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         return 1;
     }
     internal string ToText() => budget.CopyText(characters.Span);
+    internal string ToText(int start, int length) => budget.CopyText(characters.Span.Slice(start, length));
     internal void Clear() => characters.Clear();
     internal byte[] ToAscii()
     {

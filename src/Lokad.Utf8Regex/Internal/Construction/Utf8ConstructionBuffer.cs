@@ -41,6 +41,47 @@ internal sealed class Utf8ConstructionBuffer<T>(Utf8ConstructionBudget budget, b
         Count = 0;
     }
 
+    internal void Truncate(int count)
+    {
+        if ((uint)count > (uint)Count) throw new ArgumentOutOfRangeException(nameof(count));
+        budget.ChargeWork((ulong)(Count - count));
+        _items.AsSpan(count, Count - count).Clear();
+        Count = count;
+    }
+
+    internal void RemoveAt(int index)
+    {
+        if ((uint)index >= (uint)Count) throw new ArgumentOutOfRangeException(nameof(index));
+        budget.ChargeWork((ulong)(Count - index));
+        _items.AsSpan(index + 1, Count - index - 1).CopyTo(_items.AsSpan(index));
+        _items.AsSpan(--Count, 1).Clear();
+    }
+
+    internal void Insert(int index, T value)
+    {
+        if ((uint)index > (uint)Count) throw new ArgumentOutOfRangeException(nameof(index));
+        EnsureCapacity(checked(Count + 1));
+        budget.ChargeWork((ulong)(Count - index) + 1);
+        _items.AsSpan(index, Count - index).CopyTo(_items.AsSpan(index + 1));
+        _items[index] = value;
+        Count++;
+    }
+
+    // Parser fixup sequences borrow a distinct scratch vector. Admit the growth
+    // overlap and both shifted/source ranges before rewriting the destination.
+    internal void InsertRange(int index, ReadOnlySpan<T> values)
+    {
+        if ((uint)index > (uint)Count) throw new ArgumentOutOfRangeException(nameof(index));
+        if (values.IsEmpty) return;
+        if (values.Overlaps(_items)) throw new ArgumentException("Insertion requires a distinct source vector.", nameof(values));
+        var count = checked(Count + values.Length);
+        EnsureCapacity(count);
+        budget.ChargeWork((ulong)(Count - index) + (ulong)values.Length);
+        _items.AsSpan(index, Count - index).CopyTo(_items.AsSpan(index + values.Length));
+        values.CopyTo(_items.AsSpan(index));
+        Count = count;
+    }
+
     private void EnsureCapacity(int required)
     {
         if (required > _items.Length)

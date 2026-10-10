@@ -253,7 +253,7 @@ public sealed class Utf8FinalFamilyQualificationTests
     public void ActualFinalWrappersUseSharedDepthAndTextScannersStayAbsent()
     {
         var tree = Tree(Balanced, RegexOptions.None); var root = tree.Root;
-        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None).AddChild(root);
+        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None).WithChild(root);
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
         var method = Classifier("Utf8FallbackFinalProfileClassifier", tree); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 16);

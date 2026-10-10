@@ -14,7 +14,7 @@ public sealed class Utf8NativeEncodingPreparationTests
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, params Utf8TreeNode[] children)
     {
         var node = Utf8TreeNode.Create(kind, RegexOptions.CultureInvariant);
-        foreach (var child in children) node.AddChild(child);
+        foreach (var child in children) node.WithChild(child);
         return node;
     }
     private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);

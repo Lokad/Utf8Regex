@@ -62,15 +62,25 @@ public sealed class Utf8OwnedParserFrameAdmissionTests
     public void ChildFrameByteDenialRestoresParentAndTheSameOwnerRecovers(string open, string close)
     {
         var pattern = string.Concat(Enumerable.Repeat(open, 32)) + "a" + string.Concat(Enumerable.Repeat(close, 32));
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 1024, ulong.MaxValue, ulong.MaxValue);
+        ulong recoveryPeak;
+        using (var measured = Utf8ConstructionScope.Enter())
+        {
+            measured.Budget.AllocateObject(17, static value => new ParentValue(value));
+            Assert.NotNull(Utf8OwnedTreeParser.TryParse("a", RegexOptions.CultureInvariant));
+            recoveryPeak = measured.Budget.PeakBytes;
+        }
+        // Lexical storage is now admitted. Use the measured complete small
+        // parser footprint, while dedicated lexical controls retain 1024-byte denials.
+        var cap = Math.Max(1024ul, recoveryPeak);
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, cap, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(1024ul, failure.Limit);
+        Assert.Equal(cap, failure.Limit);
         Assert.True(failure.Requested > failure.Limit);
-        Assert.InRange(owner.Budget.PeakBytes, 113ul, 1024ul);
+        Assert.InRange(owner.Budget.PeakBytes, 113ul, cap);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);

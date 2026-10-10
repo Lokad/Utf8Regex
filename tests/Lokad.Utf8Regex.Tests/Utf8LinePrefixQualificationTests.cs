@@ -206,7 +206,7 @@ public sealed class Utf8LinePrefixQualificationTests
     public void ActualLineWrappersUseSharedAdmittedFramesAndRetiredScannersStayAbsent()
     {
         var tree = Tree(Until, RegexOptions.CultureInvariant); var root = tree.Root;
-        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).AddChild(root);
+        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).WithChild(root);
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
         var method = Classifier(); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);

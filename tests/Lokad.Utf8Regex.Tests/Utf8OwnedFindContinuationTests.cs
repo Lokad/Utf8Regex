@@ -75,7 +75,7 @@ public sealed class Utf8OwnedFindContinuationTests
         {
             var suffix = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'b');
             var concat = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
-            concat.Children = new List<Utf8TreeNode> { body, suffix };
+            concat.Children = new Utf8TreeNode[] { body, suffix };
             body.Parent = concat;
             suffix.Parent = concat;
             body = concat;

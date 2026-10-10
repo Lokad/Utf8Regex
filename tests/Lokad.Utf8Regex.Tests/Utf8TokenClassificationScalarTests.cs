@@ -147,7 +147,7 @@ public sealed class Utf8TokenClassificationScalarTests
     public void ClassifierAdmitsActualOwnedWrapperDepthAndRecoversTheSameOwner()
     {
         var tree = Tree("[a]+:[b]+[c]+"); var root = tree.Root;
-        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None).AddChild(root);
+        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.None).WithChild(root);
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping,
             tree.CaptureNumberSparseMapping, tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
         var method = Classifier();

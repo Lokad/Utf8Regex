@@ -22,19 +22,26 @@ internal static class Utf8OwnedOptionPrelude
 
     public static string NormalizeLeadingGlobalOptions(string pattern, ref RegexOptions options)
     {
+        using var owner = Utf8ConstructionScope.Enter();
+        var stagedOptions = options;
         var index = 0;
         var consumed = 0;
-        while (index + 3 < pattern.Length &&
+        while (pattern.Length - index > 3 &&
                pattern[index] == '(' &&
                pattern[index + 1] == '?' &&
-               TryConsumeLeadingGlobalOptionsGroup(pattern, ref index, ref options))
+               TryConsumeLeadingGlobalOptionsGroup(owner.Budget, pattern, ref index, ref stagedOptions))
         {
+            owner.Budget.ChargeWork(1);
             consumed = index;
         }
 
-        return consumed == 0 ? pattern : pattern[consumed..];
+        owner.Budget.ChargeWork(1);
+        var result = consumed == 0 ? pattern : owner.Budget.CopyText(pattern.AsSpan(consumed));
+        options = stagedOptions;
+        owner.Complete();
+        return result;
 
-        static bool TryConsumeLeadingGlobalOptionsGroup(string pattern, ref int index, ref RegexOptions options)
+        static bool TryConsumeLeadingGlobalOptionsGroup(Utf8ConstructionBudget budget, string pattern, ref int index, ref RegexOptions options)
         {
             var scan = index + 2;
             var enable = true;
@@ -42,6 +49,7 @@ internal static class Utf8OwnedOptionPrelude
             var staged = options;
             while (scan < pattern.Length)
             {
+                budget.ChargeWork(1);
                 var ch = pattern[scan];
                 if (ch == '-')
                 {

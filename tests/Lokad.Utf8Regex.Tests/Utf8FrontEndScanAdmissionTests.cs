@@ -30,7 +30,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
         else node = Utf8TreeNode.Create(kind: kind, options: RegexOptions.None,
             ch: '\0', str: text, m: 1, n: 1,
             children: null, parent: null, matchCaseInsensitive: false);
-        foreach (var child in children) node.AddChild(child);
+        foreach (var child in children) node.WithChild(child);
         return node;
     }
 

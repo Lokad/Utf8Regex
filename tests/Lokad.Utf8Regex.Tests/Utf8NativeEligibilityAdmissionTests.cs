@@ -27,7 +27,7 @@ public sealed class Utf8NativeEligibilityAdmissionTests
     {
         var node = Utf8TreeNode.Create(kind, options);
         if (kind == Utf8TreeNodeKind.Capture) { node.M = 0; node.N = -1; }
-        foreach (var child in children) node.AddChild(child);
+        foreach (var child in children) node.WithChild(child);
         return node;
     }
 

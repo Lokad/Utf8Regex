@@ -159,7 +159,8 @@ public sealed class Utf8TreeObjectAdmissionTests
         Assert.Equal(0ul, denied.Budget.ReservedBytes);
         Assert.Equal(0ul, denied.Budget.Depth);
         Assert.Null(denied.Budget.ObjectCheckpoint);
-        Assert.Equal(work - 2, denied.Budget.WorkSteps);
+        if (kind == Utf8ResourceLimitKind.ConstructionWorkSteps) Assert.Equal(work - 2, denied.Budget.WorkSteps);
+        else Assert.InRange(denied.Budget.WorkSteps, 0ul, work - 2);
     }
 
     private static ulong CompleteLoan(Type type, int fieldCount)

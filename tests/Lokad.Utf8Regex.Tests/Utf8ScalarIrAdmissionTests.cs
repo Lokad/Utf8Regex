@@ -14,7 +14,7 @@ public sealed class Utf8ScalarIrAdmissionTests
         Assert.NotNull(tree);
         var concat = tree.Root.Child(0);
         Assert.Equal(Utf8TreeNodeKind.Concatenate, concat.Kind);
-        Assert.IsType<List<Utf8TreeNode>>(concat.Children)[1] = concat.Child(0);
+        Assert.IsType<Utf8TreeNode[]>(concat.Children)[1] = concat.Child(0);
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
         var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.None);
         Assert.NotNull(program);

@@ -210,7 +210,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
         }
         var deep = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "abc");
         for (var index = 0; index < 32; index++)
-            deep = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).AddChild(deep);
+            deep = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).WithChild(deep);
         using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 4))
         {
             var parent = owner.Budget.AllocateArray<byte>(1, false);
