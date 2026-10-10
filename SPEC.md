@@ -930,8 +930,8 @@ leading-segment preflights, primitive minimum-length scanning and composite copi
 share the owner. The top-level factory constructs only its selected literal or
 nonliteral implementation, without a discarded second runtime. Unused runtime
 enumeration state, duplicate ASCII scanning and obsolete family-wide BMP helpers
-are removed. Other runtime objects, opaque state and
-dynamic emission remain separate unqualified construction debt.
+are removed. Other runtime objects, opaque state and remaining CLR/JIT metadata
+remain separate construction scope debt; owned dynamic emission is covered below.
 Substring preparation borrows exact needles and meters short exact anchor scans.
 Folded candidate searches receive admitted ASCII needles; their folded bytes are
 borrowed when already canonical, otherwise one final copy is admitted. Empty and
