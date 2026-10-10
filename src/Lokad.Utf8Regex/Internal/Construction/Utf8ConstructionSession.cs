@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal;
@@ -66,6 +68,36 @@ internal sealed class Utf8ConstructionSession(
         if (right.Length == 0) return left;
         using var text = Utf8ConstructionText.Create();
         return text.Append(left).Append(right).ToText();
+    }
+
+    // Replacement text repairs invalid UTF-16 inside each independent literal
+    // fragment. Pattern encoding remains strict; this is shared interop work.
+    internal byte[] EncodeRepairedUtf8(ReadOnlySpan<char> text)
+    {
+        var count = 0;
+        for (var index = 0; index < text.Length;)
+        {
+            budget.ChargeWork(1);
+            var rune = ReadScalar(text, ref index);
+            count = checked(count + rune.Utf8SequenceLength);
+        }
+        var result = Allocate<byte>(count);
+        var written = 0;
+        for (var index = 0; index < text.Length;)
+        {
+            budget.ChargeWork(1);
+            var rune = ReadScalar(text, ref index);
+            budget.ChargeWork((ulong)rune.Utf8SequenceLength);
+            written += rune.EncodeToUtf8(result.AsSpan(written));
+        }
+        return result;
+    }
+
+    private static Rune ReadScalar(ReadOnlySpan<char> text, ref int index)
+    {
+        var status = Rune.DecodeFromUtf16(text[index..], out var rune, out var consumed);
+        index += Math.Max(1, consumed);
+        return status == OperationStatus.Done ? rune : Rune.ReplacementChar;
     }
 
     internal void Complete() => arrays.Complete();

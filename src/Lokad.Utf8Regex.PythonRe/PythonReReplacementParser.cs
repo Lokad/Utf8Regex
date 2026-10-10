@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Globalization;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
@@ -122,7 +121,7 @@ internal static class PythonReReplacementParser
                     throw new PythonRePatternException(storage.Text().Append("octal escape value \\").Append(replacement.AsSpan(start, 3)).Append(" outside of range 0-0o377").ToText());
                 Span<char> octal = stackalloc char[1];
                 octal[0] = (char)value;
-                return PythonReReplacementToken.ForLiteral(EncodeFragment(storage, octal));
+                return PythonReReplacementToken.ForLiteral(storage.EncodeRepairedUtf8(octal));
             }
         }
         ValidateGroupReference(storage, number, captureGroupCount);
@@ -142,36 +141,8 @@ internal static class PythonReReplacementParser
         if (literal.Length == 0) return;
         // Borrow the admitted scratch span, so no intermediate literal string is
         // acquired. Fragment boundaries repair unpaired surrogates independently.
-        tokens.Add(PythonReReplacementToken.ForLiteral(EncodeFragment(storage, literal.Span)));
+        tokens.Add(PythonReReplacementToken.ForLiteral(storage.EncodeRepairedUtf8(literal.Span)));
         literal.Clear();
-    }
-
-    private static byte[] EncodeFragment(Utf8ConstructionSession storage, ReadOnlySpan<char> text)
-    {
-        var count = 0;
-        for (var index = 0; index < text.Length;)
-        {
-            storage.Budget.ChargeWork(1);
-            var rune = ReadScalar(text, ref index);
-            count = checked(count + rune.Utf8SequenceLength);
-        }
-        var result = storage.Allocate<byte>(count);
-        var written = 0;
-        for (var index = 0; index < text.Length;)
-        {
-            storage.Budget.ChargeWork(1);
-            var rune = ReadScalar(text, ref index);
-            storage.Budget.ChargeWork((ulong)rune.Utf8SequenceLength);
-            written += rune.EncodeToUtf8(result.AsSpan(written));
-        }
-        return result;
-    }
-
-    private static Rune ReadScalar(ReadOnlySpan<char> text, ref int index)
-    {
-        var status = Rune.DecodeFromUtf16(text[index..], out var rune, out var consumed);
-        index += Math.Max(1, consumed);
-        return status == OperationStatus.Done ? rune : Rune.ReplacementChar;
     }
 
     private static byte[]? CollectLiteralBytes(Utf8ConstructionSession storage, Utf8ConstructionBuffer<PythonReReplacementToken> tokens)

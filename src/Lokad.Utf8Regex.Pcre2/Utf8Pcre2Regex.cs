@@ -1650,7 +1650,7 @@ public sealed partial class Utf8Pcre2Regex
                 return false;
             }
 
-            plan = new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)]);
+            plan = Pcre2SimpleReplacementParser.Literal(replacement);
             return true;
         }
 
@@ -2111,7 +2111,7 @@ public sealed partial class Utf8Pcre2Regex
         var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
+            ? Pcre2SimpleReplacementParser.Literal(replacement)
             : GetSimpleReplacementPlan(replacement, templateOptions);
         var builder = new StringBuilder(subject.Length + replacement.Length);
         var position = 0;
@@ -2191,7 +2191,7 @@ public sealed partial class Utf8Pcre2Regex
         var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
+            ? Pcre2SimpleReplacementParser.Literal(replacement)
             : GetSimpleReplacementPlan(replacement, templateOptions);
         var builder = new StringBuilder(subject.Length + replacement.Length);
         var position = 0;
@@ -2292,12 +2292,12 @@ public sealed partial class Utf8Pcre2Regex
                     : input.ToArray();
             }
 
-            var subject = Encoding.UTF8.GetString(input);
             var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
             var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
             var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-                ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
+                ? Pcre2SimpleReplacementParser.Literal(replacement)
                 : GetSimpleReplacementPlan(replacement, templateOptions);
+            var subject = simplePlan is null ? Encoding.UTF8.GetString(input) : string.Empty;
             var position = 0;
             do
             {
@@ -2486,107 +2486,25 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private static bool TryParseSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions, out Pcre2SimpleReplacementPlan plan)
-    {
-        if (substitutionOptions != Pcre2SubstitutionOptions.None)
-        {
-            plan = default;
-            return false;
-        }
-
-        List<Pcre2SimpleReplacementSegment>? segments = null;
-        var literalStart = 0;
-        for (var i = 0; i < replacement.Length; i++)
-        {
-            if (replacement[i] != '$')
-            {
-                continue;
-            }
-
-            if (i + 1 >= replacement.Length)
-            {
-                continue;
-            }
-
-            var next = replacement[i + 1];
-            if (next == '$')
-            {
-                segments ??= [];
-                if (i > literalStart)
-                {
-                    segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
-                }
-
-                segments.Add(Pcre2SimpleReplacementSegment.FromLiteral("$"));
-                i++;
-                literalStart = i + 1;
-                continue;
-            }
-
-            if (next == '&' || next == '0')
-            {
-                segments ??= [];
-                if (i > literalStart)
-                {
-                    segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
-                }
-
-                segments.Add(Pcre2SimpleReplacementSegment.WholeMatch());
-                i++;
-                literalStart = i + 1;
-                continue;
-            }
-
-            if (next == '{')
-            {
-                var closing = replacement.IndexOf('}', i + 2);
-                if (closing == i + 3 && replacement[i + 2] == '0')
-                {
-                    segments ??= [];
-                    if (i > literalStart)
-                    {
-                        segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
-                    }
-
-                    segments.Add(Pcre2SimpleReplacementSegment.WholeMatch());
-                    i = closing;
-                    literalStart = i + 1;
-                    continue;
-                }
-
-                plan = default;
-                return false;
-            }
-
-            plan = default;
-            return false;
-        }
-
-        if (segments is null)
-        {
-            plan = new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)]);
-            return true;
-        }
-
-        if (literalStart < replacement.Length)
-        {
-            segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..]));
-        }
-
-        plan = new Pcre2SimpleReplacementPlan([.. segments]);
-        return true;
-    }
+        => Pcre2SimpleReplacementParser.TryParse(replacement, substitutionOptions, out plan);
 
     private static void AppendSimpleReplacement(StringBuilder builder, Pcre2SimpleReplacementPlan plan, string subject, int matchIndex, int matchLength)
     {
+        // These remaining decoded consumers derive text only while shaping their
+        // string output. The cached plan owns canonical UTF-8 bytes alone.
+        Span<char> scalarText = stackalloc char[2];
         foreach (var segment in plan.Segments)
         {
-            if (segment.IsWholeMatch)
-            {
-                builder.Append(subject, matchIndex, matchLength);
-            }
+            if (segment.IsWholeMatch) builder.Append(subject, matchIndex, matchLength);
             else
             {
-                builder.Append(segment.Literal);
+                ReadOnlySpan<byte> bytes = segment.LiteralUtf8;
+                while (!bytes.IsEmpty)
+                {
+                    _ = Rune.DecodeFromUtf8(bytes, out var scalar, out var consumed);
+                    builder.Append(scalarText[..scalar.EncodeToUtf16(scalarText)]);
+                    bytes = bytes[consumed..];
+                }
             }
         }
     }
@@ -2620,7 +2538,7 @@ public sealed partial class Utf8Pcre2Regex
                     continue;
                 }
 
-                AppendReplacementChar(builder, current, ref nextCaseTransform, ref caseTransform, syntaxOnly);
+                AppendReplacementLiteral(builder, replacement, ref i, ref nextCaseTransform, ref caseTransform, syntaxOnly);
                 continue;
             }
 
@@ -2666,7 +2584,7 @@ public sealed partial class Utf8Pcre2Regex
                 continue;
             }
 
-            AppendReplacementChar(builder, current, ref nextCaseTransform, ref caseTransform, syntaxOnly);
+            AppendReplacementLiteral(builder, replacement, ref i, ref nextCaseTransform, ref caseTransform, syntaxOnly);
         }
     }
 
@@ -2823,8 +2741,9 @@ public sealed partial class Utf8Pcre2Regex
             throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
         }
 
-        AppendReplacementChar(builder, next, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        return index + 1;
+        var literalIndex = index + 1;
+        AppendReplacementLiteral(builder, replacement, ref literalIndex, ref nextCaseTransform, ref caseTransform, syntaxOnly);
+        return literalIndex;
     }
 
     private static int AppendDollarReplacement(
@@ -3245,27 +3164,40 @@ public sealed partial class Utf8Pcre2Regex
 
     private static void AppendReplacementText(StringBuilder builder, ReadOnlySpan<char> text, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
     {
-        foreach (var value in text)
+        for (var index = 0; index < text.Length; index++)
         {
-            AppendReplacementChar(builder, value, ref nextCaseTransform, ref caseTransform, syntaxOnly);
+            AppendReplacementLiteral(builder, text, ref index, ref nextCaseTransform, ref caseTransform, syntaxOnly);
         }
     }
 
+    private static void AppendReplacementLiteral(StringBuilder builder, ReadOnlySpan<char> text, ref int index, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
+    {
+        var status = Rune.DecodeFromUtf16(text[index..], out var scalar, out var consumed);
+        index += Math.Max(1, consumed) - 1;
+        AppendReplacementScalar(builder, status == OperationStatus.Done ? scalar : Rune.ReplacementChar,
+            ref nextCaseTransform, ref caseTransform, syntaxOnly);
+    }
+
     private static void AppendReplacementChar(StringBuilder builder, char value, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
+        => AppendReplacementScalar(builder, Rune.TryCreate(value, out var scalar) ? scalar : Rune.ReplacementChar,
+            ref nextCaseTransform, ref caseTransform, syntaxOnly);
+
+    private static void AppendReplacementScalar(StringBuilder builder, Rune value, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
     {
         var effectiveTransform = nextCaseTransform is not Pcre2ReplacementCaseTransformMode.None
             ? nextCaseTransform
             : caseTransform;
         var transformed = effectiveTransform switch
         {
-            Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.UpperUntilEnd => char.ToUpperInvariant(value),
-            Pcre2ReplacementCaseTransformMode.LowerNext or Pcre2ReplacementCaseTransformMode.LowerUntilEnd => char.ToLowerInvariant(value),
+            Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.UpperUntilEnd => Rune.ToUpperInvariant(value),
+            Pcre2ReplacementCaseTransformMode.LowerNext or Pcre2ReplacementCaseTransformMode.LowerUntilEnd => Rune.ToLowerInvariant(value),
             _ => value,
         };
 
         if (!syntaxOnly)
         {
-            builder.Append(transformed);
+            Span<char> scalarText = stackalloc char[2];
+            builder.Append(scalarText[..transformed.EncodeToUtf16(scalarText)]);
         }
 
         if (nextCaseTransform is Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.LowerNext)
@@ -3400,16 +3332,6 @@ public sealed partial class Utf8Pcre2Regex
     private readonly record struct Pcre2ReplacementReferenceResolution(bool Known, bool Success, string Value);
 
     private readonly record struct Pcre2SimpleReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
-
-    private readonly record struct Pcre2SimpleReplacementSegment(string Literal, byte[] LiteralUtf8, bool IsWholeMatch)
-    {
-        public static Pcre2SimpleReplacementSegment FromLiteral(string literal) =>
-            new(literal, Encoding.UTF8.GetBytes(literal), false);
-
-        public static Pcre2SimpleReplacementSegment WholeMatch() => new(string.Empty, [], true);
-    }
-
-    private readonly record struct Pcre2SimpleReplacementPlan(Pcre2SimpleReplacementSegment[] Segments);
 
     private sealed class Pcre2ReplacementComponent
     {
