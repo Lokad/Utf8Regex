@@ -66,8 +66,8 @@ public sealed class Utf8OffsetEnumerationInvocationTests
                 Assert.False(cursor.MoveNext());
             }
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     // This fixture's grammar has ASCII classes, literals (plus é), dot, captures
@@ -143,8 +143,8 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             Assert.Equal(expected, actual);
             Assert.False(cursor.MoveNext());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object[]> EntryCases()
@@ -170,7 +170,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             Assert.True(canceled);
         }
         finally { session.Complete(); }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

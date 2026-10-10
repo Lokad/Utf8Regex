@@ -61,7 +61,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Utf8(new string((char)0x03C2, 1))));
         Assert.False(Bcl(pattern).IsMatch(new string((char)0x03C2, 1)));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -90,7 +90,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> CountCases()
@@ -110,7 +110,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> FirstMatchCases()
@@ -136,7 +136,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.Equal(expected.Index + expected.Length, found.EndOffsetInBytes);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public sealed class Pcre2SliceInlineTests
         }
 
         Assert.Equal(["2-3", "4-5"], ranges);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.True(detailed.Success);
         Assert.Equal("abab", detailed.Value.GetValueString());
         Assert.Equal(1, detailed.CaptureSlotCount);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.True(detailed.Success);
         Assert.Equal("aab", detailed.Value.GetValueString());
         Assert.Equal("aa", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ReplaceCases()
@@ -199,7 +199,7 @@ public sealed class Pcre2SliceInlineTests
         Assert.Equal(expected, Bcl(pattern).Replace(inputText, "<$0>"));
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.ReplaceToString(Utf8(inputText), "<$0>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 }
 

@@ -57,7 +57,7 @@ public sealed class Utf8SliceHybridTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal("AsciiSimplePattern", regex.Inspection.ExecutionKind.ToString());
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
 
@@ -111,7 +111,7 @@ public sealed class Utf8SliceHybridTests
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -139,7 +139,7 @@ public sealed class Utf8SliceHybridTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> AstralOwnedCases()
@@ -159,7 +159,7 @@ public sealed class Utf8SliceHybridTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> CountCases()
@@ -179,7 +179,7 @@ public sealed class Utf8SliceHybridTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -203,7 +203,7 @@ public sealed class Utf8SliceHybridTests
             Assert.Equal(expectedValue, inputText.Substring(item.IndexInUtf16, item.LengthInUtf16));
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -223,7 +223,7 @@ public sealed class Utf8SliceHybridTests
             Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -237,7 +237,7 @@ public sealed class Utf8SliceHybridTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -247,6 +247,6 @@ public sealed class Utf8SliceHybridTests
         var regex = new Utf8Regex("([\\da]+)+b", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=([\\da]+)+b");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=([\\da]+)+b");
     }
 }

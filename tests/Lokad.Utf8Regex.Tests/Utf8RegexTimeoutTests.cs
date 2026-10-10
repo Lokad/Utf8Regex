@@ -212,7 +212,7 @@ public sealed class Utf8RegexTimeoutTests
             writer.Append("]"u8);
         }));
         Assert.Throws<RegexMatchTimeoutException>(() => regex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(0).GetValueString() + "]"));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -230,7 +230,7 @@ public sealed class Utf8RegexTimeoutTests
         var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(expectedMiss, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -259,7 +259,7 @@ public sealed class Utf8RegexTimeoutTests
         });
         Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchFromUtf16Offset(input, 0));
         Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -325,6 +325,6 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(text, replaceException.Input);
         Assert.Equal("(a+)+$", replaceException.Pattern);
         Assert.Equal(timeout, replaceException.MatchTimeout);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

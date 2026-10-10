@@ -50,11 +50,7 @@ internal sealed class Utf8RegexProgram
             var compiledEngine = Utf8CompiledEngineSelector.Select(
                 preparedRegex,
                 (options & RegexOptions.Compiled) != 0);
-            var verifierRuntime = Utf8VerifierRuntime.Create(
-                preparedRegex,
-                pattern,
-                options,
-                matchTimeout);
+            var verifierRuntime = Utf8VerifierRuntime.Create(preparedRegex);
             var compiledEngineRuntime = Utf8CompiledEngineRuntime.Create(
                 compiledEngine,
                 preparedRegex,

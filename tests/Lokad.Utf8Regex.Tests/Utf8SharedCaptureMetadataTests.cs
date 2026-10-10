@@ -36,7 +36,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         // Program metadata borrows the canonical catalog directly. Public array
         // copies, sparse lookups, captures and replacement below share its data.
         Assert.Same(catalog, program.PreparedRegex.ScalarProgram?.CaptureCatalog);
-        Assert.False(program.VerifierRuntime.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(program.VerifierRuntime);
 
         // These expressions capture whole scalars, so BCL metadata and returned
         // text overlap the UTF-8 contract, including supplementary literals.
@@ -57,6 +57,6 @@ public sealed class Utf8SharedCaptureMetadataTests
         foreach (var number in oracle.GetGroupNumbers())
             Assert.Equal(expected.Groups[number].Value, actual.GetGroup(number).GetValueString());
         Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(subject, replacement)), regex.Replace(input, replacement));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

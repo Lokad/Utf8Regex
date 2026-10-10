@@ -112,7 +112,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             // The mapping stays owned: no fallback engine is constructed.
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -157,8 +157,8 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         }
 
         Assert.Equal(expected, actual);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -167,21 +167,19 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     public void NonByteSafeSimplePerOpRoutingMatchesContract(string pattern, string text, bool expectOwnedDiscovery, bool expectOwnedEnumeration, bool expectOwnedSplits, bool expectOwnedReplacement)
     {
         // IsMatch, Count, enumeration, splits, and groupless literal replacement are owned
-        // everywhere (scalar-aware on astral-free input, unit-aware on astral input).
-        // Group-reference templates and evaluators over grouped shapes stay
-        // BCL-backed (declared R05 debt). Parity holds; construction is pinned
-        // per op.
+        // across scalar subjects; templates and evaluators share owned captures.
+        // The comparator overlaps here because the matches are ASCII spans.
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var isMatchRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-            Assert.Equal(!expectOwnedDiscovery, isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(expectOwnedDiscovery, isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
             var countRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-            Assert.Equal(!expectOwnedDiscovery, countRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(expectOwnedDiscovery, countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
             var enumRegex = new Utf8Regex(pattern, options);
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
@@ -197,25 +195,21 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expected.Count, actual.Count);
-            Assert.Equal(!expectOwnedEnumeration, enumRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(expectOwnedEnumeration, enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
             var detailedRegex = new Utf8Regex(pattern, options);
             var expectedFirst = oracle.Match(text);
             var actualFirst = detailedRegex.MatchDetailed(input);
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
-            // Neither row constructs the anchored engine: BMP discovery serves the
-            // owned slice, while astral shaping verifies through the full BCL decode
-            // (unit-aware discovery is owned, but projection still needs full decode;
-            // guided verification is unsound where matches start mid-scalar, so the
-            // anchored bounded-slice path stays out).
-            Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            // Detailed captures borrow the same catalog as the scalar program.
+            Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             const int count = int.MaxValue;
             var replaceRegex = new Utf8Regex(pattern, options);
             var expectedReplaced = oracle.Replace(text, "x");
             var actualReplaced = replaceRegex.ReplaceToString(input, "x");
             Assert.Equal(expectedReplaced, actualReplaced);
-            Assert.Equal(!expectOwnedReplacement, replaceRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(expectOwnedReplacement, replaceRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
             var splitRegex = new Utf8Regex(pattern, options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
@@ -233,7 +227,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             }
 
             Assert.Equal(expectedSplits, actualSplits);
-            Assert.Equal(!expectOwnedSplits, splitRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.Equal(expectOwnedSplits, splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 

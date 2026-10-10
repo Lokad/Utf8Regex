@@ -70,7 +70,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             Assert.False(cursor.CurrentValueMatch.Success);
             Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     [Theory]
     [InlineData(false, false)]
@@ -184,7 +184,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         Assert.Equal(Utf8ExecutionBackend.NativeLiteral, Prepared(regex).ExecutionBackend);
         // Owned graph admission validates construction without creating BCL.
         // Poison lazy accessors too, so every operation proves that independence.
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         ForbidFallbackExecution(regex);
         if (pattern.Length == 0)
             Utf8ScalarCountTests.AssertEmptyScalarOperations(regex, false);
@@ -198,13 +198,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var field = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(field);
         var runtime = Assert.IsType<Utf8VerifierRuntime>(field.GetValue(regex));
-        foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
-        {
-            var engine = typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(engine);
-            engine.SetValue(runtime.FallbackCandidateVerifier,
-                new Lazy<Regex>(() => throw new InvalidOperationException("Native NonBacktracking execution accessed BCL fallback.")));
-        }
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
     }
 
     [Theory]
@@ -265,7 +259,7 @@ public sealed class Utf8NativeLiteralInvocationTests
                 }
             Assert.False(actual.MoveNext());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, $"Semantic exclusion {patternId}");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, $"Semantic exclusion {patternId}");
     }
 
     [Theory]
@@ -301,7 +295,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         catch (OperationCanceledException e) { Assert.Equal(source.Token, e.CancellationToken); cancelled = true; }
         Assert.True(cancelled);
         Assert.False(enumerator.Current.Success);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -322,7 +316,7 @@ public sealed class Utf8NativeLiteralInvocationTests
                 Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.Current.IndexInBytes);
             }
             Assert.False(actual.MoveNext());
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
     [Theory]
@@ -351,7 +345,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             Assert.True(entered);
             Assert.False(enumerator.Current.Success);
             Assert.Equal(0, session.VerifierInvocations);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         var recovered = regex.EnumerateMatches("target"u8);

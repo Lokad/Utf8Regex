@@ -505,7 +505,7 @@ public sealed class Utf8SearchPlanTests
     {
         var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, "a.*b", RegexOptions.CultureInvariant, Utf8Regex.DefaultMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var hit = Encoding.UTF8.GetBytes("zzza123bzzz");
         var miss = Encoding.UTF8.GetBytes("zzza123czzz");
 
@@ -518,7 +518,7 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(1, runtime.Count(hit, Utf8Validation.Validate(hit), Utf8ExecutionDeadline.Infinite));
         Assert.False(runtime.IsMatch(miss, Utf8Validation.Validate(miss), Utf8ExecutionDeadline.Infinite));
         Assert.Equal(0, runtime.Count(miss, Utf8Validation.Validate(miss), Utf8ExecutionDeadline.Infinite));
-        Assert.False(verifierRuntime.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifierRuntime);
     }
 
     [Fact]
@@ -979,15 +979,15 @@ public sealed class Utf8SearchPlanTests
             null,
             default);
 
-        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("using\\s+var.*await", RegexOptions.CultureInvariant, plan, hasAbsoluteStartAnchor: false);
+        var verifier = Utf8RegexPreparer.PrepareScalarVerifier(plan);
 
         Assert.True(verifier.RequiresCandidateEndCoverage);
         Assert.True(verifier.RequiresTrailingAnchorCoverage);
-        Assert.Equal(Utf8FallbackVerifierMode.AnchoredSliceRegex, verifier.Mode);
+        Assert.Equal(2, typeof(Utf8ScalarVerifierPlan).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Length);
     }
 
     [Fact]
-    public void FallbackVerifierPlanUsesBoundedSliceModeForExactLengthStartPlans()
+    public void ScalarVerifierPlanKeepsEndCoverageForExactLengthStartPlans()
     {
         var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
                                               Utf8SearchKind.ExactAsciiLiteral,
@@ -998,11 +998,11 @@ public sealed class Utf8SearchPlanTests
                                                   ExactRequiredLength = 5,
                                               })).StructuralSearchPlan;
 
-        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("foo..", RegexOptions.CultureInvariant, plan, hasAbsoluteStartAnchor: false);
+        var verifier = Utf8RegexPreparer.PrepareScalarVerifier(plan);
 
         Assert.True(verifier.RequiresCandidateEndCoverage);
         Assert.False(verifier.RequiresTrailingAnchorCoverage);
-        Assert.Equal(Utf8FallbackVerifierMode.AnchoredSliceRegex, verifier.Mode);
+        Assert.Equal(2, typeof(Utf8ScalarVerifierPlan).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Length);
     }
 
     [Fact]
@@ -1052,13 +1052,12 @@ public sealed class Utf8SearchPlanTests
     {
         var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
         var validation = Utf8Validation.Validate(input);
-        var plan = new Utf8FallbackVerifierPlan(
-            Utf8FallbackVerifierMode.AnchoredSliceRegex,
+        var plan = new Utf8ScalarVerifierPlan(
             requiresCandidateEndCoverage: true,
             requiresTrailingAnchorCoverage: false);
-        var prepared = Utf8VerifierTestPlans.WithFallbackVerifier(
+        var prepared = Utf8VerifierTestPlans.WithScalarVerifier(
             Utf8FrontEnd.Compile("(foo)\\1", RegexOptions.CultureInvariant), plan);
-        var verifier = Utf8VerifierRuntime.Create(prepared, "(foo)\\1", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
 
@@ -1080,8 +1079,8 @@ public sealed class Utf8SearchPlanTests
         Assert.True(second.Success);
         Assert.True(invocation.Budget.Steps > spent);
         Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
-        Assert.False(verifier.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
         Assert.Equal(2, first.IndexInBytes);
         Assert.Equal(10, second.IndexInBytes);
     }
@@ -1098,12 +1097,12 @@ public sealed class Utf8SearchPlanTests
                                                   MaxPossibleLength = 6,
                                               })).StructuralSearchPlan;
 
-        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("(foo)\\\\1?", RegexOptions.CultureInvariant, plan, hasAbsoluteStartAnchor: false);
+        var verifier = Utf8RegexPreparer.PrepareScalarVerifier(plan);
 
         Assert.True(plan.ProducesBoundedCandidates);
         Assert.False(verifier.RequiresCandidateEndCoverage);
         Assert.False(verifier.RequiresTrailingAnchorCoverage);
-        Assert.Equal(Utf8FallbackVerifierMode.AnchoredSliceRegex, verifier.Mode);
+        Assert.Equal(2, typeof(Utf8ScalarVerifierPlan).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Length);
     }
 
     [Fact]

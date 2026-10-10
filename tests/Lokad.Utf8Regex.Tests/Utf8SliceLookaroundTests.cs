@@ -81,7 +81,7 @@ public sealed class Utf8SliceLookaroundTests
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public sealed class Utf8SliceLookaroundTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
     [Theory]
     [InlineData("(?:a)")]
@@ -170,7 +170,7 @@ public sealed class Utf8SliceLookaroundTests
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -195,7 +195,7 @@ public sealed class Utf8SliceLookaroundTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -222,7 +222,7 @@ public sealed class Utf8SliceLookaroundTests
             Assert.Equal(expectedLength, item.LengthInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -247,7 +247,7 @@ public sealed class Utf8SliceLookaroundTests
             }
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -267,7 +267,7 @@ public sealed class Utf8SliceLookaroundTests
             Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -282,7 +282,7 @@ public sealed class Utf8SliceLookaroundTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -292,7 +292,7 @@ public sealed class Utf8SliceLookaroundTests
         var regex = new Utf8Regex("(?=(a+)+b)a", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=(?=(a+)+b)a");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=(?=(a+)+b)a");
     }
 
     public static IEnumerable<object?[]> AstralIsMatchCases()
@@ -312,7 +312,7 @@ public sealed class Utf8SliceLookaroundTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> AstralDotBodyCases()
@@ -330,8 +330,8 @@ public sealed class Utf8SliceLookaroundTests
         Assert.Equal(expected, oracle.Matches(inputText).Count);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

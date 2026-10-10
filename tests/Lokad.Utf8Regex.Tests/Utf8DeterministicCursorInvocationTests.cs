@@ -54,8 +54,8 @@ public sealed class Utf8DeterministicCursorInvocationTests
             if (Utf8Validation.Validate(input).IsAscii || Prepared(regex).StructuralLinearProgram.AllowsUtf8ByteSafe)
                 Assert.Equal(previous, cursor.Current);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object[]> CompleteCases()
@@ -180,7 +180,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
             Assert.True(entered);
         }
         finally { session.Complete(); }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.Equal(new Regex(pattern, Options(compiled)).Count(text), regex.Count(input));
     }
 
@@ -215,7 +215,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         }
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
         Assert.Equal(previous, cursor.Current);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -229,7 +229,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(malformed, source.Token); _ = cursor.MoveNext(); });
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = regex.EnumerateMatches(malformed, source.Token); _ = cursor.MoveNext(); }).CancellationToken);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> TerminalCases()
@@ -288,6 +288,6 @@ public sealed class Utf8DeterministicCursorInvocationTests
         Assert.Equal(regex.Pattern, timeout.Pattern);
         Assert.Equal(Encoding.UTF8.GetString(input), timeout.Input);
         Assert.False(cursor.Current.Success);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

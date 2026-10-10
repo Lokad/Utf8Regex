@@ -16,7 +16,6 @@ public ref struct Utf8ValueSplitEnumerator
     private readonly Utf8StorageLease? _decodedStorageLease;
     private readonly Utf8BoundaryMap? _boundaryMap;
     private readonly int _totalUtf16Length;
-    private Regex.ValueSplitEnumerator _fallbackEnumerator;
     private Utf8OperationMatchCursor _matchCursor;
     internal ulong DebugInvocationSteps => _matchCursor.DebugInvocationSteps;
     internal ulong DebugInvocationReservedBytes => _matchCursor.DebugInvocationReservedBytes;
@@ -29,34 +28,7 @@ public ref struct Utf8ValueSplitEnumerator
     private string? _timeoutPattern;
     private TimeSpan _timeout;
 
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        string decoded,
-        Regex regex,
-        int count,
-        Utf8BoundaryMap boundaryMap)
-    {
-        var emitTailOnly = count == 1;
-        _sourceKind = emitTailOnly ? SplitSourceKind.NativeMatchCursor : SplitSourceKind.FallbackRegex;
-        _input = input;
-        _decoded = decoded;
-        _decodedStorageLease = null;
-        _boundaryMap = boundaryMap;
-        _totalUtf16Length = decoded.Length;
-        _fallbackEnumerator = emitTailOnly ? default : regex.EnumerateSplits(decoded, count);
-        // Count one publishes only a tail, but still needs a valid deadline
-        // holder for publication and subsequent terminal moves.
-        _matchCursor = emitTailOnly
-            ? new Utf8OperationMatchCursor(input, boundaryMap, Utf8ExecutionDeadline.Start(regex.MatchTimeout))
-            : default;
-        _segmentStartBytes = 0;
-        _segmentStartUtf16 = 0;
-        _remainingCount = emitTailOnly ? 1 : 0;
-        _completed = false;
-        _timeoutPattern = emitTailOnly ? regex.ToString() : null;
-        _timeout = regex.MatchTimeout;
-        Current = default;
-    }
+
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
@@ -69,7 +41,6 @@ public ref struct Utf8ValueSplitEnumerator
         _decodedStorageLease = null;
         _boundaryMap = null;
         _totalUtf16Length = input.Length;
-        _fallbackEnumerator = default;
         _matchCursor = new Utf8OperationMatchCursor(
             input,
             smallAsciiLiteralFamilySearch,
@@ -111,7 +82,6 @@ public ref struct Utf8ValueSplitEnumerator
         _decodedStorageLease = decodedStorageLease;
         _boundaryMap = map;
         _totalUtf16Length = totalUtf16Length;
-        _fallbackEnumerator = default;
         _matchCursor = matchCursor;
         _segmentStartBytes = 0;
         _segmentStartUtf16 = rightToLeft ? totalUtf16Length : 0;
@@ -134,7 +104,6 @@ public ref struct Utf8ValueSplitEnumerator
         _decodedStorageLease = null;
         _boundaryMap = null;
         _totalUtf16Length = totalUtf16Length;
-        _fallbackEnumerator = default;
         _matchCursor = matchCursor;
         _segmentStartBytes = 0;
         _segmentStartUtf16 = 0;
@@ -158,14 +127,15 @@ public ref struct Utf8ValueSplitEnumerator
     {
         try
         {
-            if (_sourceKind != SplitSourceKind.FallbackRegex) _matchCursor.CheckOwnedSliceCursorBoundary();
+            if (_sourceKind == SplitSourceKind.Exhausted) return false;
+            _matchCursor.CheckOwnedSliceCursorBoundary();
             return _sourceKind switch
             {
                 SplitSourceKind.NativeMatchCursor => MoveNextNative(),
                 SplitSourceKind.OwnedSlice => MoveNextNative(),
                 SplitSourceKind.OwnedSliceRtl => MoveNextNative(),
                 SplitSourceKind.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
-                _ => MoveNextFallback(),
+                _ => MoveNextNative(),
             };
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
@@ -190,36 +160,7 @@ public ref struct Utf8ValueSplitEnumerator
         return this;
     }
 
-    private bool MoveNextFallback()
-    {
-        if (!_fallbackEnumerator.MoveNext())
-        {
-            return false;
-        }
 
-        var range = _fallbackEnumerator.Current;
-        var startIndex = range.Start;
-        var endIndex = range.End;
-        int start;
-        int length;
-        if (!startIndex.IsFromEnd && !endIndex.IsFromEnd)
-        {
-            start = startIndex.Value;
-            length = endIndex.Value - start;
-        }
-        else
-        {
-            (start, length) = range.GetOffsetAndLength(_totalUtf16Length);
-        }
-
-        if (_boundaryMap is not { } boundaryMap)
-        {
-            throw new InvalidOperationException("Fallback split enumeration requires prepared UTF-16 projection.");
-        }
-
-        Current = new Utf8ValueSplit(_input, _decoded, start, length, boundaryMap, _decodedStorageLease);
-        return true;
-    }
 
     private bool MoveNextNative()
     {
@@ -403,7 +344,7 @@ public ref struct Utf8ValueSplitEnumerator
 
     private enum SplitSourceKind : byte
     {
-        FallbackRegex = 0,
+        Exhausted = 0,
         NativeMatchCursor = 1,
         SmallAsciiLiteralFamily = 2,
         OwnedSlice = 3,

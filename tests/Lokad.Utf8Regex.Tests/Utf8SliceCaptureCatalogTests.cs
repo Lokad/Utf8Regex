@@ -43,7 +43,7 @@ public sealed class Utf8SliceCaptureCatalogTests
             var expected = oracle.Match(text);
             foreach (var name in oracle.GetGroupNames())
                 Assert.Equal(expected.Groups[name].Value, context.GetGroup(name).GetValueString());
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -100,7 +100,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(input));
         Assert.Equal(literal, regex.MatchDetailed(input).GetGroup(name).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

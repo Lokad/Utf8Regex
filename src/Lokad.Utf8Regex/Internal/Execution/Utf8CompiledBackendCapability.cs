@@ -34,8 +34,8 @@ internal static class Utf8CompiledBackendCapability
 
     private static bool CanUseVerifierDrivenSearchGuidedFallback(Utf8PreparedRegex regexPlan)
     {
-        return regexPlan.SearchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.FallbackVerifier &&
-            regexPlan.SearchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.FallbackVerifier;
+        return regexPlan.SearchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.ScalarVerifier &&
+            regexPlan.SearchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.ScalarVerifier;
     }
 
     private static bool IsEmittableLiteralFamilyProgram(Utf8SearchOperationPlan program)

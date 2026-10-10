@@ -229,7 +229,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
 
     private static void AssertOwned(Utf8Regex regex)
     {
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

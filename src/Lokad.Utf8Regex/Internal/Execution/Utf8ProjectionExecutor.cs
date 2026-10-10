@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -37,20 +36,7 @@ internal static class Utf8ProjectionExecutor
         return Utf8ExecutionLimitKind.None;
     }
 
-    public static Utf8ValueMatch ProjectFallbackRegexMatch(ReadOnlySpan<byte> input, Match match, Utf8BoundaryMap boundaryMap)
-    {
-        if (!match.Success)
-        {
-            return Utf8ValueMatch.NoMatch;
-        }
 
-        if (boundaryMap.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
-        {
-            return new Utf8ValueMatch(true, true, match.Index, match.Length, indexInBytes, lengthInBytes);
-        }
-
-        return new Utf8ValueMatch(true, false, match.Index, match.Length);
-    }
 
     public static Utf8ValueMatch ProjectLiteralFamilyMatch(
         Utf8SearchOperationPlan program,

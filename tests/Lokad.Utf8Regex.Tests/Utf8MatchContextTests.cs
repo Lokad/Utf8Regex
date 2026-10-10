@@ -151,6 +151,6 @@ public sealed class Utf8MatchContextTests
                 return "ok";
             });
         Assert.Equal("ok", replaced);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

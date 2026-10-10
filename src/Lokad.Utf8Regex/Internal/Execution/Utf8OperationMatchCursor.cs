@@ -54,7 +54,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private readonly int _totalUtf16Length;
     private readonly Utf8ProjectionPlan _projectionPlan;
     private readonly Utf8SearchOperationPlan _program;
-    private Regex.ValueMatchEnumerator _fallbackEnumerator;
     private ReadOnlySpan<byte> _remaining;
     private int _consumed;
     private int _consumedUtf16;
@@ -95,7 +94,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = 0;
         _projectionPlan = default;
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -157,7 +155,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = 0;
         _projectionPlan = default;
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -175,63 +172,9 @@ internal ref partial struct Utf8OperationMatchCursor
         };
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap? boundaryMap)
-    {
-        _plans = Utf8OperationMatchCursorPlans.Empty;
-        _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
-        _literal = null;
-        _input = input;
-        _boundaryMap = boundaryMap;
-        _budget = Utf8ExecutionDeadline.Infinite;
-        _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
-        _projectionPlan = boundaryMap is null
-            ? default
-            : new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
-        _program = default;
-        _fallbackEnumerator = regex.EnumerateMatches(decoded);
-        _remaining = default;
-        _consumed = 0;
-        _consumedUtf16 = 0;
-        _multiLiteralScanState = default;
-        _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
-        _mode = boundaryMap is null
-            ? EnumeratorMode.FallbackRegexAscii
-            : EnumeratorMode.FallbackRegex;
-    }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Regex regex, string decoded, int startAt, Utf8BoundaryMap? boundaryMap)
-    {
-        _plans = Utf8OperationMatchCursorPlans.Empty;
-        _smallAsciiLiteralFamilySearch = default;
-        _alternateLiteralUtf16Lengths = null;
-        _literal = null;
-        _input = input;
-        _boundaryMap = boundaryMap;
-        _budget = Utf8ExecutionDeadline.Infinite;
-        _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
-        _projectionPlan = boundaryMap is null
-            ? default
-            : new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
-        _program = default;
-        _fallbackEnumerator = regex.EnumerateMatches(decoded.AsSpan(), startAt);
-        _remaining = default;
-        _consumed = 0;
-        _consumedUtf16 = 0;
-        _multiLiteralScanState = default;
-        _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
-        _mode = boundaryMap is null
-            ? EnumeratorMode.FallbackRegexAscii
-            : EnumeratorMode.FallbackRegex;
-    }
+
+
 
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input,
@@ -255,7 +198,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = input.Length;
         _projectionPlan = useStructuralLinearProgram ? default : searchPlan.ProjectionPlan;
         _program = useStructuralLinearProgram ? default : searchPlan.EnumerationOperation;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -325,7 +267,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = map.Utf16Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = default;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -496,7 +437,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = input.Length;
         _projectionPlan = default;
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -532,7 +472,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = input.Length;
         _projectionPlan = default;
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -767,8 +706,6 @@ internal ref partial struct Utf8OperationMatchCursor
             EnumeratorMode.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
             EnumeratorMode.EmittedKernelPattern => MoveNextEmittedKernelPattern(),
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
-            EnumeratorMode.FallbackRegex => MoveNextFallback(),
-            EnumeratorMode.FallbackRegexAscii => MoveNextFallbackAscii(),
             EnumeratorMode.OwnedSlice => MoveNextOwnedSlice(),
             _ => false,
         };
@@ -814,7 +751,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = input.Length;
         _projectionPlan = searchPlan.EnumerationOperation.Projection;
         _program = searchPlan.EnumerationOperation;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -884,7 +820,6 @@ internal ref partial struct Utf8OperationMatchCursor
             ? searchPlan.EnumerationOperation.WithProjection(
                 new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly))
             : searchPlan.EnumerationOperation;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -918,7 +853,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -947,7 +881,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _totalUtf16Length = input.Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly);
         _program = default;
-        _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
         _consumedUtf16 = 0;
@@ -1172,45 +1105,9 @@ internal ref partial struct Utf8OperationMatchCursor
         return true;
     }
 
-    private bool MoveNextFallback()
-    {
-        if (!_fallbackEnumerator.MoveNext())
-        {
-            return false;
-        }
 
-        var valueMatch = _fallbackEnumerator.Current;
-        var start = ResolveBoundary(valueMatch.Index);
-        var end = ResolveBoundary(valueMatch.Index + valueMatch.Length);
-        var isByteAligned = start.IsScalarBoundary && end.IsScalarBoundary;
 
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: isByteAligned,
-            indexInUtf16: valueMatch.Index,
-            lengthInUtf16: valueMatch.Length,
-            indexInBytes: start.ByteOffset,
-            lengthInBytes: end.ByteOffset - start.ByteOffset);
-        return true;
-    }
 
-    private bool MoveNextFallbackAscii()
-    {
-        if (!_fallbackEnumerator.MoveNext())
-        {
-            return false;
-        }
-
-        var valueMatch = _fallbackEnumerator.Current;
-        _current = new Utf8ValueMatch(
-            success: true,
-            isByteAligned: true,
-            indexInUtf16: valueMatch.Index,
-            lengthInUtf16: valueMatch.Length,
-            indexInBytes: valueMatch.Index,
-            lengthInBytes: valueMatch.Length);
-        return true;
-    }
 
     private bool MoveNextAsciiSimplePattern()
     {
@@ -1365,20 +1262,7 @@ internal ref partial struct Utf8OperationMatchCursor
         return true;
     }
 
-    private Utf16Boundary ResolveBoundary(int utf16Offset)
-    {
-        if (_boundaryMap is { } map)
-        {
-            return map.Resolve(utf16Offset);
-        }
 
-        if (_totalUtf16Length == _input.Length)
-        {
-            return Utf16Boundary.ScalarBoundary(utf16Offset, utf16Offset);
-        }
-
-        throw new InvalidOperationException("UTF-16 projection was not prepared for this match enumeration.");
-    }
 
     private Utf8ValueMatch ApplyBaseOffsets(Utf8ValueMatch match)
     {
@@ -1405,13 +1289,11 @@ internal ref partial struct Utf8OperationMatchCursor
         AsciiLiteralIgnoreCase = 4,
         AsciiLiteralIgnoreCaseLiterals = 5,
         AsciiSimplePattern = 6,
-        FallbackRegex = 7,
         AsciiFixedTokenPattern = 8,
         AsciiDeterministicPattern = 9,
         EmptyLiteral = 10,
         SmallAsciiLiteralFamily = 11,
         EmittedKernelPattern = 12,
-        FallbackRegexAscii = 13,
         OwnedSlice = 14,
         AnchoredAsciiLiteralPrefix = 15,
         AnchoredAsciiLiteralSuffix = 16,

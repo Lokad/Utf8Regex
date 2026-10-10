@@ -79,7 +79,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     [MemberData(nameof(Cutoffs))]
     public void EveryRootAndFactoryCutoffPreservesBorrowedParentsAndSpentWork(string pattern, bool factory, bool bytes)
     {
-        var plan = Plan(pattern); var verifier = Utf8VerifierRuntime.Create(plan, pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var plan = Plan(pattern); var verifier = Utf8VerifierRuntime.Create(plan);
         ulong peak, work, loan;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
@@ -135,7 +135,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     public void NonliteralSelectionDoesNotPrepareTheDiscardedLiteralRuntime(int kind)
     {
         var plan = Plan("aaaaa|bbbbb|ccccc");
-        var verifier = Utf8VerifierRuntime.Create(plan, "aaaaa|bbbbb|ccccc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(plan);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 2, 2);
         var runtime = Utf8CompiledRuntimeFactory.Create(new Utf8CompiledEngine((Utf8CompiledEngineKind)kind), plan, verifier, RegexOptions.None);
         Assert.False(runtime is Utf8LiteralFamilyCompiledEngineRuntime or Utf8ExactLiteralCompiledEngineRuntime);
@@ -161,7 +161,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
             Assert.Equal(ranges.Count, regex.Count(input)); Assert.Equal(ranges.Count > 0, regex.IsMatch(input));
             var first = regex.Match(input); Assert.Equal(ranges[0], (first.IndexInBytes, first.LengthInBytes));
             Assert.All(ranges, range => { Assert.NotEqual(0x80, input[range.Item1] & 0xc0); Assert.True(range.Item1 + range.Item2 == input.Length || (input[range.Item1 + range.Item2] & 0xc0) != 0x80); });
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
     private sealed class Box(int value) { internal readonly int Value = value; }

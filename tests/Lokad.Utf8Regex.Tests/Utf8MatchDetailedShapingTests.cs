@@ -45,7 +45,7 @@ public sealed class Utf8MatchDetailedShapingTests
             Assert.False(actual.TryGetGroup(1, out _));
             Assert.False(actual.TryGetGroup("missing", out _));
         }
-        Assert.False(utf8.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(utf8.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

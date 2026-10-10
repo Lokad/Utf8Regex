@@ -40,7 +40,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.Inspection.AvailableOwnedSliceProgram?.IsNonBacktracking);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         Assert.Equal(oracle.Count(text), regex.Count(input));
         var expected = oracle.Match(text);
@@ -62,7 +62,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInUtf16, match.LengthInUtf16));
         Assert.Equal(oracle.Matches(text).Select(match => (match.Index, match.Length)), ranges);
         Assert.Equal(oracle.Replace(text, "<$0:$1>"), regex.ReplaceToString(input, "<$0:$1>"));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -79,7 +79,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         var group = regex.MatchDetailed("abc"u8).GetGroup("x");
         Assert.Equal("abc", group.GetValueString());
         Assert.Equal(1, group.CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -99,7 +99,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal("aQb", regex.ReplaceToString(input, "Q"));
         var fromOffset = regex.MatchDetailedFromUtf16Offset(input, 3);
         Assert.Equal((5, 4), (fromOffset.IndexInBytes, fromOffset.LengthInBytes));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(new Utf8Regex("^.$", options).IsMatch("😀"u8));
         Assert.False(new Utf8Regex("^..$", options).IsMatch("😀"u8));
         Assert.Equal(2, new Utf8Regex(".*?", options).Count("😀"u8));
@@ -107,7 +107,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         var ranges = new List<(int, int)>();
         foreach (var item in dots.EnumerateMatches(input)) ranges.Add((item.IndexInBytes, item.LengthInBytes));
         Assert.Equal(new[] { (0, 1), (1, 4), (5, 4), (9, 1) }, ranges);
-        Assert.False(dots.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(dots.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -129,7 +129,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
             previous = invocation.Budget.Steps;
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

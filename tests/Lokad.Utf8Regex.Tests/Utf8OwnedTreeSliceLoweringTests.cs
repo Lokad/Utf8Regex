@@ -73,7 +73,7 @@ public sealed class Utf8OwnedTreeSliceLoweringTests
             var splits = new List<string>();
             foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
             Assert.Equal(new[] { "", "" }, splits);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 

@@ -63,7 +63,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         // so non-ASCII input uses the complete-subject scalar program while
         // ASCII input keeps the owned route below. The byte scan (not just the
         // validation flag) decides: fused-family callers pass default validation.
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions) &&
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options) &&
             !validation.IsAscii &&
             input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
         {
@@ -71,7 +71,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
             isMatch = AsciiOrderedLiteralWindowExecutor.FindNext(
                 input,
@@ -91,7 +91,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
+        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
             isMatch = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
                 input,
@@ -133,7 +133,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         // so non-ASCII input uses the complete-subject scalar program while
         // ASCII input keeps the owned route below. The byte scan (not just the
         // validation flag) decides: fused-family callers pass default validation.
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions) &&
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options) &&
             !validation.IsAscii &&
             input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
         {
@@ -141,7 +141,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
             count = AsciiOrderedLiteralWindowExecutor.Count(
@@ -161,7 +161,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
+        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
             if (regexPlan.SearchPlan.PreparedSearcher.HasValue &&
                 Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseSuffixOnlyCountKernel(regexPlan.StructuralIdentifierFamilyPlan))
@@ -224,7 +224,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         // so non-ASCII input uses the complete-subject scalar program while
         // ASCII input keeps the owned route below. The byte scan (not just the
         // validation flag) decides: fused-family callers pass default validation.
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions) &&
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options) &&
             !validation.IsAscii &&
             input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
         {
@@ -232,7 +232,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
             var index = AsciiOrderedLiteralWindowExecutor.FindNext(
                 input,
@@ -258,7 +258,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
+        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, regexPlan.SemanticRegex.Options))
         {
             var index = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
                 input,

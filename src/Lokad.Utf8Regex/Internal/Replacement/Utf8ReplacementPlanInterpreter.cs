@@ -2,27 +2,12 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8ReplacementPlanInterpreter
 {
-    public static string Apply(Utf8ReplacementPlan plan, Match match, string input, int lastGroupNumber)
-    {
-        if (plan.Instructions.Count == 0)
-        {
-            return string.Empty;
-        }
 
-        var builder = new StringBuilder();
-        foreach (var instruction in plan.Instructions)
-        {
-            AppendInstruction(builder, instruction, match, input, lastGroupNumber);
-        }
-
-        return builder.ToString();
-    }
 
     public static string ApplyOwned(Utf8ReplacementPlan plan, string input, in Utf8MatchContext context)
     {
         // R05: expands a template against owned group spans projected onto the discovery
-        // hit, mirroring AppendInstruction field for field (unmatched or out-of-range
-        // groups contribute nothing, like the BCL-backed route).
+        // hit. Unmatched or out-of-range groups contribute nothing.
         if (plan.Instructions.Count == 0)
         {
             return string.Empty;
@@ -93,65 +78,9 @@ internal static class Utf8ReplacementPlanInterpreter
     }
 
 
-    private static void AppendInstruction(StringBuilder builder, Utf8ReplacementInstruction instruction, Match match, string input, int lastGroupNumber)
-    {
-        switch (instruction.Kind)
-        {
-            case Utf8ReplacementInstructionKind.Literal:
-                if (instruction.LiteralUtf8.Length > 0)
-                {
-                    builder.Append(instruction.LiteralText);
-                }
 
-                return;
 
-            case Utf8ReplacementInstructionKind.Group:
-                AppendGroup(builder, instruction, match);
-                return;
 
-            case Utf8ReplacementInstructionKind.WholeMatch:
-                builder.Append(match.Value);
-                return;
 
-            case Utf8ReplacementInstructionKind.LeftPortion:
-                builder.Append(input, 0, match.Index);
-                return;
 
-            case Utf8ReplacementInstructionKind.RightPortion:
-                builder.Append(input, match.Index + match.Length, input.Length - (match.Index + match.Length));
-                return;
-
-            case Utf8ReplacementInstructionKind.LastGroup:
-                AppendLastGroup(builder, match, lastGroupNumber);
-                return;
-
-            case Utf8ReplacementInstructionKind.WholeString:
-                builder.Append(input);
-                return;
-
-            default:
-                throw new InvalidOperationException("Unsupported replacement instruction kind.");
-        }
-    }
-
-    private static void AppendGroup(StringBuilder builder, Utf8ReplacementInstruction instruction, Match match)
-    {
-        var group = match.Groups[instruction.GroupNumber];
-
-        if (group is { Success: true })
-        {
-            builder.Append(group.Value);
-        }
-    }
-
-    private static void AppendLastGroup(StringBuilder builder, Match match, int lastGroupNumber)
-    {
-        // Use metadata's final public number; sparse groups cannot be visited
-        // as consecutive numbers or inferred from GroupCollection.Count.
-        var last = match.Groups[lastGroupNumber];
-        if (last.Success)
-        {
-            builder.Append(last.Value);
-        }
-    }
 }

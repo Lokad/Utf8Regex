@@ -236,11 +236,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance); Assert.NotNull(property);
             var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
-            {
-                var field = typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance); Assert.NotNull(field);
-                field.SetValue(runtime.FallbackCandidateVerifier, new Lazy<Regex>(() => throw new InvalidOperationException("Native literal used BCL fallback.")));
-            }
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
             var bytes = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(bytes)); Assert.Equal(row.Count, regex.Count(bytes));
             var match = regex.Match(bytes); Assert.True(match.Success);
             Assert.Equal(row.Pattern == "call|invoke" ? 4 : row.Subject.StartsWith('x') ? 1 : 0, match.IndexInBytes);
@@ -249,7 +245,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             if (row.Pattern == "(é😀)") Assert.Equal("é😀", regex.MatchDetailed(bytes).GetGroup(1).GetValueString());
             var count = 0; foreach (var item in regex.EnumerateMatches(bytes)) { Assert.True(item.LengthInBytes > 0); count++; }
             Assert.Equal(row.Count, count); Assert.Equal(row.Replaced, regex.ReplaceToString(bytes, "X"));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated); Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 }

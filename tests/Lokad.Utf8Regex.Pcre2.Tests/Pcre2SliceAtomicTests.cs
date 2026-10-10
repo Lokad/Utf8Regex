@@ -46,7 +46,7 @@ public sealed class Pcre2SliceAtomicTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -58,7 +58,7 @@ public sealed class Pcre2SliceAtomicTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class Pcre2SliceAtomicTests
         var detailed = regex.MatchDetailed(Utf8("aaab"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("aaa", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -76,6 +76,6 @@ public sealed class Pcre2SliceAtomicTests
     {
         var regex = new Utf8Pcre2Regex("(?>a+)b", Pcre2CompileOptions.None);
         Assert.Equal(Bcl("(?>a+)b").Replace("aaab", "<$0>"), regex.ReplaceToString(Utf8("aaab"), "<$0>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

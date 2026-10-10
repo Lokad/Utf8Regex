@@ -39,7 +39,7 @@ internal sealed partial class Utf8VerifierRuntime
                 program.RightToLeft && candidate.EndIndex >= 0 && low != candidate.StartIndex)
                 return Utf8ExecutionLimitKind.None;
 
-            var plan = _preparedRegex.FallbackVerifier;
+            var plan = _preparedRegex.ScalarVerifier;
             if (plan.RequiresCandidateEndCoverage && candidate.EndIndex >= 0 && high < candidate.EndIndex)
                 return Utf8ExecutionLimitKind.None;
             if (plan.RequiresTrailingAnchorCoverage)

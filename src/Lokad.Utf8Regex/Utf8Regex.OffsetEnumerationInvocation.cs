@@ -8,11 +8,9 @@ namespace Lokad.Utf8Regex;
 /// <summary>Retains one invocation through owned UTF-16-offset entry and enumeration.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryCreateOwnedOffsetEnumerator(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken token,
-        out Utf8ValueMatchEnumerator enumerator)
+    private Utf8ValueMatchEnumerator CreateOwnedOffsetEnumerator(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken token)
     {
-        enumerator = default;
-        if (_ownedSliceProgram is not { } program) return false;
+        var program = _ownedSliceProgram;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         ulong reservation = 0;
         try
@@ -50,8 +48,7 @@ public sealed partial class Utf8Regex
                 reservation = 0;
                 cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, start.Value);
             }
-            enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
-            return true;
+            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         finally { if (reservation != 0) invocation.Ledger.Release(reservation); }

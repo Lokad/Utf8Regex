@@ -268,7 +268,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             Assert.Equal((byteIndex, 4), (match.IndexInBytes, match.LengthInBytes));
             Assert.Equal((byteIndex == 0 ? 0 : 4, 2), (match.IndexInUtf16, match.LengthInUtf16));
             Assert.Equal(byteIndex == 0 ? "<> x𐐀x" : "𐐀 x<>x", regex.ReplaceToString("𐐀 x𐐀x"u8, "<>"));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 

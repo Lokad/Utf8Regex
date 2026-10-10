@@ -20,6 +20,6 @@ public sealed class Utf8ValueSplitTests
         }
         Assert.Equal([(0, 0), (4, 0)], byteRanges);
         Assert.Equal([(0, 0), (2, 0)], unitRanges);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

@@ -43,7 +43,7 @@ public sealed class LokadCodeRouteGuardrailTests
         Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
         var match = regex.Match(bytes);
         Assert.Equal(Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index, match.IndexInUtf16);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]

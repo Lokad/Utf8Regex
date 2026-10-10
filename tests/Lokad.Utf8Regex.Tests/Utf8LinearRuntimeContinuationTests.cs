@@ -267,7 +267,7 @@ public sealed class Utf8LinearRuntimeContinuationTests
                 Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
             }
             Assert.False(actual.MoveNext());
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 

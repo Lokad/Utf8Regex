@@ -1110,7 +1110,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(Regex.Count(input, pattern), regex.Count(bytes));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -1339,7 +1339,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -1351,7 +1351,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -1363,7 +1363,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -1522,8 +1522,8 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal((0, input.Length), (match.IndexInBytes, match.LengthInBytes));
         Assert.False(match.GetGroup("open").Success);
         Assert.Equal(1, compiled.Count(input));
-        Assert.False(compiled.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(compiled.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(compiled.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, compiled.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]
@@ -1538,7 +1538,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(compiled.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
         Assert.Equal(baseline.Count(bytes), compiled.Count(bytes));
-        Assert.False(compiled.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -1553,7 +1553,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(compiled.IsMatch(bytes));
         var match = compiled.Match(bytes);
         Assert.Equal((0, 32, 0, 16), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
-        Assert.False(compiled.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -1726,7 +1726,7 @@ public sealed class Utf8RegexConstructionTests
         source.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token));
         Assert.Throws<OperationCanceledException>(() => regex.Count(new byte[] { 0xff }, source.Token));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -2845,7 +2845,7 @@ public sealed class Utf8RegexConstructionTests
         var match = regex.Match(input);
         Assert.True(match.Success);
         Assert.Equal(0, match.IndexInBytes);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]

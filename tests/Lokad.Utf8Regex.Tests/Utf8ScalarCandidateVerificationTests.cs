@@ -9,19 +9,19 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ScalarCandidateVerificationTests
 {
-    private static Utf8VerifierRuntime Runtime(string pattern, RegexOptions options, int mode,
+    private static Utf8VerifierRuntime Runtime(string pattern, RegexOptions options,
         bool endCoverage, bool trailingCoverage)
     {
-        var prepared = Utf8VerifierTestPlans.WithFallbackVerifier(Utf8FrontEnd.Compile(pattern, options),
-            new((Utf8FallbackVerifierMode)mode, endCoverage, trailingCoverage));
-        return Utf8VerifierRuntime.Create(prepared, pattern, options, Regex.InfiniteMatchTimeout);
+        var prepared = Utf8VerifierTestPlans.WithScalarVerifier(Utf8FrontEnd.Compile(pattern, options),
+            new(endCoverage, trailingCoverage));
+        return Utf8VerifierRuntime.Create(prepared);
     }
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void AllCandidateModesUseTheCompleteScalarSubjectAndCachedProgram(int mode)
+    public void CandidateCoveragePlansUseTheCompleteScalarSubjectAndCachedProgram(int coverage)
     {
-        var runtime = Runtime(@"(?<=é)(?<x>.)\k<x>(?=z)", RegexOptions.CultureInvariant, mode, true, false);
+        var runtime = Runtime(@"(?<=é)(?<x>.)\k<x>(?=z)", RegexOptions.CultureInvariant, coverage != 0, coverage == 2);
         var input = "é😀😀z"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
@@ -29,10 +29,13 @@ public sealed class Utf8ScalarCandidateVerificationTests
         using var construction = Utf8ConstructionScope.Enter();
         var checkpoint = construction.Budget.ObjectCheckpoint;
         var before = construction.Budget.ReservedBytes;
+        var candidate = coverage == 2
+            ? Utf8StructuralCandidate.Window(2, 10, 8, 0, 6, 4, 0)
+            : Utf8StructuralCandidate.Start(2, 10, 8, 0);
         for (var attempt = 0; attempt < 2; attempt++)
         {
             Assert.Equal(Utf8ExecutionLimitKind.None, runtime.TryVerifyCandidate(input,
-                Utf8StructuralCandidate.Start(2, 10, 8, 0), validation, ref invocation, out var result));
+                candidate, validation, ref invocation, out var result));
             Assert.True(result.Success);
             Assert.Equal((2, 8), (result.IndexInBytes, result.LengthInBytes));
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ProjectionExecutor.TryProjectScalarVerification(input,
@@ -47,8 +50,8 @@ public sealed class Utf8ScalarCandidateVerificationTests
         Assert.Equal(before, construction.Budget.ReservedBytes);
         Assert.Equal(0ul, construction.Budget.WorkSteps);
         Assert.Same(checkpoint, construction.Budget.ObjectCheckpoint);
-        Assert.False(runtime.FallbackCandidateVerifier.IsFallbackRegexCreated);
-        Assert.False(runtime.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
     }
 
     [Theory]
@@ -64,7 +67,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0) |
             (nonBacktracking ? RegexOptions.NonBacktracking : 0);
-        var runtime = Runtime(pattern, options, 2, true, false);
+        var runtime = Runtime(pattern, options, true, false);
         var input = Encoding.UTF8.GetBytes(text);
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
@@ -79,14 +82,14 @@ public sealed class Utf8ScalarCandidateVerificationTests
             Assert.True(projected.IsByteAligned); Assert.Equal(units, projected.LengthInUtf16);
         }
         Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
-        Assert.False(runtime.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void CandidateCoverageDoesNotReplaceTheScalarMatchEnd(bool requireEnd)
     {
-        var runtime = Runtime(".", RegexOptions.CultureInvariant, 2, requireEnd, false);
+        var runtime = Runtime(".", RegexOptions.CultureInvariant, requireEnd, false);
         var input = "😀😀"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
@@ -101,7 +104,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     [InlineData(4, 1, true)] [InlineData(1, 1, false)] [InlineData(4, 2, false)]
     public void TrailingCoverageUsesWholeScalarByteBounds(int trailingStart, int trailingLength, bool expected)
     {
-        var runtime = Runtime("😀z?", RegexOptions.CultureInvariant, 2, true, true);
+        var runtime = Runtime("😀z?", RegexOptions.CultureInvariant, true, true);
         var input = "😀z"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
@@ -114,7 +117,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     [InlineData(0, false)] [InlineData(4, true)]
     public void ContiguousAnchorsBorrowTheCallerOrigin(int origin, bool expected)
     {
-        var runtime = Runtime(@"\G.", RegexOptions.CultureInvariant, 1, false, false);
+        var runtime = Runtime(@"\G.", RegexOptions.CultureInvariant, false, false);
         var input = "😀z"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
@@ -128,7 +131,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     [InlineData(false)] [InlineData(true)]
     public void DenialRestoresTheParentLedgerAndKeepsSpentWork(bool bytes)
     {
-        var runtime = Runtime("(?<x>a)+", RegexOptions.CultureInvariant, 2, true, false);
+        var runtime = Runtime("(?<x>a)+", RegexOptions.CultureInvariant, true, false);
         var input = "aaaa"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(new(bytes ? 0ul : 1ul, 0, bytes ? 8ul : 0ul), Regex.InfiniteMatchTimeout, default);
@@ -147,7 +150,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     [Fact]
     public void CancellationDuringVmWorkReleasesScratchAndKeepsTheOriginalToken()
     {
-        var runtime = Runtime("(?<x>a+)b", RegexOptions.CultureInvariant, 2, true, false);
+        var runtime = Runtime("(?<x>a+)b", RegexOptions.CultureInvariant, true, false);
         var input = Encoding.UTF8.GetBytes(new string('a', 2048) + "b");
         var validation = Utf8Validation.Validate(input);
         using var source = new CancellationTokenSource();
@@ -165,7 +168,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     [Fact]
     public void LaterCandidatesCannotResetTheSharedWorkOwner()
     {
-        var runtime = Runtime("a", RegexOptions.CultureInvariant, 2, true, false);
+        var runtime = Runtime("a", RegexOptions.CultureInvariant, true, false);
         var validation = Utf8Validation.Validate("a"u8);
         var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         var candidate = Utf8StructuralCandidate.Start(0, 1, 1, 0);
@@ -182,7 +185,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     [Fact]
     public void VerificationChecksTheOriginalEntryDeadlineAfterADeferredAttempt()
     {
-        var runtime = Runtime("a", RegexOptions.CultureInvariant, 2, true, false);
+        var runtime = Runtime("a", RegexOptions.CultureInvariant, true, false);
         var validation = Utf8Validation.Validate("a"u8);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(1), default);
         Thread.Sleep(20);
@@ -203,7 +206,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     {
         const RegexOptions options = RegexOptions.CultureInvariant;
         var prepared = Utf8FrontEnd.Compile(pattern, options);
-        var verifier = Utf8VerifierRuntime.Create(prepared, pattern, options, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         var token = pattern.StartsWith("[A-Z]", StringComparison.Ordinal) ? "A😀😀 " : "foo😀😀 ";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(token, 40)));
         var validation = Utf8Validation.Validate(input);
@@ -213,7 +216,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
             Assert.False(prepared.SearchPlan.FallbackSearch.HasCandidates);
             var regex = new Utf8Regex(pattern, options | (emitted ? RegexOptions.Compiled : 0));
             Assert.Equal(40, regex.Count(input)); Assert.True(regex.IsMatch(input));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         else
         {
@@ -224,8 +227,8 @@ public sealed class Utf8ScalarCandidateVerificationTests
             Assert.Equal(40, runtime.Count(input, validation, Utf8ExecutionDeadline.Infinite));
             Assert.True(runtime.IsMatch(input, validation, Utf8ExecutionDeadline.Infinite));
         }
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
-        Assert.False(verifier.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     [Fact]
@@ -233,7 +236,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     {
         const string pattern = @"foo(?<x>.)\k<x>";
         var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var verifier = Utf8VerifierRuntime.Create(prepared, pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         var runtime = Utf8CompiledFallbackCompiledEngineRuntime.Create(prepared, verifier);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo😀😀 ", 40)));
         var validation = Utf8Validation.Validate(input);
@@ -242,8 +245,8 @@ public sealed class Utf8ScalarCandidateVerificationTests
         var match = runtime.Match(input, validation, Utf8ExecutionDeadline.Infinite);
         Assert.True(match.Success); Assert.True(match.IsByteAligned);
         Assert.Equal((0, 11, 0, 7), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
-        Assert.False(verifier.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     [Fact]
@@ -258,10 +261,10 @@ public sealed class Utf8ScalarCandidateVerificationTests
             MinRequiredLength = 8,
         }));
         var prepared = Utf8VerifierTestPlans.WithSearchPlan(Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant), search);
-        prepared = Utf8VerifierTestPlans.WithFallbackVerifier(prepared, new(Utf8FallbackVerifierMode.AnchoredSliceRegex, true, true));
+        prepared = Utf8VerifierTestPlans.WithScalarVerifier(prepared, new(true, true));
         Assert.True(prepared.SearchPlan.FallbackSearch.HasCandidates);
         Assert.True(Utf8CompiledBackendCapability.CanUseEmittedSearchGuidedFallback(prepared));
-        var verifier = Utf8VerifierRuntime.Create(prepared, pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         Assert.True(Utf8EmittedSearchGuidedFallback.TryCreate(prepared, verifier, out var backend));
         Assert.NotNull(backend);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo😀😀bar\n", 40)));
@@ -273,7 +276,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
         invocation.AnchorOriginByte = 0;
         Assert.True(backend.IsMatch(input, validation, ref invocation));
         Assert.True(invocation.Budget.Steps > spent); Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
-        Assert.False(verifier.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 }

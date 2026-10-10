@@ -2400,7 +2400,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
-        return UsesRightToLeft(verifierRuntime)
+        return UsesRightToLeft(PreparedRegex)
             ? Utf8PreparedScalarExecutor.IsMatch(PreparedRegex, input, validation, budget)
             : FindNext(input, verifierRuntime, 0, budget, out _) >= 0;
     }
@@ -2408,14 +2408,14 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
-        return UsesRightToLeft(verifierRuntime)
+        return UsesRightToLeft(PreparedRegex)
             ? Utf8PreparedScalarExecutor.Count(PreparedRegex, input, validation, budget)
             : CountForward(input, verifierRuntime, budget);
     }
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
-        if (UsesRightToLeft(verifierRuntime))
+        if (UsesRightToLeft(PreparedRegex))
         {
             return Utf8PreparedScalarExecutor.Match(PreparedRegex, input, validation, budget);
         }
@@ -2428,7 +2428,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
     public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
-        if (UsesRightToLeft(verifierRuntime))
+        if (UsesRightToLeft(PreparedRegex))
         {
             matchIndex = -1;
             matchedLength = 0;
@@ -2658,9 +2658,9 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         return -1;
     }
 
-    private static bool UsesRightToLeft(Utf8VerifierRuntime verifierRuntime)
+    private static bool UsesRightToLeft(Utf8PreparedRegex regexPlan)
     {
-        return (verifierRuntime.FallbackCandidateVerifier.FallbackOptions & RegexOptions.RightToLeft) != 0;
+        return (regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) != 0;
     }
 }
 

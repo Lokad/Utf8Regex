@@ -226,7 +226,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
             Assert.Equal(appendValid, regex.IsMatch(input)); Assert.Equal(appendValid ? 1 : 0, regex.Count(input));
             var gaps = new List<(int, int)>(); foreach (var gap in regex.EnumerateSplits(input)) gaps.Add((gap.IndexInBytes, gap.LengthInBytes));
             Assert.Equal(appendValid ? new[] { (0, falseCandidate.Length + 1), (input.Length, 0) } : new[] { (0, input.Length) }, gaps);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
     [Theory]
@@ -236,7 +236,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         var regex = new Utf8Regex("alpha|bravo|charlie", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = "😀alpha|ébravo|中charlie!"u8; Assert.Equal(3, regex.Count(input));
         var ranges = new List<(int, int)>(); foreach (var split in regex.EnumerateSplits(input)) ranges.Add((split.IndexInBytes, split.LengthInBytes));
-        Assert.Equal(new[] { (0, 4), (9, 3), (17, 4), (28, 1) }, ranges); Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(new[] { (0, 4), (9, 3), (17, 4), (28, 1) }, ranges); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     private sealed class Box(int value) { internal readonly int Value = value; }
 }

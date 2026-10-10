@@ -2334,91 +2334,7 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        if (TryCreateOwnedOffsetEnumerator(input, utf16Offset, CancellationToken.None, out var ownedEnumerator)) return ownedEnumerator;
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        var startInUtf16 = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        // Window boundaries inspect the original subject, including the unit
-        // before startat. Slicing the suffix would invent a word boundary there.
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            !UsesRightToLeft() &&
-            Utf8InputAnalyzer.IsAscii(input))
-        {
-            return new Utf8ValueMatchEnumerator(
-                Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                    _preparedRegex, input,
-                    new Utf8ValidationResult(input.Length, input.Length, true, false),
-                    CreateExecutionBudget(), startInUtf16.Value, startInUtf16.Value))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
-
-        // Anchored prefixes from a nonzero start are a definitive miss; from offset 0
-        // they reuse the single-match owned cursor without BCL construction.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredOffsetLiteral)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
-            if (startInUtf16.Value != 0)
-            {
-                return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input[..0], Array.Empty<byte>(), CreateExecutionBudget()))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
-            }
-
-            return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, anchoredOffsetLiteral, CreateExecutionBudget()))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
-
-        // Anchored suffixes match at most once at a fixed end position: a start past
-        // it misses definitively, otherwise the single-match cursor decides.
-        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixEnumerate) &&
-                suffixEnumerate.Success &&
-                startInUtf16.Value <= suffixEnumerate.IndexInUtf16)
-            {
-                return new Utf8ValueMatchEnumerator(
-                    new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
-            }
-
-            return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input[..0], Array.Empty<byte>(), CreateExecutionBudget()))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
-
-
-        // R05: slice shapes enumerate from the start unit on full input through
-        // the owned cursor above (anchors keep true left context and \\G pins to
-        // the scan start with the original context, unlike suffix slicing).
-        // Derived starts must resolve to a complete scalar boundary.
-        if (_ownedSliceProgram is { } ownedProgram)
-        {
-            return OwnedSliceEnumerateMatchesFromUnit(input, ownedProgram, analysis.BoundaryMap, startInUtf16.Value, CancellationToken.None)
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
-        }
-
-        if (!UsesRightToLeft())
-        {
-            var startBoundary = analysis.BoundaryMap.Resolve(startInUtf16.Value);
-            if (startBoundary.IsScalarBoundary)
-            {
-                var startInBytes = analysis.GetBytePosition(startBoundary.ByteOffset, nameof(utf16Offset));
-                return new Utf8ByteOffsetExecution(this).EnumerateMatches(analysis, startInBytes)
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
-            }
-        }
-
-        var decoded = analysis.GetDecodedString();
-        return new Utf8ValueMatchEnumerator(
-            input,
-            _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-            decoded,
-            startInUtf16.Value,
-            analysis.Utf16ProjectionMap)
-            .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        return CreateOwnedOffsetEnumerator(input, utf16Offset, CancellationToken.None);
     }
 
     /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset, observing cancellation when enumeration begins.</summary>
@@ -2428,9 +2344,7 @@ public sealed partial class Utf8Regex
     /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (TryCreateOwnedOffsetEnumerator(input, utf16Offset, cancellationToken, out var ownedEnumerator)) return ownedEnumerator;
-        return EnumerateMatchesFromUtf16Offset(input, utf16Offset);
+        return CreateOwnedOffsetEnumerator(input, utf16Offset, cancellationToken);
     }
 
     /// <summary>Enumerates all split segments, including the final tail.</summary>
@@ -2444,9 +2358,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_ownedSliceProgram is { } ownedProgram)
-            return OwnedSliceEnumerateSplits(input, ownedProgram, int.MaxValue, cancellationToken);
-        return EnumerateSplits(input);
+        return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, int.MaxValue, cancellationToken);
     }
 
     /// <summary>Enumerates at most the requested number of split segments.</summary>
@@ -2455,27 +2367,6 @@ public sealed partial class Utf8Regex
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
-        // R05: right-to-left slice shapes split owned through the same cursor
-        // the ascending arm uses, projecting segments descending from the input end
-        // with UTF-16 indexes exactly like the BCL oracle (encounter order, tail
-        // piece first). Culture, Kelvin, and unserved shapes keep the legacy routing
-        // below; count 1 keeps the BCL tail while count 0 means unlimited here.
-        if ((count == 0 || count > 1) &&
-            !ShouldUseKelvinSignFallback(input) &&
-            _sliceProgram is not null && _sliceProgram.RightToLeft)
-        {
-            var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
-            var rtlDecoded = rtlAnalysis.GetDecodedString();
-            return new Utf8ValueSplitEnumerator(
-                input,
-                rtlDecoded,
-                new Utf8OperationMatchCursor(_sliceProgram, input, rtlAnalysis.BoundaryMap, MatchTimeout, CancellationToken.None),
-                rtlAnalysis.BoundaryMap,
-                count == 0 ? int.MaxValue : count,
-                rtlDecoded.Length,
-                rightToLeft: true)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
-        }
         // R05: right-to-left literal shapes split owned through the reverse-search
         // cursor (the same cursor backing owned RTL enumeration), projecting segments
         // descending from the input end exactly like the oracle encounter order.
@@ -2504,13 +2395,7 @@ public sealed partial class Utf8Regex
         }
 
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
-        {
-            if (count >= 0 && _ownedSliceProgram is { } resumedProgram)
-                return OwnedSliceEnumerateSplits(input, resumedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
-            var subject = Utf8InputAnalyzer.Analyze(input);
-            return new Utf8ValueSplitEnumerator(input, subject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, subject.BoundaryMap)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
-        }
+            return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
 
         if (count > 0 && TryGetSmallAsciiLiteralFamilySplitSearch(input, out var smallAsciiLiteralFamilySearch))
         {
@@ -2585,27 +2470,6 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        // R03: split segments project the owned match cursor, whose empty-match
-        // advancement already follows the BCL search order. Counts below 2 keep the
-        // BCL tail below with identical behavior (count 0 means unlimited there,
-        // while count 1 throws inside its first MoveNext). Right-to-left splits keep
-        // legacy routing until the enumerator stages buffered right-to-left ranges
-        // (segments stay positional while discovery runs right-to-left).
-        if (count > 1 && _sliceProgram is not null && !_sliceProgram.RightToLeft)
-        {
-            var analysis = Utf8InputAnalyzer.Analyze(input);
-            var decoded = analysis.GetDecodedString();
-            return new Utf8ValueSplitEnumerator(
-                input,
-                decoded,
-                new Utf8OperationMatchCursor(_sliceProgram, input, analysis.BoundaryMap, MatchTimeout, CancellationToken.None),
-                analysis.BoundaryMap,
-                count,
-                decoded.Length,
-                rightToLeft: false)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
-        }
-
         // R05: scalar-verifiable simple patterns split owned through the scalar
         // cursor; anything else keeps the BCL split below.
         if (count > 1 && Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
@@ -2623,13 +2487,8 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        // Native split cursors above retain their discovery paths. Count zero
-        // and any other admitted shape use the owned scalar cursor before BCL.
-        if (count >= 0 && _ownedSliceProgram is { } splitProgram)
-            return OwnedSliceEnumerateSplits(input, splitProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
-        var fallbackSubject = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueSplitEnumerator(input, fallbackSubject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, fallbackSubject.BoundaryMap)
-            .WithTimeoutMapping(Pattern, MatchTimeout);
+        // Any remaining admitted shape uses the cached scalar cursor.
+        return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
     }
 
     /// <summary>Enumerates at most the requested number of split segments, observing cancellation when enumeration begins.</summary>
@@ -2641,9 +2500,7 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-        if (_ownedSliceProgram is { } ownedProgram)
-            return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, cancellationToken);
-        return EnumerateSplits(input, count);
+        return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, cancellationToken);
     }
 
     private Utf8ValueSplitEnumerator OwnedSliceEnumerateSplits(ReadOnlySpan<byte> input, Utf8SliceProgram program, int count, CancellationToken token)
@@ -2701,7 +2558,7 @@ public sealed partial class Utf8Regex
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
-        return ReplaceCore(input, replacement, analyzed, cancellationToken);
+        return ReplaceCore(input, analyzed, cancellationToken);
     }
 
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
@@ -2746,12 +2603,7 @@ public sealed partial class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
         _ = Utf8Validation.Validate(replacementPatternUtf8);
-        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
-        {
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                Encoding.UTF8.GetString(replacementPatternUtf8)));
-        }
+
 
         if ((GetOwnedSliceProgram(input, cancellationToken) ??
             (input.IsEmpty || _ownedSliceProgram is { CanMatchEmpty: true } &&
@@ -2779,12 +2631,7 @@ public sealed partial class Utf8Regex
             return Encoding.UTF8.GetBytes(ownedTemplate);
         }
 
-        if (ShouldUseFallbackForSimplePatternReplacement(replacementPattern, input))
-        {
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacementText));
-        }
+
 
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
         {
@@ -2798,7 +2645,7 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacementPattern, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacementPattern, cancellationToken));
+            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacementPattern, cancellationToken));
         }
 
         return ReplaceLiteralBytesCore(input, validation, replacementBytes);
@@ -2815,232 +2662,8 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
-        if ((_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
-        {
-            try { return OwnedSliceReplaceEvaluator(input, ownedProgram, state, evaluator, cancellationToken); }
-            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
-        }
-        var validation = Utf8Validation.Validate(input);
-        var decoded = Encoding.UTF8.GetString(input);
-        var boundaryMap = Utf8BoundaryMap.Create(input, validation);
-        // R05: empty input still runs the evaluator loop below (BCL-equivalent
-        // patterns can match empty), and the writer rejects a zero capacity.
-        var output = new ArrayBufferWriter<byte>(Math.Max(input.Length, 1));
-        var writer = new Utf8ReplacementWriter(output);
-        var sourcePosition = 0;
-        // R03: patterns without captures project every callback argument from owned spans,
-        // so discovery and shaping both run without the BCL engine; other patterns keep it.
-        if (_groupNumbers.Length <= 1)
-        {
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!valueMatch.IsByteAligned)
-                {
-                    throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                }
-
-                writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
-                var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
-                evaluator(in context, ref writer, ref state);
-                sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-            }
-
-            writer.Append(input[sourcePosition..]);
-            return writer.GetValidatedBytes().ToArray();
-        }
-        // R03: single groups wrapping a whole literal family enumerate like groupless
-        // shapes and project group 1 from the whole span.
-        if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount) && ownedGroupCount > 1)
-        {
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!valueMatch.IsByteAligned)
-                {
-                    throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                }
-
-                writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
-                var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, ownedGroupCount);
-                evaluator(in context, ref writer, ref state);
-                sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-            }
-
-            writer.Append(input[sourcePosition..]);
-            return writer.GetValidatedBytes().ToArray();
-        }
-
-
-        // R05: grouped single-literal shapes enumerate like groupless shapes and
-        // project every group from fixed literal-relative spans. The first hit validates
-        // the projection channel before any output, mirroring the branched contract.
-        if (_groupedLiteralSpanTable is not null &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var groupedDeclined = false;
-            var groupedFirst = true;
-            try
-            {
-                foreach (var valueMatch in EnumerateMatches(input))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (!valueMatch.IsByteAligned)
-                    {
-                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                    }
-
-                    if (!TryShapeGroupedLiteralDetailedMatch(input, decoded, boundaryMap, valueMatch, out var groupedContext))
-                    {
-                        if (!groupedFirst)
-                        {
-                            throw new InvalidOperationException("The grouped span projection failed after matching began.");
-                        }
-
-                        groupedDeclined = true;
-                        break;
-                    }
-
-                    groupedFirst = false;
-                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
-                    evaluator(in groupedContext, ref writer, ref state);
-                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!groupedDeclined)
-            {
-                writer.Append(input[sourcePosition..]);
-                return writer.GetValidatedBytes().ToArray();
-            }
-        }
-
-        // R03: mapped branch shapes discover through the family cursor and shape every
-        // callback argument from owned spans. The first hit validates the branch channel;
-        // no output is produced before it, so an unknown branch still declines cleanly.
-        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var budget = CreateExecutionBudget();
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-                _preparedRegex,
-                input,
-                validation,
-                budget);
-            var declined = false;
-            try
-            {
-                var first = true;
-                while (cursor.MoveNext())
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var candidate = cursor.CurrentValueMatch;
-                    if (!candidate.IsByteAligned)
-                    {
-                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                    }
-
-                    var branch = cursor.LastLiteralFamilyBranchId;
-                    if (first)
-                    {
-                        first = false;
-                        if (branch < 0 || (uint)branch >= (uint)branchMap.BranchGroups.Length)
-                        {
-                            declined = true;
-                            break;
-                        }
-                    }
-
-                    writer.Append(input[sourcePosition..candidate.IndexInBytes]);
-                    var context = CreateBranchedDetailedMatch(input, decoded, boundaryMap, branchMap, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
-                    evaluator(in context, ref writer, ref state);
-                    sourcePosition = candidate.IndexInBytes + candidate.LengthInBytes;
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!declined)
-            {
-                writer.Append(input[sourcePosition..]);
-                return writer.GetValidatedBytes().ToArray();
-            }
-        }
-
-        // R05: divergent single-alternation shapes enumerate like groupless shapes and
-        // project the winning branch spans identified by ordinal text comparison, with
-        // the same first-hit decline contract as the arms above.
-        if (_alternationBranchSpanMap is not null &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var alternationDeclined = false;
-            var alternationFirst = true;
-            try
-            {
-                foreach (var valueMatch in EnumerateMatches(input))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (!valueMatch.IsByteAligned)
-                    {
-                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-                    }
-
-                    if (!TryShapeAlternationBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, out var alternationContext))
-                    {
-                        if (!alternationFirst)
-                        {
-                            throw new InvalidOperationException("The alternation branch projection failed after matching began.");
-                        }
-
-                        alternationDeclined = true;
-                        break;
-                    }
-
-                    alternationFirst = false;
-                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
-                    evaluator(in alternationContext, ref writer, ref state);
-                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!alternationDeclined)
-            {
-                writer.Append(input[sourcePosition..]);
-                return writer.GetValidatedBytes().ToArray();
-            }
-        }
-
-
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
-        while (match.Success)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var matchStart = boundaryMap.Resolve(match.Index);
-            var matchEnd = boundaryMap.Resolve(match.Index + match.Length);
-            if (!matchStart.IsScalarBoundary || !matchEnd.IsScalarBoundary)
-            {
-                throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
-            }
-
-            writer.Append(input[sourcePosition..matchStart.ByteOffset]);
-            var context = new Utf8MatchContext(input, decoded, match, boundaryMap, _groupNames);
-            evaluator(in context, ref writer, ref state);
-            sourcePosition = matchEnd.ByteOffset;
-            match = match.NextMatch();
-        }
-
-        writer.Append(input[sourcePosition..]);
-        return writer.GetValidatedBytes().ToArray();
+        try { return OwnedSliceReplaceEvaluator(input, _ownedSliceProgram, state, evaluator, cancellationToken); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
     }
 
     /// <summary>Replaces all matches through a stateful callback that writes UTF-8 replacement content, observing cancellation before matching begins.</summary>
@@ -3096,191 +2719,12 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
-        if ((_sliceProgram ?? _ownedSliceProgram) is { } ownedProgram)
+        try
         {
-            try
-            {
-                return OwnedSliceReplace(input, ownedProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, ownedProgram),
-                    ref state, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
-            }
-            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+            return OwnedSliceReplace(input, _ownedSliceProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _ownedSliceProgram),
+                ref state, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
         }
-        var validation = Utf8Validation.Validate(input);
-        var inputBytes = input.ToArray();
-        var decoded = Encoding.UTF8.GetString(input);
-        var boundaryMap = Utf8InputAnalyzer.Analyze(inputBytes).BoundaryMap;
-        // R03: groupless matches enumerate and shape from owned spans; string slicing
-        // needs no byte alignment, matching the BCL oracle on every input.
-        if (_groupNumbers.Length <= 1)
-        {
-            var builder = new StringBuilder(decoded.Length);
-            var sourcePosition = 0;
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                builder.Append(decoded, sourcePosition, valueMatch.IndexInUtf16 - sourcePosition);
-                var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
-                builder.Append(evaluator(in context, ref state));
-                sourcePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-            }
-
-            builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
-            return builder.ToString();
-        }
-        // R03: single groups wrapping a whole literal family enumerate like groupless
-        // shapes and project group 1 from the whole span.
-        if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount) && ownedGroupCount > 1)
-        {
-            var singleBuilder = new StringBuilder(decoded.Length);
-            var singlePosition = 0;
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                singleBuilder.Append(decoded, singlePosition, valueMatch.IndexInUtf16 - singlePosition);
-                var singleContext = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, ownedGroupCount);
-                singleBuilder.Append(evaluator(in singleContext, ref state));
-                singlePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-            }
-
-            singleBuilder.Append(decoded, singlePosition, decoded.Length - singlePosition);
-            return singleBuilder.ToString();
-        }
-
-
-        // R05: grouped single-literal shapes enumerate like groupless shapes and
-        // project every group from fixed literal-relative spans, with the same
-        // first-hit decline contract as the arms around it.
-        if (_groupedLiteralSpanTable is not null &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var groupedBuilder = new StringBuilder(decoded.Length);
-            var groupedPosition = 0;
-            var groupedDeclined = false;
-            var groupedFirst = true;
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryShapeGroupedLiteralDetailedMatch(input, decoded, boundaryMap, valueMatch, out var groupedContext))
-                {
-                    if (!groupedFirst)
-                    {
-                        throw new InvalidOperationException("The grouped span projection failed after matching began.");
-                    }
-
-                    groupedDeclined = true;
-                    break;
-                }
-
-                groupedFirst = false;
-                groupedBuilder.Append(decoded, groupedPosition, valueMatch.IndexInUtf16 - groupedPosition);
-                groupedBuilder.Append(evaluator(in groupedContext, ref state));
-                groupedPosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-            }
-
-            if (!groupedDeclined)
-            {
-                groupedBuilder.Append(decoded, groupedPosition, decoded.Length - groupedPosition);
-                return groupedBuilder.ToString();
-            }
-        }
-
-        // R03: mapped branch shapes discover through the family cursor and shape every
-        // callback argument from owned spans, with the same first-hit decline contract as
-        // the byte-wise evaluator overload.
-        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var budget = CreateExecutionBudget();
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-                _preparedRegex,
-                input,
-                validation,
-                budget);
-            var builder = new StringBuilder(decoded.Length);
-            var sourcePosition = 0;
-            var declined = false;
-            try
-            {
-                var first = true;
-                while (cursor.MoveNext())
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var candidate = cursor.CurrentValueMatch;
-                    var branch = cursor.LastLiteralFamilyBranchId;
-                    if (first)
-                    {
-                        first = false;
-                        if (branch < 0 || (uint)branch >= (uint)branchMap.BranchGroups.Length)
-                        {
-                            declined = true;
-                            break;
-                        }
-                    }
-
-                    builder.Append(decoded, sourcePosition, candidate.IndexInUtf16 - sourcePosition);
-                    var context = CreateBranchedDetailedMatch(input, decoded, boundaryMap, branchMap, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
-                    builder.Append(evaluator(in context, ref state));
-                    sourcePosition = candidate.IndexInUtf16 + candidate.LengthInUtf16;
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input);
-            }
-
-            if (!declined)
-            {
-                builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
-                return builder.ToString();
-            }
-        }
-
-        // R05: divergent single-alternation shapes enumerate like groupless shapes and
-        // project the winning branch spans identified by ordinal text comparison, with
-        // the same first-hit decline contract as the arms above.
-        if (_alternationBranchSpanMap is not null &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            var alternationBuilder = new StringBuilder(decoded.Length);
-            var alternationPosition = 0;
-            var alternationDeclined = false;
-            var alternationFirst = true;
-            foreach (var valueMatch in EnumerateMatches(input))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryShapeAlternationBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, out var alternationContext))
-                {
-                    if (!alternationFirst)
-                    {
-                        throw new InvalidOperationException("The alternation branch projection failed after matching began.");
-                    }
-
-                    alternationDeclined = true;
-                    break;
-                }
-
-                alternationFirst = false;
-                alternationBuilder.Append(decoded, alternationPosition, valueMatch.IndexInUtf16 - alternationPosition);
-                alternationBuilder.Append(evaluator(in alternationContext, ref state));
-                alternationPosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-            }
-
-            if (!alternationDeclined)
-            {
-                alternationBuilder.Append(decoded, alternationPosition, decoded.Length - alternationPosition);
-                return alternationBuilder.ToString();
-            }
-        }
-
-
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-            decoded,
-            match =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var context = new Utf8MatchContext(inputBytes, decoded, match, boundaryMap, _groupNames);
-                return evaluator(in context, ref state);
-            });
+        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
     }
 
     /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text, observing cancellation before matching begins.</summary>
@@ -3315,7 +2759,7 @@ public sealed partial class Utf8Regex
         CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
-        return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten, cancellationToken);
+        return TryReplaceCore(input, analyzed, destination, out bytesWritten, cancellationToken);
     }
 
     /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination.</summary>
@@ -3338,17 +2782,9 @@ public sealed partial class Utf8Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
-        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
-        {
-            var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                Encoding.UTF8.GetString(replacementPatternUtf8));
-            return TryEncodeUtf8ToDestination(replaced, destination, out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
-        }
 
-        if (GetOwnedSliceProgram(input, cancellationToken) is null && !(input.IsEmpty && _ownedSliceProgram is not null) &&
+
+        if (GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
@@ -3357,7 +2793,7 @@ public sealed partial class Utf8Regex
 
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
-        return TryReplaceCore(input, replacementPattern, replacementText, destination, out bytesWritten, cancellationToken);
+        return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken);
     }
 
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination, observing cancellation before matching begins.</summary>
@@ -3410,9 +2846,9 @@ public sealed partial class Utf8Regex
                 result,
                 _preparedRegex.ExecutionKind.ToString(),
                 _preparedRegex.SearchPlan.Kind.ToString(),
-                _preparedRegex.FallbackVerifier.Mode.ToString(),
-                _preparedRegex.FallbackVerifier.RequiresCandidateEndCoverage,
-                _preparedRegex.FallbackVerifier.RequiresTrailingAnchorCoverage,
+                "Scalar",
+                _preparedRegex.ScalarVerifier.RequiresCandidateEndCoverage,
+                _preparedRegex.ScalarVerifier.RequiresTrailingAnchorCoverage,
                 session.SearchCandidates,
                 session.FixedCheckRejects,
                 session.VerifierInvocations,
@@ -3440,9 +2876,9 @@ public sealed partial class Utf8Regex
                 result,
                 _preparedRegex.ExecutionKind.ToString(),
                 _preparedRegex.SearchPlan.Kind.ToString(),
-                _preparedRegex.FallbackVerifier.Mode.ToString(),
-                _preparedRegex.FallbackVerifier.RequiresCandidateEndCoverage,
-                _preparedRegex.FallbackVerifier.RequiresTrailingAnchorCoverage,
+                "Scalar",
+                _preparedRegex.ScalarVerifier.RequiresCandidateEndCoverage,
+                _preparedRegex.ScalarVerifier.RequiresTrailingAnchorCoverage,
                 session.ExecutionRoute.Format(),
                 session.SearchCandidates,
                 session.FixedCheckRejects,

@@ -92,7 +92,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.False(limited.CurrentValueMatch.Success);
             Assert.Equal(7UL, limited.DebugInvocationReservedBytes);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> CrossBlockCases()
@@ -230,7 +230,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.Equal(expected.Length, enumerator.Current.LengthInUtf16);
         }
         Assert.False(enumerator.MoveNext());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -271,7 +271,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.True(entered);
             Assert.False(enumerator.Current.Success);
             Assert.Equal(0, session.VerifierInvocations);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         Assert.True(regex.EnumerateMatches("target"u8).MoveNext());
@@ -302,7 +302,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         catch (OperationCanceledException e) { Assert.Equal(source.Token, e.CancellationToken); failed = true; }
         Assert.True(failed);
         Assert.False(enumerator.Current.Success);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -372,7 +372,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.Equal(pattern, timeout.Pattern);
             Assert.Equal(regex.MatchTimeout, timeout.MatchTimeout);
             Assert.Equal(Encoding.UTF8.GetString(input), timeout.Input);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
     }
@@ -403,7 +403,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.Equal(regex.Pattern, timeout.Pattern);
             Assert.Equal(regex.MatchTimeout, timeout.MatchTimeout);
             Assert.Equal(Encoding.UTF8.GetString(input), timeout.Input);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
     }
@@ -431,7 +431,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.Equal(expected.Length, enumerator.Current.LengthInUtf16);
         }
         Assert.False(enumerator.MoveNext());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

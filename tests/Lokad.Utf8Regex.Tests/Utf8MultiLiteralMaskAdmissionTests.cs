@@ -234,7 +234,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
         Assert.True(regex.IsMatch(subject)); Assert.Equal(3, regex.Count(subject));
         var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         Assert.Equal(new[] { (2, 12), (15, 10), (26, 10) }, ranges);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private sealed class Box(int value) { public readonly int Value = value; }

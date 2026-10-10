@@ -35,7 +35,7 @@ public sealed class Utf8DecodedFallbackTests
             Assert.Equal(new Regex(pattern, options).Count(subject), regex.Count(bytes));
             Assert.Equal(new Regex(pattern, options).IsMatch(subject), regex.IsMatch(bytes));
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

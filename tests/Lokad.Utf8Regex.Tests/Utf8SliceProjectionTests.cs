@@ -52,7 +52,7 @@ public sealed class Utf8SliceProjectionTests
         Assert.Equal(oracle.Groups[1].Value, actual.GetGroup(1).GetValueString());
         Assert.Equal(oracle.Groups[2].Value, actual.GetGroup(2).GetValueString());
         Assert.Equal(oracle.Groups[1].Index, actual.GetGroup(1).IndexInUtf16);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]

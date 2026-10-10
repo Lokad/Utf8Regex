@@ -72,7 +72,7 @@ public sealed class Utf8RtlEnumerationTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> RtlLiteralEnumerationDeclineCases()
@@ -116,6 +116,6 @@ public sealed class Utf8RtlEnumerationTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

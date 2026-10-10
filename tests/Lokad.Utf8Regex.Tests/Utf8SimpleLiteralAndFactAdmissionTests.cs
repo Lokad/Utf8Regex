@@ -217,17 +217,13 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | row.Flags | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance); Assert.NotNull(property);
             var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
-            {
-                var field = typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance); Assert.NotNull(field);
-                field.SetValue(runtime.FallbackCandidateVerifier, new Lazy<Regex>(() => throw new InvalidOperationException("Simple literal accessed BCL fallback.")));
-            }
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
             var input = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var match = regex.Match(input); Assert.Equal(4, match.IndexInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, match.LengthInBytes);
             Assert.Equal(match.IndexInBytes, regex.MatchDetailed(input).IndexInBytes);
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.Equal(match.LengthInBytes, item.LengthInBytes); count++; }
             Assert.Equal(2, count); Assert.Equal(row.Replaced, regex.ReplaceToString(input, "X"));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated); Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 }

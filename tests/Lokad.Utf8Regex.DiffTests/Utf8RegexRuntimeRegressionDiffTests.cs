@@ -112,7 +112,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
             }
             Assert.False(matches.MoveNext());
             Assert.Equal(ordinary.Replace(input, "Q"), regex.ReplaceToString(bytes, "Q"));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -150,8 +150,8 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.Equal(expected.Groups.Count, actualCompiled.GroupCount);
         Assert.False(actualCompiled.GetGroup(1).Success);
         Assert.False(actualCompiled.GetGroup(2).Success);
-        Assert.False(context.Utf8.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(context.Utf8Compiled.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(context.Utf8.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(context.Utf8Compiled.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -189,8 +189,8 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.Equal(expected.Groups.Count, actualCompiled.GroupCount);
         Assert.False(actualCompiled.GetGroup(1).Success);
         Assert.False(actualCompiled.GetGroup(2).Success);
-        Assert.False(context.Utf8.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(context.Utf8Compiled.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(context.Utf8.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(context.Utf8Compiled.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     [Theory]
     [InlineData(@"^b", "a\nb\nc", RegexOptions.Multiline | RegexOptions.CultureInvariant)]

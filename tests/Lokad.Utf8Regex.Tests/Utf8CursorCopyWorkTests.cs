@@ -121,7 +121,7 @@ public sealed class Utf8CursorCopyWorkTests
             index++;
         }
         Assert.Equal(expected.Length, index);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -234,6 +234,6 @@ public sealed class Utf8CursorCopyWorkTests
         Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
         source.Cancel();
         Assert.Equal(retainedValue, retained.GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

@@ -75,7 +75,7 @@ public sealed class Utf8SliceNonCapturingTests
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -111,7 +111,7 @@ public sealed class Utf8SliceNonCapturingTests
         Assert.Equal(expected, oracle.Matches(inputText).Count);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -126,7 +126,7 @@ public sealed class Utf8SliceNonCapturingTests
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -160,7 +160,7 @@ public sealed class Utf8SliceNonCapturingTests
 
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 }

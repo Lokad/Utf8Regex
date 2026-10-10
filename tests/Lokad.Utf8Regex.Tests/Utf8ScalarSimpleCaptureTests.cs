@@ -21,7 +21,7 @@ public sealed class Utf8ScalarSimpleCaptureTests
         if (count) Assert.Equal(1, regex.Count(input, source.Token));
         else Assert.True(regex.IsMatch(input, source.Token));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -43,8 +43,8 @@ public sealed class Utf8ScalarSimpleCaptureTests
         }
         // ASCII derived coordinates need no map arrays; scratch is input-independent.
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -80,7 +80,7 @@ public sealed class Utf8ScalarSimpleCaptureTests
             Assert.Equal(1, second.CaptureCount);
         }
         else Assert.Equal(0, second.CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

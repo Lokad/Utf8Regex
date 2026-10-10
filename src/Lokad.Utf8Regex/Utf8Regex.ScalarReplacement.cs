@@ -11,16 +11,13 @@ public sealed partial class Utf8Regex
     private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken token)
     {
         if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _ownedSliceProgram : null)) is { } program) return program;
-        // These branches would otherwise construct BCL before reaching the
-        // ordinary native/template routes. The owned program carries deadlines
-        // and cancellation for every admitted shape.
-        if (_ownedSliceProgram is not null &&
-            (UsesRightToLeft() || _ownedSliceProgram.HasContiguousAnchor ||
-             // These structural shapes have no qualified native match cursor;
-             // literal replacements otherwise construct BCL in cursor creation.
+        // Native replacement routes need complete scalar endpoints. Unsupported
+        // native cursor shapes use the admitted scalar program with the original token.
+        if (UsesRightToLeft() || !CanUseScalarAlignedNativeReplacement(input) || _ownedSliceProgram.HasContiguousAnchor ||
+             // These structural shapes have no qualified native match cursor.
              _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiStructuralTokenWindow or
                 NativeExecutionKind.AsciiStructuralRepeatedSegment or NativeExecutionKind.AsciiStructuralQuotedRelation ||
-             ShouldUseFallbackForSimplePatternReplacement(replacement, input)))
+             RequiresScalarSimplePatternReplacement(replacement, input))
             return _ownedSliceProgram;
         return null;
     }

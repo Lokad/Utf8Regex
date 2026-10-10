@@ -5,7 +5,7 @@ internal enum Utf8ConfirmationKind : byte
     None = 0,
     BoundaryRequirements = 1,
     BoundaryAndTrailingLiteral = 2,
-    FallbackVerifier = 3,
+    ScalarVerifier = 3,
 }
 
 internal readonly struct Utf8ConfirmationPlan

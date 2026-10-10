@@ -224,7 +224,7 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         Assert.Equal(3, regex.Count(input)); var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         var expected = new[] { (2, 8), (11, 7), (19, 4) }; if ((options & RegexOptions.RightToLeft) != 0) Array.Reverse(expected);
-        Assert.Equal(expected, ranges); Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(expected, ranges); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     private sealed class Box(int value) { internal readonly int Value = value; }
 }

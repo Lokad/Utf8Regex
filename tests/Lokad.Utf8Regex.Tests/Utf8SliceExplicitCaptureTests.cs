@@ -64,7 +64,7 @@ public sealed class Utf8SliceExplicitCaptureTests
             Assert.Equal(expected, regex.IsMatch(input));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -82,7 +82,7 @@ public sealed class Utf8SliceExplicitCaptureTests
         var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("ab"));
         Assert.True(detailed.Success);
         Assert.Equal("b", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class Utf8SliceExplicitCaptureTests
         var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("aby"));
         Assert.True(detailed.Success);
         Assert.Equal("y", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

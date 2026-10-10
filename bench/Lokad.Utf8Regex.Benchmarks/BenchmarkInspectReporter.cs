@@ -1076,17 +1076,9 @@ internal static partial class BenchmarkInspectReporter
         var phasePreparedRegex = Utf8FrontEnd.Compile(benchmarkCase.Pattern, effectiveOptions);
         var phaseOrdinaryEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex, preferCompiled: false);
         var phaseCompiledEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex, preferCompiled: true);
-        var phaseOrdinaryVerifier = Utf8VerifierRuntime.Create(
-            phasePreparedRegex,
-            benchmarkCase.Pattern,
-            ordinaryOptions,
-            Regex.InfiniteMatchTimeout);
-        var phaseCompiledVerifier = Utf8VerifierRuntime.Create(
-            phasePreparedRegex,
-            benchmarkCase.Pattern,
-            compiledOptions,
-            Regex.InfiniteMatchTimeout);
-        var phaseFallbackRegex = phaseOrdinaryVerifier.FallbackCandidateVerifier.FallbackRegex;
+        var phaseOrdinaryVerifier = Utf8VerifierRuntime.Create(phasePreparedRegex);
+        var phaseCompiledVerifier = Utf8VerifierRuntime.Create(phasePreparedRegex);
+        var phaseRegexComparator = new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout);
 
         if (phasePreparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } exactLiterals &&
             phasePreparedRegex.SearchPlan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals)
@@ -1098,17 +1090,9 @@ internal static partial class BenchmarkInspectReporter
         MeasureFixedConstruction("Utf8FrontEndCompile", samples, instanceCount,
             () => Utf8FrontEnd.Compile(benchmarkCase.Pattern, effectiveOptions));
         MeasureFixedConstruction("Utf8OrdinaryVerifier", samples, instanceCount,
-            () => Utf8VerifierRuntime.Create(
-                phasePreparedRegex,
-                benchmarkCase.Pattern,
-                ordinaryOptions,
-                Regex.InfiniteMatchTimeout));
+            () => Utf8VerifierRuntime.Create(phasePreparedRegex));
         MeasureFixedConstruction("Utf8CompiledVerifier", samples, instanceCount,
-            () => Utf8VerifierRuntime.Create(
-                phasePreparedRegex,
-                benchmarkCase.Pattern,
-                compiledOptions,
-                Regex.InfiniteMatchTimeout));
+            () => Utf8VerifierRuntime.Create(phasePreparedRegex));
         MeasureFixedConstruction("Utf8OrdinaryRuntime", samples, instanceCount,
             () => Utf8CompiledEngineRuntime.Create(
                 phaseOrdinaryEngine,
@@ -1142,9 +1126,9 @@ internal static partial class BenchmarkInspectReporter
                 compiledOptions,
                 Regex.InfiniteMatchTimeout));
         MeasureFixedConstruction("RegexGroupNumbers", samples, instanceCount,
-            phaseFallbackRegex.GetGroupNumbers);
+            phaseRegexComparator.GetGroupNumbers);
         MeasureFixedConstruction("RegexGroupNames", samples, instanceCount,
-            phaseFallbackRegex.GetGroupNames);
+            phaseRegexComparator.GetGroupNames);
 
         MeasureFixedConstruction("Utf8OrdinaryConstruct", samples, instanceCount,
             () => new Utf8Regex(benchmarkCase.Pattern, ordinaryOptions));
@@ -2516,7 +2500,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        var verifierRuntime = Utf8VerifierRuntime.Create(regexPlan, context.Pattern, benchmarkCase.Utf8Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(regexPlan);
         var iterations = ParseLokadPrefixIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -4524,7 +4508,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        var verifierRuntime = Utf8VerifierRuntime.Create(regexPlan, context.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(regexPlan);
         var input = context.InputBytes;
         var iterations = ParseIterations(iterationsText);
 
@@ -4741,7 +4725,7 @@ internal static partial class BenchmarkInspectReporter
 
         var regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
         var context = new Utf8RegexBenchmarkContext(benchmarkCase);
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, benchmarkCase.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
         _ = Utf8EmittedKernelMatcher.TryCreate(analysis, out var emittedKernelMatcher);
@@ -4799,7 +4783,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, context.CompiledPattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
         var iterations = ParseIterations(iterationsText);
@@ -5131,7 +5115,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var validation = Utf8InputAnalyzer.ValidateOnly(context.InputBytes);
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, context.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(analysis);
         var iterations = ParseIterations(iterationsText);
 
@@ -5403,7 +5387,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
         Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
         Console.WriteLine($"ActiveScalarPlan  : {regex.Inspection.DebugUsesOwnedSliceProgram}");
-        Console.WriteLine($"BclRegexCreated   : {regex.Inspection.DebugFallbackRegexIsCreated}");
+        Console.WriteLine($"ScalarPrepared    : {regex.Inspection.PreparedRegex.ScalarProgram is not null}");
         Console.WriteLine($"SearchKind        : {regex.Inspection.SearchPlan.Kind}");
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");

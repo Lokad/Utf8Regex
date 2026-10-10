@@ -89,7 +89,7 @@ public sealed class Utf8SliceEscapeTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -135,7 +135,7 @@ public sealed class Utf8SliceEscapeTests
         // Byte-wrapped class octal zero now admits the native ASCII literal.
         Assert.Equal(pattern is not "\\400" and not "[\\400]", regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        if (pattern != "\\400") Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        if (pattern != "\\400") Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -149,7 +149,7 @@ public sealed class Utf8SliceEscapeTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -164,7 +164,7 @@ public sealed class Utf8SliceEscapeTests
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -177,7 +177,7 @@ public sealed class Utf8SliceEscapeTests
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> SliceControlShapes()
@@ -254,7 +254,7 @@ public sealed class Utf8SliceEscapeTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -271,7 +271,7 @@ public sealed class Utf8SliceEscapeTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -285,7 +285,7 @@ public sealed class Utf8SliceEscapeTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ControlLetterCodeCases()
@@ -348,7 +348,7 @@ public sealed class Utf8SliceEscapeTests
             var regex = new Utf8Regex(pattern, options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
             Assert.True(regex.IsMatch(input), "pattern=" + pattern);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -374,8 +374,8 @@ public sealed class Utf8SliceEscapeTests
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
             Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
         finally
         {

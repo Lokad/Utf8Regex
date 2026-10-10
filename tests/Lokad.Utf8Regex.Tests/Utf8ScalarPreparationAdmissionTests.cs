@@ -27,7 +27,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         Assert.True(detailed.Success);
         Assert.Equal((0, 8), (detailed.IndexInBytes, detailed.LengthInBytes));
         Assert.Equal(nonBacktracking ? 1 : 2, detailed.GetGroup("x").CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var prepared = Utf8FrontEnd.Compile("(?<x>.){2}", options);
         Assert.NotNull(prepared.ScalarProgram);
@@ -59,7 +59,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         var match = regex.MatchDetailed("aab"u8);
         Assert.True(match.Success);
         Assert.Equal(2, match.GetGroup("x").CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

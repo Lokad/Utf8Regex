@@ -38,7 +38,7 @@ public sealed class Utf8ScalarRangeAdmissionTests
         Assert.NotNull(program);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes("\U00010400\U00010401\U00010402")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

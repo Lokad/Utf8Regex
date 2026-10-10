@@ -102,7 +102,7 @@ public sealed class Utf8SliceClassSubtractionTests
         {
             var regex = new Utf8Regex(pattern, options);
             Assert.Equal(new Regex(pattern, options).IsMatch("a"), regex.IsMatch(Encoding.UTF8.GetBytes("a")));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 }

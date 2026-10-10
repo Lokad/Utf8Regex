@@ -18,36 +18,12 @@ public sealed partial class Utf8Regex
 {
     private byte[] ReplaceCore(
         ReadOnlySpan<byte> input,
-        string replacementText,
         Utf8AnalyzedReplacement replacement,
         CancellationToken cancellationToken)
     {
-        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
-        {
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Utf8Validation.DecodeStrict(input),
-                replacementText));
-        }
-
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
-        }
-
-        if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacementText));
-        }
-
-        if (UsesRightToLeft())
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacementText));
         }
 
         var validation = Utf8Validation.Validate(input);
@@ -65,7 +41,7 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacement, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken));
+            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacement, cancellationToken));
         }
 
         return ReplaceLiteralBytesCore(input, validation, replacementBytes);
@@ -186,39 +162,9 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken)
     {
-        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
-        {
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Utf8Validation.DecodeStrict(input),
-                replacement.OriginalText);
-        }
-
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
-        }
-
-        // Remaining native replacement routes require scalar-aligned endpoints.
-        // Every owned slice already supplies them, including empty matches.
-        if (!OwnedMatchStartsAreScalarAligned(input))
-        {
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Utf8Validation.DecodeStrict(input),
-                replacement.OriginalText);
-        }
-
-        if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacement.OriginalText);
-        }
-
-        if (UsesRightToLeft())
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken);
         }
 
         var validation = Utf8Validation.Validate(input);
@@ -245,63 +191,21 @@ public sealed partial class Utf8Regex
             return Encoding.UTF8.GetString(Replace(input, replacementBytes));
         }
 
-        return ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken);
+        return ReplaceWithScalarProgram(input, replacement, cancellationToken);
     }
 
     private OperationStatus TryReplaceCore(
         ReadOnlySpan<byte> input,
         Utf8AnalyzedReplacement replacement,
-        string replacementText,
         Span<byte> destination,
         out int bytesWritten,
         CancellationToken cancellationToken)
     {
-        if (ShouldUseKelvinSignFallback(input) && _ownedSliceProgram is null)
-        {
-            var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Utf8Validation.DecodeStrict(input),
-                replacementText);
-            return TryEncodeUtf8ToDestination(replaced, destination, out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
-        }
-
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
             var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Destination, destination, cancellationToken);
             bytesWritten = result.BytesWritten;
             return result.Status;
-        }
-
-        // Admitted scalar programs returned above; remaining native splicers
-        // require complete scalar endpoints.
-        if (!OwnedMatchStartsAreScalarAligned(input))
-        {
-            var astralReplaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Utf8Validation.DecodeStrict(input),
-                replacementText);
-            return TryEncodeUtf8ToDestination(astralReplaced, destination, out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
-        }
-
-        if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacementText);
-            return TryEncodeUtf8ToDestination(replaced, destination, out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
-        }
-
-        if (UsesRightToLeft())
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return TryEncodeUtf8ToDestination(ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken), destination, out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
         }
 
         var validation = Utf8Validation.Validate(input);
@@ -333,7 +237,7 @@ public sealed partial class Utf8Regex
                 out bytesWritten);
         }
 
-        return TryEncodeUtf8ToDestination(ReplaceFallbackWithSharedPlan(input, replacement, cancellationToken), destination, out bytesWritten)
+        return TryEncodeUtf8ToDestination(ReplaceWithScalarProgram(input, replacement, cancellationToken), destination, out bytesWritten)
             ? OperationStatus.Done
             : OperationStatus.DestinationTooSmall;
     }
@@ -459,35 +363,18 @@ public sealed partial class Utf8Regex
         return success ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
     }
 
-    private string ReplaceFallbackWithSharedPlan(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement,
+    private string ReplaceWithScalarProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement,
         CancellationToken cancellationToken)
     {
-        // Qualified native splice routes have already had their opportunity.
-        // Admitted remaining templates use the cached VM with the operation token.
-        if (_ownedSliceProgram is { } program)
-            return OwnedSliceReplace(input, program, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
-        var decoded = Encoding.UTF8.GetString(input);
-        if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var owned))
-        {
-            return owned;
-        }
-
-        var lastGroupNumber = _groupNumbers[^1];
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-            decoded,
-            match => Utf8ReplacementPlanInterpreter.Apply(replacement.Plan, match, decoded, lastGroupNumber));
+        return OwnedSliceReplace(input, _ownedSliceProgram, replacement,
+            Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
     }
 
-    // R05: the native plan cursor is BCL-backed for fallback-backed and absolute-anchored
-    // shapes, so the owned template attempt runs before it there; literal shapes keep
-    // their allocation profile by staying on the native-first order (see the
-    // destination allocation bound test). Simple shapes ride along because the native
-    // executor throws on unaligned matches (folding across scalar boundaries) where
-    // BCL produces values; the string-based worker agrees with BCL there instead.
+    // Keep the qualified template/native allocation order. Finite deadlines
+    // use a cursor that retains the operation budget rather than this template worker.
     private bool UsesOwnedTemplateBeforeNativePlan()
     {
-        // Finite timeouts keep the legacy routing so BCL timeout enforcement is
-        // preserved exactly; the owned template worker carries no deadline mapping.
+        // The decoded template worker does not retain a finite invocation budget.
         if (MatchTimeout != Regex.InfiniteMatchTimeout)
         {
             return false;
@@ -509,8 +396,7 @@ public sealed partial class Utf8Regex
     {
         // The decode below runs only for map-covered, groupless, or single-wrap
         // shapes, so other routes keep their allocation profile (see the
-        // destination allocation bound test). Finite timeouts keep the legacy
-        // routing so BCL timeout enforcement is preserved exactly.
+        // destination allocation bound test). Finite deadlines use the cursor path.
         replaced = string.Empty;
         if (MatchTimeout != Regex.InfiniteMatchTimeout)
         {

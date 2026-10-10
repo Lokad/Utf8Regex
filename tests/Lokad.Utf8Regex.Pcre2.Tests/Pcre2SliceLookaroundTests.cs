@@ -80,7 +80,7 @@ public sealed class Pcre2SliceLookaroundTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var reuse = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.False(reuse.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
         var explicitStart = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
     }
@@ -97,7 +97,7 @@ public sealed class Pcre2SliceLookaroundTests
         // empty-first-alternative row counts 3 natively, 2 under BCL).
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -119,7 +119,7 @@ public sealed class Pcre2SliceLookaroundTests
             Assert.Equal(expectedEnd, found.EndOffsetInBytes);
         }
 
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public sealed class Pcre2SliceLookaroundTests
         }
 
         Assert.Equal(["0-1", "1-2", "2-3"], ranges);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public sealed class Pcre2SliceLookaroundTests
         var detailed = regex.MatchDetailed(Utf8("xab"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class Pcre2SliceLookaroundTests
     {
         var regex = new Utf8Pcre2Regex("(?<=a)b", Pcre2CompileOptions.None);
         Assert.Equal("aa<b> a<b>", regex.ReplaceToString(Utf8("aab ab"), "<$0>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -172,6 +172,6 @@ public sealed class Pcre2SliceLookaroundTests
                 return "[" + match.Value.StartOffsetInBytes + ":" + match.GetValueString() + "]";
             });
         Assert.Equal("abc[3:][3:def]abc[9:]", actual);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

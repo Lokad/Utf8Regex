@@ -35,7 +35,7 @@ public sealed class Pcre2SliceConditionalTests
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Contains("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> NativeCases()

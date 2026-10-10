@@ -97,7 +97,7 @@ public sealed class Utf8SliceSplitTests
             Assert.Equal(expected, actual);
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -133,7 +133,7 @@ public sealed class Utf8SliceSplitTests
         Assert.Equal(expected, actual);
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 

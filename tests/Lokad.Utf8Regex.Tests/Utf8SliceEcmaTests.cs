@@ -114,8 +114,8 @@ public sealed class Utf8SliceEcmaTests
             }
             Assert.False(actual.MoveNext());
             Assert.Equal(count, regex.Count(input));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 
@@ -205,6 +205,6 @@ public sealed class Utf8SliceEcmaTests
         Assert.False(regex.IsMatch(input));
         Assert.True(regex.IsMatch("aaabac"u8));
         Assert.True(regex.IsMatch("c"u8)); // The absent reference matches empty.
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

@@ -54,8 +54,8 @@ public sealed class Utf8NonBacktrackingConstructionTests
             }
         }
         Assert.Equal(ordinary.ReplaceToString(input, "<$0:${x}>"), regex.ReplaceToString(input, "<$0:${x}>"));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(ordinary.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ordinary.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -78,7 +78,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.Equal(1, group.CaptureCount);
         Assert.Equal((0, 0), (group.IndexInBytes, group.LengthInBytes));
         Assert.Equal("Q😀Q", huge.ReplaceToString("😀"u8, "Q"));
-        Assert.False(huge.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(huge.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -96,7 +96,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             Assert.InRange(program.Instructions.Length, 1, depth + 4);
             Assert.Equal(2, regex.Count("😀"u8));
             Assert.True(regex.MatchDetailed("😀"u8).GetGroup("x").Success);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -118,7 +118,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             Assert.True(regex.IsMatch("aaab"u8));
             Assert.False(regex.IsMatch("aaaa"u8));
             Assert.Equal(1, regex.Count("aaab"u8));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -169,7 +169,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             foreach (var number in oracle.GetGroupNumbers())
                 Assert.Equal(wanted.Groups[number].Value, actual.GetGroup(number).GetValueString());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> UnsupportedCases()

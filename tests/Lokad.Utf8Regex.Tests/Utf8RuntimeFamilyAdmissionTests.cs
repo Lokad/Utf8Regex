@@ -192,7 +192,7 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
         { var literal = values.FirstOrDefault(v => input.AsSpan(start).StartsWith(v)); if (literal is null) continue; ranges.Add((last, start - last)); last = start + literal.Length; start = last - 1; }
         ranges.Add((last, input.Length - last)); var actual = new List<(int, int)>();
         foreach (var gap in regex.EnumerateSplits(input)) actual.Add((gap.IndexInBytes, gap.LengthInBytes));
-        Assert.Equal(ranges, actual); Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(ranges, actual); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     private sealed class Box(int value) { internal readonly int Value = value; }
 }

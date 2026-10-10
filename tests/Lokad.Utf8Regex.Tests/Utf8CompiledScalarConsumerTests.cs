@@ -31,7 +31,7 @@ public sealed class Utf8CompiledScalarConsumerTests
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var prepared = Prepare(pattern, options);
-        var verifier = Utf8VerifierRuntime.Create(prepared, pattern, options, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         var runtime = Utf8CompiledRuntimeFactory.Create(new((Utf8CompiledEngineKind)kind), prepared, verifier, options);
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var validation in new[] { Utf8Validation.Validate(input), default })
@@ -43,8 +43,8 @@ public sealed class Utf8CompiledScalarConsumerTests
             Assert.Equal((indexBytes, lengthBytes, indexUnits, lengthUnits),
                 (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
         }
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
-        Assert.False(verifier.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
         if (pattern == @"\p{L}{1,2}")
         {
             Assert.True(Utf8UnicodeLetterBoundedRepeatExecutor.TryCountLetters(input, 1, 2, out var letters));
@@ -73,7 +73,7 @@ public sealed class Utf8CompiledScalarConsumerTests
             Assert.Equal(count, linear.Count(input, actualValidation, verifier, Utf8ExecutionDeadline.Infinite));
             Assert.Equal(lengthBytes, linear.Match(input, actualValidation, verifier, Utf8ExecutionDeadline.Infinite).LengthInBytes);
         }
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     [Theory]
@@ -92,10 +92,10 @@ public sealed class Utf8CompiledScalarConsumerTests
         Assert.Equal(direct, Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input,
             prepared.FallbackDirectFamily.LiteralUtf8, prepared.FallbackDirectFamily.SecondaryLiteralUtf8, out var nativeCount));
         Assert.Equal(direct ? expected : 0, nativeCount);
-        var verifier = Utf8VerifierRuntime.Create(prepared, pattern, options, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.FallbackRegex), prepared, verifier, options);
         Assert.Equal(expected, runtime.Count(input, Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite));
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     [Theory]
@@ -206,7 +206,7 @@ public sealed class Utf8CompiledScalarConsumerTests
     {
         const string pattern = @"(?<=é).";
         var prepared = Prepare(pattern);
-        var verifier = Utf8VerifierRuntime.Create(prepared, pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(prepared);
         var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.FallbackRegex), prepared, verifier, RegexOptions.CultureInvariant);
         var input = "é😀"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
@@ -218,7 +218,7 @@ public sealed class Utf8CompiledScalarConsumerTests
             else if (operation == 1) _ = runtime.Count(input, validation, deadline);
             else _ = runtime.Match(input, validation, deadline);
         });
-        Assert.False(verifier.FallbackCandidateVerifier.IsFallbackRegexCreated);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 
     private static Utf8ExecutionLimitKind Run(int operation, Utf8PreparedRegex prepared, byte[] input,

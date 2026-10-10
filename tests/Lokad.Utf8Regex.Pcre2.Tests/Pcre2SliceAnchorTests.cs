@@ -61,7 +61,7 @@ public sealed class Pcre2SliceAnchorTests
         // out of scope for the anchor slice and pinned only behaviorally.
         var reuse = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.False(reuse.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
         var explicitStart = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
     }
@@ -82,7 +82,7 @@ public sealed class Pcre2SliceAnchorTests
         Assert.True(found.Success);
         Assert.Equal(0, found.StartOffsetInBytes);
         Assert.Equal(6, found.EndOffsetInBytes);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public sealed class Pcre2SliceAnchorTests
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -112,7 +112,7 @@ public sealed class Pcre2SliceAnchorTests
             Assert.Equal(expectedEnd, found.EndOffsetInBytes);
         }
 
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class Pcre2SliceAnchorTests
         }
 
         Assert.Equal(["0-1", "2-3"], ranges);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public sealed class Pcre2SliceAnchorTests
         Assert.True(detailed.Success);
         Assert.Equal("abc", detailed.Value.GetValueString());
         Assert.Equal("abc", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -148,6 +148,6 @@ public sealed class Pcre2SliceAnchorTests
     {
         var regex = new Utf8Pcre2Regex("^(a.c)+$", Pcre2CompileOptions.None);
         Assert.Equal("<abc>", regex.ReplaceToString(Utf8("abc"), "<$1>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

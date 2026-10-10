@@ -20,7 +20,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         var match = regex.Match(input);
         Assert.Equal((0, byteLength), (match.IndexInBytes, match.LengthInBytes));
         Assert.Equal((0, text.Length), (match.IndexInUtf16, match.LengthInUtf16));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -87,7 +87,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         var expected = subject.Comparator(pattern, options).IsMatch(subject.Projected);
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -552,7 +552,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         Assert.True(match.IsByteAligned);
         Assert.Equal((0, 4), (match.IndexInBytes, match.LengthInBytes));
         Assert.Equal((0, 2), (match.IndexInUtf16, match.LengthInUtf16));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -894,7 +894,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         var match = regex.Match(bytes);
         Assert.Equal((0, 8), (match.IndexInBytes, match.LengthInBytes));
         Assert.Equal((0, 6), (match.IndexInUtf16, match.LengthInUtf16));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }
 

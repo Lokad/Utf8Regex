@@ -220,7 +220,7 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         Assert.True(regex.IsMatch(subject)); Assert.Equal(6, regex.Count(subject));
         var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         Assert.Equal(new[] { (2, 6), (9, 5), (15, 6), (22, 7), (30, 5), (36, 7) }, ranges);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private sealed class Box(int value) { public readonly int Value = value; }

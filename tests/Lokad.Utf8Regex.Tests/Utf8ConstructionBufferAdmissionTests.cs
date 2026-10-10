@@ -21,7 +21,7 @@ public sealed class Utf8ConstructionBufferAdmissionTests
         using (var measured = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity))
         {
             var regex = new Utf8Regex(pattern, options);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             count = regex.Count(input);
             peak = measured.Budget.PeakBytes;
             Assert.True(measured.Budget.ReservedBytes > 0);
@@ -40,7 +40,7 @@ public sealed class Utf8ConstructionBufferAdmissionTests
                 if (failure is null)
                 {
                     Assert.NotNull(regex);
-                    Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+                    Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                     Assert.Equal(count, regex.Count(input));
                     Assert.True(scope.Budget.ReservedBytes > 0);
                 }

@@ -106,7 +106,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
 
             var isMatchRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.IsMatch(inputText), isMatchRegex.IsMatch(input));
-            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
             var matchRegex = new Utf8Regex(pattern, options);
             var expected = oracle.Match(inputText);
@@ -115,8 +115,8 @@ public sealed class Utf8AnchoredLiteralPrefixTests
 
             var countRegex = new Utf8Regex(pattern, options);
             Assert.Equal(oracle.Matches(inputText).Count, countRegex.Count(input));
-            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             if (expected.Success)
             {
                 Assert.Equal(expected.Index, actual.IndexInUtf16);
@@ -146,7 +146,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
             var regex = new Utf8Regex(pattern, options);
             var actual = regex.MatchDetailed(input);
             Assert.Equal(expected.Success, actual.Success);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             if (expected.Success)
             {
                 Assert.Equal(expected.Index, actual.GetGroup(0).IndexInUtf16);
@@ -180,7 +180,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
             }
 
             Assert.Equal(expectedCount, actualCount);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -204,13 +204,13 @@ public sealed class Utf8AnchoredLiteralPrefixTests
                 var regex = new Utf8Regex(pattern, options);
                 var actualMatch = regex.MatchFromUtf16Offset(input, offset);
                 Assert.Equal(expectedMatch.Success, actualMatch.Success);
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex2 = new Utf8Regex(pattern, options);
                 Assert.Equal(oracle.IsMatch(inputText, offset), regex2.IsMatchFromUtf16Offset(input, offset));
-                Assert.False(regex2.Inspection.DebugFallbackRegexIsCreated);
+                Assert.True(regex2.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex3 = new Utf8Regex(pattern, options);
                 Assert.Equal(expectedMatch.Success, regex3.MatchDetailedFromUtf16Offset(input, offset).Success);
-                Assert.False(regex3.Inspection.DebugFallbackRegexIsCreated);
+                Assert.True(regex3.Inspection.PreparedRegex.ScalarProgram is not null);
                 var regex4 = new Utf8Regex(pattern, options);
                 var actualEnum = 0;
                 var enumerator = regex4.EnumerateMatchesFromUtf16Offset(input, offset);
@@ -226,7 +226,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
                 }
 
                 Assert.Equal(expectedEnum, actualEnum);
-                Assert.False(regex4.Inspection.DebugFallbackRegexIsCreated);
+                Assert.True(regex4.Inspection.PreparedRegex.ScalarProgram is not null);
             }
         }
     }

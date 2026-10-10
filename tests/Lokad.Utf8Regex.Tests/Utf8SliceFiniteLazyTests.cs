@@ -151,6 +151,6 @@ public sealed class Utf8SliceFiniteLazyTests
         var recovered = regex.MatchDetailed("aaabc"u8);
         Assert.Equal("aaab", recovered.GetGroup("x").GetValueString());
         Assert.Equal(4, recovered.GetGroup("x").CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

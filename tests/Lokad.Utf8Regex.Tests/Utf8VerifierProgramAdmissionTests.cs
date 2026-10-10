@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -18,11 +17,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
     {
         if (kind < 4)
             return Utf8StructuralVerifierRuntimeFactory.Create(prepared);
-        if (kind < 7)
-            return Utf8FallbackVerifierRuntimeFactory.Create(new((Utf8FallbackVerifierMode)(kind - 4), false, false),
-                "a", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        if (kind == 7)
-            return Utf8VerifierRuntime.Create(prepared, "a", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        if (kind < 8) return Utf8VerifierRuntime.Create(prepared);
         return Utf8RegexProgram.Compile("a", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
     }
 
@@ -30,7 +25,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
     [MemberData(nameof(Roots))]
     public void RootCutoffsPreserveParentOwnershipAndSpentWork(int kind, string limit)
     {
-        var prepared = Utf8VerifierTestPlans.WithStructuralVerifier(new((Utf8StructuralVerifierKind)Math.Min(kind, 3),
+        var prepared = Utf8VerifierTestPlans.WithStructuralVerifier(new((Utf8StructuralVerifierKind)(kind < 4 ? kind : Math.Min(kind - 4, 3)),
             default, default, default, null, default));
         ulong peak, work, depth, loan, slots;
         using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -92,9 +87,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
     [Fact]
     public void CompleteFieldStateIncludesSourcesAndBorrowsStructuralPayload()
     {
-        Type[] types = [typeof(Utf8VerifierRuntime), typeof(Utf8StructuralVerifierRuntime),
-            typeof(Utf8FallbackCandidateVerifier), typeof(Utf8RegexProgram),
-            typeof(Utf8FallbackVerifierRuntimeFactory).GetNestedType("RegexFactory", BindingFlags.NonPublic)!];
+        Type[] types = [typeof(Utf8VerifierRuntime), typeof(Utf8StructuralVerifierRuntime), typeof(Utf8RegexProgram)];
         foreach (var type in types)
         {
             Assert.NotNull(type);
@@ -105,7 +98,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
             Assert.Equal(fields.Select(field => field.FieldType.FullName).Order(), stateFields.Select(field => field.FieldType.FullName).Order());
             Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
         }
-        Assert.Equal(3, typeof(Utf8VerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length);
+        Assert.Equal(2, typeof(Utf8VerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length);
         Assert.Single(typeof(Utf8StructuralVerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
         foreach (var type in new[] { typeof(Utf8NoStructuralVerifierRuntime), typeof(Utf8AsciiStructuralVerifierRuntime),
             typeof(Utf8ByteSafeLinearVerifierRuntime), typeof(Utf8ByteSafeLazyDfaVerifierRuntime) })
@@ -128,30 +121,23 @@ public sealed class Utf8VerifierProgramAdmissionTests
     [Theory]
     [InlineData(false, false)] [InlineData(false, true)]
     [InlineData(true, false)] [InlineData(true, true)]
-    public void PlainCallbackSourcesAdmitFieldsAndRetainersBeforeAcquisition(bool finiteTimeout, bool bytes)
+    public void BorrowedVerifierRootsAdmitFieldsAndRetainersBeforeAcquisition(bool finiteTimeout, bool bytes)
     {
         var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
-        var type = typeof(Utf8FallbackVerifierRuntimeFactory).GetNestedType("RegexFactory", BindingFlags.NonPublic)!;
-        var create = type.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
-        object BuildSource(Utf8ConstructionBudget budget)
-        {
-            try
-            {
-                return create.Invoke(null, new object[] { "a", RegexOptions.None, timeout, budget })!;
-            }
-            catch (TargetInvocationException wrapped) { ExceptionDispatchInfo.Capture(wrapped.InnerException!).Throw(); throw; }
-        }
+        var regex = new Utf8Regex("a", RegexOptions.None, timeout);
+        var prepared = regex.Inspection.PreparedRegex;
+        object BuildSource() => Utf8VerifierRuntime.Create(prepared);
         ulong capacity, work;
         using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            var result = BuildSource(funded.Budget);
-            var borrowedField = type.GetField("_pattern", BindingFlags.Instance | BindingFlags.NonPublic)!;
-            Assert.Same("a", borrowedField.GetValue(result));
-            Assert.Equal(timeout, type.GetField("_matchTimeout", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(result));
-            Assert.Equal(RegexOptions.None, type.GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(result));
+            var result = Assert.IsType<Utf8VerifierRuntime>(BuildSource());
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(result);
+            Assert.Same(prepared, typeof(Utf8VerifierRuntime).GetField("_preparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(result));
+            Assert.Equal(timeout, regex.MatchTimeout);
+            Assert.Equal(RegexOptions.None, regex.Options);
             capacity = funded.Budget.ReservedBytes; work = funded.Budget.WorkSteps;
         }
-        Assert.True(capacity > 0); Assert.Equal(2ul, work);
+        Assert.True(capacity > 0); Assert.Equal(4ul, work);
         var maximum = bytes ? capacity : work;
         var successes = 0;
         for (var allowance = 0ul; allowance <= maximum; allowance++)
@@ -160,7 +146,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
                 bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
             var checkpoint = owner.Budget.ObjectCheckpoint;
-            var error = Record.Exception(() => _ = BuildSource(owner.Budget));
+            var error = Record.Exception(() => _ = BuildSource());
             if (error is null)
             { successes++; Assert.Equal(112 + capacity, owner.Budget.ReservedBytes); }
             else
@@ -170,7 +156,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
                 Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? 4ul : 2 + allowance);
+            Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? 2 + work : 2 + allowance);
         }
         Assert.Equal(1, successes);
     }
@@ -178,32 +164,47 @@ public sealed class Utf8VerifierProgramAdmissionTests
     [Theory]
     [InlineData(0, false)] [InlineData(0, true)] [InlineData(1, false)]
     [InlineData(1, true)] [InlineData(2, false)] [InlineData(2, true)]
-    public void LazyFallbackKeepsPublicationFailureIdentityAndConfiguration(int mode, bool valid)
+    public void OwnedPublicationKeepsConfigurationOrFailsEagerlyAndRecovers(int mode, bool valid)
     {
-        const RegexOptions options = RegexOptions.CultureInvariant;
-        var pattern = valid ? "(?<x>a)" : "(";
-        var verifier = Utf8FallbackVerifierRuntimeFactory.Create(new((Utf8FallbackVerifierMode)mode, false, false),
-            pattern, options, Regex.InfiniteMatchTimeout);
-        Assert.False(verifier.IsFallbackRegexCreated); Assert.False(verifier.IsAnchoredFallbackRegexCreated);
+        var options = RegexOptions.CultureInvariant | (mode == 1 ? RegexOptions.Compiled :
+            mode == 2 ? RegexOptions.NonBacktracking : RegexOptions.None);
         if (!valid)
         {
-            var first = Assert.Throws<RegexParseException>(() => _ = verifier.FallbackRegex);
-            Assert.Same(first, Assert.Throws<RegexParseException>(() => _ = verifier.FallbackRegex));
-            Assert.False(verifier.IsFallbackRegexCreated);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
+            var checkpoint = owner.Budget.ObjectCheckpoint;
+            ArgumentException? first = null;
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                Utf8Regex? unpublished = null;
+                var workBefore = owner.Budget.WorkSteps;
+                var error = Assert.ThrowsAny<ArgumentException>(() => unpublished = new Utf8Regex("(", options));
+                Assert.Null(unpublished);
+                if (first is not null) { Assert.Equal(first.Message, error.Message); Assert.Equal(first.ParamName, error.ParamName); }
+                first = error;
+                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > workBefore);
+            }
+            Assert.Equal(17, parent.Value);
+            var recovered = new Utf8Regex("(?<x>a)", options);
+            Assert.Equal(1, recovered.Count("😀a"u8));
+            Assert.Equal("a", recovered.MatchDetailed("😀a"u8).GetGroup("x").GetValueString());
             return;
         }
-        var regex = verifier.FallbackRegex;
-        Parallel.For(0, 32, _ => Assert.Same(regex, verifier.FallbackRegex));
-        Assert.Equal(pattern, regex.ToString()); Assert.Equal(options, regex.Options);
+        var regex = new Utf8Regex("(?<x>a)", options);
+        var prepared = regex.Inspection.PreparedRegex;
+        var scalar = prepared.ScalarProgram;
+        Assert.NotNull(scalar);
+        Assert.Same(prepared.SemanticRegex.RuntimeTree!.CaptureCatalog, scalar.CaptureCatalog);
+        Assert.Equal("(?<x>a)", regex.Pattern); Assert.Equal(options, regex.Options);
         Assert.Equal(Regex.InfiniteMatchTimeout, regex.MatchTimeout);
-        if (mode == 0) Assert.Null(verifier.AnchoredFallbackRegex);
-        else
+        Parallel.For(0, 32, _ =>
         {
-            var anchored = Assert.IsType<Regex>(verifier.AnchoredFallbackRegex);
-            Assert.Equal(@"\G(?:" + pattern + ")", anchored.ToString());
-            Assert.Same(anchored, verifier.AnchoredFallbackRegex);
-            Assert.Equal(options, anchored.Options); Assert.Equal(Regex.InfiniteMatchTimeout, anchored.MatchTimeout);
-        }
+            Assert.Same(prepared, regex.Inspection.PreparedRegex);
+            Assert.Same(scalar, regex.Inspection.AvailableOwnedSliceProgram);
+            Assert.True(regex.IsMatch("😀a"u8));
+            Assert.Equal("a", regex.MatchDetailed("😀a"u8).GetGroup("x").GetValueString());
+        });
     }
 
     private sealed class Box(int value) { internal readonly int Value = value; }
@@ -214,7 +215,7 @@ internal static class Utf8VerifierTestPlans
     internal static Utf8PreparedRegex WithDirectFamily(Utf8PreparedRegex p, Utf8FallbackDirectFamilyPlan family)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
-            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, p.StructuralVerifier,
+            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.ScalarVerifier, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, family);
 
@@ -223,11 +224,11 @@ internal static class Utf8VerifierTestPlans
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, p.StructuralLinearProgram, p.SimplePatternPlan,
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            search.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, p.StructuralVerifier,
+            search.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.ScalarVerifier, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
 
-    internal static Utf8PreparedRegex WithFallbackVerifier(Utf8PreparedRegex p, Utf8FallbackVerifierPlan fallback)
+    internal static Utf8PreparedRegex WithScalarVerifier(Utf8PreparedRegex p, Utf8ScalarVerifierPlan fallback)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
             p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, fallback, p.StructuralVerifier,
@@ -240,7 +241,7 @@ internal static class Utf8VerifierTestPlans
         return Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan, p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, structuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
+            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.ScalarVerifier, structuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
     }

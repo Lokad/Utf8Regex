@@ -103,6 +103,6 @@ public sealed class Utf8SliceLiteralBracketTests
         finally { session.Complete(); }
         Assert.Equal(new string('.', 4096), regex.ReplaceToString(input, 0,
             static (in Utf8MatchContext match, ref int calls) => { calls++; return "."; }, CancellationToken.None));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

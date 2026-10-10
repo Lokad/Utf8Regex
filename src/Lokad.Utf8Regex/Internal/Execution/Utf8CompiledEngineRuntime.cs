@@ -290,7 +290,7 @@ internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8Co
     private bool UsesRightToLeft()
     {
         // The cached options answer without constructing the lazy engine.
-        return (_verifierRuntime.FallbackCandidateVerifier.FallbackOptions & RegexOptions.RightToLeft) != 0;
+        return (_regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) != 0;
     }
 }
 

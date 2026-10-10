@@ -59,6 +59,6 @@ public sealed class Pcre2SliceVerboseTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 }

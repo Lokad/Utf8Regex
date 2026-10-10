@@ -72,7 +72,7 @@ public sealed class Utf8SliceAtomicTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -85,7 +85,7 @@ public sealed class Utf8SliceAtomicTests
         var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("aaab"));
         Assert.True(detailed.Success);
         Assert.Equal("aaa", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object?[]> CountCases()
@@ -104,7 +104,7 @@ public sealed class Utf8SliceAtomicTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -119,6 +119,6 @@ public sealed class Utf8SliceAtomicTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

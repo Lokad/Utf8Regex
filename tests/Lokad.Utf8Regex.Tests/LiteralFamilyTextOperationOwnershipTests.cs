@@ -135,8 +135,8 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
             foreach (var _ in oracle.EnumerateSplits(inputText, count)) expected++;
         }
         Assert.Equal(expected, regex.Inspection.DebugCountSplitsViaCompiledEngine(input, count));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> ReplaceParityCases()
@@ -175,7 +175,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
         Assert.True(nativeLength >= 0, "pattern=" + pattern + " options=" + options.ToString() + " replacement=" + replacement);
         var oracle = new Regex(pattern, options);
         Assert.Equal(Encoding.UTF8.GetByteCount(oracle.Replace(inputText, replacement)), nativeLength);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

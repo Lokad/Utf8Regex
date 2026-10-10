@@ -185,7 +185,7 @@ public sealed class Utf8StructuralInvocationTests
             Assert.Equal(expected.Length, actual.LengthInUtf16);
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> InterruptedOperations()
@@ -234,7 +234,7 @@ public sealed class Utf8StructuralInvocationTests
                 Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
             }
             Assert.False(actual.MoveNext());
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -265,7 +265,7 @@ public sealed class Utf8StructuralInvocationTests
             Assert.Equal(expected.Current.Length, actual.Current.LengthInUtf16);
         }
         Assert.False(actual.MoveNext());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -308,7 +308,7 @@ public sealed class Utf8StructuralInvocationTests
             }
             else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
             Assert.True(entered);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(method ? "LogError(" : "getAlpha")));
@@ -439,7 +439,7 @@ public sealed class Utf8StructuralInvocationTests
         {
             Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
             Assert.True(entered);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         Assert.Equal(4000, regex.Count(input));

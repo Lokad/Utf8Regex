@@ -83,7 +83,7 @@ public sealed class Utf8SliceAnchorTests
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -148,7 +148,7 @@ public sealed class Utf8SliceAnchorTests
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> MultilineAstralEnumerateReplaceCases()
@@ -190,7 +190,7 @@ public sealed class Utf8SliceAnchorTests
             }
             Assert.Equal(expectedFlat, actual.ToArray());
             Assert.Equal(expectedReplaced, regex.ReplaceToString(input, "Q"));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, candidate.ToString());
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, candidate.ToString());
         }
     }
 
@@ -217,7 +217,7 @@ public sealed class Utf8SliceAnchorTests
             Assert.Equal(expectedStart, item.IndexInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -232,7 +232,7 @@ public sealed class Utf8SliceAnchorTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.IsMatchFromUtf16Offset(input, offset));
         Assert.Equal(expected, regex.MatchFromUtf16Offset(input, offset).Success);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -259,9 +259,9 @@ public sealed class Utf8SliceAnchorTests
         Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -274,9 +274,9 @@ public sealed class Utf8SliceAnchorTests
         Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -293,7 +293,7 @@ public sealed class Utf8SliceAnchorTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     // Absolute-origin assertions additionally require a scalar-aligned
@@ -320,7 +320,7 @@ public sealed class Utf8SliceAnchorTests
         }
 
         Assert.Equal(expectedCount, enumerated.Count);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public sealed class Utf8SliceAnchorTests
         var oracle = new Regex(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant);
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -343,7 +343,7 @@ public sealed class Utf8SliceAnchorTests
         var oracle = new Regex("^", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, "Z");
         var regex = new Utf8Regex("^", RegexOptions.CultureInvariant);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, "Z")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -358,6 +358,6 @@ public sealed class Utf8SliceAnchorTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

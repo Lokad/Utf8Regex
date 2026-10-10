@@ -50,7 +50,7 @@ public sealed class Utf8PublicScalarFallbackTests
             Assert.Equal(match.LengthInUtf16, detailed.LengthInUtf16);
             Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(start, length)), detailed.GetValueString());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> AnchorOffsets()
@@ -86,7 +86,7 @@ public sealed class Utf8PublicScalarFallbackTests
                 Assert.Equal("foo", detailed.GetValueString());
             }
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -102,7 +102,7 @@ public sealed class Utf8PublicScalarFallbackTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.MatchDetailedFromUtf16Offset(input, 1); });
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -131,7 +131,7 @@ public sealed class Utf8PublicScalarFallbackTests
         Assert.Equal("😀", first.GetValueString());
         Assert.Equal("a", match.GetGroup(12).GetValueString());
         Assert.Equal(1, first.CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private static RegexOptions Options(bool compiled, bool rtl) => RegexOptions.CultureInvariant |

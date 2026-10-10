@@ -52,7 +52,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
     {
         const string pattern = "aaaaa|bbbbb|ccccc";
         var plan = Plan(pattern);
-        var verifier = Utf8VerifierRuntime.Create(plan, pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var verifier = Utf8VerifierRuntime.Create(plan);
         ulong peak, work, depth, loan;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
@@ -142,7 +142,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, NativeExecutionKind.FallbackRegex, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, program, p.SimplePatternPlan, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, p.DeterministicAnchor, guards, p.FallbackVerifier, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
+            p.StructuralSearchPlan, p.DeterministicAnchor, guards, p.ScalarVerifier, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
 

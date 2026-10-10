@@ -114,7 +114,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText, startOffsetInBytes));
         Assert.Equal(expected, regex.IsMatch(input, startOffsetInBytes));
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -143,7 +143,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText, startOffsetInBytes).Count);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -159,7 +159,7 @@ public sealed class Pcre2SliceOwnershipTests
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -197,7 +197,7 @@ public sealed class Pcre2SliceOwnershipTests
         }
 
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -218,7 +218,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> DetailedCases()
@@ -273,7 +273,7 @@ public sealed class Pcre2SliceOwnershipTests
         }
 
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -300,7 +300,7 @@ public sealed class Pcre2SliceOwnershipTests
             detailed.GetGroup(3 - winningGroup).Success);
         Assert.False(detailed.GetGroup(3 - winningGroup).Success);
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -320,7 +320,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(oracle.Groups[2].Value, detailed.GetGroup(2).GetValueString());
         var expectedStart = Encoding.UTF8.GetByteCount(inputText[..oracle.Index]);
         Assert.Equal(expectedStart, detailed.Value.StartOffsetInBytes);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public sealed class Pcre2SliceOwnershipTests
         var exception = Assert.Throws<Pcre2MatchException>(
             () => regex.MatchDetailed(input, 0));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> EnumerateCases()
@@ -403,7 +403,7 @@ public sealed class Pcre2SliceOwnershipTests
 
         Assert.Equal(expected, actual.ToArray());
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -420,7 +420,7 @@ public sealed class Pcre2SliceOwnershipTests
         }
 
         Assert.Equal(new[] { 0, 0, 0, 1, 1, 1 }, actual.ToArray());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -441,7 +441,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             oracle.Select(static m => m.Value).ToArray(),
             actual.ToArray());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -461,7 +461,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.False(isMore);
         Assert.Equal(9, destination[2].StartOffsetInBytes);
         Assert.Equal(15, destination[2].EndOffsetInBytes);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -516,7 +516,7 @@ public sealed class Pcre2SliceOwnershipTests
         {
             Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
         }
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     public static IEnumerable<object?[]> ReplaceCases()
@@ -550,7 +550,7 @@ public sealed class Pcre2SliceOwnershipTests
             expected,
             Encoding.UTF8.GetString(regex.Replace(input, replacement)));
         Assert.False(
-            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
     }
 
@@ -573,7 +573,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             backtracked.ReplaceToString(input, "<$0>"),
             sliced.ReplaceToString(input, "<$0>"));
-        Assert.False(sliced.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -583,7 +583,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             "\U0001F600<aaabb>\U0001F600",
             regex.ReplaceToString(Utf8("\U0001F600aaabb\U0001F600"), "<$0>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -618,7 +618,7 @@ public sealed class Pcre2SliceOwnershipTests
         var growthException = Assert.Throws<Pcre2MatchException>(
             () => grown.ReplaceToString(input, "<$0>"));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, growthException.ErrorKind);
-        Assert.False(grown.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(grown.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -632,7 +632,7 @@ public sealed class Pcre2SliceOwnershipTests
                 "<$0>",
                 0,
                 Pcre2SubstitutionOptions.SubstituteLiteral));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Theory]
@@ -665,7 +665,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             backtracked.ReplaceToString(input, "<$1|$2>"),
             sliced.ReplaceToString(input, "<$1|$2>"));
-        Assert.False(sliced.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
 [Fact]
@@ -725,7 +725,7 @@ public sealed class Pcre2SliceOwnershipTests
         var exception = Assert.Throws<Pcre2MatchException>(
             () => regex.ReplaceToString(input, "<$0>"));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -801,6 +801,6 @@ public sealed class Pcre2SliceOwnershipTests
             TimeSpan.FromMilliseconds(1));
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, 0));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

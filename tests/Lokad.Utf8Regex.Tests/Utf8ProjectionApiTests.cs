@@ -20,7 +20,7 @@ public sealed class Utf8ProjectionApiTests
         Assert.Equal((0, 4), (index, length));
         Assert.True(match.TryGetValueBytes(out var bytes));
         Assert.True(bytes.SequenceEqual("😀"u8));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public sealed class Utf8ProjectionApiTests
         Assert.True(capture.TryGetValueBytes(out bytes));
         Assert.True(bytes.SequenceEqual("😀"u8));
         Assert.True(capture.GetValueBytes().SequenceEqual("😀"u8));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private static Utf8Regex CreateUtf8Regex(string pattern, bool compiled)

@@ -266,7 +266,7 @@ internal readonly struct Utf8SearchPlan
     {
         if (!HasPreparedSearcher && FallbackCandidateSource.HasValue)
         {
-            return new Utf8ConfirmationPlan(Utf8ConfirmationKind.FallbackVerifier);
+            return new Utf8ConfirmationPlan(Utf8ConfirmationKind.ScalarVerifier);
         }
         if (HasBoundaryRequirements && HasTrailingLiteralRequirement)
         {

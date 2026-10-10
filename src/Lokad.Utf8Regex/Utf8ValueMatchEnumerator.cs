@@ -24,24 +24,9 @@ public ref struct Utf8ValueMatchEnumerator
         _timeout = default;
     }
 
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        string decoded,
-        Regex regex,
-        Utf8BoundaryMap? boundaryMap)
-        : this(new Utf8OperationMatchCursor(input, decoded, regex, boundaryMap))
-    {
-    }
 
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Regex regex,
-        string decoded,
-        int startAt,
-        Utf8BoundaryMap? boundaryMap)
-        : this(new Utf8OperationMatchCursor(input, regex, decoded, startAt, boundaryMap))
-    {
-    }
+
+
 
     internal Utf8ValueMatchEnumerator(
         Utf8SliceProgram program,

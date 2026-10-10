@@ -111,7 +111,7 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
         var actual = regex.Match(bytes);
         Assert.Equal(expected.Index, actual.IndexInUtf16);
         Assert.Equal(expected.Length, actual.LengthInUtf16);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]

@@ -51,11 +51,7 @@ internal static class Utf8RegexPreparer
             {
                 structuralVerifier = PrepareByteSafeStructuralVerifier(tree, program, deterministicGuards);
             }
-            var fallbackVerifier = PrepareFallbackVerifier(
-                analyzedRegex.SemanticRegex.Pattern,
-                analyzedRegex.SemanticRegex.Options,
-                structuralSearchPlan,
-                analyzedRegex.Features.HasAbsoluteStartAnchor);
+            var scalarVerifier = PrepareScalarVerifier(structuralSearchPlan);
 
             var structuralLinearProgram = Utf8StructuralLinearProgram.Create(
                 analyzedRegex.ExecutionKind,
@@ -117,7 +113,7 @@ internal static class Utf8RegexPreparer
                 structuralSearchPlan,
                 deterministicAnchor,
                 deterministicGuards,
-                fallbackVerifier,
+                scalarVerifier,
                 structuralVerifier,
                 analyzedRegex.StructuralIdentifierFamilyPlan,
                 analyzedRegex.StructuralTokenWindowPlan,
@@ -165,36 +161,10 @@ internal static class Utf8RegexPreparer
             guards);
     }
 
-    internal static Utf8FallbackVerifierPlan PrepareFallbackVerifier(
-        string pattern,
-        RegexOptions options,
-        Utf8StructuralSearchPlan structuralSearchPlan,
-        bool hasAbsoluteStartAnchor)
+    internal static Utf8ScalarVerifierPlan PrepareScalarVerifier(Utf8StructuralSearchPlan structuralSearchPlan)
     {
-        var canUseAnchoredRegex = CanUseAnchoredRegex(pattern, options);
-        // Bounded slices rebase start anchors (^, \A) to the slice start, where BCL would
-        // fail them against the true string start. Keep those patterns on the anchored
-        // (start-verified, full-tail) mode, which evaluates anchors in full context.
-        var canUseBoundedSlice = canUseAnchoredRegex && !hasAbsoluteStartAnchor;
-        var mode = structuralSearchPlan.ProducesBoundedCandidates && canUseBoundedSlice
-            ? Utf8FallbackVerifierMode.AnchoredSliceRegex
-            : canUseAnchoredRegex
-                ? Utf8FallbackVerifierMode.AnchoredRegex
-                : Utf8FallbackVerifierMode.DirectRegex;
-        return new Utf8FallbackVerifierPlan(
-            mode,
+        return new Utf8ScalarVerifierPlan(
             structuralSearchPlan.RequiresCandidateEndCoverage,
             structuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Window);
-    }
-
-    private static bool CanUseAnchoredRegex(string pattern, RegexOptions options)
-    {
-        if ((options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
-        {
-            return false;
-        }
-
-        // Wrapping the pattern changes semantics for leading global inline constructs.
-        return !pattern.StartsWith("(?", StringComparison.Ordinal);
     }
 }

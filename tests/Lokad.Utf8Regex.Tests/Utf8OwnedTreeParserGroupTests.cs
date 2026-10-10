@@ -391,7 +391,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
                     Assert.Equal(expected.Groups[number].Captures[index].Value, capture.GetValueString());
                 }
             }
-            Assert.False(product.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(product.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
     private static void AssertGroupNameMapping(Regex oracle, IReadOnlyDictionary<string, int>? actual)

@@ -11,7 +11,29 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class EngineDependencyInventoryTests
 {
     [Fact]
-    public void ProductionRegexConstructionInventoryMatchesR00Baseline()
+    public void ConsumedCoreHasNoBclRegexFactoriesOrEngineOwners()
+    {
+        var assembly = typeof(Utf8Regex).Assembly;
+        foreach (var name in new[] { "Utf8FallbackCandidateVerifier", "Utf8FallbackVerifierRuntimeFactory", "Utf8FallbackVerifierMode" })
+            Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name));
+        var flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
+        foreach (var type in assembly.GetTypes())
+        {
+            foreach (var field in type.GetFields(flags)) Assert.False(RetainsEngine(field.FieldType), $"{type.FullName}.{field.Name}");
+            foreach (var method in type.GetMethods(flags)) Assert.False(RetainsEngine(method.ReturnType), $"{type.FullName}.{method.Name}");
+            foreach (var constructor in type.GetConstructors(flags))
+            foreach (var parameter in constructor.GetParameters())
+                Assert.False(RetainsEngine(parameter.ParameterType), $"{type.FullName} {constructor}");
+        }
+
+        static bool RetainsEngine(Type type) => type == typeof(Regex) ||
+            type.HasElementType && RetainsEngine(type.GetElementType()!) ||
+            type.IsGenericType && type.GetGenericArguments().Any(RetainsEngine);
+    }
+
+    [Fact]
+    public void ProductionRegexConstructionInventoryIsEmpty()
     {
         var repoRoot = FindRepositoryRoot();
         var srcRoot = Path.Combine(repoRoot, "src");
@@ -23,14 +45,8 @@ public sealed class EngineDependencyInventoryTests
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        // R05 migration baseline: only the two core root/anchored factories remain.
-        // PythonRe has no BCL engine or BCL result plumbing; its consumed-assembly
-        // metadata guard lives in PythonReEngineArchitectureTests.
-        // The remaining core factories serve admission and residual dispatch.
-        // Former ValidateOptions probe in Utf8Regex.cs is owned since R00 and must not regress.
-        // Former PCRE2 managed-compat probe in Utf8Pcre2Regex.cs is deleted since R05 and must not regress.
-        Assert.Equal(2, hits.Length);
-        Assert.Equal(2, hits.Count(static hit => hit.Contains("Utf8FallbackVerifierPlan.cs", StringComparison.Ordinal)));
+        // R05: every shipped profile prepares and executes owned programs.
+        Assert.Empty(hits);
         Assert.DoesNotContain(hits, static hit => hit.Contains("Lokad.Utf8Regex.PythonRe", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Pcre2Regex.cs", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Regex.cs", StringComparison.Ordinal));
@@ -100,24 +116,18 @@ public sealed class EngineDependencyInventoryTests
         }
 
         // 1. Core fallback execution (union of the three receiver spellings below).
-        //    Purpose: remaining public execution routes. Owner: R03.
+        //    Public execution now uses qualified native paths or the scalar program.
         //    The linear compiled router left this set in R05 once its RightToLeft
         //    predicates read cached fallback options instead of constructing the engine.
         //    Compiled/simple/structural consumers and the general cursor factory
         //    borrow the admitted scalar program, including mixed input and RTL.
         //    Metadata queries borrow the owned capture catalog directly.
         var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
-        var expectedFallbackFiles = new[]
-        {
-            "Utf8Regex.cs",
-            "Utf8Regex.Replacement.cs",
-        };
-        Assert.Equal(expectedFallbackFiles.Order(StringComparer.Ordinal).ToArray(), fallbackFiles);
+        Assert.Empty(fallbackFiles);
 
-        // 2. BCL enumerator structs: split enumeration and operation cursors (PCRE2 managed lanes deleted in R05).
-        //    Owners: R03 (core) and R05 (PCRE2 managed-lane deletion).
-        Assert.Equal(new[] { "Utf8ValueSplitEnumerator.cs" }, FilesContaining("Regex.ValueSplitEnumerator"));
-        Assert.Equal(new[] { "Utf8OperationMatchCursor.cs" }, FilesContaining("Regex.ValueMatchEnumerator"));
+        // 2. BCL enumerator structs are retired across all shipped profiles.
+        Assert.Empty(FilesContaining("Regex.ValueSplitEnumerator"));
+        Assert.Empty(FilesContaining("Regex.ValueMatchEnumerator"));
 
         // 3. PythonRe managed execution has been removed; no descriptor may return.
         var managedHits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
@@ -126,8 +136,8 @@ public sealed class EngineDependencyInventoryTests
             .ToArray();
         Assert.Empty(managedHits);
 
-        // 4. Only the transitional core evaluator loop still chains BCL matches.
-        Assert.Equal(new[] { "Utf8Regex.cs" }, FilesContaining(".NextMatch()"));
+        // 4. Evaluators use the cached scalar program and owned capture histories.
+        Assert.Empty(FilesContaining(".NextMatch()"));
 
         // 5. BCL result plumbing holders. Owner: R02/R03 (owned match/group/capture storage).
         Assert.Equal(new[] { "Utf8MatchContext.cs" }, FilesContaining("Match? _match"));

@@ -226,6 +226,6 @@ public sealed class Utf8OwnedTreeContinuationTests
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.IsMatch(input));
         Assert.False(regex.IsMatch("b"u8));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

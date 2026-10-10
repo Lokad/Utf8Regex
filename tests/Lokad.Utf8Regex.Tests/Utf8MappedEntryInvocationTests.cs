@@ -43,7 +43,7 @@ public sealed class Utf8MappedEntryInvocationTests
                 canceled = true;
             }
             Assert.True(canceled);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
     }

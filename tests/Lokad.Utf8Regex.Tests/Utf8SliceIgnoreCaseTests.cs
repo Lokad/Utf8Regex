@@ -74,7 +74,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -108,7 +108,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         Assert.Equal(expected, regex.IsMatch(input));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -134,7 +134,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         Assert.Equal(expected, regex.IsMatch(input));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -149,7 +149,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         Assert.True(detailed.Success);
         Assert.Equal("A", detailed.GetGroup(1).GetValueString());
         Assert.Equal("B", detailed.GetGroup(2).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             var regex = new Utf8Regex("i", RegexOptions.IgnoreCase);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             Assert.Equal(oracle.IsMatch("I"), regex.IsMatch(Encoding.UTF8.GetBytes("I")));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally
         {
@@ -206,6 +206,6 @@ public sealed class Utf8SliceIgnoreCaseTests
         }
 
         Assert.Equal(expectedSegments, actualSegments);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

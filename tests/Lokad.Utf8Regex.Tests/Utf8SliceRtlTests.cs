@@ -45,7 +45,7 @@ public sealed class Utf8SliceRtlTests
         {
             var regex = new Utf8Regex(pattern, options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class Utf8SliceRtlTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object?[]> RtlParserDeclines()
@@ -250,7 +250,7 @@ public sealed class Utf8SliceRtlTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
             }
         }
     }
@@ -289,7 +289,7 @@ public sealed class Utf8SliceRtlTests
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -313,7 +313,7 @@ public sealed class Utf8SliceRtlTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(inputText)));
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }
 public sealed class Utf8SliceRtlOperationTests
@@ -352,7 +352,7 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
             Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
             Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
         }
     }
 
@@ -395,7 +395,7 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.Equal(expectedLength, found.LengthInUtf16);
             Assert.Equal(expectedStart, found.IndexInBytes);
             Assert.Equal(expectedLength, found.LengthInBytes);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
         }
     }
 
@@ -453,7 +453,7 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.Equal(wanted.Value, actual.GetValueString());
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -506,7 +506,7 @@ public sealed class Utf8SliceRtlOperationTests
         }
         Assert.Equal(expected, flat);
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, inputText, requireSlice: true);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ReplaceCases()
@@ -531,7 +531,7 @@ public sealed class Utf8SliceRtlOperationTests
         var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template)));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> OwnedRtlSplitCases()
@@ -583,7 +583,7 @@ public sealed class Utf8SliceRtlOperationTests
             actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16, split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expected, actual);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> RtlAsciiShapingOwnedCases()
@@ -618,12 +618,12 @@ public sealed class Utf8SliceRtlOperationTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(isMatchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(countRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
@@ -633,8 +633,8 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
-        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(matchRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
         var actualDetailed = detailedRegex.MatchDetailed(input);
@@ -643,8 +643,8 @@ public sealed class Utf8SliceRtlOperationTests
         {
             Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
         }
-        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(detailedRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -657,8 +657,8 @@ public sealed class Utf8SliceRtlOperationTests
             actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
         }
         Assert.Equal(expectedPositions, actualPositions);
-        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(enumerateRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(enumerateRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, enumerateRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var splitRegex = new Utf8Regex(pattern, options);
         var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
@@ -673,27 +673,27 @@ public sealed class Utf8SliceRtlOperationTests
             actualSplits.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        Assert.Equal(splitFallback, splitRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(splitRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.Equal(!splitFallback, splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(splitRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, splitRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
-        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.False(destinationRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(destinationRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(destinationRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, destinationRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> RtlEmptyReplaceDeclineCases()
@@ -747,7 +747,7 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.Equal(expectedStart, found.IndexInUtf16);
             Assert.Equal(expectedLength, found.LengthInUtf16);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> RtlFromOffsetEnumerateCases()
@@ -790,7 +790,7 @@ public sealed class Utf8SliceRtlOperationTests
             flat.Add(match.LengthInUtf16);
         }
         Assert.Equal(expectedFlat, flat);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -804,6 +804,6 @@ public sealed class Utf8SliceRtlOperationTests
         var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(500));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

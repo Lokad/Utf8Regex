@@ -253,7 +253,7 @@ public sealed class Utf8CancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -270,7 +270,7 @@ public sealed class Utf8CancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -289,7 +289,7 @@ public sealed class Utf8CancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.Equal(new Regex(regex.Pattern, RegexOptions.CultureInvariant).Replace("12x", "Q"),
             regex.ReplaceToString("12x"u8, "Q"));
     }
@@ -312,8 +312,8 @@ public sealed class Utf8CancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]

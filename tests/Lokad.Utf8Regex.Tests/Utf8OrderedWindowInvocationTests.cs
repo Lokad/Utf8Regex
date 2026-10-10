@@ -68,7 +68,7 @@ public sealed class Utf8OrderedWindowInvocationTests
             Assert.False(actual.MoveNext());
             Assert.False(actual.MoveNext());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -235,7 +235,7 @@ public sealed class Utf8OrderedWindowInvocationTests
             }
             else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
             Assert.True(entered);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch("a b"u8));

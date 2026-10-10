@@ -99,13 +99,13 @@ public sealed class Utf8SliceSparseGroupTests
             var subject = new Utf8ScalarCaptureFixture.Subject(text);
             var input = subject.Input;
             Assert.Equal(oracle.IsMatch(subject.Projected), regex.IsMatch(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "IsMatch");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "IsMatch");
             Assert.Equal(oracle.Count(subject.Projected), regex.Count(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Count");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Count");
             AssertValue(oracle.Match(subject.Projected), regex.Match(input, source.Token), subject);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Match");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Match");
             AssertDetailed(oracle, oracle.Match(subject.Projected), regex.MatchDetailed(input, source.Token), subject);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Detailed");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Detailed");
             for (var offset = 0; offset <= text.Length; offset++)
             {
                 var scalarOffset = Array.BinarySearch(subject.Units, offset);
@@ -134,7 +134,7 @@ public sealed class Utf8SliceSparseGroupTests
                 }
                 Assert.False(actual.MoveNext());
             }
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Offsets");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Offsets");
             foreach (var count in new[] { 0, 1, 2 })
             foreach (var liveToken in new[] { false, true })
             {
@@ -167,7 +167,7 @@ public sealed class Utf8SliceSparseGroupTests
                 }
                 Assert.False(actual.MoveNext());
             }
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Splits");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Splits");
             foreach (var template in new[] { "Q", "$&", "<$1>|$" + "{5}|$12|$" + "{12}|$" + "{x}|$2147483647",
                 "$00|$01|$" + "{012}|$+", "$" + (char)96 + "|$'|$_", "\ud83d$" + "{12}\ude00" })
             {
@@ -175,24 +175,24 @@ public sealed class Utf8SliceSparseGroupTests
                 // string APIs no longer retain halves across substitutions.
                 var expected = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
                 Assert.Equal(expected, regex.ReplaceToString(input, template, source.Token));
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Text template " + template);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Text template " + template);
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
                 Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Byte template " + template);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Byte template " + template);
                 var destination = new byte[expectedBytes.Length + 1];
                 Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, source.Token));
                 Assert.Equal(expectedBytes, destination.AsSpan(0, written).ToArray());
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Destination template " + template);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Destination template " + template);
                 var utf8Template = Encoding.UTF8.GetBytes(template);
                 var expectedUtf8Template = Encoding.UTF8.GetBytes(Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(utf8Template))));
                 Assert.Equal(expectedUtf8Template, regex.Replace(input, utf8Template, source.Token));
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "UTF-8 template");
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "UTF-8 template");
                 var utf8Destination = new byte[expectedUtf8Template.Length + 1];
                 Assert.Equal(OperationStatus.Done, regex.TryReplace(input, utf8Template, utf8Destination, out var utf8Written, source.Token));
                 Assert.Equal(expectedUtf8Template, utf8Destination.AsSpan(0, utf8Written).ToArray());
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "UTF-8 destination template");
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "UTF-8 destination template");
             }
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "Templates");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Templates");
             var expectedCalls = new List<string>();
             var expectedString = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, match => { expectedCalls.Add(Signature(oracle, match, subject)); return "[" + match.Groups[numbers[^1]].Value + "]"; }));
             var state = (Numbers: numbers, Calls: new List<string>(), Subject: subject, Oracle: oracle,
@@ -206,7 +206,7 @@ public sealed class Utf8SliceSparseGroupTests
                 }, source.Token);
             Assert.Equal(expectedString, actualString);
             Assert.Equal(expectedCalls, state.Calls);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "String callback");
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "String callback");
             var expectedByteCalls = new List<string>();
             var expectedByteText = oracle.Replace(subject.Projected, match =>
             {
@@ -229,8 +229,8 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.Equal(Encoding.UTF8.GetBytes(Utf8ScalarCaptureFixture.Subject.Restore(expectedByteText)), actualBytes);
             Assert.Equal(expectedByteCalls, byteState.Calls);
             Assert.Null(Utf8SliceByteOutputScope.Current);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 
@@ -242,7 +242,7 @@ public sealed class Utf8SliceSparseGroupTests
     [InlineData("(?<2147483647>a)(?<x>b)", "ab")]
     [InlineData("(?<12>a)(?<5>b)?", "a")]
     [InlineData("ab", "ab")]
-    public void BothReplacementInterpretersRetainPublicNumbersAndLastOrdinal(string pattern, string text)
+    public void OwnedReplacementInterpreterAndPublicTemplatesRetainPublicNumbersAndLastOrdinal(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var match = oracle.Match(text);
@@ -252,10 +252,10 @@ public sealed class Utf8SliceSparseGroupTests
         {
             var parsed = Utf8ReplacementPattern.Parse(template).ResolveGroupReferences(oracle.GetGroupNumbers(), oracle.GetGroupNames());
             var plan = Utf8ReplacementPlanLowerer.Lower(parsed);
-            Assert.Equal(match.Result(template), Utf8ReplacementPlanInterpreter.Apply(plan, match, text, oracle.GetGroupNumbers()[^1]));
+            Assert.Equal(match.Result(template), regex.ReplaceToString(Encoding.UTF8.GetBytes(text), template));
             Assert.Equal(match.Result(template), Utf8ReplacementPlanInterpreter.ApplyOwned(plan, text, in context));
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

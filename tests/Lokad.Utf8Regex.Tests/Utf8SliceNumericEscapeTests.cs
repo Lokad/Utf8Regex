@@ -196,7 +196,7 @@ public sealed class Utf8SliceNumericEscapeTests
         var recovered = regex.MatchDetailed(input);
         Assert.Equal(text, recovered.GetGroup(12).GetValueString());
         Assert.Equal(17, recovered.GetGroup(12).CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -233,7 +233,7 @@ public sealed class Utf8SliceNumericEscapeTests
         }
         finally { session.Complete(); }
         Assert.Equal(2000, regex.CountFromUtf16Offset(input, 0));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
 }

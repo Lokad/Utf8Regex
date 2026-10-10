@@ -143,7 +143,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         var recovered = new Utf8Pcre2Regex("\\b"u8);
         Assert.True(recovered.IsMatch("a😀"u8));
         Assert.Equal(2, recovered.Count("a😀"u8));
-        Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(recovered.DebugCompiledProgram is not null);
         Assert.Equal(0, parent[0]);
         Assert.InRange(scope.Budget.ReservedBytes, 48ul, 32768ul);
         scope.Budget.ReleaseArray(parent, false);
@@ -174,7 +174,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         var recovered = new Utf8Pcre2Regex(@"\b");
         Assert.True(recovered.IsMatch("a😀"u8));
         Assert.Equal(2, recovered.Count("a😀"u8));
-        Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(recovered.DebugCompiledProgram is not null);
         Assert.InRange(scope.Budget.ReservedBytes, 1ul, 32768ul);
     }
 
@@ -198,7 +198,7 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.False(Utf8ConstructionScope.IsActive);
         var recovered = new Utf8Pcre2Regex("cat");
         Assert.True(recovered.IsMatch("cat"u8));
-        Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(recovered.DebugCompiledProgram is not null);
     }
 
     [Theory]
@@ -220,6 +220,6 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.False(Utf8ConstructionScope.IsActive);
         var recovered = new Utf8Pcre2Regex("cat");
         Assert.True(recovered.IsMatch("cat"u8));
-        Assert.False(recovered.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(recovered.DebugCompiledProgram is not null);
     }
 }

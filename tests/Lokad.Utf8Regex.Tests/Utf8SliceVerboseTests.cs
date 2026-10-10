@@ -73,7 +73,7 @@ public sealed class Utf8SliceVerboseTests
             Assert.Equal(expected, regex.IsMatch(input));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }

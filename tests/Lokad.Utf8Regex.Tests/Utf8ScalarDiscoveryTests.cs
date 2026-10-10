@@ -22,7 +22,7 @@ public sealed class Utf8ScalarDiscoveryTests
         }
         else Assert.True(regex.IsMatch(input));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -43,7 +43,7 @@ public sealed class Utf8ScalarDiscoveryTests
         Assert.Equal("😀", match.GetGroup(0).GetValueString());
         Assert.Equal("😀", match.GetGroup(0).GetCapture(0).GetValueString());
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 4096L);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -62,7 +62,7 @@ public sealed class Utf8ScalarDiscoveryTests
         Assert.True(match.TryGetByteRange(out var start, out var length));
         Assert.Equal((0, 0), (start, length));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -87,7 +87,7 @@ public sealed class Utf8ScalarDiscoveryTests
         });
         Assert.Equal(1, seen);
         Assert.Equal("[é😀𐐀a]", Encoding.UTF8.GetString(actual));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private static void AssertHistory(Utf8MatchContext match, bool reverse)
@@ -135,6 +135,6 @@ public sealed class Utf8ScalarDiscoveryTests
             Assert.Equal((1, 4), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
             Assert.False(cursor.MoveNext());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

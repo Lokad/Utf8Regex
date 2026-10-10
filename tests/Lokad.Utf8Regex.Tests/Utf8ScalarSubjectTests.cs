@@ -208,8 +208,8 @@ public sealed class Utf8ScalarSubjectTests
             Assert.Equal(output, regex.Replace(input, "X", token));
             foreach (var split in regex.EnumerateSplits(input, token)) Assert.True(split.IsByteAligned);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public sealed class Utf8ScalarSubjectTests
                 });
             Assert.Equal(input, output);
             Assert.Equal(rtl ? new[] { "\u00e9", "\U0001f600", "a" } : new[] { "a", "\U0001f600", "\u00e9" }, seen);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -336,8 +336,8 @@ public sealed class Utf8ScalarSubjectTests
             }
             finally { session.Complete(); }
             Assert.Equal(1, regex.Count("ab"u8));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 

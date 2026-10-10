@@ -63,7 +63,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
             Assert.True(entered);
             Assert.Equal(0, session.VerifierInvocations);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(pattern == "TARGET" ? "target" : pattern == @"\btarget\b" ? "target" : pattern)));
@@ -101,7 +101,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
             Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), actual.LengthInBytes);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -184,7 +184,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         }
         finally { session.Complete(); }
         Assert.Equal(1000, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -202,7 +202,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, live.Token)).CancellationToken);
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, live.Token)).CancellationToken);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -259,6 +259,6 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         var actual = regex.Match(input, source.Token);
         Utf8SliceSparseGroupTests.AssertValue(expected, actual, subject);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(patterns[id], options), [text]);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

@@ -102,13 +102,13 @@ public sealed class Utf8SliceAdmissionTests
         Assert.True(pattern.Length > HistoricalPatternLengthLimit);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "length=" + pattern.Length);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "construction must stay lazy");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(oracle.IsMatch("xxaaabbyy"), regex.IsMatch(input));
         Assert.Equal(oracle.Matches("xxaaabbyy").Count, regex.Count(input));
         Assert.Equal(oracle.Match("xxaaabbyy").Success, regex.Match(input).Success);
         Assert.Equal(oracle.IsMatch("xxaaayy"), regex.IsMatch(Encoding.UTF8.GetBytes("xxaaayy")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

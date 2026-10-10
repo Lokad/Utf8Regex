@@ -38,7 +38,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         Assert.Equal(expected, EnumerateUtf8Splits(regex, input, count));
         foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), count))
             Assert.True(split.IsByteAligned);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]

@@ -152,7 +152,7 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
                 ? preparedKernelMatcher
                 : null;
             var emittedBoundaryLiteralFamily = emit &&
-                (verifierRuntime.FallbackCandidateVerifier.FallbackOptions & RegexOptions.RightToLeft) == 0 &&
+                (regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) == 0 &&
                 Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(
                     regexPlan,
                 out var preparedBoundaryLiteralFamily)

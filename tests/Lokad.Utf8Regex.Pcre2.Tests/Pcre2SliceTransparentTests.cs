@@ -57,7 +57,7 @@ public sealed class Pcre2SliceTransparentTests
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         if (expectOwned)
         {
-            Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -70,7 +70,7 @@ public sealed class Pcre2SliceTransparentTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public sealed class Pcre2SliceTransparentTests
         Assert.True(detailed.Success);
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
         Assert.Equal("c", detailed.GetGroup(2).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -89,6 +89,6 @@ public sealed class Pcre2SliceTransparentTests
     {
         var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", Pcre2CompileOptions.None);
         Assert.Equal(Bcl("(a)(?:b)(c)").Replace("abc", "<$1$2>"), regex.ReplaceToString(Utf8("abc"), "<$1$2>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

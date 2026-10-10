@@ -305,8 +305,6 @@ public sealed partial class Utf8Pcre2Regex
 
     internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
 
-    internal bool DebugFoundationCoreFallbackRegexIsCreated =>
-        HasPrimaryUtf8Regex && PrimaryUtf8Regex.Inspection.DebugFallbackRegexIsCreated;
 
     internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.Inspection.ExecutionKind.ToString() : "<none>";
 

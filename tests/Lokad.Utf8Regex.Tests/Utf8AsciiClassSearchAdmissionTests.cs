@@ -206,15 +206,13 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
     {
         var regex = new Utf8Regex("[ABCD]{2,4}", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var runtime = Assert.IsType<Utf8VerifierRuntime>(typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex));
-        foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
-            typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(
-                runtime.FallbackCandidateVerifier, new Lazy<Regex>(() => throw new InvalidOperationException("ASCII scalar class used BCL.")));
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
         var subject = Encoding.UTF8.GetBytes("😀ABCD中ABC😀A");
         Assert.True(regex.IsMatch(subject)); Assert.Equal(2, regex.Count(subject));
         var match = regex.Match(subject); Assert.Equal(4, match.IndexInBytes); Assert.Equal(4, match.LengthInBytes);
         var detail = regex.MatchDetailed(subject); Assert.Equal(4, detail.IndexInBytes); Assert.Equal(4, detail.LengthInBytes);
         var count = 0; foreach (var item in regex.EnumerateMatches(subject)) { Assert.True(item.LengthInBytes >= 2); count++; }
         Assert.Equal(2, count); Assert.Equal("😀X中X😀A", regex.ReplaceToString(subject, "X"));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated); Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

@@ -42,7 +42,7 @@ public sealed class Utf8RegexSliceSplitDiffTests
         Assert.Equal(expected, actual);
         if (utf8Regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(utf8Regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(utf8Regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -65,7 +65,7 @@ public sealed class Utf8RegexSliceSplitDiffTests
         Assert.Equal(expected, EnumerateUtf8Splits(regex, input, int.MaxValue));
         foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), int.MaxValue))
             Assert.True(split.IsByteAligned);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private static List<(string Value, int Index, int Length)> EnumerateRuntimeSplits(

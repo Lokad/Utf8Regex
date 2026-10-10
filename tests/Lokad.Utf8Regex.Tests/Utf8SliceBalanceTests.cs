@@ -62,7 +62,7 @@ public sealed class Utf8SliceBalanceTests
                 Assert.Equal(oracle.Count(text), regex.Count(input));
             }
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
 
@@ -118,7 +118,7 @@ public sealed class Utf8SliceBalanceTests
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -139,7 +139,7 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class Utf8SliceBalanceTests
         Assert.Equal(oracle.Groups[1].Captures.Count, detailed.GetGroup(1).CaptureCount);
         Assert.Equal(1, detailed.GetGroup(1).CaptureCount);
         Assert.Equal("a", detailed.GetGroup(1).GetCapture(0).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class Utf8SliceBalanceTests
         Assert.False(detailed.GetGroup(1).Success);
         Assert.False(detailed.GetGroup(2).Success);
         Assert.Equal("y", detailed.GetGroup(3).GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -188,7 +188,7 @@ public sealed class Utf8SliceBalanceTests
             Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -202,7 +202,7 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex("(?<o>(a+)+)(?<-o>b)c", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=(?<o>(a+)+)(?<-o>b)c");
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=(?<o>(a+)+)(?<-o>b)c");
     }
 
     public static IEnumerable<object?[]> AstralInputCases()
@@ -233,7 +233,7 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> LookbehindCaptureDeclineCases()
@@ -254,7 +254,7 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> LookaheadBalanceCases()
@@ -277,6 +277,6 @@ public sealed class Utf8SliceBalanceTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

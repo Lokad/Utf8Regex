@@ -18,7 +18,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         Assert.True(regex.IsMatch("😀"u8));
         Assert.Equal(1, regex.Count("😀"u8));
         Assert.Equal(4, regex.Match("😀"u8).LengthInBytes);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> Cases()
@@ -50,7 +50,7 @@ public sealed class Utf8DeepScalarAdmissionTests
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         var text = family == "behind" ? "\U0001f600x" : "\U0001f600";
         var input = Encoding.UTF8.GetBytes(text);
         var index = family == "behind" ? 4 : 0;
@@ -74,7 +74,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
         Assert.Equal(family == "behind" ? rtl ? new[] { "", "\U0001f600" } : new[] { "\U0001f600", "" }
             : new[] { "", "" }, splits);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

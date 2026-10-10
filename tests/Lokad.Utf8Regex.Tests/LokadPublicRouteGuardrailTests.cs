@@ -69,18 +69,12 @@ public sealed class LokadPublicRouteGuardrailTests
         // Historic compiled-plan labels do not describe the scalar VM selected
         // before native/fallback dispatch. No offset through these loops is fixed.
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var runtimeProperty = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(runtimeProperty);
         var runtime = Assert.IsType<Utf8VerifierRuntime>(runtimeProperty.GetValue(regex));
-        foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
-        {
-            var field = typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(field);
-            field.SetValue(runtime.FallbackCandidateVerifier, new Lazy<Regex>(() =>
-                throw new InvalidOperationException("Scalar search accessed BCL fallback.")));
-        }
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
         var input = Encoding.UTF8.GetBytes("!éé Holmes!𐐀 Holmes!");
         Assert.True(regex.IsMatch(input));
         Assert.Equal(2, regex.Count(input));
@@ -101,8 +95,8 @@ public sealed class LokadPublicRouteGuardrailTests
         foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
         Assert.Equal(new[] { "!", "!", "!" }, splits);
         Assert.False(regex.IsMatch("Holmes"u8));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]

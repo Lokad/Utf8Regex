@@ -153,7 +153,7 @@ public sealed class Utf8SliceClassAdmissionTests
         Assert.Equal(oracle.Replace(text, "<$&>"), regex.ReplaceToString(input, "<$&>"));
         Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(text, "!")), regex.Replace(input, "!"u8));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(new string('a', 65536))));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -202,7 +202,7 @@ public sealed class Utf8SliceClassAdmissionTests
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal("a", regex.MatchDetailed(input).GetGroup("x").GetValueString());
         Assert.False(regex.IsMatch("b"u8));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

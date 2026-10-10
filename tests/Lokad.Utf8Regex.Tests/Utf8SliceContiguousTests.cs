@@ -70,7 +70,7 @@ public sealed class Utf8SliceContiguousTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
             }
         }
     }
@@ -100,7 +100,7 @@ public sealed class Utf8SliceContiguousTests
         Assert.Equal(expected, regex.Count(input));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
         }
     }
 
@@ -137,7 +137,7 @@ public sealed class Utf8SliceContiguousTests
         }
 
         Assert.Equal(expected, actual);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public sealed class Utf8SliceContiguousTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(?<=\\Ga)b", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(oracle.IsMatch("ab"), regex.IsMatch(Encoding.UTF8.GetBytes("ab")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -169,7 +169,7 @@ public sealed class Utf8SliceContiguousTests
             Assert.Equal(expectedEnd, actual.IndexInUtf16 + actual.LengthInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -185,6 +185,6 @@ public sealed class Utf8SliceContiguousTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "X")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 }

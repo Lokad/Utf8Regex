@@ -587,14 +587,9 @@ public sealed partial class Utf8Regex
         !UsesRightToLeft() &&
         !ShouldUseKelvinSignFallback(input);
 
-    // Guided verification and owned template replacement only try scalar-boundary
-    // starts, so astral inputs need shapes whose matches start at scalar
-    // boundaries: literal spans (exact and folded literals, grouped literal tables),
-    // ASCII-first non-empty matches (byte-safe plans with positive minimum length),
-    // or anchored matches (positions 0, line edges, input end). BMP and ASCII inputs
-    // stay on the fast paths: their units are scalars. Everything else falls back
-    // to full BCL decode on astral input.
-    private bool OwnedMatchStartsAreScalarAligned(ReadOnlySpan<byte> input)
+    // Native replacement splicers require complete scalar endpoints. Mixed
+    // subjects outside these qualified shapes use the cached scalar program.
+    private bool CanUseScalarAlignedNativeReplacement(ReadOnlySpan<byte> input)
     {
         if (input.IndexOfAnyInRange((byte)0xF0, byte.MaxValue) < 0)
         {
@@ -720,11 +715,10 @@ public sealed partial class Utf8Regex
             MatchTimeout != Regex.InfiniteMatchTimeout;
     }
 
-    private bool ShouldUseFallbackForSimplePatternReplacement(Utf8AnalyzedReplacement replacement, ReadOnlySpan<byte> input)
+    private bool RequiresScalarSimplePatternReplacement(Utf8AnalyzedReplacement replacement, ReadOnlySpan<byte> input)
     {
         // R05: groupless templates stay on owned routes under an infinite timeout
-        // (mirroring the groupless evaluator arm); finite timeouts keep the legacy
-        // routing so BCL timeout enforcement is preserved exactly.
+        // with their qualified projection; finite deadlines use the scalar program.
         if (MatchTimeout == Regex.InfiniteMatchTimeout && !_hasCaptures)
         {
             return false;

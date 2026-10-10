@@ -26,8 +26,8 @@ internal static class Utf8CompiledSearchAnalysisPolicy
         Utf8SearchOperationPlan countPipeline,
         Utf8SearchOperationPlan firstMatchPipeline)
     {
-        if (countPipeline.Confirmation.Kind != Utf8ConfirmationKind.FallbackVerifier ||
-            firstMatchPipeline.Confirmation.Kind != Utf8ConfirmationKind.FallbackVerifier)
+        if (countPipeline.Confirmation.Kind != Utf8ConfirmationKind.ScalarVerifier ||
+            firstMatchPipeline.Confirmation.Kind != Utf8ConfirmationKind.ScalarVerifier)
         {
             return false;
         }
@@ -62,8 +62,8 @@ internal static class Utf8CompiledSearchAnalysisPolicy
     {
         return regexPlan.ExecutionProgram is not null &&
             regexPlan.SearchPlan.FallbackSearch.CandidatePlans is { Length: > 0 } &&
-            !regexPlan.FallbackVerifier.RequiresCandidateEndCoverage &&
-            !regexPlan.FallbackVerifier.RequiresTrailingAnchorCoverage &&
+            !regexPlan.ScalarVerifier.RequiresCandidateEndCoverage &&
+            !regexPlan.ScalarVerifier.RequiresTrailingAnchorCoverage &&
             string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal) &&
             !HasBackreferenceInstructions(regexPlan.ExecutionProgram);
     }

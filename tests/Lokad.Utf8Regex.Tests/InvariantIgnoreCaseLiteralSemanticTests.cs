@@ -264,11 +264,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var expected = new Regex(pattern, options);
         var actual = new Utf8Regex(pattern, options);
         var analysis = Utf8FrontEnd.Compile(pattern, options);
-        var verifierRuntime = Utf8VerifierRuntime.Create(
-            analysis,
-            pattern,
-            options,
-            Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis);
         var input = Encoding.UTF8.GetBytes(subject);
         var validation = Utf8Validation.Validate(input);
         var splits = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
@@ -354,8 +350,8 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
             Assert.Equal(expected[i].Length, actual[i].Length);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -386,8 +382,8 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(oracle.Matches(text).Count, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> NonAsciiSplitCases()
@@ -428,8 +424,8 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expected, actual);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -466,8 +462,8 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expected, actual);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> NonAsciiTemplateCases()
@@ -499,14 +495,14 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
-        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> GroupedFoldedLiteralTemplateCases()
@@ -535,14 +531,14 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
-        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
-        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)

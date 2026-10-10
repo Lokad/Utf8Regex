@@ -31,8 +31,8 @@ public sealed class Utf8OwnedAdmissionTests
         var regex = new Utf8Regex(pattern, options);
         var oracle = new Regex(pattern, options);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text, "", "😀", "a", "-", "[", "a]", "[]", "-]"]);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -111,8 +111,8 @@ public sealed class Utf8OwnedAdmissionTests
             {
                 var regex = new Utf8Regex(@"(?<x>😀)\k<x>", options);
                 Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
-                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-                Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+                Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             }
             Assert.Equal(112ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);

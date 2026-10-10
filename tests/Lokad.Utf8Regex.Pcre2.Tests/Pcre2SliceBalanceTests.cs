@@ -51,7 +51,7 @@ public sealed class Pcre2SliceBalanceTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -63,7 +63,7 @@ public sealed class Pcre2SliceBalanceTests
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class Pcre2SliceBalanceTests
         var drained = regex.MatchDetailed(Utf8("ab"), 0);
         Assert.True(drained.Success);
         Assert.False(drained.GetGroup(1).Success);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class Pcre2SliceBalanceTests
         var detailed = regex.MatchDetailed(Utf8("xaab"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public sealed class Pcre2SliceBalanceTests
         Assert.False(detailed.GetGroup(1).Success);
         Assert.False(detailed.GetGroup(2).Success);
         Assert.Equal("y", detailed.GetGroup(3).GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class Pcre2SliceBalanceTests
     {
         var regex = new Utf8Pcre2Regex("(?<o>a)(?<-o>b)", Pcre2CompileOptions.None);
         Assert.Equal(Bcl("(?<o>a)(?<-o>b)").Replace("ab", "X"), regex.ReplaceToString(Utf8("ab"), "X"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class Pcre2SliceBalanceTests
         }
 
         Assert.Equal(["0-3", "4-7"], ranges);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Theory]

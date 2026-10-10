@@ -239,7 +239,7 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         ranges.Add((last, input.Length - last));
         Assert.True(regex.IsMatch(input)); Assert.Equal(count, regex.Count(input));
         var actual = new List<(int, int)>(); foreach (var gap in regex.EnumerateSplits(input)) actual.Add((gap.IndexInBytes, gap.LengthInBytes));
-        Assert.Equal(ranges, actual); Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(ranges, actual); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     private sealed class Box(int value) { internal readonly int Value = value; }
 }

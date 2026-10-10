@@ -255,7 +255,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         Assert.Equal(3, regex.Count(subject)); var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
         var expected = new[] { (2, 8), (11, 8), (20, 7) }; if ((options & RegexOptions.RightToLeft) != 0) Array.Reverse(expected);
-        Assert.Equal(expected, ranges); Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.Equal(expected, ranges); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
     private sealed class Box(int value) { internal readonly int Value = value; }
 }

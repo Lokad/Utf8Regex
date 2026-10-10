@@ -59,7 +59,7 @@ public sealed class Utf8SliceCategoryBlockTests
         {
             var regex = new Utf8Regex(pattern, options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
         }
     }
 
@@ -140,7 +140,7 @@ public sealed class Utf8SliceCategoryBlockTests
             var regex = new Utf8Regex(pattern, effective);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, effective.ToString() + " pattern=" + pattern);
             Assert.Equal(expected, regex.IsMatch(input));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, effective.ToString() + " pattern=" + pattern);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, effective.ToString() + " pattern=" + pattern);
         }
     }
 
@@ -164,7 +164,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> BlockFoldMatchCases()
@@ -191,7 +191,7 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.IndexInUtf16);
         Assert.Equal(expectedLength, found.LengthInUtf16);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -214,7 +214,7 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.Equal(expectedStart, group.IndexInUtf16);
         Assert.Equal(expectedLength, group.LengthInUtf16);
         Assert.Equal(expected.Groups[1].Value, group.GetValueString());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> BlockFoldEnumerateCases()
@@ -272,7 +272,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> BlockFoldSplitCases()
@@ -321,7 +321,7 @@ public sealed class Utf8SliceCategoryBlockTests
             Assert.Equal(expectedLength, found.LengthInUtf16);
         }
 
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> BlockFoldRtlCases()
@@ -350,7 +350,7 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.Equal(expectedSuccess, found.Success);
         Assert.Equal(expectedStart, found.IndexInUtf16);
         Assert.Equal(expectedLength, found.LengthInUtf16);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> BlockFoldAstralCases()
@@ -435,8 +435,8 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.False(plain.IsMatch(input), "plain");
         Assert.False(doubled.IsMatch(input), "doubled");
         Assert.True(bare.IsMatch(input), "bare");
-        Assert.False(plain.Inspection.DebugFallbackRegexIsCreated, "plain");
-        Assert.False(doubled.Inspection.DebugFallbackRegexIsCreated, "doubled");
-        Assert.False(bare.Inspection.DebugFallbackRegexIsCreated, "bare");
+        Assert.True(plain.Inspection.PreparedRegex.ScalarProgram is not null, "plain");
+        Assert.True(doubled.Inspection.PreparedRegex.ScalarProgram is not null, "doubled");
+        Assert.True(bare.Inspection.PreparedRegex.ScalarProgram is not null, "bare");
     }
 }

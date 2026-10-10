@@ -123,7 +123,7 @@ public sealed class Utf8SliceAssertionDirectionTests
         var regex = new Utf8Regex(pattern, options);
         Assert.Equal(1, regex.Count(input));
         Assert.False(regex.MatchDetailed(input).GetGroup("o").Success);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -148,7 +148,7 @@ public sealed class Utf8SliceAssertionDirectionTests
         var regex = new Utf8Regex(pattern, options);
         var match = regex.MatchDetailedFromUtf16Offset(input, 1024);
         Assert.Equal(1024, match.GetGroup("o").CaptureCount);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]

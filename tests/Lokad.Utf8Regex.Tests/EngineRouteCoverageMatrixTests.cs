@@ -119,8 +119,8 @@ public sealed class EngineRouteCoverageMatrixTests
         {
             Assert.Equal(Regex.Count(inputText, pattern, options), regex.Count(input));
             Assert.Equal((0, inputText.Length), (regex.Match(input).IndexInBytes, regex.Match(input).LengthInBytes));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 }

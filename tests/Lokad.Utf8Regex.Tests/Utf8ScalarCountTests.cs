@@ -42,8 +42,8 @@ public sealed class Utf8ScalarCountTests
         var input = Encoding.UTF8.GetBytes(subject);
         using var source = new CancellationTokenSource();
         Assert.Equal(expected, live ? regex.Count(input, source.Token) : regex.Count(input));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -65,7 +65,7 @@ public sealed class Utf8ScalarCountTests
         }
         foreach (var interior in new[] { 2, 4 })
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, interior));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -107,7 +107,7 @@ public sealed class Utf8ScalarCountTests
         Assert.Equal(60000, regex.Count(input));
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.InRange(allocated, 0L, 65536L);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -164,8 +164,8 @@ public sealed class Utf8ScalarCountTests
         var destination = new byte[64];
         Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "|"u8, destination, out var written));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), destination.AsSpan(0, written).ToArray());
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]

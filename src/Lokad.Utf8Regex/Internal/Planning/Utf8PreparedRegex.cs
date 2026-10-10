@@ -27,7 +27,7 @@ internal sealed class Utf8PreparedRegex
         Utf8StructuralSearchPlan StructuralSearchPlan,
         Utf8DeterministicAnchorSearch DeterministicAnchor,
         Utf8DeterministicVerifierGuards DeterministicGuards,
-        Utf8FallbackVerifierPlan FallbackVerifier,
+        Utf8ScalarVerifierPlan ScalarVerifier,
         Utf8StructuralVerifierPlan StructuralVerifier,
         AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan StructuralTokenWindowPlan,
@@ -53,7 +53,7 @@ internal sealed class Utf8PreparedRegex
         StructuralSearchPlan = state.StructuralSearchPlan;
         DeterministicAnchor = state.DeterministicAnchor;
         DeterministicGuards = state.DeterministicGuards;
-        FallbackVerifier = state.FallbackVerifier;
+        ScalarVerifier = state.ScalarVerifier;
         StructuralVerifier = state.StructuralVerifier;
         StructuralIdentifierFamilyPlan = state.StructuralIdentifierFamilyPlan;
         StructuralTokenWindowPlan = state.StructuralTokenWindowPlan;
@@ -78,7 +78,7 @@ internal sealed class Utf8PreparedRegex
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8DeterministicAnchorSearch deterministicAnchor,
         Utf8DeterministicVerifierGuards deterministicGuards,
-        Utf8FallbackVerifierPlan fallbackVerifier,
+        Utf8ScalarVerifierPlan scalarVerifier,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
@@ -105,7 +105,7 @@ internal sealed class Utf8PreparedRegex
             structuralSearchPlan,
             deterministicAnchor,
             deterministicGuards,
-            fallbackVerifier,
+            scalarVerifier,
             structuralVerifier,
             structuralIdentifierFamilyPlan,
             structuralTokenWindowPlan,
@@ -145,7 +145,7 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8DeterministicVerifierGuards DeterministicGuards { get; }
 
-    public Utf8FallbackVerifierPlan FallbackVerifier { get; }
+    public Utf8ScalarVerifierPlan ScalarVerifier { get; }
 
     public Utf8StructuralVerifierPlan StructuralVerifier { get; }
 

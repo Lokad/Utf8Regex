@@ -17,7 +17,7 @@ internal static class Utf8ConfirmationExecutor
             Utf8ConfirmationKind.None => true,
             Utf8ConfirmationKind.BoundaryRequirements or Utf8ConfirmationKind.BoundaryAndTrailingLiteral
                 => MatchesBoundaryRequirementsFast(in plan, input, startIndex, literalLength),
-            Utf8ConfirmationKind.FallbackVerifier => true,
+            Utf8ConfirmationKind.ScalarVerifier => true,
             _ => false,
         };
     }

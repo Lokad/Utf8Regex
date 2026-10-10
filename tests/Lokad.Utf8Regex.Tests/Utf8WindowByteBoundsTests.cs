@@ -79,18 +79,12 @@ public sealed class Utf8WindowByteBoundsTests
         })
         {
             var regex = new Utf8Regex(row.Pattern, options);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(property);
             var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            foreach (var name in new[] { "_fallbackRegex", "_anchoredFallbackRegex" })
-            {
-                var field = typeof(Utf8FallbackCandidateVerifier).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.NotNull(field);
-                field.SetValue(runtime.FallbackCandidateVerifier, new Lazy<Regex>(() =>
-                    throw new InvalidOperationException("Window matching accessed BCL fallback.")));
-            }
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
             var input = Encoding.UTF8.GetBytes(row.Text);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(2, regex.Count(input));
@@ -118,8 +112,8 @@ public sealed class Utf8WindowByteBoundsTests
             foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
             Assert.Equal(new[] { "!", "!", "!" }, splits);
             Assert.False(regex.IsMatch("firstlast"u8));
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-            Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 

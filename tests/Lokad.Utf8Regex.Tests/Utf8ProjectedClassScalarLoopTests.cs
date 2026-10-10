@@ -62,7 +62,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
         Assert.True(regex.IsMatch("a??b"u8));
         Assert.False(regex.IsMatch("a😀b"u8));
         Assert.Equal(10, regex.Match("a😀😀b"u8).LengthInBytes);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> PublicCases()
@@ -115,7 +115,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
             foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
             Assert.Equal(expected ? new[] { "", "" } : new[] { text }, splits);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

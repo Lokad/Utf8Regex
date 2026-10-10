@@ -20,7 +20,7 @@ public sealed class Utf8LoweringDepthTests
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxabxx")));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]
@@ -57,6 +57,6 @@ public sealed class Utf8LoweringDepthTests
         Assert.Equal(runtime.GroupNumberFromName("word"), utf8.GroupNumberFromName("word"));
         Assert.Equal("word", utf8.GroupNameFromNumber(utf8.GroupNumberFromName("word")));
         Assert.True(utf8.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));
-        Assert.False(utf8.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(utf8.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

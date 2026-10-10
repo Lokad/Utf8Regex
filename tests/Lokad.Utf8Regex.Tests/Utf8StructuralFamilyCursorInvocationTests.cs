@@ -54,8 +54,8 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
             Assert.Equal(oracle.Count(text), regex.Count(input, live ? source.Token : default));
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, live ? source.Token : default));
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object[]> CompleteCases()
@@ -138,7 +138,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
             }
             Assert.False(cursor.MoveNext());
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> PhaseCases()
@@ -182,7 +182,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
             }
             else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
             Assert.True(entered);
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(method ? "LogError(" : "getAlpha")));
@@ -214,7 +214,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         if (expire) Assert.IsType<RegexMatchTimeoutException>(observed);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
         Assert.Equal(previous, cursor.Current);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(input));
     }
 
@@ -239,7 +239,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
             var malformed = "getAlpha "u8.ToArray().Concat(input).ToArray();
             Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(malformed); _ = cursor.MoveNext(); });
             Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(malformed, source.Token); _ = cursor.MoveNext(); });
-            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         source.Cancel();
         var canceled = new Utf8Regex(Patterns[0], options);
@@ -265,7 +265,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         Assert.Equal(text, timeout.Input);
         Assert.Equal(regex.MatchTimeout, timeout.MatchTimeout);
         Assert.False(cursor.Current.Success);
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Theory]

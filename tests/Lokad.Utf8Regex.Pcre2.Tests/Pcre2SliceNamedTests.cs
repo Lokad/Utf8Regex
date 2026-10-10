@@ -103,7 +103,7 @@ public sealed class Pcre2SliceNamedTests
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
         var reuse = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
-        Assert.False(reuse.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
         var explicitStart = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
     }
@@ -116,7 +116,7 @@ public sealed class Pcre2SliceNamedTests
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]
@@ -138,7 +138,7 @@ public sealed class Pcre2SliceNamedTests
             Assert.Equal(expectedEnd, found.EndOffsetInBytes);
         }
 
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+        Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class Pcre2SliceNamedTests
         }
 
         Assert.Equal(["0-2", "3-5"], ranges);
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public sealed class Pcre2SliceNamedTests
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
         Assert.Equal("a", word.GetValueString());
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 
     [Fact]
@@ -175,6 +175,6 @@ public sealed class Pcre2SliceNamedTests
     {
         var regex = new Utf8Pcre2Regex("(?<word>a)+", Pcre2CompileOptions.None);
         Assert.Equal("x<a>", regex.ReplaceToString(Utf8("xaa"), "<$1>"));
-        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+        Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

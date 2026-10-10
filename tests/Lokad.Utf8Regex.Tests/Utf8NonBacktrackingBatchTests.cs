@@ -61,8 +61,8 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal("<abc>", shared.ReplaceToString("abc"u8, "<${x}>"));
         Assert.Equal("<abc>", shared.ReplaceToString("abc"u8, 0,
             static (in Utf8MatchContext match, ref int state) => "<" + match.GetGroup("x").GetValueString() + ">"));
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
-        Assert.False(shared.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+        Assert.True(shared.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             Assert.True(copy.MoveNext());
             Assert.Equal(0, copy.Current.IndexInBytes);
         }
-        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     [Fact]
