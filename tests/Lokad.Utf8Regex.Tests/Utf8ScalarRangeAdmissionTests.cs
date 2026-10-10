@@ -22,7 +22,7 @@ public sealed class Utf8ScalarRangeAdmissionTests
     }
 
     [Fact]
-    public void ClassWireBmpQueriesRemainConsistentForMixedScalarRanges()
+    public void CanonicalClassesKeepMixedScalarRangeMembership()
     {
         const string pattern = "[A-Z\U00010400-\U00010402-[B\U00010401]]";
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
@@ -30,10 +30,12 @@ public sealed class Utf8ScalarRangeAdmissionTests
         var root = tree.Root;
         while (root.ChildCount == 1) root = root.Child(0);
         Assert.Equal(Utf8TreeNodeKind.Set, root.Kind);
-        Assert.NotNull(root.Str);
-        Assert.True(Utf8OwnedCharClass.CharInClass('A', root.Str));
-        Assert.False(Utf8OwnedCharClass.CharInClass('B', root.Str));
-        Assert.False(Utf8OwnedCharClass.CharInClass('a', root.Str));
+        Assert.Null(root.Str);
+        Assert.NotNull(root.ScalarClass);
+        Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(root.ScalarClass, out var mask));
+        Assert.True(mask.Contains((byte)'A'));
+        Assert.False(mask.Contains((byte)'B'));
+        Assert.False(mask.Contains((byte)'a'));
         var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.CultureInvariant);
         Assert.NotNull(program);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

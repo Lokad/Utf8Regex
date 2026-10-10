@@ -305,7 +305,7 @@ internal static partial class Utf8StructuralSearchExecutor
                         return false;
                     }
 
-                    if (stage.HasSet && !Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)input[index], stage.Set))
+                    if (stage.HasSet && !stage.Set.Contains(input[index]))
                     {
                         return false;
                     }

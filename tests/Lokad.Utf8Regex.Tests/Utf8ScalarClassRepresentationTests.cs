@@ -8,6 +8,132 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ScalarClassRepresentationTests
 {
+    private sealed class ParentValue(int value) { internal readonly int Value = value; }
+
+    [Fact]
+    public void CanonicalAtomProducersKeepCompleteScalarByteRanges()
+    {
+        (string Pattern, RegexOptions Extra, string Subject, (int, int)[] Ranges)[] cases =
+        [
+            (".", 0, "😀\n𐐀", [(0, 4), (5, 4)]),
+            (".", RegexOptions.Singleline, "😀\n𐐀", [(0, 4), (4, 1), (5, 4)]),
+            (@"\d", 0, "1𝟎!", [(0, 1), (1, 4)]),
+            (@"\D", 0, "𝟎😀", [(4, 4)]),
+            (@"\w", 0, "𐐀_😀", [(0, 4), (4, 1)]),
+            (@"\W", 0, "𐐀_😀", [(5, 4)]),
+            (@"\s", 0, "😀\u0085\u00a0\u2028", [(4, 2), (6, 2), (8, 3)]),
+            (@"\S", 0, "😀\u0085", [(0, 4)]),
+            (@"\p{L}", 0, "𐐀😀", [(0, 4)]),
+            (@"\P{L}", 0, "𐐀😀", [(4, 4)]),
+            (@"\p{IsSpecials}", 0, "\uffff\U00010000", [(0, 3)]),
+            (@"\P{IsSpecials}", 0, "\uffff\U00010000", [(3, 4)]),
+            (@"[\P{IsBasicLatin}-[\p{L}]]", 0, "😀𐐀!", [(0, 4)]),
+            (@"(?i:k)", 0, "KkK😀", [(0, 1), (1, 1), (2, 3)]),
+            (@"\d", RegexOptions.ECMAScript, "1𝟎😀_İ ", [(0, 1)]),
+            (@"\D", RegexOptions.ECMAScript, "1𝟎😀_İ ", [(1, 4), (5, 4), (9, 1), (10, 2), (12, 1)]),
+            (@"\w", RegexOptions.ECMAScript, "1𝟎😀_İ ", [(0, 1), (9, 1), (10, 2)]),
+            (@"\W", RegexOptions.ECMAScript, "1𝟎😀_İ ", [(1, 4), (5, 4), (12, 1)]),
+            (@"\s", RegexOptions.ECMAScript, "1𝟎😀_İ ", [(12, 1)]),
+            (@"\S", RegexOptions.ECMAScript, "1𝟎😀_İ ", [(0, 1), (1, 4), (5, 4), (9, 1), (10, 2)]),
+        ];
+        foreach (var row in cases)
+        foreach (var compiled in new[] { false, true })
+        foreach (var rtl in (row.Extra & RegexOptions.ECMAScript) != 0 ? new[] { false } : new[] { false, true })
+        {
+            var options = Options(compiled, rtl) | row.Extra;
+            var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
+            Assert.NotNull(tree);
+            var pending = new Stack<Utf8TreeNode>(); pending.Push(tree.Root);
+            while (pending.TryPop(out var node))
+            {
+                if (node.Kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)
+                {
+                    Assert.NotNull(node.ScalarClass);
+                    Assert.Null(node.Str);
+                }
+                for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
+            }
+            var input = Encoding.UTF8.GetBytes(row.Subject);
+            var regex = new Utf8Regex(row.Pattern, options);
+            var expected = rtl ? row.Ranges.Reverse().ToArray() : row.Ranges;
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(expected.Length, regex.Count(input));
+            var actual = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(expected, actual);
+            var first = regex.MatchDetailed(input);
+            Assert.True(first.Success);
+            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
+            AssertOwned(regex);
+        }
+    }
+
+    [Fact]
+    public void CanonicalParserClassProducersRecoverEveryWorkCutoffAndRootDenial()
+    {
+        foreach (var pattern in new[] { ".", "(?s:.)", @"\w", @"\P{IsSpecials}", @"\p{L}", @"(?i:K)", @"[x\P{IsBasicLatin}-[\d]]" })
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.ECMAScript })
+        {
+            ulong work;
+            using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+            {
+                Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
+                work = measured.Budget.WorkSteps;
+            }
+            Assert.InRange(work, 1ul, 20_000ul);
+            for (ulong cutoff = 0; cutoff <= work; cutoff++)
+            {
+                using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
+                var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
+                var checkpoint = owner.Budget.ObjectCheckpoint;
+                if (cutoff < work)
+                {
+                    var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, options));
+                    Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
+                    Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                    Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                }
+                else Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
+                Assert.Equal(17, parent.Value);
+                Assert.Equal(0ul, owner.Budget.Depth);
+                Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
+            }
+            foreach (var depth in new[] { false, true })
+            {
+                using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : 112, ulong.MaxValue, depth ? 0ul : ulong.MaxValue);
+                var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
+                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, options));
+                Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
+                Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(0ul, owner.Budget.Depth);
+                Assert.Equal(17, parent.Value);
+                if (depth) Assert.Equal(112ul, owner.Budget.PeakBytes);
+            }
+        }
+    }
+
+    [Fact]
+    public void AllRecognizedPropertyBlocksUseExplicitIntegerEndpointPairs()
+    {
+        Assert.Equal(112, Utf8SliceCategories.BlockNames.Count);
+        foreach (var name in Utf8SliceCategories.BlockNames)
+        {
+            Assert.True(Utf8SliceCategories.TryResolve(name, out var mask, out var ranges, out var block));
+            Assert.True(block); Assert.Equal(0u, mask);
+            Assert.IsType<int[]>(ranges);
+            Assert.Equal(0, ranges.Length & 1);
+            Assert.NotEmpty(ranges);
+            for (var index = 0; index < ranges.Length; index += 2)
+            {
+                Assert.InRange(ranges[index], 0, 0x10ffff);
+                Assert.InRange(ranges[index + 1], ranges[index] + 1, 0x110000);
+            }
+            if (name == "IsSpecials") Assert.Equal(new[] { 0xfff0, 0x10000 }, ranges);
+        }
+    }
+
     private static readonly string SparseMembers = MakeSparseMembers();
     private static readonly string RepeatedCategories = string.Concat(Enumerable.Repeat(@"\p{Lu}", 65536));
 
@@ -147,8 +273,13 @@ public sealed class Utf8ScalarClassRepresentationTests
         Assert.True(owner.Budget.PeakBytes <= owner.Budget.MaximumBytes);
         if (workLimit)
         {
-            // Failed byte loans roll back; cumulative work does not. An
-            // exhausted owner cannot admit even a small subsequent parse.
+            // A denied buffer-copy batch has not run and can leave unused
+            // work. Admitted work stays spent after rollback. Consume the
+            // remainder explicitly before checking the exhausted owner.
+            var spent = owner.Budget.WorkSteps;
+            Assert.InRange(spent, 1ul, 4096ul);
+            owner.Budget.ChargeWork(4096ul - spent);
+            Assert.Equal(4096ul, owner.Budget.WorkSteps);
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                     Utf8OwnedTreeParser.TryParse("[a]", RegexOptions.None)).ResourceKind);
@@ -168,6 +299,17 @@ public sealed class Utf8ScalarClassRepresentationTests
         Assert.Null(node.Str);
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(4, 4), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
         Assert.NotNull(Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.CultureInvariant));
+        var semantic = new Utf8SemanticRegex("large class", node.Options, "large class", node.Options, tree);
+        var execution = Utf8ExecutionTreeLowerer.Lower(semantic);
+        Assert.NotNull(execution);
+        Assert.Same(node.ScalarClass, execution.Root.Children[0].Payload);
+        Assert.Equal(string.Empty, execution.Root.Children[0].Text);
+        var program = Utf8ExecutionProgramLowerer.Lower(execution);
+        Assert.NotNull(program);
+        var instruction = Assert.Single(program.Instructions.Where(static instruction =>
+            instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Set));
+        Assert.Same(node.ScalarClass, instruction.Payload);
+        Assert.Null(instruction.CharClass);
         foreach (var lazy in new[] { false, true })
         {
             var repeat = Utf8TreeNode.CreateSetRepeat(node, node.Options, 2, 3, lazy);

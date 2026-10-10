@@ -561,7 +561,8 @@ internal static class Utf8NativeExecutionAnalyzer
                     case Utf8TreeNodeKind.Empty:
                         break;
                     case Utf8TreeNodeKind.Set:
-                        if (node.Str is null || Utf8OwnedCharClass.IsSubtraction(node.Str)) return false;
+                        if (node.ScalarClass is not { } scalarClass || scalarClass.Data.Length < 3 ||
+                            scalarClass.Data.Length != 3L + scalarClass.Data[1] + scalarClass.Data[2]) return false;
                         break;
                     case Utf8TreeNodeKind.Oneloop:
                     case Utf8TreeNodeKind.Setloop:
@@ -2513,18 +2514,15 @@ internal static class Utf8NativeExecutionAnalyzer
     // range of a negated set (dot and negated-newline loops passed as
     // whitespace-only because their lone excluded newline is whitespace),
     // misrouting dot gaps into separator-window plans.
-    private static bool IsAsciiWhitespaceOnlySet(string runtimeSet)
+    private static bool IsAsciiWhitespaceOnlySet(Utf8ScalarClass scalarClass)
     {
-        using var construction = Utf8ConstructionScope.Enter();
-        using var query = Utf8ConstructionClass.Create(construction.Budget, runtimeSet);
-        var sawMatch = false;
+        if (!Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) || mask.IsEmpty) return false;
         for (var value = 0; value < 128; value++)
         {
-            if (!query.Contains((char)value)) continue;
-            sawMatch = true;
-            if (value is not (' ' or '\t' or '\r' or '\n' or '\f' or '\v')) return false;
+            Utf8ConstructionScope.ChargeWork(1);
+            if (mask.Contains((byte)value) && !Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value)) return false;
         }
-        return sawMatch;
+        return true;
     }
 
     private static bool TryGetAsciiLiteral(Utf8TreeNode node, out byte[] literalUtf8)
@@ -2613,7 +2611,7 @@ internal static class Utf8NativeExecutionAnalyzer
                         owner.ChargeWork((ulong)text.Length); value = 0;
                         foreach (var ch in text) if (ch == '\n') value++;
                         frames.Pop(); continue;
-                    case Utf8TreeNodeKind.Set when node.Str is { } set:
+                    case Utf8TreeNodeKind.Set when node.ScalarClass is { } set:
                         value = HasNewline(set) ? 1 : 0; frames.Pop(); continue;
                     case Utf8TreeNodeKind.Loop:
                     case Utf8TreeNodeKind.Lazyloop:
@@ -2621,7 +2619,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     case Utf8TreeNodeKind.Setlazy:
                     case Utf8TreeNodeKind.Setloopatomic:
                         if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic &&
-                            node.Str is { } loopSet && !HasNewline(loopSet))
+                            node.ScalarClass is { } loopSet && !HasNewline(loopSet))
                         { value = 0; frames.Pop(); continue; }
                         if (node.ChildCount != 1) return false;
                         frames[index] = frame; frames.Push(new(node.Child(0))); continue;
@@ -2654,18 +2652,15 @@ internal static class Utf8NativeExecutionAnalyzer
         }
         maxLineBreaks = value; return true;
 
-        static bool HasNewline(string set)
-        {
-            using var query = Utf8ConstructionClass.Create(Utf8ConstructionScope.CurrentBudget, set);
-            return query.Contains('\n');
-        }
+        static bool HasNewline(Utf8ScalarClass scalarClass) =>
+            !Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) || mask.Contains((byte)'\n');
     }
 
 
 
     // The direct window executor selects the trailing literal greedily
     // (LastIndexOf), so lazy ranges decline window plans while greedy and
-    // fixed gaps keep them; BCL parity holds through the fallback route.
+    // fixed gaps keep them; declined shapes use the required scalar route.
     private static bool IsLazyGapRange(Utf8TreeNode node, int minGap, int maxGap)
     {
         if (minGap == maxGap)
@@ -2683,11 +2678,11 @@ internal static class Utf8NativeExecutionAnalyzer
         maxCount = 0;
         minCount = 0;
         if (!TryGetSetLoop(node, out var setNode, out var min, out var max) ||
-            setNode.Str is null ||
+            setNode.ScalarClass is null ||
             min < 0 ||
             max < min ||
             max == int.MaxValue ||
-            !IsAsciiAnyTextSet(setNode.Str))
+            !IsAsciiAnyTextSet(setNode.ScalarClass))
         {
             return false;
         }
@@ -2713,11 +2708,11 @@ internal static class Utf8NativeExecutionAnalyzer
         maxCount = 0;
         minCount = 0;
         if (!TryGetSetLoop(node, out var setNode, out var min, out var max) ||
-            setNode.Str is null ||
+            setNode.ScalarClass is null ||
             min < 0 ||
             max < min ||
             max == int.MaxValue ||
-            !IsAsciiDotSet(setNode.Str))
+            !IsAsciiDotSet(setNode.ScalarClass))
         {
             return false;
         }
@@ -2731,45 +2726,13 @@ internal static class Utf8NativeExecutionAnalyzer
     /// <summary>
     /// Returns true if the set matches all ASCII characters EXCEPT \n (i.e., '.' without Singleline).
     /// </summary>
-    private static bool IsAsciiDotSet(string runtimeSet)
-    {
-        for (var value = 0; value < 128; value++)
-        {
-            var matches = Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
-            if (value == '\n')
-            {
-                if (matches)
-                {
-                    return false;
-                }
-            }
-            else if (!matches)
-            {
-                return false;
-            }
-        }
+    private static bool IsAsciiDotSet(Utf8ScalarClass scalarClass) =>
+        Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) &&
+        mask.ActualLowMask == (ulong.MaxValue & ~(1UL << '\n')) && mask.ActualHighMask == ulong.MaxValue;
 
-        return true;
-    }
-
-    private static bool IsAsciiAnyTextSet(string runtimeSet)
-    {
-        var sawNewLine = false;
-        for (var value = 0; value < 128; value++)
-        {
-            var matches = Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
-            if (!matches)
-            {
-                return false;
-            }
-
-            sawNewLine |= value == '\n';
-        }
-
-        return sawNewLine;
-    }
-
-
+    private static bool IsAsciiAnyTextSet(Utf8ScalarClass scalarClass) =>
+        Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) &&
+        mask.ActualLowMask == ulong.MaxValue && mask.ActualHighMask == ulong.MaxValue;
 
     private static byte[] GetShortestLiteral(byte[][] literals)
     {
@@ -2932,7 +2895,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 else if (!foldCase && node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi &&
                     TryGetLiteralText(node, out literal)) { }
                 else if (!foldCase && node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Setlazy &&
-                    node.Str is { } set && node.M >= 1 && node.N == int.MaxValue)
+                    node.ScalarClass is { } set && node.M >= 1 && node.N == int.MaxValue)
                 {
                     if (!IsAsciiWhitespaceOnlySet(set)) return false;
                     literal = " ";
@@ -3012,7 +2975,7 @@ internal static class Utf8NativeExecutionAnalyzer
                             text.Append((char)Internal.Search.AsciiSearch.FoldCase((byte)value));
                         }
                         break;
-                    case Utf8TreeNodeKind.Set when node.Str is { } set:
+                    case Utf8TreeNodeKind.Set when node.ScalarClass is { } set:
                         if (!TryGetInvariantIgnoreCaseAsciiSetLiteral(set, out var folded)) return false;
                         text.Append((char)folded); break;
                     case Utf8TreeNodeKind.Concatenate:
@@ -3035,14 +2998,12 @@ internal static class Utf8NativeExecutionAnalyzer
         literal = text.ToText(); construction.Complete(); return true;
     }
 
-    private static bool TryGetInvariantIgnoreCaseAsciiSetLiteral(string runtimeSet, out byte literal)
+    private static bool TryGetInvariantIgnoreCaseAsciiSetLiteral(Utf8ScalarClass scalarClass, out byte literal)
     {
         literal = 0;
         var owner = Utf8ConstructionScope.CurrentBudget;
-        owner.ChargeWork((ulong)runtimeSet.Length);
-        // Stored ranges alone do not prove the whole class is this literal.
-        if (Utf8OwnedCharClass.IsNegated(runtimeSet) || Utf8OwnedCharClass.IsSubtraction(runtimeSet) ||
-            !Utf8OwnedCharClass.IsAscii(runtimeSet))
+        // An ASCII intersection alone does not prove the whole class is this literal.
+        if (!Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(scalarClass, out var mask))
         {
             return false;
         }
@@ -3051,8 +3012,8 @@ internal static class Utf8NativeExecutionAnalyzer
         var folded = byte.MaxValue;
         for (var value = 0; value < 128; value++)
         {
-            owner.ChargeWork((ulong)runtimeSet.Length + 1);
-            if (!Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet))
+            owner.ChargeWork(1);
+            if (!mask.Contains((byte)value))
             {
                 continue;
             }

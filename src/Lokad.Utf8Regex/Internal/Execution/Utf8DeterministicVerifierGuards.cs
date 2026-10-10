@@ -258,7 +258,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
 
                     return true;
 
-                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
+                case Utf8ExecutionNodeKind.Set when Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var set):
                     return TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, set));
 
                 case Utf8ExecutionNodeKind.Concatenate:
@@ -281,7 +281,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
         {
             Utf8ConstructionScope.ChargeWork(1);
             if (node.Kind is Utf8ExecutionNodeKind.Set or Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop &&
-                (node.Text == Internal.FrontEnd.Utf8OwnedCharClass.SpaceClass || node.Text == Internal.FrontEnd.Utf8OwnedCharClass.ECMASpaceClass))
+                Utf8ScalarAsciiProjector.IsPositiveWhitespace(node.ScalarClass))
                 return true;
             if (node.Kind is not (Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop) || node.Children.Count != 1)
                 return false;
@@ -309,21 +309,21 @@ internal readonly struct Utf8DeterministicByteGuard
     {
         Offset = offset;
         Literal = literal;
-        Set = null;
+        CharClass = null;
     }
 
-    public Utf8DeterministicByteGuard(int offset, string set)
+    public Utf8DeterministicByteGuard(int offset, AsciiCharClass charClass)
     {
         Offset = offset;
         Literal = null;
-        Set = set;
+        CharClass = charClass;
     }
 
     public int Offset { get; }
 
     public byte? Literal { get; }
 
-    public string? Set { get; }
+    public AsciiCharClass? CharClass { get; }
 
     public bool Matches(byte value)
     {
@@ -332,6 +332,6 @@ internal readonly struct Utf8DeterministicByteGuard
             return value == literal;
         }
 
-        return Set is { } set && Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)value, set);
+        return CharClass is { } charClass && charClass.Contains(value);
     }
 }

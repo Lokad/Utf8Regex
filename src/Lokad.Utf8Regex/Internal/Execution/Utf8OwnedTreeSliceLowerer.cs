@@ -308,7 +308,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                         var hit = ((int)member >> 1) switch
                         {
                             0 => char.IsDigit((char)value),
-                            1 => Utf8OwnedCharClass.IsWordChar((char)value),
+                            1 => Utf8SliceScalarClasses.WordCharAsciiLookup[value] != 0,
                             _ => char.IsWhiteSpace((char)value),
                         };
                         if (hit != (((int)member & 1) != 0)) mask[value >> 3] |= (byte)(1 << (value & 7));
@@ -336,7 +336,7 @@ internal static class Utf8OwnedTreeSliceLowerer
             for (var index = 0; index < encoded.Length; index++)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (encoded[index] == Utf8OwnedCharClass.RangePredicateCode)
+                if (encoded[index] == Utf8ScalarClass.RangePredicateCode)
                 {
                     if (index + 2 >= encoded.Length) return false;
                     var negated = encoded[++index] != 0;

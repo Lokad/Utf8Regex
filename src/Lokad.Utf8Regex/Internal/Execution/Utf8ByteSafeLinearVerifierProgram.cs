@@ -305,7 +305,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text):
                 steps.Add(Utf8ByteSafeLinearVerifierStep.MatchText(text));
                 break;
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && TryCreateByteSafeSetStep(set, false, 0, 0, out var setStep):
+            case Utf8ExecutionNodeKind.Set when node.ScalarClass is { } set && TryCreateByteSafeSetStep(set, false, 0, 0, out var setStep):
                 steps.Add(setStep);
                 break;
             case Utf8ExecutionNodeKind.Bol:
@@ -397,14 +397,14 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
             return AppendAction.Complete;
         }
 
-        if (node.Text is { Length: > 0 } loopSet && TryCreateByteSafeSetStep(loopSet, loop: true, node.Min, node.Max, out var loopSetStep))
+        if (node.ScalarClass is { } loopSet && TryCreateByteSafeSetStep(loopSet, loop: true, node.Min, node.Max, out var loopSetStep))
         {
             steps.Add(loopSetStep);
             frame.Succeeded = true;
             return AppendAction.Complete;
         }
 
-        if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText))
+        if (node.ScalarClass is null && Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText))
         {
             steps.Add(Utf8ByteSafeLinearVerifierStep.LoopText(loopText, node.Min, node.Max));
             frame.Succeeded = true;
@@ -425,7 +425,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(child.Text, out var text):
                 steps.Add(Utf8ByteSafeLinearVerifierStep.LoopText(text, node.Min, node.Max));
                 break;
-            case Utf8ExecutionNodeKind.Set when child.Text is { Length: > 0 } set && TryCreateByteSafeSetStep(set, true, node.Min, node.Max, out var setStep):
+            case Utf8ExecutionNodeKind.Set when child.ScalarClass is { } set && TryCreateByteSafeSetStep(set, true, node.Min, node.Max, out var setStep):
                 steps.Add(setStep);
                 break;
             case Utf8ExecutionNodeKind.Concatenate:
@@ -579,39 +579,18 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
         return AppendAction.Child;
     }
 
-    private bool TryCreateByteSafeSetStep(string runtimeSet, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
+    private bool TryCreateByteSafeSetStep(Utf8ScalarClass scalarClass, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
     {
-        if (TryCreateCharClass(runtimeSet, out var asciiCharClass))
+        if (Utf8ScalarAsciiProjector.TryProjectAsciiIntersection(scalarClass, out var mask))
         {
-            // This carrier executes the ASCII intersection. Non-ASCII input
-            // declines to the dispatcher; surrogate-half membership cannot
-            // determine scalar loop admission or its minimum.
-            step = loop
-                ? Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(asciiCharClass, min, max)
-                : Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(asciiCharClass);
-            return true;
-        }
-
-        if (Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(runtimeSet))
-        {
-            // The old wire proof includes subtraction and its legacy all-byte
-            // sentinel. Prepare its exact ASCII intersection once, and retain
-            // the scalar dispatcher guard for every non-ASCII encounter.
-            TryBuildAsciiSetMask(runtimeSet, out var low, out var high);
-            var mask = new AsciiCharClass(low, high);
-            step = loop
-                ? Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(mask, min, max)
+            // Only the proved ASCII intersection executes here. A non-ASCII
+            // encounter requests the authoritative scalar dispatcher.
+            step = loop ? Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(mask, min, max)
                 : Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(mask);
             return true;
         }
-
         step = default;
         return false;
-    }
-
-    private static bool TryCreateCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
-    {
-        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(runtimeSet, out asciiCharClass);
     }
 
     private AppendAction AppendTerminalAlternation(ref AppendFrame frame, AppendResult last, out AppendFrame pending)
@@ -990,7 +969,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                 case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
                     AddByteToMask(text[0], ref low, ref high);
                     return true;
-                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set:
+                case Utf8ExecutionNodeKind.Set when node.ScalarClass is { } set:
                     return TryBuildByteSafeLeadingMask(set, out low, out high);
                 case Utf8ExecutionNodeKind.Loop:
                 case Utf8ExecutionNodeKind.LazyLoop:
@@ -999,7 +978,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                         AddByteToMask((byte)node.Ch, ref low, ref high);
                         return true;
                     }
-                    if (node.Text is { Length: > 0 } loopSet)
+                    if (node.ScalarClass is { } loopSet)
                         return TryBuildByteSafeLeadingMask(loopSet, out low, out high);
                     if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
                     {
@@ -1012,41 +991,22 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
         }
     }
 
-    private static bool TryBuildAsciiSetMask(string set, out ulong lowMask, out ulong highMask)
+    private static bool TryBuildByteSafeLeadingMask(Utf8ScalarClass scalarClass, out ulong lowMask, out ulong highMask)
     {
-        lowMask = 0;
-        highMask = 0;
-
-        for (var i = 0; i < 128; i++)
+        if (Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(scalarClass, out var definition))
         {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)i, set))
-            {
-                AddByteToMask((byte)i, ref lowMask, ref highMask);
-            }
-        }
-
-        return (lowMask | highMask) != 0;
-    }
-
-    private static bool TryBuildByteSafeLeadingMask(string set, out ulong lowMask, out ulong highMask)
-    {
-        if (Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set))
-        {
-            return TryBuildAsciiSetMask(set, out lowMask, out highMask);
-        }
-
-        if (TryCreateCharClass(set, out var asciiCharClass))
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            lowMask = asciiCharClass.Negated ? 0 : asciiCharClass.PositiveLowMask;
-            highMask = asciiCharClass.Negated ? 0 : asciiCharClass.PositiveHighMask;
-
+            lowMask = definition.LowMask;
+            highMask = definition.HighMask;
             return (lowMask | highMask) != 0;
         }
-
-        lowMask = 0;
-        highMask = 0;
+        if (Utf8ScalarAsciiProjector.TryProjectAsciiIntersection(scalarClass, out var intersection))
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            lowMask = intersection.Negated ? 0 : intersection.PositiveLowMask;
+            highMask = intersection.Negated ? 0 : intersection.PositiveHighMask;
+            return (lowMask | highMask) != 0;
+        }
+        lowMask = highMask = 0;
         return false;
     }
 

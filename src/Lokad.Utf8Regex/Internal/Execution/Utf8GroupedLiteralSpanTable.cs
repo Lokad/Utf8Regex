@@ -236,16 +236,8 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     walker.Position += node.Text.Length;
                     return true;
                 case Utf8ExecutionNodeKind.Set:
-                    if (node.Text is not { Length: > 0 } set) return false;
-                    char[] setChars;
-                    try { setChars = Utf8OwnedCharClass.GetSetChars(set); }
-                    catch (ArgumentException) { setChars = []; }
-                    if (setChars.Length == 0) return false;
-                    foreach (var ch in setChars)
-                    {
-                        budget.ChargeWork(1);
-                        if (char.IsSurrogate(ch)) return false;
-                    }
+                    if (!Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var set) || set.IsEmpty)
+                        return false;
                     walker.Position++;
                     return true;
                 case Utf8ExecutionNodeKind.Concatenate:

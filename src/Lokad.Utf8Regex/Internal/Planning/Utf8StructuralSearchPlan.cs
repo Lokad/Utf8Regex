@@ -44,7 +44,7 @@ internal readonly struct Utf8StructuralSearchStage
         public bool HasLiteralByte { get; init; }
         public byte LiteralByte { get; init; }
         public bool HasSet { get; init; }
-        public string Set { get; init; }
+        public AsciiCharClass Set { get; init; }
         public byte[] LiteralUtf8 { get; init; }
         public int MinLength { get; init; }
         public int MaxSpan { get; init; }
@@ -63,7 +63,7 @@ internal readonly struct Utf8StructuralSearchStage
         HasLiteralByte = data.HasLiteralByte;
         LiteralByte = data.LiteralByte;
         HasSet = data.HasSet;
-        Set = data.Set ?? string.Empty;
+        Set = data.Set;
         LiteralUtf8 = data.LiteralUtf8 ?? [];
         MinLength = data.MinLength;
         MaxSpan = data.MaxSpan;
@@ -89,7 +89,7 @@ internal readonly struct Utf8StructuralSearchStage
 
     public bool HasSet { get; }
 
-    public string Set { get; }
+    public AsciiCharClass Set { get; }
 
     public byte[] LiteralUtf8 { get; }
 
@@ -116,7 +116,7 @@ internal readonly struct Utf8StructuralSearchStage
     public static Utf8StructuralSearchStage RequireByteAtOffset(int byteOffset, byte literalByte) =>
         new(Utf8StructuralSearchStageKind.RequireByteAtOffset, new Data { ByteOffset = byteOffset, HasLiteralByte = true, LiteralByte = literalByte });
 
-    public static Utf8StructuralSearchStage RequireSetAtOffset(int byteOffset, string set) =>
+    public static Utf8StructuralSearchStage RequireAsciiClassAtOffset(int byteOffset, AsciiCharClass set) =>
         new(Utf8StructuralSearchStageKind.RequireByteAtOffset, new Data { ByteOffset = byteOffset, HasSet = true, Set = set });
 
     public static Utf8StructuralSearchStage RequireLiteralAtOffset(int byteOffset, byte[] literalUtf8) =>
@@ -311,9 +311,9 @@ internal readonly struct Utf8StructuralSearchPlan
             {
                 enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireByteAtOffset(guard.Offset, literal);
             }
-            else if (guard.Set is { } set)
+            else if (guard.CharClass is { } set)
             {
-                enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireSetAtOffset(guard.Offset, set);
+                enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireAsciiClassAtOffset(guard.Offset, set);
             }
             else
             {
@@ -361,8 +361,7 @@ internal readonly struct Utf8StructuralSearchPlan
             }
             else
             {
-                var setText = new string(chars.Select(static ch => (char)ch).ToArray());
-                updated = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireSetAtOffset(set.Distance, setText));
+                updated = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireAsciiClassAtOffset(set.Distance, set.ByteSet));
             }
 
             if (updated.Stages is { } updatedStages)

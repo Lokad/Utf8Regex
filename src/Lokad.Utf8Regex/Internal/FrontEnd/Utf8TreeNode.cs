@@ -38,8 +38,7 @@ internal sealed class Utf8TreeNode
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, Utf8ScalarClass scalarClass) =>
         CreatePayload(kind, options, '\0', scalarClass, 0, 0, null, null, (options & RegexOptions.IgnoreCase) != 0);
 
-    // Quantification borrows the original class, including payloads that cannot
-    // fit the temporary native wire projection. Preserve the lexical fold flag.
+    // Quantification borrows the original canonical class and lexical fold flag.
     internal static Utf8TreeNode CreateSetRepeat(Utf8TreeNode atom, RegexOptions options, int minimum, int maximum, bool lazy) =>
         CreatePayload(lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop,
             options, '\0', atom._payload, minimum, maximum, null, null, atom.MatchCaseInsensitive);
@@ -52,13 +51,7 @@ internal sealed class Utf8TreeNode
     // are admitted before the only constructor can run.
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, char ch,
         string? str, int m, int n, object? children, Utf8TreeNode? parent, bool matchCaseInsensitive)
-    {
-        using var scope = Utf8ConstructionScope.Enter();
-        object? payload = IsSet(kind) && str is not null ? (object?)Utf8ScalarClass.TryImport(str) ?? str : str;
-        var node = CreatePayload(kind, options, ch, payload, m, n, children, parent, matchCaseInsensitive);
-        scope.Complete();
-        return node;
-    }
+        => CreatePayload(kind, options, ch, str, m, n, children, parent, matchCaseInsensitive);
 
     private static Utf8TreeNode CreatePayload(Utf8TreeNodeKind kind, RegexOptions options, char ch,
         object? payload, int m, int n, object? children, Utf8TreeNode? parent, bool matchCaseInsensitive)
@@ -82,12 +75,9 @@ internal sealed class Utf8TreeNode
     internal Utf8ScalarClass? ScalarClass => _payload as Utf8ScalarClass;
     public string? Str
     {
-        get => _payload is Utf8ScalarClass scalarClass ? scalarClass.NativeProjection : _payload as string;
-        set => _payload = IsSet(Kind) && value is not null ? (object?)Utf8ScalarClass.TryImport(value) ?? value : value;
+        get => _payload as string;
+        set => _payload = value;
     }
-
-    private static bool IsSet(Utf8TreeNodeKind kind) => kind is Utf8TreeNodeKind.Set or
-        Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic;
 
     public char Ch { get; set; }
 

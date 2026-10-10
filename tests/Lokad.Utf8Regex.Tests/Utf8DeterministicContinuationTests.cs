@@ -10,8 +10,17 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DeterministicContinuationTests
 {
+    private static Utf8ScalarClass Class(string pattern)
+    {
+        var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(tree);
+        var scalarClass = tree.Root.Child(0).ScalarClass;
+        Assert.NotNull(scalarClass);
+        return scalarClass;
+    }
+
     private static Utf8ExecutionNode Node(Utf8ExecutionNodeKind kind, string text, params Utf8ExecutionNode[] children)
-        => new(kind, RegexOptions.CultureInvariant, children, text, '\0', 0, 1, 1);
+        => new(kind, RegexOptions.CultureInvariant, children, kind == Utf8ExecutionNodeKind.Set ? Class(text) : text, '\0', 0, 1, 1);
 
     private static object? Call(Type type, string name, params object?[] args)
     {
@@ -72,7 +81,7 @@ public sealed class Utf8DeterministicContinuationTests
     [InlineData(16385, true)]
     public void DeepLoopByteMaskKeepsAsciiGateWhileWhitespaceUnwraps(int depth, bool ascii)
     {
-        var root = Node(Utf8ExecutionNodeKind.Set, ascii ? Utf8OwnedCharClass.ECMASpaceClass : Utf8OwnedCharClass.SpaceClass);
+        var root = Node(Utf8ExecutionNodeKind.Set, ascii ? @"[\t-\r ]" : @"\s");
         for (var index = 0; index < depth; index++)
             root = Node(Utf8ExecutionNodeKind.Loop, "", Node(Utf8ExecutionNodeKind.Group, "", root));
         Assert.True(Assert.IsType<bool>(Call(typeof(Utf8DeterministicVerifierGuards), "IsAsciiWhitespaceLoop", root)));

@@ -559,10 +559,7 @@ public sealed class Utf8SliceCategoryTests
                 }
             }
 
-            if ((ranges.Length & 1) != 0)
-            {
-                probes.Add(ranges[ranges.Length - 1]);
-            }
+            Assert.Equal(0, ranges.Length & 1); // Every block has complete scalar endpoint pairs.
 
             var oracle = new Regex("\\p{" + name + "}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
             var regex = new Utf8Regex("\\p{" + name + "}+", RegexOptions.CultureInvariant);

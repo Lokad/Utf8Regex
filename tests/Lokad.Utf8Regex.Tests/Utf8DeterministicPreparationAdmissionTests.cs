@@ -12,8 +12,17 @@ public sealed class Utf8DeterministicPreparationAdmissionTests
 {
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
 
+    private static Utf8ScalarClass Class(string pattern)
+    {
+        var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(tree);
+        var scalarClass = tree.Root.Child(0).ScalarClass;
+        Assert.NotNull(scalarClass);
+        return scalarClass;
+    }
+
     private static Utf8ExecutionNode Node(Utf8ExecutionNodeKind kind, string text, params Utf8ExecutionNode[] children)
-        => new(kind, RegexOptions.None, children, text, '\0', 0, 0, 1);
+        => new(kind, RegexOptions.None, children, kind == Utf8ExecutionNodeKind.Set ? Class(text) : text, '\0', 0, 0, 1);
 
     private static Utf8ExecutionNode Make(int route, int depth)
     {
@@ -174,7 +183,7 @@ public sealed class Utf8DeterministicPreparationAdmissionTests
     public void BorrowedWhitespaceSuffixKeepsGuardOffsetsAndNestedPartialPrefix()
     {
         var root = Node(Utf8ExecutionNodeKind.Concatenate, "", Node(Utf8ExecutionNodeKind.Beginning, ""),
-            Node(Utf8ExecutionNodeKind.Loop, "", Node(Utf8ExecutionNodeKind.Group, "", Node(Utf8ExecutionNodeKind.Set, Utf8OwnedCharClass.SpaceClass))),
+            Node(Utf8ExecutionNodeKind.Loop, "", Node(Utf8ExecutionNodeKind.Group, "", Node(Utf8ExecutionNodeKind.Set, @"\s"))),
             Node(Utf8ExecutionNodeKind.Boundary, ""),
             Node(Utf8ExecutionNodeKind.Concatenate, "", Node(Utf8ExecutionNodeKind.Multi, "ab"), Node(Utf8ExecutionNodeKind.Unsupported, "")),
             Node(Utf8ExecutionNodeKind.Multi, "c"));

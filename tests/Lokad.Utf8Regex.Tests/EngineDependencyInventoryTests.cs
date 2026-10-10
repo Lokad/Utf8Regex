@@ -44,9 +44,12 @@ public sealed class EngineDependencyInventoryTests
             Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string[]));
 
         Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution.AsciiStructuralCompiledSuffixPart"));
+        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.DotNetAsciiCharClassProjector"));
+        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8ConstructionClass"));
         foreach (var name in new[] { "AsciiStructuralIdentifierFamilyPlan", "AsciiStructuralTokenWindowPlan",
             "AsciiStructuralRepeatedSegmentPlan", "AsciiStructuralSuffixPart", "AsciiStructuralVerifierStep",
-            "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction", "Utf8ByteSafeLinearVerifierStep" })
+            "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction", "Utf8ByteSafeLinearVerifierStep",
+            "Utf8DeterministicByteGuard" })
         {
             var type = assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name)!;
             Assert.DoesNotContain(type.GetFields(flags), field => field.FieldType == typeof(string));
@@ -64,6 +67,12 @@ public sealed class EngineDependencyInventoryTests
         var linearKinds = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ByteSafeLinearVerifierStepKind")!;
         Assert.DoesNotContain(Enum.GetNames(linearKinds), name => name is "MatchSet" or "LoopSet" or
             "MatchProjectedAsciiSet" or "LoopProjectedAsciiSet");
+        var node = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionNode")!;
+        Assert.DoesNotContain(node.GetFields(flags), field => field.FieldType == typeof(string));
+        Assert.Equal(typeof(object), node.GetProperty("Payload", flags)!.PropertyType);
+        var stage = assembly.GetType("Lokad.Utf8Regex.Internal.Planning.Utf8StructuralSearchStage")!;
+        Assert.DoesNotContain(stage.GetFields(flags), field => field.FieldType == typeof(string));
+        Assert.Null(stage.GetMethod("RequireSetAtOffset", flags));
 
         static bool RetainsEngine(Type type) => type == typeof(Regex) || type == typeof(Match) || type == typeof(Group) || type == typeof(Capture) ||
             type.HasElementType && RetainsEngine(type.GetElementType()!) ||

@@ -15,6 +15,8 @@ internal readonly struct Utf8SearchAsciiSet
 
     public bool HasValue => (Low | High) != 0;
 
+    internal static Utf8SearchAsciiSet FromMasks(ulong low, ulong high) => new(low, high);
+
     public bool Contains(byte value)
     {
         if (value >= 128)

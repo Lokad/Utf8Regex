@@ -17,7 +17,7 @@ public sealed class Utf8WindowByteBoundsTests
             ("(?i:[a-z])", 3, true), ("(?i:é)", 2, true), ("😀", 4, true),
             (".", 4, false), (@"[\s\S]", 4, false), (@"\d", 4, true),
             (@"\s", 4, false), ("[😀-🙏]", 4, true), ("[^a]", 4, false),
-            (@"[^\r\n]", 4, true), ("[a-z-[aeiou]]", 4, false),
+            (@"[^\r\n]", 4, true), ("[a-z-[aeiou]]", 4, true),
             ("(?(?=\n)ab|é)", 2, false), ("(?=\n)é", 2, false),
             ("(?=\n)", 0, true), ("\n{0}", 0, true), ("(?:\n){0}", 0, true),
             ("(?:😀){2,3}", 12, true), ("(?:é|😀){2}", 8, true),
@@ -53,7 +53,7 @@ public sealed class Utf8WindowByteBoundsTests
     [InlineData("[😀-🙏]{1,2}", 8, true)]
     [InlineData(".{1,2}", 8, false)]
     [InlineData(@"[^\r\n]{1,2}", 8, true)]
-    [InlineData("[a-z-[aeiou]]{1,2}", 8, false)]
+    [InlineData("[a-z-[aeiou]]{1,2}", 8, true)]
     [InlineData("(?=\n)", 0, true)]
     [InlineData("[a-z]{2147483646}[0-9]{2}", null, false)]
     public void OrderedWindowFactsUseBytesAndDeclineCombinedOverflow(string gap, int? maximum, bool excludes)
@@ -120,8 +120,15 @@ public sealed class Utf8WindowByteBoundsTests
     [Fact]
     public void LongPlainClassLineProofIsAdmittedBeforeMembershipScanning()
     {
-        var wire = "\0" + (char)32000 + "\0" + string.Concat(Enumerable.Repeat("ab", 16000));
-        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, wire);
+        Utf8TreeNode node;
+        using (var construction = Utf8ConstructionScope.Enter())
+        {
+            using var data = Utf8ConstructionBuffer<int>.Create(construction.Budget);
+            data.AddRange([0, 32000, 0]);
+            for (var index = 0; index < 16000; index++) data.AddRange(['a', 'b']);
+            node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Utf8ScalarClass.Create(data));
+            construction.Complete();
+        }
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 40000, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var checkpoint = owner.Budget.ObjectCheckpoint;

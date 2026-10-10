@@ -5654,7 +5654,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8StructuralSearchStageKind.TransformCandidateStart => $"TransformStart {stage.StartTransform.Kind}",
             Utf8StructuralSearchStageKind.RequireByteAtOffset => stage.LiteralByte is byte b
                 ? $"RequireByteAtOffset @{stage.ByteOffset}='{(char)b}'"
-                : $"RequireSetAtOffset @{stage.ByteOffset}={FormatOpaqueText(stage.Set)}",
+                : $"RequireAsciiClassAtOffset @{stage.ByteOffset} ascii-bytes={stage.Set.Count}",
             Utf8StructuralSearchStageKind.RequireLiteralAtOffset => $"RequireLiteralAtOffset @{stage.ByteOffset}=\"{Encoding.UTF8.GetString(stage.LiteralUtf8 ?? [])}\"",
             Utf8StructuralSearchStageKind.RequireMinLength => $"RequireMinLength {stage.MinLength}",
             Utf8StructuralSearchStageKind.RequireWithinByteSpan => $"RequireWithinByteSpan {stage.MaxSpan}",
@@ -7203,7 +7203,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static bool IsBoundaryWordRune(Rune value)
     {
-        return value.IsBmp && Utf8OwnedCharClass.IsBoundaryWordChar((char)value.Value);
+        return Utf8SliceScalarClasses.IsWord(value, includeJoiners: true, ecma: false);
     }
 
     private static Utf8ValueMatch ProjectLiteralFamilyMatch(
@@ -9407,10 +9407,10 @@ internal static partial class BenchmarkInspectReporter
 
         foreach (var stage in stages)
         {
-            if (stage.Set is not null)
+            if (stage.HasSet)
             {
                 // The deep benchmark candidate probe only simulates byte-level start filtering.
-                // Runtime set strings that require RegexCharClass parsing are not safe here.
+                // This attribution probe does not replay prepared class guards.
                 return false;
             }
         }

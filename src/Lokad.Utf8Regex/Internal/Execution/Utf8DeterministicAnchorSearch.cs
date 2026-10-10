@@ -308,7 +308,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                     AddByteToMask(text[0], ref lowMask, ref highMask);
                     return true;
 
-                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
+                case Utf8ExecutionNodeKind.Set when Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var set):
                     return TryBuildAsciiSetMask(set, out lowMask, out highMask);
 
                 case Utf8ExecutionNodeKind.Loop:
@@ -319,7 +319,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                         return true;
                     }
 
-                    if (node.Text is { Length: > 0 } loopSet && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(loopSet))
+                    if (Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var loopSet))
                     {
                         return TryBuildAsciiSetMask(loopSet, out lowMask, out highMask);
                     }
@@ -338,20 +338,10 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         }
     }
 
-    private static bool TryBuildAsciiSetMask(string set, out ulong lowMask, out ulong highMask)
+    private static bool TryBuildAsciiSetMask(AsciiCharClass set, out ulong lowMask, out ulong highMask)
     {
-        lowMask = 0;
-        highMask = 0;
-
-        for (var i = 0; i < 128; i++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)i, set))
-            {
-                AddByteToMask((byte)i, ref lowMask, ref highMask);
-            }
-        }
-
+        lowMask = set.LowMask;
+        highMask = set.HighMask;
         return (lowMask | highMask) != 0;
     }
 
@@ -436,7 +426,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                         break;
 
                     case Utf8ExecutionNodeKind.Set:
-                        if (node.Text is null || !Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(node.Text))
+                        if (!Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out _))
                         {
                             return false;
                         }
@@ -586,7 +576,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                 case Utf8ExecutionNodeKind.Multi when node.Text is { Length: > 0 } text && IsAsciiText(text):
                     return [text];
 
-                case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set:
+                case Utf8ExecutionNodeKind.Set when Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var set):
                     return TryExtractSetChoices(set);
 
                 default:
@@ -615,20 +605,16 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         return combined;
     }
 
-    private static List<string>? TryExtractSetChoices(string set)
+    private static List<string>? TryExtractSetChoices(AsciiCharClass set)
     {
-        if (!Internal.FrontEnd.Utf8OwnedCharClass.CanEasilyEnumerateSetContents(set))
+        if (set.Count == 0 || set.Count > MaxDeterministicSetChoices) return null;
+        var choices = new List<string>(set.Count);
+        for (var value = 0; value < 128; value++)
         {
-            return null;
+            Utf8ConstructionScope.ChargeWork(1);
+            if (set.Contains((byte)value)) choices.Add(((char)value).ToString());
         }
-
-        var chars = Internal.FrontEnd.Utf8OwnedCharClass.GetSetChars(set);
-        if (chars.Length == 0 || chars.Length > MaxDeterministicSetChoices || !IsAsciiText(chars))
-        {
-            return null;
-        }
-
-        return [.. chars.Select(static ch => ch.ToString())];
+        return choices;
     }
 
     private static bool TryCreateAsciiIgnoreCaseAnchorLiteral(string[] literals, out byte[] literalUtf8)

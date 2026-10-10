@@ -5,8 +5,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // half-open range pairs. The accepted set is frozen: block ranges were
 // verified name-by-name against Unicode 15.0 Blocks.txt (105 exact matches
 // plus the Greek, PrivateUse, and CombiningMarksforSymbols aliases kept with
-// identical ranges), and post-4.0 block names decline to legacy-exact
-// construction failures exactly like the runtime oracle. The four underscore
+// identical ranges). Preserve the recognized grammar names; unsupported
+// names receive owned construction diagnostics. The four underscore
 // groupings carry the audited XML 1.0 sets (Start Name Char, Name Char, Digit
 // with five frozen decimal ranges, and the frozen word amalgam). Lookup stays
 // ordinal case-sensitive, so \p{lu} and unknown names decline. Range arrays
@@ -20,7 +20,7 @@ internal static class Utf8SliceCategories
 
     // One row per single-range block: inclusive first scalar plus exclusive
     // end scalar, transcribed from the audited ranges above.
-    private static readonly (string Name, ushort First, ushort LastExclusive)[] BlockRows =
+    private static readonly (string Name, int First, int LastExclusive)[] BlockRows =
     [
         ("IsAlphabeticPresentationForms", 0xFB00, 0xFB50),
         ("IsArabic", 0x0600, 0x0700),
@@ -133,7 +133,7 @@ internal static class Utf8SliceCategories
 
     // Multi-range groupings as flat half-open endpoint pairs, transcribed
     // from the audited sets above.
-    private static readonly ushort[] XmlC =
+    private static readonly int[] XmlC =
     [
         0x002D, 0x002F, 0x0030, 0x003B, 0x0041, 0x005B, 0x005F, 0x0060,
         0x0061, 0x007B, 0x00B7, 0x00B8, 0x00C0, 0x00D7, 0x00D8, 0x00F7,
@@ -208,7 +208,7 @@ internal static class Utf8SliceCategories
         0x3099, 0x309B, 0x309D, 0x309F, 0x30A1, 0x30FB, 0x30FC, 0x30FF,
         0x3105, 0x312D, 0x4E00, 0x9FA6, 0xAC00, 0xD7A4
     ];
-    private static readonly ushort[] XmlD =
+    private static readonly int[] XmlD =
     [
         0x0030, 0x003A, 0x0660, 0x066A, 0x06F0, 0x06FA, 0x0966, 0x0970,
         0x09E6, 0x09F0, 0x0A66, 0x0A70, 0x0AE6, 0x0AF0, 0x0B66, 0x0B70,
@@ -216,7 +216,7 @@ internal static class Utf8SliceCategories
         0x0E50, 0x0E5A, 0x0ED0, 0x0EDA, 0x0F20, 0x0F2A, 0x1040, 0x104A,
         0x1369, 0x1372, 0x17E0, 0x17EA, 0x1810, 0x181A, 0xFF10, 0xFF1A,
     ];
-    private static readonly ushort[] XmlI =
+    private static readonly int[] XmlI =
     [
         0x003A, 0x003B, 0x0041, 0x005B, 0x005F, 0x0060, 0x0061, 0x007B,
         0x00C0, 0x00D7, 0x00D8, 0x00F7, 0x00F8, 0x0132, 0x0134, 0x013F,
@@ -271,7 +271,7 @@ internal static class Utf8SliceCategories
         0x3021, 0x302A, 0x3041, 0x3095, 0x30A1, 0x30FB, 0x3105, 0x312D,
         0x4E00, 0x9FA6, 0xAC00, 0xD7A4
     ];
-    private static readonly ushort[] XmlW =
+    private static readonly int[] XmlW =
     [
         0x0024, 0x0025, 0x002B, 0x002C, 0x0030, 0x003A, 0x003C, 0x003F,
         0x0041, 0x005B, 0x005E, 0x005F, 0x0060, 0x007B, 0x007C, 0x007D,
@@ -373,19 +373,18 @@ internal static class Utf8SliceCategories
         0xFFD2, 0xFFD8, 0xFFDA, 0xFFDD, 0xFFE0, 0xFFE7, 0xFFE8, 0xFFEF,
         0xFFFC, 0xFFFE
     ];
-    private static readonly Dictionary<string, ushort[]> Blocks = BuildBlocks();
+    private static readonly Dictionary<string, int[]> Blocks = BuildBlocks();
 
-    private static Dictionary<string, ushort[]> BuildBlocks()
+    private static Dictionary<string, int[]> BuildBlocks()
     {
-        var blocks = new Dictionary<string, ushort[]>(112, StringComparer.Ordinal);
+        var blocks = new Dictionary<string, int[]>(112, StringComparer.Ordinal);
         foreach (var row in BlockRows)
         {
             blocks[row.Name] = [row.First, row.LastExclusive];
         }
 
-        // Trailing lone scalars span to char.MaxValue in the range walk, so
-        // the specials block keeps its single endpoint.
-        blocks["IsSpecials"] = [0xFFF0];
+        // Explicit scalar endpoint: this historical block stays in the BMP.
+        blocks["IsSpecials"] = [0xFFF0, 0x10000];
         blocks["_xmlC"] = XmlC;
         blocks["_xmlD"] = XmlD;
         blocks["_xmlI"] = XmlI;
@@ -395,7 +394,7 @@ internal static class Utf8SliceCategories
 
     internal static ICollection<string> BlockNames => Blocks.Keys;
 
-internal static bool TryResolve(string name, out uint mask, out ushort[] ranges, out bool isBlock)
+    internal static bool TryResolve(string name, out uint mask, out int[] ranges, out bool isBlock)
     {
         mask = 0;
         ranges = [];

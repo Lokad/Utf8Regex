@@ -45,7 +45,7 @@ internal static partial class Utf8ExecutionInterpreter
                     if (loop.Enter + 1 < instruction.PartnerIndex) pc = loop.Enter + 1;
                     else
                     {
-                        var hit = instruction.Text is { Length: > 0 }
+                        var hit = instruction.ScalarClass is not null
                             ? TryMatchSet(input, instruction, index, out var next)
                             : TryMatchOne(input, instruction, index, out next);
                         if (!hit) failed = true;

@@ -585,6 +585,8 @@ internal readonly struct Utf8FixedDistanceSet
 
     public bool Contains(byte value) => ByteSet.Contains(value);
 
+    internal static Utf8FixedDistanceSet FromMask(int distance, AsciiCharClass byteSet) => new(distance, byteSet);
+
     public static Utf8FixedDistanceSet FromBytes(int distance, byte[]? chars, bool negated)
         => new(distance, AsciiCharClass.FromBytes(chars ?? [], negated));
 

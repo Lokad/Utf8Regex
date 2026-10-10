@@ -6,6 +6,19 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// remain BMP-only; general categories and shorthands cover every scalar plane.</summary>
 internal static class Utf8SliceScalarClasses
 {
+    // Borrowed static ASCII word table; no per-parser or per-program copy.
+    internal static ReadOnlySpan<byte> WordCharAsciiLookup =>
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    ];
+
     private const int WordCategories =
         (1 << (int)UnicodeCategory.UppercaseLetter) |
         (1 << (int)UnicodeCategory.LowercaseLetter) |

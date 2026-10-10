@@ -26,10 +26,16 @@ internal static class Utf8ExecutionProgramLowerer
             var enterIndex = frame.EnterIndex;
             if (enterIndex < 0)
             {
+                AsciiCharClass? charClass = null;
+                // Retain the complete canonical payload for preparation facts.
+                // A ready mask qualifies its native ASCII lane; unproved classes
+                // retain their data and use the required scalar program.
+                if (Utf8ScalarAsciiProjector.TryProjectAsciiIntersection(node.ScalarClass, out var projected))
+                    charClass = projected;
                 enterIndex = instructions.Count;
                 instructions.Add(new Utf8ExecutionInstruction(
                     Utf8ExecutionInstructionKind.Enter, node.Kind, node.Options,
-                    node.Text, node.Ch, node.CaptureNumber, node.Min, node.Max, -1));
+                    node.Payload, charClass, node.Ch, node.CaptureNumber, node.Min, node.Max, -1));
             }
             if (frame.NextChild < node.Children.Count)
             {
@@ -41,7 +47,7 @@ internal static class Utf8ExecutionProgramLowerer
             var exitIndex = instructions.Count;
             instructions.Add(new Utf8ExecutionInstruction(
                 Utf8ExecutionInstructionKind.Exit, node.Kind, node.Options,
-                node.Text, node.Ch, node.CaptureNumber, node.Min, node.Max, enterIndex));
+                node.Payload, instructions[enterIndex].CharClass, node.Ch, node.CaptureNumber, node.Min, node.Max, enterIndex));
             instructions[enterIndex] = instructions[enterIndex] with { PartnerIndex = exitIndex };
             frames.Pop();
         }

@@ -743,9 +743,8 @@ internal static partial class Utf8ExecutionInterpreter
                     offset += instruction.Text.Length;
                     continue;
 
-                case Utf8ExecutionNodeKind.Set when instruction.Text is not null:
-                    if ((uint)offset >= (uint)input.Length ||
-                        !Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)input[offset], instruction.Text))
+                case Utf8ExecutionNodeKind.Set when instruction.CharClass is { } set:
+                    if ((uint)offset >= (uint)input.Length || !set.Contains(input[offset]))
                     {
                         matchedLength = 0;
                         return false;
@@ -877,21 +876,20 @@ internal static partial class Utf8ExecutionInterpreter
         out int endIndex)
     {
         endIndex = 0;
-        if ((uint)index >= (uint)input.Length || instruction.Text is null)
+        if ((uint)index >= (uint)input.Length || input[index] >= 128 || instruction.CharClass is not { } charClass)
         {
             return false;
         }
 
-        var ch = (char)input[index];
-        if (!Internal.FrontEnd.Utf8OwnedCharClass.CharInClass(ch, instruction.Text))
+        if (!charClass.Contains(input[index]))
         {
             if ((instruction.Options & RegexOptions.IgnoreCase) == 0 || input[index] > 0x7F)
             {
                 return false;
             }
 
-            var folded = (char)Internal.Search.AsciiSearch.FoldCase(input[index]);
-            if (!Internal.FrontEnd.Utf8OwnedCharClass.CharInClass(folded, instruction.Text))
+            var folded = Internal.Search.AsciiSearch.FoldCase(input[index]);
+            if (!charClass.Contains(folded))
             {
                 return false;
             }

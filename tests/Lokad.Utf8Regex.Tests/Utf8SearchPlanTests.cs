@@ -11,6 +11,32 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SearchPlanTests
 {
     [Fact]
+    public void FixedDistanceClassGuardsBorrowMasksAndCheckEveryMember()
+    {
+        var first = Utf8FixedDistanceSet.FromBytes(0, "ab"u8.ToArray(), false);
+        var second = Utf8FixedDistanceSet.FromBytes(1, "xy"u8.ToArray(), false);
+        var plan = new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start,
+            [Utf8StructuralSearchStage.FindLiteralFamily(new PreparedSearcher(new PreparedSubstringSearch("!"u8.ToArray(), false), false)),
+             Utf8StructuralSearchStage.TransformCandidateStart(new(2, Utf8FallbackStartTransformKind.None)),
+             Utf8StructuralSearchStage.YieldStart()]).WithFixedSets([first, second]);
+        var guards = plan.Stages.Where(static stage => stage.HasSet).ToArray();
+        Assert.Equal(2, guards.Length);
+        Assert.Equal(first.ByteSet, guards[0].Set);
+        Assert.Equal(second.ByteSet, guards[1].Set);
+        foreach (var input in new[] { "ax!", "ay!", "bx!", "by!" })
+        {
+            var state = default(Utf8StructuralSearchState);
+            Assert.True(plan.TryFindNextCandidate(Encoding.UTF8.GetBytes(input), ref state, out var candidate));
+            Assert.Equal(0, candidate.StartIndex);
+        }
+        foreach (var input in new[] { "az!", "cx!", "é!" })
+        {
+            var state = default(Utf8StructuralSearchState);
+            Assert.False(plan.TryFindNextCandidate(Encoding.UTF8.GetBytes(input), ref state, out _));
+        }
+    }
+
+    [Fact]
     public void ConstructorCreatesExactLiteralSearchPlanForPlainAsciiLiteral()
     {
         var regex = new Utf8Regex("needle", RegexOptions.CultureInvariant);

@@ -19,10 +19,6 @@ internal static class Utf8ExecutionTreeLowerer
             var frameIndex = frames.Count - 1;
             var frame = frames[frameIndex];
             var node = frame.Node;
-            // This tree supplies existing native preparation consumers. Their
-            // bounded class projection is optional; the authoritative scalar
-            // tree and VM remain available for every admitted large class.
-            if (node.ScalarClass is { NativeProjection: null }) return null;
             if (frame.NextChild < node.ChildCount)
             {
                 frames[frameIndex] = frame with { NextChild = frame.NextChild + 1 };
@@ -38,9 +34,9 @@ internal static class Utf8ExecutionTreeLowerer
             }
             nodes[node] = budget.AllocateObject(
                 (Kind: MapKind(node.Kind), node.Options, Children: (IReadOnlyList<Utf8ExecutionNode>)children,
-                    Text: node.Str ?? string.Empty, node.Ch, Capture: GetCaptureNumber(node), node.M, node.N),
+                    Payload: (object?)node.ScalarClass ?? node.Str ?? string.Empty, node.Ch, Capture: GetCaptureNumber(node), node.M, node.N),
                 static state => new Utf8ExecutionNode(state.Kind, state.Options, state.Children,
-                    state.Text, state.Ch, state.Capture, state.M, state.N));
+                    state.Payload, state.Ch, state.Capture, state.M, state.N));
             frames.Pop();
         }
         var result = budget.AllocateObject(nodes[root], static node => new Utf8ExecutionTree(node));

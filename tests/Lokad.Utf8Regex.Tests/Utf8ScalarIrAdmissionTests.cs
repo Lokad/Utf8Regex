@@ -66,7 +66,11 @@ public sealed class Utf8ScalarIrAdmissionTests
         {
             var balancing = false;
             var lazy = false;
-            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.None, wire);
+            // Keep the two historical row identities, now using malformed
+            // canonical data: an incomplete segment or an invalid predicate.
+            using var data = Utf8ConstructionBuffer<int>.Create(child.Budget);
+            data.AddRange(wire.EndsWith('x') ? [0, 2, 0, 'a', 'b', 'x'] : [0, 2, 0, 'a', 'b', 0, 0, 1, 0x7fff]);
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.None, Utf8ScalarClass.Create(data));
             Assert.Null(Utf8OwnedTreeSliceLowerer.TryConvertRoot(node, tree.CaptureCatalog, arena, ref balancing, ref lazy));
             Assert.True(parent.Budget.ReservedBytes > before);
         }

@@ -17,14 +17,14 @@ public sealed class Utf8NativeLiteralPreparationTests
         return node;
     }
     private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
-    private static string Class(string pattern)
+    private static Utf8ScalarClass Class(string pattern)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
         var node = tree.Root;
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group) node = node.Child(0);
-        Assert.NotNull(node.Str);
-        return node.Str;
+        Assert.NotNull(node.ScalarClass);
+        return node.ScalarClass;
     }
     private static object? Call(string name, params object?[] args)
     {
@@ -178,9 +178,9 @@ public sealed class Utf8NativeLiteralPreparationTests
     [InlineData("[a-z]", false, (byte)0)]
     public void FoldedLiteralProofIncludesWholeClassNegationAndSubtraction(string pattern, bool expected, byte value)
     {
-        var wire = Class(pattern);
+        var scalarClass = Class(pattern);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        object?[] args = [wire, (byte)0];
+        object?[] args = [scalarClass, (byte)0];
         Assert.Equal(expected, Assert.IsType<bool>(Call("TryGetInvariantIgnoreCaseAsciiSetLiteral", args)));
         Assert.Equal(value, Assert.IsType<byte>(args[1]));
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
@@ -194,9 +194,9 @@ public sealed class Utf8NativeLiteralPreparationTests
     [InlineData(@"[^\S]", true)]
     [InlineData(@"[^\S-[\t]]", true)]
     [InlineData(@"[\s-[\t-[\r]]]", true)]
-    public void WhitespaceSubtractionUsesAdmittedSegmentsAndRecoversTheirLoans(string pattern, bool expected)
+    public void WhitespaceSubtractionUsesBorrowedScalarDataAndRecoversAdmission(string pattern, bool expected)
     {
-        var wire = Class(pattern);
+        var scalarClass = Class(pattern);
         // ASCII membership is an overlapping comparator, not a UTF-16 subject contract.
         var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
         var any = false;
@@ -211,7 +211,7 @@ public sealed class Utf8NativeLiteralPreparationTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static n => new ParentValue(n));
         var checkpoint = owner.Budget.ObjectCheckpoint;
-        Assert.Equal(expected, Assert.IsType<bool>(Call("IsAsciiWhitespaceOnlySet", wire)));
+        Assert.Equal(expected, Assert.IsType<bool>(Call("IsAsciiWhitespaceOnlySet", scalarClass)));
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);

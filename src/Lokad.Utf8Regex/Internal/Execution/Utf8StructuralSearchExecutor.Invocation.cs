@@ -219,7 +219,7 @@ internal static partial class Utf8StructuralSearchExecutor
                 case Utf8StructuralSearchStageKind.RequireByteAtOffset:
                     var index = (long)start + stage.ByteOffset;
                     if (index < 0 || index >= input.Length || stage.HasLiteralByte && input[(int)index] != stage.LiteralByte ||
-                        stage.HasSet && !Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)input[(int)index], stage.Set))
+                        stage.HasSet && !stage.Set.Contains(input[(int)index]))
                         return Utf8ExecutionLimitKind.None;
                     break;
                 case Utf8StructuralSearchStageKind.RequireLiteralAtOffset:

@@ -262,7 +262,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static bool TrySelectQuotedAsciiRunPrefilter(Utf8TreeNode root, out string? asciiSet, out int runLength)
+    private static bool TrySelectQuotedAsciiRunPrefilter(Utf8TreeNode root, out AsciiCharClass? asciiSet, out int runLength)
     {
         asciiSet = null;
         runLength = 0;
@@ -332,7 +332,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         internal bool Entered;
     }
 
-    private static bool TryFindQuotedAsciiRun(Utf8TreeNode node, out string? asciiSet, out int runLength)
+    private static bool TryFindQuotedAsciiRun(Utf8TreeNode node, out AsciiCharClass? asciiSet, out int runLength)
     {
         asciiSet = null;
         runLength = 0;
@@ -374,25 +374,8 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static Utf8SearchAsciiSet CreateAsciiByteSet(string? regexCharClass)
-    {
-        if (string.IsNullOrEmpty(regexCharClass))
-        {
-            return default;
-        }
-
-        var result = default(Utf8SearchAsciiSet);
-        for (var value = 0; value < 128; value++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (Utf8OwnedCharClass.CharInClassBase((char)value, regexCharClass))
-            {
-                result = result.With((byte)value);
-            }
-        }
-
-        return result;
-    }
+    private static Utf8SearchAsciiSet CreateAsciiByteSet(AsciiCharClass? charClass) =>
+        charClass is { } mask ? Utf8SearchAsciiSet.FromMasks(mask.ActualLowMask, mask.ActualHighMask) : default;
 
     private static bool IsQuoteNode(Utf8TreeNode node)
     {
@@ -423,17 +406,16 @@ internal static class Utf8FrontEndSearchAnalyzer
         return true;
     }
 
-    private static bool TryGetExactAsciiSetLength(Utf8TreeNode node, out string? asciiSet, out int runLength)
+    private static bool TryGetExactAsciiSetLength(Utf8TreeNode node, out AsciiCharClass? asciiSet, out int runLength)
     {
         node = UnwrapStructuralNode(node) ?? node;
         asciiSet = null;
         runLength = 0;
 
         if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic &&
-            node.Str is { Length: > 0 } set &&
             node.M > 0 &&
             node.M == node.N &&
-            Utf8OwnedCharClass.IsAscii(set))
+            Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var set))
         {
             asciiSet = set;
             runLength = node.M;
@@ -447,8 +429,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         {
             var child = UnwrapStructuralNode(node.Child(0)) ?? node.Child(0);
             if (child.Kind == Utf8TreeNodeKind.Set &&
-                child.Str is { Length: > 0 } childSet &&
-                Utf8OwnedCharClass.IsAscii(childSet))
+                Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(child.ScalarClass, out var childSet))
             {
                 asciiSet = childSet;
                 runLength = node.M;
@@ -1048,7 +1029,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return false;
         }
 
-        return node.Str == Utf8OwnedCharClass.SpaceClass || node.Str == Utf8OwnedCharClass.ECMASpaceClass;
+        return Utf8ScalarAsciiProjector.IsPositiveWhitespace(node.ScalarClass);
     }
 
     private static int FindFirstSignificantChildIndex(Utf8TreeNode node)
@@ -1164,16 +1145,9 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
         return result;
 
-        static bool ExcludesLineBreaks(string set)
-        {
-            // Plain wires use the allocation-free predicate. Subtraction's
-            // legacy predicate builds temporary buffers; decline this optional
-            // line proof until it has an admitted scalar consumer.
-            if (set.Length < 3 || set.Length != 3 + set[1] + set[2]) return false;
-            Utf8ConstructionScope.ChargeWork(2 * (ulong)set.Length);
-            return !Utf8OwnedCharClass.CharInClass('\r', set) &&
-                !Utf8OwnedCharClass.CharInClass('\n', set);
-        }
+        static bool ExcludesLineBreaks(Utf8ScalarClass? scalarClass) =>
+            Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) &&
+            !mask.Contains((byte)'\r') && !mask.Contains((byte)'\n');
 
         static bool ReadScalar(Utf8TreeNode node, out int maxLineBreaks)
         {
@@ -1202,7 +1176,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                     return true;
 
                 case Utf8TreeNodeKind.Set:
-                    if (node.Str is { Length: > 0 } set && ExcludesLineBreaks(set))
+                    if (ExcludesLineBreaks(node.ScalarClass))
                     {
                         maxLineBreaks = 0;
                         return true;
@@ -1226,7 +1200,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                 case Utf8TreeNodeKind.Setloopatomic:
                     if (node.N >= 0 &&
                         node.N != int.MaxValue &&
-                        node.Str is { Length: > 0 } repeatedSet && ExcludesLineBreaks(repeatedSet))
+                        ExcludesLineBreaks(node.ScalarClass))
                     {
                         maxLineBreaks = 0;
                         return true;
@@ -1462,46 +1436,16 @@ internal static class Utf8FrontEndSearchAnalyzer
             return false;
         }
 
-        fixedDistanceSets = new Utf8FixedDistanceSet[runtimeSets.Length];
-        for (var i = 0; i < runtimeSets.Length; i++)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        fixedDistanceSets = budget.AllocateArray<Utf8FixedDistanceSet>(runtimeSets.Length, false);
+        for (var index = 0; index < runtimeSets.Length; index++)
         {
-            var set = runtimeSets[i];
-            byte[]? chars = null;
-            if (set.Chars is { Length: > 0 } setChars)
-            {
-                chars = new byte[setChars.Length];
-                for (var j = 0; j < setChars.Length; j++)
-                {
-                    if (setChars[j] > 0x7F)
-                    {
-                        fixedDistanceSets = [];
-                        return false;
-                    }
-
-                    chars[j] = (byte)setChars[j];
-                }
-            }
-
-            byte rangeLow = 0;
-            byte rangeHigh = 0;
-            var hasRange = false;
-            if (set.Range is { } range)
-            {
-                if (range.LowInclusive > 0x7F || range.HighInclusive > 0x7F)
-                {
-                    fixedDistanceSets = [];
-                    return false;
-                }
-
-                rangeLow = (byte)range.LowInclusive;
-                rangeHigh = (byte)range.HighInclusive;
-                hasRange = true;
-            }
-
-            fixedDistanceSets[i] = hasRange
-                ? Utf8FixedDistanceSet.FromBytesAndRange(set.Distance, chars, set.Negated, rangeLow, rangeHigh)
-                : Utf8FixedDistanceSet.FromBytes(set.Distance, chars, set.Negated);
+            budget.ChargeWork(1);
+            var set = runtimeSets[index];
+            fixedDistanceSets[index] = Utf8FixedDistanceSet.FromMask(set.Distance, set.CharClass);
         }
+        construction.Complete();
 
         minRequiredLength = findOptimizations.MinRequiredLength;
         return true;
@@ -1629,8 +1573,8 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                     return true;
 
-                case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set && Utf8OwnedCharClass.IsAscii(set):
-                    return TryCreateAsciiSet(set, offset++, out var fixedDistanceSet) &&
+                case Utf8TreeNodeKind.Set:
+                    return TryCreateAsciiSet(node.ScalarClass, offset++, out var fixedDistanceSet) &&
                         TryAddDeterministicPrefixSet(fixedDistanceSets, fixedDistanceSet);
 
                 case Utf8TreeNodeKind.Concatenate:
@@ -1735,32 +1679,12 @@ internal static class Utf8FrontEndSearchAnalyzer
         return best == int.MinValue ? 0 : best;
     }
 
-    private static bool TryCreateAsciiSet(string set, int distance, out Utf8FixedDistanceSet fixedDistanceSet)
+    private static bool TryCreateAsciiSet(Utf8ScalarClass? scalarClass, int distance, out Utf8FixedDistanceSet fixedDistanceSet)
     {
         fixedDistanceSet = default;
-        if (!Utf8OwnedCharClass.CanEasilyEnumerateSetContents(set))
-        {
+        if (!Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(scalarClass, out var mask) || mask.IsEmpty)
             return false;
-        }
-
-        var chars = Utf8OwnedCharClass.GetSetChars(set);
-        if (chars.Length == 0)
-        {
-            return false;
-        }
-
-        var utf8Chars = new byte[chars.Length];
-        for (var i = 0; i < chars.Length; i++)
-        {
-            if (chars[i] > 0x7F)
-            {
-                return false;
-            }
-
-            utf8Chars[i] = (byte)chars[i];
-        }
-
-        fixedDistanceSet = Utf8FixedDistanceSet.FromBytes(distance, utf8Chars, negated: false);
+        fixedDistanceSet = Utf8FixedDistanceSet.FromMask(distance, mask);
         return true;
     }
 

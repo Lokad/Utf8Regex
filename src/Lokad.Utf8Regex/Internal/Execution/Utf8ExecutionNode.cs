@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8ExecutionNode
@@ -6,7 +8,7 @@ internal sealed class Utf8ExecutionNode
         Utf8ExecutionNodeKind kind,
         RegexOptions options,
         IReadOnlyList<Utf8ExecutionNode> children,
-        string text,
+        object payload,
         char ch,
         int captureNumber,
         int min,
@@ -15,7 +17,7 @@ internal sealed class Utf8ExecutionNode
         Kind = kind;
         Options = options;
         Children = children;
-        Text = text;
+        Payload = payload;
         Ch = ch;
         CaptureNumber = captureNumber;
         Min = min;
@@ -28,7 +30,13 @@ internal sealed class Utf8ExecutionNode
 
     public IReadOnlyList<Utf8ExecutionNode> Children { get; }
 
-    public string Text { get; }
+    // Literal text and canonical scalar classes borrow one payload slot. A class
+    // never exposes its temporary wire projection through the literal getter.
+    public object Payload { get; }
+
+    public string Text => Payload as string ?? string.Empty;
+
+    public Utf8ScalarClass? ScalarClass => Payload as Utf8ScalarClass;
 
     public char Ch { get; }
 

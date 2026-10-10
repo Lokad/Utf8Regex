@@ -228,18 +228,80 @@ public sealed class Utf8NativeStructuralPreparationTests
     [InlineData(@"[^\S-[\t]]")] [InlineData(@"[\s-[\t-[\r]]]")] [InlineData(@"[^a-[^b]]")] [InlineData(@"[\p{L}-[A-Z]]")]
     public void PreparedClassQueriesAgreeOnAsciiOverlap(string pattern)
     {
-        // The remaining construction-query consumer still takes its native
-        // projection; structural plan producers above borrow canonical classes.
-        var wire = Class(pattern).NativeProjection;
-        Assert.NotNull(wire);
+        var scalarClass = Class(pattern);
         var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        using var query = Utf8ConstructionClass.Create(owner.Budget, wire);
-        for (var value = 0; value < 128; value++) Assert.Equal(comparator.IsMatch(((char)value).ToString()), query.Contains((char)value));
+        Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask));
+        for (var value = 0; value < 128; value++) Assert.Equal(comparator.IsMatch(((char)value).ToString()), mask.Contains((byte)value));
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.PeakBytes);
     }
 
     [Fact]
-    public void EverySubtractionWorkCutoffRecoversPartiallyAcquiredSegments()
+    public void CanonicalAsciiQueriesCoverPredicatesAndClassesBeyondTheFormerProjectionLimit()
+    {
+        foreach (var pattern in new[] { @"\p{Lu}", @"\P{Ll}", @"[\p{L}\p{N}]", @"[^\p{L}\p{N}]",
+            @"\p{IsBasicLatin}", @"\P{IsBasicLatin}", @"[\P{IsGreek}0-9]", @"\p{Cs}",
+            @"[\p{L}-[A-Z-[M]]]", @"[\P{L}-[^a-[b]]]", @"[\S\t]", @"[\s-[\S]]" })
+        {
+            var scalarClass = Class(pattern);
+            var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
+            using var query = new Utf8ConstructionScope(0, 0, ulong.MaxValue, ulong.MaxValue);
+            Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask));
+            for (var value = 0; value < 128; value++)
+                Assert.Equal(comparator.IsMatch(((char)value).ToString()), mask.Contains((byte)value));
+            Assert.Equal(0ul, query.Budget.PeakBytes);
+        }
+
+        Utf8ScalarClass large;
+        using (var preparation = Utf8ConstructionScope.Enter())
+        {
+            using var data = Utf8ConstructionBuffer<int>.Create(preparation.Budget);
+            data.AddRange([0, 65540, 0]);
+            for (var index = 0; index < 32770; index++)
+            {
+                data.Add(0x10000 + 2 * index);
+                data.Add(0x10001 + 2 * index);
+            }
+            large = Utf8ScalarClass.Create(data);
+            preparation.Complete();
+        }
+        Assert.Null(typeof(Utf8ScalarClass).GetProperty("NativeProjection", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
+        Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(large, out var warmed));
+        Assert.True(warmed.IsEmpty);
+        using (var query = new Utf8ConstructionScope(0, 112, ulong.MaxValue, ulong.MaxValue))
+        {
+            var parent = query.Budget.AllocateObject(17, static value => new ParentValue(value));
+            var checkpoint = query.Budget.ObjectCheckpoint;
+            var allocated = GC.GetAllocatedBytesForCurrentThread();
+            var succeeded = Utf8ScalarAsciiProjector.TryProjectAsciiQuery(large, out var mask);
+            var bytes = GC.GetAllocatedBytesForCurrentThread() - allocated;
+            Assert.True(succeeded);
+            Assert.True(mask.IsEmpty);
+            Assert.Equal(0, bytes);
+            Assert.Equal(112ul, query.Budget.ReservedBytes);
+            Assert.Equal(112ul, query.Budget.PeakBytes);
+            Assert.Equal(0ul, query.Budget.Depth);
+            Assert.Same(checkpoint, query.Budget.ObjectCheckpoint);
+            Assert.Equal(17, parent.Value);
+        }
+        using (var query = new Utf8ConstructionScope(0, 112, 64, ulong.MaxValue))
+        {
+            var parent = query.Budget.AllocateObject(17, static value => new ParentValue(value));
+            var checkpoint = query.Budget.ObjectCheckpoint;
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                Utf8ScalarAsciiProjector.TryProjectAsciiQuery(large, out _));
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+            Assert.True(failure.Requested > 64);
+            Assert.Equal(112ul, query.Budget.ReservedBytes);
+            Assert.Equal(0ul, query.Budget.Depth);
+            Assert.Same(checkpoint, query.Budget.ObjectCheckpoint);
+            Assert.Equal(17, parent.Value);
+        }
+    }
+
+    [Fact]
+    public void EverySubtractionWorkCutoffRecoversCanonicalQueryAdmission()
     {
         var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
         ulong work;
@@ -257,14 +319,13 @@ public sealed class Utf8NativeStructuralPreparationTests
     }
 
     [Fact]
-    public void SubtractionByteDenialAfterSegmentAcquisitionRestoresTheParent()
+    public void SubtractionQueriesBorrowCanonicalDataWithinTheOriginalByteBound()
     {
         var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(@"[\s-[\t-[\r]]]"));
         using var owner = new Utf8ConstructionScope(0, 640, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Call("TryGetFiniteLineBreakCount", node, 0));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind); Assert.True(error.Requested > 640);
-        Assert.True(owner.Budget.PeakBytes > 432); Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.True(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", node, 0)));
+        Assert.True(owner.Budget.PeakBytes <= 640); Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Equal(17, parent.Value);
     }
     [Theory]

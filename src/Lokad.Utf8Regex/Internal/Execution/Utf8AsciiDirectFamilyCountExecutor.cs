@@ -99,7 +99,7 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
 
     private static int CountAsciiWordRuns(ReadOnlySpan<byte> input, int minCount)
     {
-        var lookup = Internal.FrontEnd.Utf8OwnedCharClass.WordCharAsciiLookup;
+        var lookup = Utf8SliceScalarClasses.WordCharAsciiLookup;
         var count = 0;
         var index = 0;
         while (index < input.Length)

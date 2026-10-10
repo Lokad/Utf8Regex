@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Runtime.InteropServices;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
@@ -14,20 +13,6 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal static class Utf8OwnedTreeParser
 {
     private const int Infinite = 2147483647;
-
-    // Provider dot payloads probed per Singleline shape; set nodes never carry IgnoreCase.
-    private const string DotText = "\u0001\u0002\u0000\u000a\u000b";
-    internal const string SinglelineDotText = Utf8OwnedCharClass.AnyScalarClass;
-
-    // Probe-observed predefined shorthand payloads, verbatim: the six ASCII
-    // shorthands land as category payloads, including the complement and
-    // framing quirks the differential battery pins.
-    private const string ShorthandDigitCats = "\u0009";
-    private const string ShorthandNotDigitCats = "\uFFF7";
-    private const string ShorthandWordCats = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-    private const string ShorthandNotWordCats = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
-    private const string ShorthandSpaceCats = "d";
-    private const string ShorthandNotSpaceCats = "\uFF9C";
 
     public static Utf8OwnedRegexTree? TryParse(string pattern, RegexOptions options)
         => TryParse(pattern, options, out _);
@@ -71,9 +56,8 @@ internal static class Utf8OwnedTreeParser
                 (state.LeadingGroup is null || !ReferenceEquals(root, state.LeadingGroup)))
             {
                 // A leading scope that does not cover the whole pattern must not leak
-                // its options onto the top composite: strip the non-covering contribution
-                // instead of declining. Per-node scoping is already BCL-exact and the top
-                // composite options are inert downstream, so serving is safe.
+                // its options onto the top composite. Per-node lexical options
+                // remain authoritative for scalar execution.
                 state.TreeSeen &= ~state.LeadingContribution;
             }
 
@@ -520,14 +504,9 @@ internal static class Utf8OwnedTreeParser
                         atom = Utf8TreeNode.Create(anchorKind, state.Options);
                         state.Position++;
                     }
-                    else if (character == '.' && (state.Options & RegexOptions.Singleline) == 0)
-                    {
-                        atom = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, DotText);
-                        state.Position++;
-                    }
                     else if (character == '.')
                     {
-                        atom = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
+                        atom = CreateDotNode(state.Options);
                         state.Position++;
                     }
                     else if (character == '[')
@@ -842,9 +821,8 @@ internal static class Utf8OwnedTreeParser
                     return state.Fail(Utf8PatternError.UnclosedClass);
                 }
             }
-            var units = new List<char>();
-            var categories = new List<char>();
-            var scalarRanges = new List<int>();
+            using var scalarRanges = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            using var categories = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
             var pending = 0;
             var hasPending = false;
             var pendingIsPlain = false;
@@ -890,7 +868,7 @@ internal static class Utf8OwnedTreeParser
 
                     if (state.Position + 1 < state.Pattern.Length &&
                         state.Pattern[state.Position + 1] == '[' &&
-                        (hasPending || units.Count + categories.Count + scalarRanges.Count > 0))
+                        (hasPending || categories.Count + scalarRanges.Count > 0))
                     {
                         if (hasPending && !pendingAdded)
                         {
@@ -900,7 +878,7 @@ internal static class Utf8OwnedTreeParser
                             }
                         }
 
-                        AppendSegment(data, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
+                        AppendSegment(data, negated, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
                         subtracted = true;
                         state.Position++;
                         return true;
@@ -939,7 +917,7 @@ internal static class Utf8OwnedTreeParser
                     first = false;
                     continue;
                 }
-                if (character == '\\' && TryTakeShorthandMembers(ref state, units, categories))
+                if (character == '\\' && TryTakeShorthandMembers(ref state, scalarRanges, categories))
                 {
                     hasPending = false;
                     pendingIsPlain = false;
@@ -968,20 +946,16 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            AppendSegment(data, negated, units, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
+            AppendSegment(data, negated, scalarRanges, categories, (state.Options & RegexOptions.IgnoreCase) != 0, state.CaseBehavior);
             return true;
         }
 
-        static void AppendSegment(Utf8ConstructionBuffer<int> data, bool negated, List<char> units,
-            List<int> scalarRanges, List<char> categories, bool fold, Utf8ScalarCaseBehavior behavior)
+        static void AppendSegment(Utf8ConstructionBuffer<int> data, bool negated,
+            Utf8ConstructionBuffer<int> scalarRanges, Utf8ConstructionBuffer<int> categories,
+            bool fold, Utf8ScalarCaseBehavior behavior)
         {
             var owner = Utf8ConstructionScope.CurrentBudget;
             using var ranges = Utf8ConstructionBuffer<(int Low, int High)>.Create(owner);
-            for (var index = 0; index < units.Count; index += 2)
-                {
-                Utf8ConstructionScope.ChargeWork(1);
-                ranges.Add((units[index], units[index + 1] == 0 ? 65536 : units[index + 1]));
-            }
             for (var index = 0; index < scalarRanges.Count; index += 2)
                 {
                 Utf8ConstructionScope.ChargeWork(1);
@@ -1039,11 +1013,8 @@ internal static class Utf8OwnedTreeParser
                 owner.ChargeWork(1);
                 endpoints.Add(range.Low); endpoints.Add(range.High);
             }
-            using var predicates = Utf8ConstructionBuffer<int>.Create(owner);
-            if (!Utf8ScalarClass.ImportCategories(CollectionsMarshal.AsSpan(categories), endpoints, predicates))
-                throw new InvalidOperationException("Invalid owned class predicate.");
-            data.Add(negated ? 1 : 0); data.Add(endpoints.Count); data.Add(predicates.Count);
-            data.AddRange(endpoints.Span); data.AddRange(predicates.Span);
+            data.Add(negated ? 1 : 0); data.Add(endpoints.Count); data.Add(categories.Count);
+            data.AddRange(endpoints.Span); data.AddRange(categories.Span);
         }
 
         static bool ShorthandRangeEndAhead(ref ParserState state)
@@ -1057,11 +1028,13 @@ internal static class Utf8OwnedTreeParser
 
             var probe = state;
             probe.Position++;
-            return TryTakeShorthandMembers(ref probe, new List<char>(), new List<char>());
+            using var ranges = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            using var categories = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            return TryTakeShorthandMembers(ref probe, ranges, categories);
         }
 
 
-        static bool TryTakeRangeEnd(ref ParserState state, int start, List<int> ranges)
+        static bool TryTakeRangeEnd(ref ParserState state, int start, Utf8ConstructionBuffer<int> ranges)
         {
             if (!IsRangeEndAhead(state, 1)) return false;
             var probe = state;
@@ -1166,9 +1139,8 @@ internal static class Utf8OwnedTreeParser
                     return true;
                 }
                 // Anchor escapes (A, B, G, Z, z) are BCL-invalid inside a
-                // character class (UnrecognizedEscape): fall through to
-                // DecodeEscape, which declines ASCII letters, so these
-                // decline to the BCL fallback exactly like the oracle.
+                // character class: DecodeEscape rejects those letters and
+                // the owned parser reports the construction failure.
                 if (letter == '-')
                 {
                     value = '-';
@@ -1193,47 +1165,33 @@ internal static class Utf8OwnedTreeParser
             // punctuation resolutions that break ranges.
             return letter is '0' or 'x' or 'u' or 'c' or 'a' or 'e' or 'n' or 'r' or 't' or 'f' or 'v' || (letter >= '0' && letter <= '7');
         }
+        static Utf8TreeNode CreateDotNode(RegexOptions options)
+        {
+            using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            if ((options & RegexOptions.Singleline) != 0) data.AddRange([0, 2, 0, 0, 0x110000]);
+            else data.AddRange([1, 2, 0, '\n', '\n' + 1]);
+            return Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
+        }
+
         static bool TryTakeShorthandAtom(ref ParserState state, out Utf8TreeNode? node)
         {
             node = null;
-            var units = new List<char>();
-            var categories = new List<char>();
+            using var ranges = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            using var categories = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
             var ecmaShorthand = (state.Options & RegexOptions.ECMAScript) != 0 &&
                 state.Position + 1 < state.Pattern.Length && state.Pattern[state.Position + 1] is 'd' or 'D' or 'w' or 'W' or 's' or 'S';
-            if (!TryTakeShorthandMembers(ref state, units, categories))
-            {
-                return false;
-            }
-
-            node = BuildSetNode(state.Options & ~RegexOptions.IgnoreCase, negated: false, units, categories);
-            // Standalone ECMAScript shorthands retain their fixed set even
-            // under IgnoreCase; bracketed unions receive class expansion.
+            if (!TryTakeShorthandMembers(ref state, ranges, categories)) return false;
+            using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            data.Add(0); data.Add(ranges.Count); data.Add(categories.Count);
+            data.AddRange(ranges.Span); data.AddRange(categories.Span);
+            node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
+            // Standalone ECMAScript shorthands keep their fixed scalar set;
+            // bracketed unions receive lexical class expansion.
             node.MatchCaseInsensitive = !ecmaShorthand && (state.Options & RegexOptions.IgnoreCase) != 0;
             return true;
         }
 
-        static Utf8TreeNode BuildSetNode(RegexOptions options, bool negated, List<char> units, List<char> categories)
-        {
-            var text = new char[units.Count + categories.Count + 3];
-            text[0] = negated ? (char)1 : (char)0;
-            text[1] = (char)units.Count;
-            text[2] = (char)categories.Count;
-            for (var i = 0; i < units.Count; i++)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                text[i + 3] = units[i];
-            }
-
-            for (var i = 0; i < categories.Count; i++)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                text[i + 3 + units.Count] = categories[i];
-            }
-
-            return Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options, new string(text));
-        }
-
-        static bool TryTakeShorthandMembers(ref ParserState state, List<char> units, List<char> categories)
+        static bool TryTakeShorthandMembers(ref ParserState state, Utf8ConstructionBuffer<int> ranges, Utf8ConstructionBuffer<int> categories)
         {
             // state.Position is at the backslash; nothing is consumed on failure.
             if (state.Position + 1 >= state.Pattern.Length)
@@ -1242,7 +1200,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             if ((state.Options & RegexOptions.ECMAScript) != 0 &&
-                TryEcmaShorthand(state.Pattern[state.Position + 1], units, categories))
+                TryEcmaShorthand(state.Pattern[state.Position + 1], ranges, categories))
             {
                 state.Position += 2;
                 return true;
@@ -1251,58 +1209,62 @@ internal static class Utf8OwnedTreeParser
             switch (state.Pattern[state.Position + 1])
             {
                 case 'd':
-                    categories.AddRange(ShorthandDigitCats);
+                    categories.Add((int)UnicodeCategory.DecimalDigitNumber + 1);
                     state.Position += 2;
                     return true;
                 case 'D':
-                    categories.AddRange(ShorthandNotDigitCats);
+                    categories.Add(-((int)UnicodeCategory.DecimalDigitNumber + 1));
                     state.Position += 2;
                     return true;
                 case 'w':
-                    categories.AddRange(ShorthandWordCats);
+                    categories.AddRange([0, 2, 4, 5, 3, 1, 6, 9, 19, 0]);
                     state.Position += 2;
                     return true;
                 case 'W':
-                    categories.AddRange(ShorthandNotWordCats);
+                    categories.AddRange([0, -2, -4, -5, -3, -1, -6, -9, -19, 0]);
                     state.Position += 2;
                     return true;
                 case 's':
-                    categories.AddRange(ShorthandSpaceCats);
+                    categories.Add(100);
                     state.Position += 2;
                     return true;
                 case 'S':
-                    categories.AddRange(ShorthandNotSpaceCats);
+                    categories.Add(-100);
                     state.Position += 2;
                     return true;
                 case 'p':
-                    return TryTakeProperty(ref state, invert: false, units, categories);
+                    return TryTakeProperty(ref state, invert: false, ranges, categories);
                 case 'P':
-                    return TryTakeProperty(ref state, invert: true, units, categories);
+                    return TryTakeProperty(ref state, invert: true, ranges, categories);
                 default:
                     return false;
             }
         }
 
-        static bool TryEcmaShorthand(char head, List<char> units, List<char> categories)
+        static bool TryEcmaShorthand(char head, Utf8ConstructionBuffer<int> ranges, Utf8ConstructionBuffer<int> categories)
         {
-            ushort[] ranges = head switch
+            ReadOnlySpan<int> members = head switch
             {
                 'd' or 'D' => ['0', ':'],
                 's' or 'S' => ['\t', '\x0e', ' ', '!'],
-                'w' or 'W' => ['0', ':', 'A', '[', '_', '`', 'a', '{', '\u0130', '\u0131'],
+                'w' or 'W' => ['0', ':', 'A', '[', '_', '`', 'a', '{', 0x0130, 0x0131],
                 _ => [],
             };
-            if (ranges.Length == 0) return false;
-            if (head is 'd' or 's' or 'w')
-                foreach (var endpoint in ranges) {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    units.Add((char)endpoint);
-                }
-            else Utf8OwnedCharClass.AddRangePredicate(categories, ranges, true);
+            if (members.IsEmpty) return false;
+            if (head is 'd' or 's' or 'w') ranges.AddRange(members);
+            else AppendRangePredicate(categories, members, true);
             return true;
         }
 
-        static bool TryTakeProperty(ref ParserState state, bool invert, List<char> units, List<char> categories)
+        static void AppendRangePredicate(Utf8ConstructionBuffer<int> categories, ReadOnlySpan<int> ranges, bool negated)
+        {
+            categories.Add(Utf8ScalarClass.RangePredicateCode);
+            categories.Add(negated ? 1 : 0);
+            categories.Add(ranges.Length);
+            categories.AddRange(ranges);
+        }
+
+        static bool TryTakeProperty(ref ParserState state, bool invert, Utf8ConstructionBuffer<int> ranges, Utf8ConstructionBuffer<int> categories)
         {
             // state.Position is at the backslash of \p or \P.
             var open = state.Position + 2;
@@ -1326,7 +1288,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             var name = Utf8ConstructionScope.CurrentBudget.CopyText(state.Pattern.AsSpan(open + 1, close - open - 1));
-            if (!TryResolvePropertyMembers(name, invert, units, categories))
+            if (!TryResolvePropertyMembers(name, invert, ranges, categories))
             {
                 return state.Fail(Utf8PatternError.InvalidProperty);
             }
@@ -1335,12 +1297,12 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool TryResolvePropertyMembers(string name, bool invert, List<char> units, List<char> categories)
+        static bool TryResolvePropertyMembers(string name, bool invert, Utf8ConstructionBuffer<int> ranges, Utf8ConstructionBuffer<int> categories)
         {
             if (TryResolveSingleCategory(name, out var single))
             {
-                var encoded = (char)(single + 1);
-                categories.Add(invert ? ComplementCategory(encoded) : encoded);
+                var encoded = single + 1;
+                categories.Add(invert ? -encoded : encoded);
                 return true;
             }
 
@@ -1348,34 +1310,26 @@ internal static class Utf8OwnedTreeParser
             {
                 // Zero frames distinguish groups from a standalone -1 (not Lu).
                 // Negative members inside the frame intersect their exclusions.
-                categories.Add((char)0);
+                categories.Add(0);
                 foreach (var member in members)
                 {
                     Utf8ConstructionScope.ChargeWork(1);
-                    var encoded = (char)(member + 1);
-                    categories.Add(invert ? ComplementCategory(encoded) : encoded);
+                    var encoded = member + 1;
+                    categories.Add(invert ? -encoded : encoded);
                 }
 
-                categories.Add((char)0);
+                categories.Add(0);
                 return true;
             }
 
             if (Utf8SliceCategories.TryResolve(name, out _, out var blockRanges, out var isBlock) && isBlock)
             {
-                if (invert) Utf8OwnedCharClass.AddRangePredicate(categories, blockRanges, true);
-                else AddBlockRanges(units, blockRanges);
+                if (invert) AppendRangePredicate(categories, blockRanges, true);
+                else ranges.AddRange(blockRanges);
                 return true;
             }
 
             return false;
-        }
-
-        static char ComplementCategory(char encoded)
-        {
-            // Two's-complement negation, matching the shorthand wire bytes the
-            // differential battery pins (\D pairs 0xFFF7 with digit code 9): the
-            // complement of positive code p is -p, not ~p (which is -p - 1).
-            return (char)(~encoded + 1);
         }
 
         static bool TryResolveSingleCategory(string name, out int category)
@@ -1417,9 +1371,9 @@ internal static class Utf8OwnedTreeParser
             return category >= 0;
         }
 
-        static bool TryResolveCategoryGroup(string name, out int[] members)
+        static bool TryResolveCategoryGroup(string name, out ReadOnlySpan<int> members)
         {
-            // Member order is probe-observed, not declaration order.
+            // Borrowed immutable category groups; integer predicates cover every scalar plane.
             switch (name)
             {
                 case "L":
@@ -1449,15 +1403,6 @@ internal static class Utf8OwnedTreeParser
             }
         }
 
-        static void AddBlockRanges(List<char> units, ushort[] blockRanges)
-        {
-            for (var i = 0; i < blockRanges.Length; i += 2)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                units.Add((char)blockRanges[i]);
-                units.Add(i + 1 < blockRanges.Length ? (char)blockRanges[i + 1] : (char)0);
-            }
-        }
         static bool ParseNamedGroup(ref OwnedParseContext context, ref OwnedParseFrame frame, out OwnedParseFrame child)
         {
             child = default;
@@ -2599,7 +2544,7 @@ internal static class Utf8OwnedTreeParser
             return false;
         }
 
-        static bool AddClassScalar(List<int> ranges, int value)
+        static bool AddClassScalar(Utf8ConstructionBuffer<int> ranges, int value)
         {
             ranges.Add(value);
             ranges.Add(value + 1);
@@ -2795,14 +2740,11 @@ internal static class Utf8OwnedTreeParser
 
         static Utf8TreeNode FoldedSet(RegexOptions options, char lower, char upper)
         {
-            var wire = new string(new char[]
-            {
-                (char)0, (char)4, (char)0, lower, (char)(lower + 1), upper, (char)(upper + 1),
-            });
-
-            return Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Set, options: options & ~RegexOptions.IgnoreCase,
-                ch: '\0', str: wire, m: 0, n: 0,
-                children: null, parent: null, matchCaseInsensitive: (options & RegexOptions.IgnoreCase) != 0);
+            using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
+            data.AddRange([0, 4, 0, lower, (int)lower + 1, upper, (int)upper + 1]);
+            var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
+            node.MatchCaseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
+            return node;
         }
 
         static void ReplaceNodeInParent(ref Utf8TreeNode root, Utf8TreeNode oldNode, Utf8TreeNode fresh)

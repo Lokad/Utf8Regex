@@ -1,34 +1,45 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 
-// Search preparation over borrowed grammar. Keep only facts with search-plan
-// consumers; the caller already owns the tree. Width/distance producers still
-// use scalar byte bounds, while acquisition of this container and the
-// remaining family/set results is outside the partial construction admission.
+// Search preparation over borrowed grammar. The facts holder, covering prefix
+// ropes/families/frames/results and fixed-set state use shared construction
+// admission. Remaining literal/width producers and retained-policy qualification
+// still have their separate cleanup gates.
 internal sealed class Utf8OwnedFindFacts
 {
-    private Utf8OwnedFindFacts(Utf8OwnedRegexTree tree)
+    private readonly record struct ConstructionState(bool IsFixedLength, int MinRequiredLength,
+        int? MaxPossibleLength, Utf8TreeNodeKind TrailingAnchor, string? LeadingLiteral,
+        string? LongestLiteral, string[]? AlternatePrefixes, (string Literal, int Distance)? FixedDistanceLiteral,
+        Utf8OwnedFindOptimizations.OwnedSet[]? FixedDistanceSets);
+
+    private Utf8OwnedFindFacts(ConstructionState state)
     {
-        var width = Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
-        MinRequiredLength = width.Minimum;
-        MaxPossibleLength = width.Maximum;
-        IsFixedLength = width.IsFixed;
-        TrailingAnchor = Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root);
-        LeadingLiteral = Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root);
-        LongestLiteral = Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root);
-        AlternatePrefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options);
-        FixedDistanceLiteral = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(tree.Root);
-        FixedDistanceSets = Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root);
+        IsFixedLength = state.IsFixedLength;
+        MinRequiredLength = state.MinRequiredLength;
+        MaxPossibleLength = state.MaxPossibleLength;
+        TrailingAnchor = state.TrailingAnchor;
+        LeadingLiteral = state.LeadingLiteral;
+        LongestLiteral = state.LongestLiteral;
+        AlternatePrefixes = state.AlternatePrefixes;
+        FixedDistanceLiteral = state.FixedDistanceLiteral;
+        FixedDistanceSets = state.FixedDistanceSets;
     }
 
     public static Utf8OwnedFindFacts? FromTree(Utf8OwnedRegexTree? tree)
     {
-        if (tree is null)
-        {
-            return null;
-        }
-
-        return new Utf8OwnedFindFacts(tree);
+        if (tree is null) return null;
+        using var scope = Utf8ConstructionScope.Enter();
+        var width = Utf8OwnedFindOptimizations.ComputeByteWidth(tree.Root);
+        var state = new ConstructionState(width.IsFixed, width.Minimum, width.Maximum,
+            Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root),
+            Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root),
+            Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root),
+            Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options),
+            Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(tree.Root),
+            Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root));
+        var result = scope.Budget.AllocateObject(state, static value => new Utf8OwnedFindFacts(value));
+        scope.Complete();
+        return result;
     }
 
     public bool IsFixedLength { get; }

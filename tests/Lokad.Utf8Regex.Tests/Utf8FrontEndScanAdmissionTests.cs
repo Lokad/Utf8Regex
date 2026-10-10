@@ -10,15 +10,26 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FrontEndScanAdmissionTests
 {
-    private const string Digits = "\0\u0002\0\u0030\u003a";
+    private const string Digits = "[0-9]";
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private sealed record Input(Utf8TreeNode Find, Utf8ExecutionNode Execution, Utf8SemanticRegex Semantic);
 
     private static Utf8TreeNode Node(Utf8TreeNodeKind kind, string text, params Utf8TreeNode[] children)
     {
-        var node = Utf8TreeNode.Create(kind: kind, options: RegexOptions.None,
+        Utf8TreeNode node;
+        if (kind is Utf8TreeNodeKind.Set or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)
+        {
+            Assert.Equal(Digits, text);
+            using var scope = Utf8ConstructionScope.Enter();
+            using var data = Utf8ConstructionBuffer<int>.Create(scope.Budget);
+            data.AddRange([0, 2, 0, '0', ':']);
+            node = Utf8TreeNode.Create(kind, RegexOptions.None, Utf8ScalarClass.Create(data));
+            node.M = 1; node.N = 1;
+            scope.Complete();
+        }
+        else node = Utf8TreeNode.Create(kind: kind, options: RegexOptions.None,
             ch: '\0', str: text, m: 1, n: 1,
-            children: null, parent: null, matchCaseInsensitive: (RegexOptions.None & RegexOptions.IgnoreCase) != 0);
+            children: null, parent: null, matchCaseInsensitive: false);
         foreach (var child in children) node.AddChild(child);
         return node;
     }
@@ -195,7 +206,12 @@ public sealed class Utf8FrontEndScanAdmissionTests
     [Fact]
     public void WhitespaceSuffixBorrowsChildrenWithoutReparentingTheOwnedTree()
     {
-        var whitespace = Node(Utf8TreeNodeKind.Setloop, Utf8OwnedCharClass.SpaceClass);
+        var whitespaceTree = Utf8OwnedTreeParser.TryParse(@"\s", RegexOptions.CultureInvariant);
+        Assert.NotNull(whitespaceTree);
+        var whitespaceAtom = whitespaceTree.Root;
+        while (whitespaceAtom.ChildCount == 1) whitespaceAtom = whitespaceAtom.Child(0);
+        Assert.NotNull(whitespaceAtom.ScalarClass);
+        var whitespace = Utf8TreeNode.CreateSetRepeat(whitespaceAtom, RegexOptions.CultureInvariant, 0, int.MaxValue, false);
         whitespace.M = 0;
         whitespace.N = int.MaxValue;
         var root = Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Beginning, ""), whitespace,
@@ -291,7 +307,20 @@ public sealed class Utf8FrontEndScanAdmissionTests
         var root = Node(Utf8TreeNodeKind.Alternate, "", first, second);
         object?[] args = [root, null, 0];
         Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryFindQuotedAsciiRun", args)));
-        Assert.Equal(Digits, args[1]);
+        var mask = Assert.IsType<AsciiCharClass>(args[1]);
+        for (var value = 0; value < 128; value++)
+            Assert.Equal(value is >= '0' and <= '9', mask.Contains((byte)value));
         Assert.Equal(8, args[2]);
+
+        // An ASCII intersection cannot certify a byte-sized quoted scalar run.
+        var negative = Utf8FrontEnd.Compile("'[^a]{2}'", RegexOptions.CultureInvariant);
+        Assert.NotNull(negative.SemanticRegex.RuntimeTree);
+        object?[] declined = [negative.SemanticRegex.RuntimeTree.Root, null, 0];
+        Assert.False(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryFindQuotedAsciiRun", declined)));
+        var regex = new Utf8Regex("'[^a]{2}'", RegexOptions.CultureInvariant);
+        var match = regex.Match("'😀b'"u8);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.IndexInBytes);
+        Assert.Equal(7, match.LengthInBytes);
     }
 }

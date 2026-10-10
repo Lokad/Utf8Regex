@@ -43,7 +43,12 @@ public sealed class Utf8OwnedPreparationContinuationTests
         {
             nodeCount++;
             Assert.Equal(pair.Source.Options, pair.Copy.Options);
-            Assert.Equal(pair.Source.Str ?? "", pair.Copy.Text);
+            if (pair.Source.ScalarClass is { } scalarClass)
+            {
+                Assert.Same(scalarClass, pair.Copy.Payload);
+                Assert.Equal(string.Empty, pair.Copy.Text);
+            }
+            else Assert.Equal(pair.Source.Str ?? "", pair.Copy.Text);
             Assert.Equal(pair.Source.Ch, pair.Copy.Ch);
             Assert.Equal(pair.Source.M, pair.Copy.Min);
             Assert.Equal(pair.Source.N, pair.Copy.Max);
@@ -67,6 +72,7 @@ public sealed class Utf8OwnedPreparationContinuationTests
                 Assert.Equal(node.Kind, instruction.NodeKind);
                 Assert.Equal(node.Options, instruction.Options);
                 Assert.Equal(node.Text, instruction.Text);
+                Assert.Same(node.Payload, instruction.Payload);
                 Assert.Equal(node.Ch, instruction.Ch);
                 Assert.Equal(node.CaptureNumber, instruction.CaptureNumber);
                 Assert.Equal(node.Min, instruction.Min);
