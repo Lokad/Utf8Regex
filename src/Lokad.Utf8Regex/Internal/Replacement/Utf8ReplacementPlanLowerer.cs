@@ -12,16 +12,27 @@ internal static class Utf8ReplacementPlanLowerer
         ReadOnlySpan<int> validGroupNumbers,
         ReadOnlySpan<string> validGroupNames)
     {
-        var instructions = new List<Utf8ReplacementInstruction>(pattern.Tokens.Length);
-        foreach (var token in pattern.Tokens)
-        {
-            instructions.Add(LowerToken(token, validGroupNumbers, validGroupNames));
-        }
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var result = Lower(storage, pattern.Tokens, validGroupNumbers, validGroupNames);
+        storage.Complete(); owner.Complete();
+        return result;
+    }
 
-        return new Utf8ReplacementPlan(instructions);
+    internal static Utf8ReplacementPlan Lower(Utf8ConstructionSession storage, ReadOnlySpan<Utf8ReplacementToken> tokens,
+        ReadOnlySpan<int> validGroupNumbers, ReadOnlySpan<string> validGroupNames)
+    {
+        var instructions = storage.Buffer<Utf8ReplacementInstruction>();
+        foreach (var token in tokens)
+        {
+            storage.Budget.ChargeWork(1);
+            instructions.Add(LowerToken(storage, token, validGroupNumbers, validGroupNames));
+        }
+        return Utf8ReplacementPlan.Create(storage, instructions.Span);
     }
 
     private static Utf8ReplacementInstruction LowerToken(
+        Utf8ConstructionSession storage,
         Utf8ReplacementToken token,
         ReadOnlySpan<int> validGroupNumbers,
         ReadOnlySpan<string> validGroupNames)
@@ -29,9 +40,9 @@ internal static class Utf8ReplacementPlanLowerer
         return token.Kind switch
         {
             Utf8ReplacementTokenKind.Literal => Utf8ReplacementInstruction.Literal(
-                token.Literal ?? string.Empty),
+                storage, token.Literal ?? string.Empty),
             Utf8ReplacementTokenKind.Group => Utf8ReplacementInstruction.Group(
-                ResolveGroupNumber(token, validGroupNumbers, validGroupNames),
+                ResolveGroupNumber(storage, token, validGroupNumbers, validGroupNames),
                 token.IsBraceEnclosed),
             Utf8ReplacementTokenKind.WholeMatch => Utf8ReplacementInstruction.WholeMatch(),
             Utf8ReplacementTokenKind.LeftPortion => Utf8ReplacementInstruction.LeftPortion(),
@@ -43,6 +54,7 @@ internal static class Utf8ReplacementPlanLowerer
     }
 
     private static int ResolveGroupNumber(
+        Utf8ConstructionSession storage,
         Utf8ReplacementToken token,
         ReadOnlySpan<int> validGroupNumbers,
         ReadOnlySpan<string> validGroupNames)
@@ -60,6 +72,7 @@ internal static class Utf8ReplacementPlanLowerer
 
         for (var i = 0; i < validGroupNames.Length && i < validGroupNumbers.Length; i++)
         {
+            storage.Budget.ChargeWork(1 + (ulong)Math.Min(validGroupNames[i]?.Length ?? 0, groupName.Length));
             if (string.Equals(validGroupNames[i], groupName, StringComparison.Ordinal))
             {
                 return validGroupNumbers[i];

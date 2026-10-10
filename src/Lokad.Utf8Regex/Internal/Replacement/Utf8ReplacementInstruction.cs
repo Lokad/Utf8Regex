@@ -26,15 +26,53 @@ internal readonly struct Utf8ReplacementInstruction
 
     public bool IsBraceEnclosed { get; }
 
-    public static Utf8ReplacementInstruction Literal(byte[] literalUtf8) =>
-        new(Utf8ReplacementInstructionKind.Literal, literalUtf8, Encoding.UTF8.GetString(literalUtf8), -1, isBraceEnclosed: false);
+    public static Utf8ReplacementInstruction Literal(byte[] literalUtf8)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var result = new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.Literal, literalUtf8,
+            DecodeLiteral(storage, literalUtf8), -1, false);
+        storage.Complete(); owner.Complete();
+        return result;
+    }
 
     public static Utf8ReplacementInstruction Literal(string literalText)
     {
-        // A template literal is one encoding boundary. String-based consumers
-        // use the same scalar text as byte consumers, including U+FFFD for an
-        // unpaired surrogate; later captures cannot complete that surrogate.
-        return Literal(Encoding.UTF8.GetBytes(literalText));
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var result = Literal(storage, literalText);
+        storage.Complete(); owner.Complete();
+        return result;
+    }
+
+    internal static Utf8ReplacementInstruction Literal(Utf8ConstructionSession storage, string literalText)
+    {
+        // Each literal fragment is an independent scalar encoding boundary.
+        // Repair unpaired template surrogates before captures can be appended.
+        storage.Budget.ChargeWork((ulong)literalText.Length);
+        var count = Encoding.UTF8.GetByteCount(literalText);
+        var bytes = storage.Allocate<byte>(count, true);
+        storage.Budget.ChargeWork((ulong)literalText.Length + (ulong)count);
+        Encoding.UTF8.GetBytes(literalText.AsSpan(), bytes);
+        var valid = true;
+        storage.Budget.ChargeWork((ulong)literalText.Length);
+        for (var offset = 0; offset < literalText.Length;)
+        {
+            if (Rune.DecodeFromUtf16(literalText.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
+            { valid = false; break; }
+            offset += width;
+        }
+        return new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.Literal, bytes,
+            valid ? literalText : DecodeLiteral(storage, bytes), -1, false);
+    }
+
+    private static string DecodeLiteral(Utf8ConstructionSession storage, byte[] bytes)
+    {
+        storage.Budget.ChargeWork((ulong)bytes.Length);
+        var characters = storage.Allocate<char>(Encoding.UTF8.GetCharCount(bytes), false);
+        storage.Budget.ChargeWork((ulong)bytes.Length + (ulong)characters.Length);
+        Encoding.UTF8.GetChars(bytes.AsSpan(), characters);
+        return storage.Budget.CopyText(characters);
     }
 
     public static Utf8ReplacementInstruction Group(int groupNumber, bool isBraceEnclosed) =>

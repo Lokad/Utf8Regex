@@ -519,34 +519,54 @@ public sealed partial class Utf8Regex
 
     private Utf8ReplacementPlan RewriteWholeLiteralCapturePlan(Utf8ReplacementPlan plan)
     {
-        var captureNumber = GetWholeLiteralCaptureNumber();
+        if (_groupNumbers.Length <= 1) return plan;
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var captureNumber = GetWholeLiteralCaptureNumber(storage);
         if (captureNumber <= 0)
         {
             return plan;
         }
 
-        List<Utf8ReplacementInstruction>? rewritten = null;
+        Utf8ConstructionBuffer<Utf8ReplacementInstruction>? rewritten = null;
         for (var i = 0; i < plan.Instructions.Count; i++)
         {
+            storage.Budget.ChargeWork(1);
             var instruction = plan.Instructions[i];
-            if (instruction.Kind == Utf8ReplacementInstructionKind.Group &&
-                instruction.GroupNumber == captureNumber)
+            if (instruction.Kind == Utf8ReplacementInstructionKind.Group && instruction.GroupNumber == captureNumber)
             {
-                rewritten ??= [.. plan.Instructions];
+                if (rewritten is null)
+                {
+                    rewritten = storage.Buffer<Utf8ReplacementInstruction>();
+                    for (var j = 0; j < plan.Instructions.Count; j++)
+                    {
+                        storage.Budget.ChargeWork(1);
+                        rewritten.Add(plan.Instructions[j]);
+                    }
+                }
                 rewritten[i] = Utf8ReplacementInstruction.WholeMatch();
             }
         }
-
-        return rewritten is null ? plan : new Utf8ReplacementPlan(rewritten);
+        if (rewritten is null) return plan;
+        var result = Utf8ReplacementPlan.Create(storage, rewritten.Span);
+        storage.Complete(); owner.Complete();
+        return result;
     }
 
     private int GetWholeLiteralCaptureNumber()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        return GetWholeLiteralCaptureNumber(storage);
+    }
+
+    private int GetWholeLiteralCaptureNumber(Utf8ConstructionSession storage)
     {
         if (_groupNumbers.Length == 2 &&
             Pattern.Length >= 3 &&
             Pattern[0] == '(' &&
             Pattern[^1] == ')' &&
-            IsPlainLiteralPattern(Pattern[1..^1]))
+            IsPlainLiteralPattern(storage.Budget, Pattern.AsSpan(1, Pattern.Length - 2)))
         {
             return 1;
         }
@@ -558,74 +578,104 @@ public sealed partial class Utf8Regex
             return 0;
         }
 
-        return TryGetWholeLiteralCaptureNumber(root.Children[0], out var captureNumber)
+        return TryGetWholeLiteralCaptureNumber(storage, root.Children[0], out var captureNumber)
             ? captureNumber
             : 0;
     }
 
-    private static bool TryGetWholeLiteralCaptureNumber(Utf8ExecutionNode node, out int captureNumber)
+    private readonly record struct ReplacementCaptureFrame(Utf8ExecutionNode Node, int NextChild);
+
+    private static bool TryGetWholeLiteralCaptureNumber(Utf8ConstructionSession storage,
+        Utf8ExecutionNode node, out int captureNumber)
     {
-        switch (node.Kind)
+        var frames = storage.Buffer<ReplacementCaptureFrame>();
+        var success = false;
+        var number = 0;
+        PushReplacementCaptureFrame(storage.Budget, frames, node);
+        try
         {
-            case Utf8ExecutionNodeKind.Capture when node.Children.Count == 1:
-                if (TryGetWholeLiteralCaptureNumber(node.Children[0], out _))
+            while (frames.Count > 0)
+            {
+                storage.Budget.ChargeWork(1);
+                var frame = frames.Peek();
+                var current = frame.Node;
+                if (frame.NextChild < 0)
                 {
-                    captureNumber = node.CaptureNumber;
-                    return captureNumber > 0;
-                }
-
-                break;
-
-            case Utf8ExecutionNodeKind.Group when node.Children.Count == 1:
-                return TryGetWholeLiteralCaptureNumber(node.Children[0], out captureNumber);
-
-            case Utf8ExecutionNodeKind.Concatenate:
-                Utf8ExecutionNode? substantiveChild = null;
-                for (var i = 0; i < node.Children.Count; i++)
-                {
-                    var child = node.Children[i];
-                    if (IsZeroWidthBoundaryNode(child.Kind))
+                    switch (current.Kind)
                     {
+                        case Utf8ExecutionNodeKind.Capture when current.Children.Count == 1:
+                        case Utf8ExecutionNodeKind.Group when current.Children.Count == 1:
+                            frames[frames.Count - 1] = frame with { NextChild = 0 };
+                            PushReplacementCaptureFrame(storage.Budget, frames, current.Children[0]);
+                            continue;
+                        case Utf8ExecutionNodeKind.Concatenate:
+                            Utf8ExecutionNode? child = null;
+                            var multiple = false;
+                            foreach (var candidate in current.Children)
+                            {
+                                storage.Budget.ChargeWork(1);
+                                if (IsZeroWidthBoundaryNode(candidate.Kind)) continue;
+                                if (child is not null) { multiple = true; break; }
+                                child = candidate;
+                            }
+                            if (child is not null && !multiple)
+                            {
+                                frames[frames.Count - 1] = frame with { NextChild = 0 };
+                                PushReplacementCaptureFrame(storage.Budget, frames, child);
+                                continue;
+                            }
+                            success = false; number = 0;
+                            break;
+                        case Utf8ExecutionNodeKind.One:
+                        case Utf8ExecutionNodeKind.Multi:
+                            success = true; number = 0;
+                            break;
+                        case Utf8ExecutionNodeKind.Alternate:
+                            if (current.Children.Count > 0)
+                            {
+                                frames[frames.Count - 1] = frame with { NextChild = 1 };
+                                PushReplacementCaptureFrame(storage.Budget, frames, current.Children[0]);
+                                continue;
+                            }
+                            success = true; number = 0;
+                            break;
+                        default:
+                            success = false; number = 0;
+                            break;
+                    }
+                }
+                else if (current.Kind == Utf8ExecutionNodeKind.Capture)
+                {
+                    success &= current.CaptureNumber > 0;
+                    number = success ? current.CaptureNumber : 0;
+                }
+                else if (current.Kind == Utf8ExecutionNodeKind.Alternate)
+                {
+                    if (success && frame.NextChild < current.Children.Count)
+                    {
+                        frames[frames.Count - 1] = frame with { NextChild = frame.NextChild + 1 };
+                        PushReplacementCaptureFrame(storage.Budget, frames, current.Children[frame.NextChild]);
                         continue;
                     }
-
-                    if (substantiveChild is not null)
-                    {
-                        captureNumber = 0;
-                        return false;
-                    }
-
-                    substantiveChild = child;
+                    number = 0;
                 }
-
-                if (substantiveChild is not null)
-                {
-                    return TryGetWholeLiteralCaptureNumber(substantiveChild, out captureNumber);
-                }
-
-                break;
-
-            case Utf8ExecutionNodeKind.One:
-            case Utf8ExecutionNodeKind.Multi:
-                captureNumber = 0;
-                return true;
-
-            case Utf8ExecutionNodeKind.Alternate:
-                for (var i = 0; i < node.Children.Count; i++)
-                {
-                    if (!TryGetWholeLiteralCaptureNumber(node.Children[i], out _))
-                    {
-                        captureNumber = 0;
-                        return false;
-                    }
-                }
-
-                captureNumber = 0;
-                return true;
+                frames.Pop(); storage.Budget.LeaveDepth();
+            }
         }
+        finally
+        {
+            while (frames.Count > 0) { frames.Pop(); storage.Budget.LeaveDepth(); }
+        }
+        captureNumber = number;
+        return success;
+    }
 
-        captureNumber = 0;
-        return false;
+    private static void PushReplacementCaptureFrame(Utf8ConstructionBudget budget,
+        Utf8ConstructionBuffer<ReplacementCaptureFrame> frames, Utf8ExecutionNode node)
+    {
+        budget.EnterDepth();
+        try { frames.Push(new ReplacementCaptureFrame(node, -1)); }
+        catch { budget.LeaveDepth(); throw; }
     }
 
     // R05: a lone capture wrapping the whole tree spans the hit exactly, no matter
@@ -710,10 +760,11 @@ public sealed partial class Utf8Regex
             Utf8ExecutionNodeKind.End;
     }
 
-    private static bool IsPlainLiteralPattern(string pattern)
+    private static bool IsPlainLiteralPattern(Utf8ConstructionBudget budget, ReadOnlySpan<char> pattern)
     {
         foreach (var ch in pattern)
         {
+            budget.ChargeWork(1);
             if (Utf8RegexSyntax.IsRegexMetaCharacter(ch))
             {
                 return false;
