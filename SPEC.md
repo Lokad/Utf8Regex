@@ -1006,8 +1006,18 @@ deadlines propagate instead of selecting an unmetered route. Failed children
 restore the parent's capacity and depth; successful graphs transfer their final
 arrays. Internal construction interruption authority belongs to the shared
 owner; complete public construction/invocation policy remains unqualified.
-Fixed global BCL SearchValues state and remaining upstream preparation
-metadata and complete retained/shared preparation remain uncovered. Their complete
+Eight fixed executor byte sets now use bounded immutable value fields and share
+the existing owned byte-mask/SIMD kernel with admitted pattern-dependent sets.
+No shipped SearchValues reference or runtime ASCII category-map array remains.
+The 128 ASCII category bytes are borrowed compiler data; scalar category fixtures
+qualify every entry and preserve mixed-width category counting. Fixed table
+initialization uses constant bounded stack scratch and acquires no heap program
+buffer. Pattern-dependent set descriptors keep their original byte/work/depth
+loans; moving the search kernel does not reset or relax admission. Shared fixed
+value/embedded data has a declared constant footprint, distinct from per-pattern
+and invocation capacity. Complete retained/shared policy remains unfinished.
+Remaining upstream preparation metadata and complete retained/shared preparation
+remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run

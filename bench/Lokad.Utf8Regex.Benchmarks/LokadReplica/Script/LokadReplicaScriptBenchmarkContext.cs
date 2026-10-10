@@ -1,4 +1,4 @@
-using System.Buffers;
+using Lokad.Utf8Regex.Internal.Search;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -9,26 +9,10 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal sealed class LokadReplicaScriptBenchmarkContext
 {
-    private static readonly SearchValues<byte> s_asciiLetterSearchValues = SearchValues.Create(
-    [
-        (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', (byte)'I', (byte)'J',
-        (byte)'K', (byte)'L', (byte)'M', (byte)'N', (byte)'O', (byte)'P', (byte)'Q', (byte)'R', (byte)'S', (byte)'T',
-        (byte)'U', (byte)'V', (byte)'W', (byte)'X', (byte)'Y', (byte)'Z',
-        (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f', (byte)'g', (byte)'h', (byte)'i', (byte)'j',
-        (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p', (byte)'q', (byte)'r', (byte)'s', (byte)'t',
-        (byte)'u', (byte)'v', (byte)'w', (byte)'x', (byte)'y', (byte)'z',
-    ]);
-
-    private static readonly SearchValues<byte> s_asciiAlphaNumericSearchValues = SearchValues.Create(
-    [
-        (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
-        (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F', (byte)'G', (byte)'H', (byte)'I', (byte)'J',
-        (byte)'K', (byte)'L', (byte)'M', (byte)'N', (byte)'O', (byte)'P', (byte)'Q', (byte)'R', (byte)'S', (byte)'T',
-        (byte)'U', (byte)'V', (byte)'W', (byte)'X', (byte)'Y', (byte)'Z',
-        (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f', (byte)'g', (byte)'h', (byte)'i', (byte)'j',
-        (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p', (byte)'q', (byte)'r', (byte)'s', (byte)'t',
-        (byte)'u', (byte)'v', (byte)'w', (byte)'x', (byte)'y', (byte)'z',
-    ]);
+    private static readonly PreparedByteSetState s_asciiLetters = PreparedByteSetState.FromValues(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_asciiAlphaNumeric = PreparedByteSetState.FromValues(
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
 
     private static ReadOnlySpan<byte> ImportPrefix => "import"u8;
     private static ReadOnlySpan<byte> ImportOptionalSegment => "shared"u8;
@@ -271,7 +255,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8AsciiTokenFinderExecutor.TryFindNext(sample, 0, s_asciiLetterSearchValues, s_asciiAlphaNumericSearchValues, out _, out var matchedLength))
+            if (Utf8AsciiTokenFinderExecutor.TryFindNext(sample, 0, s_asciiLetters, s_asciiAlphaNumeric, out _, out var matchedLength))
             {
                 total += matchedLength;
             }

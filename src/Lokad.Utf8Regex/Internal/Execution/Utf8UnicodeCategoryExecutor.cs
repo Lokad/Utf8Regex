@@ -1,4 +1,4 @@
-using System.Buffers;
+using Lokad.Utf8Regex.Internal.Search;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -11,8 +11,20 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // PCRE2-INTEGRATION-POINT: flavor-neutral category counting over already-validated UTF-8.
 internal static class Utf8UnicodeCategoryExecutor
 {
-    private static readonly byte[] s_asciiCategoryMap = CreateAsciiCategoryMap();
-    private static readonly SearchValues<byte> s_asciiMathSymbolSearchValues = SearchValues.Create("+<=>|~"u8);
+    // ASCII categories are fixed scalar facts. Borrow the compiler's embedded
+    // 128-byte data instead of acquiring a runtime category-map array.
+    private static ReadOnlySpan<byte> AsciiCategoryMap =>
+    [
+        14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+        14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+        11, 24, 24, 24, 26, 24, 24, 24, 20, 21, 24, 25, 24, 19, 24, 24,
+        8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 24, 24, 25, 25, 25, 24,
+        24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 24, 21, 27, 18,
+        27, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 20, 25, 21, 25, 14,
+    ];
+    private static readonly PreparedByteSetState s_asciiMathSymbols = PreparedByteSetState.FromValues("+<=>|~"u8);
 
     public static int CountCategory(
         ReadOnlySpan<byte> input,
@@ -32,7 +44,7 @@ internal static class Utf8UnicodeCategoryExecutor
             var first = input[index];
             if (first < 0x80)
             {
-                if (s_asciiCategoryMap[first] == categoryByte)
+                if (AsciiCategoryMap[first] == categoryByte)
                 {
                     count++;
                 }
@@ -162,7 +174,7 @@ internal static class Utf8UnicodeCategoryExecutor
 
         while (index < input.Length)
         {
-            var relative = input[index..].IndexOfAny(s_asciiMathSymbolSearchValues);
+            var relative = s_asciiMathSymbols.IndexOf(input[index..]);
             if (relative < 0)
             {
                 break;
@@ -231,16 +243,5 @@ internal static class Utf8UnicodeCategoryExecutor
         }
 
         return count;
-    }
-
-    private static byte[] CreateAsciiCategoryMap()
-    {
-        var map = new byte[128];
-        for (var i = 0; i < map.Length; i++)
-        {
-            map[i] = (byte)char.GetUnicodeCategory((char)i);
-        }
-
-        return map;
     }
 }

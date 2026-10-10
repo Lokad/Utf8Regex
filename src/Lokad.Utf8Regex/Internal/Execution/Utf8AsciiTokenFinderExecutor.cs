@@ -1,13 +1,13 @@
-using System.Buffers;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiTokenFinderExecutor
 {
-    private static readonly SearchValues<byte> s_asciiLetterSearchValues = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
-    private static readonly SearchValues<byte> s_asciiAlphaNumericSearchValues = SearchValues.Create("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_asciiLetters = PreparedByteSetState.FromValues("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_asciiAlphaNumeric = PreparedByteSetState.FromValues("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
 
-    public static bool TryFindNext(ReadOnlySpan<byte> input, int startIndex, SearchValues<byte> headSearchValues, SearchValues<byte> tailSearchValues, out int matchIndex, out int matchedLength)
+    public static bool TryFindNext(ReadOnlySpan<byte> input, int startIndex, in PreparedByteSetState headSet, in PreparedByteSetState tailSet, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;
         matchedLength = 0;
@@ -16,7 +16,7 @@ internal static class Utf8AsciiTokenFinderExecutor
             return false;
         }
 
-        var relative = input[startIndex..].IndexOfAny(headSearchValues);
+        var relative = headSet.IndexOf(input[startIndex..]);
         if (relative < 0)
         {
             return false;
@@ -24,14 +24,14 @@ internal static class Utf8AsciiTokenFinderExecutor
 
         matchIndex = startIndex + relative;
         var tail = input[(matchIndex + 1)..];
-        var stop = tail.IndexOfAnyExcept(tailSearchValues);
+        var stop = tailSet.IndexOfAnyExcept(tail);
         matchedLength = stop < 0 ? input.Length - matchIndex : 1 + stop;
         return true;
     }
 
     public static bool TryFindAsciiIdentifierToken(ReadOnlySpan<byte> input, int startIndex, out int matchIndex, out int matchedLength)
     {
-        return TryFindNext(input, startIndex, s_asciiLetterSearchValues, s_asciiAlphaNumericSearchValues, out matchIndex, out matchedLength);
+        return TryFindNext(input, startIndex, s_asciiLetters, s_asciiAlphaNumeric, out matchIndex, out matchedLength);
     }
 
     public static Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult TryFindAsciiIdentifierTokenWithoutValidation(
@@ -48,7 +48,7 @@ internal static class Utf8AsciiTokenFinderExecutor
         }
 
         var search = input[startIndex..];
-        var relative = search.IndexOfAny(s_asciiLetterSearchValues);
+        var relative = s_asciiLetters.IndexOf(search);
         if (relative < 0)
         {
             return search.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0
@@ -63,7 +63,7 @@ internal static class Utf8AsciiTokenFinderExecutor
 
         matchIndex = startIndex + relative;
         var tail = input[(matchIndex + 1)..];
-        var stop = tail.IndexOfAnyExcept(s_asciiAlphaNumericSearchValues);
+        var stop = s_asciiAlphaNumeric.IndexOfAnyExcept(tail);
         matchedLength = stop < 0 ? input.Length - matchIndex : 1 + stop;
         return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
     }

@@ -1,11 +1,12 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiPrefixTokenExecutor
 {
-    private static readonly SearchValues<byte> s_asciiIdentifierTail = SearchValues.Create("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
-    private static readonly SearchValues<byte> s_asciiOperators = SearchValues.Create("=+-^*/.<>~!&|?"u8);
+    private static readonly PreparedByteSetState s_asciiIdentifierTail = PreparedByteSetState.FromValues("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_asciiOperators = PreparedByteSetState.FromValues("=+-^*/.<>~!&|?"u8);
     public static bool TryMatchIdentifierPrefixIgnoreCase(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
@@ -32,7 +33,7 @@ internal static class Utf8AsciiPrefixTokenExecutor
             return true;
         }
 
-        var stop = tail.IndexOfAnyExcept(s_asciiIdentifierTail);
+        var stop = s_asciiIdentifierTail.IndexOfAnyExcept(tail);
         var index = stop < 0 ? input.Length : 1 + stop;
 
         matchedLength = index;
@@ -144,7 +145,7 @@ internal static class Utf8AsciiPrefixTokenExecutor
         }
 
         var tail = input[1..];
-        var stop = tail.IndexOfAnyExcept(s_asciiOperators);
+        var stop = s_asciiOperators.IndexOfAnyExcept(tail);
         var index = stop < 0 ? input.Length : 1 + stop;
 
         matchedLength = index;

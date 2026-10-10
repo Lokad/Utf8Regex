@@ -1,12 +1,12 @@
-using System.Buffers;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiEmailWholeExecutor
 {
-    private static readonly SearchValues<byte> s_localChars = SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
-    private static readonly SearchValues<byte> s_domainLabelChars = SearchValues.Create("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
-    private static readonly SearchValues<byte> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_localChars = PreparedByteSetState.FromValues("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_domainLabelChars = PreparedByteSetState.FromValues("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
+    private static readonly PreparedByteSetState s_asciiLetters = PreparedByteSetState.FromValues("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8);
 
     public static bool TryMatchWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
@@ -124,10 +124,10 @@ internal static class Utf8AsciiEmailWholeExecutor
         return count >= minCount;
     }
 
-    private static bool TryConsumeRun(ReadOnlySpan<byte> input, ref int index, int effectiveLength, SearchValues<byte> values, int minCount)
+    private static bool TryConsumeRun(ReadOnlySpan<byte> input, ref int index, int effectiveLength, in PreparedByteSetState values, int minCount)
     {
         var remaining = input.Slice(index, effectiveLength - index);
-        var count = remaining.IndexOfAnyExcept(values);
+        var count = values.IndexOfAnyExcept(remaining);
         if (count < 0)
         {
             count = remaining.Length;

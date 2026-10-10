@@ -19,6 +19,14 @@
 
 ## Development history
 
+- Replace the eight fixed executor SearchValues holders with immutable value
+  tables sharing the owned byte-mask/SIMD kernel. Pattern-dependent sets retain
+  their admission and descriptor ownership. The ASCII category table borrows
+  128 embedded bytes; its runtime array/producer is removed. Email, identifier,
+  operator and category scans preserve byte/scalar results across vector tails
+  and scalar execution. This does not close public resource/default/retained
+  policy or remaining preparation metadata.
+
 - Dynamic-method emission now owns IL, label/fixup/local/token tables, dispatch
   scratch, stack analysis and wrappers under the shared construction budget.
   Structural class and kernel-lowering arrays use the same owner; borrowed
