@@ -57,18 +57,38 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
 
     public int TransitionCount => _transitionTargets?.Length ?? 0;
 
+    // PCRE2-INTEGRATION-POINT: shared byte-safe graph construction.
     public static Utf8ByteSafeLazyDfaCompileOutcome Compile(Utf8ByteSafeLinearVerifierProgram linearProgram)
-        => new Compiler().Compile(linearProgram);
+    {
+        if (!linearProgram.HasValue) return new(default, Utf8ByteSafeLazyDfaCompileFailureKind.EmptyProgram);
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            var compiler = budget.AllocateObject((owner: budget, failure: Utf8ByteSafeLazyDfaCompileFailureKind.None,
+                beginning: default(Utf8ByteSafeLinearVerifierStep), end: default(Utf8ByteSafeLinearVerifierStep), optimizerSteps: 0UL),
+                static state => new Compiler(state.owner));
+            var outcome = compiler.Compile(linearProgram);
+            if (outcome.Succeeded) scope.Complete();
+            return outcome;
+        }
+        finally { budget.LeaveDepth(); }
+    }
 
     private sealed partial class Compiler
     {
+        private const ulong MaxOptimizationSteps = 1_048_576;
+        private ulong _optimizationSteps;
         private Utf8ByteSafeLazyDfaCompileFailureKind _failureKind;
         private Utf8ByteSafeLinearVerifierStep _beginningAnchor;
         private Utf8ByteSafeLinearVerifierStep _endAnchor;
-        // Speculative optimizer limits: rejection keeps the owned linear route.
-        // Immutable graph storage remains separate from public construction policy.
-        private Utf8SliceInvocation _invocation = new(new Utf8ExecutionLimits(1048576, 0, 64 * 1024 * 1024),
-            Regex.InfiniteMatchTimeout, System.Threading.CancellationToken.None);
+        private readonly Utf8ConstructionBudget _budget;
+
+        public Compiler(Utf8ConstructionBudget budget) => _budget = budget;
+
+        private Utf8ConstructionBuffer<T> Buffer<T>(bool instructions) =>
+            Utf8ConstructionBuffer<T>.Create(_budget, instructions);
 
         public Utf8ByteSafeLazyDfaCompileOutcome Compile(Utf8ByteSafeLinearVerifierProgram linearProgram)
         {
@@ -107,306 +127,562 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                     return new Utf8ByteSafeLazyDfaCompileOutcome(default, _failureKind);
                 }
 
+                using var ownedNfa = nfa;
                 var program = BuildDfa(nfa, requiresBeginning, requiresEnd);
                 if (!program.HasValue && _failureKind == Utf8ByteSafeLazyDfaCompileFailureKind.None)
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
                 }
 
-                return new Utf8ByteSafeLazyDfaCompileOutcome(program, _failureKind);
+                return new Utf8ByteSafeLazyDfaCompileOutcome(program, program.HasValue ? Utf8ByteSafeLazyDfaCompileFailureKind.None : _failureKind);
             }
             catch (CompilationBudgetExceededException)
             {
                 return new(default, Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded);
             }
         }
-    private bool IsCurrentlyTooComplex(IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps)
-    {
-        for (var i = 0; i < steps.Count; i++)
+        private bool IsCurrentlyTooComplex(Utf8ByteSafeLinearVerifierStep[] steps)
         {
-            ChargeCompilationStep();
-            var step = steps[i];
-            switch (step.Kind)
+            for (var i = 0; i < steps.Length; i++)
             {
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                    if (IsSupportedDeterministicLoopProgram(step))
-                    {
-                        continue;
-                    }
+                ChargeCompilationStep();
+                var step = steps[i];
+                switch (step.Kind)
+                {
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
+                        if (IsSupportedDeterministicLoopProgram(step))
+                        {
+                            continue;
+                        }
 
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.LoopProgram;
-                    return true;
+                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.LoopProgram;
+                        return true;
+                }
             }
-        }
 
-        return false;
-    }
-
-    private bool IsSupportedDeterministicLoopProgram(Utf8ByteSafeLinearVerifierStep step)
-    {
-        if (IsSupportedDeterministicOptionalProgram(step))
-        {
-            return true;
-        }
-
-        if (step.Program is not { Length: > 0 } program ||
-            step.Min != 1 ||
-            !IsOpenEndedLoop(step.Max))
-        {
             return false;
         }
 
-        var previousSet = AsciiCharClass.Empty;
-        var hasPrevious = false;
-        for (var i = 0; i < program.Length; i++)
+        private bool IsSupportedDeterministicLoopProgram(Utf8ByteSafeLinearVerifierStep step)
         {
-            ChargeCompilationStep();
-            if (!TryGetDisjointLoopSet(program[i], out var currentSet))
+            if (IsSupportedDeterministicOptionalProgram(step))
+            {
+                return true;
+            }
+
+            if (step.Program is not { Length: > 0 } program ||
+                step.Min != 1 ||
+                !IsOpenEndedLoop(step.Max))
             {
                 return false;
             }
 
-            if (!IsOpenEndedLoop(program[i].Max))
+            var previousSet = AsciiCharClass.Empty;
+            var hasPrevious = false;
+            for (var i = 0; i < program.Length; i++)
             {
-                return false;
-            }
-
-            if (program[i].Min != 1 && !(i == program.Length - 1 && program[i].Min == 0))
-            {
-                return false;
-            }
-
-            if (hasPrevious && !previousSet.IsDisjoint(currentSet))
-            {
-                return false;
-            }
-
-            previousSet = currentSet;
-            hasPrevious = true;
-        }
-
-        return true;
-    }
-
-    private Utf8ByteSafeLazyDfaVerifierProgram BuildDfa(NfaGraph nfa, bool requiresBeginning, bool requiresEnd)
-    {
-        var stateMap = new Dictionary<NfaStateSet, int>(NfaStateSetComparer.Instance);
-        var queue = new Queue<NfaStateSet>();
-        var dfaStateSets = new List<NfaStateSet>();
-        var accepting = new List<bool>();
-        var transitionOffsets = new List<int>();
-        var transitionCounts = new List<int>();
-        var transitionSets = new List<AsciiCharClass>();
-        var transitionTargets = new List<int>();
-
-        var startSet = ComputeClosure([0], nfa);
-        stateMap[startSet] = 0;
-        dfaStateSets.Add(startSet);
-        accepting.Add(startSet.Contains(nfa.AcceptState));
-        queue.Enqueue(startSet);
-
-        while (queue.Count > 0)
-        {
-            if (dfaStateSets.Count > MaxDfaStates || transitionSets.Count > MaxDfaTransitions)
-            {
-                _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
-                return default;
-            }
-
-            ChargeCompilationStep();
-            var current = queue.Dequeue();
-            var buckets = new Dictionary<TransitionKey, HashSet<int>>(TransitionKeyComparer.Instance);
-
-            foreach (var stateId in current.States)
-            {
-                foreach (var transition in nfa.States[stateId].Transitions)
+                ChargeCompilationStep();
+                if (!TryGetDisjointLoopSet(program[i], out var currentSet))
                 {
-                    if (!buckets.TryGetValue(transition.Key, out var targets))
-                    {
-                        targets = [];
-                        buckets[transition.Key] = targets;
-                    }
-
-                    targets.Add(transition.TargetState);
-                }
-            }
-
-            var orderedBuckets = buckets
-                .Select(static kvp => (Key: kvp.Key, Targets: kvp.Value))
-                .OrderBy(static bucket => bucket.Key.SortKey)
-                .ToArray();
-
-            transitionOffsets.Add(transitionSets.Count);
-            transitionCounts.Add(orderedBuckets.Length);
-
-            for (var i = 0; i < orderedBuckets.Length; i++)
-            {
-                var closure = ComputeClosure([.. orderedBuckets[i].Targets], nfa);
-                if (!stateMap.TryGetValue(closure, out var targetIndex))
-                {
-                    targetIndex = dfaStateSets.Count;
-                    if (targetIndex >= MaxDfaStates)
-                    {
-                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
-                        return default;
-                    }
-
-                    stateMap[closure] = targetIndex;
-                    dfaStateSets.Add(closure);
-                    accepting.Add(closure.Contains(nfa.AcceptState));
-                    queue.Enqueue(closure);
+                    return false;
                 }
 
-                if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
-                transitionSets.Add(orderedBuckets[i].Key.Set);
-                transitionTargets.Add(targetIndex);
-                if (transitionSets.Count > MaxDfaTransitions)
+                if (!IsOpenEndedLoop(program[i].Max))
                 {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded;
-                    return default;
+                    return false;
                 }
-            }
-        }
 
-        return new Utf8ByteSafeLazyDfaVerifierProgram(
-            [.. transitionOffsets],
-            [.. transitionCounts],
-            [.. transitionSets],
-            [.. transitionTargets],
-            [.. accepting],
-            requiresBeginning,
-            requiresEnd, _beginningAnchor, _endAnchor);
-    }
+                if (program[i].Min != 1 && !(i == program.Length - 1 && program[i].Min == 0))
+                {
+                    return false;
+                }
 
-    private NfaStateSet ComputeClosure(int[] startStates, NfaGraph nfa)
-    {
-        var visited = new HashSet<int>();
-        var stack = new Stack<int>(startStates);
-        while (stack.Count > 0)
-        {
-            ChargeCompilationStep();
-            var state = stack.Pop();
-            if (!visited.Add(state))
-            {
-                continue;
+                if (hasPrevious && !previousSet.IsDisjoint(currentSet))
+                {
+                    return false;
+                }
+
+                previousSet = currentSet;
+                hasPrevious = true;
             }
 
-            foreach (var target in nfa.States[state].EpsilonTransitions)
-            {
-                stack.Push(target);
-            }
-        }
-
-        var ordered = visited.OrderBy(static value => value).ToArray();
-        return new NfaStateSet(ordered);
-    }
-
-    private bool TryCompileDeterministicSequence(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        out Utf8ByteSafeLazyDfaVerifierProgram program)
-    {
-        if (TryCompileDisjointLoopSequence(steps, out program))
-        {
             return true;
         }
 
-        var requiresBeginning = false;
-        var requiresEnd = false;
-        var transitionOffsets = new List<int>();
-        var transitionCounts = new List<int>();
-        var transitionSets = new List<AsciiCharClass>();
-        var transitionTargets = new List<int>();
-        var accepting = new List<bool>();
-        var stateIndex = 0;
-
-        AddDfaState(accepting);
-
-        for (var stepIndex = 0; stepIndex < steps.Count; stepIndex++)
+        private bool TryCompileDeterministicSequence(
+            Utf8ByteSafeLinearVerifierStep[] steps,
+            out Utf8ByteSafeLazyDfaVerifierProgram program)
         {
-            var step = steps[stepIndex];
-            switch (step.Kind)
+            using var attempt = Utf8ConstructionScope.Enter();
+            _budget.EnterDepth();
+            try
             {
-                case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
-                    if (stateIndex != 0)
+                if (TryCompileDisjointLoopSequence(steps, out program))
+                {
+                    attempt.Complete();
+                    return true;
+                }
+
+                var requiresBeginning = false;
+                var requiresEnd = false;
+                using var transitionOffsets = Buffer<int>(false);
+                using var transitionCounts = Buffer<int>(false);
+                using var transitionSets = Buffer<AsciiCharClass>(false);
+                using var transitionTargets = Buffer<int>(true);
+                using var accepting = Buffer<bool>(false);
+                var stateIndex = 0;
+
+                AddDfaState(accepting);
+
+                for (var stepIndex = 0; stepIndex < steps.Length; stepIndex++)
+                {
+                    ChargeCompilationStep();
+                    var step = steps[stepIndex];
+                    switch (step.Kind)
                     {
-                        program = default;
-                        return false;
+                        case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
+                            if (stateIndex != 0)
+                            {
+                                program = default;
+                                return false;
+                            }
+
+                            requiresBeginning = true;
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
+                            requiresEnd = true;
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.Accept:
+                            accepting[stateIndex] = true;
+                            while (transitionOffsets.Count < accepting.Count)
+                            {
+                                transitionOffsets.Add(0);
+                                transitionCounts.Add(0);
+                            }
+
+                            program = new Utf8ByteSafeLazyDfaVerifierProgram(
+                                transitionOffsets.Take(),
+                                transitionCounts.Take(),
+                                transitionSets.Take(),
+                                transitionTargets.Take(),
+                                accepting.Take(),
+                                requiresBeginning,
+                                requiresEnd, _beginningAnchor, _endAnchor);
+                            attempt.Complete();
+                            return true;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
+                            stateIndex = AppendDeterministicTransition(
+                                step,
+                                AsciiCharClass.ForByte(step.Value),
+                                stateIndex,
+                                accepting,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets);
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.MatchText:
+                            foreach (var value in step.Text)
+                            {
+                                stateIndex = AppendDeterministicTransition(
+                                    step,
+                                    AsciiCharClass.ForByte(value),
+                                    stateIndex,
+                                    accepting,
+                                    transitionOffsets,
+                                    transitionCounts,
+                                    transitionSets,
+                                    transitionTargets);
+                            }
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                            if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedMatchSet))
+                            {
+                                _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
+                                program = default;
+                                return false;
+                            }
+
+                            stateIndex = AppendDeterministicTransition(
+                                step,
+                                projectedMatchSet,
+                                stateIndex,
+                                accepting,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets);
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopByte when step.Min == step.Max:
+                            for (var i = 0; i < step.Min; i++)
+                            {
+                                stateIndex = AppendDeterministicTransition(
+                                    step,
+                                    AsciiCharClass.ForByte(step.Value),
+                                    stateIndex,
+                                    accepting,
+                                    transitionOffsets,
+                                    transitionCounts,
+                                    transitionSets,
+                                    transitionTargets);
+                            }
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopText when step.Min == step.Max:
+                            for (var repeat = 0; repeat < step.Min; repeat++)
+                            {
+                                foreach (var value in step.Text)
+                                {
+                                    stateIndex = AppendDeterministicTransition(
+                                        step,
+                                        AsciiCharClass.ForByte(value),
+                                        stateIndex,
+                                        accepting,
+                                        transitionOffsets,
+                                        transitionCounts,
+                                        transitionSets,
+                                        transitionTargets);
+                                }
+                            }
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass when step.Min == step.Max:
+                            if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
+                            {
+                                _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
+                                program = default;
+                                return false;
+                            }
+
+                            for (var i = 0; i < step.Min; i++)
+                            {
+                                stateIndex = AppendDeterministicTransition(
+                                    step,
+                                    projectedLoopSet,
+                                    stateIndex,
+                                    accepting,
+                                    transitionOffsets,
+                                    transitionCounts,
+                                    transitionSets,
+                                    transitionTargets);
+                            }
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass when
+                            step.Min == 0 &&
+                            IsOpenEndedLoop(step.Max) &&
+                            AsciiCharClass.TryUseNonEmpty(step.CharClass, out var leadingProjectedLoopSet) &&
+                            TryGetFirstDeterministicTransitionSet(steps, stepIndex + 1, out var followingSet) &&
+                            leadingProjectedLoopSet.IsDisjoint(followingSet):
+                            AddDeterministicTransition(
+                                stateIndex,
+                                leadingProjectedLoopSet,
+                                stateIndex,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets);
+                            break;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
+                            step.Min == 0 &&
+                            step.Max == 1 &&
+                            step.Program is { Length: > 0 } optionalProgram &&
+                            TryAppendDeterministicOptionalProgram(
+                                optionalProgram,
+                                ref stateIndex,
+                                accepting,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets):
+                            break;
+
+                        default:
+                            _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedDeterministicStep;
+                            program = default;
+                            return false;
+                    }
+                }
+
+                program = default;
+                return false;
+            }
+            finally { _budget.LeaveDepth(); }
+        }
+
+        private bool TryCompileDisjointLoopSequence(
+            Utf8ByteSafeLinearVerifierStep[] steps,
+            out Utf8ByteSafeLazyDfaVerifierProgram program)
+        {
+            using var attempt = Utf8ConstructionScope.Enter();
+            _budget.EnterDepth();
+            try
+            {
+                program = default;
+                if (steps.Length < 3 || steps[^1].Kind != Utf8ByteSafeLinearVerifierStepKind.Accept)
+                {
+                    return false;
+                }
+
+                var requiresBeginning = false;
+                var requiresEnd = false;
+                var start = 0;
+                var endExclusive = steps.Length - 1;
+
+                if (steps[start].Kind == Utf8ByteSafeLinearVerifierStepKind.RequireBeginning)
+                {
+                    requiresBeginning = true;
+                    start++;
+                }
+
+                if (endExclusive > start && steps[endExclusive - 1].Kind == Utf8ByteSafeLinearVerifierStepKind.RequireEnd)
+                {
+                    requiresEnd = true;
+                    endExclusive--;
+                }
+
+                if (!requiresBeginning || !requiresEnd || endExclusive <= start)
+                {
+                    return false;
+                }
+
+                if (endExclusive - start >= MaxDfaStates) return false;
+                var payloadSteps = steps.AsSpan(start, endExclusive - start);
+                if (payloadSteps.Length == 0)
+                {
+                    return false;
+                }
+
+                var repeatedSegments = false;
+                ReadOnlySpan<Utf8ByteSafeLinearVerifierStep> coreSteps;
+                if (payloadSteps.Length == 1 &&
+                    payloadSteps[0].Kind == Utf8ByteSafeLinearVerifierStepKind.LoopProgram &&
+                    payloadSteps[0].Program is { Length: > 0 } subProgram &&
+                    payloadSteps[0].Min == 1 &&
+                    IsOpenEndedLoop(payloadSteps[0].Max))
+                {
+                    repeatedSegments = true;
+                    coreSteps = subProgram;
+                }
+                else
+                {
+                    coreSteps = payloadSteps;
+                }
+
+                if (coreSteps.Length >= MaxDfaStates) return false;
+                var loopSets = _budget.AllocateArray<AsciiCharClass>(coreSteps.Length, false);
+                try
+                {
+                    for (var i = 0; i < coreSteps.Length; i++)
+                    {
+                        ChargeCompilationStep();
+                        if (!TryGetDisjointLoopSet(coreSteps[i], out loopSets[i]))
+                        {
+                            return false;
+                        }
+
+                        if (!IsOpenEndedLoop(coreSteps[i].Max))
+                        {
+                            return false;
+                        }
+
+                        if (coreSteps[i].Min != 1 && !(i == coreSteps.Length - 1 && coreSteps[i].Min == 0))
+                        {
+                            return false;
+                        }
+
+                        if (i > 0 && !loopSets[i - 1].IsDisjoint(loopSets[i]))
+                        {
+                            return false;
+                        }
                     }
 
-                    requiresBeginning = true;
-                    break;
+                    using var transitionOffsets = Buffer<int>(false);
+                    transitionOffsets.Add(0);
+                    using var transitionCounts = Buffer<int>(false);
+                    transitionCounts.Add(0);
+                    using var transitionSets = Buffer<AsciiCharClass>(false);
+                    using var transitionTargets = Buffer<int>(true);
+                    using var accepting = Buffer<bool>(false);
+                    AddDfaState(accepting);
 
-                case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
-                    requiresEnd = true;
-                    break;
-
-                case Utf8ByteSafeLinearVerifierStepKind.Accept:
-                    accepting[stateIndex] = true;
-                    while (transitionOffsets.Count < accepting.Count)
+                    var previousStageState = 0;
+                    for (var i = 0; i < coreSteps.Length; i++)
                     {
+                        var stageState = AddDfaState(accepting);
                         transitionOffsets.Add(0);
                         transitionCounts.Add(0);
+
+                        AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
+                        AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
+
+                        if (i == coreSteps.Length - 1)
+                        {
+                            accepting[stageState] = true;
+                            if (coreSteps[i].Min == 0)
+                            {
+                                accepting[previousStageState] = true;
+                            }
+                        }
+
+                        previousStageState = stageState;
+                    }
+
+                    if (repeatedSegments)
+                    {
+                        var firstSet = loopSets[0];
+                        for (var stateIndex = 0; stateIndex < accepting.Count; stateIndex++)
+                        {
+                            ChargeCompilationStep();
+                            if (!accepting[stateIndex])
+                            {
+                                continue;
+                            }
+
+                            AddDeterministicTransition(stateIndex, firstSet, 1, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
+                        }
                     }
 
                     program = new Utf8ByteSafeLazyDfaVerifierProgram(
-                        [.. transitionOffsets],
-                        [.. transitionCounts],
-                        [.. transitionSets],
-                        [.. transitionTargets],
-                        [.. accepting],
+                        transitionOffsets.Take(),
+                        transitionCounts.Take(),
+                        transitionSets.Take(),
+                        transitionTargets.Take(),
+                        accepting.Take(),
                         requiresBeginning,
                         requiresEnd, _beginningAnchor, _endAnchor);
+                    attempt.Complete();
+                    return true;
+                }
+                finally { _budget.ReleaseArray(loopSets, false); }
+            }
+            finally { _budget.LeaveDepth(); }
+        }
+
+        private bool TryGetDisjointLoopSet(Utf8ByteSafeLinearVerifierStep step, out AsciiCharClass set)
+        {
+            switch (step.Kind)
+            {
+                case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
+                    set = AsciiCharClass.ForByte(step.Value);
                     return true;
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                    stateIndex = AppendDeterministicTransition(
-                        step,
-                        AsciiCharClass.ForByte(step.Value),
-                        stateIndex,
-                        accepting,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                        transitionTargets);
-                    break;
-
-                case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                    foreach (var value in step.Text)
+                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                    if (AsciiCharClass.TryUseNonEmpty(step.CharClass, out set))
                     {
-                        stateIndex = AppendDeterministicTransition(
-                            step,
-                            AsciiCharClass.ForByte(value),
-                            stateIndex,
-                            accepting,
-                            transitionOffsets,
-                            transitionCounts,
-                            transitionSets,
-                            transitionTargets);
-                    }
-                    break;
-
-                case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedMatchSet))
-                    {
-                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
-                        program = default;
-                        return false;
+                        return true;
                     }
 
-                    stateIndex = AppendDeterministicTransition(
-                        step,
-                        projectedMatchSet,
-                        stateIndex,
-                        accepting,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                        transitionTargets);
                     break;
+            }
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopByte when step.Min == step.Max:
-                    for (var i = 0; i < step.Min; i++)
+            set = AsciiCharClass.Empty;
+            return false;
+        }
+
+        private bool TryGetFirstDeterministicTransitionSet(
+            Utf8ByteSafeLinearVerifierStep[] steps,
+            int startIndex,
+            out AsciiCharClass set)
+        {
+            while (true)
+            {
+                var descended = false;
+                for (var i = startIndex; i < steps.Length; i++)
+                {
+                    ChargeCompilationStep();
+                    ChargeCompilationStep();
+                    var step = steps[i];
+                    switch (step.Kind)
                     {
+                        case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
+                        case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
+                        case Utf8ByteSafeLinearVerifierStepKind.Accept:
+                            continue;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
+                            set = AsciiCharClass.ForByte(step.Value);
+                            return true;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.MatchText when step.Text is { Length: > 0 } text:
+                            set = AsciiCharClass.ForByte(text[0]);
+                            return true;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                            return AsciiCharClass.TryUseNonEmpty(step.CharClass, out set);
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
+                            set = AsciiCharClass.ForByte(step.Value);
+                            return true;
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                            return AsciiCharClass.TryUseNonEmpty(step.CharClass, out set);
+
+                        case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
+                            step.Min == 0 &&
+                            step.Max == 1 &&
+                            step.Program is { Length: > 0 } optionalProgram:
+                            steps = optionalProgram;
+                            startIndex = 0;
+                            descended = true;
+                            break;
+
+                        default:
+                            set = AsciiCharClass.Empty;
+                            return false;
+                    }
+                    if (descended) break;
+                }
+                if (descended) continue;
+
+                set = AsciiCharClass.Empty;
+                return false;
+            }
+        }
+
+        private bool TryAppendDeterministicOptionalProgram(
+            Utf8ByteSafeLinearVerifierStep[] steps,
+            ref int stateIndex,
+            Utf8ConstructionBuffer<bool> accepting,
+            Utf8ConstructionBuffer<int> transitionOffsets,
+            Utf8ConstructionBuffer<int> transitionCounts,
+            Utf8ConstructionBuffer<AsciiCharClass> transitionSets,
+            Utf8ConstructionBuffer<int> transitionTargets)
+        {
+            accepting[stateIndex] = true;
+            return TryAppendDeterministicSubProgram(
+                steps,
+                ref stateIndex,
+                accepting,
+                transitionOffsets,
+                transitionCounts,
+                transitionSets,
+                transitionTargets);
+        }
+
+        private bool TryAppendDeterministicSubProgram(
+            Utf8ByteSafeLinearVerifierStep[] steps,
+            ref int stateIndex,
+            Utf8ConstructionBuffer<bool> accepting,
+            Utf8ConstructionBuffer<int> transitionOffsets,
+            Utf8ConstructionBuffer<int> transitionCounts,
+            Utf8ConstructionBuffer<AsciiCharClass> transitionSets,
+            Utf8ConstructionBuffer<int> transitionTargets)
+        {
+            for (var i = 0; i < steps.Length; i++)
+            {
+                ChargeCompilationStep();
+                var step = steps[i];
+                switch (step.Kind)
+                {
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
                         stateIndex = AppendDeterministicTransition(
                             step,
                             AsciiCharClass.ForByte(step.Value),
@@ -416,12 +692,9 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                             transitionCounts,
                             transitionSets,
                             transitionTargets);
-                    }
-                    break;
+                        break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopText when step.Min == step.Max:
-                    for (var repeat = 0; repeat < step.Min; repeat++)
-                    {
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchText:
                         foreach (var value in step.Text)
                         {
                             stateIndex = AppendDeterministicTransition(
@@ -434,364 +707,404 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                                 transitionSets,
                                 transitionTargets);
                         }
-                    }
-                    break;
+                        break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass when step.Min == step.Max:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
-                    {
-                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
-                        program = default;
-                        return false;
-                    }
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                        if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedMatchSet))
+                        {
+                            _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
+                            return false;
+                        }
 
-                    for (var i = 0; i < step.Min; i++)
-                    {
                         stateIndex = AppendDeterministicTransition(
                             step,
-                            projectedLoopSet,
+                            projectedMatchSet,
                             stateIndex,
                             accepting,
                             transitionOffsets,
                             transitionCounts,
                             transitionSets,
                             transitionTargets);
-                    }
-                    break;
+                        break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass when
-                    step.Min == 0 &&
-                    IsOpenEndedLoop(step.Max) &&
-                    AsciiCharClass.TryUseNonEmpty(step.CharClass, out var leadingProjectedLoopSet) &&
-                    TryGetFirstDeterministicTransitionSet(steps, stepIndex + 1, out var followingSet) &&
-                    leadingProjectedLoopSet.IsDisjoint(followingSet):
-                    AddDeterministicTransition(
-                        stateIndex,
-                        leadingProjectedLoopSet,
-                        stateIndex,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                        transitionTargets);
-                    break;
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                        if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
+                        {
+                            _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
+                            return false;
+                        }
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
-                    step.Min == 0 &&
-                    step.Max == 1 &&
-                    step.Program is { Length: > 0 } optionalProgram &&
-                    TryAppendDeterministicOptionalProgram(
-                        optionalProgram,
-                        ref stateIndex,
-                        accepting,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                        transitionTargets):
-                    break;
+                        if (step.Min == 0 && step.Max == 1)
+                        {
+                            AddDeterministicTransition(
+                                stateIndex,
+                                projectedLoopSet,
+                                stateIndex,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets);
+                            break;
+                        }
+
+                        if (!TryAppendRepeatedDisjointLoopSequence(
+                                System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref step, 1),
+                                ref stateIndex,
+                                accepting,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets))
+                        {
+                            return false;
+                        }
+
+                        break;
+
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
+                        step.Min == 1 &&
+                        IsOpenEndedLoop(step.Max) &&
+                        step.Program is { Length: > 0 } repeatedProgram:
+                        if (!TryAppendRepeatedDisjointLoopSequence(
+                                repeatedProgram,
+                                ref stateIndex,
+                                accepting,
+                                transitionOffsets,
+                                transitionCounts,
+                                transitionSets,
+                                transitionTargets))
+                        {
+                            return false;
+                        }
+
+                        break;
+
+                    default:
+                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedDeterministicStep;
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool IsSupportedDeterministicOptionalProgram(Utf8ByteSafeLinearVerifierStep step)
+        {
+            if (step.Program is not { Length: > 0 } program ||
+                step.Min != 0 ||
+                step.Max != 1)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < program.Length; i++)
+            {
+                ChargeCompilationStep();
+                if (!IsSupportedDeterministicSubProgramStep(program[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool IsSupportedDeterministicSubProgramStep(Utf8ByteSafeLinearVerifierStep step)
+        {
+            switch (step.Kind)
+            {
+                case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
+                case Utf8ByteSafeLinearVerifierStepKind.MatchText:
+                    return true;
+
+                case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                    return !step.CharClass.IsEmpty;
+
+                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                    return !step.CharClass.IsEmpty &&
+                        ((step.Min == 0 && step.Max == 1) || IsOpenEndedLoop(step.Max));
+
+                case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
+                    return step.Program is { Length: > 0 } nestedProgram &&
+                        step.Min == 1 &&
+                        IsOpenEndedLoop(step.Max) &&
+                        AreDisjointLoopSteps(nestedProgram);
 
                 default:
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedDeterministicStep;
-                    program = default;
                     return false;
             }
         }
 
-        program = default;
-        return false;
-    }
-
-    private bool TryCompileDisjointLoopSequence(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        out Utf8ByteSafeLazyDfaVerifierProgram program)
-    {
-        program = default;
-        if (steps.Count < 3 || steps[^1].Kind != Utf8ByteSafeLinearVerifierStepKind.Accept)
+        private bool AreDisjointLoopSteps(Utf8ByteSafeLinearVerifierStep[] steps)
         {
-            return false;
-        }
-
-        var requiresBeginning = false;
-        var requiresEnd = false;
-        var start = 0;
-        var endExclusive = steps.Count - 1;
-
-        if (steps[start].Kind == Utf8ByteSafeLinearVerifierStepKind.RequireBeginning)
-        {
-            requiresBeginning = true;
-            start++;
-        }
-
-        if (endExclusive > start && steps[endExclusive - 1].Kind == Utf8ByteSafeLinearVerifierStepKind.RequireEnd)
-        {
-            requiresEnd = true;
-            endExclusive--;
-        }
-
-        if (!requiresBeginning || !requiresEnd || endExclusive <= start)
-        {
-            return false;
-        }
-
-        if (endExclusive - start >= MaxDfaStates) return false;
-        var payloadSteps = steps.Skip(start).Take(endExclusive - start).ToArray();
-        if (payloadSteps.Length == 0)
-        {
-            return false;
-        }
-
-        var repeatedSegments = false;
-        Utf8ByteSafeLinearVerifierStep[] coreSteps;
-        if (payloadSteps.Length == 1 &&
-            payloadSteps[0].Kind == Utf8ByteSafeLinearVerifierStepKind.LoopProgram &&
-            payloadSteps[0].Program is { Length: > 0 } subProgram &&
-            payloadSteps[0].Min == 1 &&
-            IsOpenEndedLoop(payloadSteps[0].Max))
-        {
-            repeatedSegments = true;
-            coreSteps = subProgram;
-        }
-        else
-        {
-            coreSteps = payloadSteps;
-        }
-
-        if (coreSteps.Length >= MaxDfaStates) return false;
-        var loopSets = new AsciiCharClass[coreSteps.Length];
-        for (var i = 0; i < coreSteps.Length; i++)
-        {
-            if (!TryGetDisjointLoopSet(coreSteps[i], out loopSets[i]))
-            {
-                return false;
-            }
-
-            if (!IsOpenEndedLoop(coreSteps[i].Max))
-            {
-                return false;
-            }
-
-            if (coreSteps[i].Min != 1 && !(i == coreSteps.Length - 1 && coreSteps[i].Min == 0))
-            {
-                return false;
-            }
-
-            if (i > 0 && !loopSets[i - 1].IsDisjoint(loopSets[i]))
-            {
-                return false;
-            }
-        }
-
-        var transitionOffsets = new List<int> { 0 };
-        var transitionCounts = new List<int> { 0 };
-        var transitionSets = new List<AsciiCharClass>();
-        var transitionTargets = new List<int>();
-        var accepting = new List<bool>();
-        AddDfaState(accepting);
-
-        var previousStageState = 0;
-        for (var i = 0; i < coreSteps.Length; i++)
-        {
-            var stageState = AddDfaState(accepting);
-            transitionOffsets.Add(0);
-            transitionCounts.Add(0);
-
-            AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-            AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-
-            if (i == coreSteps.Length - 1)
-            {
-                accepting[stageState] = true;
-                if (coreSteps[i].Min == 0)
-                {
-                    accepting[previousStageState] = true;
-                }
-            }
-
-            previousStageState = stageState;
-        }
-
-        if (repeatedSegments)
-        {
-            var firstSet = loopSets[0];
-            for (var stateIndex = 0; stateIndex < accepting.Count; stateIndex++)
-            {
-                if (!accepting[stateIndex])
-                {
-                    continue;
-                }
-
-                AddDeterministicTransition(stateIndex, firstSet, 1, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-            }
-        }
-
-        program = new Utf8ByteSafeLazyDfaVerifierProgram(
-            [.. transitionOffsets],
-            [.. transitionCounts],
-            [.. transitionSets],
-            [.. transitionTargets],
-            [.. accepting],
-            requiresBeginning,
-            requiresEnd, _beginningAnchor, _endAnchor);
-        return true;
-    }
-
-    private bool TryGetDisjointLoopSet(Utf8ByteSafeLinearVerifierStep step, out AsciiCharClass set)
-    {
-        switch (step.Kind)
-        {
-            case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                set = AsciiCharClass.ForByte(step.Value);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
-                if (AsciiCharClass.TryUseNonEmpty(step.CharClass, out set))
-                {
-                    return true;
-                }
-
-                break;
-        }
-
-        set = AsciiCharClass.Empty;
-        return false;
-    }
-
-    private bool TryGetFirstDeterministicTransitionSet(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        int startIndex,
-        out AsciiCharClass set)
-    {
-        while (true)
-        {
-            var descended = false;
-            for (var i = startIndex; i < steps.Count; i++)
+            var previousSet = AsciiCharClass.Empty;
+            var hasPrevious = false;
+            for (var i = 0; i < steps.Length; i++)
             {
                 ChargeCompilationStep();
-                var step = steps[i];
-                switch (step.Kind)
+                if (!TryGetDisjointLoopSet(steps[i], out var currentSet))
                 {
-                    case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
-                    case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
-                    case Utf8ByteSafeLinearVerifierStepKind.Accept:
-                        continue;
-
-                    case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                        set = AsciiCharClass.ForByte(step.Value);
-                        return true;
-
-                    case Utf8ByteSafeLinearVerifierStepKind.MatchText when step.Text is { Length: > 0 } text:
-                        set = AsciiCharClass.ForByte(text[0]);
-                        return true;
-
-                    case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
-                        return AsciiCharClass.TryUseNonEmpty(step.CharClass, out set);
-
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                        set = AsciiCharClass.ForByte(step.Value);
-                        return true;
-
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
-                        return AsciiCharClass.TryUseNonEmpty(step.CharClass, out set);
-
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
-                        step.Min == 0 &&
-                        step.Max == 1 &&
-                        step.Program is { Length: > 0 } optionalProgram:
-                        steps = optionalProgram;
-                        startIndex = 0;
-                        descended = true;
-                        break;
-
-                    default:
-                        set = AsciiCharClass.Empty;
-                        return false;
+                    return false;
                 }
-                if (descended) break;
+
+                if (!IsOpenEndedLoop(steps[i].Max))
+                {
+                    return false;
+                }
+
+                if (steps[i].Min != 1 && !(i == steps.Length - 1 && steps[i].Min == 0))
+                {
+                    return false;
+                }
+
+                if (hasPrevious && !previousSet.IsDisjoint(currentSet))
+                {
+                    return false;
+                }
+
+                previousSet = currentSet;
+                hasPrevious = true;
             }
-            if (descended) continue;
 
-            set = AsciiCharClass.Empty;
-            return false;
+            return hasPrevious;
         }
-    }
 
-    private bool TryAppendDeterministicOptionalProgram(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        ref int stateIndex,
-        List<bool> accepting,
-        List<int> transitionOffsets,
-        List<int> transitionCounts,
-        List<AsciiCharClass> transitionSets,
-        List<int> transitionTargets)
-    {
-        accepting[stateIndex] = true;
-        return TryAppendDeterministicSubProgram(
-            steps,
-            ref stateIndex,
-            accepting,
-            transitionOffsets,
-            transitionCounts,
-            transitionSets,
-            transitionTargets);
-    }
-
-    private bool TryAppendDeterministicSubProgram(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        ref int stateIndex,
-        List<bool> accepting,
-        List<int> transitionOffsets,
-        List<int> transitionCounts,
-        List<AsciiCharClass> transitionSets,
-        List<int> transitionTargets)
-    {
-        for (var i = 0; i < steps.Count; i++)
+        private bool TryAppendRepeatedDisjointLoopSequence(
+            ReadOnlySpan<Utf8ByteSafeLinearVerifierStep> steps,
+            ref int stateIndex,
+            Utf8ConstructionBuffer<bool> accepting,
+            Utf8ConstructionBuffer<int> transitionOffsets,
+            Utf8ConstructionBuffer<int> transitionCounts,
+            Utf8ConstructionBuffer<AsciiCharClass> transitionSets,
+            Utf8ConstructionBuffer<int> transitionTargets)
         {
-            var step = steps[i];
+            if (steps.Length == 0)
+            {
+                return false;
+            }
+
+            if (steps.Length >= MaxDfaStates) return false;
+            var loopSets = _budget.AllocateArray<AsciiCharClass>(steps.Length, false);
+            try
+            {
+                for (var i = 0; i < steps.Length; i++)
+                {
+                    ChargeCompilationStep();
+                    if (!TryGetDisjointLoopSet(steps[i], out loopSets[i]))
+                    {
+                        return false;
+                    }
+
+                    if (!IsOpenEndedLoop(steps[i].Max))
+                    {
+                        return false;
+                    }
+
+                    if (steps[i].Min != 1 && !(i == steps.Length - 1 && steps[i].Min == 0))
+                    {
+                        return false;
+                    }
+
+                    if (i > 0 && !loopSets[i - 1].IsDisjoint(loopSets[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                var firstStageState = -1;
+                var previousStageState = stateIndex;
+                for (var i = 0; i < loopSets.Length; i++)
+                {
+                    var stageState = AddDfaState(accepting);
+                    transitionOffsets.Add(0);
+                    transitionCounts.Add(0);
+
+                    AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
+                    AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
+
+                    if (i == 0)
+                    {
+                        firstStageState = stageState;
+                    }
+
+                    if (i == loopSets.Length - 1)
+                    {
+                        accepting[stageState] = true;
+                        if (steps[i].Min == 0)
+                        {
+                            accepting[previousStageState] = true;
+                        }
+                    }
+
+                    previousStageState = stageState;
+                }
+
+                for (var i = 0; i < accepting.Count; i++)
+                {
+                    ChargeCompilationStep();
+                    if (accepting[i])
+                    {
+                        AddDeterministicTransition(i, loopSets[0], firstStageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
+                    }
+                }
+
+                stateIndex = previousStageState;
+                return true;
+            }
+            finally { _budget.ReleaseArray(loopSets, false); }
+        }
+
+        private bool IsOpenEndedLoop(int max) => max < 0 || max == int.MaxValue;
+
+        private int AppendDeterministicTransition(
+            Utf8ByteSafeLinearVerifierStep step,
+            AsciiCharClass transitionSet,
+            int stateIndex,
+            Utf8ConstructionBuffer<bool> accepting,
+            Utf8ConstructionBuffer<int> transitionOffsets,
+            Utf8ConstructionBuffer<int> transitionCounts,
+            Utf8ConstructionBuffer<AsciiCharClass> transitionSets,
+            Utf8ConstructionBuffer<int> transitionTargets)
+        {
+            ChargeCompilationStep();
+            while (transitionOffsets.Count <= stateIndex)
+            {
+                transitionOffsets.Add(0);
+                transitionCounts.Add(0);
+            }
+
+            var nextState = AddDfaState(accepting);
+            if (transitionCounts[stateIndex] == 0)
+            {
+                transitionOffsets[stateIndex] = transitionSets.Count;
+                transitionCounts[stateIndex] = 1;
+                if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
+                transitionSets.Add(transitionSet);
+                transitionTargets.Add(nextState);
+                return nextState;
+            }
+
+            AddDeterministicTransition(
+                stateIndex,
+                transitionSet,
+                nextState,
+                transitionOffsets,
+                transitionCounts,
+                transitionSets,
+                transitionTargets);
+            return nextState;
+        }
+
+        private void AddDeterministicTransition(
+            int stateIndex,
+            AsciiCharClass transitionSet,
+            int targetState,
+            Utf8ConstructionBuffer<int> transitionOffsets,
+            Utf8ConstructionBuffer<int> transitionCounts,
+            Utf8ConstructionBuffer<AsciiCharClass> transitionSets,
+            Utf8ConstructionBuffer<int> transitionTargets)
+        {
+            ChargeCompilationStep();
+            while (transitionOffsets.Count <= stateIndex)
+            {
+                transitionOffsets.Add(0);
+                transitionCounts.Add(0);
+            }
+
+            if (transitionCounts[stateIndex] == 0)
+            {
+                transitionOffsets[stateIndex] = transitionSets.Count;
+            }
+
+            var offset = transitionOffsets[stateIndex];
+            var count = transitionCounts[stateIndex];
+            for (var i = 0; i < count; i++)
+            {
+                ChargeCompilationStep();
+                if (!transitionSets[offset + i].IsDisjoint(transitionSet))
+                {
+                    throw new InvalidOperationException("Deterministic lazy DFA compiler received overlapping transitions.");
+                }
+            }
+
+            if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
+            transitionSets.Add(transitionSet);
+            transitionTargets.Add(targetState);
+            transitionCounts[stateIndex] = count + 1;
+        }
+
+        private bool TryAppendNfaStep(
+            Utf8ConstructionBuffer<NfaState> states,
+            ref int current,
+            Utf8ByteSafeLinearVerifierStep step,
+            bool isTopLevel,
+            ref bool requiresBeginning,
+            ref bool requiresEnd,
+            bool isLastBeforeAccept)
+        {
+            ChargeCompilationStep();
             switch (step.Kind)
             {
+                case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
+                    if (!isTopLevel || current != 0)
+                    {
+                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedAnchoring;
+                        return false;
+                    }
+
+                    requiresBeginning = true;
+                    return true;
+
+                case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
+                    if (!isTopLevel || !isLastBeforeAccept)
+                    {
+                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedAnchoring;
+                        return false;
+                    }
+
+                    requiresEnd = true;
+                    return true;
+
+                case Utf8ByteSafeLinearVerifierStepKind.Accept:
+                    return isTopLevel;
+
                 case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                    stateIndex = AppendDeterministicTransition(
-                        step,
-                        AsciiCharClass.ForByte(step.Value),
-                        stateIndex,
-                        accepting,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                        transitionTargets);
-                    break;
+                    current = AppendSet(states, current, AsciiCharClass.ForByte(step.Value));
+                    return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchText:
                     foreach (var value in step.Text)
                     {
-                        stateIndex = AppendDeterministicTransition(
-                            step,
-                            AsciiCharClass.ForByte(value),
-                            stateIndex,
-                            accepting,
-                            transitionOffsets,
-                            transitionCounts,
-                            transitionSets,
-                            transitionTargets);
+                        current = AppendSet(states, current, AsciiCharClass.ForByte(value));
                     }
-                    break;
+                    return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedMatchSet))
+                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         return false;
                     }
 
-                    stateIndex = AppendDeterministicTransition(
-                        step,
-                        projectedMatchSet,
-                        stateIndex,
-                        accepting,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                        transitionTargets);
-                    break;
+                    current = AppendSet(states, current, projectedSet);
+                    return true;
+
+                case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
+                    current = AppendLoop(states, current, AsciiCharClass.ForByte(step.Value), step.Min, step.Max);
+                    return true;
+
+                case Utf8ByteSafeLinearVerifierStepKind.LoopText:
+                    if (step.Text.Length >= MaxNfaStates) throw new CompilationBudgetExceededException();
+                    using (var units = Buffer<AsciiCharClass>(false))
+                    {
+                        foreach (var value in step.Text)
+                        {
+                            ChargeCompilationStep();
+                            units.Add(AsciiCharClass.ForByte(value));
+                        }
+                        current = AppendLoop(states, current, units.Span, step.Min, step.Max);
+                    }
+                    return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
                     if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
@@ -800,586 +1113,233 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                         return false;
                     }
 
-                    if (step.Min == 0 && step.Max == 1)
-                    {
-                        AddDeterministicTransition(
-                            stateIndex,
-                            projectedLoopSet,
-                            stateIndex,
-                            transitionOffsets,
-                            transitionCounts,
-                            transitionSets,
-                            transitionTargets);
-                        break;
-                    }
+                    current = AppendLoop(states, current, projectedLoopSet, step.Min, step.Max);
+                    return true;
 
-                    if (!TryAppendRepeatedDisjointLoopSequence(
-                            [step],
-                            ref stateIndex,
-                            accepting,
-                            transitionOffsets,
-                            transitionCounts,
-                            transitionSets,
-                            transitionTargets))
-                    {
-                        return false;
-                    }
+                case Utf8ByteSafeLinearVerifierStepKind.MatchAnyText:
+                    current = AppendAlternatives(states, current, step.Alternatives, optional: false);
+                    return true;
 
-                    break;
+                case Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional:
+                    current = AppendAlternatives(states, current, step.Alternatives, optional: true);
+                    return true;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
-                    step.Min == 1 &&
-                    IsOpenEndedLoop(step.Max) &&
-                    step.Program is { Length: > 0 } repeatedProgram:
-                    if (!TryAppendRepeatedDisjointLoopSequence(
-                            repeatedProgram,
-                            ref stateIndex,
-                            accepting,
-                            transitionOffsets,
-                            transitionCounts,
-                            transitionSets,
-                            transitionTargets))
-                    {
-                        return false;
-                    }
-
-                    break;
+                case Utf8ByteSafeLinearVerifierStepKind.LoopAnyText:
+                    current = AppendAlternativeLoop(states, current, step.Alternatives, step.Min, step.Max);
+                    return true;
 
                 default:
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedDeterministicStep;
+                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedStep;
                     return false;
             }
         }
 
-        return true;
-    }
-
-    private bool IsSupportedDeterministicOptionalProgram(Utf8ByteSafeLinearVerifierStep step)
-    {
-        if (step.Program is not { Length: > 0 } program ||
-            step.Min != 0 ||
-            step.Max != 1)
+        private int AppendLoop(Utf8ConstructionBuffer<NfaState> states, int current, AsciiCharClass set, int min, int max)
         {
-            return false;
+            return AppendLoop(states, current, System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref set, 1), min, max);
         }
 
-        for (var i = 0; i < program.Length; i++)
+        private int AppendLoop(Utf8ConstructionBuffer<NfaState> states, int current, ReadOnlySpan<AsciiCharClass> units, int min, int max)
         {
-            ChargeCompilationStep();
-            if (!IsSupportedDeterministicSubProgramStep(program[i]))
+            for (var i = 0; i < min; i++)
             {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private bool IsSupportedDeterministicSubProgramStep(Utf8ByteSafeLinearVerifierStep step)
-    {
-        switch (step.Kind)
-        {
-            case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-            case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
-                return !step.CharClass.IsEmpty;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
-                return !step.CharClass.IsEmpty &&
-                    ((step.Min == 0 && step.Max == 1) || IsOpenEndedLoop(step.Max));
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                return step.Program is { Length: > 0 } nestedProgram &&
-                    step.Min == 1 &&
-                    IsOpenEndedLoop(step.Max) &&
-                    AreDisjointLoopSteps(nestedProgram);
-
-            default:
-                return false;
-        }
-    }
-
-    private bool AreDisjointLoopSteps(IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps)
-    {
-        var previousSet = AsciiCharClass.Empty;
-        var hasPrevious = false;
-        for (var i = 0; i < steps.Count; i++)
-        {
-            ChargeCompilationStep();
-            if (!TryGetDisjointLoopSet(steps[i], out var currentSet))
-            {
-                return false;
+                ChargeCompilationStep();
+                current = AppendSequence(states, current, units);
             }
 
-            if (!IsOpenEndedLoop(steps[i].Max))
+            var exitState = AddState(states);
+            if (max < 0)
             {
-                return false;
+                states[current].EpsilonTransitions.Add(exitState);
+                var loopStart = current;
+                current = AppendSequence(states, current, units);
+                states[current].EpsilonTransitions.Add(loopStart);
+                states[current].EpsilonTransitions.Add(exitState);
+                return exitState;
             }
 
-            if (steps[i].Min != 1 && !(i == steps.Count - 1 && steps[i].Min == 0))
+            for (var i = min; i < max; i++)
             {
-                return false;
+                ChargeCompilationStep();
+                states[current].EpsilonTransitions.Add(exitState);
+                current = AppendSequence(states, current, units);
             }
 
-            if (hasPrevious && !previousSet.IsDisjoint(currentSet))
-            {
-                return false;
-            }
-
-            previousSet = currentSet;
-            hasPrevious = true;
-        }
-
-        return hasPrevious;
-    }
-
-    private bool TryAppendRepeatedDisjointLoopSequence(
-        IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
-        ref int stateIndex,
-        List<bool> accepting,
-        List<int> transitionOffsets,
-        List<int> transitionCounts,
-        List<AsciiCharClass> transitionSets,
-        List<int> transitionTargets)
-    {
-        if (steps.Count == 0)
-        {
-            return false;
-        }
-
-        if (steps.Count >= MaxDfaStates) return false;
-        var loopSets = new AsciiCharClass[steps.Count];
-        for (var i = 0; i < steps.Count; i++)
-        {
-            if (!TryGetDisjointLoopSet(steps[i], out loopSets[i]))
-            {
-                return false;
-            }
-
-            if (!IsOpenEndedLoop(steps[i].Max))
-            {
-                return false;
-            }
-
-            if (steps[i].Min != 1 && !(i == steps.Count - 1 && steps[i].Min == 0))
-            {
-                return false;
-            }
-
-            if (i > 0 && !loopSets[i - 1].IsDisjoint(loopSets[i]))
-            {
-                return false;
-            }
-        }
-
-        var firstStageState = -1;
-        var previousStageState = stateIndex;
-        for (var i = 0; i < loopSets.Length; i++)
-        {
-            var stageState = AddDfaState(accepting);
-            transitionOffsets.Add(0);
-            transitionCounts.Add(0);
-
-            AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-            AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-
-            if (i == 0)
-            {
-                firstStageState = stageState;
-            }
-
-            if (i == loopSets.Length - 1)
-            {
-                accepting[stageState] = true;
-                if (steps[i].Min == 0)
-                {
-                    accepting[previousStageState] = true;
-                }
-            }
-
-            previousStageState = stageState;
-        }
-
-        for (var i = 0; i < accepting.Count; i++)
-        {
-            if (accepting[i])
-            {
-                AddDeterministicTransition(i, loopSets[0], firstStageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-            }
-        }
-
-        stateIndex = previousStageState;
-        return true;
-    }
-
-    private bool IsOpenEndedLoop(int max) => max < 0 || max == int.MaxValue;
-
-    private int AppendDeterministicTransition(
-        Utf8ByteSafeLinearVerifierStep step,
-        AsciiCharClass transitionSet,
-        int stateIndex,
-        List<bool> accepting,
-        List<int> transitionOffsets,
-        List<int> transitionCounts,
-        List<AsciiCharClass> transitionSets,
-        List<int> transitionTargets)
-    {
-        ChargeCompilationStep();
-        while (transitionOffsets.Count <= stateIndex)
-        {
-            transitionOffsets.Add(0);
-            transitionCounts.Add(0);
-        }
-
-        var nextState = AddDfaState(accepting);
-        if (transitionCounts[stateIndex] == 0)
-        {
-            transitionOffsets[stateIndex] = transitionSets.Count;
-            transitionCounts[stateIndex] = 1;
-            if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
-        transitionSets.Add(transitionSet);
-            transitionTargets.Add(nextState);
-            return nextState;
-        }
-
-        AddDeterministicTransition(
-            stateIndex,
-            transitionSet,
-            nextState,
-            transitionOffsets,
-            transitionCounts,
-            transitionSets,
-            transitionTargets);
-        return nextState;
-    }
-
-    private void AddDeterministicTransition(
-        int stateIndex,
-        AsciiCharClass transitionSet,
-        int targetState,
-        List<int> transitionOffsets,
-        List<int> transitionCounts,
-        List<AsciiCharClass> transitionSets,
-        List<int> transitionTargets)
-    {
-        ChargeCompilationStep();
-        while (transitionOffsets.Count <= stateIndex)
-        {
-            transitionOffsets.Add(0);
-            transitionCounts.Add(0);
-        }
-
-        if (transitionCounts[stateIndex] == 0)
-        {
-            transitionOffsets[stateIndex] = transitionSets.Count;
-        }
-
-        var offset = transitionOffsets[stateIndex];
-        var count = transitionCounts[stateIndex];
-        for (var i = 0; i < count; i++)
-        {
-            if (!transitionSets[offset + i].IsDisjoint(transitionSet))
-            {
-                throw new InvalidOperationException("Deterministic lazy DFA compiler received overlapping transitions.");
-            }
-        }
-
-        if (transitionSets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
-        transitionSets.Add(transitionSet);
-        transitionTargets.Add(targetState);
-        transitionCounts[stateIndex] = count + 1;
-    }
-
-    private bool TryAppendNfaStep(
-        List<NfaState> states,
-        ref int current,
-        Utf8ByteSafeLinearVerifierStep step,
-        bool isTopLevel,
-        ref bool requiresBeginning,
-        ref bool requiresEnd,
-        bool isLastBeforeAccept)
-    {
-        ChargeCompilationStep();
-        switch (step.Kind)
-        {
-            case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
-                if (!isTopLevel || current != 0)
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedAnchoring;
-                    return false;
-                }
-
-                requiresBeginning = true;
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.RequireEnd:
-                if (!isTopLevel || !isLastBeforeAccept)
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedAnchoring;
-                    return false;
-                }
-
-                requiresEnd = true;
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.Accept:
-                return isTopLevel;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                current = AppendSet(states, current, AsciiCharClass.ForByte(step.Value));
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                foreach (var value in step.Text)
-                {
-                    current = AppendSet(states, current, AsciiCharClass.ForByte(value));
-                }
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
-                if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedSet))
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
-                    return false;
-                }
-
-                current = AppendSet(states, current, projectedSet);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                current = AppendLoop(states, current, AsciiCharClass.ForByte(step.Value), 1, step.Min, step.Max);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopText:
-                if (step.Text.Length >= MaxNfaStates) throw new CompilationBudgetExceededException();
-                current = AppendLoop(states, current, step.Text.Select(static value => AsciiCharClass.ForByte(value)).ToArray(), step.Min, step.Max);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
-                if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
-                    return false;
-                }
-
-                current = AppendLoop(states, current, projectedLoopSet, 1, step.Min, step.Max);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchAnyText:
-                current = AppendAlternatives(states, current, step.Alternatives, optional: false);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional:
-                current = AppendAlternatives(states, current, step.Alternatives, optional: true);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopAnyText:
-                current = AppendAlternativeLoop(states, current, step.Alternatives, step.Min, step.Max);
-                return true;
-
-            default:
-                _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedStep;
-                return false;
-        }
-    }
-
-    private int AppendLoop(List<NfaState> states, int current, AsciiCharClass set, int width, int min, int max)
-    {
-        var units = new AsciiCharClass[width];
-        for (var i = 0; i < width; i++)
-        {
-            units[i] = set;
-        }
-
-        return AppendLoop(states, current, units, min, max);
-    }
-
-    private int AppendLoop(List<NfaState> states, int current, AsciiCharClass[] units, int min, int max)
-    {
-        for (var i = 0; i < min; i++)
-        {
-            ChargeCompilationStep();
-            current = AppendSequence(states, current, units);
-        }
-
-        var exitState = AddState(states);
-        if (max < 0)
-        {
-            states[current].EpsilonTransitions.Add(exitState);
-            var loopStart = current;
-            current = AppendSequence(states, current, units);
-            states[current].EpsilonTransitions.Add(loopStart);
             states[current].EpsilonTransitions.Add(exitState);
             return exitState;
         }
 
-        for (var i = min; i < max; i++)
+        private int AppendSequence(Utf8ConstructionBuffer<NfaState> states, int current, ReadOnlySpan<AsciiCharClass> units)
         {
-            ChargeCompilationStep();
-            states[current].EpsilonTransitions.Add(exitState);
-            current = AppendSequence(states, current, units);
-        }
-
-        states[current].EpsilonTransitions.Add(exitState);
-        return exitState;
-    }
-
-    private int AppendSequence(List<NfaState> states, int current, AsciiCharClass[] units)
-    {
-        for (var i = 0; i < units.Length; i++)
-        {
-            current = AppendSet(states, current, units[i]);
-        }
-
-        return current;
-    }
-
-    private int AppendAlternatives(List<NfaState> states, int current, byte[][] alternatives, bool optional)
-    {
-        var exitState = AddState(states);
-        if (optional)
-        {
-            states[current].EpsilonTransitions.Add(exitState);
-        }
-
-        for (var i = 0; i < alternatives.Length; i++)
-        {
-            ChargeCompilationStep();
-            var branchState = AddState(states);
-            states[current].EpsilonTransitions.Add(branchState);
-            var branchCurrent = branchState;
-            foreach (var value in alternatives[i])
+            for (var i = 0; i < units.Length; i++)
             {
-                branchCurrent = AppendSet(states, branchCurrent, AsciiCharClass.ForByte(value));
+                current = AppendSet(states, current, units[i]);
             }
 
-            states[branchCurrent].EpsilonTransitions.Add(exitState);
+            return current;
         }
 
-        return exitState;
-    }
-
-    private int AppendAlternativeLoop(List<NfaState> states, int current, byte[][] alternatives, int min, int max)
-    {
-        for (var i = 0; i < min; i++)
+        private int AppendAlternatives(Utf8ConstructionBuffer<NfaState> states, int current, byte[][] alternatives, bool optional)
         {
-            ChargeCompilationStep();
-            current = AppendAlternatives(states, current, alternatives, optional: false);
+            var exitState = AddState(states);
+            if (optional)
+            {
+                states[current].EpsilonTransitions.Add(exitState);
+            }
+
+            for (var i = 0; i < alternatives.Length; i++)
+            {
+                ChargeCompilationStep();
+                var branchState = AddState(states);
+                states[current].EpsilonTransitions.Add(branchState);
+                var branchCurrent = branchState;
+                foreach (var value in alternatives[i])
+                {
+                    branchCurrent = AppendSet(states, branchCurrent, AsciiCharClass.ForByte(value));
+                }
+
+                states[branchCurrent].EpsilonTransitions.Add(exitState);
+            }
+
+            return exitState;
         }
 
-        var exitState = AddState(states);
-        if (max < 0)
+        private int AppendAlternativeLoop(Utf8ConstructionBuffer<NfaState> states, int current, byte[][] alternatives, int min, int max)
         {
-            states[current].EpsilonTransitions.Add(exitState);
-            var loopStart = current;
-            current = AppendAlternatives(states, current, alternatives, optional: false);
-            states[current].EpsilonTransitions.Add(loopStart);
+            for (var i = 0; i < min; i++)
+            {
+                ChargeCompilationStep();
+                current = AppendAlternatives(states, current, alternatives, optional: false);
+            }
+
+            var exitState = AddState(states);
+            if (max < 0)
+            {
+                states[current].EpsilonTransitions.Add(exitState);
+                var loopStart = current;
+                current = AppendAlternatives(states, current, alternatives, optional: false);
+                states[current].EpsilonTransitions.Add(loopStart);
+                states[current].EpsilonTransitions.Add(exitState);
+                return exitState;
+            }
+
+            for (var i = min; i < max; i++)
+            {
+                ChargeCompilationStep();
+                states[current].EpsilonTransitions.Add(exitState);
+                current = AppendAlternatives(states, current, alternatives, optional: false);
+            }
+
             states[current].EpsilonTransitions.Add(exitState);
             return exitState;
         }
 
-        for (var i = min; i < max; i++)
+        private int AppendSet(Utf8ConstructionBuffer<NfaState> states, int current, AsciiCharClass set)
+        {
+            var next = AddState(states);
+            states[current].Transitions.Add(new NfaTransition(new TransitionKey(set), next));
+            return next;
+        }
+
+        private int AddState(Utf8ConstructionBuffer<NfaState> states)
         {
             ChargeCompilationStep();
-            states[current].EpsilonTransitions.Add(exitState);
-            current = AppendAlternatives(states, current, alternatives, optional: false);
-        }
-
-        states[current].EpsilonTransitions.Add(exitState);
-        return exitState;
-    }
-
-    private int AppendSet(List<NfaState> states, int current, AsciiCharClass set)
-    {
-        var next = AddState(states);
-        states[current].Transitions.Add(new NfaTransition(new TransitionKey(set), next));
-        return next;
-    }
-
-    private int AddState(List<NfaState> states)
-    {
-        ChargeCompilationStep();
-        if (states.Count >= MaxNfaStates)
-        {
-            throw new CompilationBudgetExceededException();
-        }
-
-        var index = states.Count;
-        states.Add(new NfaState());
-        return index;
-    }
-
-    private sealed class NfaState
-    {
-        public List<int> EpsilonTransitions { get; } = [];
-
-        public List<NfaTransition> Transitions { get; } = [];
-    }
-
-    private readonly record struct NfaTransition(TransitionKey Key, int TargetState);
-
-    private readonly record struct TransitionKey(AsciiCharClass Set)
-    {
-        public ulong SortKey => Set.LowMask ^ (Set.HighMask * 31UL);
-    }
-
-    private readonly record struct NfaStateSet(int[] States)
-    {
-        public bool Contains(int state)
-        {
-            for (var i = 0; i < States.Length; i++)
+            if (states.Count >= MaxNfaStates)
             {
-                if (States[i] == state)
+                throw new CompilationBudgetExceededException();
+            }
+
+            var index = states.Count;
+            states.Add(NfaState.Create(_budget));
+            return index;
+        }
+
+        private sealed class NfaState(Utf8ConstructionBuffer<int> epsilon, Utf8ConstructionBuffer<NfaTransition> transitions) : IDisposable
+        {
+            public Utf8ConstructionBuffer<int> EpsilonTransitions { get; } = epsilon;
+            public Utf8ConstructionBuffer<NfaTransition> Transitions { get; } = transitions;
+            internal static NfaState Create(Utf8ConstructionBudget budget)
+            {
+                budget.ChargeWork(1); // Pre-admit the mandatory cleanup walk.
+                var epsilon = Utf8ConstructionBuffer<int>.Create(budget, true);
+                var transitions = Utf8ConstructionBuffer<NfaTransition>.Create(budget, true);
+                return budget.AllocateObject((epsilon, transitions), static state => new NfaState(state.epsilon, state.transitions));
+            }
+            public void Dispose() { EpsilonTransitions.Dispose(); Transitions.Dispose(); }
+        }
+
+        private readonly record struct NfaTransition(TransitionKey Key, int TargetState);
+
+        private readonly record struct TransitionKey(AsciiCharClass Set)
+        {
+            public ulong SortKey => Set.LowMask ^ (Set.HighMask * 31UL);
+        }
+
+        private readonly record struct NfaStateSet(int[] States)
+        {
+            public bool Contains(int state)
+            {
+                for (var i = 0; i < States.Length; i++)
                 {
-                    return true;
+                    Utf8ConstructionScope.ChargeWork(1);
+                    if (States[i] == state)
+                    {
+                        return true;
+                    }
                 }
+
+                return false;
             }
-
-            return false;
-        }
-    }
-
-    private sealed class NfaStateSetComparer : IEqualityComparer<NfaStateSet>
-    {
-        public static NfaStateSetComparer Instance { get; } = new();
-
-        public bool Equals(NfaStateSet x, NfaStateSet y)
-        {
-            return x.States.AsSpan().SequenceEqual(y.States);
         }
 
-        public int GetHashCode(NfaStateSet obj)
+        private sealed class NfaStateSetComparer(Utf8ConstructionBudget budget) : IEqualityComparer<NfaStateSet>
         {
-            var hash = new HashCode();
-            foreach (var state in obj.States)
+
+
+            public bool Equals(NfaStateSet x, NfaStateSet y)
             {
-                hash.Add(state);
+                budget.ChargeWork((ulong)Math.Min(x.States.Length, y.States.Length));
+                return x.States.AsSpan().SequenceEqual(y.States);
             }
 
-            return hash.ToHashCode();
+            public int GetHashCode(NfaStateSet obj)
+            {
+                budget.ChargeWork((ulong)obj.States.Length);
+                var hash = new HashCode();
+                foreach (var state in obj.States)
+                {
+                    hash.Add(state);
+                }
+
+                return hash.ToHashCode();
+            }
         }
-    }
 
-    private sealed class TransitionKeyComparer : IEqualityComparer<TransitionKey>
-    {
-        public static TransitionKeyComparer Instance { get; } = new();
-
-        public bool Equals(TransitionKey x, TransitionKey y)
+        private sealed class TransitionKeyComparer : IEqualityComparer<TransitionKey>
         {
-            return x.Set.LowMask == y.Set.LowMask && x.Set.HighMask == y.Set.HighMask;
+            public static TransitionKeyComparer Instance { get; } = new();
+
+            public bool Equals(TransitionKey x, TransitionKey y)
+            {
+                return x.Set.LowMask == y.Set.LowMask && x.Set.HighMask == y.Set.HighMask;
+            }
+
+            public int GetHashCode(TransitionKey obj)
+            {
+                return HashCode.Combine(obj.Set.LowMask, obj.Set.HighMask);
+            }
         }
 
-        public int GetHashCode(TransitionKey obj)
+        private readonly record struct NfaGraph(NfaState[] States, int AcceptState, Utf8ConstructionBudget Budget) : IDisposable
         {
-            return HashCode.Combine(obj.Set.LowMask, obj.Set.HighMask);
+            public void Dispose()
+            {
+                foreach (var state in States) state.Dispose();
+                Budget.ReleaseArray(States, false);
+            }
         }
-    }
 
-    private readonly record struct NfaGraph(NfaState[] States, int AcceptState);
-
-    private sealed class CompilationBudgetExceededException : Exception;
+        private sealed class CompilationBudgetExceededException : Exception;
     }
 }
 

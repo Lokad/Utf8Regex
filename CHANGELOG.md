@@ -19,6 +19,12 @@
 
 ## Development history
 
+- Byte-safe DFA construction now admits graph storage and descriptors into the
+  parent construction budget. Pending NFA and closure frames share depth, and
+  graph/proof work remains spent after optimizer declines. Shared resource
+  failures and interruption propagate; existing optimizer caps are unchanged.
+  This does not complete emission admission or public finite resource policies.
+
 - Development contract: core matching now targets Unicode scalars over strict UTF-8, with byte coordinates as primary. Exact .NET UTF-16 parity is superseded; implementation migration and removal of obsolete parity machinery are in progress. Published 0.3.0 behavior is unchanged by this documentation decision.
 
 - Whole-segment getters on owned split views retain their prepared decoded-string loan after the view or cursor disappears. Decoded text and coordinate maps now have separate leases, so an escaped text alias does not retain unused coordinate storage. Weak alias attachments preserve the existing string identity and release after the last alias is collected. Independent substring results, getter/result limits and registry/object-overhead admission remain open.

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal;
 
@@ -27,6 +28,12 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     internal ulong Depth { get; private set; }
     internal ulong PeakDepth { get; private set; }
     internal ObjectAllocation? ObjectCheckpoint { get; private set; }
+    // Optional authority belongs to this shared owner, so nested optimizers
+    // inherit it. Existing constructor entries use no token/infinite timeout;
+    // complete public construction/invocation policy remains a separate gate.
+    internal Utf8ExecutionDeadline Deadline { get; set; } = Utf8ExecutionDeadline.Infinite;
+    internal System.Threading.CancellationToken CancellationToken { get; set; }
+    internal Action<ulong>? CheckpointHook { get; set; }
 
     // The owner keeps acquired objects alive until its scope closes. This makes
     // their conservative loans live construction capacity rather than a count
@@ -42,6 +49,9 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     // Batch admission happens before the bounded scan/copy it represents.
     internal void ChargeWork(ulong steps)
     {
+        CheckpointHook?.Invoke(WorkSteps);
+        CancellationToken.ThrowIfCancellationRequested();
+        Deadline.CheckNow();
         var requested = steps > ulong.MaxValue - WorkSteps ? ulong.MaxValue : WorkSteps + steps;
         if (steps > ulong.MaxValue - WorkSteps || requested > MaximumWorkSteps)
             throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionWorkSteps, MaximumWorkSteps, requested);

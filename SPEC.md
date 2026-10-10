@@ -975,6 +975,18 @@ SIMD prefilter declines. The scalar fallback remains available without intrinsic
 Declines release speculative capacity/depth while work remains spent.
 Emitted matcher wrapper storage is admitted; CLR/JIT metadata, kernel lowering
 and other adapter program/AST storage remain separate unqualified debt.
+Byte-safe DFA construction shares the enclosing construction owner for its
+compiler and graph descriptors, deterministic vectors, NFA states and edges,
+closure keys, work queues, transition buckets and maps. Graph growth and final
+copies admit both old and new extents before acquisition. Borrowed linear
+programs retain their independent ownership. Pending NFA and closure frames
+share live depth; proof, graph and collection work stays charged after declines.
+The 256-state DFA, 2,048-state NFA, 4,096-transition and one-million-step optimizer
+ceilings remain heuristic declines. Shared resource failures, cancellation and
+deadlines propagate instead of selecting an unmetered route. Failed children
+restore the parent's capacity and depth; successful graphs transfer their final
+arrays. Internal construction interruption authority belongs to the shared
+owner; complete public construction/invocation policy remains unqualified.
 Fixed global BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
