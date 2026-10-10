@@ -27,8 +27,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [MemberData(nameof(AcceptCases))]
     public void AnchoredLiteralShapesClassifyToSuffixFamily(string pattern, string expectedKind)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-            pattern, pattern, RegexOptions.CultureInvariant, null);
+        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant));
 
         Assert.Equal(expectedKind, plan.Kind.ToString());
         Assert.Equal(Utf8FallbackFindModeKind.MatchAtEnd, plan.FindMode);
@@ -44,8 +43,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [MemberData(nameof(FoldedAcceptCases))]
     public void FoldedAnchoredLiteralShapesClassifyToFoldedSuffixFamily(string pattern, string expectedKind)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-            pattern, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null);
+        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
 
         Assert.Equal(expectedKind, plan.Kind.ToString());
         Assert.Equal(Utf8FallbackFindModeKind.MatchAtEnd, plan.FindMode);
@@ -77,8 +75,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [MemberData(nameof(DeclineCases))]
     public void OtherShapesKeepExistingClassification(string pattern, RegexOptions options)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-            pattern, pattern, options, null);
+        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options));
 
         Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix, plan.Kind);
         Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd, plan.Kind);

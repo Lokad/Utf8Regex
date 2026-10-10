@@ -17,13 +17,22 @@ internal static class Utf8AsciiLeadingAnyRunTrailingLiteralExecutor
             return false;
         }
 
-        var trailingIndex = input.LastIndexOf(literalUtf8);
-        if (trailingIndex < 0)
+        var lineStart = 0;
+        while (lineStart < input.Length)
         {
-            return false;
+            var newline = input[lineStart..].IndexOf((byte)'\n');
+            var lineEnd = newline < 0 ? input.Length : lineStart + newline;
+            // Dot cannot cross LF, but the literal can consume it. Limit the
+            // candidate start to this line and let the literal extend past LF.
+            var windowLength = (int)Math.Min((long)input.Length - lineStart, (long)lineEnd - lineStart + literalUtf8.Length);
+            var trailingIndex = input.Slice(lineStart, windowLength).LastIndexOf(literalUtf8);
+            if (trailingIndex >= 0)
+            {
+                matchIndex = lineStart; matchedLength = trailingIndex + literalUtf8.Length; return true;
+            }
+            if (lineEnd == input.Length) return false;
+            lineStart = lineEnd + 1;
         }
-
-        matchedLength = trailingIndex + literalUtf8.Length;
-        return true;
+        return false;
     }
 }

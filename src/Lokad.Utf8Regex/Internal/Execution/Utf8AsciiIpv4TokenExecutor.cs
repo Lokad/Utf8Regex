@@ -8,7 +8,7 @@ internal static class Utf8AsciiIpv4TokenExecutor
     {
         matchIndex = -1;
         matchedLength = 0;
-        if ((uint)startIndex >= (uint)input.Length)
+        if ((uint)startIndex >= (uint)input.Length || input.Length - startIndex < 11)
         {
             return false;
         }

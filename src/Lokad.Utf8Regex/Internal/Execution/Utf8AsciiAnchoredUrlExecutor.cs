@@ -4,260 +4,122 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiAnchoredUrlExecutor
 {
-    public static bool TryMatchDigitsQueryWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, out int matchedLength)
+    public static bool TryMatchDigitsQueryWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, out int matchedLength) =>
+        TryMatchWhole(input, plan, false, out matchedLength);
+    public static bool TryMatchHexQueryWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, out int matchedLength) =>
+        TryMatchWhole(input, plan, true, out matchedLength);
+
+    private static bool TryMatchWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, bool hex, out int matchedLength)
     {
         matchedLength = 0;
-        if (ContainsNewLine(input))
-        {
-            return false;
-        }
-
-        if (TryMatchAnyPrefix(input, plan, TryMatchDigitsQuerySuffix))
-        {
-            matchedLength = input.Length;
-            return true;
-        }
-
+        // A required negative value class may consume LF, including final LF.
+        // Dot tails exclude LF, while the end anchor can leave one final LF.
+        if (TryPrefixes(input, plan, hex)) { matchedLength = input.Length; return true; }
+        if (!input.IsEmpty && input[^1] == (byte)'\n' && TryPrefixes(input[..^1], plan, hex))
+        { matchedLength = input.Length - 1; return true; }
         return false;
     }
 
-    public static bool TryMatchHexQueryWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, out int matchedLength)
+    private static bool TryPrefixes(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, bool hex)
     {
-        matchedLength = 0;
-        if (ContainsNewLine(input))
-        {
-            return false;
-        }
-
-        if (TryMatchAnyPrefix(input, plan, TryMatchHexQuerySuffix))
-        {
-            matchedLength = input.Length;
-            return true;
-        }
-
-        return false;
+        var dots = plan.Url.PrefixWildcards;
+        return TryPrefix(input, plan.PrimaryPrefixUtf8, dots.Primary, plan, hex) ||
+            TryPrefix(input, plan.SecondaryPrefixUtf8, dots.Secondary, plan, hex) ||
+            TryPrefix(input, plan.RelativePrefixUtf8, dots.Relative, plan, hex);
     }
 
-    private delegate bool SuffixMatcher(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, ref int index);
-
-    private static bool TryMatchAnyPrefix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, SuffixMatcher matcher)
+    private static bool TryPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, UInt128 dots, in Utf8FallbackDirectFamilyPlan plan, bool hex)
     {
-        return TryMatchAnyPrefix(input, plan.PrimaryPrefixUtf8, plan, matcher) ||
-               TryMatchAnyPrefix(input, plan.SecondaryPrefixUtf8, plan, matcher) ||
-               TryMatchAnyPrefix(input, plan.RelativePrefixUtf8, plan, matcher);
-    }
-
-    private static bool TryMatchAnyPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, in Utf8FallbackDirectFamilyPlan plan, SuffixMatcher matcher)
-    {
-        if (prefix.IsEmpty)
-        {
-            return false;
-        }
-
+        if (prefix.IsEmpty || input.Length < prefix.Length) return false;
+        var firstLf = input.IndexOf((byte)'\n'); var leadingEnd = firstLf < 0 ? input.Length : firstLf;
+        var fixedWidth = 0;
+        while (fixedWidth < prefix.Length && ((dots >> fixedWidth) & 1) == 0) fixedWidth++;
+        if (fixedWidth == 0) return false; // The owned proof requires a fixed first byte.
         var searchFrom = 0;
-        while (TryFindPrefix(input, prefix, searchFrom, out var suffixIndex, out var prefixIndex))
+        while (searchFrom <= input.Length - fixedWidth)
         {
-            var local = suffixIndex;
-            if (matcher(input, plan, ref local))
+            var found = AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], prefix[..fixedWidth]);
+            if (found < 0) return false;
+            var candidate = searchFrom + found;
+            if (candidate > leadingEnd) return false;
+            if (input.Length - candidate < prefix.Length) return false;
+            var matched = true;
+            for (var index = fixedWidth; index < prefix.Length; index++)
             {
-                return true;
+                var current = input[candidate + index];
+                if (((dots >> index) & 1) != 0 ? current == (byte)'\n' :
+                    AsciiSearch.FoldCase(current) != AsciiSearch.FoldCase(prefix[index])) { matched = false; break; }
             }
-
-            searchFrom = prefixIndex + 1;
+            if (matched && TrySuffix(input, candidate + prefix.Length, plan, hex)) return true;
+            searchFrom = candidate + 1;
         }
-
         return false;
     }
 
-    private static bool TryFindPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, int startIndex, out int suffixIndex, out int prefixIndex)
+    private static bool TrySuffix(ReadOnlySpan<byte> input, int index, in Utf8FallbackDirectFamilyPlan plan, bool hex)
     {
-        prefixIndex = AsciiSearch.IndexOfIgnoreCase(input[startIndex..], prefix);
-        if (prefixIndex < 0)
-        {
-            suffixIndex = 0;
-            prefixIndex = 0;
-            return false;
-        }
-
-        prefixIndex += startIndex;
-        suffixIndex = prefixIndex + prefix.Length;
-        return true;
-    }
-
-    private static bool TryMatchDigitsQuerySuffix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, ref int index)
-    {
-        if (!TryConsumeOptionalTrigram(input, ref index) ||
-            !ConsumeIgnoreCase(input, ref index, plan.RouteMarkerUtf8) ||
-            !ConsumeDigits(input, ref index))
-        {
-            return false;
-        }
-
-        ConsumeOptionalByte(input, ref index, (byte)'/');
-        if (!TryConsumeRequiredParameter(input, plan.RequiredParameterUtf8, ref index))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool TryMatchHexQuerySuffix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, ref int index)
-    {
-        if (!TryConsumeOptionalTrigram(input, ref index) ||
-            !ConsumeIgnoreCase(input, ref index, plan.RouteMarkerUtf8))
-        {
-            return false;
-        }
-
-        ConsumeHexDigits(input, ref index);
-        TryConsumeOptionalParameter(input, plan.OptionalParameterUtf8, ref index);
-        if (!TryConsumeRequiredParameter(input, plan.RequiredParameterUtf8, ref index))
-        {
-            return false;
-        }
-
-        TryConsumeOptionalParameter(input, plan.OptionalParameterUtf8, ref index);
-        return true;
-    }
-
-    private static bool TryConsumeOptionalTrigram(ReadOnlySpan<byte> input, ref int index)
-    {
-        if ((uint)index >= (uint)input.Length || input[index] != (byte)'/')
-        {
-            return true;
-        }
-
-        if ((uint)(input.Length - index) >= 3 &&
-            AsciiSearch.MatchesIgnoreCase(input.Slice(index, 3), "/d/"u8))
-        {
-            return true;
-        }
-
-        if ((uint)(input.Length - index) >= 2 &&
-            input[index + 1] != (byte)'/' &&
-            input[index + 1] != (byte)'?' &&
-            input[index + 1] != (byte)'&')
+        // The optional /[A-Za-z0-9]+ must backtrack to absence if the route
+        // itself begins with an alphanumeric segment. No route is hard-coded.
+        var original = index;
+        if (index < input.Length && input[index] == (byte)'/')
         {
             var start = ++index;
-            while ((uint)index < (uint)input.Length && IsAsciiLetterOrDigit(input[index]))
-            {
-                index++;
-            }
-
-            return index > start;
+            while (index < input.Length && IsLetterOrDigit(input[index])) index++;
+            if (index > start && TrySuffixCore(input, index, plan, hex)) return true;
         }
-
-        return true;
+        return TrySuffixCore(input, original, plan, hex);
     }
 
-    private static bool TryConsumeOptionalParameter(ReadOnlySpan<byte> input, ReadOnlySpan<byte> parameterUtf8, ref int index)
+    private static bool TrySuffixCore(ReadOnlySpan<byte> input, int index, in Utf8FallbackDirectFamilyPlan plan, bool hex)
     {
-        if (parameterUtf8.IsEmpty)
+        if (!ConsumeLiteral(input, plan.RouteMarkerUtf8, ref index)) return false;
+        if (!hex)
         {
-            return true;
+            var start = index;
+            while (index < input.Length && Utf8AsciiBytePredicates.IsDigit(input[index])) index++;
+            if (index == start) return false;
+            if (index < input.Length && input[index] == (byte)'/') index++;
+            return TryRequired(input, index, plan.RequiredParameterUtf8, true);
         }
-
-        var original = index;
-        if (TryConsumeParameterMarker(input, parameterUtf8, ref index))
+        while (index < input.Length && IsHex(input[index])) index++;
+        var absent = index;
+        if (!plan.OptionalParameterUtf8.AsSpan().IsEmpty && ConsumeParameter(input, plan.OptionalParameterUtf8, false, ref index))
         {
-            return ConsumeUntilAny(input, ref index, (byte)'&', (byte)' ');
+            var start = index;
+            while (index < input.Length && input[index] is not ((byte)'&') and not ((byte)' ') and not ((byte)'\n')) index++;
+            // '?' belongs to this value class. Greedy optional values must
+            // return it to a following required ?name= marker when necessary.
+            for (var end = index; end > start; end--)
+                if (TryRequired(input, end, plan.RequiredParameterUtf8, false)) return true;
         }
-
-        index = original;
-        return false;
+        return TryRequired(input, absent, plan.RequiredParameterUtf8, false);
     }
 
-    private static bool TryConsumeRequiredParameter(ReadOnlySpan<byte> input, ReadOnlySpan<byte> parameterUtf8, ref int index)
+    private static bool TryRequired(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> name, bool questionOnly)
     {
-        return TryConsumeParameterMarker(input, parameterUtf8, ref index) &&
-            ConsumeUntilAny(input, ref index, (byte)'&', (byte)' ');
+        if (!ConsumeParameter(input, name, questionOnly, ref index)) return false;
+        var start = index;
+        while (index < input.Length && input[index] != (byte)' ' && input[index] != (questionOnly ? (byte)'?' : (byte)'&')) index++;
+        if (index == start) return false;
+        // The optional post-value parameter is contained in the non-LF dot
+        // tail's language. Capture projection still executes the owned tree.
+        return input[index..].IndexOf((byte)'\n') < 0;
     }
 
-    private static bool TryConsumeParameterMarker(ReadOnlySpan<byte> input, ReadOnlySpan<byte> parameterUtf8, ref int index)
+    private static bool ConsumeParameter(ReadOnlySpan<byte> input, ReadOnlySpan<byte> name, bool questionOnly, ref int index)
     {
-        if (parameterUtf8.IsEmpty)
-        {
-            return false;
-        }
-
-        if ((uint)index >= (uint)input.Length || (input[index] != (byte)'?' && input[index] != (byte)'&'))
-        {
-            return false;
-        }
-
+        if (name.IsEmpty || index >= input.Length || (questionOnly ? input[index] != (byte)'?' : input[index] is not ((byte)'?') and not ((byte)'&'))) return false;
         index++;
-        return ConsumeIgnoreCase(input, ref index, parameterUtf8);
+        if (!ConsumeLiteral(input, name, ref index) || index >= input.Length || input[index] != (byte)'=') return false;
+        index++; return true;
     }
-
-    private static bool ConsumeIgnoreCase(ReadOnlySpan<byte> input, ref int index, ReadOnlySpan<byte> literal)
+    private static bool ConsumeLiteral(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, ref int index)
     {
-        if ((uint)(input.Length - index) < (uint)literal.Length ||
-            !AsciiSearch.MatchesIgnoreCase(input.Slice(index, literal.Length), literal))
-        {
-            return false;
-        }
-
-        index += literal.Length;
-        return true;
+        if (input.Length - index < literal.Length || !AsciiSearch.MatchesIgnoreCase(input.Slice(index, literal.Length), literal)) return false;
+        index += literal.Length; return true;
     }
-
-    private static bool ConsumeDigits(ReadOnlySpan<byte> input, ref int index)
-    {
-        var start = index;
-        while ((uint)index < (uint)input.Length && (uint)(input[index] - (byte)'0') <= 9)
-        {
-            index++;
-        }
-
-        return index > start;
-    }
-
-    private static void ConsumeHexDigits(ReadOnlySpan<byte> input, ref int index)
-    {
-        while ((uint)index < (uint)input.Length && IsAsciiHex(input[index]))
-        {
-            index++;
-        }
-    }
-
-    private static bool ConsumeUntilAny(ReadOnlySpan<byte> input, ref int index, byte stop1, byte stop2)
-    {
-        var start = index;
-        while ((uint)index < (uint)input.Length)
-        {
-            var value = input[index];
-            if (value == stop1 || value == stop2 || value == (byte)'\n' || value == (byte)'\r')
-            {
-                break;
-            }
-
-            index++;
-        }
-
-        return index > start;
-    }
-
-    private static void ConsumeOptionalByte(ReadOnlySpan<byte> input, ref int index, byte value)
-    {
-        if ((uint)index < (uint)input.Length && input[index] == value)
-        {
-            index++;
-        }
-    }
-
-    private static bool ContainsNewLine(ReadOnlySpan<byte> input)
-        => input.IndexOfAny((byte)'\n', (byte)'\r') >= 0;
-
-    private static bool IsAsciiLetterOrDigit(byte value)
-    {
-        value = AsciiSearch.FoldCase(value);
-        return (uint)(value - (byte)'a') <= (byte)('z' - 'a') || (uint)(value - (byte)'0') <= 9;
-    }
-
-    private static bool IsAsciiHex(byte value)
-    {
-        value = AsciiSearch.FoldCase(value);
-        return (uint)(value - (byte)'0') <= 9 || (uint)(value - (byte)'a') <= (byte)('f' - 'a');
-    }
+    private static bool IsLetterOrDigit(byte value)
+    { value = AsciiSearch.FoldCase(value); return (uint)(value - (byte)'a') <= 'z' - 'a' || Utf8AsciiBytePredicates.IsDigit(value); }
+    private static bool IsHex(byte value)
+    { value = AsciiSearch.FoldCase(value); return Utf8AsciiBytePredicates.IsDigit(value) || (uint)(value - (byte)'a') <= 'f' - 'a'; }
 }

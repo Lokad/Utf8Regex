@@ -34,7 +34,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
                     out matchIndex,
                     out matchedLength);
 
-            case Utf8FallbackDirectFamilyKind.AsciiIpv4Token:
+            case Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount:
                 return Utf8AsciiIpv4TokenExecutor.TryFindAsciiIpv4Token(input, startIndex, out matchIndex, out matchedLength);
 
             case Utf8FallbackDirectFamilyKind.Utf8UriToken:
@@ -59,7 +59,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
         matchedLength = 0;
 
         if (plan.Kind is Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
-            Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
+            Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
             Utf8FallbackDirectFamilyKind.Utf8UriToken or
             Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
         {
@@ -134,11 +134,6 @@ internal static class Utf8AsciiTokenFamilyExecutor
             case Utf8FallbackDirectFamilyKind.AsciiIdentifierToken when isAscii:
                 diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiIdentifierToken;
                 count = CountAsciiIdentifierTokens(input);
-                return true;
-
-            case Utf8FallbackDirectFamilyKind.AsciiIpv4Token when isAscii:
-                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiIpv4Token;
-                count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.Utf8UriToken:

@@ -7,6 +7,7 @@ internal static class Utf8AsciiHexColorExecutor
     public static bool TryMatchWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
+        if (!input.IsEmpty && input[^1] == (byte)'\n') input = input[..^1];
         var index = 0;
         if ((uint)index < (uint)input.Length && input[index] == (byte)'#')
         {

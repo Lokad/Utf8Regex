@@ -17,7 +17,6 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     AsciiDelimitedTokenCount = 10,
     AsciiLiteralStructuredTokenCount = 11,
     AsciiDottedDecimalQuadCount = 12,
-    AsciiIpv4Token = 13,
     AsciiUntilByteStarCount = 14,
     UnicodeLetterCount = 15,
     UnicodeCategoryCount = 16,
@@ -74,29 +73,8 @@ internal readonly struct Utf8FallbackLiteralPayload
     public byte[] TertiaryLiteralUtf8 => _tertiaryLiteralUtf8 ?? [];
 }
 
-internal readonly struct Utf8FallbackCharSetPayload
-{
-    private readonly byte[]? _headCharSetUtf8;
-    private readonly byte[]? _middleCharSetUtf8;
-    private readonly byte[]? _tailCharSetUtf8;
-    private readonly byte[]? _extraCharSetUtf8;
-
-    public Utf8FallbackCharSetPayload(byte[]? headCharSetUtf8, byte[]? middleCharSetUtf8, byte[]? tailCharSetUtf8, byte[]? extraCharSetUtf8)
-    {
-        _headCharSetUtf8 = headCharSetUtf8;
-        _middleCharSetUtf8 = middleCharSetUtf8;
-        _tailCharSetUtf8 = tailCharSetUtf8;
-        _extraCharSetUtf8 = extraCharSetUtf8;
-    }
-
-    public byte[] HeadCharSetUtf8 => _headCharSetUtf8 ?? [];
-
-    public byte[] MiddleCharSetUtf8 => _middleCharSetUtf8 ?? [];
-
-    public byte[] TailCharSetUtf8 => _tailCharSetUtf8 ?? [];
-
-    public byte[] ExtraCharSetUtf8 => _extraCharSetUtf8 ?? [];
-}
+internal readonly record struct Utf8FallbackTokenMasks(AsciiCharClass Head, AsciiCharClass Middle,
+    AsciiCharClass Tail, AsciiCharClass OptionalTail1, AsciiCharClass OptionalTail2);
 
 internal readonly record struct Utf8FallbackCountBoundsPayload(
     int MinCount,
@@ -121,6 +99,8 @@ internal readonly record struct Utf8FallbackDateTokenPayload(
 internal readonly record struct Utf8FallbackUnicodePayload(
     UnicodeCategory UnicodeCategory);
 
+internal readonly record struct Utf8FallbackUrlPrefixWildcards(UInt128 Primary, UInt128 Secondary, UInt128 Relative);
+
 internal readonly struct Utf8FallbackUrlPayload
 {
     private readonly byte[]? _primaryPrefixUtf8;
@@ -136,7 +116,8 @@ internal readonly struct Utf8FallbackUrlPayload
         byte[] relativePrefixUtf8,
         byte[] routeMarkerUtf8,
         byte[] requiredParameterUtf8,
-        byte[]? optionalParameterUtf8)
+        byte[]? optionalParameterUtf8,
+        Utf8FallbackUrlPrefixWildcards prefixWildcards)
     {
         _primaryPrefixUtf8 = primaryPrefixUtf8;
         _secondaryPrefixUtf8 = secondaryPrefixUtf8;
@@ -144,6 +125,7 @@ internal readonly struct Utf8FallbackUrlPayload
         _routeMarkerUtf8 = routeMarkerUtf8;
         _requiredParameterUtf8 = requiredParameterUtf8;
         _optionalParameterUtf8 = optionalParameterUtf8;
+        PrefixWildcards = prefixWildcards;
     }
 
     public byte[] PrimaryPrefixUtf8 => _primaryPrefixUtf8 ?? [];
@@ -157,6 +139,8 @@ internal readonly struct Utf8FallbackUrlPayload
     public byte[] RequiredParameterUtf8 => _requiredParameterUtf8 ?? [];
 
     public byte[] OptionalParameterUtf8 => _optionalParameterUtf8 ?? [];
+
+    internal Utf8FallbackUrlPrefixWildcards PrefixWildcards { get; }
 }
 
 internal readonly struct Utf8FallbackDirectFamilyPlan
@@ -166,7 +150,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         Utf8FallbackFindModeKind findMode,
         Utf8FallbackCountBoundsPayload countBounds,
         Utf8FallbackLiteralPayload literals,
-        Utf8FallbackCharSetPayload charSets,
+        Utf8FallbackTokenMasks tokenMasks,
         Utf8FallbackLinePayload line,
         Utf8FallbackDateTokenPayload dateToken,
         Utf8FallbackUnicodePayload unicode,
@@ -176,7 +160,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         FindMode = findMode;
         CountBounds = countBounds;
         Literals = literals;
-        CharSets = charSets;
+        TokenMasks = tokenMasks;
         Line = line;
         DateToken = dateToken;
         Unicode = unicode;
@@ -191,7 +175,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
 
     public Utf8FallbackLiteralPayload Literals { get; }
 
-    public Utf8FallbackCharSetPayload CharSets { get; }
+    public Utf8FallbackTokenMasks TokenMasks { get; }
 
     public Utf8FallbackLinePayload Line { get; }
 
@@ -210,14 +194,6 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
     public byte[] SecondaryLiteralUtf8 => Literals.SecondaryLiteralUtf8;
 
     public byte[] TertiaryLiteralUtf8 => Literals.TertiaryLiteralUtf8;
-
-    public byte[] HeadCharSetUtf8 => CharSets.HeadCharSetUtf8;
-
-    public byte[] MiddleCharSetUtf8 => CharSets.MiddleCharSetUtf8;
-
-    public byte[] TailCharSetUtf8 => CharSets.TailCharSetUtf8;
-
-    public byte[] ExtraCharSetUtf8 => CharSets.ExtraCharSetUtf8;
 
     public bool TrimLeadingAsciiWhitespace => Line.TrimLeadingAsciiWhitespace;
 
@@ -282,12 +258,12 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         Utf8FallbackLinePayload line) =>
         new(kind, findMode, default, literals, default, line, default, default, default);
 
-    private static Utf8FallbackDirectFamilyPlan CreateWithLiteralsAndCharSets(
+    private static Utf8FallbackDirectFamilyPlan CreateWithLiteralsAndTokenMasks(
         Utf8FallbackDirectFamilyKind kind,
         Utf8FallbackFindModeKind findMode,
         Utf8FallbackLiteralPayload literals,
-        Utf8FallbackCharSetPayload charSets) =>
-        new(kind, findMode, default, literals, charSets, default, default, default, default);
+        Utf8FallbackTokenMasks tokenMasks) =>
+        new(kind, findMode, default, literals, tokenMasks, default, default, default, default);
 
     private static Utf8FallbackDirectFamilyPlan CreateWithLiteralsAndDateToken(
         Utf8FallbackDirectFamilyKind kind,
@@ -368,60 +344,20 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
             Utf8FallbackFindModeKind.CountLines,
             new Utf8FallbackLiteralPayload(literalUtf8, secondaryLiteralUtf8, null));
 
-    public static Utf8FallbackDirectFamilyPlan ForDelimitedTokenCount(
-        byte[] delimiterUtf8,
-        byte[] secondaryDelimiterUtf8,
-        byte[] headCharSetUtf8,
-        byte[] middleCharSetUtf8,
-        byte[] tailCharSetUtf8)
-        => ForDelimitedTokenCount(
-            Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount,
-            delimiterUtf8,
-            secondaryDelimiterUtf8,
-            headCharSetUtf8,
-            middleCharSetUtf8,
-            tailCharSetUtf8);
+    public static Utf8FallbackDirectFamilyPlan ForDelimitedTokenCount(byte[] delimiterUtf8,
+        byte[] secondaryDelimiterUtf8, Utf8FallbackTokenMasks masks)
+        => CreateWithLiteralsAndTokenMasks(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount,
+            Utf8FallbackFindModeKind.None, new Utf8FallbackLiteralPayload(delimiterUtf8, secondaryDelimiterUtf8, null), masks);
 
-    public static Utf8FallbackDirectFamilyPlan ForUtf8WordDelimitedTokenCount(
-        byte[] delimiterUtf8,
-        byte[] secondaryDelimiterUtf8,
-        byte[] headCharSetUtf8,
-        byte[] middleCharSetUtf8,
-        byte[] tailCharSetUtf8)
-        => ForDelimitedTokenCount(
-            Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount,
-            delimiterUtf8,
-            secondaryDelimiterUtf8,
-            headCharSetUtf8,
-            middleCharSetUtf8,
-            tailCharSetUtf8);
+    public static Utf8FallbackDirectFamilyPlan ForUtf8WordDelimitedTokenCount(byte[] delimiterUtf8,
+        byte[] secondaryDelimiterUtf8, Utf8FallbackTokenMasks masks)
+        => CreateWithLiteralsAndTokenMasks(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount,
+            Utf8FallbackFindModeKind.None, new Utf8FallbackLiteralPayload(delimiterUtf8, secondaryDelimiterUtf8, null), masks);
 
-    private static Utf8FallbackDirectFamilyPlan ForDelimitedTokenCount(
-        Utf8FallbackDirectFamilyKind kind,
-        byte[] delimiterUtf8,
-        byte[] secondaryDelimiterUtf8,
-        byte[] headCharSetUtf8,
-        byte[] middleCharSetUtf8,
-        byte[] tailCharSetUtf8)
-        => CreateWithLiteralsAndCharSets(
-            kind,
-            Utf8FallbackFindModeKind.None,
-            new Utf8FallbackLiteralPayload(delimiterUtf8, secondaryDelimiterUtf8, null),
-            new Utf8FallbackCharSetPayload(headCharSetUtf8, middleCharSetUtf8, tailCharSetUtf8, null));
-
-    public static Utf8FallbackDirectFamilyPlan ForLiteralStructuredTokenCount(
-        byte[] literalUtf8,
-        byte[]? secondaryLiteralUtf8,
-        byte[]? tertiaryLiteralUtf8,
-        byte[] headCharSetUtf8,
-        byte[] middleCharSetUtf8,
-        byte[] tailCharSetUtf8,
-        byte[]? extraCharSetUtf8)
-        => CreateWithLiteralsAndCharSets(
-            Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount,
-            Utf8FallbackFindModeKind.None,
-            new Utf8FallbackLiteralPayload(literalUtf8, secondaryLiteralUtf8, tertiaryLiteralUtf8),
-            new Utf8FallbackCharSetPayload(headCharSetUtf8, middleCharSetUtf8, tailCharSetUtf8, extraCharSetUtf8));
+    public static Utf8FallbackDirectFamilyPlan ForLiteralStructuredTokenCount(byte[] literalUtf8,
+        byte[]? secondaryLiteralUtf8, byte[]? tertiaryLiteralUtf8, Utf8FallbackTokenMasks masks)
+        => CreateWithLiteralsAndTokenMasks(Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount,
+            Utf8FallbackFindModeKind.None, new Utf8FallbackLiteralPayload(literalUtf8, secondaryLiteralUtf8, tertiaryLiteralUtf8), masks);
 
     public static Utf8FallbackDirectFamilyPlan ForLiteralBetweenNegatedRuns(
         byte[] literalUtf8,
@@ -470,33 +406,11 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         byte[] secondaryPrefixUtf8,
         byte[] relativePrefixUtf8,
         byte[] routeMarkerUtf8,
-        byte[] requiredParameterUtf8) =>
-        ForAnchoredAsciiQueryWhole(
-            kind,
-            primaryPrefixUtf8,
-            secondaryPrefixUtf8,
-            relativePrefixUtf8,
-            routeMarkerUtf8,
-            requiredParameterUtf8,
-            null);
-
-    public static Utf8FallbackDirectFamilyPlan ForAnchoredAsciiQueryWhole(
-        Utf8FallbackDirectFamilyKind kind,
-        byte[] primaryPrefixUtf8,
-        byte[] secondaryPrefixUtf8,
-        byte[] relativePrefixUtf8,
-        byte[] routeMarkerUtf8,
         byte[] requiredParameterUtf8,
-        byte[]? optionalParameterUtf8)
-        => CreateWithUrl(
-            kind,
-            new Utf8FallbackUrlPayload(
-                primaryPrefixUtf8,
-                secondaryPrefixUtf8,
-                relativePrefixUtf8,
-                routeMarkerUtf8,
-                requiredParameterUtf8,
-                optionalParameterUtf8));
+        byte[]? optionalParameterUtf8,
+        Utf8FallbackUrlPrefixWildcards prefixWildcards)
+        => CreateWithUrl(kind, new Utf8FallbackUrlPayload(primaryPrefixUtf8, secondaryPrefixUtf8,
+            relativePrefixUtf8, routeMarkerUtf8, requiredParameterUtf8, optionalParameterUtf8, prefixWildcards));
 
     public bool SupportsAsciiDefinitiveIsMatch => Utf8FallbackDirectFamilySupport.SupportsAsciiDefinitiveIsMatch(Kind);
 

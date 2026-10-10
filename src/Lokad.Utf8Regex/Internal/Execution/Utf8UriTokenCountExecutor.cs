@@ -110,20 +110,10 @@ internal static class Utf8UriTokenCountExecutor
     private static bool TryConsumeBody(ReadOnlySpan<byte> input, int bodyStart, out int tokenEnd)
     {
         tokenEnd = bodyStart;
-        if (!TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: false, out var utf16Length))
-        {
-            return false;
-        }
-
-        while (TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: true, out var scalarUtf16Length))
-        {
-            utf16Length += scalarUtf16Length;
-        }
-
-        if (utf16Length < 2)
-        {
-            return false;
-        }
+        // Host and continuation each require one complete scalar.
+        if (!TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: false) ||
+            !TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: true)) return false;
+        while (TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: true)) { }
 
         if ((uint)tokenEnd < (uint)input.Length && input[tokenEnd] == (byte)'?')
         {
@@ -147,10 +137,8 @@ internal static class Utf8UriTokenCountExecutor
     private static bool TryConsumeBodyScalar(
         ReadOnlySpan<byte> input,
         ref int index,
-        bool allowSlash,
-        out int utf16Length)
+        bool allowSlash)
     {
-        utf16Length = 0;
         if ((uint)index >= (uint)input.Length)
         {
             return false;
@@ -167,7 +155,6 @@ internal static class Utf8UriTokenCountExecutor
             }
 
             index++;
-            utf16Length = 1;
             return true;
         }
 
@@ -178,7 +165,6 @@ internal static class Utf8UriTokenCountExecutor
         }
 
         index += consumed;
-        utf16Length = scalar.Utf16SequenceLength;
         return true;
     }
 
@@ -195,7 +181,7 @@ internal static class Utf8UriTokenCountExecutor
         var value = input[index];
         if (value < 0x80)
         {
-            if (value == excludedAscii || char.IsWhiteSpace((char)value))
+            if ((excludedAscii != 0 && value == excludedAscii) || char.IsWhiteSpace((char)value))
             {
                 return false;
             }

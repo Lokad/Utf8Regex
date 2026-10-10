@@ -88,6 +88,48 @@ internal static class Utf8ScalarAsciiProjector
             TryProjectAsciiDefinition(scalarClass, out charClass);
     }
 
+    // Borrow an entire positive ASCII definition without the token constructor's
+    // full 128-scalar replay. Query proofs still meter its canonical endpoints.
+    internal static bool TryProjectPositiveAsciiQuery(Utf8ScalarClass? scalarClass, out AsciiCharClass mask)
+    {
+        mask = default;
+        if (scalarClass is null) return false;
+        var data = scalarClass.Data.AsSpan(); Utf8ConstructionScope.ChargeWork((ulong)data.Length);
+        if (data.Length < 3 || data[0] != 0 || data[1] < 0 || (data[1] & 1) != 0 || data[2] != 0 || 3L + data[1] != data.Length) return false;
+        for (var index = 3; index < data.Length; index += 2)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (data[index] < 0 || data[index] >= data[index + 1] || data[index + 1] > 128) return false;
+        }
+        return TryProjectAsciiQuery(scalarClass, out mask);
+    }
+
+    // Project the actual folded ASCII language of a positive range union,
+    // including fibers supplied by non-ASCII definition members. The canonical
+    // ranges and construction culture remain borrowed. This qualifies only an
+    // ASCII subject envelope, rather than claiming the full language is ASCII.
+    internal static bool TryProjectPositiveFoldedAsciiQuery(Utf8ScalarClass? scalarClass,
+        Utf8ScalarCaseBehavior behavior, out AsciiCharClass charClass)
+    {
+        charClass = default;
+        if (scalarClass is null) return false;
+        var data = scalarClass.Data.AsSpan(); Utf8ConstructionScope.ChargeWork((ulong)data.Length);
+        if (data.Length < 3 || data[0] != 0 || data[1] < 0 || (data[1] & 1) != 0 || data[2] != 0 || 3L + data[1] != data.Length) return false;
+        var ranges = data[3..];
+        for (var index = 0; index < ranges.Length; index += 2)
+            if (ranges[index] < 0 || ranges[index] >= ranges[index + 1] || ranges[index + 1] > 0x110000) return false;
+        ulong low = 0, high = 0;
+        for (var value = 0; value < 128; value++)
+        {
+            Utf8ConstructionScope.ChargeWork(1); var hit = InRanges(value, ranges);
+            if (!hit)
+                foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, behavior))
+                { Utf8ConstructionScope.ChargeWork(1); if (InRanges(equivalent, ranges)) { hit = true; break; } }
+            if (hit) { if (value < 64) low |= 1ul << value; else high |= 1ul << (value - 64); }
+        }
+        charClass = new AsciiCharClass(low, high); return true;
+    }
+
     // A byte candidate must cover the complete lexical case fiber. Wider
     // equivalents (for example Kelvin sign for K) require the scalar lane.
     // Non-invariant preparation covers every supported culture behavior.

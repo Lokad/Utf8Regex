@@ -211,8 +211,6 @@ public sealed partial class Utf8Regex
                     Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole,
                 Utf8FallbackDirectFamilyKind.Utf8UriToken =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiUriToken,
-                Utf8FallbackDirectFamilyKind.AsciiIpv4Token =>
-                    Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
                 Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
                 Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken =>

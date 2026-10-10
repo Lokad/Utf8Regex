@@ -70,7 +70,7 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
 
         if (Utf8FallbackDirectFamilyCategories.IsPreparedTokenCountFamily(plan.Kind))
         {
-            if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount && !isAscii)
+            if (!isAscii)
             {
                 return false;
             }

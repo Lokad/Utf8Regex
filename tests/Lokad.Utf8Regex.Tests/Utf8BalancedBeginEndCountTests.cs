@@ -84,13 +84,17 @@ public sealed class Utf8BalancedBeginEndCountTests
     [Fact]
     public void AnalyzerAdmitsOnlyCaseSensitiveCompatibleOptions()
     {
-        Assert.True(Utf8FallbackRegexFamilyAnalyzer.IsUtf8BalancedBeginEndCount(Pattern, RegexOptions.None));
-        Assert.True(Utf8FallbackRegexFamilyAnalyzer.IsUtf8BalancedBeginEndCount(
+        Assert.True(ClassifiesBalanced(Pattern, RegexOptions.None));
+        Assert.True(ClassifiesBalanced(
             Pattern,
             RegexOptions.CultureInvariant | RegexOptions.Compiled));
-        Assert.False(Utf8FallbackRegexFamilyAnalyzer.IsUtf8BalancedBeginEndCount(Pattern, RegexOptions.IgnoreCase));
-        Assert.False(Utf8FallbackRegexFamilyAnalyzer.IsUtf8BalancedBeginEndCount(Pattern + "x", RegexOptions.None));
+        Assert.False(ClassifiesBalanced(Pattern, RegexOptions.IgnoreCase));
+        Assert.False(ClassifiesBalanced(Pattern + "x", RegexOptions.None));
     }
+
+    private static bool ClassifiesBalanced(string pattern, RegexOptions options) =>
+        Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options)).Kind ==
+            Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount;
 
     private static string BuildTokenSequence(int tokenCount, int combination)
     {

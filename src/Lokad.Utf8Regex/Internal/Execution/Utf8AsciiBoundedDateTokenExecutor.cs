@@ -128,7 +128,8 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
             RequireLeadingBoundary: true,
             RequireTrailingBoundary: true,
         };
-        while (searchFrom <= input.Length - 6)
+        var minimumLength = family.FirstFieldMinCount + family.SecondFieldMinCount + family.ThirdFieldMinCount + 2;
+        while (searchFrom <= input.Length - minimumLength)
         {
             var relative = input[searchFrom..].IndexOfAnyInRange((byte)'0', (byte)'9');
             if (relative < 0)

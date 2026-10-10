@@ -491,9 +491,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             "lokad/folding/region-marker" => Utf8LinePrefixExecutor.CountMatchingLines(
                 InputBytes,
                 s_regionMarkerFinder,
-                trimLeadingAsciiWhitespace: true,
-                verifier: null,
-                out _),
+                trimLeadingWhitespace: true),
             _ => 0,
         };
     }
@@ -616,8 +614,8 @@ internal sealed class LokadReplicaScriptBenchmarkContext
 
     private int ExecuteImportLineVerifierModel()
     {
-        var count = Utf8QuotedLineSegmentExecutor.CountViaCandidateScan(InputBytes, ImportPrefix, ImportOptionalSegment, out var requiresFallback);
-        return requiresFallback ? Regex.Count(InputString) : count;
+        return Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(InputBytes, ImportPrefix, ImportOptionalSegment, out var count)
+            ? count : Regex.Count(InputString);
     }
 
     private int CountLiteralHits(Utf8AsciiLiteralFinder finder)

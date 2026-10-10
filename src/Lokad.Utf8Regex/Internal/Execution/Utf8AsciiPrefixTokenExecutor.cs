@@ -6,15 +6,6 @@ internal static class Utf8AsciiPrefixTokenExecutor
 {
     private static readonly SearchValues<byte> s_asciiIdentifierTail = SearchValues.Create("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
     private static readonly SearchValues<byte> s_asciiOperators = SearchValues.Create("=+-^*/.<>~!&|?"u8);
-    private static readonly SearchValues<byte> s_utf8QuotedStringSpecials = SearchValues.Create("\"\\\n"u8);
-
-    private static readonly byte[] s_stringStops =
-    [
-        (byte)'"', (byte)'\\', (byte)'\n',
-    ];
-
-    private static readonly SearchValues<byte> s_stringStopsSearchValues = SearchValues.Create(s_stringStops);
-
     public static bool TryMatchIdentifierPrefixIgnoreCase(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
@@ -160,48 +151,6 @@ internal static class Utf8AsciiPrefixTokenExecutor
         return true;
     }
 
-    public static bool TryMatchStringPrefix(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        matchedLength = 0;
-        if (input.IsEmpty || input[0] != (byte)'"')
-        {
-            return false;
-        }
-
-        var index = 1;
-        while ((uint)index < (uint)input.Length)
-        {
-            var relative = input[index..].IndexOfAny(s_stringStopsSearchValues);
-            if (relative < 0)
-            {
-                return false;
-            }
-
-            index += relative;
-            var value = input[index];
-            if (value == (byte)'"')
-            {
-                matchedLength = index + 1;
-                return true;
-            }
-
-            if (value == (byte)'\n')
-            {
-                return false;
-            }
-
-            index++;
-            if ((uint)index >= (uint)input.Length || input[index] == (byte)'\n')
-            {
-                return false;
-            }
-
-            index++;
-        }
-
-        return false;
-    }
-
     public static bool TryMatchAnchoredPrefixUntilByte(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, byte terminator, out int matchedLength)
     {
         matchedLength = 0;
@@ -226,14 +175,20 @@ internal static class Utf8AsciiPrefixTokenExecutor
         ReadOnlySpan<byte> optionalPrefix,
         out int matchedLength)
     {
-        matchedLength = 0;
-        var effectiveLength = input.Length;
-        if (effectiveLength > 0 && input[effectiveLength - 1] == (byte)'\n')
-        {
-            effectiveLength--;
-        }
+        // Greedy optional whitespace may consume the final LF. Try that extent
+        // before allowing the end anchor to leave one LF outside the match.
+        if (TryMatchTrimmedTailCore(input, requiredPrefix, optionalPrefix, out matchedLength)) return true;
+        return !input.IsEmpty && input[^1] == (byte)'\n' &&
+            TryMatchTrimmedTailCore(input[..^1], requiredPrefix, optionalPrefix, out matchedLength);
+    }
 
-        input = input[..effectiveLength];
+    private static bool TryMatchTrimmedTailCore(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> requiredPrefix,
+        ReadOnlySpan<byte> optionalPrefix,
+        out int matchedLength)
+    {
+        matchedLength = 0;
         var index = 0;
 
         while ((uint)index < (uint)input.Length && char.IsWhiteSpace((char)input[index]))
@@ -261,11 +216,6 @@ internal static class Utf8AsciiPrefixTokenExecutor
         index += requiredPrefix.Length;
         if ((uint)index < (uint)input.Length)
         {
-            if (input[index] == (byte)'\n')
-            {
-                return false;
-            }
-
             if (char.IsWhiteSpace((char)input[index]))
             {
                 index++;
@@ -284,41 +234,24 @@ internal static class Utf8AsciiPrefixTokenExecutor
     public static bool TryMatchQuotedStringPrefix(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
-        if (input.Length < 2 || input[0] != (byte)'"')
-        {
-            return false;
-        }
-
+        if (input.Length < 2 || input[0] != (byte)'"') return false;
         var index = 1;
         while ((uint)index < (uint)input.Length)
         {
-            var special = input[index..].IndexOfAny(s_utf8QuotedStringSpecials);
-            if (special < 0)
-            {
-                return false;
-            }
-
+            // Unescaped LF belongs to [^"\\]. Only escaped dot excludes LF.
+            var special = input[index..].IndexOfAny((byte)'"', (byte)'\\');
+            if (special < 0) return false;
             index += special;
-            switch (input[index])
+            if (input[index] == (byte)'"') { matchedLength = index + 1; return true; }
+            index++;
+            if ((uint)index >= (uint)input.Length || input[index] == (byte)'\n') return false;
+            if (input[index] < 128) index++;
+            else
             {
-                case (byte)'"':
-                    matchedLength = index + 1;
-                    return true;
-
-                case (byte)'\n':
-                    return false;
-
-                case (byte)'\\':
-                    if ((uint)(index + 1) >= (uint)input.Length || input[index + 1] == (byte)'\n')
-                    {
-                        return false;
-                    }
-
-                    index += 2;
-                    break;
+                if (Rune.DecodeFromUtf8(input[index..], out _, out var consumed) != OperationStatus.Done) return false;
+                index += consumed;
             }
         }
-
         return false;
     }
 

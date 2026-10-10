@@ -1,17 +1,14 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+using System.Buffers;
 
-internal delegate bool Utf8LinePrefixVerifier(ReadOnlySpan<byte> line, out bool requiresFallback);
+namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8LinePrefixExecutor
 {
     public static int CountMatchingLines(
         ReadOnlySpan<byte> input,
         Utf8AsciiLiteralFinder prefixFinder,
-        bool trimLeadingAsciiWhitespace,
-        Utf8LinePrefixVerifier? verifier,
-        out bool requiresFallback)
+        bool trimLeadingWhitespace)
     {
-        requiresFallback = false;
         if (prefixFinder.Literal.IsEmpty)
         {
             return 0;
@@ -23,13 +20,14 @@ internal static class Utf8LinePrefixExecutor
         {
             var lineStart = FindLineStart(input, candidateIndex);
             var prefixStart = lineStart;
-            if (trimLeadingAsciiWhitespace)
+            if (trimLeadingWhitespace)
             {
                 while ((uint)prefixStart < (uint)input.Length &&
                     input[prefixStart] != (byte)'\n' &&
-                    IsAsciiWhitespace(input[prefixStart]))
+                    Rune.DecodeFromUtf8(input[prefixStart..], out var scalar, out var consumed) == OperationStatus.Done &&
+                    Rune.IsWhiteSpace(scalar))
                 {
-                    prefixStart++;
+                    prefixStart += consumed;
                 }
             }
 
@@ -39,21 +37,10 @@ internal static class Utf8LinePrefixExecutor
                 continue;
             }
 
-            var lineEnd = FindLineEnd(input, candidateIndex);
-            var line = input[prefixStart..lineEnd];
-            if (verifier is null)
-            {
-                count++;
-            }
-            else if (verifier(line, out var lineRequiresFallback))
-            {
-                count++;
-            }
-            else if (lineRequiresFallback)
-            {
-                requiresFallback = true;
-                return count;
-            }
+            // A qualified literal can itself contain LF. Consume its complete
+            // extent before locating the dot tail and advancing enumeration.
+            var lineEnd = FindLineEnd(input, candidateIndex + prefixFinder.Literal.Length);
+            count++;
 
             searchFrom = lineEnd >= input.Length ? input.Length : lineEnd + 1;
         }

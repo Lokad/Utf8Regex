@@ -32,6 +32,22 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
         finally { budget.LeaveDepth(); }
     }
 
+    public PreparedAsciiDelimitedTokenSearch(ReadOnlySpan<byte> delimiterUtf8,
+        ReadOnlySpan<byte> secondaryDelimiterUtf8, Utf8FallbackTokenMasks masks)
+    {
+        using var scope = Utf8ConstructionScope.Enter(); var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork(1);
+            _headMask = masks.Head; _middleMask = masks.Middle; _tailMask = masks.Tail;
+            _secondaryDelimiter = secondaryDelimiterUtf8[0];
+            _delimiterFinder = new Utf8AsciiLiteralFinder(delimiterUtf8); DelimiterLength = delimiterUtf8.Length;
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
+    }
+
     public int DelimiterLength { get; }
 
     public bool HasValue => DelimiterLength > 0;
@@ -73,14 +89,9 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
                 continue;
             }
 
-            var tokenEnd = middleStart + 1;
-            while ((uint)tokenEnd < (uint)input.Length &&
-                IsPotentialTailByte(input[tokenEnd]))
-            {
-                tokenEnd++;
-            }
-
-            if (!TryFindTailSplit(input, middleStart, tokenEnd))
+            var middleEnd = middleStart + 1;
+            while ((uint)middleEnd < (uint)input.Length && _middleMask.Contains(input[middleEnd])) middleEnd++;
+            if (!TryFindTailSplit(input, middleStart, middleEnd, out var tokenEnd))
             {
                 searchFrom = delimiterIndex + 1;
                 continue;
@@ -96,95 +107,25 @@ internal readonly struct PreparedAsciiDelimitedTokenSearch
 
     public int Count(ReadOnlySpan<byte> input)
     {
-        if (!HasValue)
-        {
-            return 0;
-        }
-
-        var count = 0;
-        var searchFrom = 0;
-        while (_delimiterFinder.TryFindNext(input, searchFrom, out var delimiterIndex))
-        {
-            var tokenStart = delimiterIndex;
-            while (tokenStart > searchFrom && _headMask.Contains(input[tokenStart - 1]))
-            {
-                tokenStart--;
-            }
-
-            if (tokenStart == delimiterIndex)
-            {
-                searchFrom = delimiterIndex + 1;
-                continue;
-            }
-
-            var middleStart = delimiterIndex + DelimiterLength;
-            if ((uint)middleStart >= (uint)input.Length ||
-                !_middleMask.Contains(input[middleStart]))
-            {
-                searchFrom = delimiterIndex + 1;
-                continue;
-            }
-
-            var tokenEnd = middleStart + 1;
-            while ((uint)tokenEnd < (uint)input.Length &&
-                IsPotentialTailByte(input[tokenEnd]))
-            {
-                tokenEnd++;
-            }
-
-            if (!TryFindTailSplit(input, middleStart, tokenEnd))
-            {
-                searchFrom = delimiterIndex + 1;
-                continue;
-            }
-
-            count++;
-            searchFrom = tokenEnd;
-        }
-
+        var count = 0; var searchFrom = 0;
+        while (TryFindNext(input, searchFrom, out var index, out var length))
+        { count++; searchFrom = index + length; }
         return count;
     }
 
-    private bool IsPotentialTailByte(byte value)
+    private bool TryFindTailSplit(ReadOnlySpan<byte> input, int middleStart, int middleEnd, out int tokenEnd)
     {
-        return value == _secondaryDelimiter ||
-            _middleMask.Contains(value) ||
-            _tailMask.Contains(value);
-    }
-
-    private bool TryFindTailSplit(ReadOnlySpan<byte> input, int middleStart, int tokenEnd)
-    {
-        for (var secondaryIndex = tokenEnd - 1; secondaryIndex > middleStart; secondaryIndex--)
+        tokenEnd = 0;
+        // Greedy middle may contain the separator, but every byte before the
+        // selected separator must belong to middle. Then tail is greedy alone.
+        for (var split = middleEnd; split > middleStart; split--)
         {
-            if (input[secondaryIndex] != _secondaryDelimiter)
-            {
-                continue;
-            }
-
-            var tailStart = secondaryIndex + 1;
-            if ((uint)tailStart >= (uint)input.Length ||
-                tailStart >= tokenEnd ||
-                !_tailMask.Contains(input[tailStart]))
-            {
-                continue;
-            }
-
-            var isTail = true;
-            for (var index = tailStart; index < tokenEnd; index++)
-            {
-                if (!_tailMask.Contains(input[index]))
-                {
-                    isTail = false;
-                    break;
-                }
-            }
-
-            if (isTail)
-            {
-                return true;
-            }
+            if ((uint)split >= (uint)input.Length || input[split] != _secondaryDelimiter ||
+                (uint)(split + 1) >= (uint)input.Length || !_tailMask.Contains(input[split + 1])) continue;
+            tokenEnd = split + 2;
+            while ((uint)tokenEnd < (uint)input.Length && _tailMask.Contains(input[tokenEnd])) tokenEnd++;
+            return true;
         }
-
         return false;
     }
 }

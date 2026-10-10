@@ -19,14 +19,14 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         yield return new object?[] { "^a" };
         yield return new object?[] { "^Test_123" };
         yield return new object?[] { "^a-b" };
+        yield return new object?[] { "^(ab)" };
     }
 
     [Theory]
     [MemberData(nameof(AcceptCases))]
     public void AnchoredLiteralShapesClassifyToPrefixFamily(string pattern)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-            pattern, pattern, RegexOptions.CultureInvariant, null);
+        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant));
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
         Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
@@ -42,8 +42,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
     [MemberData(nameof(FoldedAcceptCases))]
     public void FoldedAnchoredLiteralShapesClassifyToFoldedPrefixFamily(string pattern)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-            pattern, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null);
+        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix, plan.Kind);
         Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
@@ -53,7 +52,6 @@ public sealed class Utf8AnchoredLiteralPrefixTests
     {
         yield return new object?[] { "^ab|cd", RegexOptions.CultureInvariant };
         yield return new object?[] { "^a.c", RegexOptions.CultureInvariant };
-        yield return new object?[] { "^(ab)", RegexOptions.CultureInvariant };
         yield return new object?[] { "^", RegexOptions.CultureInvariant };
         yield return new object?[] { "^ab$", RegexOptions.CultureInvariant };
         yield return new object?[] { "^ab", RegexOptions.Multiline | RegexOptions.CultureInvariant };
@@ -70,8 +68,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
     [MemberData(nameof(DeclineCases))]
     public void OtherShapesKeepExistingClassification(string pattern, RegexOptions options)
     {
-        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-            pattern, pattern, options, null);
+        var plan = Utf8FallbackRegexFamilyAnalyzer.Classify(Utf8FrontEnd.Analyze(pattern, options));
 
         Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
     }

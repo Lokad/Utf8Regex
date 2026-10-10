@@ -21,7 +21,7 @@ internal static class Utf8AsciiLiteralBetweenNegatedRunsExecutor
             return input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
         }
 
-        var minimumCandidate = Math.Max(startIndex, 1);
+        var minimumCandidate = startIndex + 1;
         var maximumCandidate = input.Length - 2;
         var offset = 0;
         ref var inputRef = ref MemoryMarshal.GetReference(input);
@@ -124,44 +124,24 @@ internal static class Utf8AsciiLiteralBetweenNegatedRunsExecutor
             return false;
         }
 
-        var searchIndex = Math.Max(startIndex, 0);
-        if (searchIndex == 0)
+        var headStart = startIndex;
+        while (headStart < input.Length - 2)
         {
-            searchIndex = 1;
+            while (headStart < input.Length && input[headStart] == excludedHead) headStart++;
+            var headEnd = headStart;
+            while (headEnd < input.Length && input[headEnd] != excludedHead) headEnd++;
+            // First select the latest feasible split of the complete greedy
+            // head run. Then consume the tail greedily. Never rewind the floor.
+            for (var split = Math.Min(headEnd, input.Length - 2); split > headStart; split--)
+            {
+                if (input[split] != literal || input[split + 1] == excludedTail) continue;
+                var tailEnd = split + 2;
+                while (tailEnd < input.Length && input[tailEnd] != excludedTail) tailEnd++;
+                matchIndex = headStart; matchedLength = tailEnd - headStart; return true;
+            }
+            if (headEnd == input.Length) break;
+            headStart = headEnd + 1;
         }
-
-        while (searchIndex < input.Length - 1)
-        {
-            var relative = input[searchIndex..^1].IndexOf(literal);
-            if (relative < 0)
-            {
-                return false;
-            }
-
-            var literalIndex = searchIndex + relative;
-            if (input[literalIndex - 1] == excludedHead || input[literalIndex + 1] == excludedTail)
-            {
-                searchIndex = literalIndex + 1;
-                continue;
-            }
-
-            var left = literalIndex - 1;
-            while (left > 0 && input[left - 1] != excludedHead)
-            {
-                left--;
-            }
-
-            var right = literalIndex + 2;
-            while (right < input.Length && input[right] != excludedTail)
-            {
-                right++;
-            }
-
-            matchIndex = left;
-            matchedLength = right - left;
-            return true;
-        }
-
         return false;
     }
 }

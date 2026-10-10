@@ -28,7 +28,7 @@ internal static class Utf8FallbackDirectFamilyCategories
     public static bool IsTokenFindFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
-        Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
+        Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
@@ -39,7 +39,6 @@ internal static class Utf8FallbackDirectFamilyCategories
     public static bool IsTokenCountFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
-        Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
@@ -69,7 +68,6 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
-        Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
@@ -85,7 +83,6 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
-        Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken or
         Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount or
@@ -97,7 +94,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
-        Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
+        Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount;
 }

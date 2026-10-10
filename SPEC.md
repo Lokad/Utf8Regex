@@ -592,9 +592,91 @@ duplicated raw matchers and repeated per-match preparation are removed. Structur
 tokens preserve independent greedy first/second body runs, including disjoint
 classes and overlapping splits. Optional delimiter absence uses nullable byte
 state, so NUL is a complete scalar and a present delimiter followed by an empty
-star class still consumes the delimiter. These selected token carriers do not
-close upstream char-set payload classification, the complete search portfolio,
-other opaque search preparation or common invocation/resource policy.
+star class still consumes the delimiter. Selected token classification now
+borrows the owned scalar tree, admits every actual wrapper depth, meters the
+complete proof and transfers only final literal arrays plus typed ASCII masks.
+Escaped atoms and NUL members retain canonical scalar membership; packed tail
+sets and the duplicate textual class scanner are removed. ASCII intersections
+execute only on ASCII subjects. The Unicode word email specialization separately
+proves the complete word predicates and punctuation. Greedy heads overlapping
+the primary delimiter, unsupported secondary literals and unproved shapes stay
+on the scalar matcher. Delimited middle runs cannot accept tail-only members
+before their separator. This selected cleanup does not close classification for
+other families, the complete search portfolio, other opaque search preparation
+or common invocation/resource policy.
+Identifier, operator, Unicode category/letter, bounded word and single-ASCII-
+exclusion count families now qualify from the owned tree and canonical scalar
+predicates. Equivalent escaped and grouped spellings retain their native routes.
+Actual wrapper depth, temporary proof capacity and scans are admitted; only a
+selected negated-run infix retains a copied literal array. Shared borrowed
+queries replace duplicate token walks and textual class/category/count scanners.
+Nested repetitions do not lose inner bounds when queried as atoms. ASCII
+intersections remain fenced by their subject envelope; Unicode letter/category
+counts prove complete predicates. The negated-run finder selects the greedy
+head endpoint before consuming its tail and never rewinds before the caller
+floor. Other textual families, full portfolio and common policy remain open.
+Literal edge families now borrow owned scalar nodes instead of rescanning pattern
+text. Escaped/captured fragments, lexical anchor options and complete ASCII case
+fibers qualify their final byte payload; mixed sensitive letters and wider fibers
+retain scalar execution. Real wrappers, proof/copy work and the final literal
+array share construction admission; scratch retains no descriptor or copied tree.
+Leading-dot discovery proves the complete non-LF scalar language and preserves
+the first successful line and its greedy endpoint. A trailing literal may itself
+consume LF. Raw literal-edge parsers, their strict decoder and the ClassifyPattern
+entry are removed. Other textual families and common resource policy stay open.
+Date, URI and the ordered dotted-decimal profile now borrow the same owned tree
+and admitted wrapper frames. Their plans contain values without copied grammar
+or retained proof scratch. Date digit masks prove only the ASCII intersection;
+Unicode digits and boundaries use scalar execution. Positive finite fields use
+their declared minimum rather than a fixed six-byte search floor. URI proofs
+require the full Unicode word category union and Unicode whitespace exclusions.
+The body requires two complete scalars; a supplementary scalar supplies one.
+Fragments accept NUL, and their greedy extent includes any apparent URI inside
+the fragment. Dotted-decimal octet proofs preserve alternative order and the
+existing two-or-three-digit grammar, with one selector for matching and counting.
+Lazy, atomic, reordered, folded or otherwise unproved shapes retain scalar grammar
+execution. The five former textual token classifiers and duplicate IPv4 selector
+and diagnostic route are physically removed.
+Number and quoted-string prefixes, signed decimal, hex color and spreadsheet
+whole profiles now prove complete owned grammar, including every optional feature
+their fixed matcher accepts. Missing sign/fraction/exponent/dot/hash/colon features
+cannot select a broader shortcut. Lexical beginning and final-LF anchors are
+proved at their nodes; multiline and strict-end shapes keep scalar execution.
+Folded ASCII intersections use borrowed positive scalar ranges and the captured
+construction culture, including non-ASCII members supplying ASCII fibers. This
+does not qualify non-ASCII subjects for the ASCII shortcut. Quoted prefixes prove
+the complete negative body class and non-LF escaped scalar; unescaped LF is allowed,
+and a backslash consumes one complete scalar. One shared quoted matcher replaces
+duplicated loops and three opaque/static stop holders. Color and spreadsheet
+matchers exclude one permitted final LF from their byte length. Eight old textual
+classifier/helpers are physically removed. Other families and common resource
+and retained policies remain open.
+Prefix-until-byte, trimmed optional-prefix, line-title, quoted-line and leading-
+digit-tail routes now prove owned scalar grammar using shared admitted frames.
+Fragmented literals borrow their actual capture/group wrappers; only selected
+final byte arrays survive qualification. Whitespace proofs cover the complete
+Unicode predicate. Optional trimmed prefixes require disjoint, non-whitespace
+first bytes. Leading-digit tails require an end arm and at most eight non-digit,
+non-LF separators; unproved alternatives retain scalar execution. Greedy optional
+whitespace may consume a final LF. Line counts consume Unicode indentation and
+complete prefixes; quoted counts use the exact declared prefix and allow Unicode
+whitespace and raw quoted bodies spanning LF. The quoted grammar's literal-dot
+arm does not admit backslash escapes. Eleven textual methods, the PrefixFamilies
+file, a copied-array/closure candidate probe and its verifier delegate are removed.
+Email, balancing and digit/hex-query routes now prove their complete owned scalar
+grammar. The family analyzer dispatches only on that tree; its remaining textual
+selectors and five partial files are removed. Balancing proves the actual shared
+capture-stack identity and rejects outside effects on that stack. Email and
+balancing retain value plans; query proofs borrow shared cursor/literal slices and
+fund only their five/six final byte arrays. Three bounded UInt128 value masks
+preserve prefix dot predicates separately from literal bytes, including NUL.
+Prefixes beyond 128 positions, Turkic folding, sensitive lexical fragments and
+unknown shapes retain owned scalar execution. Query matching requires the declared
+equals sign, honors optional segment/value backtracking, preserves CR and negative
+value classes, and returns the exact final-LF extent. Duplicate URL suffix delegates
+and caches are removed. Positive ASCII definition queries borrow canonical
+endpoints instead of replaying a full scalar token. This qualification does not
+close the fallback-preference, whole-search, retained or common-policy gates.
 Deterministic prefix, literal-family, leading-mask, byte-safety and guard walks
 also use admitted value frames and metered visits, comparisons and ASCII copies.
 Incomplete branches invalidate whole-family proofs and partial mask unions.

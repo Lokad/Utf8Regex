@@ -62,9 +62,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
             count = Utf8LinePrefixExecutor.CountMatchingLines(
                 input,
                 linePrefixFinder,
-                directFamily.TrimLeadingAsciiWhitespace,
-                verifier: null,
-                out _);
+                directFamily.TrimLeadingAsciiWhitespace);
             return true;
         }
 
@@ -78,7 +76,10 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeLetter);
-            count = Utf8UnicodeLetterBoundedRepeatExecutor.CountLetters(input, validation.ContainsSupplementaryScalars);
+            // A default or mismatched validation descriptor supplies no proof
+            // that four-byte scalars are absent. Preserve them in direct counts.
+            count = Utf8UnicodeLetterBoundedRepeatExecutor.CountLetters(input,
+                validation.ContainsSupplementaryScalars || validation.ByteLength != input.Length);
             return true;
         }
 
@@ -87,7 +88,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeCategory);
             count = Utf8UnicodeCategoryExecutor.CountCategory(
                 input,
-                validation.ContainsSupplementaryScalars,
+                validation.ContainsSupplementaryScalars || validation.ByteLength != input.Length,
                 directFamily.UnicodeCategory);
             return true;
         }

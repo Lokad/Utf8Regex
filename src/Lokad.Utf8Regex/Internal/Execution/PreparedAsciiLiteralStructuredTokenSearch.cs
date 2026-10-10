@@ -42,6 +42,24 @@ internal readonly struct PreparedAsciiLiteralStructuredTokenSearch
         finally { budget.LeaveDepth(); }
     }
 
+    public PreparedAsciiLiteralStructuredTokenSearch(ReadOnlySpan<byte> literalUtf8,
+        ReadOnlySpan<byte> optionalDelimiter1Utf8, ReadOnlySpan<byte> optionalDelimiter2Utf8, Utf8FallbackTokenMasks masks)
+    {
+        using var scope = Utf8ConstructionScope.Enter(); var budget = scope.Budget;
+        budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork(1);
+            _headMask = masks.Head; _firstBodyMask = masks.Middle; _secondBodyMask = masks.Tail;
+            _optionalTail1Mask = masks.OptionalTail1; _optionalTail2Mask = masks.OptionalTail2;
+            OptionalDelimiter1 = optionalDelimiter1Utf8.IsEmpty ? null : optionalDelimiter1Utf8[0];
+            OptionalDelimiter2 = optionalDelimiter2Utf8.IsEmpty ? null : optionalDelimiter2Utf8[0];
+            _literalFinder = new Utf8AsciiLiteralFinder(literalUtf8); LiteralLength = literalUtf8.Length;
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
+    }
+
     public int LiteralLength { get; }
 
     public byte? OptionalDelimiter1 { get; }

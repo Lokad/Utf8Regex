@@ -57,7 +57,7 @@ internal static class Utf8BalancedBeginEndExecutor
         }
 
         // A failed outer BEGIN does not hide the complete matches nested within it:
-        // .NET retries at the next BEGIN and promotes those completed child blocks.
+        // Unanchored search retries at the next BEGIN, promoting completed children.
         while (depth > 0)
         {
             depth--;

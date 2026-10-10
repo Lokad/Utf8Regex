@@ -300,14 +300,19 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorKeepsCompatOnlyImportPatternOffByteSafeLinear()
+    public void ConstructorQualifiesEscapedQuoteImportAliasWithoutByteSafeLinear()
     {
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\\\"(?<path>(\\.|[^\\\\\\\"]*))\\\".*$";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
+        // Escaped and unescaped quote spellings now share the owned grammar proof.
+        Assert.Null(regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
         Assert.NotEqual(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(1, regex.Count("import \"😀\nx\"tail"u8));
+        var path = regex.MatchDetailed("import \"😀\nx\"tail"u8).GetGroup("path");
+        Assert.Equal((8, 6), (path.IndexInBytes, path.LengthInBytes));
     }
 
     [Fact]

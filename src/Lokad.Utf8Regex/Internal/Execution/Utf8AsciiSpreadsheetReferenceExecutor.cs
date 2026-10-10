@@ -5,6 +5,7 @@ internal static class Utf8AsciiSpreadsheetReferenceExecutor
     public static bool TryMatchCellReferenceWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
+        if (!input.IsEmpty && input[^1] == (byte)'\n') input = input[..^1];
         if (input.Length < 2 || !IsAsciiLetterIgnoreCase(input[0]))
         {
             return false;
@@ -34,6 +35,7 @@ internal static class Utf8AsciiSpreadsheetReferenceExecutor
     public static bool TryMatchRangeReferenceWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
+        if (!input.IsEmpty && input[^1] == (byte)'\n') input = input[..^1];
         if (!TryConsumeCellReference(input, 0, out var index))
         {
             return false;

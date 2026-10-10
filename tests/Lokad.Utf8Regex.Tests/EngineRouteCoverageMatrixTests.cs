@@ -77,8 +77,9 @@ public sealed class EngineRouteCoverageMatrixTests
         // Conditionals and balancing: BCL fallback with unsupported_conditional (owner R03).
         yield return new object?[] { "conditional", "(a)?(?(1)ab|cd)", RegexOptions.CultureInvariant, "aab", "FallbackRegex", "unsupported_conditional", true, true };
         yield return new object?[] { "balancing", "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))", RegexOptions.CultureInvariant, "BEGINEND", "FallbackRegex", "unsupported_conditional", true, true };
-        // Structural word shapes: BCL fallback on this shape (owner R03).
-        yield return new object?[] { "word-email-shape", "\\w+@\\w+\\.\\w+", RegexOptions.CultureInvariant, "mail me a@b.cd ok", "FallbackRegex", "unsupported_loop", true, true };
+        // Canonical word intersections qualify ASCII token execution; Unicode
+        // subjects retain owned scalar execution (owner R03).
+        yield return new object?[] { "word-email-shape", "\\w+@\\w+\\.\\w+", RegexOptions.CultureInvariant, "mail me a@b.cd ok", "FallbackRegex", null, true, true };
         yield return new object?[] { "compiled-literal", "abc", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "negated-shorthand-window-gap-miss", "a\\D{2,5}b", RegexOptions.CultureInvariant, "xa12b", "AsciiSimplePattern", null, false, false };
         yield return new object?[] { "negated-shorthand-window-gap-hit", "a\\D{2,5}b", RegexOptions.CultureInvariant, "xayzb", "AsciiSimplePattern", null, false, false };

@@ -80,21 +80,21 @@ public sealed class Utf8CompiledScalarConsumerTests
     [InlineData("import \"abc\"\n", 1, true)]
     [InlineData("import \"😀é\"\n", 1, false)]
     [InlineData("import \"abc\"\nimport shared \"😀é\"\n", 2, false)]
-    public void QuotedLineCounterDeclinesIncompleteByteProofAndCountsTheCompleteScalarSubject(string text, int expected, bool direct)
+    public void QuotedLineCounterUsesQualifiedGrammarForCompleteScalarSubjects(string text, int expected, bool isAscii)
     {
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$";
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Multiline;
         var prepared = Prepare(pattern, options);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.None, prepared.FallbackDirectFamily.Kind);
-        prepared = Utf8VerifierTestPlans.WithDirectFamily(prepared,
-            Utf8FallbackDirectFamilyPlan.ForQuotedLineSegmentCount("import"u8.ToArray(), "shared"u8.ToArray()));
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, prepared.FallbackDirectFamily.Kind);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(direct, Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input,
+        Assert.Equal(isAscii, Utf8Validation.Validate(input).IsAscii);
+        Assert.True(Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input,
             prepared.FallbackDirectFamily.LiteralUtf8, prepared.FallbackDirectFamily.SecondaryLiteralUtf8, out var nativeCount));
-        Assert.Equal(direct ? expected : 0, nativeCount);
+        Assert.Equal(expected, nativeCount);
         var verifier = Utf8VerifierRuntime.Create(prepared);
         var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.FallbackRegex), prepared, verifier, options);
         Assert.Equal(expected, runtime.Count(input, Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite));
+        Assert.Equal(expected, runtime.Count(input, default, Utf8ExecutionDeadline.Infinite));
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 

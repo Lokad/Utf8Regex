@@ -17,7 +17,7 @@ internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
                 return Utf8AsciiPrefixTokenExecutor.TryMatchOperatorRunPrefix(input, out matchedLength);
 
             case Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix:
-                return Utf8AsciiPrefixTokenExecutor.TryMatchStringPrefix(input, out matchedLength);
+                return Utf8AsciiPrefixTokenExecutor.TryMatchQuotedStringPrefix(input, out matchedLength);
 
             case Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte:
                 return plan.LiteralUtf8 is { Length: > 0 } prefixUtf8 &&
