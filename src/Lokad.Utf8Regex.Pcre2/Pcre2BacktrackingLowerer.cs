@@ -230,7 +230,7 @@ internal sealed class Pcre2BacktrackingLowerer
                     if (repeatedToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
                         (repeatedToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                     {
-                        repeatedToken.CharacterClass.PrepareAsciiSearchValues();
+                        repeatedToken.CharacterClass.PrepareAsciiByteSet();
                     }
 
                     _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(
@@ -246,7 +246,7 @@ internal sealed class Pcre2BacktrackingLowerer
                     if (collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
                         (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                     {
-                        collapsibleToken.CharacterClass.PrepareAsciiSearchValues();
+                        collapsibleToken.CharacterClass.PrepareAsciiByteSet();
                     }
 
                     var collapsibleIndex = _instructions.Count;

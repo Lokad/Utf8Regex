@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Globalization;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -230,7 +231,7 @@ internal readonly record struct Pcre2CharacterClassTerm(
 
 internal sealed class Pcre2CharacterClass
 {
-    private SearchValues<byte>? _asciiSearchValues;
+    private PreparedByteSet? _asciiByteSet;
 
     internal static Pcre2CharacterClass Empty { get; } = new([], false, AsciiCharClass.Empty);
 
@@ -250,13 +251,13 @@ internal sealed class Pcre2CharacterClass
 
     internal AsciiCharClass AsciiSet { get; }
 
-    internal SearchValues<byte>? AsciiSearchValues => _asciiSearchValues;
+    internal PreparedByteSet? AsciiByteSet => _asciiByteSet;
 
-    internal void PrepareAsciiSearchValues()
+    internal void PrepareAsciiByteSet()
     {
-        if (_asciiSearchValues is null && !AsciiSet.IsEmpty)
+        if (_asciiByteSet is null && !AsciiSet.IsEmpty)
         {
-            _asciiSearchValues = SearchValues.Create(AsciiSet.GetMatchBytes());
+            _asciiByteSet = PreparedByteSet.CreateOwned(AsciiSet.ActualLowMask, AsciiSet.ActualHighMask, 0, 0);
         }
     }
 

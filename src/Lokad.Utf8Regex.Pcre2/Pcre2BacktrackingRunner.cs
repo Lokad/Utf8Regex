@@ -846,18 +846,18 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
                         var possessiveCount = 0;
-                        var asciiSearchValues =
+                        var asciiByteSet =
                             instruction.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
                             (instruction.Token.Options & Pcre2CharacterOptions.Caseless) == 0
-                                ? instruction.Token.CharacterClass.AsciiSearchValues
+                                ? instruction.Token.CharacterClass.AsciiByteSet
                                 : null;
                         while (possessiveCount < instruction.Maximum)
                         {
-                            if (asciiSearchValues is not null && inputIndex < input.Length)
+                            if (asciiByteSet is not null && inputIndex < input.Length)
                             {
                                 var remainingMaximum = instruction.Maximum - possessiveCount;
                                 var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
-                                var stop = input.Slice(inputIndex, remainingLength).IndexOfAnyExcept(asciiSearchValues);
+                                var stop = asciiByteSet.IndexOfAnyExcept(input.Slice(inputIndex, remainingLength));
                                 var asciiCount = stop < 0 ? remainingLength : stop;
                                 inputIndex += asciiCount;
                                 possessiveCount += asciiCount;
@@ -906,10 +906,10 @@ internal static class Pcre2BacktrackingRunner
                         var collapsibleMaximum = instruction.Maximum;
                         var collapsibleStart = inputIndex;
                         var collapsibleCount = 0;
-                        var collapsibleAsciiSearchValues =
+                        var collapsibleAsciiByteSet =
                             collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
                             (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0
-                                ? collapsibleToken.CharacterClass.AsciiSearchValues
+                                ? collapsibleToken.CharacterClass.AsciiByteSet
                                 : null;
                         var collapsibleLiteralByte =
                             collapsibleToken.Kind == Pcre2CharacterTokenKind.Literal &&
@@ -930,11 +930,11 @@ internal static class Pcre2BacktrackingRunner
                                         collapsibleCount++;
                                     }
                                 }
-                                else if (collapsibleAsciiSearchValues is not null)
+                                else if (collapsibleAsciiByteSet is not null)
                                 {
                                     var remainingMaximum = collapsibleMaximum - collapsibleCount;
                                     var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
-                                    var stop = input.Slice(inputIndex, remainingLength).IndexOfAnyExcept(collapsibleAsciiSearchValues);
+                                    var stop = collapsibleAsciiByteSet.IndexOfAnyExcept(input.Slice(inputIndex, remainingLength));
                                     var asciiCount = stop < 0 ? remainingLength : stop;
                                     inputIndex += asciiCount;
                                     collapsibleCount += asciiCount;

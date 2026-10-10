@@ -5,7 +5,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
-using System.Text;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
@@ -21,39 +20,60 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 {
     private const int MaximumAlternatives = 8;
     private readonly Literal[] _literals;
-    private readonly SearchValues<byte>? _sharedAnchorSearchValues;
+    private readonly PreparedByteSet? _sharedAnchorSearch;
     private readonly byte[]? _sharedAnchorLiteralMasks;
     private readonly int _sharedAnchorByteOffset;
     private readonly PreparedMultiLiteralPackedNibbleSimdPrefilter _correlatedPrefilter;
 
-    private Utf8InvariantCyrillicLiteralCountStrategy(Literal[] literals)
+    private readonly record struct ConstructionState(Literal[] Literals, PreparedByteSet? AnchorSearch,
+        byte[]? AnchorLiteralMasks, int AnchorByteOffset, PreparedMultiLiteralPackedNibbleSimdPrefilter CorrelatedPrefilter);
+
+    private Utf8InvariantCyrillicLiteralCountStrategy(ConstructionState state)
     {
-        _literals = literals;
-        _sharedAnchorSearchValues = null;
-        _sharedAnchorLiteralMasks = null;
-        _sharedAnchorByteOffset = -1;
-        _correlatedPrefilter = literals.Length > 1
-            ? PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(
-                literals.Select(static literal => literal.Bytes).ToArray())
-            : default;
-        if (literals.Length == 1)
+        _literals = state.Literals;
+        _sharedAnchorSearch = state.AnchorSearch;
+        _sharedAnchorLiteralMasks = state.AnchorLiteralMasks;
+        _sharedAnchorByteOffset = state.AnchorByteOffset;
+        _correlatedPrefilter = state.CorrelatedPrefilter;
+    }
+
+    private static ConstructionState PrepareState(Literal[] literals, Utf8ConstructionBudget budget)
+    {
+        var prefilter = default(PreparedMultiLiteralPackedNibbleSimdPrefilter);
+        if (literals.Length > 1)
         {
-            return;
+            // Only the prefilter consumes this borrowed reference vector.
+            var bytes = budget.AllocateArray<byte[]>(literals.Length, false);
+            try
+            {
+                budget.ChargeWork((ulong)literals.Length);
+                for (var i = 0; i < literals.Length; i++) bytes[i] = literals[i].Bytes;
+                prefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(bytes);
+            }
+            finally { budget.ReleaseArray(bytes, false); }
         }
+        var state = new ConstructionState(literals, null, null, -1, prefilter);
+        // SIMD preparation can decline on other CPUs. Only then is the shared
+        // anchor fallback consumed; do not retain a second unused search table.
+        if (literals.Length == 1 || prefilter.HasValue) return state;
 
         var sharedAnchorByteOffset = literals[0].AnchorByteOffset;
+        budget.ChargeWork((ulong)literals.Length);
         for (var i = 1; i < literals.Length; i++)
         {
             if (literals[i].AnchorByteOffset != sharedAnchorByteOffset)
             {
-                return;
+                return state;
             }
         }
 
+        budget.ChargeWork(256);
         Span<bool> seen = stackalloc bool[256];
+        seen.Clear();
         Span<byte> anchorBytes = stackalloc byte[MaximumAlternatives * 2];
-        var literalMasks = new byte[256];
+        var literalMasks = budget.AllocateArray<byte>(256, false);
         var anchorByteCount = 0;
+        budget.ChargeWork(2ul * (ulong)literals.Length);
         for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
         {
             ref readonly var literal = ref literals[literalIndex];
@@ -61,9 +81,8 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             AddSharedAnchor(literal.AnchorSecond, literalIndex, seen, anchorBytes, literalMasks, ref anchorByteCount);
         }
 
-        _sharedAnchorSearchValues = SearchValues.Create(anchorBytes[..anchorByteCount]);
-        _sharedAnchorLiteralMasks = literalMasks;
-        _sharedAnchorByteOffset = sharedAnchorByteOffset;
+        return new(literals, PreparedByteSet.CreateOwned(anchorBytes[..anchorByteCount]),
+            literalMasks, sharedAnchorByteOffset, prefilter);
     }
 
     private static void AddSharedAnchor(
@@ -88,6 +107,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         TimeSpan matchTimeout,
         [NotNullWhen(true)] out Utf8InvariantCyrillicLiteralCountStrategy? strategy)
     {
+        strategy = null;
         const RegexOptions allowedOptions =
             RegexOptions.IgnoreCase |
             RegexOptions.CultureInvariant |
@@ -98,32 +118,37 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             (options & ~allowedOptions) != 0 ||
             matchTimeout != Regex.InfiniteMatchTimeout)
         {
-            strategy = null;
             return false;
         }
 
-        var alternatives = pattern.Split('|');
-        if (alternatives.Length is 0 or > MaximumAlternatives)
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget; budget.EnterDepth();
+        try
         {
-            strategy = null;
-            return false;
-        }
-
-        var literals = new Literal[alternatives.Length];
-        for (var alternativeIndex = 0; alternativeIndex < alternatives.Length; alternativeIndex++)
-        {
-            if (!TryCreateLiteral(alternatives[alternativeIndex], out literals[alternativeIndex]))
+            budget.ChargeWork(2ul * (ulong)pattern.Length);
+            var count = 1;
+            foreach (var value in pattern) if (value == '|') count++;
+            if (count > MaximumAlternatives) return false;
+            var literals = budget.AllocateArray<Literal>(count, false);
+            var start = 0;
+            for (var index = 0; index < count; index++)
             {
-                strategy = null;
-                return false;
+                var end = pattern.AsSpan(start).IndexOf('|');
+                var length = end < 0 ? pattern.Length - start : end;
+                // The delimiter scan is bounded by the full-pattern admission.
+                // Literal slices borrow text; no Split strings or array survive.
+                if (!TryCreateLiteral(pattern.AsSpan(start, length), budget, out literals[index])) return false;
+                start += length + 1;
             }
+            var state = PrepareState(literals, budget);
+            strategy = budget.AllocateObject(state, static value => new Utf8InvariantCyrillicLiteralCountStrategy(value));
+            scope.Complete();
+            return true;
         }
-
-        strategy = new Utf8InvariantCyrillicLiteralCountStrategy(literals);
-        return true;
+        finally { budget.LeaveDepth(); }
     }
 
-    private static bool TryCreateLiteral(string literal, out Literal prepared)
+    private static bool TryCreateLiteral(ReadOnlySpan<char> literal, Utf8ConstructionBudget budget, out Literal prepared)
     {
         if (literal.Length == 0)
         {
@@ -131,12 +156,13 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             return false;
         }
 
-        var units = new Unit[literal.Length];
+        var units = budget.AllocateArray<Unit>(literal.Length, false);
         var byteOffset = 0;
         var anchorPreviousAscii = -1;
         var anchorByteOffset = -1;
         var anchorFirst = (byte)0;
         var anchorSecond = (byte)0;
+        budget.ChargeWork((ulong)literal.Length);
         for (var i = 0; i < literal.Length; i++)
         {
             var value = literal[i];
@@ -188,7 +214,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 
         prepared = new Literal(
             units,
-            Encoding.UTF8.GetBytes(literal),
+            budget.EncodeUtf8(literal),
             byteOffset,
             anchorPreviousAscii,
             anchorByteOffset,
@@ -218,10 +244,10 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             return CountWithCorrelatedPrefilter(input);
         }
 
-        if (_sharedAnchorSearchValues is { } sharedAnchorSearchValues &&
+        if (_sharedAnchorSearch is { } sharedAnchorSearch &&
             _sharedAnchorLiteralMasks is { } sharedAnchorLiteralMasks)
         {
-            return CountWithSharedAnchor(input, sharedAnchorSearchValues, sharedAnchorLiteralMasks);
+            return CountWithSharedAnchor(input, sharedAnchorSearch, sharedAnchorLiteralMasks);
         }
 
         Span<int> candidates = stackalloc int[_literals.Length];
@@ -507,7 +533,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 
     private int CountWithSharedAnchor(
         ReadOnlySpan<byte> input,
-        SearchValues<byte> anchorSearchValues,
+        PreparedByteSet anchorSearch,
         byte[] anchorLiteralMasks)
     {
         var count = 0;
@@ -515,7 +541,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         var searchIndex = _sharedAnchorByteOffset;
         while (searchIndex < input.Length)
         {
-            var relative = input[searchIndex..].IndexOfAny(anchorSearchValues);
+            var relative = anchorSearch.IndexOf(input[searchIndex..]);
             if (relative < 0)
             {
                 break;

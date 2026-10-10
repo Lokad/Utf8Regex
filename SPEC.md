@@ -963,7 +963,19 @@ projection and observability choices. The small projection marker remains stored
 to preserve the distinction between a default plan and a prepared empty plan;
 UTF-16 projection remains derived interoperability metadata. Admission of objects
 that embed the plan follows its actual reduced field extent.
-Other opaque BCL SearchValues state and upstream preparation/emission
+Pattern-dependent emitted anchors, Cyrillic fallback anchors and PCRE2 leading/
+repeat sets use the same owned immutable byte-mask kernel. Mask scans and field
+state share byte/work/depth admission; PCRE2 unions canonical ASCII masks rather
+than allocating class-byte or LINQ intermediate arrays. Failed set preparation
+cannot publish a class cache. Repeated preparation borrows that cache.
+Cyrillic strategy preparation borrows pattern slices, admits literal/unit/byte
+payloads and its complete strategy field state, and releases the prefilter's
+temporary reference vector. It prepares shared-anchor storage only when the
+SIMD prefilter declines. The scalar fallback remains available without intrinsics.
+Declines release speculative capacity/depth while work remains spent.
+Emitted matcher wrapper storage is admitted; CLR/JIT metadata, kernel lowering
+and other adapter program/AST storage remain separate unqualified debt.
+Fixed global BCL SearchValues state and upstream preparation/emission
 metadata and complete retained/shared preparation remain uncovered. Their complete
 admission remains mandatory; the covered array loans are not a complete memory bound.
 Find preparation admits trailing-anchor/leading-literal ancestor frames and

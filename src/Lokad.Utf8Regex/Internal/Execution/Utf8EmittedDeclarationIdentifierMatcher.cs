@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
-using System.Buffers;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -36,16 +35,19 @@ internal sealed class Utf8EmittedKernelMatcher
         ?? throw new MissingMethodException(typeof(Utf8EmittedKernelMatcher).FullName, nameof(TryMatchBoundedLeadingBeforeTrailing));
 
     private readonly Utf8EmittedKernelPlan _plan;
-    private readonly SearchValues<byte>? _anchorSearchValues;
+    private readonly PreparedByteSet? _anchorSearch;
     private readonly FindNextDelegate _findNext;
     private readonly CountDelegate _count;
 
-    private Utf8EmittedKernelMatcher(Utf8EmittedKernelPlan plan, SearchValues<byte>? anchorSearchValues, FindNextDelegate findNext, CountDelegate count)
+    private readonly record struct ConstructionState(Utf8EmittedKernelPlan Plan,
+        PreparedByteSet? AnchorSearch, FindNextDelegate FindNext, CountDelegate Count);
+
+    private Utf8EmittedKernelMatcher(ConstructionState state)
     {
-        _plan = plan;
-        _anchorSearchValues = anchorSearchValues;
-        _findNext = findNext;
-        _count = count;
+        _plan = state.Plan;
+        _anchorSearch = state.AnchorSearch;
+        _findNext = state.FindNext;
+        _count = state.Count;
     }
 
     internal Utf8EmittedKernelPlan Plan => _plan;
@@ -60,13 +62,7 @@ internal sealed class Utf8EmittedKernelMatcher
             return false;
         }
 
-        matcher = new Utf8EmittedKernelMatcher(
-            kernelPlan,
-            kernelPlan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
-                ? SearchValues.Create(kernelPlan.FindOptimization.AnchorBytes)
-                : null,
-            CompileFindNext(kernelPlan),
-            CompileCount(kernelPlan));
+        matcher = Create(kernelPlan);
         return true;
     }
 
@@ -81,14 +77,26 @@ internal sealed class Utf8EmittedKernelMatcher
             return false;
         }
 
-        matcher = new Utf8EmittedKernelMatcher(
-            kernelPlan,
-            kernelPlan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
-                ? SearchValues.Create(kernelPlan.FindOptimization.AnchorBytes)
-                : null,
-            CompileFindNext(kernelPlan),
-            CompileCount(kernelPlan));
+        matcher = Create(kernelPlan);
         return true;
+    }
+
+    private static Utf8EmittedKernelMatcher Create(Utf8EmittedKernelPlan plan)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget; budget.EnterDepth();
+        try
+        {
+            var search = plan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
+                ? PreparedByteSet.CreateOwned(plan.FindOptimization.AnchorBytes) : null;
+            // The wrapper and byte set have explicit field-state admission.
+            // CLR/JIT method metadata and lowering still require separate qualification.
+            var state = new ConstructionState(plan, search, CompileFindNext(plan), CompileCount(plan));
+            var result = budget.AllocateObject(state, static value => new Utf8EmittedKernelMatcher(value));
+            scope.Complete();
+            return result;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     internal int FindNext(ReadOnlySpan<byte> input, int startIndex, out int matchedLength) => _findNext(this, input, startIndex, out matchedLength);
@@ -97,8 +105,8 @@ internal sealed class Utf8EmittedKernelMatcher
 
     private int FindNextAnchorRelative(ReadOnlySpan<byte> input, int startIndex)
     {
-        var values = _anchorSearchValues ?? throw new InvalidOperationException("The emitted plan does not define anchor search values.");
-        return input[startIndex..].IndexOfAny(values);
+        var search = _anchorSearch ?? throw new InvalidOperationException("The emitted plan does not define an anchor byte set.");
+        return search.IndexOf(input[startIndex..]);
     }
 
     private int FindNextCommonPrefixRelative(ReadOnlySpan<byte> input, int startIndex) => input[startIndex..].IndexOf(_plan.FindOptimization.CommonPrefix);

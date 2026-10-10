@@ -1,4 +1,6 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -14,7 +16,27 @@ internal sealed class Pcre2AsciiLiteralAlternationRepeatDirectProgram : IPcre2Di
         Fallback = fallback;
         Alternatives = alternatives;
         Suffix = suffix;
-        FirstBytes = SearchValues.Create(alternatives.Select(static alternative => alternative[0]).Distinct().ToArray());
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget; budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork((ulong)alternatives.Length);
+            ulong a = 0, b = 0, c = 0, d = 0;
+            foreach (var alternative in alternatives)
+            {
+                var value = alternative[0]; var bit = 1ul << (value & 63);
+                switch (value >> 6)
+                {
+                    case 0: a |= bit; break;
+                    case 1: b |= bit; break;
+                    case 2: c |= bit; break;
+                    default: d |= bit; break;
+                }
+            }
+            FirstBytes = PreparedByteSet.CreateOwned(a, b, c, d);
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiLiteralAlternationRepeat;
@@ -27,7 +49,7 @@ internal sealed class Pcre2AsciiLiteralAlternationRepeatDirectProgram : IPcre2Di
 
     internal byte[] Suffix { get; }
 
-    internal SearchValues<byte> FirstBytes { get; }
+    internal PreparedByteSet FirstBytes { get; }
 
     internal int Count(ReadOnlySpan<byte> input, int start)
     {
@@ -68,7 +90,7 @@ internal sealed class Pcre2AsciiLiteralAlternationRepeatDirectProgram : IPcre2Di
             var cursor = start;
             while (cursor < input.Length)
             {
-                var relativeCandidate = input[cursor..].IndexOfAny(FirstBytes);
+                var relativeCandidate = FirstBytes.IndexOf(input[cursor..]);
                 if (relativeCandidate < 0)
                 {
                     break;

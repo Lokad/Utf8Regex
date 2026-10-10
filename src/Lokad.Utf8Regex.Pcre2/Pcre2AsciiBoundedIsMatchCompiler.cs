@@ -1,5 +1,6 @@
-using System.Buffers;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -15,19 +16,29 @@ internal sealed class Pcre2AsciiBoundedIsMatchDirectProgram : IPcre2DirectProgra
         BeginningOfSubject = beginningOfSubject;
         EndOfSubjectOrFinalNewline = endOfSubjectOrFinalNewline;
         Fallback = fallback;
-        MinimumLength = alternatives.Min(static alternative => alternative.Length);
-        LeadingBytes = SearchValues.Create(
-            alternatives
-                .SelectMany(static alternative => alternative[0].GetMatchBytes())
-                .Distinct()
-                .ToArray());
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget; budget.EnterDepth();
+        try
+        {
+            budget.ChargeWork(2ul * (ulong)alternatives.Length);
+            MinimumLength = alternatives.Min(static alternative => alternative.Length);
+            ulong low = 0, high = 0;
+            foreach (var alternative in alternatives)
+            {
+                low |= alternative[0].ActualLowMask;
+                high |= alternative[0].ActualHighMask;
+            }
+            LeadingBytes = PreparedByteSet.CreateOwned(low, high, 0, 0);
+            scope.Complete();
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiBoundedIsMatch;
 
     internal AsciiCharClass[][] Alternatives { get; }
 
-    internal SearchValues<byte> LeadingBytes { get; }
+    internal PreparedByteSet LeadingBytes { get; }
 
     internal int MinimumLength { get; }
 
@@ -314,7 +325,7 @@ internal static class Pcre2AsciiBoundedIsMatchRunner
         var scanOffset = startOffsetInBytes;
         while (scanOffset <= input.Length - program.MinimumLength)
         {
-            var relativeCandidate = input[scanOffset..].IndexOfAny(program.LeadingBytes);
+            var relativeCandidate = program.LeadingBytes.IndexOf(input[scanOffset..]);
             if (relativeCandidate < 0)
             {
                 return false;
