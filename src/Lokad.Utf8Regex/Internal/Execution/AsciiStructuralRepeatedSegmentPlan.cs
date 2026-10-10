@@ -6,7 +6,7 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
         AsciiCharClass leadingCharClass,
         AsciiCharClass trailingCharClass,
         int trailingMinCount,
-        string separatorSet,
+        AsciiCharClass separatorCharClass,
         int separatorMinCount,
         int repetitionMinCount,
         int repetitionMaxCount)
@@ -14,7 +14,7 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
         LeadingCharClass = leadingCharClass;
         TrailingCharClass = trailingCharClass;
         TrailingMinCount = trailingMinCount;
-        SeparatorSet = separatorSet;
+        SeparatorCharClass = separatorCharClass;
         SeparatorMinCount = separatorMinCount;
         RepetitionMinCount = repetitionMinCount;
         RepetitionMaxCount = repetitionMaxCount;
@@ -26,7 +26,7 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
 
     public int TrailingMinCount { get; }
 
-    public string SeparatorSet { get; }
+    public AsciiCharClass SeparatorCharClass { get; }
 
     public int SeparatorMinCount { get; }
 
@@ -40,10 +40,10 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
         TrailingMinCount > 0 &&
         RepetitionMinCount > 0 &&
         RepetitionMaxCount >= RepetitionMinCount &&
-        !string.IsNullOrEmpty(SeparatorSet);
+        !SeparatorCharClass.IsEmpty;
 
     public bool MatchesSeparator(byte value)
     {
-        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, SeparatorSet);
+        return SeparatorCharClass.Contains(value);
     }
 }

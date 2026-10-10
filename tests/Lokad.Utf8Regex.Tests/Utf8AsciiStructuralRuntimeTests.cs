@@ -7,8 +7,6 @@ namespace Lokad.Utf8Regex.Tests;
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8AsciiStructuralRuntimeTests
 {
-    private const string ASet = "\0\u0002\0ab";
-    private const string AbSet = "\0\u0002\0ac";
 
     private static (AsciiStructuralLinearVerifierProgram Program, byte[] Input) Case(int family, int length)
     {
@@ -19,28 +17,28 @@ public sealed class Utf8AsciiStructuralRuntimeTests
         switch (family)
         {
             case 0:
-                instructions = [AsciiStructuralLinearVerifierInstruction.ConsumeSetLoop(ASet, a, 1)];
+                instructions = [AsciiStructuralLinearVerifierInstruction.ConsumeSetLoop(a, 1)];
                 break;
             case 1:
-                instructions = [AsciiStructuralLinearVerifierInstruction.RequireSetByte(ASet, a),
-                    AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(ASet, a, 0, int.MaxValue)];
+                instructions = [AsciiStructuralLinearVerifierInstruction.RequireSetByte(a),
+                    AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(a, 0, int.MaxValue)];
                 break;
             case 2:
                 instructions = [AsciiStructuralLinearVerifierInstruction.MatchSuffixAtCurrent(
-                    [AsciiStructuralCompiledSuffixPart.CreateLiteral(input)])];
+                    [AsciiStructuralSuffixPart.CreateLiteral(input)])];
                 break;
             case 3:
                 input = [.. input, (byte)'x'];
                 instructions = [AsciiStructuralLinearVerifierInstruction.MatchSuffixAtCurrent(
-                    [AsciiStructuralCompiledSuffixPart.CreateSeparator(ASet, a, 1),
-                     AsciiStructuralCompiledSuffixPart.CreateLiteral("x"u8.ToArray())])];
+                    [AsciiStructuralSuffixPart.CreateSeparator(a, 1),
+                     AsciiStructuralSuffixPart.CreateLiteral("x"u8.ToArray())])];
                 break;
             default:
                 input = [.. input, (byte)'b', (byte)'y'];
-                instructions = [AsciiStructuralLinearVerifierInstruction.RequireSetByte(ASet, a),
-                    AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(AbSet, ab, 0, int.MaxValue),
+                instructions = [AsciiStructuralLinearVerifierInstruction.RequireSetByte(a),
+                    AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(ab, 0, int.MaxValue),
                     AsciiStructuralLinearVerifierInstruction.MatchSuffixAfterTail(
-                        [AsciiStructuralCompiledSuffixPart.CreateLiteral("abx"u8.ToArray())], 0)];
+                        [AsciiStructuralSuffixPart.CreateLiteral("abx"u8.ToArray())], 0)];
                 break;
         }
         return (new([.. instructions, AsciiStructuralLinearVerifierInstruction.Accept()]), input);
@@ -125,7 +123,7 @@ public sealed class Utf8AsciiStructuralRuntimeTests
     public void StructuralWrapperRetainsTheAlreadyExpiredDeadline()
     {
         var program = new AsciiStructuralVerifierProgram(
-            [AsciiStructuralVerifierStep.ConsumeSeparator(ASet, 1), AsciiStructuralVerifierStep.Accept()], []);
+            [AsciiStructuralVerifierStep.ConsumeSeparator(AsciiCharClass.ForByte((byte)'a'), 1), AsciiStructuralVerifierStep.Accept()]);
         var plan = new Utf8StructuralVerifierPlan(Utf8StructuralVerifierKind.AsciiStructuralProgram,
             program, default, default, null, default);
         var runtime = Utf8StructuralVerifierRuntimeFactory.Create(Utf8VerifierTestPlans.WithStructuralVerifier(plan));
@@ -156,11 +154,11 @@ public sealed class Utf8AsciiStructuralRuntimeTests
     {
         var ab = new AsciiCharClass(0, (1UL << 33) | (1UL << 34));
         var program = new AsciiStructuralLinearVerifierProgram([
-            AsciiStructuralLinearVerifierInstruction.RequireSetByte(ASet, AsciiCharClass.ForByte((byte)'a')),
-            AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(AbSet, ab, 0, int.MaxValue),
+            AsciiStructuralLinearVerifierInstruction.RequireSetByte(AsciiCharClass.ForByte((byte)'a')),
+            AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(ab, 0, int.MaxValue),
             AsciiStructuralLinearVerifierInstruction.MatchSuffixAfterTail(
-                [AsciiStructuralCompiledSuffixPart.CreateLiteral("ab"u8.ToArray()),
-                 AsciiStructuralCompiledSuffixPart.CreateLiteral("x"u8.ToArray())], 0),
+                [AsciiStructuralSuffixPart.CreateLiteral("ab"u8.ToArray()),
+                 AsciiStructuralSuffixPart.CreateLiteral("x"u8.ToArray())], 0),
             AsciiStructuralLinearVerifierInstruction.Accept()]);
         var oracle = new Regex((prefixLength == 1 ? "p" : "") + "a[ab]*abx", RegexOptions.CultureInvariant);
         foreach (var body in new[] { "", "a", "aabx", "aaabx", "ababx", "aaaby", "aaabxx", "aaabx中" })

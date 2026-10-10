@@ -38,6 +38,12 @@ internal sealed class Utf8TreeNode
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, Utf8ScalarClass scalarClass) =>
         CreatePayload(kind, options, '\0', scalarClass, 0, 0, null, null, (options & RegexOptions.IgnoreCase) != 0);
 
+    // Quantification borrows the original class, including payloads that cannot
+    // fit the temporary native wire projection. Preserve the lexical fold flag.
+    internal static Utf8TreeNode CreateSetRepeat(Utf8TreeNode atom, RegexOptions options, int minimum, int maximum, bool lazy) =>
+        CreatePayload(lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop,
+            options, '\0', atom._payload, minimum, maximum, null, null, atom.MatchCaseInsensitive);
+
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, int m, int n) =>
         Create(kind, options, '\0', null, m, n, null, null, (options & RegexOptions.IgnoreCase) != 0);
 

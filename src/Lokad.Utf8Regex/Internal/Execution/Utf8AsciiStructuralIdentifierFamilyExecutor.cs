@@ -439,8 +439,8 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
     internal static bool CanUseSuffixOnlyCountKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
     {
-        return string.IsNullOrEmpty(familyPlan.IdentifierStartSet) &&
-            familyPlan.CompiledSuffixParts.Length > 0;
+        return !familyPlan.HasIdentifier &&
+            familyPlan.SuffixParts.Length > 0;
     }
 
     internal static int CountSuffixOnlyViaPreparedSearcher(
@@ -1153,10 +1153,10 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         suffixLiteral = [];
         separatorMinCount = 0;
 
-        if (!string.IsNullOrEmpty(familyPlan.IdentifierStartSet) ||
-            familyPlan.CompiledSuffixParts.Length != 1 ||
-            !familyPlan.CompiledSuffixParts[0].IsLiteral ||
-            familyPlan.CompiledSuffixParts[0].LiteralUtf8 is not { Length: > 0 } literal ||
+        if (familyPlan.HasIdentifier ||
+            familyPlan.SuffixParts.Length != 1 ||
+            !familyPlan.SuffixParts[0].IsLiteral ||
+            familyPlan.SuffixParts[0].LiteralUtf8 is not { Length: > 0 } literal ||
             familyPlan.SeparatorCharClass.IsEmpty)
         {
             return false;
@@ -1289,19 +1289,19 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         trailingLiteral = [];
         trailingLiteralPartIndex = -1;
 
-        if (string.IsNullOrEmpty(familyPlan.IdentifierStartSet) ||
+        if (!familyPlan.HasIdentifier ||
             familyPlan.IdentifierStartCharClass.IsEmpty ||
             familyPlan.IdentifierTailCharClass.IsEmpty ||
             familyPlan.Prefixes.Length == 0 ||
-            familyPlan.CompiledSuffixParts.Length != 1 ||
-            !familyPlan.CompiledSuffixParts[^1].IsLiteral ||
-            familyPlan.CompiledSuffixParts[^1].LiteralUtf8 is not { Length: > 0 } literal)
+            familyPlan.SuffixParts.Length != 1 ||
+            !familyPlan.SuffixParts[^1].IsLiteral ||
+            familyPlan.SuffixParts[^1].LiteralUtf8 is not { Length: > 0 } literal)
         {
             return false;
         }
 
         trailingLiteral = literal;
-        trailingLiteralPartIndex = familyPlan.CompiledSuffixParts.Length - 1;
+        trailingLiteralPartIndex = familyPlan.SuffixParts.Length - 1;
         return true;
     }
 
@@ -1312,8 +1312,8 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
     private static bool CanUseIdentifierTailOnlyCountKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
     {
-        return !string.IsNullOrEmpty(familyPlan.IdentifierStartSet) &&
-            familyPlan.CompiledSuffixParts.Length == 0;
+        return familyPlan.HasIdentifier &&
+            familyPlan.SuffixParts.Length == 0;
     }
 
     internal static bool CanUseUpperWordIdentifierKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
@@ -1579,8 +1579,8 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         return familyPlan.LeadingBoundary == Utf8BoundaryRequirement.Boundary &&
             familyPlan.SeparatorCharClass.IsEmpty &&
             familyPlan.SeparatorMinCount == 0 &&
-            string.IsNullOrEmpty(familyPlan.IdentifierStartSet) &&
-            familyPlan.CompiledSuffixParts.Length == 0;
+            !familyPlan.HasIdentifier &&
+            familyPlan.SuffixParts.Length == 0;
     }
 
     private static bool MatchesLeadingBoundaryForWordPrefix(
@@ -1624,7 +1624,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         }
 
         var index = trailingLiteralStart;
-        if (!TryReverseMatchSuffixParts(input, ref index, familyPlan.CompiledSuffixParts[..trailingLiteralPartIndex]) ||
+        if (!TryReverseMatchSuffixParts(input, ref index, familyPlan.SuffixParts[..trailingLiteralPartIndex]) ||
             !TryReverseMatchIdentifierAndPrefix(input, familyPlan, ref index, out matchIndex) ||
             matchIndex < minMatchIndex)
         {
@@ -1683,7 +1683,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
     private static bool TryReverseMatchSuffixParts(
         ReadOnlySpan<byte> input,
         ref int index,
-        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts)
+        ReadOnlySpan<AsciiStructuralSuffixPart> suffixParts)
     {
         for (var i = suffixParts.Length - 1; i >= 0; i--)
         {

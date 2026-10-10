@@ -4,55 +4,6 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    private static bool TryLowerSet(string? set, bool singleline, out AsciiSimplePatternToken token)
-    {
-        if (set is null)
-        {
-            token = default;
-            return false;
-        }
-
-        // Pure doubly-negated shorthands lower as their positive category, so
-        // every downstream consumer (masks, predicates, scalar kinds) serves them
-        // exactly like the bare shorthand.
-        set = DotNetAsciiCharClassProjector.CollapseDoubleNegatedShorthand(set) ?? set;
-
-        // A dot token matches any byte including newlines, so only singleline dots lower
-        // to it; other dots become exact newline-excluding classes through the projector.
-        if (set == Utf8OwnedCharClass.AnyScalarClass || singleline && set == Utf8OwnedCharClass.NotNewLineClass)
-        {
-            token = AsciiSimplePatternToken.Dot;
-            return true;
-        }
-
-        if (DotNetAsciiCharClassProjector.TryProjectWholeClass(set, out var charClass))
-        {
-            token = new AsciiSimplePatternToken(
-                charClass,
-                DotNetAsciiCharClassProjector.RequiresAsciiInput(set),
-                set == Utf8OwnedCharClass.SpaceClass
-                    ? Utf8SimplePatternScalarClassKind.UnicodeWhitespace
-                    : singleline && set == Utf8OwnedTreeParser.SinglelineDotText
-                        ? Utf8SimplePatternScalarClassKind.SinglelineDot
-                    : DotNetAsciiCharClassProjector.IsAsciiClosedNegation(set)
-                        ? Utf8SimplePatternScalarClassKind.AsciiClosedNegation
-                        : DotNetAsciiCharClassProjector.NegatedCategoryScalarKind(set));
-            return true;
-        }
-
-        if (!DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(set, out charClass))
-        {
-            token = default;
-            return false;
-        }
-
-        token = new AsciiSimplePatternToken(
-            charClass,
-            requiresAsciiInput: true,
-            DotNetAsciiCharClassProjector.NegatedCategoryScalarKind(set));
-        return true;
-    }
-
     private static bool TryExtractCharClassRunPlan(
         AsciiSimplePatternToken[][] branches,
         bool isStartAnchored,

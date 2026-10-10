@@ -3,14 +3,14 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static partial class AsciiStructuralSuffixMatcher
 {
     internal static bool TryConsumeSetLoop(ReadOnlySpan<byte> input, ref int index,
-        string? set, AsciiCharClass charClass, int minCount,
+        AsciiCharClass? optionalClass, int minCount,
         ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
         breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return false;
-        if (string.IsNullOrEmpty(set)) return true;
+        if (optionalClass is not { } charClass) return true;
         var count = 0;
-        while ((uint)index < (uint)input.Length && MatchesSet(input[index], set, charClass))
+        while ((uint)index < (uint)input.Length && MatchesSet(input[index], charClass))
         {
             if ((count & 2047) == 0)
             {
@@ -24,7 +24,7 @@ internal static partial class AsciiStructuralSuffixMatcher
     }
 
     internal static bool TryMatch(ReadOnlySpan<byte> input, int startIndex,
-        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts,
+        ReadOnlySpan<AsciiStructuralSuffixPart> suffixParts,
         ref Utf8SliceInvocation invocation, out int endIndex, out Utf8ExecutionLimitKind breach)
     {
         endIndex = startIndex;
@@ -37,7 +37,7 @@ internal static partial class AsciiStructuralSuffixMatcher
             if (breach != Utf8ExecutionLimitKind.None) return false;
             if (part.IsSeparator)
             {
-                if (!TryConsumeSetLoop(input, ref index, part.SeparatorSet, part.SeparatorCharClass,
+                if (!TryConsumeSetLoop(input, ref index, part.SeparatorCharClass,
                     part.SeparatorMinCount, ref invocation, out breach)) return false;
                 continue;
             }
@@ -58,7 +58,7 @@ internal static partial class AsciiStructuralSuffixMatcher
     }
 
     internal static bool TryMatchAfterTail(ReadOnlySpan<byte> input, int searchStart, int tailEnd,
-        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts,
+        ReadOnlySpan<AsciiStructuralSuffixPart> suffixParts,
         ref Utf8SliceInvocation invocation, out int endIndex, out Utf8ExecutionLimitKind breach)
     {
         endIndex = tailEnd;

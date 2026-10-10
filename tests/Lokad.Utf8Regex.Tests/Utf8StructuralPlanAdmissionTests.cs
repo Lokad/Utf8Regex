@@ -20,16 +20,22 @@ public sealed class Utf8StructuralPlanAdmissionTests
     }
     private static Utf8TreeNode Text(string text) => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, text);
     private static Utf8TreeNode One(char value) => Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, value);
-    private static string Class(string pattern)
+    private static Utf8ScalarClass Class(string pattern)
     {
         var node = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant)!.Root;
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group) node = node.Child(0);
-        return node.Str!;
+        return node.ScalarClass!;
     }
     private static Utf8TreeNode Set(string pattern, int min, int max)
-        => Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Setloop, options: RegexOptions.CultureInvariant,
-            ch: '\0', str: Class(pattern), m: min, n: max,
-            children: null, parent: null, matchCaseInsensitive: (RegexOptions.CultureInvariant & RegexOptions.IgnoreCase) != 0);
+    {
+        var atom = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(pattern));
+        return Utf8TreeNode.CreateSetRepeat(atom, RegexOptions.CultureInvariant, min, max, false);
+    }
+    private static AsciiCharClass Mask(string pattern)
+    {
+        Assert.True(Utf8ScalarAsciiProjector.TryProjectStructuralClass(Class(pattern), out var mask));
+        return mask;
+    }
     private static Utf8TreeNode Repeated(Utf8TreeNode child)
     {
         var node = Node(Utf8TreeNodeKind.Loop, child); node.M = 2; node.N = 4; return node;
@@ -68,15 +74,15 @@ public sealed class Utf8StructuralPlanAdmissionTests
         if (route <= 5)
         {
             var suffix = new[] { AsciiStructuralSuffixPart.CreateLiteral("("u8.ToArray()),
-                AsciiStructuralSuffixPart.CreateSeparator(Class("[ \\t]"), 1) };
+                AsciiStructuralSuffixPart.CreateSeparator(Mask("[ \\t]"), 1) };
             var steps = new[] { AsciiStructuralVerifierStep.MatchSuffixAtCurrent(suffix), AsciiStructuralVerifierStep.Accept() };
             return route switch
             {
-                0 => new object[] { new[] { "call"u8.ToArray(), "invoke"u8.ToArray() }, Class("[ \\t]"), Class("[A-Z]"), Class("[a-z]"), suffix },
-                1 => suffix,
+                0 => new object[] { new[] { "call"u8.ToArray(), "invoke"u8.ToArray() }, Mask("[ \\t]"), Mask("[A-Z]"), Mask("[a-z]"), suffix },
+                1 => Node(Utf8TreeNodeKind.Concatenate, Text("("), Set("[ \t]", 1, int.MaxValue)),
                 2 => new AsciiStructuralIdentifierFamilyPlan(["call"u8.ToArray(), "invoke"u8.ToArray()], null, 0,
-                    string.Empty, string.Empty, 0, 0, null, suffix, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None),
-                3 or 4 => new object[] { steps, AsciiStructuralIdentifierFamilyPlan.CreateCompiledSuffixParts(suffix) },
+                    null, null, 0, 0, null, suffix, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None),
+                3 or 4 => steps,
                 _ => new object[] { "call"u8.ToArray(), "Result"u8.ToArray() },
             };
         }
@@ -99,20 +105,22 @@ public sealed class Utf8StructuralPlanAdmissionTests
             {
                 case 0:
                     var fields = (object[])input;
-                    var plan = new AsciiStructuralIdentifierFamilyPlan((byte[][])fields[0], (string)fields[1], 1,
-                        (string)fields[2], (string)fields[3], 0, 9, null, (AsciiStructuralSuffixPart[])fields[4],
+                    var plan = new AsciiStructuralIdentifierFamilyPlan((byte[][])fields[0], (AsciiCharClass)fields[1], 1,
+                        (AsciiCharClass)fields[2], (AsciiCharClass)fields[3], 0, 9, null, (AsciiStructuralSuffixPart[])fields[4],
                         Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.Boundary);
                     Assert.Equal(6, plan.VerifierProgram.Steps.Length); Assert.Equal(6, plan.VerifierProgram.LinearProgram.Instructions.Length);
                     Assert.Same(fields[0], plan.Prefixes); Assert.Same(fields[4], plan.SuffixParts); break;
-                case 1: Assert.Equal(2, AsciiStructuralIdentifierFamilyPlan.CreateCompiledSuffixParts((AsciiStructuralSuffixPart[])input).Length); break;
+                case 1:
+                    var parts = new object?[] { (Utf8TreeNode)input, 0, 1, null };
+                    Assert.True((bool)Call("TryExtractAsciiStructuralSuffixParts", parts)!);
+                    Assert.Equal(2, ((AsciiStructuralSuffixPart[])parts[3]!).Length); break;
                 case 2:
                     var original = (AsciiStructuralIdentifierFamilyPlan)input;
-                    Assert.Equal(2, AsciiStructuralVerifierProgram.Create(original, original.CompiledSuffixParts).Steps.Length); break;
+                    Assert.Equal(2, AsciiStructuralVerifierProgram.Create(original).Steps.Length); break;
                 case 3 or 4:
-                    var values = (object[])input; var steps = (AsciiStructuralVerifierStep[])values[0];
-                    var compiled = (AsciiStructuralCompiledSuffixPart[])values[1];
-                    var linear = route == 3 ? new AsciiStructuralVerifierProgram(steps, compiled).LinearProgram
-                        : AsciiStructuralLinearVerifierProgram.Create(steps, compiled);
+                    var steps = (AsciiStructuralVerifierStep[])input;
+                    var linear = route == 3 ? new AsciiStructuralVerifierProgram(steps).LinearProgram
+                        : AsciiStructuralLinearVerifierProgram.Create(steps);
                     Assert.True(linear.TryMatch("( "u8, 0, 0, out var length)); Assert.Equal(2, length); break;
                 default:
                     var bytes = (object[])input;
@@ -252,15 +260,13 @@ public sealed class Utf8StructuralPlanAdmissionTests
     {
         var literal = "("u8.ToArray(); var prefixes = new[] { "call"u8.ToArray(), "invoke"u8.ToArray() };
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var plan = new AsciiStructuralIdentifierFamilyPlan(prefixes, null, 0, string.Empty, string.Empty, 0, 0,
+        var plan = new AsciiStructuralIdentifierFamilyPlan(prefixes, null, 0, null, null, 0, 0,
             literal, null, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None);
         Assert.Same(prefixes, plan.Prefixes); Assert.Same(literal, Assert.Single(plan.SuffixParts).LiteralUtf8);
-        Assert.Same(literal, Assert.Single(plan.CompiledSuffixParts).LiteralUtf8);
         Assert.Equal(new[] { AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent, AsciiStructuralVerifierStepKind.Accept },
             plan.VerifierProgram.Steps.Select(step => step.Kind));
-        Assert.Same(plan.CompiledSuffixParts, plan.VerifierProgram.LinearProgram.Instructions[0].SuffixParts);
+        Assert.Same(plan.SuffixParts, plan.VerifierProgram.LinearProgram.Instructions[0].SuffixParts);
         var expected = Utf8ConstructionBudget.ArrayBytes<AsciiStructuralSuffixPart>(1)
-            + Utf8ConstructionBudget.ArrayBytes<AsciiStructuralCompiledSuffixPart>(1)
             + Utf8ConstructionBudget.ArrayBytes<AsciiStructuralVerifierStep>(2)
             + Utf8ConstructionBudget.ArrayBytes<AsciiStructuralLinearVerifierInstruction>(2);
         Assert.Equal(expected, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0ul, owner.Budget.Depth);

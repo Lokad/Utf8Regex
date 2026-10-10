@@ -47,7 +47,7 @@ public sealed class Utf8ByteSafeCompilerContinuationTests
             // remaining instruction graph without recursive array equality.
             if (step.Kind != Utf8ByteSafeLinearVerifierStepKind.LoopProgram || step.Min != 1 || step.Max != 1)
             {
-                yield return $"{step.Kind}:{step.Value}:{Convert.ToHexString(step.Text)}:{step.Set}:{step.Min}:{step.Max}:{step.Options}:" +
+                yield return $"{step.Kind}:{step.Value}:{Convert.ToHexString(step.Text)}:{step.CharClass.LowMask:X16}/{step.CharClass.HighMask:X16}:{step.Min}:{step.Max}:{step.Options}:" +
                     string.Join(',', step.Alternatives.Select(static value => Convert.ToHexString(value)));
                 if (step.Kind == Utf8ByteSafeLinearVerifierStepKind.LoopProgram) pending.Push((step, true));
             }

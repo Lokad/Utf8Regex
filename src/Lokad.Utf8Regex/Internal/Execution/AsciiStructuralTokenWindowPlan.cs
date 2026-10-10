@@ -5,7 +5,7 @@ internal readonly struct AsciiStructuralTokenWindowPlan
     public AsciiStructuralTokenWindowPlan(
         AsciiCharClass leadingCharClass,
         int leadingLength,
-        string separatorSet,
+        AsciiCharClass separatorCharClass,
         int separatorMinCount,
         int leadingGapMax,
         byte[] anchorLiteralUtf8,
@@ -15,7 +15,7 @@ internal readonly struct AsciiStructuralTokenWindowPlan
     {
         LeadingCharClass = leadingCharClass;
         LeadingLength = leadingLength;
-        SeparatorSet = separatorSet;
+        SeparatorCharClass = separatorCharClass;
         SeparatorMinCount = separatorMinCount;
         LeadingGapMax = leadingGapMax;
         AnchorLiteralUtf8 = anchorLiteralUtf8;
@@ -29,7 +29,7 @@ internal readonly struct AsciiStructuralTokenWindowPlan
 
     public int LeadingLength { get; }
 
-    public string SeparatorSet { get; }
+    public AsciiCharClass SeparatorCharClass { get; }
 
     public int SeparatorMinCount { get; }
 
@@ -50,12 +50,12 @@ internal readonly struct AsciiStructuralTokenWindowPlan
         !TrailingCharClass.IsEmpty &&
         LeadingLength > 0 &&
         TrailingLength > 0 &&
-        !string.IsNullOrEmpty(SeparatorSet) &&
+        !SeparatorCharClass.IsEmpty &&
         SeparatorMinCount > 0 &&
         AnchorLiteralUtf8 is { Length: > 0 };
 
     public bool MatchesSeparator(byte value)
     {
-        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, SeparatorSet);
+        return SeparatorCharClass.Contains(value);
     }
 }

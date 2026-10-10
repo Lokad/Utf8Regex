@@ -10,7 +10,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         matchedLength = 0;
         var index = matchIndex + prefixLength;
 
-        if (string.IsNullOrEmpty(plan.IdentifierStartSet) &&
+        if (!plan.HasIdentifier &&
             plan.SeparatorMinCount == 0 &&
             TryMatchSimpleSuffixOnlyFast(input, matchIndex, index, plan, out matchedLength))
         {
@@ -23,7 +23,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
             return true;
         }
 
-        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, plan.SeparatorSet, plan.SeparatorCharClass, plan.SeparatorMinCount))
+        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, (plan.HasSeparator ? (AsciiCharClass?)plan.SeparatorCharClass : null), plan.SeparatorMinCount))
         {
             return false;
         }
@@ -31,9 +31,9 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         var tailStart = -1;
         var tailEnd = -1;
 
-        if (!string.IsNullOrEmpty(plan.IdentifierStartSet))
+        if (plan.HasIdentifier)
         {
-            if ((uint)index >= (uint)input.Length || !AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierStartSet, plan.IdentifierStartCharClass))
+            if ((uint)index >= (uint)input.Length || !AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierStartCharClass))
             {
                 return false;
             }
@@ -41,7 +41,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
             index++;
             tailStart = index;
             while ((uint)index < (uint)input.Length &&
-                   AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierTailSet, plan.IdentifierTailCharClass) &&
+                   AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierTailCharClass) &&
                    index - tailStart < plan.IdentifierTailMaxCount)
             {
                 index++;
@@ -53,17 +53,17 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
                 return false;
             }
 
-            if (plan.CompiledSuffixParts.Length > 0)
+            if (plan.SuffixParts.Length > 0)
             {
-                if (!AsciiStructuralSuffixMatcher.TryMatchAfterTail(input, tailStart + plan.IdentifierTailMinCount, tailEnd, plan.CompiledSuffixParts, out index))
+                if (!AsciiStructuralSuffixMatcher.TryMatchAfterTail(input, tailStart + plan.IdentifierTailMinCount, tailEnd, plan.SuffixParts, out index))
                 {
                     return false;
                 }
             }
         }
-        else if (plan.CompiledSuffixParts.Length > 0)
+        else if (plan.SuffixParts.Length > 0)
         {
-            if (!AsciiStructuralSuffixMatcher.TryMatch(input, index, plan.CompiledSuffixParts, out index))
+            if (!AsciiStructuralSuffixMatcher.TryMatch(input, index, plan.SuffixParts, out index))
             {
                 return false;
             }
@@ -86,7 +86,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         out int matchedLength)
     {
         matchedLength = 0;
-        if (string.IsNullOrEmpty(plan.IdentifierStartSet) || plan.CompiledSuffixParts.Length != 0)
+        if (!plan.HasIdentifier || plan.SuffixParts.Length != 0)
         {
             return false;
         }
@@ -97,12 +97,12 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         }
 
         var index = matchIndex + prefixLength;
-        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, plan.SeparatorSet, plan.SeparatorCharClass, plan.SeparatorMinCount))
+        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, (plan.HasSeparator ? (AsciiCharClass?)plan.SeparatorCharClass : null), plan.SeparatorMinCount))
         {
             return false;
         }
 
-        if ((uint)index >= (uint)input.Length || !AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierStartSet, plan.IdentifierStartCharClass))
+        if ((uint)index >= (uint)input.Length || !AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierStartCharClass))
         {
             return false;
         }
@@ -110,7 +110,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         index++;
         var tailStart = index;
         while ((uint)index < (uint)input.Length &&
-               AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierTailSet, plan.IdentifierTailCharClass) &&
+               AsciiStructuralSuffixMatcher.MatchesSet(input[index], plan.IdentifierTailCharClass) &&
                index - tailStart < plan.IdentifierTailMaxCount)
         {
             index++;
@@ -141,7 +141,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         var index = afterPrefix;
 
         // Consume the family plan's separator (e.g., \s*) before the suffix parts.
-        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, plan.SeparatorSet, plan.SeparatorCharClass, plan.SeparatorMinCount))
+        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, (plan.HasSeparator ? (AsciiCharClass?)plan.SeparatorCharClass : null), plan.SeparatorMinCount))
         {
             return false;
         }
@@ -157,7 +157,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         out int matchedLength)
     {
         matchedLength = 0;
-        var parts = plan.CompiledSuffixParts;
+        var parts = plan.SuffixParts;
         if (parts.Length == 0)
         {
             if (!MatchesBoundaryRequirement(plan.TrailingBoundary, input, index))
@@ -191,7 +191,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
 
         if (parts.Length == 2 && parts[0].IsSeparator && parts[1].IsLiteral)
         {
-            if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, parts[0].SeparatorSet, parts[0].SeparatorCharClass, parts[0].SeparatorMinCount))
+            if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, parts[0].SeparatorCharClass, parts[0].SeparatorMinCount))
             {
                 return false;
             }
@@ -226,7 +226,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
     {
         matchedLength = 0;
         var index = afterPrefix;
-        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, plan.SeparatorSet, plan.SeparatorCharClass, plan.SeparatorMinCount))
+        if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, (plan.HasSeparator ? (AsciiCharClass?)plan.SeparatorCharClass : null), plan.SeparatorMinCount))
         {
             return false;
         }

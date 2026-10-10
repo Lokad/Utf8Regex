@@ -122,13 +122,11 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
         switch (step.Kind)
         {
             case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-            case Utf8ByteSafeLinearVerifierStepKind.MatchSet:
-            case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
+            case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
             case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-            case Utf8ByteSafeLinearVerifierStepKind.LoopSet:
-            case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
+            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
                 var looping = step.Kind is Utf8ByteSafeLinearVerifierStepKind.LoopByte or
-                    Utf8ByteSafeLinearVerifierStepKind.LoopSet or Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet;
+                    Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass;
                 var min = looping ? step.Min : 1;
                 var max = looping ? step.Max : 1;
                 var count = 0;
@@ -141,13 +139,12 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                     }
                     var value = input[index];
                     bool contains;
-                    if (step.Kind is Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet or Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet)
+                    if (step.Kind is Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass or Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass)
                     {
                         if (value >= 128) { fallback = true; return false; }
-                        contains = step.ProjectedAsciiCharClass.Contains(value);
+                        contains = step.CharClass.Contains(value);
                     }
-                    else contains = step.Kind is Utf8ByteSafeLinearVerifierStepKind.MatchByte or Utf8ByteSafeLinearVerifierStepKind.LoopByte
-                        ? value == step.Value : MatchesSet(value, step.Set);
+                    else contains = value == step.Value;
                     if (!contains) break;
                     index++;
                     count++;

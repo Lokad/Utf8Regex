@@ -80,8 +80,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
                     return false;
                 }
 
-                steps.Add(Utf8ByteSafeLinearVerifierStep.MatchProjectedAsciiSet(
-                    string.Empty,
+                steps.Add(Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(
                     characterClass));
                 return true;
             case Pcre2SequenceBacktrackingNode sequence:
@@ -109,8 +108,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
                 }
 
                 hasUnboundedRepeat |= repeat.Maximum == int.MaxValue;
-                steps.Add(Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet(
-                    string.Empty,
+                steps.Add(Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(
                     repeatedClass,
                     repeat.Minimum,
                     repeat.Maximum == int.MaxValue ? -1 : repeat.Maximum));

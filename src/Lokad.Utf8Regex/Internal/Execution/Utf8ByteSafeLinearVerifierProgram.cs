@@ -6,12 +6,10 @@ internal enum Utf8ByteSafeLinearVerifierStepKind : byte
 {
     MatchByte = 0,
     MatchText = 1,
-    MatchSet = 2,
-    MatchProjectedAsciiSet = 3,
+    MatchAsciiClass = 3,
     LoopByte = 4,
     LoopText = 5,
-    LoopSet = 6,
-    LoopProjectedAsciiSet = 7,
+    LoopAsciiClass = 7,
     RequireBeginning = 8,
     RequireEnd = 9,
     RequireBoundary = 10,
@@ -42,8 +40,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
     private readonly byte[]? _text;
     private readonly byte[][]? _alternatives;
     private readonly Utf8ByteSafeLinearVerifierStep[]? _program;
-    private readonly AsciiCharClass _projectedAsciiCharClass;
-    private readonly string? _set;
+    private readonly AsciiCharClass _charClass;
 
     private Utf8ByteSafeLinearVerifierStep(
         Utf8ByteSafeLinearVerifierStepKind kind,
@@ -51,8 +48,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
         byte[]? text,
         byte[][]? alternatives,
         Utf8ByteSafeLinearVerifierStep[]? program,
-        AsciiCharClass projectedAsciiCharClass,
-        string? set,
+        AsciiCharClass charClass,
         int min,
         int max,
         RegexOptions options)
@@ -62,8 +58,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
         _text = text;
         _alternatives = alternatives;
         _program = program;
-        _projectedAsciiCharClass = projectedAsciiCharClass;
-        _set = set;
+        _charClass = charClass;
         Min = min;
         Max = max;
         Options = options;
@@ -79,9 +74,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
 
     public Utf8ByteSafeLinearVerifierStep[] Program => _program ?? [];
 
-    public AsciiCharClass ProjectedAsciiCharClass => _projectedAsciiCharClass;
-
-    public string Set => _set ?? string.Empty;
+    public AsciiCharClass CharClass => _charClass;
 
     public int Min { get; }
 
@@ -93,40 +86,34 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
         : Kind == Utf8ByteSafeLinearVerifierStepKind.RequireBeginning ? Utf8ExecutionNodeKind.Bol : Utf8ExecutionNodeKind.Eol;
 
     public static Utf8ByteSafeLinearVerifierStep MatchByte(byte value) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.MatchByte, value, null, null, null, default, null, 0, 0, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.MatchByte, value, null, null, null, default, 0, 0, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep MatchText(byte[] text) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.MatchText, 0, text, null, null, default, null, 0, 0, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.MatchText, 0, text, null, null, default, 0, 0, RegexOptions.None);
 
-    public static Utf8ByteSafeLinearVerifierStep MatchSet(string set) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.MatchSet, 0, null, null, null, default, set, 0, 0, RegexOptions.None);
-
-    public static Utf8ByteSafeLinearVerifierStep MatchProjectedAsciiSet(string set, AsciiCharClass asciiCharClass) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet, 0, null, null, null, asciiCharClass, set, 0, 0, RegexOptions.None);
+    public static Utf8ByteSafeLinearVerifierStep MatchAsciiClass(AsciiCharClass asciiCharClass) =>
+        new(Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass, 0, null, null, null, asciiCharClass, 0, 0, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep LoopByte(byte value, int min, int max) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.LoopByte, value, null, null, null, default, null, min, max, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.LoopByte, value, null, null, null, default, min, max, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep LoopText(byte[] text, int min, int max) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.LoopText, 0, text, null, null, default, null, min, max, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.LoopText, 0, text, null, null, default, min, max, RegexOptions.None);
 
-    public static Utf8ByteSafeLinearVerifierStep LoopSet(string set, int min, int max) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.LoopSet, 0, null, null, null, default, set, min, max, RegexOptions.None);
-
-    public static Utf8ByteSafeLinearVerifierStep LoopProjectedAsciiSet(string set, AsciiCharClass asciiCharClass, int min, int max) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet, 0, null, null, null, asciiCharClass, set, min, max, RegexOptions.None);
+    public static Utf8ByteSafeLinearVerifierStep LoopAsciiClass(AsciiCharClass asciiCharClass, int min, int max) =>
+        new(Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass, 0, null, null, null, asciiCharClass, min, max, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep RequireBeginning(RegexOptions options) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.RequireBeginning, 0, null, null, null, default, null, 0, 0, options);
+        new(Utf8ByteSafeLinearVerifierStepKind.RequireBeginning, 0, null, null, null, default, 0, 0, options);
 
     public static Utf8ByteSafeLinearVerifierStep RequireEnd(RegexOptions options) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.RequireEnd, 0, null, null, null, default, null, 0, 0, options);
+        new(Utf8ByteSafeLinearVerifierStepKind.RequireEnd, 0, null, null, null, default, 0, 0, options);
 
     internal static Utf8ByteSafeLinearVerifierStep RequireBeginning(Utf8ExecutionNodeKind kind, RegexOptions options) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.RequireBeginning, (byte)kind, null, null, null, default, null, 0, 0, options);
+        new(Utf8ByteSafeLinearVerifierStepKind.RequireBeginning, (byte)kind, null, null, null, default, 0, 0, options);
 
     internal static Utf8ByteSafeLinearVerifierStep RequireEnd(Utf8ExecutionNodeKind kind, RegexOptions options) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.RequireEnd, (byte)kind, null, null, null, default, null, 0, 0, options);
+        new(Utf8ByteSafeLinearVerifierStepKind.RequireEnd, (byte)kind, null, null, null, default, 0, 0, options);
 
     public static Utf8ByteSafeLinearVerifierStep RequireBoundary() =>
         CreateMarker(Utf8ByteSafeLinearVerifierStepKind.RequireBoundary);
@@ -135,22 +122,22 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
         CreateMarker(Utf8ByteSafeLinearVerifierStepKind.RequireNonBoundary);
 
     public static Utf8ByteSafeLinearVerifierStep MatchAnyText(byte[][] alternatives) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.MatchAnyText, 0, null, alternatives, null, default, null, 0, 0, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.MatchAnyText, 0, null, alternatives, null, default, 0, 0, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep MatchAnyTextOptional(byte[][] alternatives) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional, 0, null, alternatives, null, default, null, 0, 0, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional, 0, null, alternatives, null, default, 0, 0, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep LoopAnyText(byte[][] alternatives, int min, int max) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.LoopAnyText, 0, null, alternatives, null, default, null, min, max, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.LoopAnyText, 0, null, alternatives, null, default, min, max, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep LoopProgram(Utf8ByteSafeLinearVerifierStep[] program, int min, int max) =>
-        new(Utf8ByteSafeLinearVerifierStepKind.LoopProgram, 0, null, null, program, default, null, min, max, RegexOptions.None);
+        new(Utf8ByteSafeLinearVerifierStepKind.LoopProgram, 0, null, null, program, default, min, max, RegexOptions.None);
 
     public static Utf8ByteSafeLinearVerifierStep Accept() =>
         CreateMarker(Utf8ByteSafeLinearVerifierStepKind.Accept);
 
     private static Utf8ByteSafeLinearVerifierStep CreateMarker(Utf8ByteSafeLinearVerifierStepKind kind) =>
-        new(kind, 0, null, null, null, default, null, 0, 0, RegexOptions.None);
+        new(kind, 0, null, null, null, default, 0, 0, RegexOptions.None);
 }
 
 internal readonly record struct Utf8ByteSafeLinearCompileOutcome(
@@ -496,8 +483,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
         {
             Utf8ByteSafeLinearVerifierStepKind.LoopByte => (step.Kind, step.Min, step.Max),
             Utf8ByteSafeLinearVerifierStepKind.LoopText => (step.Kind, step.Min, step.Max),
-            Utf8ByteSafeLinearVerifierStepKind.LoopSet => (step.Kind, step.Min, step.Max),
-            Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet => (step.Kind, step.Min, step.Max),
+            Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass => (step.Kind, step.Min, step.Max),
             Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => (step.Kind, step.Min, step.Max),
             _ => (Utf8ByteSafeLinearVerifierStepKind.Accept, 0, 0),
         };
@@ -520,10 +506,8 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                 Utf8ByteSafeLinearVerifierStep.LoopByte(step.Value, combinedMin, combinedMax),
             Utf8ByteSafeLinearVerifierStepKind.LoopText =>
                 Utf8ByteSafeLinearVerifierStep.LoopText(step.Text, combinedMin, combinedMax),
-            Utf8ByteSafeLinearVerifierStepKind.LoopSet =>
-                Utf8ByteSafeLinearVerifierStep.LoopSet(step.Set, combinedMin, combinedMax),
-            Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet =>
-                Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet(step.Set, step.ProjectedAsciiCharClass, combinedMin, combinedMax),
+            Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass =>
+                Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(step.CharClass, combinedMin, combinedMax),
             Utf8ByteSafeLinearVerifierStepKind.LoopAnyText =>
                 Utf8ByteSafeLinearVerifierStep.LoopAnyText(step.Alternatives, combinedMin, combinedMax),
             _ => default,
@@ -597,22 +581,27 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
 
     private bool TryCreateByteSafeSetStep(string runtimeSet, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
     {
-        if (TryCreateProjectedAsciiCharClass(runtimeSet, out var asciiCharClass))
+        if (TryCreateCharClass(runtimeSet, out var asciiCharClass))
         {
             // This carrier executes the ASCII intersection. Non-ASCII input
             // declines to the dispatcher; surrogate-half membership cannot
             // determine scalar loop admission or its minimum.
             step = loop
-                ? Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet(runtimeSet, asciiCharClass, min, max)
-                : Utf8ByteSafeLinearVerifierStep.MatchProjectedAsciiSet(runtimeSet, asciiCharClass);
+                ? Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(asciiCharClass, min, max)
+                : Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(asciiCharClass);
             return true;
         }
 
         if (Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(runtimeSet))
         {
+            // The old wire proof includes subtraction and its legacy all-byte
+            // sentinel. Prepare its exact ASCII intersection once, and retain
+            // the scalar dispatcher guard for every non-ASCII encounter.
+            TryBuildAsciiSetMask(runtimeSet, out var low, out var high);
+            var mask = new AsciiCharClass(low, high);
             step = loop
-                ? Utf8ByteSafeLinearVerifierStep.LoopSet(runtimeSet, min, max)
-                : Utf8ByteSafeLinearVerifierStep.MatchSet(runtimeSet);
+                ? Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(mask, min, max)
+                : Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(mask);
             return true;
         }
 
@@ -620,7 +609,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
         return false;
     }
 
-    private static bool TryCreateProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
+    private static bool TryCreateCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
     {
         return FrontEnd.DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(runtimeSet, out asciiCharClass);
     }
@@ -1047,7 +1036,7 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
             return TryBuildAsciiSetMask(set, out lowMask, out highMask);
         }
 
-        if (TryCreateProjectedAsciiCharClass(set, out var asciiCharClass))
+        if (TryCreateCharClass(set, out var asciiCharClass))
         {
             Utf8ConstructionScope.ChargeWork(1);
             lowMask = asciiCharClass.Negated ? 0 : asciiCharClass.PositiveLowMask;
@@ -1124,12 +1113,10 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
                 {
                     Utf8ByteSafeLinearVerifierStepKind.MatchByte => 1,
                     Utf8ByteSafeLinearVerifierStepKind.MatchText => step.Text.Length,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchSet => 1,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet => 1,
+                    Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass => 1,
                     Utf8ByteSafeLinearVerifierStepKind.LoopByte => step.Min,
                     Utf8ByteSafeLinearVerifierStepKind.LoopText => step.Min * step.Text.Length,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopSet => step.Min,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet => step.Min,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass => step.Min,
                     Utf8ByteSafeLinearVerifierStepKind.MatchAnyText => step.Alternatives.Min(static value => value.Length),
                     Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional => 0,
                     Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => step.Min * step.Alternatives.Min(static value => value.Length),
@@ -1143,11 +1130,6 @@ internal readonly partial struct Utf8ByteSafeLinearVerifierProgram
         return lengths[steps];
     }
 
-    }
-
-    private static bool MatchesSet(byte value, string runtimeSet)
-    {
-        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
     }
 
 }

@@ -125,9 +125,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
         var searchPlan = regexPlan.SearchPlan;
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            string.IsNullOrEmpty(familyPlan.SeparatorSet) &&
-            string.IsNullOrEmpty(familyPlan.IdentifierStartSet) &&
-            familyPlan.CompiledSuffixParts.Length == 0 &&
+            !familyPlan.HasSeparator &&
+            !familyPlan.HasIdentifier &&
+            familyPlan.SuffixParts.Length == 0 &&
             (familyPlan.LeadingBoundary != Utf8BoundaryRequirement.None ||
              familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None) &&
             searchPlan.HasPreparedSearcher &&

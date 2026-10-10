@@ -24,19 +24,20 @@ public sealed class Utf8NativeStructuralPreparationTests
         for (var index = 0; index < depth; index++) node = Node(Utf8TreeNodeKind.Capture, node);
         return node;
     }
-    private static string Class(string pattern)
+    private static Utf8ScalarClass Class(string pattern)
     {
         var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
         var node = tree.Root;
         while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group) node = node.Child(0);
-        Assert.NotNull(node.Str);
-        return node.Str;
+        Assert.NotNull(node.ScalarClass);
+        return node.ScalarClass;
     }
     private static Utf8TreeNode SetLoop(string pattern, int min, int max)
-        => Utf8TreeNode.Create(kind: Utf8TreeNodeKind.Setloop, options: RegexOptions.CultureInvariant,
-            ch: '\0', str: Class(pattern), m: min, n: max,
-            children: null, parent: null, matchCaseInsensitive: (RegexOptions.CultureInvariant & RegexOptions.IgnoreCase) != 0);
+    {
+        var atom = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Class(pattern));
+        return Utf8TreeNode.CreateSetRepeat(atom, RegexOptions.CultureInvariant, min, max, false);
+    }
     private static object? Call(string name, params object?[] args)
     {
         var method = typeof(Utf8NativeExecutionAnalyzer).GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
@@ -93,7 +94,12 @@ public sealed class Utf8NativeStructuralPreparationTests
                 Assert.Equal(")", Encoding.ASCII.GetString(parts[0].LiteralUtf8));
                 Assert.True(parts[1].IsSeparator); Assert.Equal(1, parts[1].SeparatorMinCount);
                 Assert.Equal("tail", Encoding.ASCII.GetString(parts[2].LiteralUtf8)); break;
-            case 6: Assert.NotEmpty(Assert.IsType<string>(args[1])); Assert.Equal(0, Assert.IsType<int>(args[2])); break;
+            case 6:
+                var separator = Assert.IsType<AsciiCharClass>(args[1]);
+                Assert.Equal(2, separator.Count);
+                for (var value = 0; value < 128; value++)
+                    Assert.Equal(value is ' ' or '\t', separator.Contains((byte)value));
+                Assert.Equal(0, Assert.IsType<int>(args[2])); break;
             case 7: Assert.Equal(new[] { "AKIA", "ASIA" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString)); Assert.Equal(16, Assert.IsType<int>(args[3])); break;
             case 8:
                 Assert.Equal(new[] { "call", "invoke" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.ASCII.GetString));
@@ -222,7 +228,11 @@ public sealed class Utf8NativeStructuralPreparationTests
     [InlineData(@"[^\S-[\t]]")] [InlineData(@"[\s-[\t-[\r]]]")] [InlineData(@"[^a-[^b]]")] [InlineData(@"[\p{L}-[A-Z]]")]
     public void PreparedClassQueriesAgreeOnAsciiOverlap(string pattern)
     {
-        var wire = Class(pattern); var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
+        // The remaining construction-query consumer still takes its native
+        // projection; structural plan producers above borrow canonical classes.
+        var wire = Class(pattern).NativeProjection;
+        Assert.NotNull(wire);
+        var comparator = new Regex(@"\A(?:" + pattern + @")\z", RegexOptions.CultureInvariant);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         using var query = Utf8ConstructionClass.Create(owner.Budget, wire);
         for (var value = 0; value < 128; value++) Assert.Equal(comparator.IsMatch(((char)value).ToString()), query.Contains((char)value));

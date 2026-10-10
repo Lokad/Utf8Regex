@@ -6,13 +6,12 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal readonly struct AsciiOrderedWindowSeparatorPlan
 {
-    internal AsciiOrderedWindowSeparatorPlan(string runtimeSet, int minimum, bool lazy)
+    internal AsciiOrderedWindowSeparatorPlan(AsciiCharClass charClass, int minimum, bool lazy)
     {
-        HasValue = runtimeSet.Length > 0;
+        HasValue = true;
         Minimum = minimum;
         IsLazy = lazy;
-        CharClass = AsciiStructuralIdentifierFamilyPlan.TryCreateAsciiCharClass(runtimeSet, out var projected)
-            ? projected : default;
+        CharClass = charClass;
     }
 
     internal bool HasValue { get; }

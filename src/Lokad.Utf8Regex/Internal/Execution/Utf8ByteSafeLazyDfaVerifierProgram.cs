@@ -385,27 +385,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                     }
                     break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchSet:
-                    if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var matchSet))
-                    {
-                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
-                        program = default;
-                        return false;
-                    }
-
-                    stateIndex = AppendDeterministicTransition(
-                        step,
-                        matchSet,
-                        stateIndex,
-                        accepting,
-                        transitionOffsets,
-                        transitionCounts,
-                        transitionSets,
-                            transitionTargets);
-                    break;
-
-                case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedMatchSet))
+                case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedMatchSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         program = default;
@@ -456,30 +437,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                     }
                     break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopSet when step.Min == step.Max:
-                    if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var loopSet))
-                    {
-                        _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
-                        program = default;
-                        return false;
-                    }
-
-                    for (var i = 0; i < step.Min; i++)
-                    {
-                        stateIndex = AppendDeterministicTransition(
-                            step,
-                            loopSet,
-                            stateIndex,
-                            accepting,
-                            transitionOffsets,
-                            transitionCounts,
-                            transitionSets,
-                            transitionTargets);
-                    }
-                    break;
-
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet when step.Min == step.Max:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedLoopSet))
+                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass when step.Min == step.Max:
+                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         program = default;
@@ -500,10 +459,10 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                     }
                     break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet when
+                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass when
                     step.Min == 0 &&
                     IsOpenEndedLoop(step.Max) &&
-                    AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var leadingProjectedLoopSet) &&
+                    AsciiCharClass.TryUseNonEmpty(step.CharClass, out var leadingProjectedLoopSet) &&
                     TryGetFirstDeterministicTransitionSet(steps, stepIndex + 1, out var followingSet) &&
                     leadingProjectedLoopSet.IsDisjoint(followingSet):
                     AddDeterministicTransition(
@@ -683,11 +642,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                 set = AsciiCharClass.ForByte(step.Value);
                 return true;
 
-            case Utf8ByteSafeLinearVerifierStepKind.LoopSet:
-                return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                if (AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set))
+            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                if (AsciiCharClass.TryUseNonEmpty(step.CharClass, out set))
                 {
                     return true;
                 }
@@ -726,21 +682,15 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                         set = AsciiCharClass.ForByte(text[0]);
                         return true;
 
-                    case Utf8ByteSafeLinearVerifierStepKind.MatchSet when step.Set is not null:
-                        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
-
-                    case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                        return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                        return AsciiCharClass.TryUseNonEmpty(step.CharClass, out set);
 
                     case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
                         set = AsciiCharClass.ForByte(step.Value);
                         return true;
 
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopSet when step.Set is not null:
-                        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
-
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                        return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
+                    case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                        return AsciiCharClass.TryUseNonEmpty(step.CharClass, out set);
 
                     case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
                         step.Min == 0 &&
@@ -825,8 +775,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                     }
                     break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedMatchSet))
+                case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedMatchSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         return false;
@@ -843,8 +793,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                         transitionTargets);
                     break;
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedLoopSet))
+                case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                    if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         return false;
@@ -933,11 +883,11 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             case Utf8ByteSafeLinearVerifierStepKind.MatchText:
                 return true;
 
-            case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                return !step.ProjectedAsciiCharClass.IsEmpty;
+            case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                return !step.CharClass.IsEmpty;
 
-            case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                return !step.ProjectedAsciiCharClass.IsEmpty &&
+            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                return !step.CharClass.IsEmpty &&
                     ((step.Min == 0 && step.Max == 1) || IsOpenEndedLoop(step.Max));
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
@@ -1188,18 +1138,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                 }
                 return true;
 
-            case Utf8ByteSafeLinearVerifierStepKind.MatchSet:
-                if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var matchSet))
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
-                    return false;
-                }
-
-                current = AppendSet(states, current, matchSet);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedSet))
+            case Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass:
+                if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedSet))
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                     return false;
@@ -1217,18 +1157,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                 current = AppendLoop(states, current, step.Text.Select(static value => AsciiCharClass.ForByte(value)).ToArray(), step.Min, step.Max);
                 return true;
 
-            case Utf8ByteSafeLinearVerifierStepKind.LoopSet:
-                if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var loopSet))
-                {
-                    _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
-                    return false;
-                }
-
-                current = AppendLoop(states, current, loopSet, 1, step.Min, step.Max);
-                return true;
-
-            case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedLoopSet))
+            case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
+                if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                     return false;
@@ -1463,7 +1393,6 @@ internal enum Utf8ByteSafeLazyDfaCompileFailureKind : byte
     UnsupportedDeterministicStep = 5,
     UnsupportedStep = 6,
     UnsupportedSubProgram = 7,
-    UnsupportedRuntimeSet = 8,
     UnsupportedProjectedAsciiSet = 9,
     UnsupportedAnchoring = 10,
     StateBudgetExceeded = 11,

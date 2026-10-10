@@ -154,7 +154,7 @@ internal static class Utf8ScalarSimplePatternVerifier
     // A class verifies on scalars exactly when the walk below can evaluate it:
     // plain ASCII classes, ASCII-closed negations, whitespace, decimal digits,
     // word chars, and negated known categories (each complemented through its
-    // table). Anything else keeps BCL routing.
+    // table). Anything else uses the cached scalar program.
     private static bool IsScalarVerifiableClass(AsciiSimplePatternToken token)
     {
         if (!token.RequiresAsciiInput)
@@ -166,8 +166,7 @@ internal static class Utf8ScalarSimplePatternVerifier
             Utf8SimplePatternScalarClassKind.UnicodeWhitespace or
             Utf8SimplePatternScalarClassKind.NegatedDigit or
             Utf8SimplePatternScalarClassKind.NegatedWord or
-            Utf8SimplePatternScalarClassKind.NegatedWhitespace or
-            Utf8SimplePatternScalarClassKind.SinglelineDot)
+            Utf8SimplePatternScalarClassKind.NegatedWhitespace)
         {
             return true;
         }
@@ -341,10 +340,6 @@ internal static class Utf8ScalarSimplePatternVerifier
                 if (scalar < 0x80)
                 {
                     matches = token.CharClass.Contains((byte)scalar);
-                }
-                else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.SinglelineDot)
-                {
-                    matches = true;
                 }
                 else if (token.ScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace)
                 {

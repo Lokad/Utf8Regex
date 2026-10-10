@@ -11,17 +11,16 @@ internal static partial class AsciiStructuralSuffixMatcher
     public static bool TryConsumeSetLoop(
         ReadOnlySpan<byte> input,
         ref int index,
-        string? set,
-        AsciiCharClass charClass,
+        AsciiCharClass? optionalClass,
         int minCount)
     {
-        if (string.IsNullOrEmpty(set))
+        if (optionalClass is not { } charClass)
         {
             return true;
         }
 
         var count = 0;
-        while ((uint)index < (uint)input.Length && MatchesSet(input[index], set, charClass))
+        while ((uint)index < (uint)input.Length && MatchesSet(input[index], charClass))
         {
             index++;
             count++;
@@ -33,7 +32,7 @@ internal static partial class AsciiStructuralSuffixMatcher
     public static bool TryMatch(
         ReadOnlySpan<byte> input,
         int startIndex,
-        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts,
+        ReadOnlySpan<AsciiStructuralSuffixPart> suffixParts,
         out int endIndex)
     {
         endIndex = startIndex;
@@ -44,7 +43,7 @@ internal static partial class AsciiStructuralSuffixMatcher
             var part = suffixParts[i];
             if (part.IsSeparator)
             {
-                if (!TryConsumeSetLoop(input, ref index, part.SeparatorSet, part.SeparatorCharClass, part.SeparatorMinCount))
+                if (!TryConsumeSetLoop(input, ref index, part.SeparatorCharClass, part.SeparatorMinCount))
                 {
                     return false;
                 }
@@ -71,7 +70,7 @@ internal static partial class AsciiStructuralSuffixMatcher
         ReadOnlySpan<byte> input,
         int searchStart,
         int tailEnd,
-        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts,
+        ReadOnlySpan<AsciiStructuralSuffixPart> suffixParts,
         out int endIndex)
     {
         endIndex = tailEnd;
@@ -106,10 +105,5 @@ internal static partial class AsciiStructuralSuffixMatcher
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool MatchesSet(byte value, string runtimeSet, AsciiCharClass charClass)
-    {
-        return !charClass.IsEmpty
-            ? charClass.Contains(value)
-            : value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet);
-    }
+    public static bool MatchesSet(byte value, AsciiCharClass charClass) => charClass.Contains(value);
 }

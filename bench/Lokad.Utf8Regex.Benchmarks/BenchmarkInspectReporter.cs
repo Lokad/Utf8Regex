@@ -4839,8 +4839,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
         Console.WriteLine($"PreparedKind      : {searchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"LeadingBoundary   : {plan.LeadingBoundary}");
-        Console.WriteLine($"SeparatorSet      : {plan.SeparatorSet ?? "<none>"}");
-        Console.WriteLine($"IdentifierStart   : {plan.IdentifierStartSet ?? "<none>"}");
+        Console.WriteLine($"Separator bytes  : {(plan.HasSeparator ? plan.SeparatorCharClass.Count.ToString() : "<none>")}");
+        Console.WriteLine($"Identifier bytes : {(plan.HasIdentifier ? plan.IdentifierStartCharClass.Count.ToString() : "<none>")}");
         Console.WriteLine($"IdentifierTailMin : {plan.IdentifierTailMinCount}");
         Console.WriteLine($"IdentifierTailMax : {plan.IdentifierTailMaxCount}");
 
@@ -5587,12 +5587,10 @@ internal static partial class BenchmarkInspectReporter
         {
             Utf8ByteSafeLinearVerifierStepKind.MatchByte => $"MatchByte '{(char)step.Value}'",
             Utf8ByteSafeLinearVerifierStepKind.MatchText => $"MatchText \"{Encoding.UTF8.GetString(step.Text!)}\"",
-            Utf8ByteSafeLinearVerifierStepKind.MatchSet => $"MatchSet {FormatOpaqueText(step.Set)}",
-            Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet => $"MatchProjectedAsciiSet {FormatOpaqueText(step.Set)}",
+            Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass => $"MatchAsciiClass ascii-bytes={step.CharClass.Count}",
             Utf8ByteSafeLinearVerifierStepKind.LoopByte => $"LoopByte '{(char)step.Value}' min={step.Min} max={FormatMax(step.Max)}",
             Utf8ByteSafeLinearVerifierStepKind.LoopText => $"LoopText \"{Encoding.UTF8.GetString(step.Text!)}\" min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.LoopSet => $"LoopSet {FormatOpaqueText(step.Set)} min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet => $"LoopProjectedAsciiSet {FormatOpaqueText(step.Set)} min={step.Min} max={FormatMax(step.Max)}",
+            Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass => $"LoopAsciiClass ascii-bytes={step.CharClass.Count} min={step.Min} max={FormatMax(step.Max)}",
             Utf8ByteSafeLinearVerifierStepKind.RequireBeginning => "RequireBeginning",
             Utf8ByteSafeLinearVerifierStepKind.RequireEnd => "RequireEnd",
             Utf8ByteSafeLinearVerifierStepKind.RequireBoundary => "RequireBoundary",

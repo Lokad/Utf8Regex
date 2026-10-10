@@ -67,22 +67,75 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     }
 
     [Fact]
-    public void DotNetProjectionOwnsRegexCharClassDecoding()
+    public void ScalarProjectionReadsCanonicalClassData()
     {
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(Utf8OwnedCharClass.DigitClass, out var digits));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(Utf8OwnedCharClass.SpaceClass, out var spaces));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(Utf8OwnedCharClass.SpaceClass, out _));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(Utf8OwnedCharClass.ECMASpaceClass, out var ecmaSpaces));
-        Assert.False(DotNetAsciiCharClassProjector.TryProjectWholeClass(Utf8OwnedCharClass.DigitClass, out _));
-        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(Utf8OwnedCharClass.SpaceClass));
-        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(Utf8OwnedCharClass.DigitClass));
-        Assert.False(DotNetAsciiCharClassProjector.RequiresAsciiInput(Utf8OwnedCharClass.ECMASpaceClass));
+        var digits = ProjectToken(@"\d", RegexOptions.None);
+        var spaces = ProjectToken(@"\s", RegexOptions.None);
+        var ecmaSpaces = ProjectToken(@"\s", RegexOptions.ECMAScript);
+        Assert.True(spaces.RequiresAsciiInput);
+        Assert.True(digits.RequiresAsciiInput);
+        Assert.False(ecmaSpaces.RequiresAsciiInput);
+        Assert.Equal(Utf8SimplePatternScalarClassKind.UnicodeWhitespace, spaces.ScalarClassKind);
+        Assert.Equal(Utf8SimplePatternScalarClassKind.None, ecmaSpaces.ScalarClassKind);
 
         for (var value = 0; value < 128; value++)
         {
-            Assert.Equal(value is >= '0' and <= '9', digits.Contains((byte)value));
-            Assert.Equal(Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value), spaces.Contains((byte)value));
-            Assert.Equal(spaces.Contains((byte)value), ecmaSpaces.Contains((byte)value));
+            Assert.Equal(value is >= '0' and <= '9', digits.CharClass.Contains((byte)value));
+            Assert.Equal(Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value), spaces.CharClass.Contains((byte)value));
+            Assert.Equal(spaces.CharClass.Contains((byte)value), ecmaSpaces.CharClass.Contains((byte)value));
+        }
+    }
+
+    [Fact]
+    public void ScalarProjectionPreservesMixedShorthandExclusions()
+    {
+        var digitsWithoutZero = ProjectToken(@"[^\D0]", RegexOptions.None);
+        var wordsWithoutUnderscore = ProjectToken(@"[^\W_]", RegexOptions.None);
+        var spacesWithoutSpace = ProjectToken(@"[^\S ]", RegexOptions.None);
+        var notNewline = ProjectToken(@"[^\n]", RegexOptions.Singleline);
+        var dot = ProjectToken(".", RegexOptions.Singleline);
+        Assert.Equal(AsciiSimplePatternTokenKind.Dot, dot.Kind);
+        Assert.Equal(AsciiSimplePatternTokenKind.CharClass, notNewline.Kind);
+        for (var value = 0; value < 128; value++)
+        {
+            Assert.Equal(value is >= '1' and <= '9', digitsWithoutZero.CharClass.Contains((byte)value));
+            Assert.Equal(char.IsAsciiLetterOrDigit((char)value), wordsWithoutUnderscore.CharClass.Contains((byte)value));
+            Assert.Equal(value is >= '\t' and <= '\r', spacesWithoutSpace.CharClass.Contains((byte)value));
+            Assert.Equal(value != '\n', notNewline.CharClass.Contains((byte)value));
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void ProjectedClassesKeepExplicitScalarOutcomes(bool compiled, bool rtl)
+    {
+        var options = RegexOptions.CultureInvariant | RegexOptions.Singleline |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None) | (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
+        var input = "0a1\u0660\U000104a0\U0001f600\n_"u8.ToArray();
+        (string Pattern, (int, int)[] Ranges, string Replaced)[] cases =
+        [
+            (@"[^\D0]", [(2, 1), (3, 2), (5, 4)], "0aQQQ\U0001f600\n_"),
+            (@"[^\W_]", [(0, 1), (1, 1), (2, 1), (3, 2), (5, 4)], "QQQQQ\U0001f600\n_"),
+            (@"[^\S ]", [(13, 1)], "0a1\u0660\U000104a0\U0001f600Q_"),
+            (@"[^\n]", [(0, 1), (1, 1), (2, 1), (3, 2), (5, 4), (9, 4), (14, 1)], "QQQQQQ\nQ"),
+        ];
+        foreach (var value in cases)
+        {
+            var regex = new Utf8Regex(value.Pattern, options);
+            var expected = value.Ranges.ToArray();
+            if (rtl) Array.Reverse(expected);
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(expected.Length, regex.Count(input));
+            var actual = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(expected, actual);
+            var first = regex.Match(input);
+            Assert.Equal(expected[0], (first.IndexInBytes, first.LengthInBytes));
+            var detailed = regex.MatchDetailed(input);
+            Assert.Equal(expected[0], (detailed.IndexInBytes, detailed.LengthInBytes));
+            Assert.Equal(value.Replaced, regex.ReplaceToString(input, "Q"));
+            Assert.Equal(Encoding.UTF8.GetBytes(value.Replaced), regex.Replace(input, "Q"u8));
         }
     }
 
@@ -146,8 +199,10 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     public void ProjectionAndFixedDistanceMembershipHaveSingleOwners()
     {
         var root = FindRepositoryRoot();
-        var projector = File.ReadAllText(Path.Combine(root, "src", "Lokad.Utf8Regex", "Internal", "FrontEnd", "DotNetAsciiCharClassProjector.cs"));
-        Assert.Contains("Utf8OwnedCharClass", projector, StringComparison.Ordinal);
+        var projector = File.ReadAllText(Path.Combine(root, "src", "Lokad.Utf8Regex", "Internal", "FrontEnd", "Utf8ScalarAsciiProjector.cs"));
+        Assert.Contains("scalarClass.Data.AsSpan()", projector, StringComparison.Ordinal);
+        Assert.DoesNotContain("Utf8OwnedCharClass", projector, StringComparison.Ordinal);
+        Assert.DoesNotContain("NativeProjection", projector, StringComparison.Ordinal);
 
         var formerProjectors = new[]
         {
@@ -169,6 +224,16 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     private static void AssertBoundary(byte[] utf8, int byteOffset, int utf16Offset, HashSet<int> boundaries)
     {
         Assert.Equal(boundaries.Contains(utf16Offset), Utf8ScalarWordBoundary.IsBoundary(utf8, byteOffset));
+    }
+
+    private static AsciiSimplePatternToken ProjectToken(string pattern, RegexOptions options)
+    {
+        var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
+        Assert.NotNull(tree);
+        var scalarClass = tree.Root.Child(0).ScalarClass;
+        Assert.NotNull(scalarClass);
+        Assert.True(Utf8ScalarAsciiProjector.TryCreateToken(scalarClass, out var token));
+        return token;
     }
 
     private static string FindRepositoryRoot()

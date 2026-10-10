@@ -479,22 +479,17 @@ internal static class Utf8NativeExecutionAnalyzer
         if (body.Kind != Utf8TreeNodeKind.Concatenate ||
             body.ChildCount != 4 ||
             body.Child(0).Kind is not Utf8TreeNodeKind.Beginning and not Utf8TreeNodeKind.Start ||
-            !TryGetExactAsciiSetAtom(body.Child(1), out var headSet, out var headLength) ||
+            !TryGetExactAsciiSetAtom(body.Child(1), out var headCharClass, out var headLength) ||
             headLength != 1 ||
             !TryGetSetLoop(body.Child(2), out var tailSetNode, out var tailMin, out var tailMax) ||
-            tailSetNode.Str is not { } tailSet ||
+            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(tailSetNode.ScalarClass, out var tailCharClass) ||
             tailMax != int.MaxValue ||
-            !Utf8OwnedCharClass.IsAscii(tailSet) ||
             body.Child(3).Kind is not Utf8TreeNodeKind.EndZ and not Utf8TreeNodeKind.End)
         {
             return false;
         }
 
-        if (!TryCreateAsciiCharClass(headSet, out var headCharClass) ||
-            !TryCreateAsciiCharClass(tailSet, out var tailCharClass))
-        {
-            return false;
-        }
+
 
         var simplePatternPlan = new AsciiSimplePatternPlan(
             [],
@@ -1104,10 +1099,10 @@ internal static class Utf8NativeExecutionAnalyzer
     private static bool TryExtractAsciiStructuralIdentifierFamily(
         Utf8TreeNode node,
         out byte[][] prefixes,
-        out string? separatorSet,
+        out AsciiCharClass? separatorSet,
         out int separatorMinCount,
-        out string identifierStartSet,
-        out string identifierTailSet,
+        out AsciiCharClass? identifierStartSet,
+        out AsciiCharClass? identifierTailSet,
         out int identifierTailMinCount,
         out int identifierTailMaxCount,
         out byte[]? suffixUtf8,
@@ -1118,8 +1113,8 @@ internal static class Utf8NativeExecutionAnalyzer
         prefixes = [];
         separatorSet = null;
         separatorMinCount = 0;
-        identifierStartSet = string.Empty;
-        identifierTailSet = string.Empty;
+        identifierStartSet = null;
+        identifierTailSet = null;
         identifierTailMinCount = 0;
         identifierTailMaxCount = 0;
         suffixUtf8 = null;
@@ -1268,10 +1263,10 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static void ResetAsciiStructuralIdentifierFamilyExtraction(
         out byte[][] prefixes,
-        out string? separatorSet,
+        out AsciiCharClass? separatorSet,
         out int separatorMinCount,
-        out string identifierStartSet,
-        out string identifierTailSet,
+        out AsciiCharClass? identifierStartSet,
+        out AsciiCharClass? identifierTailSet,
         out int identifierTailMinCount,
         out int identifierTailMaxCount,
         out byte[]? suffixUtf8,
@@ -1282,8 +1277,8 @@ internal static class Utf8NativeExecutionAnalyzer
         prefixes = [];
         separatorSet = null;
         separatorMinCount = 0;
-        identifierStartSet = string.Empty;
-        identifierTailSet = string.Empty;
+        identifierStartSet = null;
+        identifierTailSet = null;
         identifierTailMinCount = 0;
         identifierTailMaxCount = 0;
         suffixUtf8 = null;
@@ -1334,17 +1329,15 @@ internal static class Utf8NativeExecutionAnalyzer
             node = UnwrapRuntimeNode(node, frames);
             if (node.Kind != Utf8TreeNodeKind.Concatenate ||
                 node.ChildCount != 7 ||
-                !TryGetExactAsciiSetLoop(node.Child(0), out var leadingSet, out var leadingLength) ||
+                !TryGetExactAsciiSetLoop(node.Child(0), out var leadingCharClass, out var leadingLength) ||
                 !TryGetIdentifierSeparatorLoop(node.Child(1), out var separatorSet, out var separatorMinCount) ||
                 !TryGetBoundedAnyTextLoop(node.Child(2), out var leadingGapMax, out _) ||
                 !TryGetAsciiLiteral(node.Child(3), out var anchorLiteralUtf8) ||
                 !TryGetBoundedAnyTextLoop(node.Child(4), out var trailingGapMax, out _) ||
                 !TryGetIdentifierSeparatorLoop(node.Child(5), out var trailingSeparatorSet, out var trailingSeparatorMinCount) ||
-                !TryGetExactAsciiSetLoop(node.Child(6), out var trailingSet, out var trailingLength) ||
+                !TryGetExactAsciiSetLoop(node.Child(6), out var trailingCharClass, out var trailingLength) ||
                 separatorSet != trailingSeparatorSet ||
-                separatorMinCount != trailingSeparatorMinCount ||
-                !TryCreateAsciiCharClass(leadingSet, out var leadingCharClass) ||
-                !TryCreateAsciiCharClass(trailingSet, out var trailingCharClass))
+                separatorMinCount != trailingSeparatorMinCount)
             {
                 return false;
             }
@@ -1944,20 +1937,16 @@ internal static class Utf8NativeExecutionAnalyzer
             var segment = UnwrapRuntimeNode(node.Child(0), frames);
             if (segment.Kind != Utf8TreeNodeKind.Concatenate ||
                 segment.ChildCount != 3 ||
-                !TryGetExactAsciiSetAtom(segment.Child(0), out var leadingSet, out var leadingLength) ||
+                !TryGetExactAsciiSetAtom(segment.Child(0), out var leadingCharClass, out var leadingLength) ||
                 leadingLength != 1 ||
                 !TryGetSetLoop(segment.Child(1), out var trailingSetNode, out var trailingMin, out var trailingMax) ||
-                trailingSetNode.Str is null ||
                 trailingMin <= 0 ||
                 trailingMax != int.MaxValue ||
-                !Utf8OwnedCharClass.IsAscii(trailingSetNode.Str) ||
+                !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(trailingSetNode.ScalarClass, out var trailingCharClass) ||
                 !TryGetSetLoop(segment.Child(2), out var separatorSetNode, out var separatorMin, out var separatorMax) ||
-                separatorSetNode.Str is null ||
                 separatorMin < 0 ||
                 separatorMax != int.MaxValue ||
-                !TryCreateAsciiCharClass(leadingSet, out var leadingCharClass) ||
-                !TryCreateAsciiCharClass(trailingSetNode.Str, out var trailingCharClass) ||
-                !TryGetAsciiSeparatorSet(separatorSetNode.Str, out var separatorSet))
+                !TryGetAsciiSeparatorSet(separatorSetNode.ScalarClass, out var separatorSet))
             {
                 return false;
             }
@@ -1997,15 +1986,13 @@ internal static class Utf8NativeExecutionAnalyzer
 
             if (node.Kind != Utf8TreeNodeKind.Alternate ||
                 node.ChildCount != 2 ||
-                !TryExtractAsciiStructuralQuotedRelationBranch(node.Child(0), out var firstBranch, out var firstPrefixes, out var firstTailSet, out var firstTailLength, out var firstRunSet, out var firstRunLength) ||
+                !TryExtractAsciiStructuralQuotedRelationBranch(node.Child(0), out var firstBranch, out var firstPrefixes, out var prefixedTailClass, out var firstTailLength, out var quotedRunClass, out var firstRunLength) ||
                 !TryExtractAsciiStructuralQuotedRelationBranch(node.Child(1), out var secondBranch, out var secondPrefixes, out var secondTailSet, out var secondTailLength, out var secondRunSet, out var secondRunLength) ||
                 !PrefixesEqual(firstPrefixes, secondPrefixes) ||
-                firstTailSet != secondTailSet ||
+                prefixedTailClass != secondTailSet ||
                 firstTailLength != secondTailLength ||
-                firstRunSet != secondRunSet ||
-                firstRunLength != secondRunLength ||
-                !TryCreateAsciiCharClass(firstTailSet, out var prefixedTailClass) ||
-                !TryCreateAsciiCharClass(firstRunSet, out var quotedRunClass))
+                quotedRunClass != secondRunSet ||
+                firstRunLength != secondRunLength)
             {
                 return false;
             }
@@ -2027,9 +2014,9 @@ internal static class Utf8NativeExecutionAnalyzer
         Utf8TreeNode node,
         out AsciiStructuralQuotedRelationBranchPlan branch,
         out byte[][] prefixesUtf8,
-        out string prefixedTailSet,
+        out AsciiCharClass prefixedTailSet,
         out int prefixedTailLength,
-        out string quotedRunSet,
+        out AsciiCharClass quotedRunSet,
         out int quotedRunLength)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -2040,9 +2027,9 @@ internal static class Utf8NativeExecutionAnalyzer
             using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
             branch = default;
             prefixesUtf8 = [];
-            prefixedTailSet = string.Empty;
+            prefixedTailSet = default;
             prefixedTailLength = 0;
-            quotedRunSet = string.Empty;
+            quotedRunSet = default;
             quotedRunLength = 0;
 
             node = UnwrapRuntimeNode(node, frames);
@@ -2120,9 +2107,9 @@ internal static class Utf8NativeExecutionAnalyzer
         out AsciiStructuralQuotedOperandKind kind,
         out bool allowRepeat,
         out byte[][] prefixesUtf8,
-        out string prefixedTailSet,
+        out AsciiCharClass prefixedTailSet,
         out int prefixedTailLength,
-        out string quotedRunSet,
+        out AsciiCharClass quotedRunSet,
         out int quotedRunLength)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -2132,8 +2119,8 @@ internal static class Utf8NativeExecutionAnalyzer
             owner.ChargeWork(1);
             using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(concatenateNode, 0, false));
             consumeCount = 0; kind = AsciiStructuralQuotedOperandKind.None;
-            allowRepeat = false; prefixesUtf8 = []; prefixedTailSet = string.Empty;
-            prefixedTailLength = 0; quotedRunSet = string.Empty; quotedRunLength = 0;
+            allowRepeat = false; prefixesUtf8 = []; prefixedTailSet = default;
+            prefixedTailLength = 0; quotedRunSet = default; quotedRunLength = 0;
 
             var singleIndex = fromStart ? 0 : concatenateNode.ChildCount - 1;
             if (TryExtractQuotedRelationOperand(concatenateNode.Child(singleIndex),
@@ -2211,17 +2198,17 @@ internal static class Utf8NativeExecutionAnalyzer
         out AsciiStructuralQuotedOperandKind kind,
         out bool allowRepeat,
         out byte[][] prefixesUtf8,
-        out string prefixedTailSet,
+        out AsciiCharClass prefixedTailSet,
         out int prefixedTailLength,
-        out string quotedRunSet,
+        out AsciiCharClass quotedRunSet,
         out int quotedRunLength)
     {
         kind = AsciiStructuralQuotedOperandKind.None;
         allowRepeat = false;
         prefixesUtf8 = [];
-        prefixedTailSet = string.Empty;
+        prefixedTailSet = default;
         prefixedTailLength = 0;
-        quotedRunSet = string.Empty;
+        quotedRunSet = default;
         quotedRunLength = 0;
 
         node = UnwrapRuntimeNode(node);
@@ -2242,11 +2229,11 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryExtractQuotedAsciiRunWithOptionalRepeat(
         Utf8TreeNode node,
-        out string runtimeSet,
+        out AsciiCharClass runtimeSet,
         out int runLength,
         out bool allowRepeat)
     {
-        runtimeSet = string.Empty;
+        runtimeSet = default;
         runLength = 0;
         allowRepeat = false;
         node = UnwrapRuntimeNode(node);
@@ -2266,11 +2253,11 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryExtractQuotedAsciiRun(
         Utf8TreeNode node,
-        out string runtimeSet,
+        out AsciiCharClass runtimeSet,
         out int runLength)
     {
         node = UnwrapRuntimeNode(node);
-        runtimeSet = string.Empty;
+        runtimeSet = default;
         runLength = 0;
         return node.Kind == Utf8TreeNodeKind.Concatenate &&
             node.ChildCount == 3 &&
@@ -2282,11 +2269,11 @@ internal static class Utf8NativeExecutionAnalyzer
     private static bool TryExtractQuotedPrefixedAsciiRun(
         Utf8TreeNode node,
         out byte[][] prefixesUtf8,
-        out string prefixedTailSet,
+        out AsciiCharClass prefixedTailSet,
         out int prefixedTailLength)
     {
         prefixesUtf8 = [];
-        prefixedTailSet = string.Empty;
+        prefixedTailSet = default;
         prefixedTailLength = 0;
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
@@ -2311,9 +2298,9 @@ internal static class Utf8NativeExecutionAnalyzer
     }
 
     private static bool TryExtractPrefixedAsciiRunBody(Utf8TreeNode body,
-        out byte[][] prefixesUtf8, out string prefixedTailSet, out int prefixedTailLength)
+        out byte[][] prefixesUtf8, out AsciiCharClass prefixedTailSet, out int prefixedTailLength)
     {
-        prefixesUtf8 = []; prefixedTailSet = string.Empty; prefixedTailLength = 0;
+        prefixesUtf8 = []; prefixedTailSet = default; prefixedTailLength = 0;
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
         using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(body, 0, false));
@@ -2329,7 +2316,7 @@ internal static class Utf8NativeExecutionAnalyzer
             !TryGetExactAsciiSetLoop(body.Child(1), out prefixedTailSet, out prefixedTailLength))
         {
             prefixesUtf8 = [];
-            prefixedTailSet = string.Empty;
+            prefixedTailSet = default;
             prefixedTailLength = 0;
             return false;
         }
@@ -2424,25 +2411,23 @@ internal static class Utf8NativeExecutionAnalyzer
         return true;
     }
 
-    private static bool TryGetAsciiSeparatorSet(string runtimeSet, out string separatorSet)
+    private static bool TryGetAsciiSeparatorSet(Utf8ScalarClass? scalarClass, out AsciiCharClass separatorSet)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)runtimeSet.Length);
-        separatorSet = string.Empty;
-        if (runtimeSet == Utf8OwnedCharClass.SpaceClass ||
-            runtimeSet == Utf8OwnedCharClass.ECMASpaceClass)
-        {
-            separatorSet = runtimeSet;
-            return true;
-        }
+        return Utf8ScalarAsciiProjector.TryProjectStructuralClass(scalarClass, out separatorSet) &&
+            IsAsciiWhitespaceOnlyMask(separatorSet);
+    }
 
-        if (Utf8OwnedCharClass.IsAscii(runtimeSet) &&
-            IsAsciiWhitespaceOnlySet(runtimeSet))
+    private static bool IsAsciiWhitespaceOnlyMask(AsciiCharClass charClass)
+    {
+        var sawMatch = false;
+        for (var value = 0; value < 128; value++)
         {
-            separatorSet = runtimeSet;
-            return true;
+            Utf8ConstructionScope.ChargeWork(1);
+            if (!charClass.Contains((byte)value)) continue;
+            sawMatch = true;
+            if (!Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value)) return false;
         }
-
-        return false;
+        return sawMatch;
     }
 
     private static bool TryExtractAsciiStructuralSuffixParts(
@@ -2471,42 +2456,30 @@ internal static class Utf8NativeExecutionAnalyzer
         suffixParts = parts.Take(); construction.Complete(); return true;
     }
 
-    private static bool TryGetAsciiSet(Utf8TreeNode node, out string runtimeSet)
+    private static bool TryGetAsciiSet(Utf8TreeNode node, out AsciiCharClass? runtimeSet)
     {
-        runtimeSet = string.Empty;
+        runtimeSet = null;
         if (node.Kind != Utf8TreeNodeKind.Set ||
-            node.Str is null ||
-            !Utf8OwnedCharClass.IsAscii(node.Str))
-        {
-            return false;
-        }
-
-        runtimeSet = node.Str;
+            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var charClass)) return false;
+        runtimeSet = charClass;
         return true;
     }
 
-    private static bool TryGetAsciiBoundedSetLoop(Utf8TreeNode node, out string runtimeSet, out int minCount, out int maxCount)
+    private static bool TryGetAsciiBoundedSetLoop(Utf8TreeNode node, out AsciiCharClass? runtimeSet, out int minCount, out int maxCount)
     {
         node = UnwrapRuntimeNode(node);
-        runtimeSet = string.Empty;
-        minCount = 0;
-        maxCount = 0;
+        runtimeSet = null; minCount = 0; maxCount = 0;
         if (node.Kind != Utf8TreeNodeKind.Setloop ||
-            node.Str is null ||
-            !Utf8OwnedCharClass.IsAscii(node.Str))
-        {
-            return false;
-        }
-
-        runtimeSet = node.Str;
+            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var charClass)) return false;
+        runtimeSet = charClass;
         minCount = Math.Max(node.M - 1, 0);
         maxCount = Math.Max(node.N - 1, 0);
         return true;
     }
 
-    private static bool TryGetIdentifierSeparatorLoop(Utf8TreeNode node, out string runtimeSet, out int minCount)
+    private static bool TryGetIdentifierSeparatorLoop(Utf8TreeNode node, out AsciiCharClass runtimeSet, out int minCount)
     {
-        runtimeSet = string.Empty; minCount = 0;
+        runtimeSet = default; minCount = 0;
         using var construction = Utf8ConstructionScope.Enter();
         var owner = construction.Budget;
         using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
@@ -2529,9 +2502,8 @@ internal static class Utf8NativeExecutionAnalyzer
             if (node.Kind != Utf8TreeNodeKind.Set) return false;
         }
         else if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)) return false;
-        if (min < 0 || max != int.MaxValue || node.Str is not { } set) return false;
-        owner.ChargeWork((ulong)set.Length);
-        if (!TryGetAsciiSeparatorSet(set, out var separatorSet)) return false;
+        if (min < 0 || max != int.MaxValue ||
+            !TryGetAsciiSeparatorSet(node.ScalarClass, out var separatorSet)) return false;
         runtimeSet = separatorSet; minCount = min; return true;
     }
 
@@ -2582,40 +2554,26 @@ internal static class Utf8NativeExecutionAnalyzer
         literalUtf8 = bytes; construction.Complete(); return true;
     }
 
-    private static bool TryGetExactAsciiSetLoop(Utf8TreeNode node, out string runtimeSet, out int length)
+    private static bool TryGetExactAsciiSetLoop(Utf8TreeNode node, out AsciiCharClass runtimeSet, out int length)
     {
         node = UnwrapRuntimeNode(node);
-        runtimeSet = string.Empty;
-        length = 0;
-        if (!TryGetSetLoop(node, out var setNode, out var min, out var max) ||
-            setNode.Str is null ||
-            min <= 0 ||
-            min != max ||
-            !Utf8OwnedCharClass.IsAscii(setNode.Str))
-        {
-            return false;
-        }
-
-        runtimeSet = setNode.Str;
+        runtimeSet = default; length = 0;
+        if (!TryGetSetLoop(node, out var setNode, out var min, out var max) || min <= 0 || min != max ||
+            !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(setNode.ScalarClass, out runtimeSet)) return false;
         length = min;
         return true;
     }
 
-    private static bool TryGetExactAsciiSetAtom(Utf8TreeNode node, out string runtimeSet, out int length)
+    private static bool TryGetExactAsciiSetAtom(Utf8TreeNode node, out AsciiCharClass runtimeSet, out int length)
     {
         node = UnwrapRuntimeNode(node);
-        runtimeSet = string.Empty;
-        length = 0;
-
+        runtimeSet = default; length = 0;
         if (node.Kind == Utf8TreeNodeKind.Set &&
-            node.Str is { } set &&
-            Utf8OwnedCharClass.IsAscii(set))
+            Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out runtimeSet))
         {
-            runtimeSet = set;
             length = 1;
             return true;
         }
-
         return TryGetExactAsciiSetLoop(node, out runtimeSet, out length);
     }
 
@@ -2811,10 +2769,7 @@ internal static class Utf8NativeExecutionAnalyzer
         return sawNewLine;
     }
 
-    private static bool TryCreateAsciiCharClass(string runtimeSet, out AsciiCharClass charClass)
-    {
-        return DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
-    }
+
 
     private static byte[] GetShortestLiteral(byte[][] literals)
     {

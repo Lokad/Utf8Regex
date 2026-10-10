@@ -145,9 +145,9 @@ public sealed class Utf8LinearRuntimeContinuationTests
             1 => Utf8ByteSafeLinearVerifierStep.LoopByte((byte)'a', 1, -1),
             2 => Utf8ByteSafeLinearVerifierStep.MatchAnyText([input]),
             3 => Utf8ByteSafeLinearVerifierStep.LoopText("a"u8.ToArray(), 1, -1),
-            4 => Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet("", AsciiCharClass.ForByte((byte)'a'), 1, -1),
+            4 => Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 1, -1),
             5 => Utf8ByteSafeLinearVerifierStep.LoopAnyText(["a"u8.ToArray()], 1, -1),
-            _ => Utf8ByteSafeLinearVerifierStep.LoopSet(Utf8OwnedCharClass.AnyClass, 1, -1),
+            _ => Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(new AsciiCharClass(ulong.MaxValue, ulong.MaxValue), 1, -1),
         };
         var program = new Utf8ByteSafeLinearVerifierProgram([step, Utf8ByteSafeLinearVerifierStep.Accept()]);
         using var source = new CancellationTokenSource();
@@ -212,10 +212,13 @@ public sealed class Utf8LinearRuntimeContinuationTests
     [InlineData(16385)]
     public void ProjectedUnicodeFallbackPropagatesAcrossEveryOptionalParent(int depth)
     {
-        Utf8ByteSafeLinearVerifierStep[] body = [Utf8ByteSafeLinearVerifierStep.MatchProjectedAsciiSet("", AsciiCharClass.ForByte((byte)'a'))];
+        Utf8ByteSafeLinearVerifierStep[] body = [Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(AsciiCharClass.ForByte((byte)'a'))];
         for (var index = 0; index < depth; index++) body = [Utf8ByteSafeLinearVerifierStep.LoopProgram(body, 0, 1)];
         var program = new Utf8ByteSafeLinearVerifierProgram([.. body, Utf8ByteSafeLinearVerifierStep.Accept()]);
         Assert.False(program.TryMatch("é"u8, 0, out var length, out var fallback));
+        Assert.Equal(0, length);
+        Assert.True(fallback);
+        Assert.False(program.TryMatch("😀"u8, 0, out length, out fallback));
         Assert.Equal(0, length);
         Assert.True(fallback);
         Assert.True(program.TryMatch("a"u8, 0, out length, out fallback));

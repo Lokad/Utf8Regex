@@ -43,6 +43,28 @@ public sealed class EngineDependencyInventoryTests
         foreach (var constructor in typeof(Utf8MatchContext).GetConstructors(flags))
             Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string[]));
 
+        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution.AsciiStructuralCompiledSuffixPart"));
+        foreach (var name in new[] { "AsciiStructuralIdentifierFamilyPlan", "AsciiStructuralTokenWindowPlan",
+            "AsciiStructuralRepeatedSegmentPlan", "AsciiStructuralSuffixPart", "AsciiStructuralVerifierStep",
+            "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction", "Utf8ByteSafeLinearVerifierStep" })
+        {
+            var type = assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name)!;
+            Assert.DoesNotContain(type.GetFields(flags), field => field.FieldType == typeof(string));
+            Assert.DoesNotContain(type.GetProperties(flags), property => property.Name is "SeparatorSet" or
+                "IdentifierStartSet" or "IdentifierTailSet" or "CompiledSuffixParts");
+            foreach (var constructor in type.GetConstructors(flags))
+                Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string));
+        }
+
+        var linearStep = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ByteSafeLinearVerifierStep")!;
+        Assert.Null(linearStep.GetProperty("Set", flags));
+        Assert.Null(linearStep.GetProperty("ProjectedAsciiCharClass", flags));
+        Assert.DoesNotContain(linearStep.GetMethods(flags), method => method.Name is "MatchSet" or "LoopSet" or
+            "MatchProjectedAsciiSet" or "LoopProjectedAsciiSet");
+        var linearKinds = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ByteSafeLinearVerifierStepKind")!;
+        Assert.DoesNotContain(Enum.GetNames(linearKinds), name => name is "MatchSet" or "LoopSet" or
+            "MatchProjectedAsciiSet" or "LoopProjectedAsciiSet");
+
         static bool RetainsEngine(Type type) => type == typeof(Regex) || type == typeof(Match) || type == typeof(Group) || type == typeof(Capture) ||
             type.HasElementType && RetainsEngine(type.GetElementType()!) ||
             type.IsGenericType && type.GetGenericArguments().Any(RetainsEngine);

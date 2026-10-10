@@ -30,7 +30,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
         Assert.NotNull(analysis.ExecutionTree);
         var outcome = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree);
         Assert.True(outcome.Succeeded);
-        Assert.Contains(outcome.Program.Steps, static step => step.Kind == Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet);
+        Assert.Contains(outcome.Program.Steps, static step => step.Kind == Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass);
         foreach (var body in new[] { "", "?", "??", "???" })
         {
             var input = Encoding.UTF8.GetBytes(shape == 2 ? "a" + body + "7" : body);

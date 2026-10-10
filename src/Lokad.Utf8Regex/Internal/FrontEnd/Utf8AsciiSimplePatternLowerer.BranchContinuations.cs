@@ -61,7 +61,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                             {
                                 if (!TryLowerLiteral(node.Ch, out token)) return false;
                             }
-                            else if (!TryLowerSet(node.Str, (node.Options & RegexOptions.Singleline) != 0, out token)) return false;
+                            else if (!Utf8ScalarAsciiProjector.TryCreateToken(node.ScalarClass, out token)) return false;
                             result = [new([token], [], false, false, false, false)];
                             if ((node.Kind is Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Setloop) &&
                                 !TryExpandFiniteRepeat(result, node.M, node.N, budget, out result)) return false;

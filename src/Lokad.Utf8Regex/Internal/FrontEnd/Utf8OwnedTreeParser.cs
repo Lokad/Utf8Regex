@@ -3330,9 +3330,7 @@ internal static class Utf8OwnedTreeParser
 
             if (atom.Kind == Utf8TreeNodeKind.Set)
             {
-                return Utf8TreeNode.Create(kind: lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop, options: state.Options & ~RegexOptions.IgnoreCase,
-                    ch: '\0', str: atom.Str, m: minimum, n: maximum,
-                    children: null, parent: null, matchCaseInsensitive: atom.MatchCaseInsensitive);
+                return Utf8TreeNode.CreateSetRepeat(atom, state.Options & ~RegexOptions.IgnoreCase, minimum, maximum, lazy);
             }
 
             // Loop wrappers carry the atom options, not the site options: a directly

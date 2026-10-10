@@ -3,8 +3,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>
-/// The sole projection boundary from the owned character-class wire encoding
-/// to the flavor-neutral ASCII byte-set carrier.
+/// Temporary wire projection for the remaining native structural consumers.
+/// Simple patterns derive their tokens directly from canonical scalar data.
 /// </summary>
 internal static class DotNetAsciiCharClassProjector
 {
@@ -86,114 +86,6 @@ internal static class DotNetAsciiCharClassProjector
 
         byteSet = new AsciiCharClass(low, high, Utf8OwnedCharClass.IsNegated(runtimeSet));
         return true;
-    }
-
-    // R05: scalar verification accepts negations whose positive definition is
-    // ASCII-only (matching every non-ASCII scalar). Canonical descriptors carry
-    // an empty category payload exactly then, so anything payload-carrying keeps
-    // BCL routing unless the negated-category mapping below names its table.
-    internal static bool IsAsciiClosedNegation(string? runtimeSet)
-    {
-        return runtimeSet is not null &&
-            Utf8OwnedCharClass.IsNegated(runtimeSet) &&
-            TryGetCategoryPayload(runtimeSet, out var categoryPayload) &&
-            categoryPayload.Length == 0;
-    }
-
-    // R05: pure doubly-negated shorthands ([^\D], [^\W], [^\S]) denote their
-    // positive category, so rewrite to the positive descriptor and let the
-    // existing predicate arms serve them. Mixed payloads keep BCL routing.
-    internal static string? CollapseDoubleNegatedShorthand(string? runtimeSet)
-    {
-        if (runtimeSet is null ||
-            !Utf8OwnedCharClass.IsNegated(runtimeSet) ||
-            !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
-        {
-            return null;
-        }
-
-        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotDigitClass))
-        {
-            return Utf8OwnedCharClass.DigitClass;
-        }
-
-        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotWordClass))
-        {
-            return Utf8OwnedCharClass.WordClass;
-        }
-
-        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotSpaceClass))
-        {
-            return Utf8OwnedCharClass.SpaceClass;
-        }
-
-        return null;
-    }
-
-    // R05: negated shorthands complement exactly through their table on non-ASCII
-    // scalars, so the token records which table. Bare complements carry the
-    // negated canonical payload without the set flag; plain negations carry the
-    // positive payload under it. ASCII exclusions mixed into the set are
-    // irrelevant beyond ASCII. Doubly-negated and mixed payloads keep BCL routing.
-    internal static Utf8SimplePatternScalarClassKind NegatedCategoryScalarKind(string? runtimeSet)
-    {
-        if (runtimeSet is null ||
-            !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
-        {
-            return Utf8SimplePatternScalarClassKind.None;
-        }
-
-        if (!Utf8OwnedCharClass.IsNegated(runtimeSet))
-        {
-            if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotDigitClass))
-            {
-                return Utf8SimplePatternScalarClassKind.NegatedDigit;
-            }
-
-            if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotWordClass))
-            {
-                return Utf8SimplePatternScalarClassKind.NegatedWord;
-            }
-
-            if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotSpaceClass))
-            {
-                return Utf8SimplePatternScalarClassKind.NegatedWhitespace;
-            }
-
-            return Utf8SimplePatternScalarClassKind.None;
-        }
-
-        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.DigitClass))
-        {
-            return Utf8SimplePatternScalarClassKind.NegatedDigit;
-        }
-
-        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.WordClass))
-        {
-            return Utf8SimplePatternScalarClassKind.NegatedWord;
-        }
-
-        // The whitespace shorthand code is probe-observed verbatim (see the parser
-        // constants); the SpaceClass descriptor carries it in set ranges instead.
-        if (categoryPayload == "d")
-        {
-            return Utf8SimplePatternScalarClassKind.NegatedWhitespace;
-        }
-
-        return Utf8SimplePatternScalarClassKind.None;
-    }
-
-    public static bool RequiresAsciiInput(string? runtimeSet)
-    {
-        if (runtimeSet == Utf8OwnedCharClass.AnyClass ||
-            (runtimeSet is not null && Utf8OwnedCharClass.IsNegated(runtimeSet)))
-        {
-            return true;
-        }
-
-        return runtimeSet is not null &&
-            TryGetCategoryPayload(runtimeSet, out var categoryPayload) &&
-            IsKnownProjectedCategory(categoryPayload);
     }
 
     private static AsciiCharClass CreateFromRuntimeSet(string runtimeSet)

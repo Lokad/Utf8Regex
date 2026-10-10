@@ -3094,17 +3094,29 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void StructuralIdentifierFamilyVerifierSharesCompiledSuffixParts()
+    public void StructuralIdentifierFamilyVerifierSharesCanonicalSuffixParts()
     {
-        // PLAN.md D05: the linear verifier shares the owning plan compiled array.
+        // The owning plan, verifier steps and linear instructions share one canonical suffix array.
         var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
         var plan = regex.Inspection.StructuralIdentifierFamilyPlan;
 
-        Assert.NotEmpty(plan.CompiledSuffixParts);
+        Assert.NotEmpty(plan.SuffixParts);
         var suffixInstruction = plan.VerifierProgram.LinearProgram.Instructions.First(
             static instruction => instruction.SuffixParts.Length > 0);
-        Assert.Same(plan.CompiledSuffixParts, suffixInstruction.SuffixParts);
+        Assert.Same(plan.SuffixParts, suffixInstruction.SuffixParts);
+        Assert.Same(plan.SuffixParts, plan.VerifierProgram.Steps.First(static step => step.SuffixParts.Length > 0).SuffixParts);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("prefix TryGetCustomerAsync suffix")));
+        // An absent identifier and a present empty ASCII intersection carry
+        // different grammar. The latter must reject the prefix-only subject.
+        var absent = new AsciiStructuralIdentifierFamilyPlan(plan.Prefixes, null, 0, null, null,
+            0, 0, null, [], Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None);
+        var empty = new AsciiStructuralIdentifierFamilyPlan(plan.Prefixes, null, 0, AsciiCharClass.Empty, AsciiCharClass.Empty,
+            0, 0, null, [], Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None);
+        Assert.False(absent.HasIdentifier);
+        Assert.True(empty.HasIdentifier);
+        Assert.True(absent.VerifierProgram.TryMatch("Get"u8, 0, 3, out var length));
+        Assert.Equal(3, length);
+        Assert.False(empty.VerifierProgram.TryMatch("Get"u8, 0, 3, out _));
     }
 
 }

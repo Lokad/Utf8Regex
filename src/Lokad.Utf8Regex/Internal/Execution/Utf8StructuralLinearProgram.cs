@@ -298,7 +298,7 @@ internal readonly struct Utf8StructuralLinearInstruction
         AsciiCharClass secondaryCharClass,
         int secondaryMinCount,
         int auxiliaryMinCount,
-        string set)
+        AsciiCharClass set)
     {
         Kind = kind;
         Literal = literal;
@@ -327,19 +327,19 @@ internal readonly struct Utf8StructuralLinearInstruction
 
     public int AuxiliaryMinCount { get; }
 
-    public string Set { get; }
+    public AsciiCharClass Set { get; }
 
     public static Utf8StructuralLinearInstruction CreateLiteral(byte literal) =>
-        new(Utf8StructuralLinearInstructionKind.Literal, literal, default, 0, 0, default, 0, 0, string.Empty);
+        new(Utf8StructuralLinearInstructionKind.Literal, literal, default, 0, 0, default, 0, 0, default);
 
     public static Utf8StructuralLinearInstruction CreateAnyByte() =>
         CreateMarker(Utf8StructuralLinearInstructionKind.AnyByte);
 
     public static Utf8StructuralLinearInstruction CreateCharClass(AsciiCharClass charClass) =>
-        new(Utf8StructuralLinearInstructionKind.CharClass, 0, charClass, 0, 0, default, 0, 0, string.Empty);
+        new(Utf8StructuralLinearInstructionKind.CharClass, 0, charClass, 0, 0, default, 0, 0, default);
 
     public static Utf8StructuralLinearInstruction CreateRunCharClass(AsciiCharClass charClass, int minCount, int maxCount) =>
-        new(Utf8StructuralLinearInstructionKind.RunCharClass, 0, charClass, minCount, maxCount, default, 0, 0, string.Empty);
+        new(Utf8StructuralLinearInstructionKind.RunCharClass, 0, charClass, minCount, maxCount, default, 0, 0, default);
 
     public static Utf8StructuralLinearInstruction CreateRepeatedSegment(
         AsciiCharClass charClass,
@@ -348,7 +348,7 @@ internal readonly struct Utf8StructuralLinearInstruction
         AsciiCharClass secondaryCharClass,
         int secondaryMinCount,
         int auxiliaryMinCount,
-        string set) =>
+        AsciiCharClass set) =>
         new(
             Utf8StructuralLinearInstructionKind.RepeatedSegment,
             0,
@@ -376,7 +376,7 @@ internal readonly struct Utf8StructuralLinearInstruction
         CreateMarker(Utf8StructuralLinearInstructionKind.Accept);
 
     private static Utf8StructuralLinearInstruction CreateMarker(Utf8StructuralLinearInstructionKind kind) =>
-        new(kind, 0, default, 0, 0, default, 0, 0, string.Empty);
+        new(kind, 0, default, 0, 0, default, 0, 0, default);
 }
 
 internal readonly struct Utf8StructuralLinearInstructionProgram
@@ -519,7 +519,7 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
                     repeatedSegmentPlan.TrailingCharClass,
                     repeatedSegmentPlan.TrailingMinCount,
                     repeatedSegmentPlan.SeparatorMinCount,
-                    repeatedSegmentPlan.SeparatorSet),
+                    repeatedSegmentPlan.SeparatorCharClass),
                 Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             default,
@@ -1782,7 +1782,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
                 case Utf8StructuralLinearInstructionKind.RepeatedSegment when
                     !instruction.CharClass.IsEmpty &&
                     !instruction.SecondaryCharClass.IsEmpty &&
-                    !string.IsNullOrEmpty(instruction.Set):
+                    !instruction.Set.IsEmpty:
                 {
                     var segments = 0;
                     while (segments < instruction.MaxCount &&
@@ -2028,7 +2028,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
         AsciiCharClass trailingCharClass,
         int trailingMinCount,
         int separatorMinCount,
-        string separatorSet,
+        AsciiCharClass separatorSet,
         out int separatorCount)
     {
         separatorCount = 0;
@@ -2060,9 +2060,9 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
         return separatorCount >= separatorMinCount;
     }
 
-    private static bool MatchesSet(byte value, string runtimeSet)
+    private static bool MatchesSet(byte value, AsciiCharClass runtimeSet)
     {
-        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet);
+        return runtimeSet.Contains(value);
     }
 
     private static bool TryMatchTokenWindowAt(ReadOnlySpan<byte> input, AsciiStructuralTokenWindowPlan plan, int startIndex, out int matchedLength)

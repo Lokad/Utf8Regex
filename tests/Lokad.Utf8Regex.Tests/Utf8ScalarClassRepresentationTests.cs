@@ -168,6 +168,46 @@ public sealed class Utf8ScalarClassRepresentationTests
         Assert.Null(node.Str);
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(4, 4), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
         Assert.NotNull(Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.CultureInvariant));
+        foreach (var lazy in new[] { false, true })
+        {
+            var repeat = Utf8TreeNode.CreateSetRepeat(node, node.Options, 2, 3, lazy);
+            Assert.Same(node.ScalarClass, repeat.ScalarClass);
+            Assert.Null(repeat.Str);
+            Assert.Equal(node.MatchCaseInsensitive, repeat.MatchCaseInsensitive);
+            Assert.Equal(lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop, repeat.Kind);
+            Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(8, 12), Utf8OwnedFindOptimizations.ComputeByteWidth(repeat));
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void DirectLargeClassQuantificationKeepsItsScalarPayload(bool compiled, bool rtl)
+    {
+        var options = Options(compiled, rtl);
+        var input = "x\U0001f600\U00010400y"u8.ToArray();
+        var atom = "[" + SparseMembers + "]";
+        foreach (var suffix in new[] { "{2}", "{2}?", "+", "+?" })
+        {
+            var regex = new Utf8Regex("(?<x>" + atom + suffix + ")", options);
+            // The lazy unbounded repeat gives one complete scalar per match.
+            var singles = suffix == "+?";
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(singles ? 2 : 1, regex.Count(input));
+            var expected = singles ? new[] { (1, 4), (5, 4) } : new[] { (1, 8) };
+            if (rtl) Array.Reverse(expected);
+            var actual = new List<(int, int)>();
+            foreach (var value in regex.EnumerateMatches(input)) actual.Add((value.IndexInBytes, value.LengthInBytes));
+            Assert.Equal(expected, actual);
+            var match = regex.MatchDetailed(input);
+            Assert.True(match.Success);
+            Assert.Equal(expected[0], (match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(expected[0], (match.GetGroup("x").IndexInBytes, match.GetGroup("x").LengthInBytes));
+            var replaced = singles ? "x<\U0001f600><\U00010400>y" : "x<\U0001f600\U00010400>y";
+            Assert.Equal(replaced, regex.ReplaceToString(input, "<${x}>"));
+            Assert.False(regex.IsMatch("\U0001f601\U0001f601"u8));
+            AssertOwned(regex);
+        }
     }
 
     private static RegexOptions Options(bool compiled, bool rtl) => RegexOptions.CultureInvariant |
