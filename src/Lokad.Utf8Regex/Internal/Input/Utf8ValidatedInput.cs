@@ -5,21 +5,19 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 /// <summary>
 /// Operation-local authority that a complete subject is well-formed UTF-8.
-/// Projection state and decoded text are materialized only when requested.
+/// Derived coordinate projection state is materialized only when requested.
 /// </summary>
 internal ref struct Utf8ValidatedInput
 {
     private readonly ReadOnlySpan<byte> _bytes;
     private readonly Utf8ValidationResult _validation;
     private Utf8BoundaryMap? _boundaryMap;
-    private string? _decoded;
 
     private Utf8ValidatedInput(ReadOnlySpan<byte> bytes, Utf8ValidationResult validation)
     {
         _bytes = bytes;
         _validation = validation;
         _boundaryMap = null;
-        _decoded = null;
     }
 
     public ReadOnlySpan<byte> Bytes => _bytes;
@@ -104,12 +102,6 @@ internal ref struct Utf8ValidatedInput
     {
         _boundaryMap ??= Utf8BoundaryMap.Create(_bytes, _validation);
         return _boundaryMap.Value;
-    }
-
-    public string GetDecodedString()
-    {
-        _decoded ??= Encoding.UTF8.GetString(_bytes);
-        return _decoded;
     }
 
     public Utf8ProjectionCursor CreateProjectionCursor() => new(_bytes, _validation);

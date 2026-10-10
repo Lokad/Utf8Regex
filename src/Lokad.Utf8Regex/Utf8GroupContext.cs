@@ -6,8 +6,6 @@ namespace Lokad.Utf8Regex;
 public readonly ref struct Utf8GroupContext
 {
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string? _decoded;
-    private readonly Group? _group;
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly bool _ownedHasValue;
     private readonly int _ownedIndex;
@@ -15,18 +13,9 @@ public readonly ref struct Utf8GroupContext
     private readonly int[]? _ownedCaptureStarts;
     private readonly int[]? _ownedCaptureLengths;
 
-    internal Utf8GroupContext(ReadOnlySpan<byte> input, string? decoded, Group? group, Utf8BoundaryMap boundaryMap)
+    internal Utf8GroupContext(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
     {
         _input = input;
-        _decoded = decoded;
-        _group = group;
-        _boundaryMap = boundaryMap;
-    }
-
-    internal Utf8GroupContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
-    {
-        _input = input;
-        _decoded = decoded;
         _boundaryMap = boundaryMap;
         _ownedHasValue = true;
         _ownedIndex = indexInUtf16;
@@ -35,49 +24,37 @@ public readonly ref struct Utf8GroupContext
 
     internal Utf8GroupContext(
         ReadOnlySpan<byte> input,
-        string? decoded,
         Utf8BoundaryMap boundaryMap,
         int indexInUtf16,
         int lengthInUtf16,
         int[] captureStarts,
         int[] captureLengths)
-        : this(input, decoded, boundaryMap, indexInUtf16, lengthInUtf16)
+        : this(input, boundaryMap, indexInUtf16, lengthInUtf16)
     {
         _ownedCaptureStarts = captureStarts;
         _ownedCaptureLengths = captureLengths;
     }
 
     /// <summary>Gets whether the group participated in the match.</summary>
-    public bool Success => _group?.Success ?? _ownedHasValue;
+    public bool Success => _ownedHasValue;
 
     /// <summary>Gets the successful group's start as a zero-based UTF-16 code-unit offset, or zero otherwise.</summary>
-    public int IndexInUtf16 => _group is { Success: true } group ? group.Index : (_ownedHasValue ? _ownedIndex : 0);
+    public int IndexInUtf16 => _ownedHasValue ? _ownedIndex : 0;
 
     /// <summary>Gets the successful group's length in UTF-16 code units, or zero otherwise.</summary>
-    public int LengthInUtf16 => _group is { Success: true } group ? group.Length : (_ownedHasValue ? _ownedLength : 0);
+    public int LengthInUtf16 => _ownedHasValue ? _ownedLength : 0;
 
     /// <summary>Gets the number of captures retained for the group.</summary>
-    public int CaptureCount => _group?.Captures.Count ?? _ownedCaptureStarts?.Length ?? (_ownedHasValue ? 1 : 0);
+    public int CaptureCount => _ownedCaptureStarts?.Length ?? (_ownedHasValue ? 1 : 0);
 
     /// <summary>Gets whether both group boundaries map to UTF-8 scalar boundaries.</summary>
     public bool IsByteAligned
     {
         get
         {
-            if (_group is null)
-            {
-                if (_ownedHasValue)
-                {
-                    var ownedStart = ResolveBoundary(_ownedIndex);
-                    var ownedEnd = ResolveBoundary(_ownedIndex + _ownedLength);
-                    return ownedStart.IsScalarBoundary && ownedEnd.IsScalarBoundary;
-                }
-
-                return true;
-            }
-
-            var start = ResolveBoundary(_group.Index);
-            var end = ResolveBoundary(_group.Index + _group.Length);
+            if (!_ownedHasValue) return true;
+            var start = ResolveBoundary(_ownedIndex);
+            var end = ResolveBoundary(_ownedIndex + _ownedLength);
             return start.IsScalarBoundary && end.IsScalarBoundary;
         }
     }
@@ -140,7 +117,7 @@ public readonly ref struct Utf8GroupContext
     /// <summary>Gets the group value as a UTF-16 string, or an empty string when the group is absent.</summary>
     public string GetValueString()
     {
-        return _group?.Value ?? (_ownedHasValue ? (_decoded is { } decoded ? decoded.Substring(_ownedIndex, _ownedLength) : Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes))) : string.Empty);
+        return _ownedHasValue ? Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes)) : string.Empty;
     }
 
     /// <summary>Gets a capture by its zero-based index within this group.</summary>
@@ -148,63 +125,35 @@ public readonly ref struct Utf8GroupContext
     public Utf8CaptureContext GetCapture(int index)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
-        if (_group is null)
+
+        if (_ownedCaptureStarts is { } starts && _ownedCaptureLengths is { } lengths)
         {
-            if (_ownedCaptureStarts is { } starts && _ownedCaptureLengths is { } lengths)
-            {
-                if ((uint)index >= (uint)starts.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-
-                return new Utf8CaptureContext(_input, _decoded, _boundaryMap, starts[index], lengths[index]);
-            }
-
-            if (!_ownedHasValue || index > 0)
+            if ((uint)index >= (uint)starts.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            return new Utf8CaptureContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+            return new Utf8CaptureContext(_input, _boundaryMap, starts[index], lengths[index]);
         }
 
-        if (index >= _group.Captures.Count)
+        if (!_ownedHasValue || index > 0)
         {
             throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        return new Utf8CaptureContext(_input, _decoded, _group.Captures[index], _boundaryMap);
+        return new Utf8CaptureContext(_input, _boundaryMap, _ownedIndex, _ownedLength);
     }
 
     private int GetIndexInBytes()
     {
-        // R05: unmatched groups project empty at zero without touching boundaries,
-        // mirroring the BCL-backed route instead of throwing NullReferenceException.
-        if (_group is null && !_ownedHasValue)
-        {
-            return 0;
-        }
-
-        return ResolveBoundary(_group?.Index ?? (_ownedHasValue ? _ownedIndex : 0)).ByteOffset;
+        return _ownedHasValue ? ResolveBoundary(_ownedIndex).ByteOffset : 0;
     }
 
     private int GetLengthInBytes()
     {
-        var group = _group;
-        if (group is null)
-        {
-            if (!_ownedHasValue)
-            {
-                return 0;
-            }
-
-            var ownedStart = ResolveBoundary(_ownedIndex).ByteOffset;
-            var ownedEnd = ResolveBoundary(_ownedIndex + _ownedLength).ByteOffset;
-            return ownedEnd - ownedStart;
-        }
-
-        var start = ResolveBoundary(group.Index).ByteOffset;
-        var end = ResolveBoundary(group.Index + group.Length).ByteOffset;
+        if (!_ownedHasValue) return 0;
+        var start = ResolveBoundary(_ownedIndex).ByteOffset;
+        var end = ResolveBoundary(_ownedIndex + _ownedLength).ByteOffset;
         return end - start;
     }
 

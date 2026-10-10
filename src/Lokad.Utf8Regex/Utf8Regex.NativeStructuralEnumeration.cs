@@ -18,15 +18,14 @@ public sealed partial class Utf8Regex
             // The unlimited family cursor replaces BCL global discovery as well.
             // Values retain their existing cheap unmetered kernels.
             if (!TryStartNativeStructuralInvocation(input, token, family, out var invocation, out var validation)) return false;
-            // Mixed subjects require UTF-16 gap widths and Unicode separator
-            // semantics. Preserve this invocation through the existing unit VM;
-            // admission and entry work stay in the same aggregate invocation.
+            // Mixed subjects require scalar gap widths and Unicode separator
+            // semantics. Preserve the same invocation through the scalar VM.
             var native = validation.IsAscii && (!family ||
                 !_preparedRegex.StructuralIdentifierFamilyPlan.HasPrefixOverlap &&
                 !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap);
             var cursor = native
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation)
-                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram ?? throw new InvalidOperationException("A structural unit program is required."),
+                : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram,
                     input, validation, ref invocation, false, out _);
             enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
             return true;

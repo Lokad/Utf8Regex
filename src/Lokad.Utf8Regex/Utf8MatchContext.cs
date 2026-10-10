@@ -1,19 +1,16 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
+
 namespace Lokad.Utf8Regex;
 
-/// <summary>Provides a stack-only match view with UTF-16 and original UTF-8 projections.</summary>
+/// <summary>Provides a stack-only match view over original UTF-8 input, with derived UTF-16 coordinates.</summary>
 /// <remarks>The view and any spans obtained from it must not outlive the input supplied to the matching operation.</remarks>
 public readonly ref struct Utf8MatchContext
 {
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string? _decoded;
-    private readonly Match? _match;
     private readonly Utf8BoundaryMap _boundaryMap;
-    private readonly string[]? _groupNames;
     private readonly Utf8CaptureCatalog? _captureCatalog;
     private readonly bool _ownedHasValue;
-    private readonly bool _denseNumericNames;
     private readonly int _ownedGroupCount;
     private readonly int[]? _ownedGroupStarts;
     private readonly int[]? _ownedGroupLengths;
@@ -22,58 +19,35 @@ public readonly ref struct Utf8MatchContext
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Match? match, Utf8BoundaryMap boundaryMap, string[]? groupNames)
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog, int indexInUtf16, int lengthInUtf16)
+        : this(input, boundaryMap, captureCatalog, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: 1)
+    {
+    }
+
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog, int indexInUtf16, int lengthInUtf16, int groupCount)
+        : this(input, boundaryMap, captureCatalog, hasValue: true, indexInUtf16, lengthInUtf16, groupCount)
+    {
+    }
+
+    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog)
+    {
+        // An unsuccessful detailed result retains group zero as an unsuccessful view.
+        return new Utf8MatchContext(input, boundaryMap, captureCatalog, hasValue: false, indexInUtf16: 0, lengthInUtf16: 0, groupCount: 1);
+    }
+
+    private Utf8MatchContext(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog, bool hasValue, int indexInUtf16, int lengthInUtf16, int groupCount)
     {
         _input = input;
-        _decoded = decoded;
-        _match = match;
         _boundaryMap = boundaryMap;
-        _groupNames = groupNames;
-    }
-
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16)
-        : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: 1)
-    {
-    }
-
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int groupCount)
-        : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount)
-    {
-    }
-
-    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames)
-    {
-        // R03: a failed BCL match still reports a single group; owned misses mirror it.
-        return new Utf8MatchContext(input, decoded, boundaryMap, groupNames, hasValue: false, indexInUtf16: 0, lengthInUtf16: 0, groupCount: 1);
-    }
-
-    private Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, bool hasValue, int indexInUtf16, int lengthInUtf16, int groupCount)
-    {
-        _input = input;
-        _decoded = decoded;
-        _boundaryMap = boundaryMap;
-        _groupNames = groupNames;
+        _captureCatalog = captureCatalog;
         _ownedHasValue = hasValue;
         _ownedGroupCount = groupCount;
         _ownedIndex = indexInUtf16;
         _ownedLength = lengthInUtf16;
-        // A dense numeric table has no name dictionary in .NET and accepts
-        // leading-zero numeric queries. Named and sparse tables query exactly.
-        _denseNumericNames = true;
-        if (groupNames is not null)
-        {
-            for (var ordinal = 0; ordinal < groupNames.Length; ordinal++)
-            {
-                if (!Utf8CaptureCatalog.TryParseNumber(groupNames[ordinal], out var number) || number != ordinal)
-                {
-                    _denseNumericNames = false;
-                    break;
-                }
-            }
-        }
     }
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths)
-        : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: groupStarts.Length)
+
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths)
+        : this(input, boundaryMap, captureCatalog, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: groupStarts.Length)
     {
         _ownedGroupStarts = groupStarts;
         _ownedGroupLengths = groupLengths;
@@ -81,37 +55,22 @@ public readonly ref struct Utf8MatchContext
 
     internal Utf8MatchContext(
         ReadOnlySpan<byte> input,
-        string? decoded,
         Utf8BoundaryMap boundaryMap,
-        string[]? groupNames,
+        Utf8CaptureCatalog captureCatalog,
         int indexInUtf16,
         int lengthInUtf16,
         int[] groupStarts,
         int[] groupLengths,
         int[][] captureStarts,
         int[][] captureLengths)
-        : this(input, decoded, boundaryMap, groupNames, indexInUtf16, lengthInUtf16, groupStarts, groupLengths)
+        : this(input, boundaryMap, captureCatalog, indexInUtf16, lengthInUtf16, groupStarts, groupLengths)
     {
         _ownedCaptureStarts = captureStarts;
         _ownedCaptureLengths = captureLengths;
     }
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap boundaryMap,
-        string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths,
-        int[][] captureStarts, int[][] captureLengths, Utf8CaptureCatalog? captureCatalog)
-        : this(input, decoded, boundaryMap, groupNames, indexInUtf16, lengthInUtf16, groupStarts, groupLengths, captureStarts, captureLengths)
-    {
-        _captureCatalog = captureCatalog;
-    }
-
     private int OwnedOrdinalFromName(string name)
-    {
-        if (_captureCatalog is not null) return _captureCatalog.OrdinalFromName(name);
-        if (_denseNumericNames)
-            return Utf8CaptureCatalog.TryParseNumber(name, out var number) &&
-                (uint)number < (uint)(_groupNames?.Length ?? _ownedGroupCount) ? number : -1;
-        return _groupNames is not null ? Array.IndexOf(_groupNames, name) : -1;
-    }
+        => _captureCatalog?.OrdinalFromName(name) ?? -1;
 
     private Utf8GroupContext OwnedGroupView(int number, int indexInUtf16, int lengthInUtf16)
     {
@@ -120,42 +79,31 @@ public readonly ref struct Utf8MatchContext
             (uint)number < (uint)starts.Length &&
             (uint)number < (uint)lengths.Length)
         {
-            return new Utf8GroupContext(_input, _decoded, _boundaryMap, indexInUtf16, lengthInUtf16, starts[number], lengths[number]);
+            return new Utf8GroupContext(_input, _boundaryMap, indexInUtf16, lengthInUtf16, starts[number], lengths[number]);
         }
 
-        return new Utf8GroupContext(_input, _decoded, _boundaryMap, indexInUtf16, lengthInUtf16);
+        return new Utf8GroupContext(_input, _boundaryMap, indexInUtf16, lengthInUtf16);
     }
 
     /// <summary>Gets whether the regex found a match.</summary>
-    public bool Success => _match?.Success ?? _ownedHasValue;
+    public bool Success => _ownedHasValue;
 
     internal int OwnedLastGroupNumber => _captureCatalog?.GroupNumbers[^1] ?? _ownedGroupCount - 1;
 
     /// <summary>Gets the successful match start as a zero-based UTF-16 code-unit offset, or zero otherwise.</summary>
-    public int IndexInUtf16 => _match is { Success: true } match ? match.Index : (_ownedHasValue ? _ownedIndex : 0);
+    public int IndexInUtf16 => _ownedHasValue ? _ownedIndex : 0;
 
     /// <summary>Gets the successful match length in UTF-16 code units, or zero otherwise.</summary>
-    public int LengthInUtf16 => _match is { Success: true } match ? match.Length : (_ownedHasValue ? _ownedLength : 0);
+    public int LengthInUtf16 => _ownedHasValue ? _ownedLength : 0;
 
     /// <summary>Gets whether both match boundaries map to UTF-8 scalar boundaries.</summary>
     public bool IsByteAligned
     {
         get
         {
-            if (_match is not { Success: true } match)
-            {
-                if (_ownedHasValue)
-                {
-                    var ownedStart = ResolveBoundary(_ownedIndex);
-                    var ownedEnd = ResolveBoundary(_ownedIndex + _ownedLength);
-                    return ownedStart.IsScalarBoundary && ownedEnd.IsScalarBoundary;
-                }
-
-                return true;
-            }
-
-            var start = ResolveBoundary(match.Index);
-            var end = ResolveBoundary(match.Index + match.Length);
+            if (!_ownedHasValue) return true;
+            var start = ResolveBoundary(_ownedIndex);
+            var end = ResolveBoundary(_ownedIndex + _ownedLength);
             return start.IsScalarBoundary && end.IsScalarBoundary;
         }
     }
@@ -191,91 +139,81 @@ public readonly ref struct Utf8MatchContext
     }
 
     /// <summary>Gets the number of numbered groups, including group zero, or zero when no match is available.</summary>
-    public int GroupCount => _match?.Groups.Count ?? _ownedGroupCount;
+    public int GroupCount => _ownedGroupCount;
 
     /// <summary>Gets a numbered group from the match.</summary>
     /// <exception cref="InvalidOperationException">No match is available.</exception>
-    /// <remarks>An undefined group number produces an unsuccessful group view, matching .NET group-collection semantics.</remarks>
+    /// <remarks>An undefined group number produces an unsuccessful group view, with zero captures and an empty value.</remarks>
     public Utf8GroupContext GetGroup(int number)
     {
-        if (_match is null)
+
+        number = _captureCatalog?.OrdinalFromNumber(number) ?? number;
+        // Branch groups project owned spans; a whole-match group borrows the whole range.
+        if (_ownedHasValue)
         {
-            number = _captureCatalog?.OrdinalFromNumber(number) ?? number;
-            // R03: branch-mapped groups project owned spans; single-whole-match groups
-            // project the whole span; misses mirror the single BCL group view.
-            if (_ownedHasValue)
+            if (number == 0)
             {
-                if (number == 0)
-                {
-                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
-                }
-
-                if (_ownedGroupStarts is { } starts &&
-                    _ownedGroupLengths is { } lengths &&
-                    (uint)number < (uint)starts.Length &&
-                    starts[number] >= 0)
-                {
-                    return OwnedGroupView(number, starts[number], lengths[number]);
-                }
-
-                if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
-                {
-                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
-                }
+                return OwnedGroupView(0, _ownedIndex, _ownedLength);
             }
 
-            if (_ownedGroupCount == 0)
+            if (_ownedGroupStarts is { } starts &&
+                _ownedGroupLengths is { } lengths &&
+                (uint)number < (uint)starts.Length &&
+                starts[number] >= 0)
             {
-                throw new InvalidOperationException("No match is available.");
+                return OwnedGroupView(number, starts[number], lengths[number]);
             }
 
-            return default;
+            if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
+            {
+                return OwnedGroupView(0, _ownedIndex, _ownedLength);
+            }
         }
 
-        return new Utf8GroupContext(_input, _decoded, _match.Groups[number], _boundaryMap);
+        if (_ownedGroupCount == 0)
+        {
+            throw new InvalidOperationException("No match is available.");
+        }
+
+        return default;
     }
 
     /// <summary>Gets a named group from the match.</summary>
     /// <exception cref="InvalidOperationException">No match is available.</exception>
-    /// <remarks>An undefined group name produces an unsuccessful group view, matching .NET group-collection semantics.</remarks>
+    /// <remarks>An undefined group name produces an unsuccessful group view, with zero captures and an empty value.</remarks>
     public Utf8GroupContext GetGroup(string name)
     {
         if (name is null) throw new ArgumentNullException(nameof(name));
-        if (_match is null)
+
+        // Names resolve through the owned table; unmatched or unknown names yield an unsuccessful view.
+        var groupIndex = OwnedOrdinalFromName(name);
+
+        if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
         {
-            // R03: names resolve through the owned group table; unmatched or unknown
-            // names mirror the unsuccessful BCL group view.
-            var groupIndex = OwnedOrdinalFromName(name);
-
-            if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
+            if (groupIndex == 0)
             {
-                if (groupIndex == 0)
-                {
-                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
-                }
-
-                if (_ownedGroupStarts is { } starts &&
-                    _ownedGroupLengths is { } lengths &&
-                    starts[groupIndex] >= 0)
-                {
-                    return OwnedGroupView(groupIndex, starts[groupIndex], lengths[groupIndex]);
-                }
-
-                if (_ownedGroupStarts is null && groupIndex == 1)
-                {
-                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
-                }
+                return OwnedGroupView(0, _ownedIndex, _ownedLength);
             }
 
-            if (_ownedGroupCount == 0)
+            if (_ownedGroupStarts is { } starts &&
+                _ownedGroupLengths is { } lengths &&
+                starts[groupIndex] >= 0)
             {
-                throw new InvalidOperationException("No match is available.");
+                return OwnedGroupView(groupIndex, starts[groupIndex], lengths[groupIndex]);
             }
 
-            return default;
+            if (_ownedGroupStarts is null && groupIndex == 1)
+            {
+                return OwnedGroupView(0, _ownedIndex, _ownedLength);
+            }
         }
 
-        return new Utf8GroupContext(_input, _decoded, _match.Groups[name], _boundaryMap);
+        if (_ownedGroupCount == 0)
+        {
+            throw new InvalidOperationException("No match is available.");
+        }
+
+        return default;
     }
 
     /// <summary>Attempts to get a numbered group from the match.</summary>
@@ -284,54 +222,41 @@ public readonly ref struct Utf8MatchContext
     /// <returns><see langword="true"/> when the numbered group exists.</returns>
     public bool TryGetGroup(int number, out Utf8GroupContext group)
     {
-        if (_match is null)
+
+        number = _captureCatalog?.OrdinalFromNumber(number) ?? number;
+        if (_ownedHasValue)
         {
-            number = _captureCatalog?.OrdinalFromNumber(number) ?? number;
-            if (_ownedHasValue)
+            if (number == 0)
             {
-                if (number == 0)
-                {
-                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
-                    return true;
-                }
-
-                // R03: valid but unmatched branch groups report an unsuccessful view.
-                if (_ownedGroupStarts is { } starts &&
-                    _ownedGroupLengths is { } lengths &&
-                    (uint)number < (uint)starts.Length)
-                {
-                    group = starts[number] >= 0
-                        ? OwnedGroupView(number, starts[number], lengths[number])
-                        : default;
-                    return true;
-                }
-
-                if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
-                {
-                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
-                    return true;
-                }
-            }
-            else if (_ownedGroupCount > 0 && number == 0)
-            {
-                group = default;
+                group = OwnedGroupView(0, _ownedIndex, _ownedLength);
                 return true;
             }
 
-            group = default;
-            return false;
-        }
+            // R03: valid but unmatched branch groups report an unsuccessful view.
+            if (_ownedGroupStarts is { } starts &&
+                _ownedGroupLengths is { } lengths &&
+                (uint)number < (uint)starts.Length)
+            {
+                group = starts[number] >= 0
+                    ? OwnedGroupView(number, starts[number], lengths[number])
+                    : default;
+                return true;
+            }
 
-        // Sparse groups may have an empty Name in .NET 10. Identity with its
-        // unavailable-group view distinguishes holes from defined unmatched slots.
-        if (number < 0 || ReferenceEquals(_match.Groups[number], _match.Groups[-1]))
+            if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
+            {
+                group = OwnedGroupView(0, _ownedIndex, _ownedLength);
+                return true;
+            }
+        }
+        else if (_ownedGroupCount > 0 && number == 0)
         {
             group = default;
-            return false;
+            return true;
         }
 
-        group = new Utf8GroupContext(_input, _decoded, _match.Groups[number], _boundaryMap);
-        return true;
+        group = default;
+        return false;
     }
 
     /// <summary>Attempts to get a named group from the match.</summary>
@@ -341,64 +266,48 @@ public readonly ref struct Utf8MatchContext
     public bool TryGetGroup(string name, out Utf8GroupContext group)
     {
         if (name is null) { group = default; return false; }
-        if (_match is null)
+
+        // R03: names resolve through the owned group table; valid but unmatched
+        // branch groups report an unsuccessful view.
+        var groupIndex = OwnedOrdinalFromName(name);
+
+        if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
         {
-            // R03: names resolve through the owned group table; valid but unmatched
-            // branch groups report an unsuccessful view.
-            var groupIndex = OwnedOrdinalFromName(name);
-
-            if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
+            if (groupIndex == 0)
             {
-                if (groupIndex == 0)
-                {
-                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
-                    return true;
-                }
-
-                if (_ownedGroupStarts is { } starts &&
-                    _ownedGroupLengths is { } lengths)
-                {
-                    group = starts[groupIndex] >= 0
-                        ? OwnedGroupView(groupIndex, starts[groupIndex], lengths[groupIndex])
-                        : default;
-                    return true;
-                }
-
-                if (_ownedGroupStarts is null && groupIndex == 1)
-                {
-                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
-                    return true;
-                }
-            }
-            else if (!_ownedHasValue && _ownedGroupCount > 0 && groupIndex == 0)
-            {
-                group = default;
+                group = OwnedGroupView(0, _ownedIndex, _ownedLength);
                 return true;
             }
 
-            group = default;
-            return false;
-        }
+            if (_ownedGroupStarts is { } starts &&
+                _ownedGroupLengths is { } lengths)
+            {
+                group = starts[groupIndex] >= 0
+                    ? OwnedGroupView(groupIndex, starts[groupIndex], lengths[groupIndex])
+                    : default;
+                return true;
+            }
 
-        if (_groupNames is null || Array.IndexOf(_groupNames, name) < 0)
+            if (_ownedGroupStarts is null && groupIndex == 1)
+            {
+                group = OwnedGroupView(0, _ownedIndex, _ownedLength);
+                return true;
+            }
+        }
+        else if (!_ownedHasValue && _ownedGroupCount > 0 && groupIndex == 0)
         {
             group = default;
-            return false;
+            return true;
         }
 
-        group = new Utf8GroupContext(_input, _decoded, _match.Groups[name], _boundaryMap);
-        return true;
+        group = default;
+        return false;
     }
 
     /// <summary>Gets the match value as a UTF-16 string, or an empty string after an unsuccessful match.</summary>
     public string GetValueString()
     {
-        if (_match is { Success: true } match)
-        {
-            return match.Value;
-        }
-
-        return _ownedHasValue ? (_decoded is { } decoded ? decoded.Substring(_ownedIndex, _ownedLength) : Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes))) : string.Empty;
+        return _ownedHasValue ? Encoding.UTF8.GetString(_input.Slice(IndexInBytes, LengthInBytes)) : string.Empty;
     }
 
     /// <summary>Attempts to get the match value from the original UTF-8 input.</summary>

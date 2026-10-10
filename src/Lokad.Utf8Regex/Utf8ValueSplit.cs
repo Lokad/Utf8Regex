@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using System.Text;
 
@@ -9,25 +8,15 @@ namespace Lokad.Utf8Regex;
 public readonly ref struct Utf8ValueSplit
 {
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string? _decoded;
-    private readonly Utf8StorageLease? _decodedStorageLease;
     private readonly Utf8BoundaryMap? _boundaryMap;
     private readonly int _indexInBytes;
     private readonly int _lengthInBytes;
     private readonly bool _hasDirectByteRange;
 
-    internal Utf8ValueSplit(ReadOnlySpan<byte> input, string? decoded, int indexInUtf16, int lengthInUtf16,
+    internal Utf8ValueSplit(ReadOnlySpan<byte> input, int indexInUtf16, int lengthInUtf16,
         Utf8BoundaryMap boundaryMap)
-        : this(input, decoded, indexInUtf16, lengthInUtf16, boundaryMap, null)
-    {
-    }
-
-    internal Utf8ValueSplit(ReadOnlySpan<byte> input, string? decoded, int indexInUtf16, int lengthInUtf16,
-        Utf8BoundaryMap boundaryMap, Utf8StorageLease? decodedStorageLease)
     {
         _input = input;
-        _decoded = decoded;
-        _decodedStorageLease = decodedStorageLease;
         IndexInUtf16 = indexInUtf16;
         LengthInUtf16 = lengthInUtf16;
         _boundaryMap = boundaryMap;
@@ -36,11 +25,9 @@ public readonly ref struct Utf8ValueSplit
         _hasDirectByteRange = false;
     }
 
-    internal Utf8ValueSplit(ReadOnlySpan<byte> input, string? decoded, int indexInUtf16, int lengthInUtf16, int indexInBytes, int lengthInBytes)
+    internal Utf8ValueSplit(ReadOnlySpan<byte> input, int indexInUtf16, int lengthInUtf16, int indexInBytes, int lengthInBytes)
     {
         _input = input;
-        _decoded = decoded;
-        _decodedStorageLease = null;
         IndexInUtf16 = indexInUtf16;
         LengthInUtf16 = lengthInUtf16;
         _boundaryMap = null;
@@ -97,14 +84,10 @@ public readonly ref struct Utf8ValueSplit
     {
         try
         {
-            if (_decoded is null) return Encoding.UTF8.GetString(GetValueBytes());
-            var value = _decoded.Substring(IndexInUtf16, LengthInUtf16);
-            if (ReferenceEquals(value, _decoded)) _decodedStorageLease?.AttachToStringAlias(value);
-            return value;
+            return Encoding.UTF8.GetString(GetValueBytes());
         }
         finally
         {
-            GC.KeepAlive(_decodedStorageLease);
             _boundaryMap?.KeepStorageAlive();
         }
     }

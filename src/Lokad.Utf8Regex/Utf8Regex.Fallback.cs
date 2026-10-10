@@ -786,8 +786,7 @@ public sealed partial class Utf8Regex
         }
 
         // Remaining admitted captures/templates use the shared scalar VM.
-        return _ownedSliceProgram is not null &&
-            !ShouldUseKelvinSignFallback(input);
+        return !ShouldUseKelvinSignFallback(input);
     }
 
     private bool CanGuideFallbackVerification()

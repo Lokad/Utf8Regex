@@ -26,7 +26,7 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination, CancellationToken token)
     {
         var state = 0;
-        return OwnedSliceReplace(input, program, new Utf8SliceTemplateExpansion(replacement, program),
+        return OwnedSliceReplace(input, program, new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog),
             ref state, resultKind, destination, token);
     }
 
@@ -158,7 +158,7 @@ public sealed partial class Utf8Regex
                     var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
                     try
                     {
-                        var context = projection.CreateContext(input, null, map, program);
+                        var context = projection.CreateContext(input, map, _program.CaptureCatalog);
                         evaluator(in context, ref writer, ref state);
                         Utf8SliceBufferWork.Checkpoint(ref invocation);
                     }

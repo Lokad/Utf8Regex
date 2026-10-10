@@ -16,6 +16,8 @@ public sealed class EngineDependencyInventoryTests
         var assembly = typeof(Utf8Regex).Assembly;
         foreach (var name in new[] { "Utf8FallbackCandidateVerifier", "Utf8FallbackVerifierRuntimeFactory", "Utf8FallbackVerifierMode" })
             Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name));
+        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Input.Utf8DecodedInput"));
+        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8StorageLease+StringAliasRoots"));
         var flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
         foreach (var type in assembly.GetTypes())
@@ -27,7 +29,21 @@ public sealed class EngineDependencyInventoryTests
                 Assert.False(RetainsEngine(parameter.ParameterType), $"{type.FullName} {constructor}");
         }
 
-        static bool RetainsEngine(Type type) => type == typeof(Regex) ||
+        foreach (var type in new[] { typeof(Utf8ValueSplit), typeof(Utf8ValueSplitEnumerator),
+            assembly.GetType("Lokad.Utf8Regex.Internal.Input.Utf8ValidatedInput")! })
+        {
+            Assert.DoesNotContain(type.GetFields(flags), field => field.Name is "_decoded" or "_decodedStorageLease");
+            Assert.DoesNotContain(type.GetMethods(flags), method => method.Name is "GetDecodedString" or "MoveNextOwnedSlice" or "get_DebugDecodedReservedBytes");
+            foreach (var constructor in type.GetConstructors(flags))
+                Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string));
+        }
+
+        Assert.Null(typeof(Utf8Regex).GetField("_sliceProgram", flags));
+        Assert.DoesNotContain(typeof(Utf8MatchContext).GetFields(flags), field => field.Name is "_groupNames" or "_denseNumericNames");
+        foreach (var constructor in typeof(Utf8MatchContext).GetConstructors(flags))
+            Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string[]));
+
+        static bool RetainsEngine(Type type) => type == typeof(Regex) || type == typeof(Match) || type == typeof(Group) || type == typeof(Capture) ||
             type.HasElementType && RetainsEngine(type.GetElementType()!) ||
             type.IsGenericType && type.GetGenericArguments().Any(RetainsEngine);
     }
@@ -139,10 +155,10 @@ public sealed class EngineDependencyInventoryTests
         // 4. Evaluators use the cached scalar program and owned capture histories.
         Assert.Empty(FilesContaining(".NextMatch()"));
 
-        // 5. BCL result plumbing holders. Owner: R02/R03 (owned match/group/capture storage).
-        Assert.Equal(new[] { "Utf8MatchContext.cs" }, FilesContaining("Match? _match"));
-        Assert.Equal(new[] { "Utf8GroupContext.cs" }, FilesContaining("Group? _group"));
-        Assert.Equal(new[] { "Utf8CaptureContext.cs" }, FilesContaining("Capture? _capture"));
+        // 5. Result contexts borrow owned ranges and capture histories.
+        Assert.Empty(FilesContaining("Match? _match"));
+        Assert.Empty(FilesContaining("Group? _group"));
+        Assert.Empty(FilesContaining("Capture? _capture"));
 
         // 6. Regex.Escape is a pure string helper used while building translated patterns.
         Assert.Equal(new[] { "Pcre2ExecutionArchitecture.cs" }, FilesContaining("Regex.Escape("));

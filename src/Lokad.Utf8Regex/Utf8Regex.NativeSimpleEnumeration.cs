@@ -17,15 +17,15 @@ public sealed partial class Utf8Regex
             _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
             _preparedRegex.SimplePatternPlan.Branches is not { Length: > 0 } ||
             UsesRightToLeft() || (Options & System.Text.RegularExpressions.RegexOptions.NonBacktracking) != 0 ||
-            _requiresKelvinSignFallback || _ownedSliceProgram is null ||
+            _requiresKelvinSignFallback ||
             _ownedSliceProgram is { IgnoreCase: true } or { HasBalancing: true })
             return false;
         try
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
             var validation = Utf8Validation.Validate(input, ref invocation);
-            // A byte-unsafe program needs UTF-16 units on mixed subjects. Its
-            // entry invocation survives this semantic transfer without a reset.
+            // Mixed subjects need scalar discovery unless the native proof
+            // guarantees complete UTF-8 boundaries. Keep the same invocation.
             var byteSafe = _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue
                 ? _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe : _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe;
             var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)

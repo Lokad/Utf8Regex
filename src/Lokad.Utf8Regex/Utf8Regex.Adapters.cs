@@ -143,11 +143,11 @@ public sealed partial class Utf8Regex
         }
 
         // General scalar programs preserve the whole subject's anchor context.
-        if (_sliceProgram is not null)
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
             try
             {
-                return OwnedSliceIsMatchFromByte(input.Bytes, _sliceProgram, start.Value, CancellationToken.None);
+                return OwnedSliceIsMatchFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -173,7 +173,7 @@ public sealed partial class Utf8Regex
         try
         {
             return OwnedSliceIsMatchFromByte(input.Bytes,
-                _ownedSliceProgram ?? throw new InvalidOperationException("Byte-offset matching requires an owned scalar program."),
+                _ownedSliceProgram,
                 start.Value, CancellationToken.None);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
@@ -248,11 +248,11 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (_sliceProgram is not null)
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
             try
             {
-                return OwnedSliceMatchFromByte(input.Bytes, _sliceProgram, start.Value, CancellationToken.None);
+                return OwnedSliceMatchFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -284,7 +284,7 @@ public sealed partial class Utf8Regex
         try
         {
             return OwnedSliceMatchFromByte(input.Bytes,
-                _ownedSliceProgram ?? throw new InvalidOperationException("Byte-offset matching requires an owned scalar program."),
+                _ownedSliceProgram,
                 start.Value, CancellationToken.None);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
@@ -300,15 +300,14 @@ public sealed partial class Utf8Regex
             _groupNumbers.Length <= 1)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            var adapterDecoded = input.GetDecodedString();
             if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterDetailed) &&
                 suffixAdapterDetailed.Success &&
                 input.Project(start).Value <= suffixAdapterDetailed.IndexInUtf16)
             {
-                return new Utf8MatchContext(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames, suffixAdapterDetailed.IndexInUtf16, suffixAdapterDetailed.LengthInUtf16);
+                return new Utf8MatchContext(input.Bytes, input.BoundaryMap, _program.CaptureCatalog, suffixAdapterDetailed.IndexInUtf16, suffixAdapterDetailed.LengthInUtf16);
             }
 
-            return Utf8MatchContext.Unsuccessful(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames);
+            return Utf8MatchContext.Unsuccessful(input.Bytes, input.BoundaryMap, _program.CaptureCatalog);
         }
 
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -316,21 +315,20 @@ public sealed partial class Utf8Regex
             _groupNumbers.Length <= 1)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
-            var adapterDecoded = input.GetDecodedString();
             if (start.Value == 0 &&
                 Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out var adapterDetailedLength))
             {
-                return new Utf8MatchContext(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames, 0, adapterDetailedLength);
+                return new Utf8MatchContext(input.Bytes, input.BoundaryMap, _program.CaptureCatalog, 0, adapterDetailedLength);
             }
 
-            return Utf8MatchContext.Unsuccessful(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames);
+            return Utf8MatchContext.Unsuccessful(input.Bytes, input.BoundaryMap, _program.CaptureCatalog);
         }
 
-        if (_sliceProgram is not null)
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
             try
             {
-                return OwnedSliceMatchDetailedFromByte(input.Bytes, _sliceProgram, start.Value, CancellationToken.None);
+                return OwnedSliceMatchDetailedFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -341,7 +339,6 @@ public sealed partial class Utf8Regex
         if (TryGetOwnedDetailedGroupCount(out var ownedAdapterOffsetGroupCount) &&
             CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
         {
-            var decoded = input.GetDecodedString();
             // R05: line-anchored ASCII detailed matches from the start byte discover
             // through the shared value path (mirroring the zero-offset arm); shaping
             // projects owned spans without BCL verification.
@@ -357,18 +354,18 @@ public sealed partial class Utf8Regex
 
             if (!adapterOffsetFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input.Bytes, decoded, input.BoundaryMap, _groupNames);
+                return Utf8MatchContext.Unsuccessful(input.Bytes, input.BoundaryMap, _program.CaptureCatalog);
             }
 
             return ownedAdapterOffsetGroupCount > 1
-                ? new Utf8MatchContext(input.Bytes, decoded, input.BoundaryMap, _groupNames, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16, ownedAdapterOffsetGroupCount)
-                : new Utf8MatchContext(input.Bytes, decoded, input.BoundaryMap, _groupNames, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16);
+                ? new Utf8MatchContext(input.Bytes, input.BoundaryMap, _program.CaptureCatalog, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16, ownedAdapterOffsetGroupCount)
+                : new Utf8MatchContext(input.Bytes, input.BoundaryMap, _program.CaptureCatalog, adapterOffsetFirst.IndexInUtf16, adapterOffsetFirst.LengthInUtf16);
         }
 
         try
         {
             return OwnedSliceMatchDetailedFromByte(input.Bytes,
-                _ownedSliceProgram ?? throw new InvalidOperationException("Byte-offset detailed matching requires an owned scalar program."),
+                _ownedSliceProgram,
                 start.Value, CancellationToken.None);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
@@ -405,46 +402,20 @@ public sealed partial class Utf8Regex
                 : 0;
         }
 
-        if (_ownedSliceProgram is { } countProgram)
+        try
         {
-            try
-            {
-                return OwnedSliceCountFromByte(input.Bytes, countProgram, start.Value, CancellationToken.None);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input.Bytes);
-            }
+            return OwnedSliceCountFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None);
         }
-
-        // R05: line-anchored ASCII counting from the start byte runs the shared
-        // interpreter loop; anchors still see the whole input.
-        if (CanServeLineAnchoredOwned(input.Bytes) && input.Validation.IsAscii)
+        catch (Utf8ExecutionDeadlineExpiredException)
         {
-            try
-            {
-                var offsetBudget = CreateExecutionBudget();
-                return Utf8ExecutionInterpreter.CountSimplePatternFrom(
-                    input.Bytes,
-                    _preparedRegex.ExecutionProgram,
-                    _preparedRegex.SearchPlan,
-                    _preparedRegex.SimplePatternPlan,
-                    start.Value,
-                    offsetBudget);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input.Bytes);
-            }
+            throw CreateMatchTimeoutException(input.Bytes);
         }
-
-        throw new InvalidOperationException("Byte-offset counting requires an owned scalar program.");
     }
 
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         var remaining = input.Bytes[start.Value..];
-        if (_sliceProgram is not null || ShouldUseKelvinSignFallback(remaining))
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex || ShouldUseKelvinSignFallback(remaining))
         {
             return CountAtByteOffset(input, start);
         }
@@ -579,9 +550,9 @@ public sealed partial class Utf8Regex
         // full input (anchors keep true left context and \\G pins to the scan
         // start exactly like BCL startat, unlike suffix slicing); anything
         // unserved keeps the routing below.
-        if (_sliceProgram is not null)
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
-            return OwnedSliceEnumerateMatchesFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
+            return OwnedSliceEnumerateMatchesFromUnit(input.Bytes, _ownedSliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
 
@@ -622,7 +593,7 @@ public sealed partial class Utf8Regex
             (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {
             return OwnedSliceEnumerateMatchesFromUnit(input.Bytes,
-                _ownedSliceProgram ?? throw new InvalidOperationException("Context-sensitive enumeration requires an owned scalar program."),
+                _ownedSliceProgram,
                 input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
         }
@@ -683,7 +654,7 @@ public sealed partial class Utf8Regex
                 return false;
             }
 
-            if (_owner._sliceProgram is not null)
+            if (_owner._preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
             {
                 isMatch = _owner.IsMatchAtByteOffset(input, start);
                 return true;

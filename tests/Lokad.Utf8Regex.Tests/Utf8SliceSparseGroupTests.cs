@@ -262,12 +262,12 @@ public sealed class Utf8SliceSparseGroupTests
     [InlineData("(?<12>a)", "a")]
     [InlineData("(?<12>a)?b", "b")]
     [InlineData("(?<2147483647>a)(?<x>b)", "ab")]
-    public void TransitionalContextDistinguishesSparseGroupsFromHoles(string pattern, string text)
+    public void OwnedContextDistinguishesSparseGroupsFromHoles(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var match = oracle.Match(text);
-        var context = new Utf8MatchContext(input, text, match, Utf8BoundaryMap.Create(input), oracle.GetGroupNames());
+        var context = new Utf8Regex(pattern, RegexOptions.CultureInvariant).MatchDetailed(input);
         AssertDetailed(oracle, match, context);
     }
 

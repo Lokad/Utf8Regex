@@ -423,24 +423,24 @@ public sealed partial class Utf8Regex
         {
             Utf8MatchContext context;
             if (_groupedLiteralSpanTable is not null &&
-                TryShapeGroupedLiteralDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var grouped))
+                TryShapeGroupedLiteralDetailedMatch(input, analysis.BoundaryMap, valueMatch, out var grouped))
             {
                 context = grouped;
             }
             else if (_alternationBranchSpanMap is not null &&
-                TryShapeAlternationBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var branched))
+                TryShapeAlternationBranchDetailedMatch(input, analysis.BoundaryMap, valueMatch, out var branched))
             {
                 context = branched;
             }
             else if (!hasMaps && !_hasCaptures)
             {
-                context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
+                context = new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
             }
             else if (!hasMaps && _hasCaptures &&
                 TryGetOwnedDetailedGroupCount(out var wrapGroups) &&
                 wrapGroups > 1)
             {
-                context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
+                context = new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, wrapGroups);
             }
             else if (!first)
             {

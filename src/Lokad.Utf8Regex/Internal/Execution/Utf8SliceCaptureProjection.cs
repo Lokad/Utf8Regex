@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -64,8 +65,8 @@ internal struct Utf8SliceCaptureProjection
         }
     }
 
-    internal readonly Utf8MatchContext CreateContext(ReadOnlySpan<byte> input, string? decoded, Utf8BoundaryMap originalMap, Utf8SliceProgram program)
-        => new(input, decoded, originalMap, program.GroupNames, Starts[0], Lengths[0], Starts, Lengths, CaptureStarts, CaptureLengths, program.CaptureCatalog);
+    internal readonly Utf8MatchContext CreateContext(ReadOnlySpan<byte> input, Utf8BoundaryMap originalMap, Utf8CaptureCatalog captureCatalog)
+        => new(input, originalMap, captureCatalog, Starts[0], Lengths[0], Starts, Lengths, CaptureStarts, CaptureLengths);
 
     internal void Release(ref Utf8SliceInvocation invocation)
     {

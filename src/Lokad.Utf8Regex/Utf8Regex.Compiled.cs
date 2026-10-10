@@ -178,10 +178,10 @@ public sealed partial class Utf8Regex
                 // mixed. Reuse this ASCII proof in the router below.
                 validation = new Utf8ValidationResult(input.Length, input.Length, true, false);
             }
-            else if (_ownedSliceProgram is { } windowProgram)
+            else
             {
                 var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-                return OwnedSliceCountFromByte(input, windowProgram, 0, ref invocation);
+                return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref invocation);
             }
         }
         // Anchored literal prefixes count directly through the router below: at most one

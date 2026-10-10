@@ -1,11 +1,16 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8SharedCaptureMetadataTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_captureCatalog")]
+    private static extern ref Utf8CaptureCatalog? ContextCatalog(ref Utf8MatchContext context);
+
     public static IEnumerable<object[]> Cases()
     {
         (string Pattern, string Subject, string Replacement)[] cases =
@@ -53,9 +58,26 @@ public sealed class Utf8SharedCaptureMetadataTests
             Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
         var input = Encoding.UTF8.GetBytes(subject);
         var actual = regex.MatchDetailed(input); var expected = oracle.Match(subject);
+        var preparedCatalog = regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog;
+        Assert.NotNull(preparedCatalog);
+        Assert.Equal(preparedCatalog.GroupNumbers.Length - 1, regex.Inspection.AvailableOwnedSliceProgram.GroupCount);
+        Assert.Same(preparedCatalog, ContextCatalog(ref actual));
+        Assert.Same(regex.Inspection.PreparedRegex.ScalarProgram, regex.Inspection.AvailableOwnedSliceProgram);
         Assert.Equal(expected.Success, actual.Success);
         foreach (var number in oracle.GetGroupNumbers())
             Assert.Equal(expected.Groups[number].Value, actual.GetGroup(number).GetValueString());
+        foreach (var name in oracle.GetGroupNames().Concat(new[] { "", "00", "01", "012", "missing" }))
+        {
+            Assert.Equal(expected.Groups[name].Value, actual.GetGroup(name).GetValueString());
+            Assert.Equal(oracle.GroupNumberFromName(name) >= 0, actual.TryGetGroup(name, out _));
+        }
+        var miss = regex.MatchDetailed([]);
+        Assert.False(miss.Success);
+        Assert.Same(preparedCatalog, ContextCatalog(ref miss));
+        Assert.Equal(1, miss.GroupCount);
+        Assert.True(miss.TryGetGroup(0, out var groupZero));
+        Assert.False(groupZero.Success);
+        Assert.True(miss.TryGetGroup("0", out _));
         Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(subject, replacement)), regex.Replace(input, replacement));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
@@ -11,7 +12,7 @@ internal interface IUtf8SliceReplacementExpansion<TState>
         Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation);
 }
 
-internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement replacement, Utf8SliceProgram program)
+internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement replacement, Utf8CaptureCatalog captureCatalog)
     : IUtf8SliceReplacementExpansion<int>
 {
     public bool RequiresContext => false;
@@ -31,10 +32,10 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
                     writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte));
                     break;
                 case Utf8ReplacementInstructionKind.Group:
-                    AppendGroup(program.CaptureCatalog?.OrdinalFromNumber(instruction.GroupNumber) ?? instruction.GroupNumber, input, outcome, writer);
+                    AppendGroup(captureCatalog.OrdinalFromNumber(instruction.GroupNumber), input, outcome, writer);
                     break;
                 case Utf8ReplacementInstructionKind.LastGroup:
-                    AppendGroup(program.GroupCount, input, outcome, writer);
+                    AppendGroup(captureCatalog.GroupNumbers.Length - 1, input, outcome, writer);
                     break;
                 case Utf8ReplacementInstructionKind.LeftPortion:
                     writer.Append(input[..outcome.StartByte]);
@@ -64,7 +65,7 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
     }
 }
 
-internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator<TState> evaluator, Utf8SliceProgram program)
+internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator<TState> evaluator, Utf8CaptureCatalog captureCatalog)
     : IUtf8SliceReplacementExpansion<TState>
 {
     public bool RequiresContext => true;
@@ -75,7 +76,7 @@ internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator
         var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
         try
         {
-            var context = projection.CreateContext(input, null, map, program);
+            var context = projection.CreateContext(input, map, captureCatalog);
             var result = evaluator(in context, ref state);
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             writer.Append(result.AsSpan());

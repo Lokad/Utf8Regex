@@ -7,7 +7,7 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SplitStringAliasTests
+public sealed class Utf8SplitStringGetterTests
 {
     private const ulong Capacity = 65536;
 
@@ -33,32 +33,30 @@ public sealed class Utf8SplitStringAliasTests
 
     [Theory]
     [MemberData(nameof(WholeCases))]
-    public void EscapedWholeStringKeepsOnlyItsDecodedLoanUntilTheAliasIsCollected(bool compiled, bool rtl, int count)
+    public void EscapedWholeStringDoesNotRetainAnyPreparedSubjectLoan(bool compiled, bool rtl, int count)
     {
         const string text = "é😀 ab tail";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
         var regex = new Utf8Regex("(zz)", options);
         var invocation = new Utf8SliceInvocation(new(0, 0, Capacity), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var alias = VerifyEscapedAlias(regex, Encoding.UTF8.GetBytes(text), text, count, ref invocation);
+        var alias = VerifyEscapedValue(regex, Encoding.UTF8.GetBytes(text), text, count, ref invocation);
         CollectLoans();
         Assert.False(alias.IsAlive);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference VerifyEscapedAlias(Utf8Regex regex, byte[] input, string text, int count,
+    private static WeakReference VerifyEscapedValue(Utf8Regex regex, byte[] input, string text, int count,
         ref Utf8SliceInvocation invocation)
     {
         var alias = EscapeValue(regex, input, count, ref invocation, out var coordinates);
-        Assert.NotSame(text, alias);
         CollectLoans();
         if (coordinates is not null) Assert.False(coordinates.IsAlive);
-        var bytes = ((ulong)text.Length + 1) * sizeof(char);
-        Assert.Equal(7 + bytes, invocation.Ledger.ReservedBytes);
-        Assert.True(invocation.Ledger.TryReserve(Capacity - 7 - bytes));
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.True(invocation.Ledger.TryReserve(Capacity - 7));
         Assert.False(invocation.Ledger.TryReserve(1));
-        invocation.Ledger.Release(Capacity - 7 - bytes);
+        invocation.Ledger.Release(Capacity - 7);
         Assert.Equal(text, alias);
         return new WeakReference(alias);
     }
@@ -67,7 +65,7 @@ public sealed class Utf8SplitStringAliasTests
     [InlineData("a")]
     [InlineData("é中")]
     [InlineData("")]
-    public void AsciiBmpAndSharedEmptyStringsRetainOnlyOwnedPayload(string text)
+    public void AsciiBmpAndSharedEmptyStringsDoNotRetainPreparedSubjectLoans(string text)
     {
         var regex = new Utf8Regex("(zz)", RegexOptions.CultureInvariant);
         var invocation = new Utf8SliceInvocation(new(0, 0, Capacity), Regex.InfiniteMatchTimeout, default);
@@ -80,10 +78,12 @@ public sealed class Utf8SplitStringAliasTests
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             return;
         }
-        var alias = VerifyEscapedAlias(regex, Encoding.UTF8.GetBytes(text), text, 1, ref invocation);
+        var alias = VerifyEscapedValue(regex, Encoding.UTF8.GetBytes(text), text, 1, ref invocation);
         CollectLoans();
-        Assert.False(alias.IsAlive);
+        if (text.Length > 1) Assert.False(alias.IsAlive);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        // Encoding may cache a one-character string; its identity does not
+        // carry a coordinate or subject loan.
     }
 
     [Theory]
@@ -117,7 +117,7 @@ public sealed class Utf8SplitStringAliasTests
         Assert.True(cursor.MoveNext());
         var view = cursor.Current;
         var value = view.GetValueString();
-        if (value.Length == map.Utf16Length) Assert.Same(value, view.GetValueString());
+        Assert.Equal(value, view.GetValueString());
         while (cursor.MoveNext()) { }
         return value;
     }

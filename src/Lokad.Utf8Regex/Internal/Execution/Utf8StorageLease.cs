@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// retain this descriptor through its last read. Collection queues a release;
 /// only the synchronous ledger owner applies it. No pooled/native resource is
 /// returned by this finalizer.</summary>
-internal sealed partial class Utf8StorageLease(Utf8StorageLedger.CollectionState ledger, ulong bytes)
+internal sealed class Utf8StorageLease(Utf8StorageLedger.CollectionState ledger, ulong bytes)
 {
     private ulong _bytes = bytes;
 

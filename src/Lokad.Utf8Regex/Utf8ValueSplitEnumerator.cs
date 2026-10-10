@@ -12,14 +12,11 @@ public ref struct Utf8ValueSplitEnumerator
 {
     private readonly SplitSourceKind _sourceKind;
     private readonly ReadOnlySpan<byte> _input;
-    private readonly string? _decoded;
-    private readonly Utf8StorageLease? _decodedStorageLease;
     private readonly Utf8BoundaryMap? _boundaryMap;
     private readonly int _totalUtf16Length;
     private Utf8OperationMatchCursor _matchCursor;
     internal ulong DebugInvocationSteps => _matchCursor.DebugInvocationSteps;
     internal ulong DebugInvocationReservedBytes => _matchCursor.DebugInvocationReservedBytes;
-    internal ulong DebugDecodedReservedBytes => _matchCursor.DebugSplitDecodedReservedBytes;
     internal ulong DebugPeakWorkingBytes => _matchCursor.DebugPeakWorkingBytes;
     private int _segmentStartBytes;
     private int _segmentStartUtf16;
@@ -28,8 +25,6 @@ public ref struct Utf8ValueSplitEnumerator
     private string? _timeoutPattern;
     private TimeSpan _timeout;
 
-
-
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
         PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
@@ -37,8 +32,6 @@ public ref struct Utf8ValueSplitEnumerator
     {
         _sourceKind = SplitSourceKind.SmallAsciiLiteralFamily;
         _input = input;
-        _decoded = null;
-        _decodedStorageLease = null;
         _boundaryMap = null;
         _totalUtf16Length = input.Length;
         _matchCursor = new Utf8OperationMatchCursor(
@@ -56,30 +49,14 @@ public ref struct Utf8ValueSplitEnumerator
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
-        string? decoded,
         Utf8OperationMatchCursor matchCursor,
         Utf8BoundaryMap map,
         int count,
         int totalUtf16Length,
         bool rightToLeft)
-        : this(input, decoded, matchCursor, map, count, totalUtf16Length, rightToLeft, null)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        string? decoded,
-        Utf8OperationMatchCursor matchCursor,
-        Utf8BoundaryMap map,
-        int count,
-        int totalUtf16Length,
-        bool rightToLeft,
-        Utf8StorageLease? decodedStorageLease)
     {
         _sourceKind = rightToLeft ? SplitSourceKind.OwnedSliceRtl : SplitSourceKind.OwnedSlice;
         _input = input;
-        _decoded = decoded;
-        _decodedStorageLease = decodedStorageLease;
         _boundaryMap = map;
         _totalUtf16Length = totalUtf16Length;
         _matchCursor = matchCursor;
@@ -100,8 +77,6 @@ public ref struct Utf8ValueSplitEnumerator
     {
         _sourceKind = SplitSourceKind.NativeMatchCursor;
         _input = input;
-        _decoded = null;
-        _decodedStorageLease = null;
         _boundaryMap = null;
         _totalUtf16Length = totalUtf16Length;
         _matchCursor = matchCursor;
@@ -160,8 +135,6 @@ public ref struct Utf8ValueSplitEnumerator
         return this;
     }
 
-
-
     private bool MoveNextNative()
     {
         if (_completed || _remainingCount <= 0)
@@ -183,10 +156,9 @@ public ref struct Utf8ValueSplitEnumerator
                 _matchCursor.CheckOwnedSliceCursorBoundary();
                 Current = new Utf8ValueSplit(
                     _input,
-                    _decoded,
                     _segmentStartUtf16,
                     _totalUtf16Length - _segmentStartUtf16,
-                    ownedMap, _decodedStorageLease);
+                    ownedMap);
                 _matchCursor.AbortOwnedSplitMatches();
                 _completed = true;
                 return true;
@@ -196,10 +168,9 @@ public ref struct Utf8ValueSplitEnumerator
             _matchCursor.CheckOwnedSliceCursorBoundary();
             Current = new Utf8ValueSplit(
                 _input,
-                _decoded,
                 _segmentStartUtf16,
                 ownedMatch.IndexInUtf16 - _segmentStartUtf16,
-                ownedMap, _decodedStorageLease);
+                ownedMap);
             _segmentStartUtf16 = ownedMatch.IndexInUtf16 + ownedMatch.LengthInUtf16;
             _remainingCount--;
             return true;
@@ -207,9 +178,8 @@ public ref struct Utf8ValueSplitEnumerator
 
         if (_sourceKind == SplitSourceKind.OwnedSliceRtl)
         {
-            // Right-to-left discovery runs from the tail: segments project
-            // descending from the input end with UTF-16 indexes exactly like
-            // the BCL oracle (encounter order, tail piece first).
+            // Scalar discovery runs from the tail and returns the tail piece
+            // first. The map supplies the derived UTF-16 coordinates.
             if (_boundaryMap is not { } rtlMap)
             {
                 throw new InvalidOperationException("Owned slice split enumeration requires prepared UTF-16 projection.");
@@ -220,10 +190,9 @@ public ref struct Utf8ValueSplitEnumerator
                 _matchCursor.CheckOwnedSliceCursorBoundary();
                 Current = new Utf8ValueSplit(
                     _input,
-                    _decoded,
                     0,
                     _segmentStartUtf16,
-                    rtlMap, _decodedStorageLease);
+                    rtlMap);
                 _matchCursor.AbortOwnedSplitMatches();
                 _completed = true;
                 return true;
@@ -233,10 +202,9 @@ public ref struct Utf8ValueSplitEnumerator
             _matchCursor.CheckOwnedSliceCursorBoundary();
             Current = new Utf8ValueSplit(
                 _input,
-                _decoded,
                 rtlMatch.IndexInUtf16 + rtlMatch.LengthInUtf16,
                 _segmentStartUtf16 - (rtlMatch.IndexInUtf16 + rtlMatch.LengthInUtf16),
-                rtlMap, _decodedStorageLease);
+                rtlMap);
             _segmentStartUtf16 = rtlMatch.IndexInUtf16;
             _remainingCount--;
             return true;
@@ -251,7 +219,6 @@ public ref struct Utf8ValueSplitEnumerator
         _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,
-            decoded: null,
             indexInUtf16: _segmentStartUtf16,
             lengthInUtf16: match.IndexInUtf16 - _segmentStartUtf16,
             indexInBytes: _segmentStartBytes,
@@ -278,7 +245,6 @@ public ref struct Utf8ValueSplitEnumerator
         _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,
-            decoded: null,
             indexInUtf16: _segmentStartBytes,
             lengthInUtf16: matchIndex - _segmentStartBytes,
             indexInBytes: _segmentStartBytes,
@@ -294,51 +260,11 @@ public ref struct Utf8ValueSplitEnumerator
         _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,
-            _decoded,
             indexInUtf16: _segmentStartUtf16,
             lengthInUtf16: _totalUtf16Length - _segmentStartUtf16,
             indexInBytes: _segmentStartBytes,
             lengthInBytes: _input.Length - _segmentStartBytes);
         _completed = true;
-        return true;
-    }
-
-    private bool MoveNextOwnedSlice()
-    {
-        // Unit-space twin of MoveNextNative: mid-scalar empty matches have no
-        // valid byte range, so segments project lazily through the map while
-        // indexes stay in UTF-16 units exactly like the BCL oracle.
-        if (_completed || _remainingCount <= 0)
-        {
-            return false;
-        }
-
-        if (_boundaryMap is not { } map)
-        {
-            throw new InvalidOperationException("Owned slice split enumeration requires prepared UTF-16 projection.");
-        }
-
-        if (_remainingCount == 1 || !_matchCursor.MoveNext())
-        {
-            Current = new Utf8ValueSplit(
-                _input,
-                _decoded,
-                _segmentStartUtf16,
-                _totalUtf16Length - _segmentStartUtf16,
-                map, _decodedStorageLease);
-            _completed = true;
-            return true;
-        }
-
-        var match = _matchCursor.Current;
-        Current = new Utf8ValueSplit(
-            _input,
-            _decoded,
-            _segmentStartUtf16,
-            match.IndexInUtf16 - _segmentStartUtf16,
-            map, _decodedStorageLease);
-        _segmentStartUtf16 = match.IndexInUtf16 + match.LengthInUtf16;
-        _remainingCount--;
         return true;
     }
 

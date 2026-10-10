@@ -7,7 +7,7 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8SplitDecodeInvocationTests
+public sealed class Utf8SplitProjectionInvocationTests
 {
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
         (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
@@ -32,57 +32,83 @@ public sealed class Utf8SplitDecodeInvocationTests
 
     [Theory]
     [MemberData(nameof(Texts))]
-    public void DecodingKeepsExactUtf16AcrossEveryScalarBlockBoundary(string text)
+    public void BoundariesAndSplitGetterKeepDerivedUtf16AcrossEveryScalarBlockBoundary(string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8DecodedInput.TryCreate(input, validation, ref invocation, out var decoded, out var bytes));
-        Assert.Equal(text, decoded);
-        Assert.Equal(text.Length == 0 ? 0UL : ((ulong)text.Length + 1) * 2, bytes);
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BoundaryMap.TryCreate(input, validation, ref invocation, out var map, out var bytes));
+        Assert.Equal(MapBytes(validation), bytes);
+        var view = new Utf8ValueSplit(input, 0, validation.Utf16Length, map);
+        Assert.True(view.IsByteAligned);
+        Assert.Equal((0, input.Length), (view.IndexInBytes, view.LengthInBytes));
+        Assert.Equal((0, text.Length), (view.IndexInUtf16, view.LengthInUtf16));
+        Assert.Equal(input, view.GetValueBytes().ToArray());
+        Assert.Equal(text, view.GetValueString());
+        var unit = 0;
+        for (var offset = 0; offset < input.Length;)
+        {
+            Assert.True(map.Resolve(unit).IsScalarBoundary);
+            Assert.Equal(offset, map.Resolve(unit).ByteOffset);
+            Assert.Equal(System.Buffers.OperationStatus.Done, Rune.DecodeFromUtf8(input.AsSpan(offset), out var scalar, out var width));
+            if (!scalar.IsBmp) Assert.False(map.Resolve(unit + 1).IsScalarBoundary);
+            unit += scalar.Utf16SequenceLength;
+            offset += width;
+        }
+        Assert.True(map.Resolve(unit).IsScalarBoundary);
+        Assert.Equal(input.Length, map.Resolve(unit).ByteOffset);
         Assert.Equal(7 + bytes, invocation.Ledger.ReservedBytes);
         Assert.True(invocation.Budget.Steps > 0);
         invocation.Ledger.Release(bytes);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
 
+    private static ulong MapBytes(Utf8ValidationResult validation) => validation.IsAscii ? 0UL :
+        (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * sizeof(int);
+
     [Fact]
-    public void EveryDecodeWorkAndStorageCutoffReturnsNoPartialStringAndRestoresBorrowedStorage()
+    public void EveryProjectionWorkAndStorageCutoffReturnsNoPartialMapAndRestoresBorrowedStorage()
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é中😀", 2200)));
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8DecodedInput.TryCreate(input, validation, ref baseline, out _, out _));
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BoundaryMap.TryCreate(input, validation, ref baseline, out _, out _));
         for (ulong cap = 1; cap < baseline.Budget.Steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8DecodedInput.TryCreate(input, validation, ref invocation, out var decoded, out var bytes));
-            Assert.Null(decoded);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BoundaryMap.TryCreate(input, validation, ref invocation, out var map, out var bytes));
+            Assert.Equal(0, map.ByteLength);
             Assert.Equal(0UL, bytes);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
         input = Encoding.UTF8.GetBytes("é😀中");
         validation = Utf8Validation.Validate(input);
-        var required = ((ulong)validation.Utf16Length + 1) * 2;
+        var required = MapBytes(validation);
         for (ulong cap = 7; cap <= required + 7; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var breach = Utf8DecodedInput.TryCreate(input, validation, ref invocation, out var decoded, out var bytes);
+            var breach = Utf8BoundaryMap.TryCreate(input, validation, ref invocation, out var map, out var bytes);
             Assert.Equal(cap == required + 7 ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, breach);
             Assert.Equal(cap == required + 7 ? required : 0UL, bytes);
-            if (cap == required + 7) Assert.Equal("é😀中", decoded);
-            else Assert.Null(decoded);
+            Assert.Equal(cap == required + 7 ? input.Length : 0, map.ByteLength);
+            if (cap == required + 7)
+            {
+                var view = new Utf8ValueSplit(input, 0, validation.Utf16Length, map);
+                Assert.Equal("é😀中", view.GetValueString());
+            }
             Assert.Equal(7 + bytes, invocation.Ledger.ReservedBytes);
+            invocation.Ledger.Release(bytes);
+            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void DecodeCancellationAndDeadlineObserveExactAuthorityAndRollback(bool deadline)
+    public void ProjectionCancellationAndDeadlineObserveExactAuthorityAndRollback(bool deadline)
     {
         var input = Encoding.UTF8.GetBytes(new string('é', 200000));
         var validation = Utf8Validation.Validate(input);
@@ -91,52 +117,54 @@ public sealed class Utf8SplitDecodeInvocationTests
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         invocation.CheckpointHook = _ => { if (deadline) Thread.Sleep(250); else source.Cancel(); };
         Assert.True(invocation.Ledger.TryReserve(7));
-        string? decoded = null;
+        var map = default(Utf8BoundaryMap);
         ulong bytes = 0;
         var interrupted = false;
-        try { Utf8DecodedInput.TryCreate(input, validation, ref invocation, out decoded, out bytes); }
+        try { Utf8BoundaryMap.TryCreate(input, validation, ref invocation, out map, out bytes); }
         catch (Utf8ExecutionDeadlineExpiredException) { Assert.True(deadline); interrupted = true; }
         catch (OperationCanceledException exception) { Assert.False(deadline); Assert.Equal(source.Token, exception.CancellationToken); interrupted = true; }
         Assert.True(interrupted);
-        Assert.Null(decoded);
+        Assert.Equal(0, map.ByteLength);
         Assert.Equal(0UL, bytes);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
 
     [Fact]
-    public void FinalDecodePublicationChecksCancellationAndImpossibleExtentBeforeAllocation()
+    public void FinalProjectionPublicationChecksCancellationAndImpossibleExtentBeforeAllocation()
     {
         var input = Encoding.UTF8.GetBytes("é😀中");
         var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        Utf8DecodedInput.Create(input, validation, ref baseline, out _);
+        Utf8BoundaryMap.Create(input, validation, ref baseline, out _);
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         while (invocation.Budget.Steps < 64 - baseline.Budget.Steps) invocation.TryChargeStep();
         invocation.CheckpointHook = _ => source.Cancel();
         Assert.True(invocation.Ledger.TryReserve(7));
         var interrupted = false;
-        try { Utf8DecodedInput.Create(input, validation, ref invocation, out _); }
+        try { Utf8BoundaryMap.Create(input, validation, ref invocation, out _); }
         catch (OperationCanceledException exception) { Assert.Equal(source.Token, exception.CancellationToken); interrupted = true; }
         Assert.True(interrupted);
         Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         invocation = new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, Utf8DecodedInput.TryCreate([], new(0, int.MaxValue, false, false), ref invocation, out var decoded, out var bytes));
-        Assert.Null(decoded);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, Utf8BoundaryMap.TryCreate([], new(0, int.MaxValue, false, false), ref invocation, out var map, out var bytes));
+        Assert.Equal(0, map.ByteLength);
         Assert.Equal(0UL, bytes);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
 
     [Fact]
-    public void DecoderExceptionAfterAllocationRestoresItsAdmission()
+    public void ProjectionExceptionAfterAllocationRestoresItsAdmission()
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         var failed = false;
-        try { Utf8DecodedInput.Create("abc"u8, new(3, 4, true, false), ref invocation, out _); }
-        catch (InvalidOperationException) { failed = true; }
+        // Deliberately inconsistent internal validation forces an exception
+        // after map allocation. Public preparation obtains real validation.
+        try { Utf8BoundaryMap.Create("abc"u8, new(3, 2, false, false), ref invocation, out _); }
+        catch (IndexOutOfRangeException) { failed = true; }
         Assert.True(failed);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
     }
@@ -156,10 +184,8 @@ public sealed class Utf8SplitDecodeInvocationTests
         var steps = prepared.DebugInvocationSteps;
         var total = prepared.DebugInvocationReservedBytes;
         var map = (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
-        var decoded = ((ulong)validation.Utf16Length + 1) * 2;
-        Assert.Equal(decoded, prepared.DebugDecodedReservedBytes);
         Assert.Equal(total, prepared.DebugPeakWorkingBytes);
-        Assert.Equal(map + decoded + 7, total);
+        Assert.Equal(map + 7, total);
         for (ulong cap = 1; cap < steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
@@ -170,7 +196,7 @@ public sealed class Utf8SplitDecodeInvocationTests
             Assert.True(denied);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
-        foreach (var cap in new[] { map + 6, map + 7, map + decoded + 6, total - 1, total }.Distinct())
+        foreach (var cap in new[] { map + 6, map + 7, total - 1, total }.Distinct())
         {
             var invocation = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
@@ -241,7 +267,7 @@ public sealed class Utf8SplitDecodeInvocationTests
     [InlineData(true, 1)]
     [InlineData(false, 2)]
     [InlineData(true, 2)]
-    public void EofAndInterruptedMovesRetainMapAndDecodedStorageForExistingViews(bool rtl, int count)
+    public void EofAndInterruptedMovesRetainMapStorageForExistingViews(bool rtl, int count)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var regex = new Utf8Regex("(ab)", options);
@@ -255,7 +281,7 @@ public sealed class Utf8SplitDecodeInvocationTests
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        var held = 7 + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4 + ((ulong)validation.Utf16Length + 1) * 2;
+        var held = 7 + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
         Assert.Equal(held, cursor.DebugInvocationReservedBytes);
         Assert.Equal(value, view.GetValueString());
         source.Cancel();

@@ -48,7 +48,6 @@ public sealed partial class Utf8Regex
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
     private readonly byte[]? _caretAnchoredGroupedLiteralUtf8;
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
-    private readonly Utf8SliceProgram? _sliceProgram;
     private readonly Utf8SliceProgram _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -149,7 +148,6 @@ public sealed partial class Utf8Regex
         // including loops and shared captures. They do not use the backtracker.
         var ownedSliceProgram = preparedRegex.ScalarProgram
             ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
-        _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ? ownedSliceProgram : null;
         _ownedSliceProgram = ownedSliceProgram;
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
@@ -354,8 +352,6 @@ public sealed partial class Utf8Regex
         Utf8RegexSyntax.ValidateOptions(options);
     }
 
-
-
     /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
@@ -438,15 +434,14 @@ public sealed partial class Utf8Regex
     {
         // Native loops do not yet carry this token through every checkpoint.
         // Keep their no-token selection; live tokens use the owned scalar VM.
-        if (token.CanBeCanceled && _ownedSliceProgram is not null) return _ownedSliceProgram;
+        if (token.CanBeCanceled) return _ownedSliceProgram;
         return GetOwnedSliceProgram(input);
     }
 
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input)
     {
-        if (_sliceProgram is not null) return _sliceProgram;
-        if (_ownedSliceProgram is not null &&
-            (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex) return _ownedSliceProgram;
+        if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _ownedSliceProgram.HasSharedCaptureDeclarations ||
              _ownedSliceProgram.HasExplicitCaptureNumbers ||
@@ -456,9 +451,8 @@ public sealed partial class Utf8Regex
              // branch at the same start succeeds. The owned VM retries it.
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                 _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
-             // Absolute anchored simple plans without a dedicated native matcher
-             // otherwise force BCL verification, even on ASCII misses. Serve the
-             // cached owned program; retain qualified direct/native and line paths.
+             // Anchored simple plans without a dedicated native matcher use
+             // the cached scalar program. Keep qualified native and line paths.
              _compiledEngine.Kind == Utf8CompiledEngineKind.SimplePatternInterpreter &&
                 !_hasDirectAnchoredHeadTailWithoutValidation &&
                 !_hasDirectFallbackAsciiFamilyWithoutValidation &&
@@ -475,7 +469,7 @@ public sealed partial class Utf8Regex
              !Utf8InputAnalyzer.IsAscii(input) &&
                 (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
                     NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals) ||
-                 _preparedRegex.SearchPlan.HasBoundaryRequirements)))
+                 _preparedRegex.SearchPlan.HasBoundaryRequirements))
             return _ownedSliceProgram;
         return null;
     }
@@ -507,13 +501,13 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
             invocation.Budget.ThrowIfCancellationRequested();
             if (!outcome.Found)
-                return Utf8MatchContext.Unsuccessful(input, null, Utf8BoundaryMap.Create([]), _groupNames);
+                return Utf8MatchContext.Unsuccessful(input, Utf8BoundaryMap.Create([]), _program.CaptureCatalog);
             // The current context stores derived UTF-16 capture coordinates.
             // Its admitted map is result interoperability, never discovery state.
             var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
             projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
             invocation.Budget.ThrowIfCancellationRequested();
-            return projection.CreateContext(input, null, map, program);
+            return projection.CreateContext(input, map, _program.CaptureCatalog);
         }
         finally
         {
@@ -540,7 +534,7 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural scalar program is required."),
+                return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                     0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
@@ -778,7 +772,7 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceCountFromByte(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural scalar program is required."),
+                return OwnedSliceCountFromByte(input, _ownedSliceProgram,
                     0, ref structuralInvocation);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
                 ? AsciiOrderedLiteralWindowExecutor.TryCount(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -1161,7 +1155,7 @@ public sealed partial class Utf8Regex
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
-                return OwnedSliceMatchFromByte(input, _ownedSliceProgram ?? throw new InvalidOperationException("A structural scalar program is required."),
+                return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
                     0, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
@@ -1443,7 +1437,6 @@ public sealed partial class Utf8Regex
         }
 
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        var decoded = analysis.GetDecodedString();
         // Anchored ASCII literal prefixes shape directly from the prefix compare:
         // byte-exact on every input, so detailed matches never construct the BCL engine.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -1453,10 +1446,10 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
             if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredDetailedLength))
             {
-                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, 0, anchoredDetailedLength);
+                return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, 0, anchoredDetailedLength);
             }
 
-            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
         }
 
         // Anchored suffixes shape the same way from the direct hit, which already
@@ -1469,10 +1462,10 @@ public sealed partial class Utf8Regex
             if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixDetailed) &&
                 suffixDetailed.Success)
             {
-                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, suffixDetailed.IndexInUtf16, suffixDetailed.LengthInUtf16);
+                return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, suffixDetailed.IndexInUtf16, suffixDetailed.LengthInUtf16);
             }
 
-            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
         }
 
         if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
@@ -1492,12 +1485,12 @@ public sealed partial class Utf8Regex
 
             if (!first.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
             }
 
             return ownedGroupCount > 1
-                ? new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16, ownedGroupCount)
-                : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
+                ? new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, first.IndexInUtf16, first.LengthInUtf16, ownedGroupCount)
+                : new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, first.IndexInUtf16, first.LengthInUtf16);
         }
 
         if (_groupedLiteralSpanTable is not null &&
@@ -1519,10 +1512,10 @@ public sealed partial class Utf8Regex
 
             if (!groupedFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
             }
 
-            if (TryShapeGroupedLiteralDetailedMatch(input, decoded, analysis.BoundaryMap, groupedFirst, out var groupedDetailed))
+            if (TryShapeGroupedLiteralDetailedMatch(input, analysis.BoundaryMap, groupedFirst, out var groupedDetailed))
             {
                 return groupedDetailed;
             }
@@ -1546,10 +1539,10 @@ public sealed partial class Utf8Regex
 
             if (!alternationFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
             }
 
-            if (TryShapeAlternationBranchDetailedMatch(input, decoded, analysis.BoundaryMap, alternationFirst, out var alternationDetailed))
+            if (TryShapeAlternationBranchDetailedMatch(input, analysis.BoundaryMap, alternationFirst, out var alternationDetailed))
             {
                 return alternationDetailed;
             }
@@ -1557,7 +1550,7 @@ public sealed partial class Utf8Regex
 
 
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
-            TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, 0, out var branched))
+            TryMatchDetailedBranchedLiteralFamily(input, analysis.BoundaryMap, branchMap, 0, out var branched))
         {
             return branched;
         }
@@ -1579,10 +1572,10 @@ public sealed partial class Utf8Regex
 
             if (!grouplessFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
             }
 
-            return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, grouplessFirst.IndexInUtf16, grouplessFirst.LengthInUtf16);
+            return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, grouplessFirst.IndexInUtf16, grouplessFirst.LengthInUtf16);
         }
 
         // Native discovery may lack complete capture history. Borrow the same
@@ -1642,7 +1635,6 @@ public sealed partial class Utf8Regex
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        string? decoded = null;
         // Anchored prefixes anchor to offset 0: a nonzero start is a definitive miss,
         // while offset 0 reuses the byte-exact prefix compare without BCL construction.
         if (!UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -1653,10 +1645,10 @@ public sealed partial class Utf8Regex
             if (start.Value == 0 &&
                 Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredOffsetLength))
             {
-                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, 0, anchoredOffsetLength);
+                return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, 0, anchoredOffsetLength);
             }
 
-            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
         }
 
         if (!UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
@@ -1668,10 +1660,10 @@ public sealed partial class Utf8Regex
                 suffixOffsetDetailed.Success &&
                 start.Value <= suffixOffsetDetailed.IndexInUtf16)
             {
-                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, suffixOffsetDetailed.IndexInUtf16, suffixOffsetDetailed.LengthInUtf16);
+                return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, suffixOffsetDetailed.IndexInUtf16, suffixOffsetDetailed.LengthInUtf16);
             }
 
-            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
         }
 
         return OwnedSliceMatchDetailedFromByte(input, _ownedSliceProgram,
@@ -1716,7 +1708,6 @@ public sealed partial class Utf8Regex
 
     private bool TryShapeGroupedLiteralDetailedMatch(
         ReadOnlySpan<byte> input,
-        string decoded,
         Utf8BoundaryMap boundaryMap,
         Utf8ValueMatch hit,
         out Utf8MatchContext detailed)
@@ -1724,7 +1715,7 @@ public sealed partial class Utf8Regex
         // R05: projects every group from fixed literal-relative spans onto the owned
         // discovery hit. The hit length selects the present or absent projection for
         // optional shapes; any other disagreement or out-of-range capture number
-        // declines to the BCL routes instead of shaping blindly.
+        // declines to scalar capture discovery instead of shaping blindly.
         detailed = default;
         var table = _groupedLiteralSpanTable;
         if (table is null)
@@ -1782,14 +1773,13 @@ public sealed partial class Utf8Regex
             lengths[number] = projectionLengths[i];
         }
 
-        detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
+        detailed = new Utf8MatchContext(input, boundaryMap, _program.CaptureCatalog, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
         return true;
     }
 
 
     private bool TryShapeAlternationBranchDetailedMatch(
         ReadOnlySpan<byte> input,
-        string decoded,
         Utf8BoundaryMap boundaryMap,
         Utf8ValueMatch hit,
         out Utf8MatchContext detailed)
@@ -1807,12 +1797,12 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        var hitSpan = decoded.AsSpan(hit.IndexInUtf16, hit.LengthInUtf16);
+        var hitSpan = input.Slice(hit.IndexInBytes, hit.LengthInBytes);
         var selected = -1;
         for (var branch = 0; branch < map.BranchExpansions.Length; branch++)
         {
             var expansion = map.BranchExpansions[branch];
-            if (expansion.Length != hit.LengthInUtf16 || !hitSpan.SequenceEqual(expansion.AsSpan()))
+            if (expansion.Length != hit.LengthInUtf16 || !MatchesScalarLiteralExpansion(hitSpan, expansion.AsSpan()))
             {
                 continue;
             }
@@ -1858,12 +1848,32 @@ public sealed partial class Utf8Regex
             lengths[number] = selectedLengths[i];
         }
 
-        detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
+        detailed = new Utf8MatchContext(input, boundaryMap, _program.CaptureCatalog, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
         return true;
     }
 
-    // R05: construction-cached pure-tree capture predicate for the template divert.
-    // A missing tree conservatively reports captures so BCL routing is preserved.
+    // Compare a native discovery hit with one pattern expansion without decoding the subject.
+    private static bool MatchesScalarLiteralExpansion(ReadOnlySpan<byte> input, ReadOnlySpan<char> expansion)
+    {
+        while (!input.IsEmpty && !expansion.IsEmpty)
+        {
+            if (input[0] < 0x80 && expansion[0] < 0x80)
+            {
+                if (input[0] != expansion[0]) return false;
+                input = input[1..];
+                expansion = expansion[1..];
+                continue;
+            }
+            if (Rune.DecodeFromUtf8(input, out var subjectScalar, out var bytes) != OperationStatus.Done ||
+                Rune.DecodeFromUtf16(expansion, out var patternScalar, out var units) != OperationStatus.Done ||
+                subjectScalar != patternScalar) return false;
+            input = input[bytes..];
+            expansion = expansion[units..];
+        }
+        return input.IsEmpty && expansion.IsEmpty;
+    }
+
+    // Construction-cached capture predicate; a missing tree conservatively reports captures.
     private static bool HasOwnedCaptures(Utf8ExecutionTree? tree)
     {
         if (tree?.Root is null)
@@ -2079,10 +2089,9 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    // Returns true when the branched path owns the result (hit or miss); false declines to BCL.
+    // Returns true when native branch discovery owns the result; false selects scalar discovery.
     private bool TryMatchDetailedBranchedLiteralFamily(
         ReadOnlySpan<byte> input,
-        string decoded,
         Utf8BoundaryMap boundaryMap,
         Utf8LiteralFamilyCaptureMap map,
         int startInUtf16,
@@ -2119,7 +2128,7 @@ public sealed partial class Utf8Regex
                     return false;
                 }
 
-                detailed = CreateBranchedDetailedMatch(input, decoded, boundaryMap, map, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
+                detailed = CreateBranchedDetailedMatch(input, boundaryMap, map, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
                 return true;
             }
         }
@@ -2128,15 +2137,14 @@ public sealed partial class Utf8Regex
             throw CreateMatchTimeoutException(input);
         }
 
-        detailed = Utf8MatchContext.Unsuccessful(input, decoded, boundaryMap, _groupNames);
+        detailed = Utf8MatchContext.Unsuccessful(input, boundaryMap, _program.CaptureCatalog);
         return true;
     }
 
     // Shapes one owned detailed view from a mapped branch hit shared by detailed matching
-    // and evaluator replacement.
+    // and its owned group projection.
     private Utf8MatchContext CreateBranchedDetailedMatch(
         ReadOnlySpan<byte> input,
-        string decoded,
         Utf8BoundaryMap boundaryMap,
         Utf8LiteralFamilyCaptureMap map,
         int branch,
@@ -2166,7 +2174,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        return new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, indexInUtf16, lengthInUtf16, starts, lengths);
+        return new Utf8MatchContext(input, boundaryMap, _program.CaptureCatalog, indexInUtf16, lengthInUtf16, starts, lengths);
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
@@ -2381,15 +2389,13 @@ public sealed partial class Utf8Regex
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input)))
         {
             var rtlAnalysis = Utf8InputAnalyzer.Analyze(input);
-            var rtlDecoded = rtlAnalysis.GetDecodedString();
             var rtlBudget = CreateExecutionBudget();
             return new Utf8ValueSplitEnumerator(
                 input,
-                rtlDecoded,
                 new Utf8OperationMatchCursor(input, _preparedRegex, rtlSplitLiteral, _preparedRegex.ExecutionKind, rtlBudget, Utf8InputAnalyzer.IsAscii(input), rightToLeft: true),
                 rtlAnalysis.BoundaryMap,
                 count == 0 ? int.MaxValue : count,
-                rtlDecoded.Length,
+                rtlAnalysis.Utf16Length,
                 rightToLeft: true)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
@@ -2433,7 +2439,7 @@ public sealed partial class Utf8Regex
 
         // R05: caret-anchored grouped literals split the single anchored hit through
         // the anchor-enforcing prefix cursor (group-agnostic segments). Counts below 2
-        // keep the BCL tail like the cursor arms around it.
+        // return the scalar tail through the general owned split preparation.
         if (count > 1 &&
             _caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretSplitPrefix &&
             !ShouldUseKelvinSignFallback(input))
@@ -2470,19 +2476,17 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        // R05: scalar-verifiable simple patterns split owned through the scalar
-        // cursor; anything else keeps the BCL split below.
+        // Scalar-verifiable simple patterns split through their native cursor;
+        // remaining shapes use the cached scalar program below.
         if (count > 1 && Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
-            var decoded = analysis.GetDecodedString();
             return new Utf8ValueSplitEnumerator(
                 input,
-                decoded,
                 new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget),
                 analysis.BoundaryMap,
                 count,
-                decoded.Length,
+                analysis.Utf16Length,
                 rightToLeft: false)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
@@ -2631,8 +2635,6 @@ public sealed partial class Utf8Regex
             return Encoding.UTF8.GetBytes(ownedTemplate);
         }
 
-
-
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
         {
             return ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes);
@@ -2721,7 +2723,7 @@ public sealed partial class Utf8Regex
     {
         try
         {
-            return OwnedSliceReplace(input, _ownedSliceProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _ownedSliceProgram),
+            return OwnedSliceReplace(input, _ownedSliceProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _program.CaptureCatalog),
                 ref state, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }

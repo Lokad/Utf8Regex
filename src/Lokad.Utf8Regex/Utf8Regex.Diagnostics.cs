@@ -486,13 +486,13 @@ public sealed partial class Utf8Regex
 
         public NativeExecutionKind ExecutionKind => _owner.ExecutionKind;
 
-        public bool DebugUsesOwnedSliceProgram => _owner._sliceProgram is not null;
+        public bool DebugUsesOwnedSliceProgram => _owner._preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex;
 
-        internal Utf8SliceProgram? OwnedSliceProgram => _owner._sliceProgram;
+        internal Utf8SliceProgram? OwnedSliceProgram => DebugUsesOwnedSliceProgram ? _owner._ownedSliceProgram : null;
 
         // Profile adapters can use the admitted scalar program even when the
         // core's default route selects a native plan for this pattern.
-        internal Utf8SliceProgram? AvailableOwnedSliceProgram => _owner._ownedSliceProgram;
+        internal Utf8SliceProgram AvailableOwnedSliceProgram => _owner._ownedSliceProgram;
 
         public Utf8PreparedRegex PreparedRegex => _owner.PreparedRegex;
 

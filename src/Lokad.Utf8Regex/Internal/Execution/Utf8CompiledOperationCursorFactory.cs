@@ -209,7 +209,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
         ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionDeadline deadline)
     {
         var cursor = CreateOwnedMatchCursor(prepared, input, validation, deadline, true, out var map);
-        return new Utf8ValueSplitEnumerator(input, null, cursor, map, count, map.Utf16Length,
+        return new Utf8ValueSplitEnumerator(input, cursor, map, count, map.Utf16Length,
             prepared.ScalarProgram is { RightToLeft: true });
     }
 }

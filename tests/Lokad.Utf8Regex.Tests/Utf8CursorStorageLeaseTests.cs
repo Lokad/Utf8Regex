@@ -149,7 +149,7 @@ public sealed class Utf8CursorStorageLeaseTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    public void AReturnedSplitViewKeepsMapAndDecodedLoansAfterCursorAbandonment(int count)
+    public void AReturnedSplitViewKeepsItsMapLoanAfterCursorAbandonment(int count)
     {
         var input = Encoding.UTF8.GetBytes("é😀 abab tail");
         var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant);
@@ -157,8 +157,7 @@ public sealed class Utf8CursorStorageLeaseTests
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var validation = Utf8Validation.Validate(input);
-        var held = 7UL + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4
-            + ((ulong)validation.Utf16Length + 1) * 2;
+        var held = 7UL + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
         ReadViewAfterCollection(regex, input, count, held, source, ref invocation);
         CollectLeases();
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
