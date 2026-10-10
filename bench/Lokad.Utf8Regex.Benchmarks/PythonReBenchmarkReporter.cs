@@ -2277,7 +2277,7 @@ internal sealed class PythonReBenchmarkContext
             _preparedReplacementPlan = plan;
             _preparedDotNetReplacement = plan.ToDotNetReplacementString();
             _preparedLiteralReplacement = string.Concat(
-                plan.Tokens.Select(static token => token.RequiredText));
+                plan.Tokens.Select(PythonReBenchmarkReplacementFormatting.GetLiteralText));
             _preparedLiteralReplacementUtf8 = s_strictUtf8.GetBytes(_preparedLiteralReplacement);
             _preparedExactReplacementPatternUtf8 = hasExactReplacementPattern
                 ? s_strictUtf8.GetBytes(exactReplacementPattern)

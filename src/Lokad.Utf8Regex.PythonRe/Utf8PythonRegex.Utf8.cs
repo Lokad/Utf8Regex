@@ -101,19 +101,7 @@ public sealed partial class Utf8PythonRegex
             startOffsetInBytes != 0 ||
             !_canUseZeroOffsetUtf8ValueFastPath ||
             _utf8Regex is null ||
-            !plan.TryGetLiteralText(out var literalText))
-        {
-            resultBytes = [];
-            replacementCount = 0;
-            return false;
-        }
-
-        byte[] literalBytes;
-        try
-        {
-            literalBytes = s_strictUtf8Encoding.GetBytes(literalText);
-        }
-        catch (EncoderFallbackException)
+            !plan.TryGetLiteralUtf8(out var literalBytes))
         {
             resultBytes = [];
             replacementCount = 0;

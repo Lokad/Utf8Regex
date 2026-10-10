@@ -13,6 +13,7 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         return owner.AllocateObject((owner, buffer), static state => new Utf8ConstructionText(state.owner, state.buffer));
     }
     internal int Length => characters.Count;
+    internal ReadOnlySpan<char> Span => characters.Span;
     internal char this[int index] => characters[index];
     internal void Truncate(int length) => characters.Truncate(length);
     internal Utf8ConstructionText Append(char value)
