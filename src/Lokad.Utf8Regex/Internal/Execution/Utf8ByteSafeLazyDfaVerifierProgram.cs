@@ -598,7 +598,6 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                 for (var i = startIndex; i < steps.Length; i++)
                 {
                     ChargeCompilationStep();
-                    ChargeCompilationStep();
                     var step = steps[i];
                     switch (step.Kind)
                     {
