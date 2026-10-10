@@ -19,13 +19,21 @@
 
 ## Development history
 
+- Admit all three owned capture projection producers under the shared
+  construction budget: map descriptors, retained arrays, scratch span vectors,
+  literal text and expansion entries. Work remains spent when a shape declines;
+  failures restore parent loans and preserve cancellation/deadline authority.
+  Replace recursive literal/optional-order helpers with admitted frames and
+  bounded preference masks. Capture identities and scalar results are preserved.
+  Broader search metadata, public resource policy and interoperability remain open.
+
 - Remove the redundant BCL capture-slot translator and its five numbering-map
   reconstructions. Grouped-literal and alternation capture maps use the final
   identities assigned by the shared owned catalog. Their existing scalar
   program supplies shared, explicit-number and balancing eligibility before
   scratch allocation; these declarations keep the owned capture-history route.
   Named/numeric/nested/duplicate captures and complete scalar ranges remain
-  qualified. Remaining capture-map storage admission is still migration work.
+  qualified. The later projection-admission change covers those map producers.
 
 - Replace the eight fixed executor SearchValues holders with immutable value
   tables sharing the owned byte-mask/SIMD kernel. Pattern-dependent sets retain

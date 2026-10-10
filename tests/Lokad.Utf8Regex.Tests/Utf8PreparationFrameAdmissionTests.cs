@@ -172,7 +172,7 @@ public sealed class Utf8PreparationFrameAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)]
-    public void SuccessfulPreparationKeepsTextLoansUntilOwnerCloses(int route)
+    public void SuccessfulPreparationKeepsRetainedPayloadLoansUntilOwnerCloses(int route)
     {
         var find = FindTree(3);
         var execution = Tree(route, 3);
@@ -189,6 +189,15 @@ public sealed class Utf8PreparationFrameAdmissionTests
                 Assert.Equal("a", Assert.IsType<string>(result));
                 Assert.True(owner.Budget.ReservedBytes > 112);
                 Assert.NotSame(checkpoint, owner.Budget.ObjectCheckpoint);
+            }
+            else if (route is >= 3 and <= 6)
+            {
+                Assert.True(owner.Budget.ReservedBytes > 112);
+                Assert.NotSame(checkpoint, owner.Budget.ObjectCheckpoint);
+                var rooted = false;
+                for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
+                    rooted |= ReferenceEquals(loan.Value, result);
+                Assert.True(rooted);
             }
             else
             {

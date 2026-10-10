@@ -95,7 +95,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
             case 4: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteLineBreakCount", input.Find, 0))); break;
             case 5: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractTrailingLiteral", input.Find, ""))); break;
             case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractDeterministicPrefixSets", input.Find, 0, null))); break;
-            case 7: Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", input.Execution, new List<bool>()))); break;
+            case 7: Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", input.Execution, 0, 0))); break;
             case 8: Call(typeof(Utf8AlternationBranchSpanMap), "CountAlternates", input.Execution, null, 0); break;
             case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
             case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input.Find)); break;
@@ -281,9 +281,10 @@ public sealed class Utf8FrontEndScanAdmissionTests
         var root = ExecutionNode(Utf8ExecutionNodeKind.Concatenate, ExecutionNode(Utf8ExecutionNodeKind.Loop, alternate),
             ExecutionNode(Utf8ExecutionNodeKind.LazyLoop, ExecutionNode(Utf8ExecutionNodeKind.One)));
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var greedy = new List<bool>();
-        Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", root, greedy)));
-        Assert.Equal(new[] { true, false }, greedy);
+        object?[] loops = [root, 0, 0];
+        Assert.True(Assert.IsType<bool>(Call(typeof(Utf8AlternationBranchSpanMap), "TryCollectLoops", loops)));
+        Assert.Equal(2, loops[1]);
+        Assert.Equal(1, loops[2]);
         object?[] args = [root, null, 0];
         Call(typeof(Utf8AlternationBranchSpanMap), "CountAlternates", args);
         Assert.Same(alternate, args[1]);

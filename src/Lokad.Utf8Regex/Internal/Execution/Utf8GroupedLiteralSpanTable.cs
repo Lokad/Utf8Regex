@@ -64,11 +64,12 @@ internal sealed class Utf8GroupedLiteralSpanTable
         // No slot renumbering or independent numbering scan is needed here.
         if (captureProgram.HasBalancing || captureProgram.HasSharedCaptureDeclarations || captureProgram.HasExplicitCaptureNumbers) return null;
         using var construction = Utf8ConstructionScope.Enter();
-        var result = Create(tree);
-        if (result is not null) construction.Complete();
+        using var storage = Utf8CaptureMapConstruction.Create(construction.Budget);
+        var result = Create(tree, storage);
+        if (result is not null) { storage.Complete(); construction.Complete(); }
         return result;
 
-        static Utf8GroupedLiteralSpanTable? Create(Utf8ExecutionTree? tree)
+        static Utf8GroupedLiteralSpanTable? Create(Utf8ExecutionTree? tree, Utf8CaptureMapConstruction storage)
         {
             if (tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
                 root.Children.Count != 1)
@@ -76,8 +77,8 @@ internal sealed class Utf8GroupedLiteralSpanTable
                 return null;
             }
 
-            var walker = new SpanWalker();
-            if (!walker.TryWalk(root.Children[0], inLoop: false, inAlternate: false))
+            var walker = SpanWalker.Create(storage, 0);
+            if (!walker.TryWalk(storage, root.Children[0], inLoop: false, inAlternate: false))
             {
                 return null;
             }
@@ -90,22 +91,16 @@ internal sealed class Utf8GroupedLiteralSpanTable
             // The shared catalog finalized these capture identities before lowering.
             if (!walker.LoopSeen)
             {
-                return new Utf8GroupedLiteralSpanTable(
-                    walker.Position,
-                    walker.Groups.ToArray(),
-                    walker.Starts.ToArray(),
-                    walker.Lengths.ToArray(),
-                    hasOptionalLoop: false,
-                    walker.Position,
-                    [],
-                    []);
+                return Allocate(storage, walker.Position, storage.Copy(walker.Groups),
+                    storage.Copy(walker.Starts), storage.Copy(walker.Lengths), false, walker.Position, [], []);
             }
 
-            var absentStarts = new int[walker.Groups.Count];
-            var absentLengths = new int[walker.Groups.Count];
+            var absentStarts = storage.Allocate<int>(walker.Groups.Count);
+            var absentLengths = storage.Allocate<int>(walker.Groups.Count);
             var loopEnd = walker.LoopStart + walker.LoopLength;
             for (var i = 0; i < walker.Groups.Count; i++)
             {
+                storage.Budget.ChargeWork(1);
                 if (walker.InLoop[i])
                 {
                     absentStarts[i] = -1;
@@ -139,26 +134,44 @@ internal sealed class Utf8GroupedLiteralSpanTable
                 }
             }
 
-            return new Utf8GroupedLiteralSpanTable(
-                walker.Position,
-                walker.Groups.ToArray(),
-                walker.Starts.ToArray(),
-                walker.Lengths.ToArray(),
-                hasOptionalLoop: true,
-                walker.Position - walker.LoopLength,
-                absentStarts,
-                absentLengths);
+            return Allocate(storage, walker.Position, storage.Copy(walker.Groups),
+                storage.Copy(walker.Starts), storage.Copy(walker.Lengths), true,
+                walker.Position - walker.LoopLength, absentStarts, absentLengths);
 
         }
     }
 
+    private static Utf8GroupedLiteralSpanTable Allocate(Utf8CaptureMapConstruction storage,
+        int total, int[] groups, int[] starts, int[] lengths, bool optional,
+        int withoutLoop, int[] absentStarts, int[] absentLengths) =>
+        storage.Budget.AllocateObject((total, groups, starts, lengths, optional, withoutLoop, absentStarts, absentLengths),
+            static state => new Utf8GroupedLiteralSpanTable(state.total, state.groups, state.starts, state.lengths,
+                state.optional, state.withoutLoop, state.absentStarts, state.absentLengths));
+
     private sealed class SpanWalker
     {
         internal int Position;
-        internal readonly List<int> Groups = new();
-        internal readonly List<int> Starts = new();
-        internal readonly List<int> Lengths = new();
-        internal readonly List<bool> InLoop = new();
+        internal readonly Utf8ConstructionBuffer<int> Groups;
+        internal readonly Utf8ConstructionBuffer<int> Starts;
+        internal readonly Utf8ConstructionBuffer<int> Lengths;
+        internal readonly Utf8ConstructionBuffer<bool> InLoop;
+
+        private SpanWalker(int position, Utf8ConstructionBuffer<int> groups,
+            Utf8ConstructionBuffer<int> starts, Utf8ConstructionBuffer<int> lengths, Utf8ConstructionBuffer<bool> inLoop)
+        {
+            Position = position;
+            Groups = groups; Starts = starts; Lengths = lengths; InLoop = inLoop;
+        }
+
+        internal static SpanWalker Create(Utf8CaptureMapConstruction storage, int position)
+        {
+            var groups = storage.Buffer<int>();
+            var starts = storage.Buffer<int>();
+            var lengths = storage.Buffer<int>();
+            var inLoop = storage.Buffer<bool>();
+            return storage.Budget.AllocateObject((position, groups, starts, lengths, inLoop, false, -1, 0),
+                static state => new SpanWalker(state.position, state.groups, state.starts, state.lengths, state.inLoop));
+        }
         internal bool LoopSeen;
         internal int LoopStart = -1;
         internal int LoopLength;
@@ -177,10 +190,9 @@ internal sealed class Utf8GroupedLiteralSpanTable
             internal int End;
         }
 
-        internal bool TryWalk(Utf8ExecutionNode node, bool inLoop, bool inAlternate)
+        internal bool TryWalk(Utf8CaptureMapConstruction storage, Utf8ExecutionNode node, bool inLoop, bool inAlternate)
         {
-            using var construction = Utf8ConstructionScope.Enter();
-            var budget = construction.Budget;
+            var budget = storage.Budget;
             using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, this, inLoop, inAlternate, 0));
             SpanWalker? completedChild = null;
             while (frames.Count != 0)
@@ -190,7 +202,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
                 var frame = frames[index];
                 Frame? child;
                 bool accepted;
-                try { accepted = Advance(ref frame, completedChild, budget, out child); }
+                try { accepted = Advance(ref frame, completedChild, storage, out child); }
                 finally { frames[index] = frame; }
                 if (!accepted) return false;
                 if (child is { } pending) frames.Push(pending);
@@ -200,16 +212,17 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     frames.Pop();
                 }
             }
-                return true;
+            return true;
         }
 
-        // Scratch branch walkers are acquired only after their value frame is
-        // admitted. Their lists and the root walker still need separate loans.
+        // Branch frames precede admitted scratch walkers and their vectors.
+        // The factory owns their payloads through the final projection copy.
         private static bool Advance(ref Frame frame, SpanWalker? completedChild,
-            Utf8ConstructionBudget budget, out Frame? child)
+            Utf8CaptureMapConstruction storage, out Frame? child)
         {
+            var budget = storage.Budget;
             child = null;
-            var walker = frame.Walker ??= new SpanWalker { Position = frame.InitialPosition };
+            var walker = frame.Walker ??= Create(storage, frame.InitialPosition);
             var node = frame.Node;
             switch (node.Kind)
             {
@@ -241,7 +254,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     if (frame.Stage == 0)
                     {
                         budget.ChargeWork((ulong)walker.Groups.Count);
-                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.Contains(node.CaptureNumber)) return false;
+                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.IndexOf(node.CaptureNumber) >= 0) return false;
                         frame.Start = walker.Position;
                         frame.Stage = 1;
                         child = new(node.Children[0], walker, frame.InLoop, frame.InAlternate, 0);
