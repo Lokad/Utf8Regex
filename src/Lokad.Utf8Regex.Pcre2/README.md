@@ -3,7 +3,12 @@
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.
-`Utf8Regex` remains exclusively the .NET 10 `Regex` profile.
+The core `Utf8Regex` matches Unicode scalars over strict UTF-8 with byte coordinates.
+
+Version 0.4.0-scalar.1 is an experimental integration candidate with a distinct
+identity from published 0.3.0. Whole producer acceptance, common resource/result
+policies and complete adapter qualification remain unfinished. Use the qualified
+candidate's exact version, immutable feed and provenance manifest.
 
 The package does not bind to native PCRE2. Its only non-BCL implementation
 dependency is `Lokad.Utf8Regex`; there is no P/Invoke, native loader, RID

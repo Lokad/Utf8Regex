@@ -2,7 +2,11 @@
 
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
-The contract changed on 2026-10-06. The published 0.3.0 packages and existing compatibility paths retain the former .NET UTF-16 behavior; the scalar migration is in progress. [SPEC.md](SPEC.md) defines the target and its qualification requirements. Existing benchmark snapshots describe their recorded implementations and qualify scalar comparisons only where results agree.
+The 0.4.0-scalar.1 prerelease uses Unicode-scalar matching. Published 0.3.0 packages retain the former .NET UTF-16 contract. The current core and adapters use owned execution; production BCL matching and result fallbacks and the private UTF-16-unit engine have been removed. [SPEC.md](SPEC.md) defines the target and its qualification requirements. Common resource policies, retained/result bounds, remaining preparation cleanup and complete acceptance remain unfinished. This prerelease is an experimental integration candidate.
+
+Use a qualified candidate's exact version and immutable feed/manifest for reproducible integration. [qualify-scalar-candidate.ps1](qualify-scalar-candidate.ps1) builds and packs once, checks provenance, runs detached consumers and records package hashes; it does not publish to NuGet.org. Existing benchmark snapshots describe their recorded implementations and qualify scalar comparisons only where results agree.
+
+Run `./qualify-scalar-candidate.ps1` from a clean committed checkout. Successful output is designated once under `artifacts/scalar-candidates/<version>/`, with `candidate.json`, a `feed/` directory and a reusable `NuGet.Config`. Consumers should pin the exact version, restore with that config and an isolated cache, and retain their package lockfile. A changed candidate requires a new version.
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you want to avoid decoding to UTF-16 before every regex operation.
 
@@ -21,10 +25,11 @@ Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 - Development semantics: Unicode-scalar matching over strict UTF-8. Dot, classes, quantifiers, capture boundaries, references and RTL traversal operate on complete scalars.
 - Primary I/O model: UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` with primary byte coordinates. Existing UTF-16 coordinate/string APIs provide interoperability and do not define matching width.
 - Primary option scope: `RegexOptions.CultureInvariant` is the main supported and performance-tested mode.
-- Execution model: owned UTF-8 execution is the target. Transitional BCL verification and private UTF-16-unit routes remain implementation debt to remove.
-- Byte coordinates: the scalar target requires every successful core match/capture to have a scalar-aligned UTF-8 byte range. Older compatibility paths can still return non-byte-aligned results during migration.
+- Execution model: owned scalar execution with qualified native UTF-8 fast paths. BCL Regex is a comparator in tests and benchmarks where its code-unit semantics overlap.
+- Byte coordinates: successful core matches and captures use scalar-aligned UTF-8 byte ranges.
 - Comparators: use .NET Regex only where its behavior overlaps the scalar contract; direct scalar fixtures define supplementary behavior.
-- Stability: the package is suitable for early production use on `CultureInvariant` UTF-8 workloads, but still evolving in backend coverage and performance portability.
+- Resource scope: the core rejects finite public `Utf8ResourcePolicy` budgets with `NotSupportedException`; instance timeouts and cancellation remain available. Internal admission covers selected producers and is not a complete public memory or work bound.
+- Stability: 0.4.0-scalar.1 is an experimental candidate. Full resource, cancellation, adapter and performance qualification remains open.
 
 ## Public API
 
@@ -68,7 +73,7 @@ Console.WriteLine(Encoding.UTF8.GetString(redacted));
 Notes:
 - Inputs must be well-formed UTF-8.
 - The library also exposes static helpers such as `Utf8Regex.IsMatch(...)`, `Utf8Regex.Count(...)`, `Utf8Regex.Match(...)`, `Utf8Regex.EnumerateMatches(...)`, and `Utf8Regex.Replace(...)`.
-- Match results expose both UTF-16 coordinates and, when available, byte coordinates via `Utf8ValueMatch`.
+- Match results expose primary byte coordinates and derived UTF-16 coordinates via `Utf8ValueMatch`.
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks

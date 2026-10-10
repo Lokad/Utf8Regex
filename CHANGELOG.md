@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0-scalar.1 candidate
+
+- Give scalar development a distinct prerelease package identity. Published 0.3.0
+  retains its former UTF-16 contract; this candidate uses strict UTF-8 Unicode
+  scalars with primary byte coordinates. A supplementary scalar is one dot match.
+- Remove production BCL matching/result fallbacks, the UTF-16-unit engine and
+  obsolete class projections. Captures, references, lookarounds, RTL and empty
+  advancement follow the scalar contract; UTF-16 coordinates/string APIs are
+  derived interoperability.
+- Qualify one immutable local feed with exact package/DLL/source/SourceLink/PE/PDB
+  identities and isolated consumers. Candidate qualification does not publish
+  packages or constitute complete producer acceptance.
+- Common finite construction/invocation/result/retention policies, remaining
+  DFA/emission/preparation admission, whole cancellation coverage, full adapter
+  acceptance and fresh comparative performance remain unfinished. Core finite
+  public resource budgets remain explicitly unsupported.
+
+## Development history
+
 - Development contract: core matching now targets Unicode scalars over strict UTF-8, with byte coordinates as primary. Exact .NET UTF-16 parity is superseded; implementation migration and removal of obsolete parity machinery are in progress. Published 0.3.0 behavior is unchanged by this documentation decision.
 
 - Whole-segment getters on owned split views retain their prepared decoded-string loan after the view or cursor disappears. Decoded text and coordinate maps now have separate leases, so an escaped text alias does not retain unused coordinate storage. Weak alias attachments preserve the existing string identity and release after the last alias is collected. Independent substring results, getter/result limits and registry/object-overhead admission remain open.
