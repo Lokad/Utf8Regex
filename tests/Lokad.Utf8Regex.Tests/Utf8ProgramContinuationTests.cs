@@ -157,10 +157,14 @@ public sealed class Utf8ProgramContinuationTests
         var input = Encoding.ASCII.GetBytes(text);
         var captures = new Utf8CaptureSlots(2);
         using var source = new CancellationTokenSource();
+        // Expire at the admitted checkpoint itself. A wall clock can expire
+        // during JIT or scheduling before the hook, losing this witness's entry.
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) Thread.Sleep(50); else source.Cancel(); };
+        invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
         if (expire)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
                 Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, captures, ref invocation, out _, out _));
