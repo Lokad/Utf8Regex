@@ -277,8 +277,6 @@ public sealed partial class Utf8Pcre2Regex
     internal int DebugEvaluateFirstReplacementOnly(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        var subject = Encoding.UTF8.GetString(input);
-
         var match = MatchDetailed(input, startOffsetInBytes, Pcre2MatchOptions.None);
         if (!match.Success)
         {
@@ -287,16 +285,15 @@ public sealed partial class Utf8Pcre2Regex
 
         var value = match.Value;
         var groups = CaptureGroups(match);
-        return EvaluateReplacementTemplate(
-            replacement,
-            substitutionOptions,
-            subject,
-            value.StartOffsetInUtf16,
-            value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-            number => ResolveNativeNumberReference(groups, number, subject),
-            name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-            () => ResolveNativeLastCapturedReference(groups, subject),
-            match.Mark).Length;
+        var writer = CreateTemplateWriter(input, CancellationToken.None);
+        try
+        {
+            // Attribution now measures the actual UTF-8 expansion and returns byte length.
+            writer.AppendTemplate(replacement, substitutionOptions, null, groups, value.StartOffsetInBytes,
+                value.EndOffsetInBytes - value.StartOffsetInBytes, match.Mark);
+            return writer.Length;
+        }
+        finally { writer.Release(); }
     }
 
     internal string DebugExecutionKindName => _program.Operations.Match.Kind.ToString();

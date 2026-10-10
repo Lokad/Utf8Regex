@@ -1769,7 +1769,7 @@ public sealed partial class Utf8Pcre2Regex
                 replacement,
                 substitutionOptions,
                 startOffsetInBytes,
-                matchOptions);
+                matchOptions, cancellationToken);
         }
 
         if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram)
@@ -1782,7 +1782,7 @@ public sealed partial class Utf8Pcre2Regex
                     replacement,
                     substitutionOptions,
                     startOffsetInBytes,
-                    matchOptions);
+                    matchOptions, cancellationToken);
             }
 
             return ReplaceSliceDetailed(
@@ -1796,7 +1796,7 @@ public sealed partial class Utf8Pcre2Regex
 
         if (_program.Operations.Replace.Kind != Pcre2DirectProgramKind.None)
         {
-            return ReplaceUsingDecodedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
+            return ReplaceUsingDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, cancellationToken);
         }
 
         throw CreateUnsupportedReplacementException();
@@ -2106,265 +2106,96 @@ public sealed partial class Utf8Pcre2Regex
         return builder.ToString();
     }
 
-    private byte[] ReplaceUsingDecodedDetailedIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
+    private Pcre2ReplacementTemplateWriter CreateTemplateWriter(ReadOnlySpan<byte> input, CancellationToken token)
+        => new(input, NameEntries, _program.Request.DefaultLimits.HeapLimitInBytes, _program.Request.MatchTimeout, token);
+
+    private byte[] ReplaceUsingDetailedIteration(ReadOnlySpan<byte> input, string replacement,
+        Pcre2SubstitutionOptions options, int startOffsetInBytes, CancellationToken token)
     {
-        var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? Pcre2SimpleReplacementParser.Literal(replacement)
-            : GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(subject.Length + replacement.Length);
-        var position = 0;
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        if (!enumerator.MoveNext())
-        {
-            return replacementOnly ? [] : input.ToArray();
-        }
-
-        do
-        {
-            var value = enumerator.Current;
-            var match = MatchDetailed(input, value.StartOffsetInBytes, Pcre2MatchOptions.None);
-            if (!match.Success)
-            {
-                throw new InvalidOperationException("Translated enumeration produced a match that MatchDetailed(...) could not reproduce.");
-            }
-
-            if (!replacementOnly)
-            {
-                builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            }
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, value.StartOffsetInUtf16, value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
-            }
-            else
-            {
-                var groups = CaptureGroups(match);
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                    number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                    () => ResolveNativeLastCapturedReference(groups, subject),
-                    mark: match.Mark));
-            }
-            position = value.EndOffsetInUtf16;
-        }
-        while (enumerator.MoveNext());
-
-        if (!replacementOnly)
-        {
-            builder.Append(subject, position, subject.Length - position);
-        }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceBacktrackingDetailed(
-        ReadOnlySpan<byte> input,
-        Pcre2BacktrackingProgram program,
-        string replacement,
-        Pcre2SubstitutionOptions substitutionOptions,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions)
-    {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
-            program,
-            _program.CandidateSearchPlan,
-            validated,
-            start,
-            matchOptions,
-            _program.Request);
-        if (!cursor.MoveNext())
-        {
-            return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
-                ? []
-                : input.ToArray();
-        }
-
-        var subject = Encoding.UTF8.GetString(input);
-        var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? Pcre2SimpleReplacementParser.Literal(replacement)
-            : GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(subject.Length + replacement.Length);
-        var position = 0;
-        do
-        {
-            var current = cursor.Current;
-            var groups = cursor.ProjectCurrentCaptures();
-            var value = groups[0];
-            if (!replacementOnly)
-            {
-                builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            }
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(
-                    builder,
-                    plan,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                    number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                    () => ResolveNativeLastCapturedReference(groups, subject),
-                    mark: current.Mark));
-            }
-
-            position = value.EndOffsetInUtf16;
-        }
-        while (cursor.MoveNext());
-
-        if (!replacementOnly)
-        {
-            builder.Append(subject, position, subject.Length - position);
-        }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    // R02a fixed-template substitution on the shared slice runner.
-    // Iteration reuses the slice global cursor (PCRE2 empty rules);
-    // every yielded match is re-queried for detailed captures through
-    // the same cumulative invocation, so request budgets never reset
-    // across the replacement. Template parsing and expansion reuse the
-    // established PCRE2 machinery over the decoded subject.
-    private static void ThrowHeapLimitExceeded()
-    {
-        throw new Pcre2MatchException(
-            "The PCRE2 heap limit was exceeded.",
-            Pcre2ErrorKind.HeapLimit);
-    }
-
-    // R02b reusable output storage: fixed-template substitution shapes into
-    // the shared ledger-charged byte writer instead of an uncharged builder.
-    // Matching steps, depth, deadline, and token polling live in the cursor
-    // invocation; this shaping scope caps working bytes only, mirroring the
-    // accounting split between invocation working storage and result
-    // materialization. Simple plans stay byte-exact end to end; full
-    // templates expand to string once per match and encode in place.
-    private byte[] ReplaceSliceDetailed(
-        ReadOnlySpan<byte> input,
-        Pcre2SliceDirectProgram sliceProgram,
-        string replacement,
-        Pcre2SubstitutionOptions substitutionOptions,
-        int startOffsetInBytes,
-        CancellationToken cancellationToken)
-    {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var shaping = new Utf8SliceInvocation(
-            new Utf8ExecutionLimits(0, 0, _program.Request.DefaultLimits.HeapLimitInBytes),
-            _program.Request.MatchTimeout,
-            cancellationToken);
-        if (!Utf8SliceOutputWriter.Rent(input.Length, ref shaping, out var writer))
-        {
-            ThrowHeapLimitExceeded();
-        }
-
-        var cursor = new Pcre2SliceGlobalMatchCursor(
-            sliceProgram.SliceProgram,
-            validated,
-            start,
-            _program.Request,
-            cancellationToken);
+        var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
+        var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+        var simple = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? Pcre2SimpleReplacementParser.Literal(replacement) : GetSimpleReplacementPlan(replacement, templateOptions);
+        var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None, token);
+        if (!enumerator.MoveNext()) return replacementOnly ? [] : input.ToArray();
+        var writer = CreateTemplateWriter(input, token);
         try
         {
-            if (!cursor.MoveNext())
+            var position = 0;
+            do
             {
-                return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
-                    ? []
-                    : input.ToArray();
-            }
+                var value = enumerator.Current;
+                var match = MatchDetailed(input, value.StartOffsetInBytes, Pcre2MatchOptions.None, token);
+                if (!match.Success) throw new InvalidOperationException("Translated enumeration produced a match that MatchDetailed(...) could not reproduce.");
+                if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
+                writer.AppendTemplate(replacement, templateOptions, simple, CaptureGroups(match), value.StartOffsetInBytes,
+                    value.EndOffsetInBytes - value.StartOffsetInBytes, match.Mark);
+                position = value.EndOffsetInBytes;
+            } while (enumerator.MoveNext());
+            if (!replacementOnly) writer.AppendGap(position, input.Length - position);
+            return writer.Complete();
+        }
+        finally { writer.Release(); }
+    }
 
-            var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
-            var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-            var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-                ? Pcre2SimpleReplacementParser.Literal(replacement)
-                : GetSimpleReplacementPlan(replacement, templateOptions);
-            var subject = simplePlan is null ? Encoding.UTF8.GetString(input) : string.Empty;
+    private byte[] ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Pcre2BacktrackingProgram program,
+        string replacement, Pcre2SubstitutionOptions options, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token)
+    {
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, _program.CandidateSearchPlan,
+            validated, start, matchOptions, _program.Request);
+        if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0 ? [] : input.ToArray();
+        var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
+        var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+        var simple = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? Pcre2SimpleReplacementParser.Literal(replacement) : GetSimpleReplacementPlan(replacement, templateOptions);
+        var writer = CreateTemplateWriter(input, token);
+        try
+        {
+            var position = 0;
+            do
+            {
+                var groups = cursor.ProjectCurrentCaptures();
+                var value = groups[0];
+                if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
+                writer.AppendTemplate(replacement, templateOptions, simple, groups, value.StartOffsetInBytes,
+                    value.EndOffsetInBytes - value.StartOffsetInBytes, cursor.Current.Mark);
+                position = value.EndOffsetInBytes;
+            } while (cursor.MoveNext());
+            if (!replacementOnly) writer.AppendGap(position, input.Length - position);
+            return writer.Complete();
+        }
+        finally { writer.Release(); }
+    }
+
+    private byte[] ReplaceSliceDetailed(ReadOnlySpan<byte> input, Pcre2SliceDirectProgram sliceProgram,
+        string replacement, Pcre2SubstitutionOptions options, int startOffsetInBytes, CancellationToken token)
+    {
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram.SliceProgram, validated, start, _program.Request, token);
+        if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0 ? [] : input.ToArray();
+        var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
+        var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+        var simple = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? Pcre2SimpleReplacementParser.Literal(replacement) : GetSimpleReplacementPlan(replacement, templateOptions);
+        var writer = CreateTemplateWriter(input, token);
+        try
+        {
             var position = 0;
             do
             {
                 var range = cursor.Current;
                 var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
                 var value = groups[0];
-                if (!replacementOnly)
-                {
-                    if (!writer.Append(input.Slice(position, value.StartOffsetInBytes - position), ref shaping))
-                    {
-                        ThrowHeapLimitExceeded();
-                    }
-                }
-
-                if (simplePlan is { } plan)
-                {
-                    foreach (var segment in plan.Segments)
-                    {
-                        if (segment.IsWholeMatch)
-                        {
-                            if (!writer.Append(input.Slice(value.StartOffsetInBytes, value.EndOffsetInBytes - value.StartOffsetInBytes), ref shaping))
-                            {
-                                ThrowHeapLimitExceeded();
-                            }
-                        }
-                        else if (!writer.Append(segment.LiteralUtf8, ref shaping))
-                        {
-                            ThrowHeapLimitExceeded();
-                        }
-                    }
-                }
-                else
-                {
-                    var expanded = EvaluateReplacementTemplate(
-                        replacement,
-                        templateOptions,
-                        subject,
-                        value.StartOffsetInUtf16,
-                        value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                        number => ResolveNativeNumberReference(groups, number, subject),
-                        name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                        () => ResolveNativeLastCapturedReference(groups, subject),
-                        mark: null);
-                    if (!writer.AppendUtf16(expanded.AsSpan(), ref shaping))
-                    {
-                        ThrowHeapLimitExceeded();
-                    }
-                }
-
+                if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
+                writer.AppendTemplate(replacement, templateOptions, simple, groups, value.StartOffsetInBytes,
+                    value.EndOffsetInBytes - value.StartOffsetInBytes, null);
                 position = value.EndOffsetInBytes;
-            }
-            while (cursor.MoveNext());
-
-            if (!replacementOnly)
-            {
-                if (!writer.Append(input.Slice(position), ref shaping))
-                {
-                    ThrowHeapLimitExceeded();
-                }
-            }
-
-            return writer.ToArrayAndRelease(ref shaping);
+            } while (cursor.MoveNext());
+            if (!replacementOnly) writer.AppendGap(position, input.Length - position);
+            return writer.Complete();
         }
-        finally
-        {
-            writer.Release(ref shaping);
-        }
+        finally { writer.Release(); }
     }
 
     private bool RejectsReplacementIteration()
@@ -2400,40 +2231,6 @@ public sealed partial class Utf8Pcre2Regex
             assertion.UsesMatchBoundaryReset || HasDeferredLookaroundReset(assertion));
     }
 
-    private static string EvaluateReplacementTemplate(
-        string replacement,
-        Pcre2SubstitutionOptions substitutionOptions,
-        string subject,
-        int matchIndex,
-        int matchLength,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
-        string? mark,
-        bool syntaxOnly)
-    {
-        var builder = new StringBuilder(replacement.Length + matchLength);
-        var caseTransform = Pcre2ReplacementCaseTransformMode.None;
-        var nextCaseTransform = Pcre2ReplacementCaseTransformMode.None;
-        var quoted = false;
-        AppendEvaluatedReplacementTemplate(
-            builder,
-            replacement,
-            substitutionOptions,
-            subject,
-            matchIndex,
-            matchLength,
-            resolveNumber,
-            resolveName,
-            resolveLastCapture,
-            mark,
-            ref nextCaseTransform,
-            ref caseTransform,
-            ref quoted,
-            syntaxOnly);
-        return builder.ToString();
-    }
-
     private bool GenericBacktrackingMayReportNonMonotoneMatchOffsets =>
         _program.Operations.Match is Pcre2BacktrackingDirectProgram
         {
@@ -2456,28 +2253,6 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private static string EvaluateReplacementTemplate(
-        string replacement,
-        Pcre2SubstitutionOptions substitutionOptions,
-        string subject,
-        int matchIndex,
-        int matchLength,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
-        string? mark)
-        => EvaluateReplacementTemplate(
-            replacement,
-            substitutionOptions,
-            subject,
-            matchIndex,
-            matchLength,
-            resolveNumber,
-            resolveName,
-            resolveLastCapture,
-            mark,
-            false);
-
     private Pcre2SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions)
     {
         return _replacementComponent.GetOrAdd(
@@ -2487,849 +2262,6 @@ public sealed partial class Utf8Pcre2Regex
 
     private static bool TryParseSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions, out Pcre2SimpleReplacementPlan plan)
         => Pcre2SimpleReplacementParser.TryParse(replacement, substitutionOptions, out plan);
-
-    private static void AppendSimpleReplacement(StringBuilder builder, Pcre2SimpleReplacementPlan plan, string subject, int matchIndex, int matchLength)
-    {
-        // These remaining decoded consumers derive text only while shaping their
-        // string output. The cached plan owns canonical UTF-8 bytes alone.
-        Span<char> scalarText = stackalloc char[2];
-        foreach (var segment in plan.Segments)
-        {
-            if (segment.IsWholeMatch) builder.Append(subject, matchIndex, matchLength);
-            else
-            {
-                ReadOnlySpan<byte> bytes = segment.LiteralUtf8;
-                while (!bytes.IsEmpty)
-                {
-                    _ = Rune.DecodeFromUtf8(bytes, out var scalar, out var consumed);
-                    builder.Append(scalarText[..scalar.EncodeToUtf16(scalarText)]);
-                    bytes = bytes[consumed..];
-                }
-            }
-        }
-    }
-
-    private static void AppendEvaluatedReplacementTemplate(
-        StringBuilder builder,
-        string replacement,
-        Pcre2SubstitutionOptions substitutionOptions,
-        string subject,
-        int matchIndex,
-        int matchLength,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
-        string? mark,
-        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
-        ref Pcre2ReplacementCaseTransformMode caseTransform,
-        ref bool quoted,
-        bool syntaxOnly)
-    {
-        for (var i = 0; i < replacement.Length; i++)
-        {
-            var current = replacement[i];
-            if ((substitutionOptions & Pcre2SubstitutionOptions.Extended) != 0 && quoted)
-            {
-                if (current == '\\' && i + 1 < replacement.Length && replacement[i + 1] == 'E')
-                {
-                    quoted = false;
-                    caseTransform = Pcre2ReplacementCaseTransformMode.None;
-                    i++;
-                    continue;
-                }
-
-                AppendReplacementLiteral(builder, replacement, ref i, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                continue;
-            }
-
-            if ((substitutionOptions & Pcre2SubstitutionOptions.Extended) != 0 && current == '\\')
-            {
-                i = AppendExtendedEscape(
-                    builder,
-                    replacement,
-                    i,
-                    substitutionOptions,
-                    subject,
-                    matchIndex,
-                    matchLength,
-                    resolveNumber,
-                    resolveName,
-                    resolveLastCapture,
-                    mark,
-                    ref nextCaseTransform,
-                    ref caseTransform,
-                    ref quoted,
-                    syntaxOnly);
-                continue;
-            }
-
-            if (current == '$')
-            {
-                i = AppendDollarReplacement(
-                    builder,
-                    replacement,
-                    i,
-                    substitutionOptions,
-                    subject,
-                    matchIndex,
-                    matchLength,
-                    resolveNumber,
-                    resolveName,
-                    resolveLastCapture,
-                    mark,
-                    ref nextCaseTransform,
-                    ref caseTransform,
-                    ref quoted,
-                    syntaxOnly);
-                continue;
-            }
-
-            AppendReplacementLiteral(builder, replacement, ref i, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        }
-    }
-
-    private static int AppendExtendedEscape(
-        StringBuilder builder,
-        string replacement,
-        int index,
-        Pcre2SubstitutionOptions substitutionOptions,
-        string subject,
-        int matchIndex,
-        int matchLength,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
-        string? mark,
-        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
-        ref Pcre2ReplacementCaseTransformMode caseTransform,
-        ref bool quoted,
-        bool syntaxOnly)
-    {
-        if (index + 1 >= replacement.Length)
-        {
-            AppendReplacementChar(builder, '\\', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return index;
-        }
-
-        var next = replacement[index + 1];
-        if (char.IsAsciiDigit(next))
-        {
-            var end = index + 2;
-            while (end < replacement.Length && char.IsAsciiDigit(replacement[end]))
-            {
-                end++;
-            }
-
-            var token = replacement[(index + 1)..end];
-            if (next == '0' || (token.Length > 1 && token.All(static c => c is >= '0' and <= '7')))
-            {
-                AppendReplacementChar(builder, (char)Convert.ToInt32(token, 8), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return end - 1;
-            }
-
-            AppendResolvedReference(
-                builder,
-                resolveNumber(int.Parse(token)),
-                substitutionOptions,
-                ref nextCaseTransform,
-                ref caseTransform,
-                syntaxOnly);
-            return end - 1;
-        }
-
-        if (next == 'g' && index + 3 < replacement.Length && replacement[index + 2] == '<')
-        {
-            var closing = replacement.IndexOf('>', index + 3);
-            if (closing < 0)
-            {
-                throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-            }
-
-            var token = replacement[(index + 3)..closing];
-            if (string.IsNullOrEmpty(token) || string.Equals(token, "*MARK", StringComparison.Ordinal))
-            {
-                throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-            }
-
-            AppendResolvedSelector(builder, token, substitutionOptions, resolveNumber, resolveName, mark, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return closing;
-        }
-
-        if (next == 'g')
-        {
-            throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-        }
-
-        if (next == 'o')
-        {
-            if (index + 3 >= replacement.Length || replacement[index + 2] != '{')
-            {
-                throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-            }
-
-            var closing = replacement.IndexOf('}', index + 3);
-            if (closing < 0)
-            {
-                throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-            }
-
-            var octalDigits = replacement[(index + 3)..closing];
-            if (octalDigits.Length == 0 || octalDigits.Any(static c => c is < '0' or > '7'))
-            {
-                throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-            }
-
-            AppendReplacementChar(builder, (char)Convert.ToInt32(octalDigits, 8), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return closing;
-        }
-
-        switch (next)
-        {
-            case 'a':
-                AppendReplacementChar(builder, '\a', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'b':
-                AppendReplacementChar(builder, '\b', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'e':
-                AppendReplacementChar(builder, '\u001B', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'f':
-                AppendReplacementChar(builder, '\f', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'n':
-                AppendReplacementChar(builder, '\n', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'r':
-                AppendReplacementChar(builder, '\r', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 't':
-                AppendReplacementChar(builder, '\t', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'v':
-                AppendReplacementChar(builder, '\v', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '\\':
-                AppendReplacementChar(builder, '\\', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case 'Q':
-                quoted = true;
-                return index + 1;
-            case 'E':
-                quoted = false;
-                nextCaseTransform = Pcre2ReplacementCaseTransformMode.None;
-                caseTransform = Pcre2ReplacementCaseTransformMode.None;
-                return index + 1;
-            case 'U':
-                caseTransform = Pcre2ReplacementCaseTransformMode.UpperUntilEnd;
-                return index + 1;
-            case 'L':
-                caseTransform = Pcre2ReplacementCaseTransformMode.LowerUntilEnd;
-                return index + 1;
-            case 'u':
-                nextCaseTransform = Pcre2ReplacementCaseTransformMode.UpperNext;
-                caseTransform = Pcre2ReplacementCaseTransformMode.None;
-                return index + 1;
-            case 'l':
-                nextCaseTransform = Pcre2ReplacementCaseTransformMode.LowerNext;
-                caseTransform = Pcre2ReplacementCaseTransformMode.None;
-                return index + 1;
-        }
-
-        if (char.IsAsciiLetter(next))
-        {
-            throw new Pcre2SubstitutionException("Bad replacement escape.", Pcre2ErrorKind.BadReplacementEscape);
-        }
-
-        var literalIndex = index + 1;
-        AppendReplacementLiteral(builder, replacement, ref literalIndex, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        return literalIndex;
-    }
-
-    private static int AppendDollarReplacement(
-        StringBuilder builder,
-        string replacement,
-        int index,
-        Pcre2SubstitutionOptions substitutionOptions,
-        string subject,
-        int matchIndex,
-        int matchLength,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
-        string? mark,
-        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
-        ref Pcre2ReplacementCaseTransformMode caseTransform,
-        ref bool quoted,
-        bool syntaxOnly)
-    {
-        if (index + 1 >= replacement.Length)
-        {
-            AppendReplacementChar(builder, '$', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return index;
-        }
-
-        var next = replacement[index + 1];
-        switch (next)
-        {
-            case '$':
-                AppendReplacementChar(builder, '$', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '&':
-                AppendReplacementText(builder, subject.AsSpan(matchIndex, matchLength), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '`':
-                AppendReplacementText(builder, subject.AsSpan(0, matchIndex), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '\'':
-                AppendReplacementText(builder, subject.AsSpan(matchIndex + matchLength, subject.Length - matchIndex - matchLength), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '_':
-                AppendReplacementText(builder, subject.AsSpan(), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '+':
-                if (index + 2 < replacement.Length && replacement[index + 2] == '+')
-                {
-                    throw new Pcre2SubstitutionException("Invalid replacement reference.", Pcre2ErrorKind.InvalidReplacementReference);
-                }
-
-                AppendResolvedPlusReference(builder, resolveLastCapture(), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                return index + 1;
-            case '{':
-                return AppendBracedReplacement(
-                    builder,
-                    replacement,
-                    index,
-                    substitutionOptions,
-                    subject,
-                    matchIndex,
-                    matchLength,
-                    resolveNumber,
-                    resolveName,
-                    resolveLastCapture,
-                    mark,
-                    ref nextCaseTransform,
-                    ref caseTransform,
-                    ref quoted,
-                    syntaxOnly);
-            case '<' when (substitutionOptions & Pcre2SubstitutionOptions.Extended) != 0:
-                return AppendAngleReplacement(builder, replacement, index, substitutionOptions, resolveName, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        }
-
-        if (char.IsAsciiDigit(next))
-        {
-            var end = index + 2;
-            while (end < replacement.Length && char.IsAsciiDigit(replacement[end]))
-            {
-                end++;
-            }
-
-            AppendResolvedReference(builder, resolveNumber(int.Parse(replacement[(index + 1)..end])), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return end - 1;
-        }
-
-        if (IsReplacementNameStart(next))
-        {
-            var end = index + 2;
-            while (end < replacement.Length && IsReplacementNamePart(replacement[end]))
-            {
-                end++;
-            }
-
-            AppendResolvedReference(builder, resolveName(replacement[(index + 1)..end]), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return end - 1;
-        }
-
-        AppendReplacementChar(builder, '$', ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        return index;
-    }
-
-    private static int AppendBracedReplacement(
-        StringBuilder builder,
-        string replacement,
-        int index,
-        Pcre2SubstitutionOptions substitutionOptions,
-        string subject,
-        int matchIndex,
-        int matchLength,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
-        string? mark,
-        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
-        ref Pcre2ReplacementCaseTransformMode caseTransform,
-        ref bool quoted,
-        bool syntaxOnly)
-    {
-        var contentStart = index + 2;
-        if (contentStart >= replacement.Length)
-        {
-            throw new Pcre2SubstitutionException("Malformed replacement pattern.", Pcre2ErrorKind.MalformedReplacementPattern);
-        }
-
-        var closing = FindReplacementBraceClose(replacement, contentStart);
-        if (closing < 0)
-        {
-            var kind = contentStart < replacement.Length && char.IsAsciiDigit(replacement[contentStart])
-                ? Pcre2ErrorKind.MissingClosingReplacementBrace
-                : Pcre2ErrorKind.MalformedReplacementPattern;
-            throw new Pcre2SubstitutionException("Replacement brace is not closed.", kind);
-        }
-
-        var content = replacement[contentStart..closing];
-        if (string.IsNullOrEmpty(content))
-        {
-            throw new Pcre2SubstitutionException("Malformed replacement pattern.", Pcre2ErrorKind.MalformedReplacementPattern);
-        }
-
-        if ((substitutionOptions & Pcre2SubstitutionOptions.Extended) != 0)
-        {
-            var conditionalIndex = content.IndexOf(":+", StringComparison.Ordinal);
-            if (conditionalIndex > 0)
-            {
-                var selector = content[..conditionalIndex];
-                var branchPayload = content[(conditionalIndex + 2)..];
-                var (thenBranch, elseBranch, hasElseBranch) = SplitConditionalBranches(branchPayload);
-
-                var resolution = ResolveSelector(selector, resolveNumber, resolveName, mark);
-                if (!resolution.Known && (substitutionOptions & Pcre2SubstitutionOptions.UnknownUnset) == 0)
-                {
-                    throw new Pcre2SubstitutionException("Unknown replacement group.", Pcre2ErrorKind.UnknownReplacementGroup);
-                }
-
-                var validationNextTransform = nextCaseTransform;
-                var validationTransform = caseTransform;
-                var validationQuoted = quoted;
-                AppendEvaluatedReplacementTemplate(
-                    new StringBuilder(),
-                    thenBranch,
-                    substitutionOptions,
-                    subject,
-                    matchIndex,
-                    matchLength,
-                    resolveNumber,
-                    resolveName,
-                    resolveLastCapture,
-                    mark,
-                    ref validationNextTransform,
-                    ref validationTransform,
-                    ref validationQuoted,
-                    syntaxOnly: true);
-                if (hasElseBranch)
-                {
-                    validationNextTransform = nextCaseTransform;
-                    validationTransform = caseTransform;
-                    validationQuoted = quoted;
-                    AppendEvaluatedReplacementTemplate(
-                        new StringBuilder(),
-                        elseBranch,
-                        substitutionOptions,
-                        subject,
-                        matchIndex,
-                        matchLength,
-                        resolveNumber,
-                        resolveName,
-                        resolveLastCapture,
-                        mark,
-                        ref validationNextTransform,
-                        ref validationTransform,
-                        ref validationQuoted,
-                        syntaxOnly: true);
-                }
-
-                var chosen = resolution.Known && resolution.Success
-                    ? thenBranch
-                    : elseBranch;
-                AppendEvaluatedReplacementTemplate(
-                    builder,
-                    chosen,
-                    substitutionOptions,
-                    subject,
-                    matchIndex,
-                    matchLength,
-                    resolveNumber,
-                    resolveName,
-                    resolveLastCapture,
-                    mark,
-                    ref nextCaseTransform,
-                    ref caseTransform,
-                    ref quoted,
-                    syntaxOnly);
-                return closing;
-            }
-
-            var fallbackIndex = content.IndexOf(":-", StringComparison.Ordinal);
-            if (fallbackIndex > 0)
-            {
-                var selector = content[..fallbackIndex];
-                var fallback = content[(fallbackIndex + 2)..];
-                var resolution = ResolveSelector(selector, resolveNumber, resolveName, mark);
-                if (!resolution.Known && (substitutionOptions & Pcre2SubstitutionOptions.UnknownUnset) == 0)
-                {
-                    throw new Pcre2SubstitutionException("Unknown replacement group.", Pcre2ErrorKind.UnknownReplacementGroup);
-                }
-
-                if (resolution.Known && resolution.Success)
-                {
-                    AppendReplacementText(builder, resolution.Value.AsSpan(), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-                }
-                else
-                {
-                    AppendEvaluatedReplacementTemplate(
-                        builder,
-                        fallback,
-                        substitutionOptions,
-                        subject,
-                        matchIndex,
-                        matchLength,
-                        resolveNumber,
-                        resolveName,
-                        resolveLastCapture,
-                        mark,
-                        ref nextCaseTransform,
-                        ref caseTransform,
-                        ref quoted,
-                        syntaxOnly);
-                }
-
-                return closing;
-            }
-        }
-
-        if (!int.TryParse(content, out _) &&
-            !content.StartsWith('*') &&
-            !string.Equals(content, "*MARK", StringComparison.Ordinal) &&
-            !content.All(IsReplacementNamePart))
-        {
-            throw new Pcre2SubstitutionException("Malformed replacement pattern.", Pcre2ErrorKind.MalformedReplacementPattern);
-        }
-
-        AppendResolvedSelector(builder, content, substitutionOptions, resolveNumber, resolveName, mark, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        return closing;
-    }
-
-    private static int AppendAngleReplacement(
-        StringBuilder builder,
-        string replacement,
-        int index,
-        Pcre2SubstitutionOptions substitutionOptions,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
-        ref Pcre2ReplacementCaseTransformMode caseTransform,
-        bool syntaxOnly)
-    {
-        var closing = replacement.IndexOf('>', index + 2);
-        if (closing < 0)
-        {
-            if (syntaxOnly)
-            {
-                return replacement.Length - 1;
-            }
-
-            throw new Pcre2SubstitutionException("Malformed replacement pattern.", Pcre2ErrorKind.MalformedReplacementPattern);
-        }
-
-        var name = replacement[(index + 2)..closing];
-        if (string.IsNullOrEmpty(name) || name[0] == '*')
-        {
-            throw new Pcre2SubstitutionException("Malformed replacement pattern.", Pcre2ErrorKind.MalformedReplacementPattern);
-        }
-
-        AppendResolvedReference(builder, resolveName(name), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        return closing;
-    }
-
-    private static void AppendResolvedSelector(
-        StringBuilder builder,
-        string token,
-        Pcre2SubstitutionOptions substitutionOptions,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        string? mark,
-        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
-        ref Pcre2ReplacementCaseTransformMode caseTransform,
-        bool syntaxOnly)
-    {
-        if (string.Equals(token, "*MARK", StringComparison.Ordinal))
-        {
-            AppendResolvedReference(builder, ResolveMarkReference(mark), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-            return;
-        }
-
-        AppendResolvedReference(builder, ResolveSelector(token, resolveNumber, resolveName, mark), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-    }
-
-    private static Pcre2ReplacementReferenceResolution ResolveSelector(
-        string token,
-        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
-        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
-        string? mark)
-    {
-        if (string.Equals(token, "*MARK", StringComparison.Ordinal))
-        {
-            return ResolveMarkReference(mark);
-        }
-
-        return int.TryParse(token, out var number) ? resolveNumber(number) : resolveName(token);
-    }
-
-    private static void AppendResolvedReference(StringBuilder builder, Pcre2ReplacementReferenceResolution resolution, Pcre2SubstitutionOptions substitutionOptions, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
-    {
-        if (!resolution.Known)
-        {
-            if (syntaxOnly)
-            {
-                return;
-            }
-
-            if ((substitutionOptions & Pcre2SubstitutionOptions.UnknownUnset) == 0)
-            {
-                throw new Pcre2SubstitutionException("Unknown replacement group.", Pcre2ErrorKind.UnknownReplacementGroup);
-            }
-
-            if ((substitutionOptions & Pcre2SubstitutionOptions.UnsetEmpty) == 0)
-            {
-                throw new Pcre2SubstitutionException("Unset replacement group.", Pcre2ErrorKind.UnsetReplacementGroup);
-            }
-
-            return;
-        }
-
-        if (!resolution.Success)
-        {
-            if (syntaxOnly)
-            {
-                return;
-            }
-
-            if ((substitutionOptions & Pcre2SubstitutionOptions.UnsetEmpty) == 0)
-            {
-                throw new Pcre2SubstitutionException("Unset replacement group.", Pcre2ErrorKind.UnsetReplacementGroup);
-            }
-
-            return;
-        }
-
-        AppendReplacementText(builder, resolution.Value.AsSpan(), ref nextCaseTransform, ref caseTransform, syntaxOnly);
-    }
-
-    private static void AppendResolvedPlusReference(StringBuilder builder, Pcre2ReplacementReferenceResolution resolution, Pcre2SubstitutionOptions substitutionOptions, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
-    {
-        if (!resolution.Known && (substitutionOptions & Pcre2SubstitutionOptions.UnknownUnset) != 0)
-        {
-            return;
-        }
-
-        AppendResolvedReference(builder, resolution, substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-    }
-
-    private static (string ThenBranch, string ElseBranch, bool HasElseBranch) SplitConditionalBranches(string branchPayload)
-    {
-        var quoted = false;
-        for (var i = 0; i < branchPayload.Length; i++)
-        {
-            var current = branchPayload[i];
-            if (current == '\\' && i + 1 < branchPayload.Length)
-            {
-                var next = branchPayload[i + 1];
-                if (quoted)
-                {
-                    if (next == 'E')
-                    {
-                        quoted = false;
-                    }
-                }
-                else if (next == 'Q')
-                {
-                    quoted = true;
-                }
-
-                i++;
-                continue;
-            }
-
-            if (quoted)
-            {
-                continue;
-            }
-
-            if (current == ':')
-            {
-                return (branchPayload[..i], branchPayload[(i + 1)..], true);
-            }
-        }
-
-        return (branchPayload, string.Empty, false);
-    }
-
-    private static void AppendReplacementText(StringBuilder builder, ReadOnlySpan<char> text, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
-    {
-        for (var index = 0; index < text.Length; index++)
-        {
-            AppendReplacementLiteral(builder, text, ref index, ref nextCaseTransform, ref caseTransform, syntaxOnly);
-        }
-    }
-
-    private static void AppendReplacementLiteral(StringBuilder builder, ReadOnlySpan<char> text, ref int index, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
-    {
-        var status = Rune.DecodeFromUtf16(text[index..], out var scalar, out var consumed);
-        index += Math.Max(1, consumed) - 1;
-        AppendReplacementScalar(builder, status == OperationStatus.Done ? scalar : Rune.ReplacementChar,
-            ref nextCaseTransform, ref caseTransform, syntaxOnly);
-    }
-
-    private static void AppendReplacementChar(StringBuilder builder, char value, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
-        => AppendReplacementScalar(builder, Rune.TryCreate(value, out var scalar) ? scalar : Rune.ReplacementChar,
-            ref nextCaseTransform, ref caseTransform, syntaxOnly);
-
-    private static void AppendReplacementScalar(StringBuilder builder, Rune value, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
-    {
-        var effectiveTransform = nextCaseTransform is not Pcre2ReplacementCaseTransformMode.None
-            ? nextCaseTransform
-            : caseTransform;
-        var transformed = effectiveTransform switch
-        {
-            Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.UpperUntilEnd => Rune.ToUpperInvariant(value),
-            Pcre2ReplacementCaseTransformMode.LowerNext or Pcre2ReplacementCaseTransformMode.LowerUntilEnd => Rune.ToLowerInvariant(value),
-            _ => value,
-        };
-
-        if (!syntaxOnly)
-        {
-            Span<char> scalarText = stackalloc char[2];
-            builder.Append(scalarText[..transformed.EncodeToUtf16(scalarText)]);
-        }
-
-        if (nextCaseTransform is Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.LowerNext)
-        {
-            nextCaseTransform = Pcre2ReplacementCaseTransformMode.None;
-        }
-    }
-
-    private static Pcre2ReplacementReferenceResolution ResolveNativeNumberReference(Pcre2GroupData[] groups, int number, string subject)
-    {
-        if ((uint)number >= (uint)groups.Length)
-        {
-            return default;
-        }
-
-        var group = groups[number];
-        return new Pcre2ReplacementReferenceResolution(
-            Known: true,
-            Success: group.Success,
-            Value: group.Success ? subject[group.StartOffsetInUtf16..group.EndOffsetInUtf16] : string.Empty);
-    }
-
-    private static Pcre2ReplacementReferenceResolution ResolveNativeNamedReference(Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries, string name, string subject)
-    {
-        if (nameEntries is null)
-        {
-            return default;
-        }
-
-        var known = false;
-        foreach (var entry in nameEntries)
-        {
-            if (!string.Equals(entry.Name, name, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            known = true;
-            var number = entry.Number;
-            if ((uint)number < (uint)groups.Length && groups[number].Success)
-            {
-                return new Pcre2ReplacementReferenceResolution(true, true, subject[groups[number].StartOffsetInUtf16..groups[number].EndOffsetInUtf16]);
-            }
-        }
-
-        return known
-            ? new Pcre2ReplacementReferenceResolution(true, false, string.Empty)
-            : default;
-    }
-
-    private static Pcre2ReplacementReferenceResolution ResolveNativeLastCapturedReference(Pcre2GroupData[] groups, string subject)
-    {
-        if (groups.Length <= 1)
-        {
-            return default;
-        }
-
-        for (var i = groups.Length - 1; i >= 1; i--)
-        {
-            var group = groups[i];
-            if (group.Success)
-            {
-                return new Pcre2ReplacementReferenceResolution(true, true, subject[group.StartOffsetInUtf16..group.EndOffsetInUtf16]);
-            }
-        }
-
-        return new Pcre2ReplacementReferenceResolution(true, false, string.Empty);
-    }
-
-    private static Pcre2ReplacementReferenceResolution ResolveMarkReference(string? mark)
-        => new(true, mark is not null, mark ?? string.Empty);
-
-    private static bool IsReplacementNameStart(char value)
-        => char.IsAsciiLetter(value) || value == '_';
-
-    private static bool IsReplacementNamePart(char value)
-        => char.IsAsciiLetterOrDigit(value) || value == '_';
-
-    private static int FindReplacementBraceClose(string replacement, int startIndex)
-    {
-        var quoted = false;
-        for (var i = startIndex; i < replacement.Length; i++)
-        {
-            if (replacement[i] == '\\' && i + 1 < replacement.Length)
-            {
-                if (quoted)
-                {
-                    if (replacement[i + 1] == 'E')
-                    {
-                        quoted = false;
-                    }
-
-                    i++;
-                    continue;
-                }
-
-                if (replacement[i + 1] == 'Q')
-                {
-                    quoted = true;
-                    i++;
-                    continue;
-                }
-            }
-
-            if (quoted)
-            {
-                continue;
-            }
-
-            if (replacement[i] != '\\' || i + 2 >= replacement.Length || replacement[i + 1] != 'o' || replacement[i + 2] != '{')
-            {
-                if (replacement[i] == '}')
-                {
-                    return i;
-                }
-
-                continue;
-            }
-
-            var innerClose = replacement.IndexOf('}', i + 3);
-            if (innerClose < 0)
-            {
-                return -1;
-            }
-
-            i = innerClose;
-        }
-
-        return -1;
-    }
-
-    private readonly record struct Pcre2ReplacementReferenceResolution(bool Known, bool Success, string Value);
 
     private readonly record struct Pcre2SimpleReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
 
@@ -3344,15 +2276,6 @@ public sealed partial class Utf8Pcre2Regex
             Pcre2SimpleReplacementCacheKey key,
             Func<Pcre2SimpleReplacementCacheKey, Pcre2SimpleReplacementPlan?> factory)
             => _plans.GetOrAdd(key, factory);
-    }
-
-    private enum Pcre2ReplacementCaseTransformMode
-    {
-        None = 0,
-        UpperNext = 1,
-        LowerNext = 2,
-        UpperUntilEnd = 3,
-        LowerUntilEnd = 4,
     }
 
 }
