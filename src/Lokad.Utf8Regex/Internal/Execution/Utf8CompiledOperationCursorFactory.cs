@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -9,7 +8,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
     public static Utf8ValueMatchEnumerator CreateMatchEnumerator(
         Utf8CompiledEngineRuntime compiledRuntime,
         Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget)
@@ -21,31 +19,31 @@ internal static partial class Utf8CompiledOperationCursorFactory
         }
 
         return new Utf8ValueMatchEnumerator(
-            CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget));
+            CreateMatchCursor(regexPlan, input, validation, budget));
     }
 
     // R05: offset enumeration floors the owned cursor scan at the start unit; arm
     // selection mirrors CreateMatchCursor.
     public static Utf8OperationMatchCursor CreateMatchCursorFromOffset(
         Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime? verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
         int startByteOffset,
         int startUtf16Offset)
     {
-        return CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget)
+        return CreateMatchCursor(regexPlan, input, validation, budget)
             .WithStartFloor(startByteOffset, startUtf16Offset);
     }
 
     public static Utf8OperationMatchCursor CreateMatchCursor(
         Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime? verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget)
     {
+        if (regexPlan.ScalarProgram is { RightToLeft: true } or { IsNonBacktracking: true })
+            return CreateOwnedMatchCursor(regexPlan, input, validation, budget, false, out _);
         var literal = regexPlan.LiteralUtf8;
         // R05: single ASCII literals (exact and folded) project incrementally on
         // non-ASCII input, so no BCL verification divert remains here. Kelvin and
@@ -91,21 +89,20 @@ internal static partial class Utf8CompiledOperationCursorFactory
                     useStructuralLinearProgram: false,
                     budget,
                     validation.IsAscii),
-            _ => CreateFallbackMatchEnumerator(
-                verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
-                input),
+            _ => CreateOwnedMatchCursor(regexPlan, input, validation, budget, false, out _),
         };
     }
 
     public static Utf8ValueSplitEnumerator CreateSplitEnumerator(
         Utf8PreparedRegex regexPlan,
-        Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         int totalUtf16Length,
         int count,
         Utf8ExecutionDeadline budget)
     {
+        if (regexPlan.ScalarProgram is { RightToLeft: true } or { IsNonBacktracking: true })
+            return CreateOwnedSplitEnumerator(regexPlan, input, validation, count, budget);
         // R05: single ASCII literals (exact and folded) split through the owned
         // incremental-projection cursor on every input. Kelvin, culture, and RTL
         // stay fenced in the split router upstream of this factory.
@@ -161,7 +158,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
                     new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget, validation.IsAscii),
                     count,
                     totalUtf16Length),
-            _ => CreateFallbackSplitEnumerator(verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."), input, count),
+            _ => CreateOwnedSplitEnumerator(regexPlan, input, validation, count, budget),
         };
     }
 
@@ -173,16 +170,16 @@ internal static partial class Utf8CompiledOperationCursorFactory
             (regexPlan.SemanticRegex.Options & (System.Text.RegularExpressions.RegexOptions.RightToLeft |
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.NonBacktracking)) == 0;
 
-    private static Utf8OperationMatchCursor CreateFallbackMatchEnumerator(
-        Utf8VerifierRuntime verifierRuntime,
-        ReadOnlySpan<byte> input)
+    private static Utf8OperationMatchCursor CreateOwnedMatchCursor(Utf8PreparedRegex prepared,
+        ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline deadline,
+        bool retainMap, out Utf8BoundaryMap map)
     {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8OperationMatchCursor(
-            input,
-            subject.GetDecodedString(),
-            verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-            subject.Utf16ProjectionMap);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, default);
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned cursor preparation exceeded {breach}.");
+        if (validation.ByteLength != input.Length) validation = Utf8Validation.Validate(input, ref invocation);
+        var program = prepared.ScalarProgram ?? throw new InvalidOperationException("Owned cursor preparation requires its admitted scalar program.");
+        return Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retainMap, out map);
     }
 
     private static Utf8OperationMatchCursor CreateLiteralMatchCursor(
@@ -208,17 +205,11 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 asciiInput);
     }
 
-    private static Utf8ValueSplitEnumerator CreateFallbackSplitEnumerator(
-        Utf8VerifierRuntime verifierRuntime,
-        ReadOnlySpan<byte> input,
-        int count)
+    private static Utf8ValueSplitEnumerator CreateOwnedSplitEnumerator(Utf8PreparedRegex prepared,
+        ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionDeadline deadline)
     {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueSplitEnumerator(
-            input,
-            subject.GetDecodedString(),
-            verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-            count,
-            subject.BoundaryMap);
+        var cursor = CreateOwnedMatchCursor(prepared, input, validation, deadline, true, out var map);
+        return new Utf8ValueSplitEnumerator(input, null, cursor, map, count, map.Utf16Length,
+            prepared.ScalarProgram is { RightToLeft: true });
     }
 }

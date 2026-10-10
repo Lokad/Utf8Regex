@@ -112,7 +112,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
-                verifierRuntime: null,
                 input,
                 validation,
                 budget);
@@ -161,7 +160,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
-                verifierRuntime: null,
                 input,
                 validation,
                 budget);
@@ -216,7 +214,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
-                verifierRuntime: null,
                 input,
                 validation,
                 budget);

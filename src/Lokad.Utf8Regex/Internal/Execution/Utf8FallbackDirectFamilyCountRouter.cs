@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
-using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -14,7 +13,6 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         Utf8AsciiLiteralFinder linePrefixFinder,
         in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
         in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
-        Func<Regex> fallbackRegexFactory,
         out int count)
     {
         // Anchored literal prefixes match at most once (at offset 0), so the count is the
@@ -52,8 +50,9 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredQuotedLineSegment);
-            count = Utf8QuotedLineSegmentExecutor.CountOrFallback(input, directFamily, fallbackRegexFactory);
-            return true;
+            count = 0;
+            return directFamily.LiteralUtf8 is { Length: > 0 } prefix &&
+                Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input, prefix, directFamily.SecondaryLiteralUtf8, out count);
         }
 
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.LinePrefixCount &&
@@ -72,12 +71,8 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeLetterBoundedCount)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeLetterBounded);
-            count = Utf8UnicodeLetterBoundedRepeatExecutor.CountLettersOrFallback(
-                input,
-                minCount: directFamily.MinCount,
-                maxCount: directFamily.MaxCount,
-                fallbackRegexFactory);
-            return true;
+            return Utf8UnicodeLetterBoundedRepeatExecutor.TryCountLetters(input,
+                directFamily.MinCount, directFamily.MaxCount, out count);
         }
 
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeLetterCount)

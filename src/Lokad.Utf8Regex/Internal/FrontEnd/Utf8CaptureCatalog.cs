@@ -228,11 +228,6 @@ internal sealed class Utf8CaptureCatalog
     internal bool HasSharedCaptureDeclarations { get; }
     internal bool HasExplicitCaptureNumbers { get; }
 
-    // Callback targets borrow the canonical metadata already retained by the
-    // parsed tree. Public metadata APIs copy these arrays before exposing them.
-    internal int[] GetGroupNumbers() => GroupNumbers;
-    internal string[] GetGroupNames() => GroupNames;
-
     internal string GroupNameFromNumber(int number)
     {
         var ordinal = OrdinalFromNumber(number);

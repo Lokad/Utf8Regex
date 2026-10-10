@@ -17,6 +17,9 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal bool DebugIsOwnedSlice => _mode == EnumeratorMode.OwnedSlice;
 
+    internal bool IsRightToLeft => _sliceProgram is { RightToLeft: true } ||
+        _mode is EnumeratorMode.RtlExactAsciiLiteral or EnumeratorMode.RtlExactUtf8Literal or EnumeratorMode.RtlAsciiLiteralIgnoreCase;
+
     internal Utf8StructuralSearchState DebugStructuralSearchState => _structuralSearchState;
 
     internal Utf8AsciiDeterministicScanState DebugDeterministicScanState => _deterministicScanState;
@@ -975,6 +978,16 @@ internal ref partial struct Utf8OperationMatchCursor
     // line anchors keep their true left context; at floor zero this is the default state.
     public Utf8OperationMatchCursor WithStartFloor(int startByteOffset, int startUtf16Offset)
     {
+        if (_sliceProgram is not null)
+        {
+            if ((uint)startByteOffset > (uint)_input.Length ||
+                startByteOffset < _input.Length && (_input[startByteOffset] & 0xC0) == 0x80)
+                throw new ArgumentOutOfRangeException(nameof(startByteOffset));
+            _slicePositionByte = startByteOffset;
+            _sliceOriginByte = startByteOffset;
+            if (_nonBacktrackingState is { } batch)
+                _nonBacktrackingBoundary = batch.ResolveByteOffset(startByteOffset);
+        }
         _preserveOffsetCurrent = true;
         _remaining = _input[startByteOffset..];
         _consumed = startByteOffset;

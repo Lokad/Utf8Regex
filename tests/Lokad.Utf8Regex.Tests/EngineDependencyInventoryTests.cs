@@ -100,23 +100,17 @@ public sealed class EngineDependencyInventoryTests
         }
 
         // 1. Core fallback execution (union of the three receiver spellings below).
-        //    Purpose: candidate verification plus all uncovered-pattern routes. Owner: R03.
+        //    Purpose: remaining public execution routes. Owner: R03.
         //    The linear compiled router left this set in R05 once its RightToLeft
         //    predicates read cached fallback options instead of constructing the engine.
-        //    The structural window router fails closed to BCL on non-ASCII input (R05).
-        //    Program metadata callbacks borrow the existing metadata/verifier;
-        //    residual BCL metadata queries live in Utf8FallbackCandidateVerifier.
+        //    Compiled/simple/structural consumers and the general cursor factory
+        //    borrow the admitted scalar program, including mixed input and RTL.
+        //    Metadata queries borrow the owned capture catalog directly.
         var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
         var expectedFallbackFiles = new[]
         {
-            "Utf8CompiledEngineRuntime.cs",
-            "Utf8CompiledOperationCursorFactory.cs",
-            "Utf8FallbackCandidateVerifier.cs",
-            "Utf8Regex.Compiled.cs",
             "Utf8Regex.cs",
             "Utf8Regex.Replacement.cs",
-            "Utf8StructuralLinearCompiledRouter.cs",
-            "Utf8StructuralLinearProgram.cs",
         };
         Assert.Equal(expectedFallbackFiles.Order(StringComparer.Ordinal).ToArray(), fallbackFiles);
 

@@ -1,7 +1,6 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -235,7 +234,7 @@ internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8Co
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return UsesRightToLeft()
-            ? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input))
+            ? Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget)
             : Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
                 input,
                 _regexPlan.StructuralIdentifierFamilyPlan,
@@ -251,7 +250,7 @@ internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8Co
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamily);
         return UsesRightToLeft()
-            ? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input))
+            ? Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget)
             : Utf8AsciiStructuralIdentifierFamilyExecutor.Count(
                 input,
                 _regexPlan.StructuralIdentifierFamilyPlan,
@@ -263,9 +262,12 @@ internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8Co
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (!validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
+
         if (UsesRightToLeft())
         {
-            return MatchFallback(input);
+            return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
         }
 
         var index = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
@@ -283,11 +285,6 @@ internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8Co
         }
 
         return new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
-    }
-
-    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input)
-    {
-        return Utf8CompiledFallbackMatchProjection.Match(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex);
     }
 
     private bool UsesRightToLeft()
@@ -418,6 +415,10 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
+            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
+
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
             return _linearRuntime.IsMatch(input, validation, _verifierRuntime, budget);
@@ -438,7 +439,7 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
 
             if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
             {
-                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
+                return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
             }
         }
 
@@ -477,11 +478,15 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
                 out _) >= 0;
         }
 
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
+        return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
     }
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
+            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
+
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
             return _linearRuntime.Count(input, validation, _verifierRuntime, budget);
@@ -503,13 +508,13 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
 
             if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
             {
-                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
+                return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
             }
         }
 
         if (!validation.IsAscii && !_regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
         {
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
+            return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
         }
 
         if (Utf8SimplePatternCompiledSearchGuidedRouter.TryCount(
@@ -547,6 +552,10 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
+            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
+
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
             return _linearRuntime.Match(input, validation, _verifierRuntime, budget);
@@ -567,14 +576,7 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
 
             if (Utf8SimplePatternCompiledRuntimePolicy.ShouldFallbackAfterAnchoredValidatorMiss(input, validation, _anchoredValidatorAllowsTrailingNewline))
             {
-                var fallbackDecoded = Encoding.UTF8.GetString(input);
-                var fallbackMatch = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(fallbackDecoded);
-                if (!fallbackMatch.Success)
-                {
-                    return Utf8ValueMatch.NoMatch;
-                }
-
-                return Utf8ProjectionExecutor.ProjectByteAlignedMatch(fallbackMatch.Index, fallbackMatch.Length);
+                return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
             }
         }
 
@@ -619,20 +621,7 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
             return new Utf8ValueMatch(true, true, index, matchLength, index, matchLength);
         }
 
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        var decoded = Encoding.UTF8.GetString(input);
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
-        if (!match.Success)
-        {
-            return Utf8ValueMatch.NoMatch;
-        }
-
-        if (analysis.BoundaryMap.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
-        {
-            return new Utf8ValueMatch(true, true, match.Index, match.Length, indexInBytes, lengthInBytes);
-        }
-
-        return new Utf8ValueMatch(true, false, match.Index, match.Length);
+        return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
     }
 
 }
@@ -689,6 +678,10 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
+            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
+
         if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
         {
@@ -721,6 +714,10 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
+            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
+
         if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
         {
@@ -754,6 +751,10 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.ScalarProgram is { RightToLeft: true } ||
+            !validation.IsAscii && input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
+
         if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
         {
@@ -1133,7 +1134,7 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
             return true;
         }
 
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
+        return Utf8PreparedScalarExecutor.IsMatch(_regexPlan, input, validation, budget);
     }
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
@@ -1146,14 +1147,13 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
             _linePrefixFinder,
             _delimitedTokenSearch,
             _literalStructuredTokenSearch,
-            () => _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
             out var directCount))
         {
             return directCount;
         }
 
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectRegex);
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
+        return Utf8PreparedScalarExecutor.Count(_regexPlan, input, validation, budget);
     }
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
@@ -1164,20 +1164,7 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
             return new Utf8ValueMatch(true, true, matchIndex, matchedLength, matchIndex, matchedLength);
         }
 
-        var decoded = Encoding.UTF8.GetString(input);
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
-        if (!match.Success)
-        {
-            return Utf8ValueMatch.NoMatch;
-        }
-
-        if (validation.IsAscii)
-        {
-            return Utf8ProjectionExecutor.ProjectByteAlignedMatch(match.Index, match.Length);
-        }
-
-        var boundaryMap = Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        return Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, match, boundaryMap);
+        return Utf8PreparedScalarExecutor.Match(_regexPlan, input, validation, budget);
     }
 
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)

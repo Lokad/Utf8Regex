@@ -31,6 +31,7 @@ internal static class Utf8ProjectionExecutor
             length = extent.Utf16Length;
         }
         var final = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
         if (final != Utf8ExecutionLimitKind.None) return final;
         match = new(true, true, index, length, verification.IndexInBytes, verification.LengthInBytes);
         return Utf8ExecutionLimitKind.None;

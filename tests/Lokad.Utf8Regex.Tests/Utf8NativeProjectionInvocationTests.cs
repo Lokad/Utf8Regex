@@ -183,7 +183,7 @@ public sealed class Utf8NativeProjectionInvocationTests
             6 or 7 => new Utf8OperationMatchCursor(input, literal, budget,
                 family == 6 ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix : Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix),
             8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, false, true),
-            _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, null, input, Utf8Validation.Validate(input), budget),
+            _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, Utf8Validation.Validate(input), budget),
         };
         Thread.Sleep(250);
         var expired = false;

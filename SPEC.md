@@ -447,6 +447,20 @@ subject or independent BCL verification path.
 Other production BCL consumers and factory payloads,
 candidate-portfolio search work/storage admission and complete shared policies
 remain uncovered; this does not complete their removal or R07 qualification.
+Internal compiled/simple/structural fallback consumers now borrow the admitted
+scalar program for mixed UTF-8 and reverse matching. Their general IsMatch/Count
+paths retain byte coordinates; requested Match projection shares the invocation.
+Absolute caller deadlines and direct controlled work/token/storage owners survive
+the transfer. General compiled match/split cursor factories use owned scalar
+execution, admitted coordinate maps and copy-safe leases, without decoded subjects
+or BCL enumerators. Scalar byte floors preserve full assertion context and NFA
+starts. Maps and NFA tables stay admitted while cursor copies can still retain
+them; EOF releases temporary VM scratch rather than invalidating those copies.
+The former BCL match/enumerator bridges, verifier-only cursor arguments and
+quoted/Unicode-count engine callbacks are removed. Bounded letter runs count
+complete scalars; zero-minimum shapes decline to the scalar VM. These consumer
+replacements do not retire remaining public BCL routes, result/metadata holders,
+shared pool/cache policies or the final dependency and R07 gates.
 Python parser branch/sequence/class-item arrays, capture/open-group metadata,
 their collection/arena descriptors, and old/new growth and final-copy overlap
 share admission. Completed AST arrays and immutable metadata tables retain their

@@ -567,7 +567,6 @@ public sealed partial class Utf8Regex
             var floorBudget = CreateExecutionBudget();
             var floorCursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
                 _preparedRegex,
-                _verifierRuntime,
                 input.Bytes,
                 input.Validation,
                 floorBudget,
@@ -613,7 +612,7 @@ public sealed partial class Utf8Regex
         {
             return new Utf8ValueMatchEnumerator(
                 Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(
-                    _preparedRegex, _verifierRuntime, input.Bytes,
+                    _preparedRegex, input.Bytes,
                     new Utf8ValidationResult(input.Bytes.Length, input.Bytes.Length, true, false),
                     budget, start.Value, start.Value))
                 .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);

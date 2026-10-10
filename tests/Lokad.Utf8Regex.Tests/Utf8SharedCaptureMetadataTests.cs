@@ -33,9 +33,9 @@ public sealed class Utf8SharedCaptureMetadataTests
         var program = Utf8RegexProgram.Compile(pattern, options, Regex.InfiniteMatchTimeout);
         var catalog = program.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog!;
         Assert.NotNull(catalog); Assert.Same(catalog, program.CaptureCatalog);
-        Assert.False(program.GroupNames.IsValueCreated); Assert.False(program.GroupNumbers.IsValueCreated);
-        Assert.Same(catalog.GroupNames, program.GroupNames.Value);
-        Assert.Same(catalog.GroupNumbers, program.GroupNumbers.Value);
+        // Program metadata borrows the canonical catalog directly. Public array
+        // copies, sparse lookups, captures and replacement below share its data.
+        Assert.Same(catalog, program.PreparedRegex.ScalarProgram?.CaptureCatalog);
         Assert.False(program.VerifierRuntime.FallbackCandidateVerifier.IsFallbackRegexCreated);
 
         // These expressions capture whole scalars, so BCL metadata and returned

@@ -36,8 +36,4 @@ internal sealed class Utf8FallbackCandidateVerifier
 
     public bool IsAnchoredFallbackRegexCreated => _anchoredFallbackRegex?.IsValueCreated ?? false;
 
-    internal int[] GetGroupNumbers() => FallbackRegex.GetGroupNumbers();
-
-    internal string[] GetGroupNames() => FallbackRegex.GetGroupNames();
-
 }

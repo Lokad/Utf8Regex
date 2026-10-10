@@ -273,7 +273,6 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var validation = Utf8Validation.Validate(input);
         var splits = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
             actual.Inspection.PreparedRegex,
-            verifierRuntime,
             input,
             validation,
             validation.Utf16Length,

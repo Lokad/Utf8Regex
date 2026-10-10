@@ -12,19 +12,17 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-// PLAN.md D09: managed fallback execution, split from the matching facade along the fallback ownership boundary.
-/// <summary>Managed fallback execution for <see cref="Utf8Regex"/>.</summary>
+// PLAN.md D09: scalar fallback execution and native verification, split from the matching facade.
+/// <summary>Scalar fallback execution and native verification for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private Utf8ValueMatch MatchScalarProgram(ReadOnlySpan<byte> input)
-        => OwnedSliceMatch(input,
-            _ownedSliceProgram ?? throw new InvalidOperationException("Semantic matching requires an owned scalar program."),
-            CancellationToken.None);
+    private Utf8ValueMatch MatchScalarProgram(ReadOnlySpan<byte> input, CancellationToken token)
+        => OwnedSliceMatch(input, _ownedSliceProgram, token);
 
     private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input)
     {
         if (RejectsByRequiredPrefilter(input)) return Utf8ValueMatch.NoMatch;
-        return MatchScalarProgram(input);
+        return MatchScalarProgram(input, CancellationToken.None);
     }
 
     private bool RejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
@@ -539,7 +537,7 @@ public sealed partial class Utf8Regex
         return _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
     }
 
-    private bool ShouldDecodeWholeSubjectForFallbackValueOperation()
+    private bool RequiresScalarValueExecution()
     {
         var features = _preparedRegex.Features;
         return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&

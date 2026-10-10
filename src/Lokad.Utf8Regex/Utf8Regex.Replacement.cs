@@ -363,7 +363,6 @@ public sealed partial class Utf8Regex
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
-            _verifierRuntime,
             input,
             validation,
             budget);
@@ -447,7 +446,6 @@ public sealed partial class Utf8Regex
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
-            _verifierRuntime,
             input,
             validation,
             budget);
@@ -596,7 +594,6 @@ public sealed partial class Utf8Regex
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
-            _verifierRuntime,
             input,
             validation,
             budget);
@@ -623,7 +620,6 @@ public sealed partial class Utf8Regex
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
-            _verifierRuntime,
             input,
             validation,
             budget);

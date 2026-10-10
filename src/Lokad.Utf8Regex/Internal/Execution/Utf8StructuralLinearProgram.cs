@@ -2,7 +2,6 @@ using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -856,6 +855,8 @@ internal abstract class Utf8StructuralLinearRuntime
         _regexPlan = regexPlan;
     }
 
+    protected Utf8PreparedRegex PreparedRegex => _regexPlan;
+
     protected ref readonly Utf8StructuralLinearProgram Program => ref _regexPlan.StructuralLinearProgram;
 
     /// <summary>
@@ -866,7 +867,7 @@ internal abstract class Utf8StructuralLinearRuntime
 
     /// <summary>
     /// Counts nonoverlapping matches in the validated complete subject using
-    /// .NET global progression and charging the supplied deadline.
+    /// scalar global progression and charging the supplied deadline.
     /// </summary>
     public abstract int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
@@ -2400,7 +2401,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         return UsesRightToLeft(verifierRuntime)
-            ? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input))
+            ? Utf8PreparedScalarExecutor.IsMatch(PreparedRegex, input, validation, budget)
             : FindNext(input, verifierRuntime, 0, budget, out _) >= 0;
     }
 
@@ -2408,7 +2409,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
         return UsesRightToLeft(verifierRuntime)
-            ? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input))
+            ? Utf8PreparedScalarExecutor.Count(PreparedRegex, input, validation, budget)
             : CountForward(input, verifierRuntime, budget);
     }
 
@@ -2416,7 +2417,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     {
         if (UsesRightToLeft(verifierRuntime))
         {
-            return MatchFallback(input, verifierRuntime);
+            return Utf8PreparedScalarExecutor.Match(PreparedRegex, input, validation, budget);
         }
 
         var index = FindNext(input, verifierRuntime, 0, budget, out var matchedLength);
@@ -2655,24 +2656,6 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         }
 
         return -1;
-    }
-
-    private static Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime)
-    {
-        var decoded = Encoding.UTF8.GetString(input);
-        var match = verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
-        if (!match.Success)
-        {
-            return Utf8ValueMatch.NoMatch;
-        }
-
-        var boundaryMap = Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        if (boundaryMap.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
-        {
-            return new Utf8ValueMatch(true, true, match.Index, match.Length, indexInBytes, lengthInBytes);
-        }
-
-        return new Utf8ValueMatch(true, false, match.Index, match.Length);
     }
 
     private static bool UsesRightToLeft(Utf8VerifierRuntime verifierRuntime)

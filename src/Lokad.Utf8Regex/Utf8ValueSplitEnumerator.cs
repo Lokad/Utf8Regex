@@ -85,7 +85,7 @@ public ref struct Utf8ValueSplitEnumerator
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
-        string decoded,
+        string? decoded,
         Utf8OperationMatchCursor matchCursor,
         Utf8BoundaryMap map,
         int count,
@@ -97,7 +97,7 @@ public ref struct Utf8ValueSplitEnumerator
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
-        string decoded,
+        string? decoded,
         Utf8OperationMatchCursor matchCursor,
         Utf8BoundaryMap map,
         int count,
@@ -230,9 +230,8 @@ public ref struct Utf8ValueSplitEnumerator
 
         if (_sourceKind == SplitSourceKind.OwnedSlice)
         {
-            // Unit-space shaping: mid-scalar empty matches have no valid byte
-            // range, so segments project lazily through the map with UTF-16
-            // indexes exactly like the BCL oracle.
+            // Scalar matches delimit byte-aligned segments. The map supplies
+            // only the requested derived UTF-16 coordinates.
             if (_boundaryMap is not { } ownedMap)
             {
                 throw new InvalidOperationException("Owned slice split enumeration requires prepared UTF-16 projection.");

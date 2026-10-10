@@ -1,19 +1,7 @@
-using System.Text.RegularExpressions;
-
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8QuotedLineSegmentExecutor
 {
-    public static int CountOrFallback(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan family, Func<Regex> fallbackRegexFactory)
-    {
-        if (family.LiteralUtf8 is not { Length: > 0 } requiredPrefix)
-        {
-            return fallbackRegexFactory().Count(System.Text.Encoding.UTF8.GetString(input));
-        }
-
-        return CountViaLineWalk(input, requiredPrefix, family.SecondaryLiteralUtf8, fallbackRegexFactory);
-    }
-
     public static int CountViaCandidateScan(ReadOnlySpan<byte> input, ReadOnlySpan<byte> requiredPrefix, ReadOnlySpan<byte> optionalSegment, out bool requiresFallback)
     {
         var prefixFinder = new Utf8AsciiLiteralFinder(requiredPrefix);
@@ -26,14 +14,14 @@ internal static class Utf8QuotedLineSegmentExecutor
             out requiresFallback);
     }
 
-    public static int CountViaLineWalk(ReadOnlySpan<byte> input, ReadOnlySpan<byte> requiredPrefix, ReadOnlySpan<byte> optionalSegment, Func<Regex> fallbackRegexFactory)
+    public static bool TryCountViaLineWalk(ReadOnlySpan<byte> input, ReadOnlySpan<byte> requiredPrefix, ReadOnlySpan<byte> optionalSegment, out int count)
     {
+        count = 0;
         if (requiredPrefix.IsEmpty)
         {
-            return fallbackRegexFactory().Count(System.Text.Encoding.UTF8.GetString(input));
+            return false;
         }
 
-        var count = 0;
         var searchFrom = 0;
         while ((uint)searchFrom <= (uint)(input.Length - requiredPrefix.Length))
         {
@@ -62,7 +50,8 @@ internal static class Utf8QuotedLineSegmentExecutor
             }
             else if (requiresFallback)
             {
-                return fallbackRegexFactory().Count(System.Text.Encoding.UTF8.GetString(input));
+                count = 0;
+                return false;
             }
             else
             {
@@ -70,7 +59,7 @@ internal static class Utf8QuotedLineSegmentExecutor
             }
         }
 
-        return count;
+        return true;
     }
 
     private static bool TryMatchSingleLineAnchoredQuotedSegment(ReadOnlySpan<byte> line, ReadOnlySpan<byte> optionalSegment, out bool requiresFallback)

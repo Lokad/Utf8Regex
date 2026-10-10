@@ -83,7 +83,7 @@ public sealed class Utf8ScalarCountTests
         Assert.Equal(5, runtime.Count(input, validation, deadline));
         var prepared = Assert.IsType<Lokad.Utf8Regex.Internal.Planning.Utf8PreparedRegex>(typeof(Utf8Regex)
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, null, input, validation, deadline);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, validation, deadline);
         int[] bytes = [0, 2, 6, 10, 11];
         int[] units = [0, 1, 3, 5, 6];
         for (var index = 0; index < bytes.Length; index++)

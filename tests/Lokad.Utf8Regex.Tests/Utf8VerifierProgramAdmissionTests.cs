@@ -211,6 +211,13 @@ public sealed class Utf8VerifierProgramAdmissionTests
 
 internal static class Utf8VerifierTestPlans
 {
+    internal static Utf8PreparedRegex WithDirectFamily(Utf8PreparedRegex p, Utf8FallbackDirectFamilyPlan family)
+        => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
+            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.FallbackVerifier, p.StructuralVerifier,
+            p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
+            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, family);
+
     internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,

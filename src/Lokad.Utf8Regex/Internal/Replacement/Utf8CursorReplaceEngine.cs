@@ -18,6 +18,7 @@ internal static class Utf8CursorReplaceEngine
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {
+            var reverse = cursor.IsRightToLeft;
             var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
             replacementCount = ledger.Count;
             if (ledger.Count == 0)
@@ -26,7 +27,7 @@ internal static class Utf8CursorReplaceEngine
             }
 
             var output = new byte[outputLength.Value];
-            Emit(input, replacement, output, ledger.WrittenRanges);
+            Emit(input, replacement, output, ledger.WrittenRanges, reverse);
             return output;
         }
         finally
@@ -45,6 +46,7 @@ internal static class Utf8CursorReplaceEngine
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {
+            var reverse = cursor.IsRightToLeft;
             var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
             if (ledger.Count == 0)
             {
@@ -57,7 +59,7 @@ internal static class Utf8CursorReplaceEngine
                 return false;
             }
 
-            Emit(input, replacement, destination, ledger.WrittenRanges);
+            Emit(input, replacement, destination, ledger.WrittenRanges, reverse);
             bytesWritten = outputLength.Value;
             return true;
         }
@@ -93,12 +95,16 @@ internal static class Utf8CursorReplaceEngine
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacement,
         Span<byte> destination,
-        ReadOnlySpan<Utf8ReplacementRange> matches)
+        ReadOnlySpan<Utf8ReplacementRange> matches,
+        bool reverse)
     {
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);
-        foreach (var match in matches)
+        // Matching order is preserved during discovery. Emit in subject order,
+        // including the empty RTL match before a nonempty range with that start.
+        for (var index = 0; index < matches.Length; index++)
         {
+            var match = matches[reverse ? matches.Length - index - 1 : index];
             sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition);
             sink.Append(replacement);
             sourcePosition = match.Start + match.Length;

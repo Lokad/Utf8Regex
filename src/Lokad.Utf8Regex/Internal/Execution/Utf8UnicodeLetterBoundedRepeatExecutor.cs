@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -70,28 +69,19 @@ internal static class Utf8UnicodeLetterBoundedRepeatExecutor
         return count;
     }
 
-    public static int CountLettersOrFallback(ReadOnlySpan<byte> input, int minCount, int maxCount, Func<Regex> fallbackRegexFactory)
-    {
-        if (TryCountLetters(input, minCount, maxCount, out var count))
-        {
-            return count;
-        }
-
-        return fallbackRegexFactory().Count(Encoding.UTF8.GetString(input));
-    }
-
-    private static bool TryCountLetters(ReadOnlySpan<byte> input, int minCount, int maxCount, out int count)
+    internal static bool TryCountLetters(ReadOnlySpan<byte> input, int minCount, int maxCount, out int count)
     {
         count = 0;
+        if (minCount <= 0 || maxCount < minCount) return false;
         var index = 0;
         while (index < input.Length)
         {
-            if (!TryDecodeBmpChar(input, ref index, out var ch))
+            if (!TryDecodeScalar(input, ref index, out var ch))
             {
                 return false;
             }
 
-            if (!char.IsLetter(ch))
+            if (!Rune.IsLetter(ch))
             {
                 continue;
             }
@@ -100,12 +90,12 @@ internal static class Utf8UnicodeLetterBoundedRepeatExecutor
             while (index < input.Length)
             {
                 var nextIndex = index;
-                if (!TryDecodeBmpChar(input, ref nextIndex, out ch))
+                if (!TryDecodeScalar(input, ref nextIndex, out ch))
                 {
                     return false;
                 }
 
-                if (!char.IsLetter(ch))
+                if (!Rune.IsLetter(ch))
                 {
                     break;
                 }
@@ -133,48 +123,11 @@ internal static class Utf8UnicodeLetterBoundedRepeatExecutor
         return count;
     }
 
-    private static bool TryDecodeBmpChar(ReadOnlySpan<byte> input, ref int index, out char ch)
+    private static bool TryDecodeScalar(ReadOnlySpan<byte> input, ref int index, out Rune scalar)
     {
-        ch = '\0';
-        if ((uint)index >= (uint)input.Length)
-        {
-            return false;
-        }
-
-        var first = input[index];
-        if (first < 0x80)
-        {
-            ch = (char)first;
-            index++;
-            return true;
-        }
-
-        if ((first & 0xE0) == 0xC0)
-        {
-            if (index + 1 >= input.Length)
-            {
-                return false;
-            }
-
-            ch = (char)(((first & 0x1F) << 6) | (input[index + 1] & 0x3F));
-            index += 2;
-            return true;
-        }
-
-        if ((first & 0xF0) == 0xE0)
-        {
-            if (index + 2 >= input.Length)
-            {
-                return false;
-            }
-
-            ch = (char)(((first & 0x0F) << 12) |
-                        ((input[index + 1] & 0x3F) << 6) |
-                        (input[index + 2] & 0x3F));
-            index += 3;
-            return true;
-        }
-
-        return false;
+        var status = Rune.DecodeFromUtf8(input[index..], out scalar, out var width);
+        if (status != System.Buffers.OperationStatus.Done) return false;
+        index += width;
+        return true;
     }
 }

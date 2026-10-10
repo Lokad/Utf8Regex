@@ -125,17 +125,14 @@ public sealed partial class Utf8Regex
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
             // R05: scalar-verifiable simple patterns answer owned on astral-free
-            // non-ASCII input; anything else keeps the BCL verification below.
+            // non-ASCII input; other admitted shapes use the cached scalar program.
             if (Utf8ScalarSimplePatternVerifier.TryIsMatch(input, _preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, budget, out var scalarIsMatch))
             {
                 return scalarIsMatch;
             }
-            if (_ownedSliceProgram is { } program)
-            {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-                return OwnedSliceIsMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, ref invocation);
-            }
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
+                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
 
         if (ShouldUseInterpreterForTimeoutSensitiveSimplePattern())
@@ -220,12 +217,9 @@ public sealed partial class Utf8Regex
             {
                 return scalarCount;
             }
-            if (_ownedSliceProgram is { } program)
-            {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-                return OwnedSliceCountFromByte(input, program, program.RightToLeft ? input.Length : 0, ref invocation);
-            }
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            return OwnedSliceCountFromByte(input, _ownedSliceProgram,
+                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
 
         return _compiledEngine.Kind switch
@@ -265,12 +259,9 @@ public sealed partial class Utf8Regex
                     return Utf8ValueMatch.NoMatch;
                 }
             }
-            if (_ownedSliceProgram is { } program)
-            {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-                return OwnedSliceMatchFromByte(input, program, program.RightToLeft ? input.Length : 0, ref invocation);
-            }
-            return MatchFallback(input);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
+                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
         }
 
         return _compiledEngine.Kind switch
@@ -294,22 +285,16 @@ public sealed partial class Utf8Regex
                     new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget))
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
-            if (_ownedSliceProgram is { } program)
-            {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-                if (validation.ByteLength != input.Length)
-                    validation = Utf8Validation.Validate(input, ref invocation);
-                var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
-                return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
-            }
-            var fallbackAnalysis = Utf8InputAnalyzer.Analyze(input);
-            return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, fallbackAnalysis.Utf16ProjectionMap);
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+            if (validation.ByteLength != input.Length)
+                validation = Utf8Validation.Validate(input, ref invocation);
+            var cursor = Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
+            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
         return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(
             _compiledEngineRuntime,
             _preparedRegex,
-            _verifierRuntime,
             input,
             validation,
             budget);
@@ -362,17 +347,8 @@ public sealed partial class Utf8Regex
         }
 
 
-        // Line-anchored shapes fall through to the owned cursors below; absolute
-        // anchors and non-ASCII input keep BCL verification here.
-        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
-        {
-            var analysis = Utf8InputAnalyzer.Analyze(input);
-            return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
-        }
-
         return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
             _preparedRegex,
-            _verifierRuntime,
             input,
             validation,
             totalUtf16Length,

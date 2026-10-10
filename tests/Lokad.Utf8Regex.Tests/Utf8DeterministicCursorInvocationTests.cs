@@ -120,7 +120,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
         var oracle = new Regex(pattern, Options(compiled));
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, null, input, validation,
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation,
                 Utf8ExecutionDeadline.Infinite, floor, floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
@@ -130,7 +130,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
             Assert.False(cursor.MoveNext());
         }
         var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
-        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, null, input, validation, budget, 0, 0);
+        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, budget, 0, 0);
         Thread.Sleep(250);
         Exception? observed = null;
         try { _ = timed.MoveNext(); } catch (Exception exception) { observed = exception; }

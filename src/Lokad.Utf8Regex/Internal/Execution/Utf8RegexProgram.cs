@@ -11,9 +11,7 @@ internal sealed class Utf8RegexProgram
         Utf8VerifierRuntime VerifierRuntime,
         Utf8CompiledEngineRuntime CompiledEngineRuntime,
         Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher,
-        Lazy<int[]> GroupNumbers,
-        Lazy<string[]> GroupNames,
-        Utf8CaptureCatalog? CaptureCatalog);
+        Utf8CaptureCatalog CaptureCatalog);
 
     private Utf8RegexProgram(ConstructionState state)
     {
@@ -22,8 +20,6 @@ internal sealed class Utf8RegexProgram
         VerifierRuntime = state.VerifierRuntime;
         CompiledEngineRuntime = state.CompiledEngineRuntime;
         DirectStructuralFamilyKernelMatcher = state.DirectStructuralFamilyKernelMatcher;
-        GroupNumbers = state.GroupNumbers;
-        GroupNames = state.GroupNames;
         CaptureCatalog = state.CaptureCatalog;
     }
 
@@ -37,11 +33,7 @@ internal sealed class Utf8RegexProgram
 
     public Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher { get; }
 
-    public Lazy<int[]> GroupNumbers { get; }
-
-    public Lazy<string[]> GroupNames { get; }
-
-    public Utf8CaptureCatalog? CaptureCatalog { get; }
+    public Utf8CaptureCatalog CaptureCatalog { get; }
 
     public static Utf8RegexProgram Compile(
         string pattern,
@@ -68,17 +60,12 @@ internal sealed class Utf8RegexProgram
                 preparedRegex,
                 verifierRuntime,
                 options);
-            // Owned metadata is preferred. The lazy BCL query for an unparsed
-            // pattern remains migration debt and must not define scalar behavior.
+            // Successful owned parsing always finishes capture numbering before
+            // publishing the tree. Borrow that catalog for every public route;
+            // absent metadata would indicate broken internal preparation.
             var captureCatalog = preparedRegex.SemanticRegex.RuntimeTree?.CaptureCatalog;
-            // Borrow callback targets already retained by the program instead of
-            // acquiring a second holder for the same metadata/verifier references.
-            var groupNumbers = captureCatalog is null
-                ? new Lazy<int[]>(verifierRuntime.FallbackCandidateVerifier.GetGroupNumbers)
-                : new Lazy<int[]>(captureCatalog.GetGroupNumbers);
-            var groupNames = captureCatalog is null
-                ? new Lazy<string[]>(verifierRuntime.FallbackCandidateVerifier.GetGroupNames)
-                : new Lazy<string[]>(captureCatalog.GetGroupNames);
+            if (captureCatalog is null)
+                throw new InvalidOperationException("Owned preparation must produce capture metadata.");
             var directStructuralFamilyKernelMatcher =
                 preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                 Utf8EmittedKernelMatcher.TryCreate(
@@ -90,7 +77,7 @@ internal sealed class Utf8RegexProgram
 
             var result = budget.AllocateObject(new ConstructionState(
                 preparedRegex, compiledEngine, verifierRuntime, compiledEngineRuntime,
-                directStructuralFamilyKernelMatcher, groupNumbers, groupNames, captureCatalog),
+                directStructuralFamilyKernelMatcher, captureCatalog),
                 static state => new Utf8RegexProgram(state));
             scope.Complete();
             return result;
@@ -98,5 +85,4 @@ internal sealed class Utf8RegexProgram
         finally { budget.LeaveDepth(); }
     }
 
-    // Lazy/delegate payloads and their eventual results need separate admission.
 }

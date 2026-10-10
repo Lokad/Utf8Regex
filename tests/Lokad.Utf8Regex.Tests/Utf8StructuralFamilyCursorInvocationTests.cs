@@ -129,7 +129,7 @@ public sealed class Utf8StructuralFamilyCursorInvocationTests
         var validation = Utf8Validation.Validate(input);
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, null, input,
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input,
                 validation, Utf8ExecutionDeadline.Infinite, floor, floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
