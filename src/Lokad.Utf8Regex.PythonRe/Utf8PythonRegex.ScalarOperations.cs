@@ -119,19 +119,15 @@ public sealed partial class Utf8PythonRegex
         {
             while (cursor.MoveNext())
             {
-                var groups = cursor.SnapshotGroups();
-                try
+                cursor.EnsureMap();
+                var group = cursor.SnapshotValueData();
+                cursor.AddResult(ref list, new Utf8PythonMatchData
                 {
-                    var group = groups[0];
-                    cursor.AddResult(ref list, new Utf8PythonMatchData
-                    {
-                        Success = true,
-                        StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
-                        StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
-                        ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes),
-                    });
-                }
-                finally { cursor.ReleaseResultArray(groups); }
+                    Success = true,
+                    StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
+                    StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
+                    ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes),
+                });
                 cursor.Checkpoint();
             }
             var completed = cursor.CompleteResults(ref list);
@@ -154,28 +150,23 @@ public sealed partial class Utf8PythonRegex
             var count = _translation.CaptureGroupCount;
             while (cursor.MoveNext())
             {
-                var groups = cursor.SnapshotGroups();
-                try
+                if (count <= 1)
                 {
-                    if (count <= 1)
-                    {
-                        var group = groups[count];
-                        cursor.AddResult(ref scalars, !group.Success ? string.Empty : count == 1 && _optionalExactCaptureFindAllValue is { } exact
-                            ? exact : cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes));
-                    }
-                    else
-                    {
-                        var tuple = cursor.AllocateResultArray<string>(count);
-                        for (var i = 0; i < count; i++)
-                        {
-                            var group = groups[i + 1];
-                            tuple[i] = group.Success ? cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty;
-                            cursor.Checkpoint();
-                        }
-                        cursor.AddResult(ref tuples, tuple);
-                    }
+                    var success = cursor.TryGetCaptureByteRange(count, out var start, out var end);
+                    cursor.AddResult(ref scalars, !success ? string.Empty : count == 1 && _optionalExactCaptureFindAllValue is { } exact
+                        ? exact : cursor.GetText(start, end));
                 }
-                finally { cursor.ReleaseResultArray(groups); }
+                else
+                {
+                    var tuple = cursor.AllocateResultArray<string>(count);
+                    for (var i = 0; i < count; i++)
+                    {
+                        tuple[i] = cursor.TryGetCaptureByteRange(i + 1, out var start, out var end)
+                            ? cursor.GetText(start, end) : string.Empty;
+                        cursor.Checkpoint();
+                    }
+                    cursor.AddResult(ref tuples, tuple);
+                }
                 cursor.Checkpoint();
             }
             var completed = new Utf8PythonFindAllResult
@@ -202,27 +193,22 @@ public sealed partial class Utf8PythonRegex
             var count = _translation.CaptureGroupCount;
             while (cursor.MoveNext())
             {
-                var groups = cursor.SnapshotGroups();
-                try
+                if (count <= 1)
                 {
-                    if (count <= 1)
-                    {
-                        var group = groups[count];
-                        cursor.AddResult(ref scalars, group.Success ? cursor.GetBytes(group.StartOffsetInBytes, group.EndOffsetInBytes) : []);
-                    }
-                    else
-                    {
-                        var tuple = cursor.AllocateResultArray<byte[]>(count);
-                        for (var i = 0; i < count; i++)
-                        {
-                            var group = groups[i + 1];
-                            tuple[i] = group.Success ? cursor.GetBytes(group.StartOffsetInBytes, group.EndOffsetInBytes) : [];
-                            cursor.Checkpoint();
-                        }
-                        cursor.AddResult(ref tuples, tuple);
-                    }
+                    var success = cursor.TryGetCaptureByteRange(count, out var start, out var end);
+                    cursor.AddResult(ref scalars, success ? cursor.GetBytes(start, end) : []);
                 }
-                finally { cursor.ReleaseResultArray(groups); }
+                else
+                {
+                    var tuple = cursor.AllocateResultArray<byte[]>(count);
+                    for (var i = 0; i < count; i++)
+                    {
+                        tuple[i] = cursor.TryGetCaptureByteRange(i + 1, out var start, out var end)
+                            ? cursor.GetBytes(start, end) : [];
+                        cursor.Checkpoint();
+                    }
+                    cursor.AddResult(ref tuples, tuple);
+                }
                 cursor.Checkpoint();
             }
             var completed = new Utf8PythonFindAllUtf8Result
@@ -251,21 +237,15 @@ public sealed partial class Utf8PythonRegex
             while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
             {
                 cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = cursor.GetText(last, cursor.StartOffsetInBytes) });
-                var groups = cursor.SnapshotGroups();
-                try
+                for (var i = 1; i <= _translation.CaptureGroupCount; i++)
                 {
-                    for (var i = 1; i < groups.Length; i++)
+                    cursor.AddResult(ref parts, new Utf8PythonSplitItem
                     {
-                        var group = groups[i];
-                        cursor.AddResult(ref parts, new Utf8PythonSplitItem
-                        {
-                            IsCapture = true, CaptureGroupNumber = i,
-                            ValueText = group.Success ? cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : null,
-                        });
-                        cursor.Checkpoint();
-                    }
+                        IsCapture = true, CaptureGroupNumber = i,
+                        ValueText = cursor.TryGetCaptureByteRange(i, out var start, out var end) ? cursor.GetText(start, end) : null,
+                    });
+                    cursor.Checkpoint();
                 }
-                finally { cursor.ReleaseResultArray(groups); }
                 last = cursor.EndOffsetInBytes;
                 splits++;
             }
