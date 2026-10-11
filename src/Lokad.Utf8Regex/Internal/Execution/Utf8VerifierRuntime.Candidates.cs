@@ -22,13 +22,19 @@ internal sealed partial class Utf8VerifierRuntime
         if (!IsBoundary(input, candidate.StartIndex) || !IsBoundary(input, attempt))
             return Utf8ExecutionLimitKind.None;
 
-        var bytes = (ulong)program.GroupCount * 8;
+        var bytes = checked(2 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+        int[]? starts = null;
+        int[]? ends = null;
         try
         {
             invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-            var starts = new int[program.GroupCount];
-            var ends = new int[program.GroupCount];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            starts = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.Ledger.IsUnlimited);
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            ends = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.Ledger.IsUnlimited);
             var match = Utf8SliceRunner.TryMatchAt(program, input, attempt, starts, ends,
                 startIsScalarBoundary: true, ref invocation);
             if (match.Breach != Utf8ExecutionLimitKind.None) return match.Breach;
@@ -55,7 +61,12 @@ internal sealed partial class Utf8VerifierRuntime
             result = new(true, low, high - low);
             return Utf8ExecutionLimitKind.None;
         }
-        finally { invocation.Ledger.Release(bytes); }
+        finally
+        {
+            if (starts is not null) Utf8ExactStatePool<int>.Return(starts, invocation.Ledger.IsUnlimited);
+            if (ends is not null) Utf8ExactStatePool<int>.Return(ends, invocation.Ledger.IsUnlimited);
+            invocation.Ledger.Release(bytes);
+        }
     }
 
     private static bool IsBoundary(ReadOnlySpan<byte> input, int offset)

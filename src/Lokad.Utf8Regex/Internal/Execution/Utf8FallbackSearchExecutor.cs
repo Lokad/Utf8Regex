@@ -27,7 +27,7 @@ internal static class Utf8FallbackSearchExecutor
             return false;
         }
 
-        using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, startIndex);
+        using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, startIndex, ref invocation);
         while (cursor.TryGetNextScalarBoundary(out var candidate))
         {
             verifierInvocations++;
@@ -55,7 +55,8 @@ internal static class Utf8FallbackSearchExecutor
         }
 
         var count = 0;
-        using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, 0);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, 0, ref invocation);
         while (requireScalarBoundary
             ? cursor.TryGetNextScalarBoundary(out _)
             : cursor.TryGetNext(out _))

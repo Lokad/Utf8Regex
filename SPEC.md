@@ -438,7 +438,8 @@ the complete validated subject. Conservative candidate ends never truncate
 lookaround/anchor context; successful starts and ends are scalar byte boundaries.
 Verification results retain only byte ranges. Requested UTF-16 match coordinates
 are derived separately under the same invocation, without decoding the subject.
-Capture scratch is admitted before acquisition and released on success, miss,
+Capture scratch reserves both complete array extents, including headers, before
+acquisition and releases them on success, miss,
 breach or cancellation; work, deadline, token and contiguous-anchor origin remain
 with the caller across candidates. Search-guided and compiled candidate matching
 no longer use BCL verification, conditional bypass or count demotion. The decoded
@@ -446,9 +447,18 @@ bounded verifier, duplicate forwarding/program/decoded-state plumbing and demoti
 threshold/route are retired. The search-guided emitter passes the same invocation
 and cached scalar verifier through its generated loop; it retains no decoded
 subject or independent BCL verification path.
-Other production BCL consumers and factory payloads,
-candidate-portfolio search work/storage admission and complete shared policies
-remain uncovered; this does not complete their removal or R07 qualification.
+Candidate portfolios borrow the same invocation. Up to two sources keep merge
+state inline; larger portfolios reserve all three physical vectors together
+before acquisition from the shared bounded exact pool. Small vectors use a
+declared power-of-two capacity; large vectors use the source count. Constructor
+failure and disposal restore parent loans. Finite storage calls may borrow
+existing leaves but cannot initialize or grow pool retention. Initialization,
+source advancement and merge-selection loops check the same caller authority;
+individual search kernels still need their complete work/cancellation gates.
+No-capture verification uses shared empties without per-attempt allocation.
+These lexical workspaces have one owner; public copied cursor/result lifetimes
+remain a separate qualification. Shipped BCL matching/result consumers and
+factories are retired. Complete shared public policies and R07 remain open.
 Internal compiled/simple/structural fallback consumers now borrow the admitted
 scalar program for mixed UTF-8 and reverse matching. Their general IsMatch/Count
 paths retain byte coordinates; requested Match projection shares the invocation.

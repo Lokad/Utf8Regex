@@ -35,7 +35,8 @@ public class Utf8CandidatePortfolioBenchmarks
     [Benchmark(Baseline = true)]
     public int PersistentMerge()
     {
-        using var cursor = new Utf8CandidatePortfolioCursor(_plans, _input, 0);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, default);
+        using var cursor = new Utf8CandidatePortfolioCursor(_plans, _input, 0, ref invocation);
         var count = 0;
         while (cursor.TryGetNext(out _))
         {
@@ -50,9 +51,10 @@ public class Utf8CandidatePortfolioBenchmarks
     {
         var count = 0;
         var startIndex = 0;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, default);
         while (startIndex <= _input.Length)
         {
-            using var cursor = new Utf8CandidatePortfolioCursor(_plans, _input, startIndex);
+            using var cursor = new Utf8CandidatePortfolioCursor(_plans, _input, startIndex, ref invocation);
             if (!cursor.TryGetNext(out var candidate))
             {
                 break;

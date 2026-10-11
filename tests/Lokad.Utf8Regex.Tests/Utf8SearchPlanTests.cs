@@ -939,7 +939,8 @@ public sealed class Utf8SearchPlanTests
         };
         var input = Encoding.UTF8.GetBytes("a---a----");
 
-        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0, ref invocation);
 
         Assert.True(cursor.TryGetNext(out var first));
         Assert.Equal(0, first.StartIndex);
@@ -965,7 +966,8 @@ public sealed class Utf8SearchPlanTests
         };
         var input = Encoding.UTF8.GetBytes(new string('a', 512) + "z");
 
-        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0, ref invocation);
         var count = 0;
         while (cursor.TryGetNext(out _))
         {
@@ -991,7 +993,8 @@ public sealed class Utf8SearchPlanTests
             Utf8StructuralSearchPlan.CreateStartPlan(second),
         };
         var input = Encoding.UTF8.GetBytes(new string('a', 128) + "z");
-        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0, ref invocation);
         var count = 0;
         while (cursor.TryGetNext(out _))
         {
