@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -138,6 +139,38 @@ public sealed class Utf8CandidateWorkspaceTests
         var allocated=GC.GetAllocatedBytesForCurrentThread()-before;
         Assert.True(correct);Assert.Equal(0,allocated);Assert.Equal(0ul,invocation.Ledger.ReservedBytes);
     }
+
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(17)] [InlineData(257)]
+    public void ActualPhysicalVectorsMatchTheAdmittedExtent(int sources)
+    {
+        var invocation=Invocation(1024*1024);
+        var cursor=new Utf8CandidatePortfolioCursor(Plans(sources,"a"),"a"u8,0,ref invocation);
+        try
+        {
+            var states=States(ref cursor);var candidates=Candidates(ref cursor);var available=Available(ref cursor);
+            if(sources<=2){Assert.Null(states);Assert.Null(candidates);Assert.Null(available);}
+            else
+            {
+                Assert.NotNull(states);Assert.NotNull(candidates);Assert.NotNull(available);
+                Assert.Equal(states.Length,candidates.Length);Assert.Equal(states.Length,available.Length);
+                var physical=checked(Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchState>(states.Length)+
+                    Utf8ConstructionBudget.ArrayBytes<Utf8StructuralCandidate>(candidates.Length)+
+                    Utf8ConstructionBudget.ArrayBytes<bool>(available.Length));
+                Assert.Equal(PortfolioBytes(sources),physical);Assert.Equal(physical,invocation.Ledger.ReservedBytes);
+            }
+        }
+        finally{cursor.Dispose();}
+        Assert.Equal(0ul,invocation.Ledger.ReservedBytes);
+    }
+
+    // Typed access to library test subjects, not private CLR coupling in production.
+    [UnsafeAccessor(UnsafeAccessorKind.Field,Name="_states")]
+    private static extern ref Utf8StructuralSearchState[]? States(ref Utf8CandidatePortfolioCursor cursor);
+    [UnsafeAccessor(UnsafeAccessorKind.Field,Name="_candidates")]
+    private static extern ref Utf8StructuralCandidate[]? Candidates(ref Utf8CandidatePortfolioCursor cursor);
+    [UnsafeAccessor(UnsafeAccessorKind.Field,Name="_available")]
+    private static extern ref bool[]? Available(ref Utf8CandidatePortfolioCursor cursor);
 
     internal static ulong PortfolioBytes(int sources)
     {
