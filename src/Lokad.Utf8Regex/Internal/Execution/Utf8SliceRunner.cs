@@ -147,23 +147,33 @@ internal static partial class Utf8SliceRunner
             return new Utf8SliceSlots(Array.Empty<int>(), Array.Empty<int>());
         }
 
-        if (!invocation.Ledger.TryReserve((ulong)groups * 8))
+        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
+        if (!invocation.Ledger.TryReserve(bytes))
         {
             throw new InvalidOperationException("Owned slice capture slots breached an unlimited invocation budget.");
         }
 
-        var starts = new int[groups];
-        var ends = new int[groups];
-        Array.Fill(starts, -1);
-        Array.Fill(ends, -1);
-        return new Utf8SliceSlots(starts, ends);
+        try
+        {
+            var starts = new int[groups];
+            var ends = new int[groups];
+            Array.Fill(starts, -1);
+            Array.Fill(ends, -1);
+            return new Utf8SliceSlots(starts, ends);
+        }
+        catch
+        {
+            invocation.Ledger.Release(bytes);
+            throw;
+        }
     }
 
     internal static void ReleaseSlots(Utf8SliceSlots slots, ref Utf8SliceInvocation invocation)
     {
         if (slots.Starts.Length != 0)
         {
-            invocation.Ledger.Release((ulong)slots.Starts.Length * 8);
+            invocation.Ledger.Release(checked(Utf8ConstructionBudget.ArrayBytes<int>(slots.Starts.Length)
+                + Utf8ConstructionBudget.ArrayBytes<int>(slots.Ends.Length)));
         }
     }
 
