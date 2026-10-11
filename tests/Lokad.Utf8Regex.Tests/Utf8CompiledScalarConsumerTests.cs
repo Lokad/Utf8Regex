@@ -14,6 +14,13 @@ public sealed class Utf8CompiledScalarConsumerTests
     private static Utf8PreparedRegex Prepare(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
         => Utf8FrontEnd.Compile(pattern, options);
 
+    private static void CollectReleasedCursorStorage()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
     [Theory]
     [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, ".+", "é😀a", false, 1, 0, 7, 0, 4)]
     [InlineData((int)Utf8CompiledEngineKind.FallbackRegex, "(?<=é).(?=z)", "é😀z", false, 1, 2, 4, 1, 2)]
@@ -117,11 +124,15 @@ public sealed class Utf8CompiledScalarConsumerTests
             ranges.Add((cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
         }
         Assert.Equal(rtl ? [(11, 0), (2, 8)] : new List<(int, int)> { (2, 8), (11, 0) }, ranges);
+        CollectReleasedCursorStorage();
         Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
         Assert.True(sibling.MoveNext());
         Assert.Equal(ranges[0], (sibling.CurrentValueMatch.IndexInBytes, sibling.CurrentValueMatch.LengthInBytes));
         while (sibling.MoveNext()) { }
-        Assert.Equal(retained, sibling.DebugInvocationReservedBytes);
+        // Both holders have dropped their tables. Collection may now return
+        // the loans; a reservation surviving EOF is not a lifetime guarantee.
+        CollectReleasedCursorStorage();
+        Assert.Equal(0UL, sibling.DebugInvocationReservedBytes);
     }
 
     [Theory]
@@ -138,11 +149,14 @@ public sealed class Utf8CompiledScalarConsumerTests
         var sibling = cursor;
         Assert.True(cursor.MoveNext()); Assert.Equal((2, 4), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
         Assert.True(cursor.MoveNext()); Assert.Equal((6, 1), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
-        Assert.False(cursor.MoveNext()); Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
+        Assert.False(cursor.MoveNext());
+        CollectReleasedCursorStorage();
+        Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
         Assert.True(sibling.MoveNext());
         Assert.Equal((2, 4), (sibling.CurrentValueMatch.IndexInBytes, sibling.CurrentValueMatch.LengthInBytes));
         while (sibling.MoveNext()) { }
-        Assert.Equal(retained, sibling.DebugInvocationReservedBytes);
+        CollectReleasedCursorStorage();
+        Assert.Equal(0UL, sibling.DebugInvocationReservedBytes);
     }
 
     [Theory]
