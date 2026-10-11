@@ -75,7 +75,9 @@ public sealed class Utf8SharedStatePoolTests
             Assert.Equal(Utf8ExactStatePool.TableBytes + Physical(small) + Physical(wide), actual.Bytes);
             var replacement = new int[16];
             Utf8ExactStatePool<int>.Return(replacement, true);
-            Assert.Equal(actual.Bytes, Inspect().Bytes);
+            Assert.Equal(actual.Bytes + Physical(replacement), Inspect().Bytes);
+            Assert.Equal(3, Inspect().Leaves);
+            Assert.Same(small, Utf8ExactStatePool<int>.Rent(16, false));
             Assert.Same(replacement, Utf8ExactStatePool<int>.Rent(16, false));
             Assert.Equal(1, Inspect().Leaves);
         }
@@ -102,6 +104,44 @@ public sealed class Utf8SharedStatePoolTests
             Utf8ExactStatePool<WideState>.Return(oversized, true);
             Assert.Equal(before.Bytes, Inspect().Bytes);
             Assert.NotSame(oversized, Utf8ExactStatePool<WideState>.Rent(256, false));
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
+
+    [Fact]
+    public void IdenticalBucketsStillRespectTheCompletePerTypeAndSlotBounds()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            var leaves = new WideState[20][];
+            for (var i = 0; i < leaves.Length; i++) leaves[i] = Utf8ExactStatePool<WideState>.Rent(16, true);
+            foreach (var leaf in leaves) Utf8ExactStatePool<WideState>.Return(leaf, true);
+            var expectedLeaves = Utf8ExactStatePool<WideState>.MaximumRetainedBytes / Physical(leaves[0]);
+            var actual = Inspect();
+            Assert.Equal(expectedLeaves, actual.Leaves);
+            Assert.Equal(expectedLeaves * Physical(leaves[0]), Utf8ExactStatePool<WideState>.RetainedBytes);
+            Assert.Equal(Utf8ExactStatePool.TableBytes + expectedLeaves * Physical(leaves[0]), actual.Bytes);
+            var borrowed = new HashSet<WideState[]>(ReferenceEqualityComparer.Instance);
+            for (var i = 0; i < expectedLeaves; i++) Assert.True(borrowed.Add(Utf8ExactStatePool<WideState>.Rent(16, false)));
+            Assert.Equal(0, Inspect().Leaves);
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
+
+    [Fact]
+    public void DuplicateReturnCannotPublishAnAliasedWorkingLeaf()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            var leaf = Utf8ExactStatePool<int>.Rent(16, true);
+            Utf8ExactStatePool<int>.Return(leaf, true);
+            var before = Inspect();
+            Utf8ExactStatePool<int>.Return(leaf, true);
+            Assert.Equal(before, Inspect());
+            Assert.Same(leaf, Utf8ExactStatePool<int>.Rent(16, false));
+            Assert.NotSame(leaf, Utf8ExactStatePool<int>.Rent(16, false));
         }
         finally { Utf8ExactStatePool.Clear(); }
     }

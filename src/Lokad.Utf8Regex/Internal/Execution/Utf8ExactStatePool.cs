@@ -99,26 +99,18 @@ internal static class Utf8ExactStatePool
             s_gate.TryEnter(0, ref taken);
             if (!taken) return;
             if (s_items is not { } cache) return;
-            var sameBucket = -1;
             var empty = -1;
             var typeBytes = 0;
+            // Identical capacities can belong to distinct simultaneous loans.
+            // Every returned leaf contributes to both retention bounds.
             for (var index = 0; index < cache.Length; index++)
             {
                 var entry = cache[index];
                 if (entry.Value is null) { if (empty < 0) empty = index; }
-                else if (entry.Value is T[] previous)
-                {
-                    if (previous.Length == items.Length) sameBucket = index;
-                    else typeBytes += entry.Bytes;
-                }
+                else if (ReferenceEquals(entry.Value, items)) return;
+                else if (entry.Value is T[]) typeBytes += entry.Bytes;
             }
             if (bytes > Utf8ExactStatePool<T>.MaximumRetainedBytes - typeBytes) return;
-            if (sameBucket >= 0)
-            {
-                s_retainedBytes -= cache[sameBucket].Bytes;
-                cache[sameBucket] = default;
-                empty = sameBucket;
-            }
             while (empty < 0 || bytes > MaximumRetainedBytes - s_retainedBytes)
             {
                 var victim = s_nextVictim;
