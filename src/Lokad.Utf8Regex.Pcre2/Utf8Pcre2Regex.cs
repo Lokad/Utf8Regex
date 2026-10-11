@@ -102,13 +102,13 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Maps a shared resource policy onto PCRE2 execution limits.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
-    /// <exception cref="NotSupportedException">A result-bytes budget is set. No profile meters result materialization yet.</exception>
+    /// <exception cref="NotSupportedException">A result-bytes budget is set. The PCRE2 profile does not yet enforce result-capacity limits.</exception>
     private static Utf8Pcre2ExecutionLimits ToExecutionLimits(Utf8ResourcePolicy resourcePolicy)
     {
         resourcePolicy.Validate(nameof(resourcePolicy));
         if (resourcePolicy.MaxResultBytes.HasValue)
         {
-            throw new NotSupportedException("Result-bytes budgets are reserved and not enforced by any profile yet.");
+            throw new NotSupportedException("The PCRE2 profile does not yet enforce result-capacity limits.");
         }
 
         uint workSteps = 0;
