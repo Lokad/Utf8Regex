@@ -157,7 +157,8 @@ public sealed class Utf8CursorStorageLeaseTests
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var validation = Utf8Validation.Validate(input);
-        var held = 7UL + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
+        var held = 7UL + 64UL + ((ulong)(validation.Utf16Length + 1) * 4 + 15) / 16 * 16
+            + ((ulong)(validation.Utf16Length + 32) / 32 * 4 + 15) / 16 * 16;
         ReadViewAfterCollection(regex, input, count, held, source, ref invocation);
         CollectLeases();
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);

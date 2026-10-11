@@ -10,6 +10,10 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8MappedEntryInvocationTests
 {
+    private static ulong MapBytes(int units) => 64UL
+        + ((ulong)(units + 1) * 4 + 15) / 16 * 16
+        + ((ulong)(units + 32) / 32 * 4 + 15) / 16 * 16;
+
     private static readonly string[] Patterns = [@"(ab)\1", @"(?<=a+)b", @"(?<x>a)+\k<x>",
         @"(?:(?<x>a)|b)+", @"(a|b)*c", @"(?i:a+)"];
 
@@ -79,7 +83,7 @@ public sealed class Utf8MappedEntryInvocationTests
         var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var reservation);
         var original = Utf8BoundaryMap.Create(input, validation);
         Assert.Equal(7 + reservation, invocation.Ledger.ReservedBytes);
-        Assert.Equal(validation.IsAscii ? 0UL : (ulong)((text.Length + 1) + (text.Length + 32) / 32) * 4, reservation);
+        Assert.Equal(validation.IsAscii ? 0UL : MapBytes(text.Length), reservation);
         for (var unit = 0; unit <= text.Length; unit++) Assert.Equal(original.Resolve(unit), map.Resolve(unit));
         for (var offset = 0; offset <= input.Length; offset++)
         {
@@ -173,7 +177,7 @@ public sealed class Utf8MappedEntryInvocationTests
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        var mapBytes = (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
+        var mapBytes = MapBytes(validation.Utf16Length);
         Assert.Equal(retain ? mapBytes + 7 : 7UL, invocation.Ledger.ReservedBytes);
         if (retain) Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
     }
@@ -184,7 +188,7 @@ public sealed class Utf8MappedEntryInvocationTests
     {
         var program = (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
         var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, retain, out var map);
-        var mapBytes = (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
+        var mapBytes = MapBytes(validation.Utf16Length);
         Assert.True(cursor.DebugInvocationSteps >= invocation.Budget.Steps);
         Assert.Equal(mapBytes + 7, cursor.DebugInvocationReservedBytes);
         var expected = new Regex(regex.Pattern, regex.Options).Matches("é😀 abab 中abab");
@@ -299,7 +303,7 @@ public sealed class Utf8MappedEntryInvocationTests
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        var mapBytes = (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
+        var mapBytes = MapBytes(validation.Utf16Length);
         Assert.Equal(retain ? mapBytes + 7 : 7UL, invocation.Ledger.ReservedBytes);
         if (retain) Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
     }
