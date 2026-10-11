@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -146,6 +147,8 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
     [InlineData(true)]
     public void WindowCursorMapsAnExpiredDeadlineToThePublicTimeout(bool compiled)
     {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         const string pattern = @"a.{0,4}b";
         var text = new string('a', 16_384);
         var input = Encoding.UTF8.GetBytes(text);
@@ -155,7 +158,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         var cursor = regex.EnumerateMatches(input);
         // Expire the invocation after its creation; the candidate loop must
         // observe its own deadline, rather than relying on construction checks.
-        Thread.Sleep(20);
+        ticks = 20;
         RegexMatchTimeoutException? observed = null;
         try
         {
