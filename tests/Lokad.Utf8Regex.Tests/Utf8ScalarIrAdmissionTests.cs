@@ -98,8 +98,11 @@ public sealed class Utf8ScalarIrAdmissionTests
         var bytes = 0ul;
         for (var allocation = budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
         {
-            var type = allocation.Value.GetType().GetGenericTypeDefinition();
-            Assert.Contains(type, new[] { typeof(Utf8ConstructionBuffer<>), typeof(Utf8ConstructionMap<,>) });
+            var acquired = allocation.Value.GetType();
+            var type = acquired.IsGenericType ? acquired.GetGenericTypeDefinition() : acquired;
+            Assert.Contains(type, new[] { typeof(Utf8ConstructionBuffer<>), typeof(Utf8ConstructionMap<,>),
+                typeof(Utf8SliceProgram), typeof(Utf8SliceAssertion), typeof(Utf8SliceCategoryTable),
+                typeof(Utf8SliceNode.CategorySetMember), typeof(Utf8SliceClassProgram) });
             bytes += allocation.Bytes;
         }
         return bytes;

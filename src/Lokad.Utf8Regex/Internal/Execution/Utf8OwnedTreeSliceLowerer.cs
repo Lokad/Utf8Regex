@@ -235,7 +235,7 @@ internal static class Utf8OwnedTreeSliceLowerer
             ranges[0] = unit;
             ranges[1] = (int)unit + 1;
             var categories = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
-            categories[0] = new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarRanges(ranges), false);
+            categories[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarRanges(ranges), false);
             return new Utf8SliceNode.CategorySetNode(arena.Allocate<byte>(16, true), true, [], categories, foldCase);
         }
 
@@ -295,7 +295,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                 }
                 if (pendingLow >= 0) AppendRange(unicode, pendingLow, pendingHigh);
                 if (unicode.Count != 0)
-                    categories.Add(new Utf8SliceNode.CategorySetMember(
+                    categories.Add(Utf8SliceNode.CategorySetMember.Create(
                         Utf8SliceCategoryTable.ForScalarRanges(arena.Take(unicode, true)), false));
                 // Hybrid instructions consult the precomputed mask on ASCII;
                 // their shorthand bits classify only the Unicode remainder.
@@ -349,7 +349,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     }
                     for (var range = 0; range < length; range += 2)
                         if (ranges[range] < 0 || ranges[range] >= ranges[range + 1] || ranges[range + 1] > 0x110000) return false;
-                    categories.Add(new Utf8SliceNode.CategorySetMember(Utf8SliceCategoryTable.ForScalarRanges(ranges), negated));
+                    categories.Add(Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarRanges(ranges), negated));
                     continue;
                 }
                 var code = encoded[index];
@@ -377,14 +377,14 @@ internal static class Utf8OwnedTreeSliceLowerer
                         else negative |= 1u << (number - 1);
                     }
                     var mask = positive == 0 ? negative : positive & ~negative;
-                    categories.Add(new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(mask, []),
+                    categories.Add(Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.Create(mask, []),
                         positive == 0));
                     index = close;
                     continue;
                 }
                 var category = Math.Abs((int)code);
                 if (category is < 1 or > 30) return false;
-                categories.Add(new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(1u << (category - 1), []), code < 0));
+                categories.Add(Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.Create(1u << (category - 1), []), code < 0));
             }
             return true;
         }

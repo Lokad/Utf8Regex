@@ -26,12 +26,13 @@ internal sealed class Utf8SliceClassProgram
         };
 
         var segments = arena.Allocate<Segment>(operands.Count, true);
+        arena.Budget.ChargeWork((ulong)operands.Count);
         for (var index = 0; index < operands.Count; index++)
             segments[index] = FromNode(operands[index]);
 
-        var program = new Utf8SliceClassProgram(segments);
+        var program = arena.Budget.AllocateObject(segments, static state => new Utf8SliceClassProgram(state));
         var categories = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
-        categories[0] = new Utf8SliceNode.CategorySetMember(new Utf8SliceCategoryTable(program), false);
+        categories[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.Create(program), false);
         return new Utf8SliceNode.CategorySetNode(arena.Allocate<byte>(16, true), false, [], categories, false);
     }
 

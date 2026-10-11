@@ -96,7 +96,18 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
         internal Func<int, int>? LowerScalar { get; init; }
     }
     internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
-    internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
+    internal sealed record CategorySetMember
+    {
+        private CategorySetMember(Utf8SliceCategoryTable table, bool negated) { Table = table; Negated = negated; }
+        internal Utf8SliceCategoryTable Table { get; }
+        internal bool Negated { get; }
+        internal static CategorySetMember Create(Utf8SliceCategoryTable table, bool negated)
+        {
+            using var owner = Utf8ConstructionScope.Enter();
+            var result = owner.Budget.AllocateObject((table, negated), static state => new CategorySetMember(state.table, state.negated));
+            owner.Complete(); return result;
+        }
+    }
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
     internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
@@ -143,35 +154,41 @@ internal enum Utf8SliceInstructionKind : byte
 /// or one immutable class subtraction program.</summary>
 internal sealed class Utf8SliceCategoryTable
 {
-    internal Utf8SliceCategoryTable(uint mask, ushort[] ranges)
+    private Utf8SliceCategoryTable(uint mask, int[] ranges, Utf8SliceClassProgram? classProgram)
+    { Mask = mask; Ranges = ranges; ClassProgram = classProgram; }
+
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(uint, int[], Utf8SliceClassProgram?)>();
+
+    internal static Utf8SliceCategoryTable Create(uint mask, ushort[] ranges)
     {
-        using var construction = Utf8ConstructionScope.Enter();
-        Mask = mask;
-        Ranges = construction.Budget.AllocateArray<int>(ranges.Length + (ranges.Length & 1), false);
-        for (var index = 0; index < ranges.Length; index++) Ranges[index] = ranges[index];
-        if ((ranges.Length & 1) != 0) Ranges[^1] = 0x10000;
-        construction.Complete();
+        using var owner = Utf8ConstructionScope.Enter();
+        var copied = owner.Budget.AllocateArray<int>(checked(ranges.Length + (ranges.Length & 1)), false);
+        owner.Budget.ChargeWork((ulong)ranges.Length + (ulong)(ranges.Length & 1));
+        for (var index = 0; index < ranges.Length; index++) copied[index] = ranges[index];
+        if ((ranges.Length & 1) != 0) copied[^1] = 0x10000;
+        var result = owner.Budget.AllocateObject((mask, copied, ClassProgram: (Utf8SliceClassProgram?)null),
+            static state => new Utf8SliceCategoryTable(state.mask, state.copied, state.ClassProgram));
+        owner.Complete(); return result;
     }
 
-    private Utf8SliceCategoryTable(int[] ranges)
+    internal static Utf8SliceCategoryTable ForScalarRanges(int[] ranges)
     {
-        Mask = 0;
-        Ranges = ranges;
+        using var owner = Utf8ConstructionScope.Enter();
+        var result = owner.Budget.AllocateObject((Mask: 0u, ranges, ClassProgram: (Utf8SliceClassProgram?)null),
+            static state => new Utf8SliceCategoryTable(state.Mask, state.ranges, state.ClassProgram));
+        owner.Complete(); return result;
     }
 
-    internal static Utf8SliceCategoryTable ForScalarRanges(int[] ranges) => new(ranges);
-
-    internal Utf8SliceCategoryTable(Utf8SliceClassProgram classProgram)
+    internal static Utf8SliceCategoryTable Create(Utf8SliceClassProgram classProgram)
     {
-        Mask = 0;
-        Ranges = [];
-        ClassProgram = classProgram;
+        using var owner = Utf8ConstructionScope.Enter();
+        var result = owner.Budget.AllocateObject((Mask: 0u, Ranges: Array.Empty<int>(), classProgram),
+            static state => new Utf8SliceCategoryTable(state.Mask, state.Ranges, state.classProgram));
+        owner.Complete(); return result;
     }
 
     internal uint Mask { get; }
-
     internal int[] Ranges { get; }
-
     internal Utf8SliceClassProgram? ClassProgram { get; }
 }
 
@@ -200,12 +217,21 @@ internal readonly struct Utf8SliceInstruction
 /// The body shares the parent capture slots at run time.</summary>
 internal sealed class Utf8SliceAssertion
 {
-    internal Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
+    private Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
     {
         Body = body;
         MinLengthBytes = minLengthBytes;
         MaxLengthBytes = maxLengthBytes;
         IsLookbehind = isLookbehind;
+    }
+
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceProgram, int, int, bool)>();
+    internal static Utf8SliceAssertion Create(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var result = owner.Budget.AllocateObject((body, minLengthBytes, maxLengthBytes, isLookbehind),
+            static state => new Utf8SliceAssertion(state.body, state.minLengthBytes, state.maxLengthBytes, state.isLookbehind));
+        owner.Complete(); return result;
     }
 
     internal Utf8SliceProgram Body { get; }
@@ -216,64 +242,159 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior)
+    private readonly record struct ConstructionState(
+        Utf8SliceInstruction[] Instructions,
+        bool IsNonBacktracking,
+        int NonBacktrackingCaptureOpeningCount,
+        int[] NonBacktrackingEpsilonOrder,
+        Func<int, int>[] BackreferenceLowerings,
+        byte[][] SetMasks,
+        Utf8SliceCategoryTable[] CategoryTables,
+        Utf8SliceNode.CategorySetMember[][] CategorySetMembers,
+        int RepeatCount,
+        int GroupCount,
+        Utf8SliceAssertion[] Assertions,
+        bool HasNonFixedLookbehind,
+        bool HasOrderSensitiveLookbehind,
+        bool UsesLiteralClassBracketSyntax,
+        bool HasMixedNamedGroups,
+        Utf8CaptureCatalog? CaptureCatalog,
+        bool UsesCaptureOpeningJournal,
+        bool HasBalancing,
+        bool IgnoreCase,
+        Utf8ScalarCaseBehavior CaseBehavior,
+        bool HasContiguousAnchor,
+        bool HasConditionalTest,
+        bool SawLookaround,
+        bool SawCapturingLookbehind,
+        bool RightToLeft,
+        bool CanMatchEmpty,
+        bool HasUnicodePatternAtoms,
+        bool UsesInterpretedLazyLoopSemantics,
+        int[] GroupNumbers,
+        string[] GroupNames,
+        bool RequiresUnicodeWordBoundary,
+        bool RequiresUnicodeShorthand,
+        bool RequiresUnicodeCategory);
+
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<ConstructionState>();
+
+    private Utf8SliceProgram(ConstructionState state)
+    {
+        Instructions = state.Instructions;
+        IsNonBacktracking = state.IsNonBacktracking;
+        NonBacktrackingCaptureOpeningCount = state.NonBacktrackingCaptureOpeningCount;
+        NonBacktrackingEpsilonOrder = state.NonBacktrackingEpsilonOrder;
+        BackreferenceLowerings = state.BackreferenceLowerings;
+        SetMasks = state.SetMasks;
+        CategoryTables = state.CategoryTables;
+        CategorySetMembers = state.CategorySetMembers;
+        RepeatCount = state.RepeatCount;
+        GroupCount = state.GroupCount;
+        Assertions = state.Assertions;
+        HasNonFixedLookbehind = state.HasNonFixedLookbehind;
+        HasOrderSensitiveLookbehind = state.HasOrderSensitiveLookbehind;
+        UsesLiteralClassBracketSyntax = state.UsesLiteralClassBracketSyntax;
+        HasMixedNamedGroups = state.HasMixedNamedGroups;
+        CaptureCatalog = state.CaptureCatalog;
+        UsesCaptureOpeningJournal = state.UsesCaptureOpeningJournal;
+        HasBalancing = state.HasBalancing;
+        IgnoreCase = state.IgnoreCase;
+        CaseBehavior = state.CaseBehavior;
+        HasContiguousAnchor = state.HasContiguousAnchor;
+        HasConditionalTest = state.HasConditionalTest;
+        SawLookaround = state.SawLookaround;
+        SawCapturingLookbehind = state.SawCapturingLookbehind;
+        RightToLeft = state.RightToLeft;
+        CanMatchEmpty = state.CanMatchEmpty;
+        HasUnicodePatternAtoms = state.HasUnicodePatternAtoms;
+        UsesInterpretedLazyLoopSemantics = state.UsesInterpretedLazyLoopSemantics;
+        GroupNumbers = state.GroupNumbers;
+        GroupNames = state.GroupNames;
+        RequiresUnicodeWordBoundary = state.RequiresUnicodeWordBoundary;
+        RequiresUnicodeShorthand = state.RequiresUnicodeShorthand;
+        RequiresUnicodeCategory = state.RequiresUnicodeCategory;
+    }
+
+    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, Func<int, int>[] backreferenceLowerings)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        Instructions = instructions;
-        SetMasks = setMasks;
-        CategoryTables = categoryTables;
-        CategorySetMembers = categorySetMembers;
-        RepeatCount = repeatCount;
-        GroupCount = groupCount;
-        RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
-        RequiresUnicodeShorthand = requiresUnicodeShorthand;
-        RequiresUnicodeCategory = requiresUnicodeCategory;
-        Assertions = assertions;
-        HasNonFixedLookbehind = hasNonFixedLookbehind;
-        GroupNames = groupNames;
-        CaptureCatalog = captureCatalog;
-        HasMixedNamedGroups = hasMixedNamedGroups;
-        HasBalancing = hasBalancing;
-        IgnoreCase = ignoreCase;
-        CaseBehavior = caseBehavior;
-        HasContiguousAnchor = hasContiguousAnchor;
-        HasConditionalTest = hasConditionalTest;
-        RightToLeft = rightToLeft;
-        SawLookaround = sawLookaround;
-        SawCapturingLookbehind = sawCapturingLookbehind;
-        CanMatchEmpty = canMatchEmpty;
-        UsesInterpretedLazyLoopSemantics = usesInterpretedLazyLoopSemantics;
-        UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
-        UsesCaptureOpeningJournal = HasSharedCaptureDeclarations;
+        var budget = construction.Budget;
+        var usesCaptureOpeningJournal = captureCatalog is { HasSharedCaptureDeclarations: true };
+        var hasUnicodePatternAtoms = false;
+        var hasOrderSensitiveLookbehind = false;
+        budget.ChargeWork((ulong)instructions.Length);
         foreach (var instruction in instructions)
         {
-            UsesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
-            HasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
+            usesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
+            hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
         }
+        budget.ChargeWork((ulong)assertions.Length);
         foreach (var assertion in assertions)
         {
-            UsesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
-            HasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
-            HasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
-            UsesLiteralClassBracketSyntax |= assertion.Body.UsesLiteralClassBracketSyntax;
+            usesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
+            hasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
+            hasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
+            usesLiteralClassBracketSyntax |= assertion.Body.UsesLiteralClassBracketSyntax;
             if (assertion.IsLookbehind)
+            {
+                budget.ChargeWork((ulong)assertion.Body.Instructions.Length);
                 foreach (var instruction in assertion.Body.Instructions)
-                    HasOrderSensitiveLookbehind |= instruction.Kind is Utf8SliceInstructionKind.Backref
+                    hasOrderSensitiveLookbehind |= instruction.Kind is Utf8SliceInstructionKind.Backref
                         or Utf8SliceInstructionKind.TestGroup or Utf8SliceInstructionKind.Lookahead
                         or Utf8SliceInstructionKind.Lookbehind or Utf8SliceInstructionKind.AtomicCommit;
+            }
         }
-        GroupNumbers = captureCatalog?.GroupNumbers ?? construction.Budget.AllocateArray<int>(groupCount + 1, false);
+        var groupNumbers = captureCatalog?.GroupNumbers ?? budget.AllocateArray<int>(checked(groupCount + 1), false);
         if (captureCatalog is null)
-            for (var group = 0; group <= groupCount; group++) GroupNumbers[group] = group;
-        construction.Complete();
+        {
+            budget.ChargeWork((ulong)groupNumbers.Length);
+            for (var group = 0; group < groupNumbers.Length; group++) groupNumbers[group] = group;
+        }
+        var result = budget.AllocateObject(new ConstructionState(
+            instructions,
+            isNonBacktracking,
+            nonBacktrackingCaptureOpeningCount,
+            nonBacktrackingEpsilonOrder,
+            backreferenceLowerings,
+            setMasks,
+            categoryTables,
+            categorySetMembers,
+            repeatCount,
+            groupCount,
+            assertions,
+            hasNonFixedLookbehind,
+            hasOrderSensitiveLookbehind,
+            usesLiteralClassBracketSyntax,
+            hasMixedNamedGroups,
+            captureCatalog,
+            usesCaptureOpeningJournal,
+            hasBalancing,
+            ignoreCase,
+            caseBehavior,
+            hasContiguousAnchor,
+            hasConditionalTest,
+            sawLookaround,
+            sawCapturingLookbehind,
+            rightToLeft,
+            canMatchEmpty,
+            hasUnicodePatternAtoms,
+            usesInterpretedLazyLoopSemantics,
+            groupNumbers,
+            groupNames,
+            requiresUnicodeWordBoundary,
+            requiresUnicodeShorthand,
+            requiresUnicodeCategory),
+            static state => new Utf8SliceProgram(state));
+        construction.Complete(); return result;
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
-    internal bool IsNonBacktracking { get; init; }
-    internal int NonBacktrackingCaptureOpeningCount { get; init; }
-    internal int[] NonBacktrackingEpsilonOrder { get; init; } = [];
-    internal Func<int, int>[] BackreferenceLowerings { get; init; } = [];
+    internal bool IsNonBacktracking { get; }
+    internal int NonBacktrackingCaptureOpeningCount { get; }
+    internal int[] NonBacktrackingEpsilonOrder { get; }
+    internal Func<int, int>[] BackreferenceLowerings { get; }
 
     internal byte[][] SetMasks { get; }
 
@@ -796,7 +917,7 @@ internal static class Utf8SliceLowerer
             lowerer.Budget.ReleaseArray(instructions, true);
             instructions = lifted;
         }
-        return new Utf8SliceProgram(
+        return Utf8SliceProgram.Create(
             instructions,
             lowerer.SetMasks.Take(),
             lowerer.CategoryTables.Take(),
@@ -807,14 +928,10 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior)
-        {
-            BackreferenceLowerings = lowerer.BackreferenceLowerings.Take(),
-            IsNonBacktracking = lowerer.NonBacktracking,
-            NonBacktrackingCaptureOpeningCount = lowerer.CaptureOpeningCount,
-            NonBacktrackingEpsilonOrder = lowerer.NonBacktracking
-                ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions) : [],
-        };
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
+            lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
+            lowerer.NonBacktracking ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions) : [],
+            lowerer.BackreferenceLowerings.Take());
     }
 
     private sealed class Lowering
@@ -1091,7 +1208,7 @@ internal static class Utf8SliceLowerer
                     // IgnoreCase fold bit, which only widens Ll/Lu/Lt to
                     // their union at match time).
                     var categoryIndex = CategoryTables.Count;
-                    CategoryTables.Add(new Utf8SliceCategoryTable(category.Mask, category.Ranges));
+                    CategoryTables.Add(Utf8SliceCategoryTable.Create(category.Mask, category.Ranges));
                     Emit(new Utf8SliceInstruction(
                         Utf8SliceInstructionKind.Category,
                         categoryIndex,
@@ -1225,7 +1342,7 @@ internal static class Utf8SliceLowerer
                     GroupCount = Math.Max(GroupCount, body.GroupCount);
                     var width = Facts[behind.Body];
                     var assertionIndex = Assertions.Count;
-                    Assertions.Add(new(body, width.Minimum, width.Maximum, true));
+                    Assertions.Add(Utf8SliceAssertion.Create(body, width.Minimum, width.Maximum, true));
                     Emit(new(Utf8SliceInstructionKind.Lookbehind, assertionIndex, behind.Positive ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:
@@ -1273,7 +1390,7 @@ internal static class Utf8SliceLowerer
                 GroupCount = Math.Max(GroupCount, program.GroupCount);
                 var width = Facts[body];
                 var index = Assertions.Count;
-                Assertions.Add(new(program, width.Minimum, width.Maximum, false));
+                Assertions.Add(Utf8SliceAssertion.Create(program, width.Minimum, width.Maximum, false));
                 Emit(new(Utf8SliceInstructionKind.Lookahead, index, positive ? 1 : 0, 0, 0));
                 return false;
             }

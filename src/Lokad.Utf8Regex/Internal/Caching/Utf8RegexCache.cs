@@ -35,7 +35,7 @@ internal static class Utf8RegexCache
         var key = new Utf8RegexCacheKey(pattern, culture, keyOptions, matchTimeout);
         return Cache.GetOrAdd(
             key,
-            static cacheKey => new Utf8Regex(cacheKey.Pattern, cacheKey.Options, cacheKey.MatchTimeout));
+            static cacheKey => Utf8Regex.CreateAdmittedForCache(cacheKey.Pattern, cacheKey.Options, cacheKey.MatchTimeout));
     }
 
     public static int EntryCount => Cache.Count;
