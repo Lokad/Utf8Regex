@@ -28,7 +28,7 @@ Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 - Execution model: owned scalar execution with qualified native UTF-8 fast paths. BCL Regex is a comparator in tests and benchmarks where its code-unit semantics overlap.
 - Byte coordinates: successful core matches and captures use scalar-aligned UTF-8 byte ranges.
 - Comparators: use .NET Regex only where its behavior overlaps the scalar contract; direct scalar fixtures define supplementary behavior.
-- Resource scope: the core rejects finite public `Utf8ResourcePolicy` budgets with `NotSupportedException`; instance timeouts and cancellation remain available. Internal admission covers selected producers and is not a complete public memory or work bound.
+- Resource scope: core instances accept a finite `Utf8ResourcePolicy.MaxWorkSteps`. One cumulative meter covers strict UTF-8 validation, scalar matching and required result shaping, including lazy advances and replacement output. Finite calls select owned scalar execution. Depth, working-byte and result-byte caps remain unsupported; defaults and static cached calls remain unlimited. Construction/replacement preparation, caller callback execution and later standalone result getters have separate scope. Work units are engine/checkpoint steps, not bytes, time or process memory.
 - Stability: 0.4.0-scalar.1 is an experimental candidate. Full resource, cancellation, adapter and performance qualification remains open.
 
 ## Public API

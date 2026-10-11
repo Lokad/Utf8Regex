@@ -134,8 +134,8 @@ their result-materialization admission is separate. Alias-registry entry/table
 overhead also remains a retained-metadata admission gate.
 These leases cover exact managed payloads, with no pooled/native cleanup in their
 finalizers. Lazy getter/result bounds, other execution routes and fixed object
-overhead still require admission work; this does not enable the core's unsupported
-finite public policies or establish a complete memory cap.
+overhead still require admission work. These leases do not establish a public
+working/result-byte cap or timely reclamation of early-abandoned legacy cursors.
 
 PythonRe's incremental `CreateMatchCursor(ReadOnlyMemory<byte>)` uses an explicit
 reference owner instead of those copied value-cursor leases. Aliases share its
@@ -146,7 +146,8 @@ manager alive until closure. Detailed snapshots own their arrays/text and remain
 valid after advance or disposal. Sequential host waits are permitted and count
 against the original absolute deadline. Concurrent/reentrant access is rejected.
 This additive development API leaves existing value/span contracts intact and
-does not enable finite public budgets or bound externally retained results.
+does not itself bound externally retained results. Its qualified MaxWorkSteps
+policy is cumulative through preparation, discovery and returned snapshot shaping.
 
 The target requires common construction, invocation, working-storage, result and
 retained-storage policies across the core, PCRE2 and PythonRe profiles. Admit
@@ -157,14 +158,30 @@ public controls, ownership/lifetime rules, checkpoint precedence and qualified
 safe defaults through the R01/R06 gates in PLAN.md; partial internal admission
 must not be advertised as complete public bounds or a process-RSS guarantee.
 
-Current public support is narrower: core and PythonRe accept the shared
-`Utf8ResourcePolicy` only when its work/depth/working/result budgets are unlimited;
-finite budgets throw `NotSupportedException`. Their configured public cap is
-`MatchTimeout`, defaulting to `Regex.InfiniteMatchTimeout`. PCRE2 supports finite
-work/depth/working budgets under its existing profile contract. Result-byte caps
-remain unsupported in every profile. Internal producer loans and cumulative
-counters described here are qualified slices, not completion of those policies
-or evidence for safe defaults.
+Current public support is narrower: core and PythonRe accept finite
+`Utf8ResourcePolicy.MaxWorkSteps` alone. A finite policy selects owned scalar
+execution with one cumulative invocation through full strict UTF-8 validation,
+discovery, required coordinate/capture projection, output and publication. Lazy
+advances share that allowance, including copies of core value cursors; copies keep
+independent positions and retained aliases/results remain valid after work denial.
+Denial throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`, the
+configured limit and a saturating requested count. A cap is in bounded engine/
+checkpoint steps, whose granularity may change, not bytes, wall time or RSS.
+Successful early hits still require full-input validation; a work denial can
+precede discovery of a malformed tail. Cancellation and absolute timeout remain
+authoritative at existing checkpoints. Pattern/replacement preparation has separate
+construction admission; arbitrary caller callback execution and later standalone
+result getters are outside this execution cap. Required callback output shaping is
+charged. Different operations have independent allowances; a policy is not a shared
+application-wide meter. Core static cached operations have no policy parameter and
+retain unlimited defaults. Finite policy routes can have different performance
+from qualified unlimited native shortcuts.
+
+Core and PythonRe depth/working/result fields still throw `NotSupportedException`
+before compilation. `MatchTimeout` defaults to `Regex.InfiniteMatchTimeout`. PCRE2
+supports finite work/depth/working budgets under its existing profile contract.
+Result-byte caps remain unsupported in every profile. These are qualified slices,
+not completion of common policies, legacy ownership cleanup or safe-default gates.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

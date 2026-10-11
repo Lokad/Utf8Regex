@@ -8,21 +8,30 @@ namespace Lokad.Utf8Regex;
 /// <summary>Retains one invocation through owned UTF-16-offset entry and enumeration.</summary>
 public sealed partial class Utf8Regex
 {
+    private static Utf8BoundaryMap PrepareOffsetInput(ReadOnlySpan<byte> input, int utf16Offset,
+        ref Utf8SliceInvocation invocation, out Utf8ValidationResult validation, out int startByte, out ulong reservation)
+    {
+        validation = Utf8Validation.Validate(input, ref invocation);
+        var start = Utf16Position.CreateChecked(validation, utf16Offset, nameof(utf16Offset));
+        var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
+        var boundary = map.Resolve(start.Value);
+        if (!boundary.IsScalarBoundary)
+            throw new ArgumentOutOfRangeException(nameof(utf16Offset), utf16Offset,
+                "The requested UTF-16 offset is not aligned to a UTF-8 scalar boundary.");
+        startByte = boundary.ByteOffset;
+        return map;
+    }
+
     private Utf8ValueMatchEnumerator CreateOwnedOffsetEnumerator(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken token)
     {
         var program = _ownedSliceProgram;
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         ulong reservation = 0;
         try
         {
-            var validation = Utf8Validation.Validate(input, ref invocation);
-            var start = Utf16Position.CreateChecked(validation, utf16Offset, nameof(utf16Offset));
-            var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
-            var boundary = map.Resolve(start.Value);
-            if (!boundary.IsScalarBoundary)
-                throw new ArgumentOutOfRangeException(nameof(utf16Offset), utf16Offset,
-                    "The requested UTF-16 offset is not aligned to a UTF-8 scalar boundary.");
-            var eligible = boundary.IsScalarBoundary && !UsesRightToLeft() &&
+            var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
+                out var validation, out var startByte, out reservation);
+            var eligible = !ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() &&
                 (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor;
@@ -39,16 +48,20 @@ public sealed partial class Utf8Regex
                 reservation = 0;
                 cursor = anchored
                     ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."),
-                        _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(boundary.ByteOffset, start.Value)
-                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, boundary.ByteOffset, start.Value);
+                        _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startByte, utf16Offset)
+                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startByte, utf16Offset);
             }
             else
             {
                 var ownedReservation = reservation;
                 reservation = 0;
-                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, start.Value);
+                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, utf16Offset);
             }
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        {
+            throw CreateExecutionWorkFailure(ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         finally { if (reservation != 0) invocation.Ledger.Release(reservation); }

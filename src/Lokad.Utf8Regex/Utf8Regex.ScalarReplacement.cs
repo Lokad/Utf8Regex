@@ -35,7 +35,7 @@ public sealed partial class Utf8Regex
         Span<byte> destination, CancellationToken token)
         where TExpansion : struct, IUtf8SliceReplacementExpansion<TState>
     {
-        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        var scope = Utf8SliceByteOutputScope.Enter(InvocationLimits, MatchTimeout, token);
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
         ulong mapReservation = 0;
@@ -111,6 +111,10 @@ public sealed partial class Utf8Regex
                     throw new InvalidOperationException("Unknown owned output kind.");
             }
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        {
+            throw CreateExecutionWorkFailure(ref invocation);
+        }
         finally
         {
             batch?.Release(ref invocation);
@@ -123,7 +127,7 @@ public sealed partial class Utf8Regex
     private byte[] OwnedSliceReplaceEvaluator<TState>(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken token)
     {
-        var scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        var scope = Utf8SliceByteOutputScope.Enter(InvocationLimits, MatchTimeout, token);
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
         ulong mapReservation = 0;
@@ -187,6 +191,10 @@ public sealed partial class Utf8Regex
             }
             else writer.Append(input[edgeByte..]);
             return writer.GetOwnedOutput(scope).ToArray();
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        {
+            throw CreateExecutionWorkFailure(ref invocation);
         }
         finally
         {

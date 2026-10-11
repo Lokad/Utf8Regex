@@ -147,7 +147,8 @@ public sealed class Utf8RegexCacheTests
         Utf8RegexCache.ResetForTests();
 
         _ = new Utf8Regex("abc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited);
-        Assert.Throws<NotSupportedException>(() => new Utf8Regex("abc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkSteps = 1ul }));
+        var finite = new Utf8Regex("abc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkSteps = 1ul });
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => finite.IsMatch("abc"u8));
 
         Assert.Equal(0, Utf8RegexCache.EntryCount);
     }

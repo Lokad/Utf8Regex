@@ -33,7 +33,7 @@ public sealed class Utf8ResourcePolicyTests
     }
 
     [Theory]
-    [InlineData(100ul, null, null, null)]
+    [InlineData(100ul, 10u, null, null)]
     [InlineData(null, 10u, null, null)]
     [InlineData(null, null, 1024ul, null)]
     [InlineData(null, null, null, 1024ul)]
@@ -45,7 +45,7 @@ public sealed class Utf8ResourcePolicyTests
     [Fact]
     public void FinitePolicyIsRejectedBeforePatternCompilation()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul, MaxDepth = 10u };
         Assert.Throws<System.NotSupportedException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
     }
 
@@ -60,7 +60,7 @@ public sealed class Utf8ResourcePolicyTests
     public void DefaultConstructionReportsUnlimitedPolicy()
     {
         // R06 compatibility decision: defaults stay unlimited (BCL-compatible);
-        // finite budgets are opt-in via the policy overload and rejected here.
+        // execution work budgets are opt-in via the policy overload.
         Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", RegexOptions.CultureInvariant).ResourcePolicy);
         Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).ResourcePolicy);
     }
@@ -72,7 +72,7 @@ public sealed class Utf8ResourcePolicyTests
     {
         // R06 compatibility evidence: default construction behaves exactly like
         // an explicit Unlimited policy across value, global, and shaping ops,
-        // on both an owned literal route and a BCL-fallback loop route.
+        // on both an owned literal route and an owned scalar loop route.
         var options = RegexOptions.CultureInvariant;
         var input = Encoding.UTF8.GetBytes(inputText);
         var baseline = new Utf8Regex(pattern, options);
