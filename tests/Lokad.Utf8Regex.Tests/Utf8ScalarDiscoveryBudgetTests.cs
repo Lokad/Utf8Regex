@@ -110,6 +110,9 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
                 {
                     Assert.Equal(captureStarts, outcome.CaptureStarts?[0]);
                     Assert.Equal(captureLengths, outcome.CaptureLengths?[0]);
+                    Assert.Equal(13UL + Utf8SliceHistoryAdmissionTests.HistoryBytes(
+                        outcome.CaptureStarts ?? throw new InvalidOperationException(),
+                        outcome.CaptureLengths ?? throw new InvalidOperationException()), invocation.Ledger.ReservedBytes);
                 }
             }
             else

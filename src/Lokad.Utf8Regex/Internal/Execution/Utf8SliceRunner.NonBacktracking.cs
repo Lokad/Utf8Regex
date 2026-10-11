@@ -282,15 +282,17 @@ internal static partial class Utf8SliceRunner
                 if (captureStarts[group] >= 0) participants++;
             }
         if (!collectHistory) return Utf8ExecutionLimitKind.None;
-        var bytes = (ulong)captureStarts.Length * 16 + (ulong)participants * 8;
+        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int[]>(captureStarts.Length) * 2
+            + (ulong)participants * Utf8ConstructionBudget.ArrayBytes<int>(1) * 2);
         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
         var published = false;
         try
         {
             var admission = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
             if (admission != Utf8ExecutionLimitKind.None) return admission;
-            var resultStarts = new int[captureStarts.Length][];
-            var resultLengths = new int[captureStarts.Length][];
+            if (bytes != 0 && (admission = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return admission;
+            var resultStarts = captureStarts.Length == 0 ? [] : new int[captureStarts.Length][];
+            var resultLengths = captureStarts.Length == 0 ? [] : new int[captureStarts.Length][];
             for (var group = 0; group < captureStarts.Length; group++)
             {
                 var breach = invocation.TryChargeInputStep();

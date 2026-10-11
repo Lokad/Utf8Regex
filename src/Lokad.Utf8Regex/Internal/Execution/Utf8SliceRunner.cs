@@ -194,18 +194,18 @@ internal static partial class Utf8SliceRunner
             return;
         }
 
-        invocation.Ledger.Release((ulong)starts.Length * 8);
-        invocation.Ledger.Release((ulong)lengths.Length * 8);
+        invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<int[]>(starts.Length));
+        invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<int[]>(lengths.Length));
         for (var group = 0; group < starts.Length && group < lengths.Length; group++)
         {
             if (starts[group].Length != 0)
             {
-                invocation.Ledger.Release((ulong)starts[group].Length * 4);
+                invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<int>(starts[group].Length));
             }
 
             if (lengths[group].Length != 0)
             {
-                invocation.Ledger.Release((ulong)lengths[group].Length * 4);
+                invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<int>(lengths[group].Length));
             }
         }
     }
@@ -1688,22 +1688,35 @@ internal static partial class Utf8SliceRunner
             captureStarts = [];
             captureLengths = [];
             if (groups == 0) return Utf8ExecutionLimitKind.None;
-            var ownedBytes = (ulong)groups * 16;
-            if (!invocation.Ledger.TryReserve(ownedBytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-            ulong temporaryBytes = 0;
+            var ownedBytes = checked(Utf8ConstructionBudget.ArrayBytes<int[]>(groups) * 2);
+            var temporaryBytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
+            if (!invocation.Ledger.TryReserve(checked(ownedBytes + temporaryBytes))) return Utf8ExecutionLimitKind.WorkingBytes;
+            int[]? rentedCounts = null;
+            int[]? rentedOpen = null;
+            var retain = invocation.Ledger.IsUnlimited;
             var published = false;
             try
             {
                 var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
                 captureStarts = new int[groups][];
                 captureLengths = new int[groups][];
-                if (!invocation.Ledger.TryReserve((ulong)groups * 8)) return Utf8ExecutionLimitKind.WorkingBytes;
-                temporaryBytes = (ulong)groups * 8; // counts and open edges coexist.
-                breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                var counts = Utf8ExactStatePool<int>.Rent(groups, retain);
+                rentedCounts = counts;
+                breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                var counts = new int[groups];
-                var open = new int[groups];
+                var open = Utf8ExactStatePool<int>.Rent(groups, retain);
+                rentedOpen = open;
+                for (var offset = 0; offset < groups;)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    var count = Math.Min(2048, groups - offset);
+                    counts.AsSpan(offset, count).Clear();
+                    offset += count;
+                }
                 var sawBalanceDrain = false;
                 for (var entry = 0; entry < _trailCount; entry++)
                 {
@@ -1716,15 +1729,20 @@ internal static partial class Utf8SliceRunner
                     }
                     else if (!item.IsStart) counts[item.Slot]++;
                 }
+                ulong captureBytes = 0;
+                for (var group = 0; group < groups; group++)
+                {
+                    if ((group & 255) == 0 && (breach = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return breach;
+                    captureBytes = checked(captureBytes + Utf8ConstructionBudget.ArrayBytes<int>(counts[group]) * 2);
+                }
+                if (!invocation.Ledger.TryReserve(captureBytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+                ownedBytes = checked(ownedBytes + captureBytes);
+                breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
                 for (var group = 0; group < groups; group++)
                 {
                     if ((group & 255) == 0 && (breach = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return breach;
                     open[group] = -1;
-                    var bytes = (ulong)counts[group] * 8;
-                    if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-                    ownedBytes += bytes;
-                    breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
                     captureStarts[group] = counts[group] == 0 ? [] : new int[counts[group]];
                     captureLengths[group] = counts[group] == 0 ? [] : new int[counts[group]];
                     counts[group] = 0;
@@ -1756,8 +1774,8 @@ internal static partial class Utf8SliceRunner
                     {
                         if ((group & 255) == 0 && (breach = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return breach;
                         if (counts[group] == captureStarts[group].Length) continue;
-                        var oldBytes = (ulong)captureStarts[group].Length * 8;
-                        var bytes = (ulong)counts[group] * 8;
+                        var oldBytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(captureStarts[group].Length) * 2);
+                        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(counts[group]) * 2);
                         // Admit both replacement arrays while old capacity is
                         // held. Copy in bounded blocks, then transfer ownership.
                         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
@@ -1786,6 +1804,8 @@ internal static partial class Utf8SliceRunner
             }
             finally
             {
+                if (rentedOpen is not null) Utf8ExactStatePool<int>.Return(rentedOpen, retain);
+                if (rentedCounts is not null) Utf8ExactStatePool<int>.Return(rentedCounts, retain);
                 invocation.Ledger.Release(temporaryBytes);
                 if (!published)
                 {

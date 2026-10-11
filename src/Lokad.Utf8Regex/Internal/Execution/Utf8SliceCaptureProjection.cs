@@ -18,17 +18,22 @@ internal struct Utf8SliceCaptureProjection
     {
         if (outcome.CaptureStarts is not { } byteStarts || outcome.CaptureLengths is not { } byteLengths)
             throw new InvalidOperationException("Owned detailed match is missing its capture histories.");
-        var groups = byteStarts.Length + 1;
-        ulong reservation = (ulong)groups * 24 + 8;
+        var groups = checked(byteStarts.Length + 1);
+        var reservation = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2
+            + Utf8ConstructionBudget.ArrayBytes<int[]>(groups) * 2
+            + Utf8ConstructionBudget.ArrayBytes<int>(1) * 2);
         for (var group = 0; group < byteStarts.Length; group++)
         {
             if ((group & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);
-            reservation += (ulong)byteStarts[group].Length * 8;
+            reservation = checked(reservation + Utf8ConstructionBudget.ArrayBytes<int>(byteStarts[group].Length) * 2);
         }
         if (!invocation.Ledger.TryReserve(reservation))
             throw new InvalidOperationException("Owned capture projection exceeded the invocation storage budget.");
         try
         {
+            if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Owned capture projection exceeded the invocation storage budget.");
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             var projection = new Utf8SliceCaptureProjection
             {
                 Starts = new int[groups], Lengths = new int[groups],
@@ -45,8 +50,8 @@ internal struct Utf8SliceCaptureProjection
             for (var group = 1; group < groups; group++)
             {
                 if ((group & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);
-                var starts = projection.CaptureStarts[group] = new int[byteStarts[group - 1].Length];
-                var lengths = projection.CaptureLengths[group] = new int[starts.Length];
+                var starts = projection.CaptureStarts[group] = byteStarts[group - 1].Length == 0 ? [] : new int[byteStarts[group - 1].Length];
+                var lengths = projection.CaptureLengths[group] = starts.Length == 0 ? [] : new int[starts.Length];
                 for (var capture = 0; capture < starts.Length; capture++)
                 {
                     if ((converted++ & 255) == 0) Utf8SliceBufferWork.Checkpoint(ref invocation);

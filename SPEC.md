@@ -1178,6 +1178,21 @@ and projection windows observe live cancellation and the existing deadline,
 without restarting either counter. Other facade/core projection producers,
 external retained-result limits and complete public policies remain open.
 
+Shared slice backtracking and NonBacktracking capture histories admit complete
+root and leaf array extents before acquisition. Backtracking history counting
+and open-edge scratch use the bounded exact pool, with their loans held alongside
+live runner storage and the final histories. Balancing compaction admits old and
+new leaves together until its bounded copy completes. Returned byte histories
+retain their loans until the consumer releases or transfers them; their arrays
+are never returned to a pool. Derived UTF-16 capture projection separately admits
+its summary vectors and complete history graph, including group zero, while
+source histories remain live. This conversion preserves scalar capture edges
+and ordering. Work cutoffs, cancellation and deadlines restore parent loans
+without refunding spent work. Other slice chunk tables, frame/journal payloads,
+NonBacktracking workspace and boundary-map arrays still require complete extent
+qualification. Public copied lifetimes, retained-result limits and MaxResultBytes
+remain separate gates; these producer loans do not bound process RSS.
+
 ## 6. Performance and benchmarking
 
 Performance rules:
