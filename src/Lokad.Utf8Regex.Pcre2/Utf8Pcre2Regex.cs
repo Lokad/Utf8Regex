@@ -1832,13 +1832,14 @@ public sealed partial class Utf8Pcre2Regex
     {
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram.SliceProgram, validated, start, _program.Request, token);
-        if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0 ? [] : input.ToArray();
+        if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
+            ? [] : Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref cursor.WorkingInvocation);
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
             ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
             : GetReplacementPreparation(replacement, templateOptions);
-        var writer = CreateTemplateWriter(input, token);
+        var writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
         try
         {
             var position = 0;

@@ -7,7 +7,8 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex.Pcre2;
 
 // Prepared templates expand directly into bytes. Continuations share the shaping
-// ledger with output; matching and cache retention remain separate policy gates.
+// ledger with output. Slice templates borrow their discovery invocation; other
+// routes still create a shaping invocation until their shared authority qualifies.
 internal ref struct Pcre2ReplacementTemplateWriter
 {
     private readonly ReadOnlySpan<byte> _input;
@@ -22,15 +23,22 @@ internal ref struct Pcre2ReplacementTemplateWriter
 
     internal Pcre2ReplacementTemplateWriter(ReadOnlySpan<byte> input, Pcre2NameEntry[] names,
         ulong heapLimit, TimeSpan timeout, CancellationToken token)
+        : this(input, names, new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, heapLimit), timeout, token))
+    { }
+
+    internal Pcre2ReplacementTemplateWriter(ReadOnlySpan<byte> input, Pcre2NameEntry[] names,
+        Utf8SliceInvocation invocation)
     {
         _input = input; _names = names; _groups = []; _mark = null;
-        _frames = []; _frameCount = 0; _frameReservation = 0;
-        _invocation = new(new Utf8ExecutionLimits(0, 0, heapLimit), timeout, token);
+        _frames = []; _frameCount = 0; _frameReservation = 0; _writer = default;
+        _invocation = invocation;
         try
         {
-            if (!Utf8SliceOutputWriter.Rent(input.Length, ref _invocation, out _writer)) ThrowHeapLimitExceeded();
+            CheckWork();
+            if (!Utf8SliceOutputWriter.Rent(input.Length, ref _invocation, out _writer)) ThrowOutputLimitExceeded();
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
 
     internal int Length => _writer.Length;
@@ -126,15 +134,36 @@ internal ref struct Pcre2ReplacementTemplateWriter
 
     internal byte[] Complete()
     {
-        ReleaseFrames();
         try
         {
-            if (!_writer.TryToArrayAndRelease(ref _invocation, out var result)) ThrowHeapLimitExceeded();
+            CheckWork();
+            ReleaseFrames();
+            if (!_writer.TryToArrayAndRelease(ref _invocation, out var result)) ThrowOutputLimitExceeded();
             return result;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
     internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
+
+    // EOF releases discovery scratch, not its authority. Fund the returned root
+    // before acquiring it, and keep the original budget/token/deadline for copying.
+    internal static byte[] CopyUnchanged(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        Pcre2ReplacementPreparationControl.Check();
+        var control = new Utf8InvocationBufferControl(ref invocation);
+        ulong reservation = 0;
+        try
+        {
+            Utf8InvocationOutput.Checkpoint(control);
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8InvocationOutput.TryAllocateBytes(input.Length, control, out var result, out reservation));
+            Utf8InvocationOutput.Copy(input, result, control);
+            return result;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
+        finally { control.ReleaseWorking(reservation); }
+    }
 
     private void Push(Pcre2ReplacementRuntimeFrame frame)
     {
@@ -143,7 +172,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         {
             var capacity = checked(Math.Max(4, _frames.Length * 2));
             var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2ReplacementRuntimeFrame>(capacity);
-            if (new Utf8InvocationBufferControl(ref _invocation).TryReserveWorking(bytes) != Utf8ExecutionLimitKind.None) ThrowHeapLimitExceeded();
+            Pcre2SliceDriver.ThrowIfSliceBreached(new Utf8InvocationBufferControl(ref _invocation).TryReserveWorking(bytes));
             try
             {
                 var grown = new Pcre2ReplacementRuntimeFrame[capacity];
@@ -165,8 +194,9 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private void AppendBytes(scoped ReadOnlySpan<byte> bytes)
     {
         CheckWork();
-        try { if (!_writer.Append(bytes, ref _invocation)) ThrowHeapLimitExceeded(); }
+        try { if (!_writer.Append(bytes, ref _invocation)) ThrowOutputLimitExceeded(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
 
     private void CheckWork()
@@ -175,7 +205,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         try
         {
             if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
-                throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
+                throw WorkFailure();
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw DeadlineFailure(); }
@@ -184,8 +214,12 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private static Pcre2MatchException DeadlineFailure()
         => new("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
 
-    private static void ThrowHeapLimitExceeded()
-        => throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
+    private static Pcre2MatchException WorkFailure()
+        => new("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
+
+    private void ThrowOutputLimitExceeded()
+        => Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.WorkLimitExceeded
+            ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.WorkingBytes);
     private static void ThrowSubstitution(Pcre2ErrorKind kind)
         => throw new Pcre2SubstitutionException("Invalid PCRE2 replacement template.", kind);
 

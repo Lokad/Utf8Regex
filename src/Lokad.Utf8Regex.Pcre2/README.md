@@ -39,7 +39,7 @@ also be decimal digits. Names alias slots assigned in declaration order. Explici
 construction with `Pcre2CompileException` / `InvalidAfterParensQuery`. This fixes
 their accidental admission and inaccessible sparse capture results in 0.3.0.
 Ordinary numbered groups, numeric backreferences, duplicate names and branch-reset
-numbering retain their PCRE2 contracts. The core .NET profile is unaffected.
+numbering retain their PCRE2 contracts. The core scalar profile is unaffected.
 
 Patterns and subjects must be well-formed UTF-8. Public start positions and
 raw match ranges use byte offsets. UTF-16 coordinates are exposed only when
@@ -79,6 +79,23 @@ Replacement strings use PCRE2 substitution syntax, not .NET replacement
 syntax. The API also exposes UTF-8 replacement patterns, callback replacement,
 `TryReplace`, `ReplaceToString`, detailed numeric-slot/name-table results, and
 explicit compile and execution settings.
+
+## Resource-control scope
+
+Work units and enforcement depend on the selected managed route. The owned slice
+template-replacement route uses one cumulative invocation from discovery through
+capture replay, output growth and final copying. Its unchanged-subject result on
+no match is admitted before allocation and copied with the same token/deadline.
+`MatchLimit` covers that work; `HeapLimitInBytes` covers overlapping live working
+capacities. Cases formerly funded by separate matching/writing allowances can
+fail earlier. Output publication releases working charges; it does not bound
+results retained by the caller or process memory.
+
+Initial validation/preparation and other replacement routes still have separate
+enforcement scopes. This slice does not establish a common operation-wide policy.
+The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
+PythonRe accept their documented cumulative result-capacity policy. Cancellation,
+timeouts, depth/backtracking limits and basic state-growth metering remain active.
 
 ## Contract and development evidence
 

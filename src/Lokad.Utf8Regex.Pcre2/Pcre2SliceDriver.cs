@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -48,6 +49,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     }
 
     internal Pcre2CharacterMatch Current { get; private set; }
+
+    [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
     // Single-attempt detailed capture for a yielded match start. The
     // caller shares this cursor invocation so replacement budgets stay

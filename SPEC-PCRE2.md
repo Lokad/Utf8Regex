@@ -527,7 +527,31 @@ Supported-profile boundary for completion is also explicit:
 
 Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 
-`MatchLimit` is enforced per yielded match on every program kind, including `Utf8Regex`-kind global operations; a breach raises `Pcre2MatchException` with the `MatchLimit` kind. Single-shot `IsMatch`/`Match` enforce `MatchLimit` only on stepwise-metered kinds: direct single-call kinds (literal scan, `Utf8Regex`-kind core delegation) perform one timeout-governed call, so a first match succeeds under any finite limit (see `Pcre2SingleShotLimitTests`). `DepthLimit` and `HeapLimitInBytes` constrain backtracking frames and workspace, so deterministic shapes that engage no backtracking machinery cannot breach them; backtracking shapes breach with the `DepthLimit` or `HeapLimit` kind. Zero disables each limit. Timeout breach on owned routes raises `Pcre2MatchException` with the `Timeout` kind. Defaults are unlimited. The shared `Utf8ResourcePolicy` maps onto these limits through explicit constructor overloads (null becomes legacy zero; overflow and zero budgets are rejected; result-bytes budgets are reserved and rejected everywhere).
+`MatchLimit` enforcement depends on the selected managed route; work units are not
+interchangeable with native PCRE2 or another managed engine. A breach raises
+`Pcre2MatchException` with the `MatchLimit` kind. Owned slice global cursors use a
+cumulative invocation across advances. Single-shot `IsMatch`/`Match` enforce
+`MatchLimit` only on stepwise-metered kinds: direct single-call kinds (literal scan,
+`Utf8Regex`-kind core delegation) perform one timeout-governed call, so a first match
+succeeds under any finite limit (see `Pcre2SingleShotLimitTests`). `DepthLimit` and
+`HeapLimitInBytes` constrain backtracking frames and workspace; admitted output
+builders also charge their covered major working capacities before acquisition.
+Breaches report `DepthLimit` or `HeapLimit`. Zero disables each limit and defaults
+are unlimited. Timeout breach on owned routes reports `Timeout`. The shared
+`Utf8ResourcePolicy` maps onto these limits through explicit constructor overloads
+(null becomes legacy zero; overflow and zero budgets are rejected). This PCRE2
+profile still rejects result-capacity budgets; core and PythonRe support their
+documented policy in `SPEC.md` Section 3.7.
+
+The slice template-replacement route shares its discovery invocation with capture
+replay and output building, including growth/final overlap and the owned unchanged
+subject copy after no match. That copy is funded before acquisition and copied in
+bounded blocks with the original token/deadline. `MatchLimit` and working heap are
+cumulative over these stages; cases that fitted former separate matching/writing
+allowances can fail earlier. Publication releases temporary working charges while
+returned arrays remain valid. These charges do not bound caller retention or RSS.
+Initial validation/preparation and non-slice replacement routes retain separate
+scopes; this slice does not qualify common operation-wide or result-byte control.
 
 ```csharp
 var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
