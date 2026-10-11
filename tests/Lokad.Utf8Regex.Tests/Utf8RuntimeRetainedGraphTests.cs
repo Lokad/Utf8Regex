@@ -28,7 +28,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
     [InlineData("(?<n>😀)\\k<n>", false)] [InlineData("(?<n>😀)\\k<n>", true)]
     [InlineData("^[-+]?[0-9]+(?:\\.[0-9]+)?$", false)] [InlineData("^[-+]?[0-9]+(?:\\.[0-9]+)?$", true)]
     [InlineData("(?m:^(?:using|import)\\s+[a-z.]+)", false)] [InlineData("(?m:^(?:using|import)\\s+[a-z.]+)", true)]
-    public void GlobalManifestIncludesEveryDeclaredLibraryRuntimeReferent(string pattern, bool compiled)
+    public void GlobalChargeCoversEveryDeclaredLibraryRuntimeReferent(string pattern, bool compiled)
     {
         Utf8RegexCache.ResetForTests();
         try
@@ -39,7 +39,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
             var field=typeof(Utf8RegexCache).GetField("s_cache",BindingFlags.Static|BindingFlags.NonPublic);
             Assert.NotNull(field); var cache=field.GetValue(null); Assert.NotNull(cache);
             var entry=Field(cache,"_first"); Assert.NotNull(entry);
-            var manifest=Assert.IsType<Utf8RetainedPayloadExtent[]>(Field(entry,"Payloads"));
+            var manifest = Utf8GlobalCacheDescendantTests.InspectEntryPayloads(entry);
             foreach (var pair in expected)
                 Assert.Contains(manifest,extent=>ReferenceEquals(extent.Value,pair.Key)&&extent.Bytes==pair.Value);
         }
@@ -82,23 +82,13 @@ public sealed class Utf8RuntimeRetainedGraphTests
     }
 
     [Fact]
-    public void TwoEntriesShareRuntimeLeavesAndOwnBothPhysicalManifests()
+    public void TwoEntriesConservativelyChargeTheirSharedGraphTwice()
     {
         var (roots,_)=PopulateStoredLayouts(); var graph=InspectRuntimeGraph(roots); var cache=Cache(1024*1024);
         Assert.Same(roots,Add(cache,"first",roots)); Assert.Same(roots,Add(cache,"second",roots)); Assert.Equal(2,cache.Count);
-        var ledger=Field(cache,"_payloadLedger"); Assert.NotNull(ledger);
-        var registry=Assert.IsAssignableFrom<Array>(Field(ledger,"_entries"));
-        var expected=graph.Values.Aggregate(ArrayBytes(registry),static(sum,bytes)=>sum+bytes);
-        expected+=Utf8ConstructionBudget.StringBytes(5)+Utf8ConstructionBudget.StringBytes(6);
-        expected+=2*Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(graph.Count+1);
-        Assert.Equal(expected,cache.PayloadBytes);
-        foreach(var item in registry)
-        {
-            Assert.NotNull(item); var reference=item.GetType().GetProperty("Value")?.GetValue(item); Assert.NotNull(reference);
-            var count=Assert.IsType<int>(reference.GetType().GetProperty("Count")?.GetValue(reference)); if(count==0)continue;
-            var identity=item.GetType().GetProperty("Key")?.GetValue(item); Assert.NotNull(identity);
-            var value=Field(identity,"Value"); Assert.NotNull(value); Assert.Equal(graph.ContainsKey(value)?2:1,count);
-        }
+        var expected = 2 * graph.Values.Aggregate(0UL, static (sum, bytes) => sum + bytes);
+        expected += Utf8ConstructionBudget.StringBytes(5) + Utf8ConstructionBudget.StringBytes(6);
+        Assert.Equal(expected, cache.PayloadBytes);
         cache.Clear(); Assert.Equal(0ul,cache.PayloadBytes); AssertManifest(graph,Collect(roots));
     }
 

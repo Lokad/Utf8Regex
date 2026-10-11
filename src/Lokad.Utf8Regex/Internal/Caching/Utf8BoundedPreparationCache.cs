@@ -6,7 +6,9 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 /// <summary>Owns bounded preparation-entry metadata. Pending entries share one
 /// preparation without retaining its factory, state or invocation controls.
 /// Qualified immutable payloads or declared root/descendant reservations have
-/// a separate identity-based cap. A descendant reservation is not a complete
+/// a separate conservative per-entry cap. Shared storage across entries is
+/// charged repeatedly; no retained manifests or global identity registry.
+/// A descendant reservation is not a complete
 /// program graph certificate. Complete public policy remains a separate gate.
 /// PCRE2-INTEGRATION-POINT</summary>
 internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : notnull
@@ -21,19 +23,19 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     private readonly ulong _maximumMetadataBytes;
     private long _generation;
     private readonly ulong _maximumPayloadBytes;
-    private readonly Utf8RetainedPayloadLedger? _payloadLedger;
+    private ulong _payloadBytes;
     private long _revision;
     private readonly Utf8RetainedStorageScope _storageScope;
 
     private Utf8BoundedPreparationCache(IEqualityComparer<TKey> comparer, int capacity, ulong maximumMetadataBytes,
-        ulong maximumPayloadBytes, Utf8RetainedPayloadLedger? payloadLedger, Utf8RetainedStorageScope storageScope)
-    { _comparer = comparer; _capacity = capacity; _maximumMetadataBytes = maximumMetadataBytes; _maximumPayloadBytes = maximumPayloadBytes; _payloadLedger = payloadLedger; _storageScope = storageScope; }
+        ulong maximumPayloadBytes, Utf8RetainedStorageScope storageScope)
+    { _comparer = comparer; _capacity = capacity; _maximumMetadataBytes = maximumMetadataBytes; _maximumPayloadBytes = maximumPayloadBytes; _storageScope = storageScope; }
 
     internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<
-        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, Utf8RetainedPayloadLedger?, long, Utf8RetainedStorageScope)>();
+        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, long, Utf8RetainedStorageScope)>();
     internal static ulong EntryBytes => Utf8ConstructionBudget.ObjectBytes<
-        (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, Utf8RetainedPayloadExtent[])>();
-    private ulong BaseMetadataBytes => ObjectBytes + (_payloadLedger is null ? 0 : Utf8RetainedPayloadLedger.ObjectBytes);
+        (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, ulong)>();
+    private ulong BaseMetadataBytes => ObjectBytes;
 
     internal static Utf8BoundedPreparationCache<TKey, TValue> Create(int capacity)
         => Create(capacity, EqualityComparer<TKey>.Default, DefaultMaximumMetadataBytes);
@@ -66,12 +68,11 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         IEqualityComparer<TKey> comparer, ulong maximumMetadataBytes, ulong maximumPayloadBytes, Utf8RetainedStorageScope storageScope)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-        if (maximumMetadataBytes < ObjectBytes + (maximumPayloadBytes == 0 ? 0 : Utf8RetainedPayloadLedger.ObjectBytes)) throw new ArgumentOutOfRangeException(nameof(maximumMetadataBytes));
+        if (maximumMetadataBytes < ObjectBytes) throw new ArgumentOutOfRangeException(nameof(maximumMetadataBytes));
         using var owner = Utf8ConstructionScope.Enter();
-        var ledger = maximumPayloadBytes == 0 ? null : Utf8RetainedPayloadLedger.Create();
         var result = owner.Budget.AllocateObject(
-            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, Ledger: ledger, Revision: 0L, Scope: storageScope),
-            static state => new Utf8BoundedPreparationCache<TKey, TValue>(state.Comparer, state.Capacity, state.Maximum, state.MaximumPayload, state.Ledger, state.Scope));
+            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Revision: 0L, Scope: storageScope),
+            static state => new Utf8BoundedPreparationCache<TKey, TValue>(state.Comparer, state.Capacity, state.Maximum, state.MaximumPayload, state.Scope));
         owner.Complete();
         return result;
     }
@@ -80,9 +81,9 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     internal int QueueLengthForTests => Count;
     internal ulong MetadataBytes { get { lock (this) return BaseMetadataBytes + (ulong)_count * EntryBytes; } }
     internal ulong MaximumMetadataBytes => _maximumMetadataBytes;
-    internal bool IsPayloadBounded => _payloadLedger is not null;
+    internal bool IsPayloadBounded => _maximumPayloadBytes != 0;
     internal Utf8RetainedStorageScope StorageScope => _storageScope;
-    internal ulong PayloadBytes { get { lock (this) return _payloadLedger?.Bytes ?? 0; } }
+    internal ulong PayloadBytes { get { lock (this) return _payloadBytes; } }
     internal ulong MaximumPayloadBytes => _maximumPayloadBytes;
     internal int Capacity
     {
@@ -134,20 +135,20 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 if (existing is not null) return Read(existing, control);
                 preparation = Utf8ConstructionScope.Enter();
                 cleanup = preparation;
-                Utf8RetainedPayloadExtent[] keyPayloads = [];
+                ulong keyCharge = 0;
                 if (IsPayloadBounded)
                 {
                     using var builder = Utf8RetainedPayloadBuilder<TControl>.Create(_maximumPayloadBytes, control);
                     storage.CollectKey(key, builder);
-                    keyPayloads = builder.Finish();
+                    keyCharge = builder.FinishCharge();
                     keyFits = !builder.Exceeded;
                 }
                 if (keyFits && CanAdd())
                 {
-                    entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyPayloads);
+                    entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyCharge);
                     control.Check();
                     if (_generation == generation && CanAdd() && Find(key, hash, control) is null &&
-                        (!IsPayloadBounded || PublishPayloads(entry, null, keyPayloads, false, generation, control)))
+                        (!IsPayloadBounded || PublishCharge(entry, null, keyCharge, false, generation, control)))
                     { if (!IsPayloadBounded) Append(entry); }
                     else entry = null;
                 }
@@ -171,9 +172,9 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                         while (victim is not null && victim.Status == 0) { control.Check(); victim = victim.Next; }
                         if (victim is null) return Complete(preparation, value);
                     }
-                    var payloads = CollectPayloads(key, value, storage, control, out var fits);
+                    var charge = CollectCharge(key, value, storage, control, out var fits);
                     if (!fits) return Complete(preparation, value);
-                    var completed = Acquire(key, new(value), null, 1, 0, hash, payloads);
+                    var completed = Acquire(key, new(value), null, 1, 0, hash, charge);
                     control.Check();
                     if (_generation != generation) return Complete(preparation, value);
                     existing = Find(key, hash, control);
@@ -185,7 +186,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                         while (victim is not null && victim.Status == 0) { control.Check(); victim = victim.Next; }
                         if (victim is null) return Complete(preparation, value);
                     }
-                    if (IsPayloadBounded) _ = PublishPayloads(completed, null, payloads, true, generation, control);
+                    if (IsPayloadBounded) _ = PublishCharge(completed, null, charge, true, generation, control);
                     else
                     {
                         if (victim is not null) Remove(victim);
@@ -201,8 +202,8 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 {
                     if (IsPayloadBounded && Contains(entry))
                     {
-                        var payloads = CollectPayloads(key, value, storage, control, out var fits);
-                        if (!fits || !PublishPayloads(entry, entry, payloads, true, generation, control)) Remove(entry);
+                        var charge = CollectCharge(key, value, storage, control, out var fits);
+                        if (!fits || !PublishCharge(entry, entry, charge, true, generation, control)) Remove(entry);
                     }
                     entry.Value = new(value); entry.OwnerThread = 0; entry.Status = 1;
                     // A detached generation can satisfy its existing waiters, but
@@ -239,16 +240,16 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
 
     private bool CanAdd() => _count < _capacity && EntryBytes <= _maximumMetadataBytes - BaseMetadataBytes - (ulong)_count * EntryBytes;
 
-    private Utf8RetainedPayloadExtent[] CollectPayloads<TStorage, TControl>(TKey key, TValue value, TStorage storage,
+    private ulong CollectCharge<TStorage, TControl>(TKey key, TValue value, TStorage storage,
         TControl control, out bool fits)
         where TControl : struct, IUtf8ConstructionTextControl
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
-        if (!IsPayloadBounded) { fits = true; return []; }
+        if (!IsPayloadBounded) { fits = true; return 0; }
         using var builder = Utf8RetainedPayloadBuilder<TControl>.Create(_maximumPayloadBytes, control);
         storage.CollectKey(key, builder); storage.CollectValue(value, builder);
-        var payloads = builder.Finish(); fits = !builder.Exceeded;
-        return payloads;
+        var charge = builder.FinishCharge(); fits = !builder.Exceeded;
+        return charge;
     }
 
     private bool Contains(CacheEntry target)
@@ -258,74 +259,57 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         return false;
     }
 
-    // Stage a fresh funded union before any publication or eviction. A physical
-    // table, every per-entry manifest and every unique leaf share the byte cap.
-    // Reentrant controls can invalidate a stage; no staged state is committed
-    // across Clear, shrink, or any other list revision.
-    private bool PublishPayloads<TControl>(CacheEntry candidate, CacheEntry? replacing,
-        Utf8RetainedPayloadExtent[] manifest, bool mayEvict, long generation, TControl control)
+    // Plan eviction with scalar totals. No graph union, manifest acquisition or
+    // reference-count rollback. Keep the revision check because a diagnostic
+    // control may reenter Clear/shrink while the owner lock is held.
+    private bool PublishCharge<TControl>(CacheEntry candidate, CacheEntry? replacing,
+        ulong charge, bool mayEvict, long generation, TControl control)
         where TControl : struct, IUtf8ConstructionTextControl
     {
-        var ledger = _payloadLedger;
-        if (ledger is null) throw new InvalidOperationException("Payload ownership is unavailable.");
-        var victims = 0;
+        if (charge > _maximumPayloadBytes) return false;
         while (true)
         {
             control.Check();
-            if (_generation != generation) return false;
+            Utf8ConstructionScope.ChargeWork(1);
+            if (_generation != generation || replacing is not null && !Contains(replacing)) return false;
             var revision = _revision;
-            if (replacing is not null && !Contains(replacing)) return false;
-            using var union = Utf8ConstructionMap<Utf8RetainedPayloadIdentity, Utf8RetainedPayloadLedger.Reference>.Create(
-                Utf8ConstructionScope.CurrentBudget, EqualityComparer<Utf8RetainedPayloadIdentity>.Default);
-            var bytes = 0ul;
-            var skipped = 0;
-            var retained = 0;
-            var ready = 0;
-            var fits = true;
+            var bytes = _payloadBytes - (replacing?.PayloadCharge ?? 0);
+            var retained = _count - (replacing is null ? 0 : 1);
+            var victims = 0;
             for (var entry = _first; entry is not null; entry = entry.Next)
             {
+                if (HasRoomForCharge(bytes, retained, charge)) break;
                 control.Check();
-                if (ReferenceEquals(entry, replacing)) continue;
-                if (entry.Status == 1)
-                {
-                    ready++;
-                    if (skipped < victims) { skipped++; continue; }
-                }
-                retained++;
-                if (fits) fits = Utf8RetainedPayloadLedger.AddManifest(union, entry.Payloads, _maximumPayloadBytes, ref bytes, control);
-            }
-            if (fits) fits = Utf8RetainedPayloadLedger.AddManifest(union, manifest, _maximumPayloadBytes, ref bytes, control);
-            fits &= retained < _capacity && (ulong)(retained + 1) * EntryBytes <= _maximumMetadataBytes - BaseMetadataBytes;
-            if (fits)
-            {
-                fits = union.StorageBytes <= _maximumPayloadBytes - bytes;
-                control.Check();
-                if (_generation != generation) return false;
-                if (_revision != revision) { victims = 0; continue; }
-                if (fits)
-                {
-                    // Nothing that can allocate, check cancellation or invoke
-                    // caller code remains after the atomic publication point.
-                    var entries = union.TakeEntries(out var count);
-                    ledger.Publish(entries, count, bytes);
-                    for (var entry = _first; entry is not null && victims > 0;)
-                    {
-                        var next = entry.Next;
-                        if (!ReferenceEquals(entry, replacing) && entry.Status == 1) { Detach(entry); victims--; }
-                        entry = next;
-                    }
-                    candidate.Payloads = manifest;
-                    if (replacing is null) Append(candidate); else _revision++;
-                    return true;
-                }
+                Utf8ConstructionScope.ChargeWork(1);
+                if (_revision != revision) break;
+                if (!mayEvict || ReferenceEquals(entry, replacing) || entry.Status != 1) continue;
+                bytes -= entry.PayloadCharge;
+                retained--;
+                victims++;
             }
             control.Check();
             if (_generation != generation) return false;
-            if (_revision != revision) { victims = 0; continue; }
-            if (!mayEvict || victims >= ready) return false;
-            victims++;
+            if (_revision != revision) continue;
+            if (!HasRoomForCharge(bytes, retained, charge)) return false;
+            // No allocation, cancellation callback or fallible arithmetic remains.
+            for (var entry = _first; entry is not null && victims > 0;)
+            {
+                var next = entry.Next;
+                if (!ReferenceEquals(entry, replacing) && entry.Status == 1) { Remove(entry); victims--; }
+                entry = next;
+            }
+            _payloadBytes -= replacing?.PayloadCharge ?? 0;
+            candidate.PayloadCharge = charge;
+            _payloadBytes += charge;
+            if (replacing is null) Append(candidate); else _revision++;
+            return true;
         }
+
     }
+
+    private bool HasRoomForCharge(ulong bytes, int retained, ulong charge) =>
+        bytes <= _maximumPayloadBytes - charge && retained < _capacity &&
+        (ulong)(retained + 1) * EntryBytes <= _maximumMetadataBytes - BaseMetadataBytes;
 
     private CacheEntry? Find<TControl>(TKey key, int hash, TControl control)
         where TControl : struct, IUtf8ConstructionTextControl
@@ -352,11 +336,11 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     }
 
     private static CacheEntry Acquire(TKey key, ValueTuple<TValue> value, Exception? error, int status, int ownerThread, int hash,
-        Utf8RetainedPayloadExtent[] payloads)
+        ulong charge)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = owner.Budget.AllocateObject((key, value, error, Next: (CacheEntry?)null, status, ownerThread, hash, payloads),
-            static state => new CacheEntry(state.key, state.value, state.error, state.status, state.ownerThread, state.hash, state.payloads));
+        var result = owner.Budget.AllocateObject((key, value, error, Next: (CacheEntry?)null, status, ownerThread, hash, charge),
+            static state => new CacheEntry(state.key, state.value, state.error, state.status, state.ownerThread, state.hash, state.charge));
         owner.Complete();
         return result;
     }
@@ -369,20 +353,14 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
 
     private void Remove(CacheEntry target)
     {
-        if (!Contains(target)) return;
-        _payloadLedger?.Release(target.Payloads);
-        Detach(target);
-    }
-
-    private void Detach(CacheEntry target)
-    {
         CacheEntry? previous = null;
         for (var entry = _first; entry is not null; previous = entry, entry = entry.Next)
         {
             if (!ReferenceEquals(entry, target)) continue;
             if (previous is null) _first = entry.Next; else previous.Next = entry.Next;
             if (ReferenceEquals(_last, entry)) _last = previous;
-            entry.Next = null; entry.Payloads = []; _count--; _revision++;
+            _payloadBytes -= entry.PayloadCharge;
+            entry.Next = null; entry.PayloadCharge = 0; _count--; _revision++;
             return;
         }
     }
@@ -397,7 +375,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     }
 
     private sealed class CacheEntry(TKey key, ValueTuple<TValue> value, Exception? error, int status, int ownerThread, int hash,
-        Utf8RetainedPayloadExtent[] payloads)
+        ulong charge)
     {
         internal readonly TKey Key = key;
         internal ValueTuple<TValue> Value = value;
@@ -406,6 +384,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         internal int Status = status;
         internal int OwnerThread = ownerThread;
         internal readonly int Hash = hash;
-        internal Utf8RetainedPayloadExtent[] Payloads = payloads;
+        internal ulong PayloadCharge = charge;
     }
 }

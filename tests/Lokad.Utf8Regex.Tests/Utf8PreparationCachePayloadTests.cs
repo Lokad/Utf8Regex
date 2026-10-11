@@ -13,24 +13,19 @@ public sealed class Utf8PreparationCachePayloadTests
     private static byte[] Add(Utf8BoundedPreparationCache<string, byte[]> cache, string key, byte[] value) =>
         cache.GetOrAdd(key, value, static (_, bytes) => bytes, default(Utf8ConstructionTextNoControl), default(ByteStorage));
 
-    private static ulong Registry(int count) => Utf8ConstructionBudget.ArrayBytes<
-        Utf8ConstructionMap<Utf8RetainedPayloadIdentity, Utf8RetainedPayloadLedger.Reference>.Entry>(count);
-
     [Fact]
-    public void SharedReferentsHaveOnePhysicalLoanAcrossEntriesAndReleasePrecisely()
+    public void SharedReferentsAreChargedPerEntryAndReleaseWithoutReferenceCounts()
     {
         var cache = Create(2, 4096);
         var shared = new byte[100];
         _ = Add(cache, "a", shared);
-        var first = Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100)
-            + Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(2) + Registry(8);
+        var first = Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100);
         Assert.Equal(first, cache.PayloadBytes);
         _ = Add(cache, "b", shared);
-        var both = 2 * Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100)
-            + 2 * Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(2) + Registry(16);
+        var both = 2 * first;
         Assert.Equal(both, cache.PayloadBytes);
         cache.Capacity = 1;
-        Assert.Equal(first - Registry(8) + Registry(16), cache.PayloadBytes);
+        Assert.Equal(first, cache.PayloadBytes);
         Assert.Same(shared, Add(cache, "b", new byte[500]));
         cache.Clear();
         Assert.Equal(0ul, cache.PayloadBytes);
@@ -43,8 +38,7 @@ public sealed class Utf8PreparationCachePayloadTests
         var cache = Create(2, 4096);
         _ = Add(cache, "a", new byte[100]);
         _ = Add(cache, "b", new byte[100]);
-        Assert.Equal(2 * (Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100)
-            + Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(2)) + Registry(16), cache.PayloadBytes);
+        Assert.Equal(2 * (Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100)), cache.PayloadBytes);
     }
 
     [Fact]
@@ -56,9 +50,7 @@ public sealed class Utf8PreparationCachePayloadTests
         var large = new byte[2000];
         Assert.Same(large, Add(cache, "large", large));
         Assert.Equal(1, cache.Count);
-        // A pending key can enlarge the registry; its slots remain charged until
-        // a new stage compacts them or the last entry is detached.
-        Assert.InRange(cache.PayloadBytes, before, 1024ul);
+        Assert.Equal(before, cache.PayloadBytes);
         Assert.Same(good, Add(cache, "good", large));
         cache.Clear(); Assert.Equal(0ul, cache.PayloadBytes);
     }
@@ -72,10 +64,10 @@ public sealed class Utf8PreparationCachePayloadTests
             _ = Add(cache, index.ToString(), new byte[200]);
             Assert.InRange(cache.PayloadBytes, 1ul, 1800ul);
         }
-        Assert.InRange(cache.Count, 1, 3);
+        Assert.Equal(6, cache.Count);
         var large = new byte[1000];
         Assert.Same(large, Add(cache, "last", large));
-        Assert.Equal(1, cache.Count);
+        Assert.Equal(3, cache.Count);
         Assert.Same(large, Add(cache, "last", []));
         Assert.InRange(cache.PayloadBytes, 1ul, 1800ul);
     }
@@ -220,6 +212,57 @@ public sealed class Utf8PreparationCachePayloadTests
         Assert.True(cache.IsPayloadBounded); Assert.Equal(0, cache.Count); Assert.Equal(0ul, cache.PayloadBytes);
         var globalControl = Utf8BoundedPreparationCache<string, byte[]>.Create(2);
         Assert.False(globalControl.IsPayloadBounded);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void EntryChargeBoundaryAdmitsOrDeclinesWithoutTruncatingTheValue(bool exact)
+    {
+        var charge = Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100);
+        var cache = Create(1, exact ? charge : charge - 1);
+        var value = new byte[100]; value[99] = 42;
+        Assert.Same(value, Add(cache, "a", value));
+        Assert.Equal(exact ? 1 : 0, cache.Count);
+        Assert.Equal(exact ? charge : 0UL, cache.PayloadBytes);
+        Assert.Equal(42, value[99]);
+        cache.Clear(); Assert.Equal(0UL, cache.PayloadBytes);
+    }
+
+    [Fact]
+    public void SharedStorageCanEvictEarlierWhileReturnedAliasesRemainValid()
+    {
+        var charge = Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100);
+        var cache = Create(2, 2 * charge - 1);
+        var shared = new byte[100]; shared[99] = 42;
+        var first = Add(cache, "a", shared);
+        var second = Add(cache, "b", shared);
+        Assert.Equal(1, cache.Count); Assert.Equal(charge, cache.PayloadBytes);
+        Assert.Same(first, second); Assert.Same(shared, Add(cache, "b", new byte[1000]));
+        cache.Clear(); Assert.Equal(42, first[99]); Assert.Equal(42, second[99]);
+        Assert.Null(cache.GetType().GetField("_payloadLedger", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance));
+    }
+
+    [Fact]
+    public void NearUlongMaximumChargesEvictWithoutWrappingTheAggregate()
+    {
+        var cache = Utf8BoundedPreparationCache<int, object>.CreateRetained(2, EqualityComparer<int>.Default, 65536, ulong.MaxValue);
+        var first = new object(); var second = new object();
+        _ = cache.GetOrAdd(1, first, static (_, value) => value, default(Utf8ConstructionTextNoControl), new HugeStorage(ulong.MaxValue - 32));
+        Assert.Equal(ulong.MaxValue - 32, cache.PayloadBytes);
+        _ = cache.GetOrAdd(2, second, static (_, value) => value, default(Utf8ConstructionTextNoControl), new HugeStorage(64));
+        Assert.Equal(1, cache.Count); Assert.Equal(64UL, cache.PayloadBytes);
+        Assert.Same(second, cache.GetOrAdd(2, first, static (_, value) => value, default(Utf8ConstructionTextNoControl), new HugeStorage(64)));
+        cache.Clear(); Assert.Equal(0UL, cache.PayloadBytes);
+    }
+
+    private readonly struct HugeStorage(ulong charge) : IUtf8RetainedStorage<int, object>
+    {
+        public bool IsCertified => true;
+        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
+        public void CollectKey<TControl>(int key, Utf8RetainedPayloadBuilder<TControl> storage)
+            where TControl : struct, IUtf8ConstructionTextControl { }
+        public void CollectValue<TControl>(object value, Utf8RetainedPayloadBuilder<TControl> storage)
+            where TControl : struct, IUtf8ConstructionTextControl => storage.Add(value, charge);
     }
 
     private readonly struct ByteStorage : IUtf8RetainedStorage<string, byte[]>

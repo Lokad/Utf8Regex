@@ -30,12 +30,12 @@ public sealed class Utf8EmittedManagedStorageTests
     }
 
     [Fact]
-    public void SharedDelegateOwnsOneAllowanceAndExactManifestBoundary()
+    public void SharedDelegateOwnsOneAllowanceAndExactEntryChargeBoundary()
     {
         using var owner=Utf8ConstructionScope.Enter();
         var emitted=Create();
         var loan=checked(80ul+InspectManagedCopies(emitted.Callback));
-        var maximum=loan+Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(1);
+        var maximum=loan;
         foreach(var cap in new[]{maximum-1,maximum})
         {
             using var storage=Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(cap,default);

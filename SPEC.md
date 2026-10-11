@@ -438,6 +438,20 @@ Rules for these extensions:
 
 ## 5. Architecture
 
+Development preparation caches bound entry metadata and use conservative charges
+per entry for their declared immutable program graph or root/bounded-descendant
+scope. Shared storage is charged again across entries and may cause earlier
+eviction. Entries retain a numeric charge, with no global identity registry,
+reference counts or payload manifests. Graph traversal still uses temporary
+identities to cover shared/cyclic references within a program; retiring those
+collectors requires a qualified coarser certificate. Independent graph/major-array
+and lazy-descendant coverage remains required. Cache admission/eviction preserve
+pending preparation coordination, cancellation, construction work and reentrant
+clear/shrink. Eviction does not invalidate caller-held programs or results. These
+internal bounds cover cache retention, not caller retention, process RSS, or a
+complete public policy. Construction helper-object precision and existing copied
+cursor leases remain under the simplification review recorded in PLAN.md.
+
 The architecture must keep these invariants:
 
 * one owned semantic front-end for the declared scalar language

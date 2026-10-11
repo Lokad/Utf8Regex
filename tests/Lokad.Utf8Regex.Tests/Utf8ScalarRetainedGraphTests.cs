@@ -15,7 +15,7 @@ public sealed class Utf8ScalarRetainedGraphTests
     [InlineData("(?<900>.)", true)]
     [InlineData("(?<=\\p{L})[\\p{L}-[AE]]", false)]
     [InlineData("(?=(?=(?<n>.))).", true)]
-    public void GlobalManifestIncludesEveryOwnedScalarReferent(string pattern, bool compiled)
+    public void GlobalChargeCoversEveryOwnedScalarReferent(string pattern, bool compiled)
     {
         Utf8RegexCache.ResetForTests();
         try
@@ -26,7 +26,7 @@ public sealed class Utf8ScalarRetainedGraphTests
             var cache = GlobalCache();
             var entry = Field(cache, "_first");
             Assert.NotNull(entry);
-            var manifest = Assert.IsType<Utf8RetainedPayloadExtent[]>(Field(entry, "Payloads"));
+            var manifest = Utf8GlobalCacheDescendantTests.InspectEntryPayloads(entry);
             var actual = manifest.ToDictionary(static e => e.Value, static e => e.Bytes, ReferenceEqualityComparer.Instance);
             foreach (var pair in expected)
             {
@@ -128,7 +128,7 @@ public sealed class Utf8ScalarRetainedGraphTests
     }
 
     [Fact]
-    public void TwoEntriesShareOneScalarGraphWhileOwningBothPhysicalManifests()
+    public void TwoEntriesConservativelyChargeTheirSharedGraphTwice()
     {
         var program = Utf8SliceParser.TryParse("(?<n>.)", RegexOptions.CultureInvariant);
         Assert.NotNull(program);
@@ -137,23 +137,9 @@ public sealed class Utf8ScalarRetainedGraphTests
         Assert.Same(program, Add(cache, "first", program));
         Assert.Same(program, Add(cache, "second", program));
         Assert.Equal(2, cache.Count);
-        var ledger = Field(cache, "_payloadLedger"); Assert.NotNull(ledger);
-        var registry = Assert.IsAssignableFrom<Array>(Field(ledger, "_entries"));
-        var expected = graph.Values.Aggregate(ArrayBytes(registry), static (sum, bytes) => sum + bytes);
+        var expected = 2 * graph.Values.Aggregate(0UL, static (sum, bytes) => sum + bytes);
         expected += Utf8ConstructionBudget.StringBytes(5) + Utf8ConstructionBudget.StringBytes(6);
-        expected += 2 * Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(graph.Count + 1);
         Assert.Equal(expected, cache.PayloadBytes);
-        foreach (var item in registry)
-        {
-            Assert.NotNull(item);
-            var reference = item.GetType().GetProperty("Value")?.GetValue(item);
-            Assert.NotNull(reference);
-            var count = Assert.IsType<int>(reference.GetType().GetProperty("Count")?.GetValue(reference));
-            if (count == 0) continue;
-            var identity = item.GetType().GetProperty("Key")?.GetValue(item); Assert.NotNull(identity);
-            var value = Field(identity, "Value"); Assert.NotNull(value);
-            Assert.Equal(graph.ContainsKey(value) ? 2 : 1, count);
-        }
         cache.Clear(); Assert.Equal(0ul, cache.PayloadBytes);
         AssertManifest(graph, Collect(program));
     }

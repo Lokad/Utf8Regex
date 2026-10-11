@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Caching;
@@ -87,7 +88,7 @@ public sealed class Utf8GlobalCacheDescendantTests
     }
 
     [Fact]
-    public void ActualManifestsAndPhysicalRegistryExactlyMatchTheReservedGraph()
+    public void ConservativeEntryChargesCoverEveryRootAndBoundedDescendant()
     {
         Utf8RegexCache.ResetForTests();
         try
@@ -152,21 +153,32 @@ public sealed class Utf8GlobalCacheDescendantTests
         finally { Utf8RegexCache.ResetForTests(); }
     }
 
+    // Recompute the production collector as a transient audit, then independently
+    // inspect every payload below. The cache retains only the scalar charge.
+    internal static Utf8RetainedPayloadExtent[] InspectEntryPayloads(object entry)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(ulong.MaxValue, default);
+        var collector = default(Utf8RegexRootAndLazyStorage);
+        collector.CollectKey(Assert.IsType<Utf8RegexCacheKey>(Field(entry, "Key")), storage);
+        collector.CollectValue(Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1, storage);
+        Assert.False(storage.Exceeded);
+        Assert.Equal(storage.FinishCharge(), Assert.IsType<ulong>(Field(entry, "PayloadCharge")));
+        return storage.Finish();
+    }
+
     private static ulong InspectLoans(object cache)
     {
         lock (cache)
         {
             Assert.Equal(11, cache.GetType().GetFields(Instance).Length);
-            var ledger = Field(cache, "_payloadLedger");
-            Assert.NotNull(ledger);
-            var registry = Assert.IsAssignableFrom<Array>(Field(ledger, "_entries"));
-            var seen = new Dictionary<object, (ulong Bytes, int Count)>(ReferenceEqualityComparer.Instance);
+            ulong bytes = 0;
             var entry = Field(cache, "_first");
             while (entry is not null)
             {
                 Assert.Equal(8, entry.GetType().GetFields(Instance).Length);
                 Assert.Equal(1, Assert.IsType<int>(Field(entry, "Status")));
-                var manifest = Assert.IsType<Utf8RetainedPayloadExtent[]>(Field(entry, "Payloads"));
+                var manifest = InspectEntryPayloads(entry);
                 var regex = Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1;
                 var scalar = Utf8ScalarRetainedGraphTests.InspectScalarGraph(Utf8ScalarRetainedGraphTests.ScalarProgram(regex));
                 foreach (var pair in Utf8PreparedRetainedGraphTests.InspectPreparedGraph(Utf8ExecutionRetainedGraphTests.Prepared(regex)))
@@ -177,7 +189,6 @@ public sealed class Utf8GlobalCacheDescendantTests
                     if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
                 foreach (var pair in scalar)
                     Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
-                Add(manifest, Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(manifest.Length));
                 foreach (var extent in manifest)
                 {
                     ulong expected;
@@ -194,46 +205,13 @@ public sealed class Utf8GlobalCacheDescendantTests
                         Assert.True(Read<ulong>(plans, "MetadataBytes") + Read<ulong>(plans, "PayloadBytes") + 48 <= expected);
                     }
                     Assert.Equal(expected, extent.Bytes);
-                    Add(extent.Value, expected);
+                    bytes += expected;
                 }
                 entry = Field(entry, "Next");
             }
-            var bytes = seen.Values.Aggregate(ArrayBytes(registry), (sum, value) => sum + value.Bytes);
-            var actualReferences = 0;
-            foreach (var item in registry)
-            {
-                var reference = Property(item, "Value");
-                Assert.NotNull(reference);
-                var count = Read<int>(reference, "Count");
-                if (count == 0) continue;
-                var identity = Property(item, "Key");
-                Assert.NotNull(identity);
-                var value = Field(identity, "Value");
-                Assert.NotNull(value);
-                Assert.True(seen.TryGetValue(value, out var expected));
-                Assert.Equal(expected.Bytes, Read<ulong>(reference, "Bytes"));
-                Assert.Equal(expected.Count, count);
-                actualReferences++;
-            }
-            Assert.Equal(seen.Count, actualReferences);
             Assert.Equal(bytes, Read<ulong>(cache, "PayloadBytes"));
             return bytes;
-
-            void Add(object value, ulong extent)
-            {
-                if (seen.TryGetValue(value, out var previous))
-                { Assert.Equal(previous.Bytes, extent); seen[value] = (extent, previous.Count + 1); }
-                else seen.Add(value, (extent, 1));
-            }
         }
-    }
-
-    private static ulong ArrayBytes(Array array)
-    {
-        var method = typeof(Utf8ConstructionBudget).GetMethod(nameof(Utf8ConstructionBudget.ArrayBytes),
-            BindingFlags.Static | BindingFlags.NonPublic);
-        Assert.NotNull(method);
-        return Assert.IsType<ulong>(method.MakeGenericMethod(array.GetType().GetElementType()).Invoke(null, [array.Length]));
     }
 
     private static object? Field(object instance, string name)
