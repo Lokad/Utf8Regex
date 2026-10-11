@@ -846,7 +846,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
     }
 }
 
-internal abstract class Utf8StructuralLinearRuntime
+internal abstract partial class Utf8StructuralLinearRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;
 

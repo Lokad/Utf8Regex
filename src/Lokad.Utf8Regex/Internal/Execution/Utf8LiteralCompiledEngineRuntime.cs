@@ -2021,16 +2021,27 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return false;
     }
 
-    private sealed class CompositeTrailingLiteralSearch(
-        PreparedSubstringSearch search,
-        int matchLengthInBytes,
-        int matchLengthInUtf16)
+    private sealed class CompositeTrailingLiteralSearch
     {
-        public int MatchLengthInBytes { get; } = matchLengthInBytes;
+        private readonly PreparedSubstringSearch _search;
 
-        public int MatchLengthInUtf16 { get; } = matchLengthInUtf16;
+        public CompositeTrailingLiteralSearch(PreparedSubstringSearch search, int matchLengthInBytes, int matchLengthInUtf16)
+        {
+            _search = search;
+            MatchLengthInBytes = matchLengthInBytes;
+            MatchLengthInUtf16 = matchLengthInUtf16;
+        }
 
-        public int FindFirst(ReadOnlySpan<byte> input) => search.IndexOf(input);
+        public int MatchLengthInBytes { get; }
+        public int MatchLengthInUtf16 { get; }
+        public int FindFirst(ReadOnlySpan<byte> input) => _search.IndexOf(input);
+
+        internal void CollectRetainedStorage<TControl>(Lokad.Utf8Regex.Internal.Caching.Utf8RetainedPayloadBuilder<TControl> storage)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<(PreparedSubstringSearch, int, int)>())) return;
+            _search.CollectRetainedStorage(storage);
+        }
     }
 
     private InvalidOperationException UnexpectedExecutionKind()

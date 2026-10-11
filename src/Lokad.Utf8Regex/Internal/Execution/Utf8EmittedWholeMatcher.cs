@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// Emits bounded exact-subject recognizers. Callers may accept a successful result directly,
 /// but must preserve the ordinary search and UTF-8 validation paths when the recognizer misses.
 /// </summary>
-internal sealed class Utf8EmittedWholeMatcher
+internal sealed partial class Utf8EmittedWholeMatcher
 {
     private const int MaxSmallPositiveSetSize = 8;
 

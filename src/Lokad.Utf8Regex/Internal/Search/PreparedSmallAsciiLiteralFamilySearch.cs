@@ -11,9 +11,9 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
     private readonly TripleDispatch _tripleDispatch;
     private readonly PairDispatch _pairDispatch;
 
-    private readonly record struct Filter(int Offset, byte[] Values);
+    private readonly partial record struct Filter(int Offset, byte[] Values);
 
-    private readonly record struct TripleDispatch(
+    private readonly partial record struct TripleDispatch(
         int PrimaryOffset,
         int SecondaryOffset,
         byte PrimaryValue0,
@@ -29,12 +29,12 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         public bool HasValue => Literal0 is not null;
     }
 
-    private readonly record struct PairDispatch(int PrimaryOffset, int SecondaryOffset, PairDispatchEntry[] Entries)
+    private readonly partial record struct PairDispatch(int PrimaryOffset, int SecondaryOffset, PairDispatchEntry[] Entries)
     {
         public bool HasValue => Entries is not null;
     }
 
-    private readonly record struct PairDispatchEntry(byte PrimaryValue, byte SecondaryValue, byte[] Literal);
+    private readonly partial record struct PairDispatchEntry(byte PrimaryValue, byte SecondaryValue, byte[] Literal);
 
     private PreparedSmallAsciiLiteralFamilySearch(
         AsciiExactLiteralSearchData searchData,

@@ -130,7 +130,7 @@ internal enum Utf8CompiledPatternFamilyKind : byte
     SymmetricLiteralWindow = 5,
 }
 
-internal readonly struct Utf8CompiledPatternFamilyPlan
+internal readonly partial struct Utf8CompiledPatternFamilyPlan
 {
     private Utf8CompiledPatternFamilyPlan(
         Utf8CompiledPatternFamilyKind kind,

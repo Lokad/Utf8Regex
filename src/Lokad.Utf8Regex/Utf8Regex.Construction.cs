@@ -39,17 +39,17 @@ public sealed partial class Utf8Regex
 
     // The global owner covers this facade, complete scalar/prepared graphs
     // and its bounded replacement child, program metadata and closed facade
-    // helpers. Compiled runtime/delegate and opaque framework descendants
-    // remain outside this declared subgraph.
+    // helpers and all owned runtime state, including direct delegate metadata.
+    // CLR method/resolver/JIT descendants remain outside this declared subgraph.
     internal void CollectCacheRoots<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl
     {
         storage.Add(this, CachedObjectBytes);
-        storage.Add(_program, Utf8RegexProgram.ObjectBytes);
         storage.Text(Pattern);
         storage.Add(_replacementCache, _replacementCache.MaximumRetainedBytes);
         Utf8ScalarProgramRetainedStorage.Collect(_ownedSliceProgram, storage);
-        Utf8PreparedRetainedStorage.Collect(_preparedRegex, storage);
+        _program.CollectRetainedStorage(storage);
+        _fusedAsciiBoundaryLiteralFamilyCounter?.CollectRetainedStorage(storage);
         CollectFacadeHelpers(storage);
     }
 

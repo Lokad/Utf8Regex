@@ -173,6 +173,8 @@ public sealed class Utf8GlobalCacheDescendantTests
                     if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
                 foreach (var pair in Utf8FacadeRetainedGraphTests.InspectFacadeGraph(regex))
                     if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
+                foreach (var pair in Utf8RuntimeRetainedGraphTests.InspectRuntimeGraph(regex))
+                    if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
                 foreach (var pair in scalar)
                     Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
                 Add(manifest, Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(manifest.Length));

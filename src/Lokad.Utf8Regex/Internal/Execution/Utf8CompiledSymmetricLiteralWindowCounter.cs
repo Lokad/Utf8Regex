@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed class Utf8CompiledSymmetricLiteralWindowCounter
+internal sealed partial class Utf8CompiledSymmetricLiteralWindowCounter
 {
     private readonly AsciiSimplePatternSymmetricLiteralWindowPlan _plan;
     private readonly byte[] _firstLiteral;

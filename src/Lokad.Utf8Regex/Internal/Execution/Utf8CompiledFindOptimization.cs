@@ -9,7 +9,7 @@ internal enum Utf8CompiledFindOptimizationKind : byte
     SharedPrefix = 2,
 }
 
-internal readonly struct Utf8CompiledFindOptimization
+internal readonly partial struct Utf8CompiledFindOptimization
 {
     public Utf8CompiledFindOptimization(int anchorOffset, byte[] anchorBytes, byte[][] anchorPrefixesByByte)
     {

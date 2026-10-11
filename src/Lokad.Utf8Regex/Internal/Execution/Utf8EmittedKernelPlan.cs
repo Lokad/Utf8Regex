@@ -36,7 +36,7 @@ internal enum Utf8EmittedKernelKind : byte
     OrderedAsciiWhitespaceLiteralWindow = 3,
 }
 
-internal readonly struct Utf8EmittedKernelPlan
+internal readonly partial struct Utf8EmittedKernelPlan
 {
     private Utf8EmittedKernelPlan(
         Utf8EmittedKernelKind kind,
