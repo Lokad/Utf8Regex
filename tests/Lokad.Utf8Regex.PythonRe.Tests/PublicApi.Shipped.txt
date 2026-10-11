@@ -10,9 +10,11 @@ struct PythonRe.Utf8PythonDetailedMatchData
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
   property Int32 NameEntryCount { get; }
+  property Nullable<Int32> LastIndex { get; set; }
   property PythonRe.PythonReNameEntry[] NameEntries { get; set; }
   property PythonRe.Utf8PythonGroupMatchData Value { get; }
   property PythonRe.Utf8PythonGroupMatchData[] Groups { get; set; }
+  property String LastGroup { get; }
   method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupMatchData group)
   method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupMatchData group)
 struct PythonRe.Utf8PythonFindAllResult
@@ -44,7 +46,9 @@ struct PythonRe.Utf8PythonMatchContext
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
   property Int32 NameEntryCount { get; }
+  property Nullable<Int32> LastIndex { get; }
   property PythonRe.Utf8PythonValueMatch Value { get; }
+  property String LastGroup { get; }
   method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupContext group)
   method Boolean TryGetFirstSetGroupValueString(String name, out String value)
   method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupContext group)

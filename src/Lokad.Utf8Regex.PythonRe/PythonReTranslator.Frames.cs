@@ -53,7 +53,7 @@ internal static partial class PythonReTranslator
                 }
                 else if (kind == InspectionKind.Lookbehind && current is PythonReGroupNode
                     { Kind: PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind } behind)
-                    EnsureFixedWidth(behind.Inner, parseResult, widths ?? throw new InvalidOperationException("Width storage is missing."));
+                    behind.FixedLookbehindWidth = EnsureFixedWidth(behind.Inner, parseResult, widths ?? throw new InvalidOperationException("Width storage is missing."));
                 else if (kind == InspectionKind.Iteration)
                 {
                     if (current is PythonReConditionalNode) return false;

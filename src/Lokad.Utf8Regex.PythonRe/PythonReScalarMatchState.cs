@@ -67,6 +67,7 @@ internal struct PythonReScalarMatchState
 
     internal int StartOffsetInBytes { get; private set; }
     internal int EndOffsetInBytes { get; private set; }
+    internal int? LastIndex { get; private set; }
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
     internal readonly ulong ResultReservation => _results.ReservedBytes;
     internal readonly bool HasCoordinateMap => _hasMap;
@@ -160,6 +161,17 @@ internal struct PythonReScalarMatchState
                     throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
                 if (outcome.IsMatch)
                 {
+                    LastIndex = null;
+                    if (outcome.LastClosedSlot >= 0)
+                    {
+                        var coreNumber = _program.GroupNumbers[outcome.LastClosedSlot + 1];
+                        for (var number = 1; number < _numbersByPython.Length; number++)
+                        {
+                            if ((number & 63) == 1) Checkpoint(input);
+                            if (_numbersByPython[number] == coreNumber) { LastIndex = number; break; }
+                        }
+                        if (LastIndex is null) throw new InvalidOperationException("Completed scalar capture has no profile slot.");
+                    }
                     StartOffsetInBytes = _position;
                     EndOffsetInBytes = outcome.EndIndex;
                     _retryNonEmpty = outcome.EndIndex == _position;
@@ -252,10 +264,10 @@ internal struct PythonReScalarMatchState
         var slot = Array.BinarySearch(_program.GroupNumbers, _numbersByPython[number]) - 1;
         start = number == 0 ? StartOffsetInBytes : slot >= 0 ? _slots.Starts[slot] : -1;
         end = number == 0 ? EndOffsetInBytes : slot >= 0 ? _slots.Ends[slot] : -1;
-        // Reverse lookbehind captures publish raw edges inside an LTR program.
-        // Byte-only template expansion does not need a coordinate map/snapshot.
+        // The profile runs fixed-width lookbehind forward as well. Byte-only
+        // template expansion needs neither edge normalization nor a map.
         if (start < 0 || end < 0) return false;
-        if (end < start) (start, end) = (end, start);
+        if (end < start) throw new InvalidOperationException("Forward scalar capture has reversed edges.");
         return true;
     }
 
@@ -303,7 +315,7 @@ internal struct PythonReScalarMatchState
             };
         }
         var copiedNames = SnapshotNameEntries(input, names);
-        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames };
+        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames, LastIndex = LastIndex };
         Checkpoint(input);
         return result;
     }

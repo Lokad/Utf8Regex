@@ -29,7 +29,7 @@ internal static class PythonReAstFactory
 
     internal static PythonReGroupNode Group(PythonReGroupKind kind, PythonReNode inner, string? name,
         PythonReCompileOptions addOptions, PythonReCompileOptions removeOptions, int groupNumber) =>
-        Create((kind, inner, name, addOptions, removeOptions, groupNumber), static state =>
+        Create((kind, inner, name, addOptions, removeOptions, groupNumber, FixedLookbehindWidth: (uint?)null), static state =>
             new PythonReGroupNode(state.kind, state.inner, state.name, state.addOptions, state.removeOptions) { GroupNumber = state.groupNumber });
 
     internal static PythonReNamedBackreferenceNode NamedReference(string name, Func<int, int>? lowerScalar) =>

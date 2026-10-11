@@ -133,7 +133,7 @@ public sealed class PythonReOneShotProjectionTests
             if (allow)
             {
                 Assert.Null(failure); Assert.NotNull(copied);
-                result = new Utf8PythonMatchContext("😀é"u8, groups, copied);
+                result = new Utf8PythonMatchContext("😀é"u8, groups, copied, cursor.LastIndex);
                 cursor.Checkpoint();
                 Assert.Same(copied, result.GetNameEntries()); Assert.NotSame(names, copied);
                 Assert.Equal(groupExtent + extent, cursor.ResultReservation);

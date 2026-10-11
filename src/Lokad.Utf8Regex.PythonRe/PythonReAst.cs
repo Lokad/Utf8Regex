@@ -28,6 +28,9 @@ internal sealed record PythonReGroupNode(
     PythonReCompileOptions RemoveOptions) : PythonReNode
 {
     internal int GroupNumber { get; init; }
+    // Filled once by width validation before scalar compilation. Keep only the
+    // numeric fact, never the transient construction map that proved it.
+    internal uint? FixedLookbehindWidth { get; set; }
 }
 
 internal sealed record PythonReNamedBackreferenceNode(string Name) : PythonReNode

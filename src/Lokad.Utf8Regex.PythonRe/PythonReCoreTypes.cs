@@ -222,6 +222,20 @@ public readonly struct Utf8PythonGroupMatchData
 /// <summary>Stores an owned detailed match with numbered and named group metadata.</summary>
 public readonly struct Utf8PythonDetailedMatchData
 {
+    /// <summary>Gets the Python number of the last capture to close on the successful path, excluding group zero, or null.</summary>
+    public int? LastIndex { get; init; }
+
+    /// <summary>Gets the name of <see cref="LastIndex"/>, or null when no capture closed or that capture is unnamed.</summary>
+    public string? LastGroup
+    {
+        get
+        {
+            if (!Success || LastIndex is not int number || NameEntries is null) return null;
+            foreach (var entry in NameEntries) if (entry.Number == number) return entry.Name;
+            return null;
+        }
+    }
+
     /// <summary>Gets whether group zero represents a successful match.</summary>
     public bool Success => Groups is { Length: > 0 } && Groups[0].Success;
 
@@ -329,14 +343,30 @@ public readonly ref struct Utf8PythonMatchContext
     private readonly ReadOnlySpan<byte> _input;
     private readonly PythonReGroupData[]? _groups;
     private readonly PythonReNameEntry[]? _nameEntries;
+    private readonly int? _lastIndex;
 
-    internal Utf8PythonMatchContext(ReadOnlySpan<byte> input, PythonReGroupData[] groups, PythonReNameEntry[] nameEntries)
+    internal Utf8PythonMatchContext(ReadOnlySpan<byte> input, PythonReGroupData[] groups, PythonReNameEntry[] nameEntries, int? lastIndex)
     {
         _input = input;
         _groups = groups;
         // The producer admits and copies both owned roots before publication.
         // Array mutation affects this context, never the instance's catalog.
         _nameEntries = nameEntries;
+        _lastIndex = lastIndex;
+    }
+
+    /// <summary>Gets the Python number of the last capture to close on the successful path, excluding group zero, or null.</summary>
+    public int? LastIndex => Success ? _lastIndex : null;
+
+    /// <summary>Gets the name of <see cref="LastIndex"/>, or null when no capture closed or that capture is unnamed.</summary>
+    public string? LastGroup
+    {
+        get
+        {
+            if (LastIndex is not int number || _nameEntries is null) return null;
+            foreach (var entry in _nameEntries) if (entry.Number == number) return entry.Name;
+            return null;
+        }
     }
 
     /// <summary>Gets whether group zero represents a successful match.</summary>

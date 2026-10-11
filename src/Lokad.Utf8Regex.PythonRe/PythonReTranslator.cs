@@ -402,7 +402,7 @@ internal static partial class PythonReTranslator
         return true;
     }
 
-    private static void EnsureFixedWidth(PythonReNode node, PythonReParseResult parseResult, Utf8ConstructionMap<PythonReNode, PythonReWidth> widths)
+    private static uint EnsureFixedWidth(PythonReNode node, PythonReParseResult parseResult, Utf8ConstructionMap<PythonReNode, PythonReWidth> widths)
     {
         var width = GetWidth(node, parseResult, widths);
         if (!width.IsFixed)
@@ -413,6 +413,7 @@ internal static partial class PythonReTranslator
         {
             throw new PythonRePatternException("looks too much behind");
         }
+        return (uint)width.Min;
     }
 
     internal static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult)

@@ -8,11 +8,10 @@ namespace Lokad.Utf8Regex.PythonRe;
 // to the shared VM rather than rediscovering folding from a .NET option flag.
 internal static class PythonReScalarCompiler
 {
-    private struct ConversionFrame(PythonReNode node, PythonReCompileOptions options, bool reversed)
+    private struct ConversionFrame(PythonReNode node, PythonReCompileOptions options)
     {
         internal readonly PythonReNode Node = node;
         internal readonly PythonReCompileOptions Options = options;
-        internal readonly bool Reversed = reversed;
         internal int Stage;
         internal int Index;
         internal Utf8SliceNode[]? Children;
@@ -24,7 +23,7 @@ internal static class PythonReScalarCompiler
         PythonReTranslation translation, bool fullMatch)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        using var frames = Utf8ConstructionFrames<ConversionFrame>.Create(construction.Budget, new(parse.Root, parse.Options, false));
+        using var frames = Utf8ConstructionFrames<ConversionFrame>.Create(construction.Budget, new(parse.Root, parse.Options));
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
         using var nodes = Utf8ConstructionMap<PythonReNode, Utf8SliceNode>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
         while (frames.Count != 0)
@@ -45,14 +44,14 @@ internal static class PythonReScalarCompiler
                         var children = frame.Children ?? throw new InvalidOperationException("Conversion children are missing.");
                         if (frame.Stage == 2)
                         {
-                            children[frame.Index] = nodes[sequence.Elements[frame.Reversed ? children.Length - 1 - frame.Index : frame.Index]];
+                            children[frame.Index] = nodes[sequence.Elements[frame.Index]];
                             frame.Index++;
                         }
                         if (frame.Index == children.Length) nodes[node] = PythonReScalarNodeFactory.Concat(children);
                         else
                         {
                             frame.Stage = 2;
-                            child = new(sequence.Elements[frame.Reversed ? children.Length - 1 - frame.Index : frame.Index], frame.Options, frame.Reversed);
+                            child = new(sequence.Elements[frame.Index], frame.Options);
                             completed = false;
                         }
                         break;
@@ -72,7 +71,7 @@ internal static class PythonReScalarCompiler
                         else
                         {
                             frame.Stage = 2;
-                            child = new(alternation.Branches[frame.Index], frame.Options, frame.Reversed);
+                            child = new(alternation.Branches[frame.Index], frame.Options);
                             completed = false;
                         }
                         break;
@@ -80,7 +79,7 @@ internal static class PythonReScalarCompiler
                     case PythonReQuantifierNode repeat:
                         if (frame.Stage++ == 0)
                         {
-                            child = new(repeat.Inner, frame.Options, frame.Reversed);
+                            child = new(repeat.Inner, frame.Options);
                             completed = false;
                         }
                         else
@@ -101,13 +100,7 @@ internal static class PythonReScalarCompiler
                                 if ((group.AddOptions & PythonReCompileOptions.Unicode) != 0) scope &= ~PythonReCompileOptions.Ascii;
                                 scope = (scope | group.AddOptions) & ~group.RemoveOptions;
                             }
-                            var direction = group.Kind switch
-                            {
-                                PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind => true,
-                                PythonReGroupKind.PositiveLookahead or PythonReGroupKind.NegativeLookahead => false,
-                                _ => frame.Reversed,
-                            };
-                            child = new(group.Inner, scope, direction);
+                            child = new(group.Inner, scope);
                             completed = false;
                         }
                         else
@@ -117,8 +110,8 @@ internal static class PythonReScalarCompiler
                             {
                                 PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing =>
                                     PythonReScalarNodeFactory.Capture(translation.CoreNumbersByPython[group.GroupNumber] - 1, body),
-                                PythonReGroupKind.PositiveLookbehind => PythonReScalarNodeFactory.Lookbehind(body, true),
-                                PythonReGroupKind.NegativeLookbehind => PythonReScalarNodeFactory.Lookbehind(body, false),
+                                PythonReGroupKind.PositiveLookbehind => PythonReScalarNodeFactory.Lookbehind(body, true, group.FixedLookbehindWidth ?? throw new InvalidOperationException("Validated lookbehind width is missing.")),
+                                PythonReGroupKind.NegativeLookbehind => PythonReScalarNodeFactory.Lookbehind(body, false, group.FixedLookbehindWidth ?? throw new InvalidOperationException("Validated lookbehind width is missing.")),
                                 PythonReGroupKind.PositiveLookahead => PythonReScalarNodeFactory.Lookahead(body, true),
                                 PythonReGroupKind.NegativeLookahead => PythonReScalarNodeFactory.Lookahead(body, false),
                                 PythonReGroupKind.Atomic => PythonReScalarNodeFactory.Atomic(body),
@@ -136,7 +129,7 @@ internal static class PythonReScalarCompiler
                         if (frame.Stage == 0)
                         {
                             frame.Stage = 1;
-                            child = new(conditional.YesBranch, frame.Options, frame.Reversed);
+                            child = new(conditional.YesBranch, frame.Options);
                             completed = false;
                             break;
                         }
@@ -146,7 +139,7 @@ internal static class PythonReScalarCompiler
                             if (conditional.NoBranch is { } noBranch)
                             {
                                 frame.Stage = 2;
-                                child = new(noBranch, frame.Options, frame.Reversed);
+                                child = new(noBranch, frame.Options);
                                 completed = false;
                                 break;
                             }

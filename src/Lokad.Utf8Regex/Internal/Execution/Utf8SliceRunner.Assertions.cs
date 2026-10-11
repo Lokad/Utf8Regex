@@ -20,6 +20,7 @@ internal static partial class Utf8SliceRunner
             ProgramIndex = 0;
             InputIndex = start;
             RepeatReservation = 0;
+            RequiredEnd = null;
         }
 
         internal Utf8SliceProgram Program;
@@ -33,6 +34,7 @@ internal static partial class Utf8SliceRunner
         internal int ProgramIndex;
         internal int InputIndex;
         internal ulong RepeatReservation;
+        internal int? RequiredEnd;
     }
 
     private readonly record struct AssertionContinuation(
@@ -55,10 +57,39 @@ internal static partial class Utf8SliceRunner
                 var outcome = RunSegment(input, captureStarts, captureEnds, balanceHeads,
                     ref current, resumeFailure, ref stacks, ref invocation, out var suspended);
                 resumeFailure = false;
+                if (!suspended && outcome.IsMatch && current.RequiredEnd is int requiredEnd && outcome.EndIndex != requiredEnd)
+                {
+                    // A forward fixed-length assertion must end at its original
+                    // edge. Keep alternatives within the same owned VM.
+                    resumeFailure = true;
+                    continue;
+                }
                 if (suspended)
                 {
                     var instruction = current.Program.Instructions[current.ProgramIndex];
                     var body = current.Program.Assertions[instruction.A].Body;
+                    var assertion = current.Program.Assertions[instruction.A];
+                    var assertionStart = current.InputIndex;
+                    if (assertion.ForwardScalarCount is uint scalarCount)
+                    {
+                        var available = scalarCount <= (uint)assertionStart;
+                        for (uint count = 0; available && count < scalarCount; count++)
+                        {
+                            if ((count & 63) == 0)
+                            {
+                                var step = invocation.TryChargeInputStep();
+                                if (step != Utf8ExecutionLimitKind.None) return new(false, -1, step, null, null);
+                            }
+                            assertionStart = AdvancePastScalar(input, assertionStart, true);
+                            available = assertionStart >= 0;
+                        }
+                        if (!available)
+                        {
+                            resumeFailure = instruction.B != 0;
+                            if (!resumeFailure) current.ProgramIndex++;
+                            continue;
+                        }
+                    }
                     var nextCounts = Array.Empty<int>();
                     var nextPositions = Array.Empty<int>();
                     ulong nextReservation = 0;
@@ -100,10 +131,12 @@ internal static partial class Utf8SliceRunner
                             stacks.JournalCount, stacks.TrailCount, instruction.B != 0), ref invocation);
                         if (breach != Utf8ExecutionLimitKind.None)
                             return new(false, -1, breach, null, null);
-                        var aligned = (uint)current.InputIndex >= (uint)input.Length ||
-                            (input[current.InputIndex] & 0xC0) != 0x80;
-                        current = new(body, current.InputIndex, nextCounts, nextPositions,
+                        var expectedEnd = current.InputIndex;
+                        var aligned = (uint)assertionStart >= (uint)input.Length ||
+                            (input[assertionStart] & 0xC0) != 0x80;
+                        current = new(body, assertionStart, nextCounts, nextPositions,
                             false, false, aligned, frameMark);
+                        current.RequiredEnd = assertion.ForwardScalarCount.HasValue ? expectedEnd : null;
                         current.RepeatReservation = nextReservation;
                         adopted = true;
                         // The marker remains outside the child's backtrack boundary,
@@ -125,7 +158,23 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
 
-                if (continuations.Count == 0) return outcome;
+                if (continuations.Count == 0)
+                {
+                    if (!outcome.IsMatch) return outcome;
+                    var lastClosedSlot = -1;
+                    if (program.GroupCount != 0)
+                    {
+                        var completionBreach = stacks.FindLastClosedSlot(ref invocation, out lastClosedSlot);
+                        if (completionBreach != Utf8ExecutionLimitKind.None) return new(false, -1, completionBreach, null, null);
+                    }
+                    int[][]? historyStarts = null, historyLengths = null;
+                    if (collectHistory)
+                    {
+                        var historyBreach = stacks.MaterializeHistory(program.GroupCount, ref invocation, out historyStarts, out historyLengths);
+                        if (historyBreach != Utf8ExecutionLimitKind.None) return new(false, -1, historyBreach, null, null);
+                    }
+                    return new(true, outcome.EndIndex, outcome.Breach, historyStarts, historyLengths, lastClosedSlot);
+                }
                 var exitBreach = invocation.TryChargeInputStep();
                 if (exitBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, exitBreach, null, null);

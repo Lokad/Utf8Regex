@@ -110,13 +110,21 @@ This profile is still incomplete. In particular:
   and bracketed forms retain the whole scalar domain. Admitted scalar programs
   now serve captured/global iteration, empty-capable result shaping, substitution
   and split with Python's same-position nonempty retry. Capture snapshots preserve
-  Python numbering and normalized scalar byte ranges, including lookbehind.
+  Python numbering and scalar byte ranges, including lookbehind. Fixed-width
+  lookbehind finds its start by stepping back the validated number of scalars,
+  then executes its body forward to the original edge. Repeated captures retain
+  their last forward value; assertions share the existing rollback machinery.
+  Detailed owned matches and borrowed contexts expose nullable `LastIndex` and
+  `LastGroup`, derived from capture-close order on the successful path. Group zero
+  is excluded; `((a))` closes group 1 last. The name comes from that same Python
+  number, and is null when the last capture is unnamed. Failed matches or matches
+  with no participating capture have null completion metadata. Owned metadata
+  remains valid after cursor advances, failure or disposal.
   One-shot search/match/fullmatch and detailed data likewise use the profile
   scalar program, with byte starts and the original assertion context. FullMatch
   adds an end assertion before discovery so alternatives can backtrack to a
-  complete result. Unserved managed callers and their compensation remain
-  R04/R05 debt; category-version reconciliation and finite/result/output
-  resource bounds remain separate gates.
+  complete result. Production BCL matching and result shaping have been removed;
+  category-version reconciliation and the remaining common resource gates stay open.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
   find the whole scalar. Search, Match, and FullMatch here stay mutually consistent
@@ -126,7 +134,7 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 
 ## Cancellation and resource contract
 
-Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Admitted scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code. Remaining managed routes still require the full R06 migration.
+Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code.
 
 Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe supports
 finite `Utf8ResourcePolicy.MaxWorkSteps`. One counter covers full-input validation,
@@ -147,11 +155,21 @@ work counts. Arbitrary evaluator execution and later standalone result getters
 are outside this cap; the library charges encoding/copying the evaluator's return.
 Cancellation and the absolute invocation deadline remain independently enforced.
 
-Finite depth, working-byte and result-byte policies still throw
-`NotSupportedException` before pattern compilation. Zero budgets remain invalid.
-The core still rejects every finite public invocation budget. PythonRe's work cap
-does not qualify the unfinished common memory, retained-result or default-policy
-gates.
+PythonRe and core also admit finite `MaxResultBytes`, charging modeled major
+arrays/text, capture and name roots, coordinate maps, staging and output growth
+before acquisition. The cumulative counter never refunds and may conservatively
+charge reused storage again. Exhaustion reports `ExecutionResultBytes` with
+`Limit` and `Requested`. It covers required result capacity traffic, not live
+caller retention or process memory. Compilation/preparation, arbitrary callback
+execution and allocations, fixed values, borrowed subjects and later standalone
+getters have separate scope. Completion metadata reuses the existing rollback
+trail and maps Python slots with bounded metered traversal; enlarged result
+structs participate in the usual array/staging extent charges.
+
+Finite depth and working-byte policies still throw `NotSupportedException`
+before pattern compilation. Zero budgets remain invalid. Core also admits finite
+work; the unfinished common memory, retained-result and default-policy gates
+remain open.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` is an incremental, explicitly owned
 alternative to the materialized `FindIterDetailed` array. Its offset/token overloads
@@ -161,8 +179,8 @@ until EOF or disposal. Early abandonment requires `Dispose`; EOF/failure clean u
 synchronously, without a finalizer. Reference aliases share position and lifetime;
 concurrent/reentrant access is rejected. `Current` is valid only after a successful
 advance, while independently owned snapshots remain valid after future advances
-or disposal. Existing span/value API lifetimes are unchanged. Depth, working-byte and
-retained-result controls and last-capture completion metadata remain unfinished.
+or disposal. Existing span/value API lifetimes are unchanged. Depth, working-byte
+and live retained-result controls remain unfinished.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

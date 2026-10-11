@@ -58,12 +58,17 @@ internal struct Utf8SliceCountMutation
 internal readonly struct Utf8SliceMatchOutcome
 {
     internal Utf8SliceMatchOutcome(bool isMatch, int endIndex, Utf8ExecutionLimitKind breach, int[][]? captureStarts, int[][]? captureLengths)
+        : this(isMatch, endIndex, breach, captureStarts, captureLengths, -1)
+    { }
+
+    internal Utf8SliceMatchOutcome(bool isMatch, int endIndex, Utf8ExecutionLimitKind breach, int[][]? captureStarts, int[][]? captureLengths, int lastClosedSlot)
     {
         IsMatch = isMatch;
         EndIndex = endIndex;
         Breach = breach;
         CaptureStarts = captureStarts;
         CaptureLengths = captureLengths;
+        LastClosedSlot = lastClosedSlot;
     }
 
     internal bool IsMatch { get; }
@@ -71,6 +76,7 @@ internal readonly struct Utf8SliceMatchOutcome
     internal Utf8ExecutionLimitKind Breach { get; }
     internal int[][]? CaptureStarts { get; }
     internal int[][]? CaptureLengths { get; }
+    internal int LastClosedSlot { get; }
 }
 
 internal readonly struct Utf8SliceSlots
@@ -1386,16 +1392,9 @@ internal static partial class Utf8SliceRunner
                         break;
                     }
 
-                    if (!collectHistory)
-                    {
-                        return new Utf8SliceMatchOutcome(true, inputIndex, Utf8ExecutionLimitKind.None, null, null);
-                    }
-
-                    var historyBreach = stacks.MaterializeHistory(program.GroupCount, ref invocation, out var historyStarts, out var historyLengths);
-                    if (historyBreach != Utf8ExecutionLimitKind.None)
-                        return new Utf8SliceMatchOutcome(false, -1, historyBreach, null, null);
-
-                    return new Utf8SliceMatchOutcome(true, inputIndex, Utf8ExecutionLimitKind.None, historyStarts, historyLengths);
+                    // Publication belongs to RunFrom after assertion continuations
+                    // close, so metadata denial cannot strand owned history roots.
+                    return new Utf8SliceMatchOutcome(true, inputIndex, Utf8ExecutionLimitKind.None, null, null);
                 default:
                     throw new InvalidOperationException($"Unsupported slice instruction {instruction.Kind}.");
             }
@@ -1537,6 +1536,25 @@ internal static partial class Utf8SliceRunner
         internal int TrailCount => _trailCount;
         internal int JournalCount => _journalCount;
         internal int BalanceCount => _balanceCount;
+
+        // Capture end writes and explicit close markers already survive exactly
+        // the chosen path. Reuse their order; no completion history is allocated.
+        internal Utf8ExecutionLimitKind FindLastClosedSlot(ref Utf8SliceInvocation invocation, out int slot)
+        {
+            slot = -1;
+            for (var index = _trailCount - 1; index >= 0; index--)
+            {
+                if ((index & 63) == 0 || index == _trailCount - 1)
+                {
+                    var breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
+                var entry = _trailTables[index / TrailChunkCapacity][index % TrailChunkCapacity];
+                if (entry.IsClosing || !entry.IsStart && !entry.IsHead && !entry.IsRestore && !entry.IsOpening)
+                { slot = entry.Slot; break; }
+            }
+            return Utf8ExecutionLimitKind.None;
+        }
 
         internal bool PushFrame(Utf8SliceFrame frame, ref Utf8SliceInvocation invocation)
         {

@@ -110,7 +110,10 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     }
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
-    internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
+    internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind)
+    {
+        internal uint? ForwardScalarCount { get; init; }
+    }
     internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
     internal sealed record AtomicNode(Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Atomic);
     internal sealed record ConditionalNode(int TestSlot, Utf8SliceNode YesBody, Utf8SliceNode NoBody, Utf8SliceNode? TestBody) : Utf8SliceNode(Utf8SliceNodeKind.Conditional);
@@ -217,20 +220,24 @@ internal readonly struct Utf8SliceInstruction
 /// The body shares the parent capture slots at run time.</summary>
 internal sealed class Utf8SliceAssertion
 {
-    private Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
+    private Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind, uint? forwardScalarCount)
     {
         Body = body;
         MinLengthBytes = minLengthBytes;
         MaxLengthBytes = maxLengthBytes;
         IsLookbehind = isLookbehind;
+        ForwardScalarCount = forwardScalarCount;
     }
 
-    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceProgram, int, int, bool)>();
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceProgram, int, int, bool, uint?)>();
     internal static Utf8SliceAssertion Create(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
+        => Create(body, minLengthBytes, maxLengthBytes, isLookbehind, null);
+
+    internal static Utf8SliceAssertion Create(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind, uint? forwardScalarCount)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = owner.Budget.AllocateObject((body, minLengthBytes, maxLengthBytes, isLookbehind),
-            static state => new Utf8SliceAssertion(state.body, state.minLengthBytes, state.maxLengthBytes, state.isLookbehind));
+        var result = owner.Budget.AllocateObject((body, minLengthBytes, maxLengthBytes, isLookbehind, forwardScalarCount),
+            static state => new Utf8SliceAssertion(state.body, state.minLengthBytes, state.maxLengthBytes, state.isLookbehind, state.forwardScalarCount));
         owner.Complete(); return result;
     }
 
@@ -238,6 +245,7 @@ internal sealed class Utf8SliceAssertion
     internal int MinLengthBytes { get; }
     internal int MaxLengthBytes { get; }
     internal bool IsLookbehind { get; }
+    internal uint? ForwardScalarCount { get; }
 }
 
 internal sealed class Utf8SliceProgram
@@ -1335,14 +1343,14 @@ internal static class Utf8SliceLowerer
                     if (frame.Stage == 0)
                     {
                         frame.Stage = 1;
-                        request = new(behind.Body, true, true, 0); return true;
+                        request = new(behind.Body, true, !behind.ForwardScalarCount.HasValue, 0); return true;
                     }
                     var body = LastSubprogram;
                     if (body is null) { Failed = true; return false; }
                     GroupCount = Math.Max(GroupCount, body.GroupCount);
                     var width = Facts[behind.Body];
                     var assertionIndex = Assertions.Count;
-                    Assertions.Add(Utf8SliceAssertion.Create(body, width.Minimum, width.Maximum, true));
+                    Assertions.Add(Utf8SliceAssertion.Create(body, width.Minimum, width.Maximum, true, behind.ForwardScalarCount));
                     Emit(new(Utf8SliceInstructionKind.Lookbehind, assertionIndex, behind.Positive ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:

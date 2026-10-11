@@ -25,6 +25,7 @@ internal ref struct PythonReScalarMatchCursor
 
     internal int StartOffsetInBytes => _state.StartOffsetInBytes;
     internal int EndOffsetInBytes => _state.EndOffsetInBytes;
+    internal int? LastIndex => _state.LastIndex;
     internal readonly ulong ReservedBytes => _state.ReservedBytes;
     internal readonly ulong ResultReservation => _state.ResultReservation;
     internal readonly bool HasCoordinateMap => _state.HasCoordinateMap;

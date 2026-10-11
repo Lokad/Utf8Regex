@@ -66,7 +66,7 @@ public sealed partial class Utf8PythonRegex
             {
                 var groups = cursor.SnapshotGroups();
                 var names = cursor.SnapshotNameEntries(_nameEntries);
-                result = new Utf8PythonMatchContext(input, groups, names);
+                result = new Utf8PythonMatchContext(input, groups, names, cursor.LastIndex);
             }
             cursor.Checkpoint();
             return result;

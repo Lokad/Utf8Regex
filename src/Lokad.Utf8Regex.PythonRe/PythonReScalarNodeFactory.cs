@@ -28,8 +28,9 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.LookaheadNode Lookahead(Utf8SliceNode body, bool positive) =>
         Create((Utf8SliceNodeKind.Lookahead, body, positive), static state => new Utf8SliceNode.LookaheadNode(state.body, state.positive));
 
-    internal static Utf8SliceNode.LookbehindNode Lookbehind(Utf8SliceNode body, bool positive) =>
-        Create((Utf8SliceNodeKind.Lookbehind, body, positive), static state => new Utf8SliceNode.LookbehindNode(state.body, state.positive));
+    internal static Utf8SliceNode.LookbehindNode Lookbehind(Utf8SliceNode body, bool positive, uint scalarCount) =>
+        Create((Utf8SliceNodeKind.Lookbehind, body, positive, scalarCount), static state =>
+            new Utf8SliceNode.LookbehindNode(state.body, state.positive) { ForwardScalarCount = state.scalarCount });
 
     internal static Utf8SliceNode.BackrefNode Backref(int slot, Func<int, int>? lowerScalar) =>
         Create((Utf8SliceNodeKind.Backref, slot, lowerScalar is not null, false, lowerScalar), static state =>

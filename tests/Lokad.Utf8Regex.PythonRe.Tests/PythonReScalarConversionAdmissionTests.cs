@@ -158,7 +158,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         3 => PythonReScalarNodeFactory.Atomic(Body),
         4 => PythonReScalarNodeFactory.Capture(0, Body),
         5 => PythonReScalarNodeFactory.Lookahead(Body, true),
-        6 => PythonReScalarNodeFactory.Lookbehind(Body, false),
+        6 => PythonReScalarNodeFactory.Lookbehind(Body, false, 1),
         7 => PythonReScalarNodeFactory.Backref(0, static scalar => scalar),
         8 => PythonReScalarNodeFactory.Conditional(0, Body, Body),
         9 => PythonReScalarNodeFactory.Empty(),

@@ -1,0 +1,8209 @@
+{
+  "oracle": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+  "cases": [
+    {
+      "id": 0,
+      "pattern": "((a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "pattern": "((a)+)",
+      "input": "aaa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "pattern": "(?P<outer>(?P<inner>a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "pattern": "(?P<outer>(a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "pattern": "((?P<inner>a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "pattern": "(?:(a)|(b))+",
+      "input": "aba",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "pattern": "((a)|(b))+",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "pattern": "(?:(a)(b)?)+",
+      "input": "aba",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "pattern": "((a)(b)?)+",
+      "input": "aba",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "pattern": "(?P<outer>(?P<left>a)|(?P<right>b))+",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "pattern": "((?=(a))a)",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "pattern": "(?<=(a))(b)",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "pattern": "((a|ab))b",
+      "input": "abb",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "abb",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "pattern": "(?:(a)c|(b))",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "pattern": "(a)(b)?",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "pattern": "(a)(b)?",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "pattern": "(a)?",
+      "input": "",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "pattern": "()",
+      "input": "",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "pattern": "((a)?)",
+      "input": "",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "pattern": "a",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "pattern": "(?P<outer>(😀))",
+      "input": "😀",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "pattern": "(?P<outer>(😀é))",
+      "input": "x😀é",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 4
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "outer",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "pattern": "(😀)(é)?",
+      "input": "😀",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "pattern": "(?P<a>a)|(?P<b>b)",
+      "input": "b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "b",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "b",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "b",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "b",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "pattern": "(?P<a>a)?(b)",
+      "input": "b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "pattern": "(?P<a>a)+a",
+      "input": "aaa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "pattern": "(?P<a>a)+?a",
+      "input": "aaa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "a",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "pattern": "(a)+?b",
+      "input": "aaab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "pattern": "((a)*)b",
+      "input": "aaab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aaab",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "pattern": "((a)*)b",
+      "input": "b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "pattern": "(a)|(b)",
+      "input": "c",
+      "single": [
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": []
+    },
+    {
+      "id": 31,
+      "pattern": "(a)?",
+      "input": "b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "pattern": "(?=(?P<future>a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "future",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "future",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "future",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "pattern": "(a)(?=(b))",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "pattern": "(?!(a)b)(a)",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "pattern": "(?!(a))()",
+      "input": "b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "pattern": "(?:(?=(a))ab|(a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "pattern": "(?:(a)b|(?P<ok>a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "ok",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "ok",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "ok",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "ok",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "pattern": "(?<=(a)(b))",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "pattern": "(?<=(a)(b))c",
+      "input": "abc",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "pattern": "(?<=((a)|(b)){2})",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "pattern": "(?<=(?:(a)|(b)){2})",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "pattern": "(?<=(.){2})",
+      "input": "😀é",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 6,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 6,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "pattern": "(?<=(?P<last>.){2})",
+      "input": "😀éx",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "last",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 6,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "last",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 6,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "last",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 7,
+              "endByte": 7,
+              "startUtf16": 4,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "x",
+              "startByte": 6,
+              "endByte": 7,
+              "startUtf16": 3,
+              "endUtf16": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "pattern": "(?<=((😀)(é)))",
+      "input": "😀é",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 6,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 6,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "pattern": "(?<=((a)(?=(b))))b",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "pattern": "(?<=((?<=a)(b)))c",
+      "input": "abc",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "pattern": "(?<=(a)(?=(b)))b",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "pattern": "(?<!((a)(b)))c",
+      "input": "xc",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "pattern": "(?<!((a)(b)))c",
+      "input": "abc",
+      "single": [
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": []
+    },
+    {
+      "id": 50,
+      "pattern": "(a)(?<=((a)))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "pattern": "(ab)(?<=\\1)",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "pattern": "(😀)(?<=\\1)(é)",
+      "input": "😀é",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "pattern": "(?P<word>😀)(?<=((?P=word)))(é)",
+      "input": "😀é",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 3,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 3,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 3,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 3,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é",
+              "startByte": 0,
+              "endByte": 6,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "pattern": "(?<=(a|b)(c|d))",
+      "input": "bd",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "d",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "d",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "pattern": "(?<=(a(?=(b))|c(?=(d))))",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "pattern": "(?<=(a?){0})()",
+      "input": "x",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "pattern": "(?<=(?P<x>)){0}()",
+      "input": "",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "pattern": "(?:(?P<x>😀)|(?P<y>é))+",
+      "input": "😀é😀",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é😀",
+              "startByte": 0,
+              "endByte": 10,
+              "startUtf16": 0,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 6,
+              "endByte": 10,
+              "startUtf16": 3,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é😀",
+              "startByte": 0,
+              "endByte": 10,
+              "startUtf16": 0,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 6,
+              "endByte": 10,
+              "startUtf16": 3,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é😀",
+              "startByte": 0,
+              "endByte": 10,
+              "startUtf16": 0,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 6,
+              "endByte": 10,
+              "startUtf16": 3,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀é😀",
+              "startByte": 0,
+              "endByte": 10,
+              "startUtf16": 0,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 6,
+              "endByte": 10,
+              "startUtf16": 3,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "é",
+              "startByte": 4,
+              "endByte": 6,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "pattern": "((a)|(b))+\\2",
+      "input": "aba",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aba",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "pattern": "(?P<x>a)(?P=x)(b)?",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "pattern": "(a)?(?(1)b|(c))",
+      "input": "c",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "c",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "pattern": "(a)?(?(1)(b)|(c))",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "pattern": "(?>(a|ab))(b)",
+      "input": "ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "pattern": "(?:(?>(a))b|(a))",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "pattern": "(?P<x>a)++",
+      "input": "aaa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "aaa",
+              "startByte": 0,
+              "endByte": 3,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "pattern": "(?P<empty>)(?P<maybe>a)?",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "maybe",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "maybe",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "maybe",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": "maybe",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "empty",
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "pattern": "(a*?)",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "pattern": "((a)?)*",
+      "input": "a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

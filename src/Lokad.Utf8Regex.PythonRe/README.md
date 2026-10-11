@@ -17,6 +17,7 @@ Version 0.4.0-scalar.1 is an experimental integration candidate with a distinct 
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.
+- Detailed owned matches and borrowed contexts expose nullable `LastIndex` and `LastGroup`: the Python number of the last capture to close on the successful path, and that capture's name. Nested `((a))` closes group 1 last; an unnamed last capture has a null name. Failed and nonparticipating matches have null completion metadata. Fixed-width lookbehind evaluates its body forward from the preceding scalar boundary, preserving Python capture values and close order even for repeated or nested groups.
 - Culture model: the profile is culture-invariant by construction; Python `re.LOCALE` is intentionally unsupported.
 - Named Unicode escapes: `\N{...}` is intentionally unsupported to avoid embedding a large Unicode-name table in the package.
 - `FindAll(...)` is a structural full-match collector.
