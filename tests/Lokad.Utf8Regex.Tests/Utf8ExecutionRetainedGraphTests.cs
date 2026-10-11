@@ -234,8 +234,7 @@ public sealed class Utf8ExecutionRetainedGraphTests
     {
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
-        public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
+        public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public void CollectValue<TControl>(ExecutionPair value, Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl : struct, IUtf8ConstructionTextControl => Utf8ExecutionRetainedStorage.Collect(value.Tree, value.Program, storage);
     }

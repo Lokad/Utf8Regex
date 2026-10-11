@@ -259,8 +259,7 @@ public sealed class Utf8PreparationCachePayloadTests
     {
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
-        public void CollectKey<TControl>(int key, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl { }
+        public ulong GetKeyCharge(int key) => 0;
         public void CollectValue<TControl>(object value, Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl : struct, IUtf8ConstructionTextControl => storage.Add(value, charge);
     }
@@ -269,8 +268,7 @@ public sealed class Utf8PreparationCachePayloadTests
     {
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
-        public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
+        public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public void CollectValue<TControl>(byte[] value, Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl : struct, IUtf8ConstructionTextControl { storage.Array(value); storage.Array(value); }
     }
@@ -298,8 +296,7 @@ public sealed class Utf8PreparationCachePayloadTests
     {
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
-        public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
+        public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public void CollectValue<TControl>(byte[] value, Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl : struct, IUtf8ConstructionTextControl => storage.Array(value);
     }

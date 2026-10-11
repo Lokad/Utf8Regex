@@ -6,8 +6,7 @@ internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<s
 {
     public bool IsCertified => true;
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
-    public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
+    public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
 
     public void CollectValue<TControl>(Utf8AnalyzedReplacement value, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl

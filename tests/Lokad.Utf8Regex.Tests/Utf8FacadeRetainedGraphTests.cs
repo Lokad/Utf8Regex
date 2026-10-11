@@ -244,8 +244,7 @@ public sealed class Utf8FacadeRetainedGraphTests
         public bool IsCertified => true;
         // Only the declared helper roots are closed; this is not a whole-regex certificate.
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
-        public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
+        public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public void CollectValue<TControl>(Utf8Regex value, Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl : struct, IUtf8ConstructionTextControl
         {

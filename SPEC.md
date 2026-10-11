@@ -479,8 +479,10 @@ Rules for these extensions:
 
 Development preparation caches bound entry metadata and use conservative charges
 per entry for their declared immutable program graph or root/bounded-descendant
-scope. Shared storage is charged again across entries and may cause earlier
-eviction. Entries retain a numeric charge, with no global identity registry,
+scope. Keys use direct length-based charges without a graph builder or identity
+map; value graphs spend the remaining allowance. Key/value text and storage shared
+across entries can be charged again and cause earlier eviction. Entries retain a
+numeric charge, with no global identity registry,
 reference counts or payload manifests. Graph traversal still uses temporary
 identities to cover shared/cyclic references within a program; retiring those
 collectors requires a qualified coarser certificate. Independent graph/major-array

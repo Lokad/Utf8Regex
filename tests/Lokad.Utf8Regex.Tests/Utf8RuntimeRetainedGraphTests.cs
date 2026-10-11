@@ -273,8 +273,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
         public bool IsCertified=>true;
         // Borrowed test root vector and opaque CLR descendants are outside scope.
         public Utf8RetainedStorageScope Scope=>Utf8RetainedStorageScope.RootsAndBoundedDescendants;
-        public void CollectKey<TControl>(string key,Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl:struct,IUtf8ConstructionTextControl=>storage.Text(key);
+        public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public void CollectValue<TControl>(object[] value,Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl:struct,IUtf8ConstructionTextControl=>CollectRoots(value,storage);
     }

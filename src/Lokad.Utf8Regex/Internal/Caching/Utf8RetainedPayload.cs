@@ -28,8 +28,9 @@ internal interface IUtf8RetainedStorage<TKey, TValue>
 {
     bool IsCertified { get; }
     Utf8RetainedStorageScope Scope { get; }
-    void CollectKey<TControl>(TKey key, Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl;
+    // Keys have closed, length-based storage. Charge them independently of the
+    // value graph; shared text may be counted again without an identity map.
+    ulong GetKeyCharge(TKey key);
     void CollectValue<TControl>(TValue value, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl;
 }
@@ -38,8 +39,7 @@ internal readonly struct Utf8UncertifiedStorage<TKey, TValue> : IUtf8RetainedSto
 {
     public bool IsCertified => false;
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.Uncertified;
-    public void CollectKey<TControl>(TKey key, Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl { }
+    public ulong GetKeyCharge(TKey key) => 0;
     public void CollectValue<TControl>(TValue value, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl { }
 }

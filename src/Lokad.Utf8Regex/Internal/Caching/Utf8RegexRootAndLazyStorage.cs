@@ -11,12 +11,8 @@ internal readonly struct Utf8RegexRootAndLazyStorage : IUtf8RetainedStorage<Utf8
 {
     public bool IsCertified => true;
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
-    public void CollectKey<TControl>(Utf8RegexCacheKey key, Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl
-    {
-        storage.Text(key.Pattern);
-        storage.Text(key.Culture);
-    }
+    public ulong GetKeyCharge(Utf8RegexCacheKey key)
+        => checked(Utf8ConstructionBudget.StringBytes(key.Pattern.Length) + Utf8ConstructionBudget.StringBytes(key.Culture.Length));
     public void CollectValue<TControl>(Utf8Regex value, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl => value.CollectCacheRoots(storage);
 }

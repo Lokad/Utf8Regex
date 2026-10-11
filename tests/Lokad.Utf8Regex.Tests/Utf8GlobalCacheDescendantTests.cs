@@ -160,10 +160,13 @@ public sealed class Utf8GlobalCacheDescendantTests
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(ulong.MaxValue, default);
         var collector = default(Utf8RegexRootAndLazyStorage);
-        collector.CollectKey(Assert.IsType<Utf8RegexCacheKey>(Field(entry, "Key")), storage);
+        var key = Assert.IsType<Utf8RegexCacheKey>(Field(entry, "Key"));
         collector.CollectValue(Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1, storage);
         Assert.False(storage.Exceeded);
-        Assert.Equal(storage.FinishCharge(), Assert.IsType<ulong>(Field(entry, "PayloadCharge")));
+        Assert.Equal(checked(collector.GetKeyCharge(key) + storage.FinishCharge()), Assert.IsType<ulong>(Field(entry, "PayloadCharge")));
+        // The physical field witness includes key text, even when its identity
+        // also occurs in the value. Numeric admission may count it twice.
+        storage.Text(key.Pattern); storage.Text(key.Culture);
         return storage.Finish();
     }
 
@@ -189,6 +192,7 @@ public sealed class Utf8GlobalCacheDescendantTests
                     if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
                 foreach (var pair in scalar)
                     Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
+                ulong physicalBytes = 0;
                 foreach (var extent in manifest)
                 {
                     ulong expected;
@@ -205,8 +209,11 @@ public sealed class Utf8GlobalCacheDescendantTests
                         Assert.True(Read<ulong>(plans, "MetadataBytes") + Read<ulong>(plans, "PayloadBytes") + 48 <= expected);
                     }
                     Assert.Equal(expected, extent.Bytes);
-                    bytes += expected;
+                    physicalBytes += expected;
                 }
+                var charge = Assert.IsType<ulong>(Field(entry, "PayloadCharge"));
+                Assert.True(physicalBytes <= charge);
+                bytes = checked(bytes + charge);
                 entry = Field(entry, "Next");
             }
             Assert.Equal(bytes, Read<ulong>(cache, "PayloadBytes"));

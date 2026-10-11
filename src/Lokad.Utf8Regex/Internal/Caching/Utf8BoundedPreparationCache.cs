@@ -126,6 +126,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
             var hash = _comparer.GetHashCode(key);
             CacheEntry? entry = null;
             var keyFits = true;
+            ulong keyCharge = 0;
             long generation;
             Utf8ConstructionScope preparation;
             lock (this)
@@ -135,13 +136,12 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 if (existing is not null) return Read(existing, control);
                 preparation = Utf8ConstructionScope.Enter();
                 cleanup = preparation;
-                ulong keyCharge = 0;
                 if (IsPayloadBounded)
                 {
-                    using var builder = Utf8RetainedPayloadBuilder<TControl>.Create(_maximumPayloadBytes, control);
-                    storage.CollectKey(key, builder);
-                    keyCharge = builder.FinishCharge();
-                    keyFits = !builder.Exceeded;
+                    control.Check();
+                    preparation.Budget.ChargeWork(1);
+                    keyCharge = storage.GetKeyCharge(key);
+                    keyFits = keyCharge <= _maximumPayloadBytes;
                 }
                 if (keyFits && CanAdd())
                 {
@@ -172,7 +172,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                         while (victim is not null && victim.Status == 0) { control.Check(); victim = victim.Next; }
                         if (victim is null) return Complete(preparation, value);
                     }
-                    var charge = CollectCharge(key, value, storage, control, out var fits);
+                    var charge = CollectCharge(keyCharge, value, storage, control, out var fits);
                     if (!fits) return Complete(preparation, value);
                     var completed = Acquire(key, new(value), null, 1, 0, hash, charge);
                     control.Check();
@@ -202,7 +202,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 {
                     if (IsPayloadBounded && Contains(entry))
                     {
-                        var charge = CollectCharge(key, value, storage, control, out var fits);
+                        var charge = CollectCharge(keyCharge, value, storage, control, out var fits);
                         if (!fits || !PublishCharge(entry, entry, charge, true, generation, control)) Remove(entry);
                     }
                     entry.Value = new(value); entry.OwnerThread = 0; entry.Status = 1;
@@ -240,16 +240,19 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
 
     private bool CanAdd() => _count < _capacity && EntryBytes <= _maximumMetadataBytes - BaseMetadataBytes - (ulong)_count * EntryBytes;
 
-    private ulong CollectCharge<TStorage, TControl>(TKey key, TValue value, TStorage storage,
+    private ulong CollectCharge<TStorage, TControl>(ulong keyCharge, TValue value, TStorage storage,
         TControl control, out bool fits)
         where TControl : struct, IUtf8ConstructionTextControl
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
         if (!IsPayloadBounded) { fits = true; return 0; }
-        using var builder = Utf8RetainedPayloadBuilder<TControl>.Create(_maximumPayloadBytes, control);
-        storage.CollectKey(key, builder); storage.CollectValue(value, builder);
-        var charge = builder.FinishCharge(); fits = !builder.Exceeded;
-        return charge;
+        if (keyCharge > _maximumPayloadBytes) { fits = false; return 0; }
+        using var builder = Utf8RetainedPayloadBuilder<TControl>.Create(_maximumPayloadBytes - keyCharge, control);
+        storage.CollectValue(value, builder);
+        var valueCharge = builder.FinishCharge(); fits = !builder.Exceeded;
+        // The builder admits value capacity against the remainder, so this sum
+        // cannot overflow. Key/value sharing intentionally earns no discount.
+        return keyCharge + valueCharge;
     }
 
     private bool Contains(CacheEntry target)
