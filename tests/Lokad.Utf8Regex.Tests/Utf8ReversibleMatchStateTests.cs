@@ -41,24 +41,6 @@ public sealed class Utf8ReversibleMatchStateTests
     }
 
     [Fact]
-    public void BoundedStateStackRefusesItsMaximumAndCanBeDisposed()
-    {
-        var states = new Utf8PooledStateStack<int>(2);
-        try
-        {
-            Assert.True(states.TryPush(3));
-            Assert.True(states.TryPush(5));
-            Assert.False(states.TryPush(7));
-            Assert.Equal(5, states.Pop());
-            Assert.Equal(3, states.Pop());
-        }
-        finally
-        {
-            states.Dispose();
-        }
-    }
-
-    [Fact]
     public void HugeSyntacticRepeatUsesReachableSubjectBound()
     {
         var prepared = Utf8FrontEnd.Compile("((?:a|b){0,2147483647})z", RegexOptions.CultureInvariant);

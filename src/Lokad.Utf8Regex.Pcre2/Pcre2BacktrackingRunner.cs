@@ -560,48 +560,30 @@ internal static class Pcre2BacktrackingRunner
         var frameLimit = configuredFrameLimit == int.MaxValue
             ? int.MaxValue
             : Math.Max(0, configuredFrameLimit - depthBase);
-        var frames = new Utf8PooledStateStack<Pcre2BacktrackingFrame>(frameLimit, budget.CollectsDiagnostics);
-        var repeatMutations = new Utf8PooledStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var captureMutations = new Utf8PooledStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var subroutineCalls = new Utf8PooledStateStack<Pcre2SubroutineCallFrame>(frameLimit, budget.CollectsDiagnostics);
-        var subroutineCallMutations = new Utf8PooledStateStack<Pcre2SubroutineCallMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var atomicCheckpoints = new Utf8PooledStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
-        var markMutations = new Utf8PooledStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var markTrail = new Utf8PooledStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
-        var rentedRepeatState = program.RepeatCount == 0
-            ? null
-            : ArrayPool<int>.Shared.Rent(checked(program.RepeatCount * 2));
+        var frames = new Pcre2InvocationStateStack<Pcre2BacktrackingFrame>(frameLimit, budget.CollectsDiagnostics);
+        var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var subroutineCalls = new Pcre2InvocationStateStack<Pcre2SubroutineCallFrame>(frameLimit, budget.CollectsDiagnostics);
+        var subroutineCallMutations = new Pcre2InvocationStateStack<Pcre2SubroutineCallMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
+        var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
         var needsCaptureState = program.RequiresCaptureState ||
             captureMaterialization != Pcre2CaptureMaterialization.None ||
             !initialCaptureStarts.IsEmpty;
-        var captureStateLength = !needsCaptureState || program.CaptureSlotCount <= 1
-            ? 0
-            : checked(program.CaptureSlotCount * 5);
-        var rentedCaptureState = captureStateLength == 0
-            ? null
-            : ArrayPool<int>.Shared.Rent(captureStateLength);
-        var captureState = rentedCaptureState is null
-            ? Span<int>.Empty
-            : rentedCaptureState.AsSpan(0, captureStateLength);
+        var captureSlots = needsCaptureState && program.CaptureSlotCount > 1 ? program.CaptureSlotCount : 0;
+        var captureStateLength = checked(captureSlots * 5);
+        using var workspace = new Pcre2BacktrackingWorkspace(program.RepeatCount, captureSlots, program.SubroutineTargets.Length != 0, ref budget);
+        var rentedRepeatState = workspace.RepeatState;
+        var rentedCaptureState = workspace.CaptureState;
+        var rentedCaptureRestoreGenerations = workspace.CaptureRestoreGenerations;
+        var rentedCaptureRestoreSlots = workspace.CaptureRestoreSlots;
+        var rentedCaptureRestoreSnapshots = workspace.CaptureRestoreSnapshots;
+        var rentedRepeatRestoreGenerations = workspace.RepeatRestoreGenerations;
+        var rentedRepeatRestoreIds = workspace.RepeatRestoreIds;
+        var rentedRepeatRestoreSnapshots = workspace.RepeatRestoreSnapshots;
+        var captureState = rentedCaptureState is null ? Span<int>.Empty : rentedCaptureState.AsSpan(0, captureStateLength);
 
-        var rentedCaptureRestoreGenerations = program.SubroutineTargets.Length == 0 || captureState.IsEmpty
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureRestoreSlots = program.SubroutineTargets.Length == 0 || captureState.IsEmpty
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureRestoreSnapshots = program.SubroutineTargets.Length == 0 || captureState.IsEmpty
-            ? null
-            : ArrayPool<Pcre2SubroutineCaptureSnapshot>.Shared.Rent(program.CaptureSlotCount);
-        var rentedRepeatRestoreGenerations = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.RepeatCount);
-        var rentedRepeatRestoreIds = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.RepeatCount);
-        var rentedRepeatRestoreSnapshots = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
-            ? null
-            : ArrayPool<Pcre2SubroutineRepeatSnapshot>.Shared.Rent(program.RepeatCount);
         var counts = rentedRepeatState is null
             ? Span<int>.Empty
             : rentedRepeatState.AsSpan(0, program.RepeatCount);
@@ -662,11 +644,7 @@ internal static class Pcre2BacktrackingRunner
                 }
             }
         }
-        budget.ChargeHeap(
-            (ulong)program.RepeatCount * 8UL +
-            (ulong)captureStarts.Length * 20UL +
-            (ulong)captureRestoreSnapshots.Length * 28UL +
-            (ulong)repeatRestoreSnapshots.Length * 16UL);
+
 
         try
         {
@@ -721,14 +699,6 @@ internal static class Pcre2BacktrackingRunner
                                 -1,
                                 0,
                                 -1),
-                            repeatMutations.Count,
-                            captureMutations.Count,
-                            subroutineCallMutations.Count,
-                            atomicCheckpoints.Count,
-                            markMutations.Count,
-                            markTrail.Count,
-                            program.RepeatCount,
-                            captureStarts.Length,
                             depthBase,
                             subroutineCalls.Count,
                             ref budget);
@@ -776,14 +746,6 @@ internal static class Pcre2BacktrackingRunner
                                             -1,
                                             0,
                                             -1),
-                                        repeatMutations.Count,
-                                        captureMutations.Count,
-                                        subroutineCallMutations.Count,
-                                        atomicCheckpoints.Count,
-                                        markMutations.Count,
-                                        markTrail.Count,
-                                        program.RepeatCount,
-                                        captureStarts.Length,
                                         depthBase,
                                         subroutineCalls.Count,
                                         ref budget);
@@ -811,14 +773,6 @@ internal static class Pcre2BacktrackingRunner
                                             -1,
                                             0,
                                             -1),
-                                        repeatMutations.Count,
-                                        captureMutations.Count,
-                                        subroutineCallMutations.Count,
-                                        atomicCheckpoints.Count,
-                                        markMutations.Count,
-                                        markTrail.Count,
-                                        program.RepeatCount,
-                                        captureStarts.Length,
                                         depthBase,
                                         subroutineCalls.Count,
                                         ref budget);
@@ -990,14 +944,6 @@ internal static class Pcre2BacktrackingRunner
                                     -1,
                                     0,
                                     -1),
-                                repeatMutations.Count,
-                                captureMutations.Count,
-                                subroutineCallMutations.Count,
-                                atomicCheckpoints.Count,
-                                markMutations.Count,
-                                markTrail.Count,
-                                program.RepeatCount,
-                                captureStarts.Length,
                                 depthBase,
                                 subroutineCalls.Count,
                                 ref budget);
@@ -1303,10 +1249,8 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.AtomicStart:
                         var nextAtomicDepth = checked(depthBase + subroutineCalls.Count + atomicCheckpoints.Count + 1);
-                        budget.ChargeFrame(
-                            (uint)nextAtomicDepth,
-                            checked((ulong)nextAtomicDepth * 32UL + (ulong)(atomicCheckpoints.Count + 1) * 8UL));
-                        if (!atomicCheckpoints.TryPush(new Pcre2AtomicCheckpoint(frames.Count, markTrail.Count)))
+                        budget.ChargeFrame((uint)nextAtomicDepth);
+                        if (!atomicCheckpoints.TryPush(new Pcre2AtomicCheckpoint(frames.Count, markTrail.Count), ref budget))
                         {
                             throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
                         }
@@ -1479,14 +1423,6 @@ internal static class Pcre2BacktrackingRunner
                                 instruction.PrimaryTarget,
                                 inputIndex,
                                 instruction.ControlNameId),
-                            repeatMutations.Count,
-                            captureMutations.Count,
-                            subroutineCallMutations.Count,
-                            atomicCheckpoints.Count,
-                            markMutations.Count,
-                            markTrail.Count,
-                            program.RepeatCount,
-                            captureStarts.Length,
                             depthBase,
                             subroutineCalls.Count,
                             ref budget);
@@ -1610,46 +1546,15 @@ internal static class Pcre2BacktrackingRunner
                 (ulong)captureMutations.RentCount,
                 (ulong)(stackRents - frames.RentCount - repeatMutations.RentCount - captureMutations.RentCount),
                 (ulong)stackGrowths);
-            markTrail.Dispose();
-            markMutations.Dispose();
-            atomicCheckpoints.Dispose();
-            subroutineCallMutations.Dispose();
-            subroutineCalls.Dispose();
-            captureMutations.Dispose();
-            repeatMutations.Dispose();
-            frames.Dispose();
-            if (rentedRepeatState is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedRepeatState);
-            }
-            if (rentedCaptureState is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureState);
-            }
-            if (rentedCaptureRestoreGenerations is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureRestoreGenerations);
-            }
-            if (rentedCaptureRestoreSlots is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureRestoreSlots);
-            }
-            if (rentedCaptureRestoreSnapshots is not null)
-            {
-                ArrayPool<Pcre2SubroutineCaptureSnapshot>.Shared.Return(rentedCaptureRestoreSnapshots);
-            }
-            if (rentedRepeatRestoreGenerations is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedRepeatRestoreGenerations);
-            }
-            if (rentedRepeatRestoreIds is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedRepeatRestoreIds);
-            }
-            if (rentedRepeatRestoreSnapshots is not null)
-            {
-                ArrayPool<Pcre2SubroutineRepeatSnapshot>.Shared.Return(rentedRepeatRestoreSnapshots);
-            }
+            markTrail.Dispose(ref budget);
+            markMutations.Dispose(ref budget);
+            atomicCheckpoints.Dispose(ref budget);
+            subroutineCallMutations.Dispose(ref budget);
+            subroutineCalls.Dispose(ref budget);
+            captureMutations.Dispose(ref budget);
+            repeatMutations.Dispose(ref budget);
+            frames.Dispose(ref budget);
+
         }
     }
 
@@ -1669,7 +1574,7 @@ internal static class Pcre2BacktrackingRunner
         out string? mark,
         out int reportedStartOffsetInBytes)
     {
-        budget.ChargeFrame((uint)depth, checked((ulong)depth * 32UL + (ulong)captureStarts.Length * 12UL));
+        budget.ChargeFrame((uint)depth);
         var isNegative = assertionKind is Pcre2AssertionKind.NegativeLookahead or Pcre2AssertionKind.NegativeLookbehind;
         var isLookbehind = assertionKind is Pcre2AssertionKind.PositiveLookbehind or Pcre2AssertionKind.NegativeLookbehind;
         var nestedOptions = outerMatchOptions & (Pcre2MatchOptions.NotBol | Pcre2MatchOptions.NotEol);
@@ -1807,7 +1712,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static bool IsSubroutineActive(
         int slot,
-        Utf8PooledStateStack<Pcre2SubroutineCallFrame> calls)
+        Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls)
     {
         for (var index = calls.Count - 1; index >= 0; index--)
         {
@@ -1828,7 +1733,7 @@ internal static class Pcre2BacktrackingRunner
         Span<int> captureOpenStarts,
         Span<int> captureOwners,
         Span<int> captureOpenOwners,
-        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
         for (var slot = 1; slot < assertionCaptures.Length; slot++)
@@ -1863,8 +1768,8 @@ internal static class Pcre2BacktrackingRunner
         ref int currentMarkId,
         ref int currentMarkPosition,
         ref int lastEncounteredMarkId,
-        ref Utf8PooledStateStack<Pcre2MarkMutation> markMutations,
-        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> markTrail,
+        ref Pcre2InvocationStateStack<Pcre2MarkMutation> markMutations,
+        ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> markTrail,
         ref Pcre2ResourceBudget budget)
     {
         if (assertionMark is null)
@@ -1893,7 +1798,7 @@ internal static class Pcre2BacktrackingRunner
         Span<int> captureOpenStarts,
         Span<int> captureOwners,
         Span<int> captureOpenOwners,
-        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
         for (var slot = 1; slot < captureOpenStarts.Length; slot++)
@@ -1934,47 +1839,29 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static void PushFrame(
-        ref Utf8PooledStateStack<Pcre2BacktrackingFrame> frames,
+        ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         Pcre2BacktrackingFrame frame,
-        int repeatMutationCount,
-        int captureMutationCount,
-        int callMutationCount,
-        int atomicCount,
-        int markMutationCount,
-        int markTrailCount,
-        int repeatCount,
-        int captureSlotCount,
         int depthBase,
         int callCount,
         ref Pcre2ResourceBudget budget)
     {
         var nextDepth = checked(depthBase + callCount + frames.Count + 1);
-        var estimatedHeapBytes = checked(
-            (ulong)nextDepth * 32UL +
-            (ulong)repeatMutationCount * 12UL +
-            (ulong)captureMutationCount * 24UL +
-            (ulong)callMutationCount * 24UL +
-            (ulong)atomicCount * 8UL +
-            (ulong)markMutationCount * 8UL +
-            (ulong)markTrailCount * 8UL +
-            (ulong)repeatCount * 8UL +
-            (ulong)captureSlotCount * 20UL);
-        budget.ChargeFrame((uint)nextDepth, estimatedHeapBytes);
-        if (!frames.TryPush(frame))
+        budget.ChargeFrame((uint)nextDepth);
+        if (!frames.TryPush(frame, ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
     }
 
     private static bool TryResume(
-        ref Utf8PooledStateStack<Pcre2BacktrackingFrame> frames,
-        ref Utf8PooledStateStack<Pcre2RepeatMutation> repeatMutations,
-        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> subroutineCallMutations,
-        ref Utf8PooledStateStack<Pcre2AtomicCheckpoint> atomicCheckpoints,
-        ref Utf8PooledStateStack<Pcre2MarkMutation> markMutations,
-        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> markTrail,
+        ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> subroutineCallMutations,
+        ref Pcre2InvocationStateStack<Pcre2AtomicCheckpoint> atomicCheckpoints,
+        ref Pcre2InvocationStateStack<Pcre2MarkMutation> markMutations,
+        ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> markTrail,
         Span<int> counts,
         Span<int> positions,
         Span<int> captureStarts,
@@ -2006,7 +1893,7 @@ internal static class Pcre2BacktrackingRunner
             RollbackSubroutineCalls(
                 frame.CallCheckpoint,
                 ref subroutineCalls,
-                ref subroutineCallMutations);
+                ref subroutineCallMutations, ref budget);
             atomicCheckpoints.Truncate(frame.AtomicCheckpoint);
             RollbackMarks(
                 frame.MarkMutationCheckpoint,
@@ -2105,16 +1992,14 @@ internal static class Pcre2BacktrackingRunner
 
     private static void PushSubroutineCall(
         Pcre2SubroutineCallFrame frame,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> calls,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> mutations,
         int depthBase,
         ref Pcre2ResourceBudget budget)
     {
         var nextDepth = checked(depthBase + calls.Count + 1);
-        budget.ChargeFrame(
-            (uint)nextDepth,
-            checked((ulong)nextDepth * 32UL + (ulong)(mutations.Count + 1) * 12UL));
-        if (!calls.TryPush(frame))
+        budget.ChargeFrame((uint)nextDepth);
+        if (!calls.TryPush(frame, ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
@@ -2143,8 +2028,8 @@ internal static class Pcre2BacktrackingRunner
         Span<int> captureRestoreSlots,
         Span<Pcre2SubroutineCaptureSnapshot> captureRestoreSnapshots,
         ref int restoreGeneration,
-        ref Utf8PooledStateStack<Pcre2RepeatMutation> repeatMutations,
-        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
         restoreGeneration++;
@@ -2254,11 +2139,10 @@ internal static class Pcre2BacktrackingRunner
     private static void RecordSubroutineCallMutation(
         Pcre2SubroutineCallMutationKind kind,
         Pcre2SubroutineCallFrame frame,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> mutations,
         ref Pcre2ResourceBudget budget)
     {
-        budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 12UL));
-        if (!mutations.TryPush(new Pcre2SubroutineCallMutation(kind, frame)))
+        if (!mutations.TryPush(new Pcre2SubroutineCallMutation(kind, frame), ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
@@ -2266,8 +2150,9 @@ internal static class Pcre2BacktrackingRunner
 
     private static void RollbackSubroutineCalls(
         int checkpoint,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> calls,
-        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> mutations)
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2ResourceBudget budget)
     {
         while (mutations.Count > checkpoint)
         {
@@ -2276,7 +2161,7 @@ internal static class Pcre2BacktrackingRunner
             {
                 _ = calls.Pop();
             }
-            else if (!calls.TryPush(mutation.Frame))
+            else if (!calls.TryPush(mutation.Frame, ref budget))
             {
                 throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
             }
@@ -2290,8 +2175,8 @@ internal static class Pcre2BacktrackingRunner
         ref int currentMarkId,
         ref int currentMarkPosition,
         ref int lastEncounteredMarkId,
-        ref Utf8PooledStateStack<Pcre2MarkMutation> mutations,
-        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> trail,
+        ref Pcre2InvocationStateStack<Pcre2MarkMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> trail,
         ref Pcre2ResourceBudget budget)
     {
         if (markId < 0)
@@ -2299,15 +2184,12 @@ internal static class Pcre2BacktrackingRunner
             return;
         }
 
-        budget.ChargeHeap(checked(
-            (ulong)(mutations.Count + 1) * 8UL +
-            (ulong)(trail.Count + (addToTrail ? 1 : 0)) * 8UL));
-        if (!mutations.TryPush(new Pcre2MarkMutation(currentMarkId, currentMarkPosition)))
+        if (!mutations.TryPush(new Pcre2MarkMutation(currentMarkId, currentMarkPosition), ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
 
-        if (addToTrail && !trail.TryPush(new Pcre2MarkTrailEntry(markId, position)))
+        if (addToTrail && !trail.TryPush(new Pcre2MarkTrailEntry(markId, position), ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
@@ -2320,8 +2202,8 @@ internal static class Pcre2BacktrackingRunner
     private static void RollbackMarks(
         int mutationCheckpoint,
         int trailCheckpoint,
-        ref Utf8PooledStateStack<Pcre2MarkMutation> mutations,
-        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> trail,
+        ref Pcre2InvocationStateStack<Pcre2MarkMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> trail,
         ref int currentMarkId,
         ref int currentMarkPosition)
     {
@@ -2337,7 +2219,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static int FindMarkPosition(
         int markId,
-        Utf8PooledStateStack<Pcre2MarkTrailEntry> trail)
+        Pcre2InvocationStateStack<Pcre2MarkTrailEntry> trail)
     {
         for (var index = trail.Count - 1; index >= 0; index--)
         {
@@ -2360,11 +2242,10 @@ internal static class Pcre2BacktrackingRunner
         int position,
         Span<int> counts,
         Span<int> positions,
-        ref Utf8PooledStateStack<Pcre2RepeatMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2RepeatMutation> mutations,
         ref Pcre2ResourceBudget budget)
     {
-        budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 12UL + (ulong)counts.Length * 8UL));
-        if (!mutations.TryPush(new Pcre2RepeatMutation(repeatId, counts[repeatId], positions[repeatId])))
+        if (!mutations.TryPush(new Pcre2RepeatMutation(repeatId, counts[repeatId], positions[repeatId]), ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
@@ -2375,7 +2256,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static void RollbackRepeats(
         int checkpoint,
-        ref Utf8PooledStateStack<Pcre2RepeatMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2RepeatMutation> mutations,
         Span<int> counts,
         Span<int> positions)
     {
@@ -2399,17 +2280,16 @@ internal static class Pcre2BacktrackingRunner
         Span<int> openStarts,
         Span<int> owners,
         Span<int> openOwners,
-        ref Utf8PooledStateStack<Pcre2CaptureMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations,
         ref Pcre2ResourceBudget budget)
     {
-        budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 24UL + (ulong)starts.Length * 20UL));
         if (!mutations.TryPush(new Pcre2CaptureMutation(
                 slot,
                 starts[slot],
                 ends[slot],
                 openStarts[slot],
                 owners[slot],
-                openOwners[slot])))
+                openOwners[slot]), ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
@@ -2423,7 +2303,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static void RollbackCaptures(
         int checkpoint,
-        ref Utf8PooledStateStack<Pcre2CaptureMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations,
         Span<int> starts,
         Span<int> ends,
         Span<int> openStarts,

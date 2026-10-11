@@ -1139,6 +1139,21 @@ PCRE2 programs and lazy retained storage. Work/depth, public construction
 controls and qualified safe defaults remain open. The byte charge bounds the
 defined live covered capacity, not process RSS or cumulative GC allocations.
 
+The managed PCRE2 backtracking VM admits its fixed repeat/capture and optional
+subroutine-restore vectors together before acquisition. Its eight growable state
+stacks use the same invocation working ledger, including physical array headers,
+exact capacity and old/new copy overlap. Nested assertion workspaces retain the
+parent's loans. Partial acquisition and disposal restore all workspace loans;
+spent work remains spent. Subroutine-restore arrays remain absent when that
+grammar is unused. Acquisition and bounded stack copies check the current
+deadline and spend shared work. The shared exact pool bounds retention across
+core and adapter types, including multiple simultaneous leaves of one type and
+capacity; finite heap calls cannot grow retained pool storage.
+The former PCRE2-only stack helper in the core is retired. This qualifies VM
+workspace payloads only: projection/result vectors, other adapter kernels,
+complete public working/retained authority and full cancellation coverage remain
+separate migration gates. Heap bytes do not certify process RSS or GC traffic.
+
 ## 6. Performance and benchmarking
 
 Performance rules:

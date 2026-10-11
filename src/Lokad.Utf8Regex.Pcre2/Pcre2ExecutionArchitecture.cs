@@ -4157,6 +4157,7 @@ internal struct Pcre2ResourceBudget
     internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
 
     private Utf8ExecutionBudget _core;
+    private Utf8StorageLedger _workingStorage;
     private readonly Pcre2ExecutionDiagnosticsCollector? _diagnostics;
 
     internal Pcre2ResourceBudget(
@@ -4169,6 +4170,7 @@ internal struct Pcre2ResourceBudget
             new Utf8ExecutionLimits(limits.MatchLimit, limits.DepthLimit, limits.HeapLimitInBytes),
             timeout,
             CancellationToken.None);
+        _workingStorage = new Utf8StorageLedger(limits.HeapLimitInBytes);
         _diagnostics = collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null;
         CandidateSteps = 0;
         BacktrackingSteps = 0;
@@ -4299,14 +4301,13 @@ internal struct Pcre2ResourceBudget
         }
     }
 
-    internal void ChargeFrame(uint depth, ulong heapBytes)
+    internal void ChargeFrame(uint depth)
     {
         if (_core.TryNoteDepth(depth) != Utf8ExecutionLimitKind.None)
         {
             throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
 
-        ChargeHeap(heapBytes);
     }
 
     internal void ChargeHeap(ulong heapBytes)
@@ -4315,6 +4316,29 @@ internal struct Pcre2ResourceBudget
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
+    }
+
+    internal ulong ReservedWorkingBytes => _workingStorage.ReservedBytes;
+
+    internal bool CanRetainWorkspace => _workingStorage.IsUnlimited;
+
+    internal void ReserveWorking(ulong bytes)
+    {
+        if (!_workingStorage.TryReserve(bytes)) ThrowWorkingLimit();
+        ChargeHeap(_workingStorage.ReservedBytes);
+    }
+
+    internal void ReleaseWorking(ulong bytes) => _workingStorage.Release(bytes);
+
+    internal void ThrowWorkingLimit()
+        => throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
+
+    internal void ChargeWorkspaceStep()
+    {
+        if (_core.IsUnmetered) return;
+        _core.CheckDeadline();
+        if (_core.TryChargeStep() != Utf8ExecutionLimitKind.None)
+            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
     }
 
     internal void RecordResultProjection()

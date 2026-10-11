@@ -4,10 +4,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R02 extraction 2: pooled-stack pushes and capture-journal writes reserve working
-/// bytes before renting, account actual rented size plus copy overlap, and decline
-/// with false on breach while preserving maximum-count behavior. Legacy unbudgeted
-/// paths are unchanged.
+/// Legacy capture-journal budget behavior. Invocation-owned scalar journals use
+/// the shared exact ledger and have separate aggregate boundary witnesses.
 /// </summary>
 public sealed class Utf8BudgetedGrowthTests
 {
@@ -19,65 +17,6 @@ public sealed class Utf8BudgetedGrowthTests
     private static Utf8ExecutionBudget Capped(ulong maxWorkingBytes)
     {
         return new Utf8ExecutionBudget(new Utf8ExecutionLimits(0, 0, maxWorkingBytes), Timeout.InfiniteTimeSpan, CancellationToken.None);
-    }
-
-    [Fact]
-    public void PushWithoutGrowthChargesNothing()
-    {
-        var stack = new Utf8PooledStateStack<int>(1024);
-        var budget = Capped(1UL << 20);
-        Assert.True(stack.TryPush(1, ref budget));
-        var peak = budget.PeakWorkingBytes;
-        Assert.True(peak >= 16UL);
-        Assert.True(stack.TryPush(2, ref budget));
-        Assert.True(stack.TryPush(3, ref budget));
-        Assert.Equal(peak, budget.PeakWorkingBytes);
-        Assert.Equal(3, stack.Count);
-        stack.Dispose();
-    }
-
-    [Fact]
-    public void BreachDeclinesPushWithoutGrowing()
-    {
-        var stack = new Utf8PooledStateStack<int>(1024);
-        var budget = Capped(15);
-        Assert.False(stack.TryPush(1, ref budget));
-        Assert.Equal(0, stack.Count);
-        Assert.Equal(16UL, budget.PeakWorkingBytes);
-        stack.Dispose();
-    }
-
-    [Fact]
-    public void MaximumCountIsEnforcedOnBothPushPaths()
-    {
-        var budgeted = new Utf8PooledStateStack<int>(2);
-        var budget = Unlimited();
-        Assert.True(budgeted.TryPush(1, ref budget));
-        Assert.True(budgeted.TryPush(2, ref budget));
-        Assert.False(budgeted.TryPush(3, ref budget));
-        Assert.Equal(2, budgeted.Count);
-        budgeted.Dispose();
-
-        var legacy = new Utf8PooledStateStack<int>(2);
-        Assert.True(legacy.TryPush(1));
-        Assert.True(legacy.TryPush(2));
-        Assert.False(legacy.TryPush(3));
-        legacy.Dispose();
-    }
-
-    [Fact]
-    public void RepeatedGrowthKeepsAnHonestPeak()
-    {
-        var stack = new Utf8PooledStateStack<int>(1024);
-        var budget = Unlimited();
-        for (var i = 0; i < 20; i++)
-        {
-            Assert.True(stack.TryPush(i, ref budget));
-        }
-
-        Assert.True(budget.PeakWorkingBytes >= 128UL);
-        Assert.Equal(20, stack.Count);
-        stack.Dispose();
     }
 
     [Fact]
