@@ -6,7 +6,18 @@ internal sealed class Utf8ReplacementPlanCache
 {
     internal const int Capacity = 16;
 
-    private readonly Utf8BoundedPreparationCache<string, Utf8AnalyzedReplacement> _plans = new(Capacity, StringComparer.Ordinal);
+    private readonly Utf8BoundedPreparationCache<string, Utf8AnalyzedReplacement> _plans;
+
+    private Utf8ReplacementPlanCache(Utf8BoundedPreparationCache<string, Utf8AnalyzedReplacement> plans) => _plans = plans;
+
+    internal static Utf8ReplacementPlanCache Create()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var plans = Utf8BoundedPreparationCache<string, Utf8AnalyzedReplacement>.Create(Capacity, StringComparer.Ordinal);
+        var result = owner.Budget.AllocateObject(plans, static value => new Utf8ReplacementPlanCache(value));
+        owner.Complete();
+        return result;
+    }
 
     internal int Count => _plans.Count;
 

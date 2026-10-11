@@ -49,7 +49,7 @@ public sealed partial class Utf8Regex
     private readonly byte[]? _caretAnchoredGroupedLiteralUtf8;
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
     private readonly Utf8SliceProgram _ownedSliceProgram;
-    private readonly Utf8ReplacementPlanCache _replacementCache = new();
+    private readonly Utf8ReplacementPlanCache _replacementCache;
 
     /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
     public Utf8Regex(string pattern)
@@ -222,6 +222,7 @@ public sealed partial class Utf8Regex
         }
 
         ResourcePolicy = resourcePolicy;
+        _replacementCache = Utf8ReplacementPlanCache.Create();
         construction.Complete();
     }
 

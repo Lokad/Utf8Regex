@@ -15,7 +15,8 @@ namespace Lokad.Utf8Regex.Internal;
 /// Core tree nodes/containers and Python parser AST objects, with their retaining
 /// descriptors, share byte admission. Other IR node objects, lexical strings/child
 /// storage, CLR/JIT metadata and lazy retained
-/// caches remain outside this partial backstop.</summary>
+/// cache key/value retention remains outside this partial backstop. Preparation
+/// cache/component/entry metadata is admitted before acquisition.</summary>
 internal sealed class Utf8ConstructionScope : IDisposable
 {
     // Preserve a bounded backstop while replacing the former per-program silent

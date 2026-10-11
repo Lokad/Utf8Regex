@@ -7,7 +7,7 @@ public sealed class Utf8BoundedPreparationCacheTests
     [Fact]
     public void FailedGenerationCannotEvictLaterValueForSameKey()
     {
-        var cache = new Utf8BoundedPreparationCache<string, object>(2, StringComparer.Ordinal);
+        var cache = Utf8BoundedPreparationCache<string, object>.Create(2, StringComparer.Ordinal);
         var aAttempts = 0;
         var bAttempts = 0;
 
@@ -49,7 +49,7 @@ public sealed class Utf8BoundedPreparationCacheTests
     [Fact]
     public async Task ConcurrentRequestsPublishOneSuccessfulPreparation()
     {
-        var cache = new Utf8BoundedPreparationCache<string, object>(4, StringComparer.Ordinal);
+        var cache = Utf8BoundedPreparationCache<string, object>.Create(4, StringComparer.Ordinal);
         var preparations = 0;
         var requests = Enumerable.Range(0, 32)
             .Select(_ => Task.Run(() => cache.GetOrAdd("key", _ =>

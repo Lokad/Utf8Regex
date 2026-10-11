@@ -10,7 +10,7 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void DistinctFailuresDoNotAccumulateQueueRecords()
     {
-        var cache = new Utf8BoundedPreparationCache<string, string>(3);
+        var cache = Utf8BoundedPreparationCache<string, string>.Create(3);
 
         for (var i = 0; i < 100; i++)
         {
@@ -25,7 +25,7 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void RepeatedIdenticalFailuresDoNotAccumulateQueueRecords()
     {
-        var cache = new Utf8BoundedPreparationCache<string, string>(3);
+        var cache = Utf8BoundedPreparationCache<string, string>.Create(3);
 
         for (var i = 0; i < 50; i++)
         {
@@ -39,7 +39,7 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void SuccessesRemainCachedAndEvictOldestAfterFailures()
     {
-        var cache = new Utf8BoundedPreparationCache<string, string>(2);
+        var cache = Utf8BoundedPreparationCache<string, string>.Create(2);
         Assert.Equal("a!", cache.GetOrAdd("a", static key => key + "!"));
         Assert.Equal("b!", cache.GetOrAdd("b", static key => key + "!"));
         for (var i = 0; i < 10; i++)
@@ -59,7 +59,7 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void CapacityShrinkStaysBoundedAfterFailures()
     {
-        var cache = new Utf8BoundedPreparationCache<string, string>(4);
+        var cache = Utf8BoundedPreparationCache<string, string>.Create(4);
         Assert.Equal("a!", cache.GetOrAdd("a", static key => key + "!"));
         Assert.Equal("b!", cache.GetOrAdd("b", static key => key + "!"));
         for (var i = 0; i < 10; i++)
@@ -77,7 +77,7 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public async Task ConcurrentFailuresShareOneGenerationWithoutQueueGrowth()
     {
-        var cache = new Utf8BoundedPreparationCache<string, string>(8);
+        var cache = Utf8BoundedPreparationCache<string, string>.Create(8);
         var attempts = 0;
         var requests = Enumerable.Range(0, 32)
             .Select(_ => Task.Run(() =>
@@ -105,7 +105,7 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public async Task ConcurrentSuccessesPrepareOnceAndQueueOnce()
     {
-        var cache = new Utf8BoundedPreparationCache<string, string>(8);
+        var cache = Utf8BoundedPreparationCache<string, string>.Create(8);
         var preparations = 0;
         var requests = Enumerable.Range(0, 32)
             .Select(_ => Task.Run(() => cache.GetOrAdd("good", _ =>

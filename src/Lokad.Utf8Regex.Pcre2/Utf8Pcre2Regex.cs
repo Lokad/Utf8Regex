@@ -19,7 +19,7 @@ public sealed partial class Utf8Pcre2Regex
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
     private readonly IPcre2DirectProgram? _unmeteredIsMatchProgram;
-    private readonly Pcre2ReplacementComponent _replacementComponent = new();
+    private readonly Pcre2ReplacementComponent _replacementComponent;
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(string pattern)
@@ -96,6 +96,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             _unmeteredIsMatchProgram = isMatchProgram;
         }
+        _replacementComponent = Pcre2ReplacementComponent.Create();
         construction.Complete();
     }
 
@@ -1930,14 +1931,26 @@ public sealed partial class Utf8Pcre2Regex
     private sealed class Pcre2ReplacementComponent
     {
         private const int Capacity = 16;
-        private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _plans = new(Capacity);
+        private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _plans;
+
+        private Pcre2ReplacementComponent(Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> plans)
+            => _plans = plans;
+
+        internal static Pcre2ReplacementComponent Create()
+        {
+            using var owner = Utf8ConstructionScope.Enter();
+            var plans = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.Create(Capacity);
+            var result = owner.Budget.AllocateObject(plans, static value => new Pcre2ReplacementComponent(value));
+            owner.Complete();
+            return result;
+        }
 
         internal int Count => _plans.Count;
 
         internal Pcre2ReplacementPreparation GetOrAdd(
             Pcre2ReplacementCacheKey key,
             Func<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> factory)
-            => _plans.GetOrAdd(key, factory);
+            => _plans.GetOrAdd(key, factory, static (item, prepare) => prepare(item), default(Pcre2ReplacementTextControl));
     }
 
 }

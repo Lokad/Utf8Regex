@@ -96,7 +96,7 @@ public sealed partial class Utf8PythonRegex
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private const int ReplacementPlanCacheCapacity = 16;
-    private readonly Utf8BoundedPreparationCache<string, PythonReReplacementPlan> _replacementPlanCache = new(ReplacementPlanCacheCapacity);
+    private readonly Utf8BoundedPreparationCache<string, PythonReReplacementPlan> _replacementPlanCache;
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with default options and timeout.</summary>
     public Utf8PythonRegex(string pattern)
@@ -250,6 +250,7 @@ public sealed partial class Utf8PythonRegex
             _canUseZeroOffsetUtf8SearchValueFastPath &&
             _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
         ResourcePolicy = resourcePolicy;
+        _replacementPlanCache = Utf8BoundedPreparationCache<string, PythonReReplacementPlan>.Create(ReplacementPlanCacheCapacity, StringComparer.Ordinal);
         construction.Complete();
     }
 
