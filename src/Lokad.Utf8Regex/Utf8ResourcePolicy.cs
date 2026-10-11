@@ -14,9 +14,9 @@ public readonly record struct Utf8ResourcePolicy
     public ulong? MaxWorkingBytes { get; init; }
 
     /// <summary>Gets the maximum cumulative modeled result/staging capacity in bytes, or <see langword="null"/> for no cap.</summary>
-    /// <remarks>The core charges major array/text extents and output controls before acquisition, including growth and repeated materialization.
+    /// <remarks>The core and Python-compatible adapter charge major array/text and staging extents before acquisition, including growth and repeated materialization. Core output controls are included.
     /// Charges are conservative and are not refunded. Borrowed subjects, fixed value results and later standalone getters are outside this scope.
-    /// This is not a live-retention or process-memory cap. The optional adapter profiles currently reject this field.</remarks>
+    /// This is not a live-retention or process-memory cap. The remaining optional profile currently rejects this field.</remarks>
     public ulong? MaxResultBytes { get; init; }
 
     /// <summary>Gets the policy with every budget unlimited.</summary>

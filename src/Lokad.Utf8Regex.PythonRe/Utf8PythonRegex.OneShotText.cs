@@ -9,7 +9,7 @@ public sealed partial class Utf8PythonRegex
         int kind, CancellationToken cancellationToken)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        var native = !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
+        var native = !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             (kind is 0 or 1 && startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath ||
              kind == 1 && startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null ||
              kind == 2 && _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null);

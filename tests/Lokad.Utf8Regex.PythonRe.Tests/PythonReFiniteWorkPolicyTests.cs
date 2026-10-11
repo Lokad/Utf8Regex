@@ -23,7 +23,7 @@ public sealed class PythonReFiniteWorkPolicyTests
             : new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
     }
 
-    private static string Run(Utf8PythonRegex regex, byte[] input, int operation, int start = 0,
+    internal static string Run(Utf8PythonRegex regex, byte[] input, int operation, int start = 0,
         CancellationToken token = default) => operation switch
     {
         0 => regex.IsMatch(input, start, token).ToString(),

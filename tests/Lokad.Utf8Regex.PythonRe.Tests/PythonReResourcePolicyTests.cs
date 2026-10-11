@@ -36,7 +36,7 @@ public sealed class PythonReResourcePolicyTests
         {
             0 => new Utf8ResourcePolicy { MaxDepth = 100 },
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 100 },
-            _ => new Utf8ResourcePolicy { MaxResultBytes = 100 },
+            _ => new Utf8ResourcePolicy { MaxDepth = 100, MaxResultBytes = 100 },
         };
         Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
         Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));

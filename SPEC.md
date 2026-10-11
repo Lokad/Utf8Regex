@@ -146,8 +146,9 @@ manager alive until closure. Detailed snapshots own their arrays/text and remain
 valid after advance or disposal. Sequential host waits are permitted and count
 against the original absolute deadline. Concurrent/reentrant access is rejected.
 This additive development API leaves existing value/span contracts intact and
-does not itself bound externally retained results. Its qualified MaxWorkSteps
-policy is cumulative through preparation, discovery and returned snapshot shaping.
+does not itself bound externally retained results. Work and result-capacity traffic
+are cumulative through validation, discovery and required snapshot shaping; working
+release never refunds the capacity charges described in Section 3.7.
 
 The target requires common construction, invocation, working-storage, result and
 retained-storage policies across the core, PCRE2 and PythonRe profiles. Admit
@@ -177,11 +178,12 @@ application-wide meter. Core static cached operations have no policy parameter a
 retain unlimited defaults. Finite policy routes can have different performance
 from qualified unlimited native shortcuts.
 
-Core also accepts `MaxResultBytes`, alone or with work. It caps cumulative modeled
-major result/staging capacity requested during the operation: rounded array/string
-extents, output controls, output growth/RTL piece tables, capture history/projection
-arrays and coordinate maps. Charges precede covered acquisition, include temporary/
-final capacity and growth, and remain spent after release or later failure. Shared,
+Core and PythonRe also accept `MaxResultBytes`, alone or with work. It caps cumulative
+modeled major result/staging capacity requested during the operation: rounded array/
+string extents, core output controls, output growth/RTL piece tables, capture history/
+projection and Python capture/name arrays, collection staging/final roots and
+coordinate maps. Charges precede covered acquisition, include temporary/final
+capacity and growth, and remain spent after release or later failure. Shared,
 reused or empty storage can be charged conservatively again. This intentionally
 denies some operations earlier than a final payload-size check. No result identities,
 reference counts or GC refunds are required. Coordinate conversion can need a map
@@ -197,7 +199,7 @@ returned results and permitted aliases stay valid. Cancellation/deadline checks
 precede covered result admission. Destination shortage remains its documented
 status; a later interruption during copying can leave a partial destination.
 
-Core and PythonRe depth/working fields, plus PythonRe result bytes, still throw
+Core and PythonRe depth/working fields still throw
 `NotSupportedException` before compilation. `MatchTimeout` defaults to
 `Regex.InfiniteMatchTimeout`. PCRE2 supports finite work/depth/working budgets under
 its existing profile contract and still rejects result-byte caps. These are staged
@@ -1303,8 +1305,9 @@ boundary/viability tables and replay openings fund complete exact array extents;
 empty vectors use shared arrays. Invocation-derived boundary maps separately
 admit their offset and boundary-bit arrays while caller loans remain live.
 Workspace/ownership descriptors and unqualified producers remain separate
-accounting work. Public copied lifetimes, retained-result limits and MaxResultBytes
-remain separate gates; these producer loans do not bound process RSS.
+accounting work. Public copied lifetimes and live-retained result limits remain
+separate gates. Invocation result-capacity traffic is described in Section 3.7;
+these producer loans do not bound process RSS.
 
 ## 6. Performance and benchmarking
 
