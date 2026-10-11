@@ -887,15 +887,19 @@ internal static class Utf8SliceLowerer
         }
 
         // Hand-built trees (tests, assertion bodies without renumbering
-        // context) carry no names; ordinals are BCL-exact for them since
+        // context) carry no names; decimal ordinals identify their slots since
         // only the parser admits named shapes, always with real names.
         var resolvedNames = lowerer.GroupNames;
+        Span<char> numberText = stackalloc char[10];
         if (resolvedNames is null)
         {
             resolvedNames = lowerer.Budget.AllocateArray<string>(lowerer.GroupCount + 1, false);
             for (var number = 0; number <= lowerer.GroupCount; number++)
             {
-                resolvedNames[number] = ((uint)number).ToString();
+                lowerer.Budget.ChargeWork(1);
+                if (!((uint)number).TryFormat(numberText, out var written))
+                    throw new InvalidOperationException("A scalar group number exceeds its decimal scratch.");
+                resolvedNames[number] = lowerer.Budget.CopyText(numberText[..written]);
             }
         }
 
@@ -908,7 +912,10 @@ internal static class Utf8SliceLowerer
         var hasNamedGroups = false;
         for (var number = 1; number < resolvedNames.Length; number++)
         {
-            if (resolvedNames[number] == number.ToString())
+            lowerer.Budget.ChargeWork(1);
+            if (!((uint)number).TryFormat(numberText, out var written))
+                throw new InvalidOperationException("A scalar group number exceeds its decimal scratch.");
+            if (resolvedNames[number].AsSpan().SequenceEqual(numberText[..written]))
             {
                 hasUnnamedGroups = true;
             }

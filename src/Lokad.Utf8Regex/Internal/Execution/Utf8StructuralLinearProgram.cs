@@ -187,9 +187,12 @@ internal readonly partial struct Utf8AsciiDeterministicProgram
             return default;
         }
 
-        var steps = new Utf8AsciiDeterministicStep[instructionProgram.Instructions.Length];
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        var steps = budget.AllocateArray<Utf8AsciiDeterministicStep>(instructionProgram.Instructions.Length, true);
         for (var i = 0; i < instructionProgram.Instructions.Length; i++)
         {
+            budget.ChargeWork(1);
             var instruction = instructionProgram.Instructions[i];
             steps[i] = instruction.Kind switch
             {
@@ -214,7 +217,7 @@ internal readonly partial struct Utf8AsciiDeterministicProgram
         }
 
         var fixedWidthChecks = CreateFixedWidthChecks(steps);
-        return new Utf8AsciiDeterministicProgram(
+        var result = new Utf8AsciiDeterministicProgram(
             steps,
             instructionProgram.FixedLiteralChecks,
             instructionProgram.SearchLiteralOffset,
@@ -227,6 +230,8 @@ internal readonly partial struct Utf8AsciiDeterministicProgram
             instructionProgram.AllowsTrailingNewlineBeforeEnd,
             instructionProgram.IsStartAnchored,
             instructionProgram.IsAbsoluteEndAnchored);
+        scope.Complete();
+        return result;
     }
 
     private static Utf8AsciiDeterministicFixedWidthCheck[] CreateFixedWidthChecks(Utf8AsciiDeterministicStep[] steps)
@@ -236,9 +241,20 @@ internal readonly partial struct Utf8AsciiDeterministicProgram
             return [];
         }
 
-        var checks = new Utf8AsciiDeterministicFixedWidthCheck[steps.Length - 1];
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        // Declined fixed-width views borrow no new storage. Inspect eligibility
+        // before acquiring an array instead of constructing and discarding it.
+        for (var i = 0; i < steps.Length - 1; i++)
+        {
+            budget.ChargeWork(1);
+            var step = steps[i];
+            if (step.Kind is not Utf8AsciiDeterministicStepKind.Literal and not Utf8AsciiDeterministicStepKind.AnyByte &&
+                (step.Kind != Utf8AsciiDeterministicStepKind.CharClass || step.CharClass.IsEmpty)) return [];
+        }
+        var checks = budget.AllocateArray<Utf8AsciiDeterministicFixedWidthCheck>(steps.Length - 1, false);
         for (var i = 0; i < checks.Length; i++)
         {
+            budget.ChargeWork(1);
             var step = steps[i];
             checks[i] = step.Kind switch
             {
@@ -250,11 +266,6 @@ internal readonly partial struct Utf8AsciiDeterministicProgram
                     => Utf8AsciiDeterministicFixedWidthCheck.CreateCharClass(step.CharClass),
                 _ => default,
             };
-
-            if (checks[i].Kind == default)
-            {
-                return [];
-            }
         }
 
         return checks;
@@ -442,10 +453,7 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
     public static Utf8StructuralLinearInstructionProgram Create(AsciiSimplePatternRunPlan runPlan)
     {
         return new Utf8StructuralLinearInstructionProgram(
-            [
-                Utf8StructuralLinearInstruction.CreateRunCharClass(runPlan.CharClass, runPlan.MinLength, runPlan.MaxLength),
-                Utf8StructuralLinearInstruction.CreateAccept(),
-            ],
+            CreatePair(Utf8StructuralLinearInstruction.CreateRunCharClass(runPlan.CharClass, runPlan.MinLength, runPlan.MaxLength)),
             runPlan.Search,
             searchLiteralOffset: 0,
             searchLiterals: [],
@@ -460,10 +468,13 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiSimplePatternPlan simplePatternPlan)
     {
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
         var branch = simplePatternPlan.Branches[0];
-        var instructions = new Utf8StructuralLinearInstruction[branch.Length + 1];
+        var instructions = budget.AllocateArray<Utf8StructuralLinearInstruction>(checked(branch.Length + 1), true);
         for (var i = 0; i < branch.Length; i++)
         {
+            budget.ChargeWork(1);
             var token = branch[i];
             instructions[i] = token.Kind switch
             {
@@ -475,7 +486,7 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
         }
 
         instructions[^1] = Utf8StructuralLinearInstruction.CreateAccept();
-        return new Utf8StructuralLinearInstructionProgram(
+        var result = new Utf8StructuralLinearInstructionProgram(
             instructions,
             default,
             simplePatternPlan.SearchLiteralOffset,
@@ -487,15 +498,16 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
             simplePatternPlan.IsAbsoluteStartAnchored,
             simplePatternPlan.AllowsTrailingNewlineBeforeEnd,
             simplePatternPlan.IsAbsoluteEndAnchored);
+        scope.Complete();
+        return result;
     }
 
     public static Utf8StructuralLinearInstructionProgram CreateLiteralFamilyRun(AsciiSimplePatternPlan simplePatternPlan)
     {
-        return new Utf8StructuralLinearInstructionProgram(
-            [
-                Utf8StructuralLinearInstruction.CreateLiteralFamilyRun(),
-                Utf8StructuralLinearInstruction.CreateAccept(),
-            ],
+        // Multi-literal search preparation can fail after the pair is acquired.
+        using var scope = Utf8ConstructionScope.Enter();
+        var result = new Utf8StructuralLinearInstructionProgram(
+            CreatePair(Utf8StructuralLinearInstruction.CreateLiteralFamilyRun()),
             default,
             simplePatternPlan.SearchLiteralOffset,
             simplePatternPlan.SearchLiterals,
@@ -506,22 +518,21 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
             simplePatternPlan.IsAbsoluteStartAnchored,
             simplePatternPlan.AllowsTrailingNewlineBeforeEnd,
             simplePatternPlan.IsAbsoluteEndAnchored);
+        scope.Complete();
+        return result;
     }
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiStructuralRepeatedSegmentPlan repeatedSegmentPlan)
     {
         return new Utf8StructuralLinearInstructionProgram(
-            [
-                Utf8StructuralLinearInstruction.CreateRepeatedSegment(
+            CreatePair(Utf8StructuralLinearInstruction.CreateRepeatedSegment(
                     repeatedSegmentPlan.LeadingCharClass,
                     repeatedSegmentPlan.RepetitionMinCount,
                     repeatedSegmentPlan.RepetitionMaxCount,
                     repeatedSegmentPlan.TrailingCharClass,
                     repeatedSegmentPlan.TrailingMinCount,
                     repeatedSegmentPlan.SeparatorMinCount,
-                    repeatedSegmentPlan.SeparatorCharClass),
-                Utf8StructuralLinearInstruction.CreateAccept(),
-            ],
+                    repeatedSegmentPlan.SeparatorCharClass)),
             default,
             searchLiteralOffset: 0,
             searchLiterals: [],
@@ -537,10 +548,7 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
     public static Utf8StructuralLinearInstructionProgram Create(AsciiStructuralTokenWindowPlan tokenWindowPlan)
     {
         return new Utf8StructuralLinearInstructionProgram(
-            [
-                Utf8StructuralLinearInstruction.CreateTokenWindow(),
-                Utf8StructuralLinearInstruction.CreateAccept(),
-            ],
+            CreatePair(Utf8StructuralLinearInstruction.CreateTokenWindow()),
             tokenWindowPlan.LeadingRunPlan.Search,
             searchLiteralOffset: 0,
             searchLiterals: [],
@@ -556,10 +564,7 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
     public static Utf8StructuralLinearInstructionProgram Create(AsciiStructuralQuotedRelationPlan quotedRelationPlan)
     {
         return new Utf8StructuralLinearInstructionProgram(
-            [
-                Utf8StructuralLinearInstruction.CreateQuotedRelation(),
-                Utf8StructuralLinearInstruction.CreateAccept(),
-            ],
+            CreatePair(Utf8StructuralLinearInstruction.CreateQuotedRelation()),
             default,
             searchLiteralOffset: 0,
             searchLiterals: [],
@@ -575,10 +580,7 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
     public static Utf8StructuralLinearInstructionProgram Create(AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan)
     {
         return new Utf8StructuralLinearInstructionProgram(
-            [
-                Utf8StructuralLinearInstruction.CreateOrderedLiteralWindow(),
-                Utf8StructuralLinearInstruction.CreateAccept(),
-            ],
+            CreatePair(Utf8StructuralLinearInstruction.CreateOrderedLiteralWindow()),
             default,
             searchLiteralOffset: 0,
             searchLiterals: [],
@@ -589,6 +591,17 @@ internal readonly partial struct Utf8StructuralLinearInstructionProgram
             isAbsoluteStartAnchored: false,
             allowsTrailingNewlineBeforeEnd: false,
             isAbsoluteEndAnchored: false);
+    }
+
+    private static Utf8StructuralLinearInstruction[] CreatePair(Utf8StructuralLinearInstruction first)
+    {
+        using var scope = Utf8ConstructionScope.Enter();
+        var instructions = scope.Budget.AllocateArray<Utf8StructuralLinearInstruction>(2, true);
+        scope.Budget.ChargeWork(2);
+        instructions[0] = first;
+        instructions[1] = Utf8StructuralLinearInstruction.CreateAccept();
+        scope.Complete();
+        return instructions;
     }
 }
 
@@ -722,19 +735,24 @@ internal readonly partial struct Utf8StructuralLinearProgram
         Utf8SearchPlan searchPlan,
         Utf8StructuralSearchPlan structuralSearchPlan)
     {
-        return executionKind switch
+        using var scope = Utf8ConstructionScope.Enter();
+        if (executionKind == NativeExecutionKind.AsciiSimplePattern && simplePatternPlan.RunPlan.HasValue)
         {
-            NativeExecutionKind.AsciiSimplePattern when simplePatternPlan.RunPlan.HasValue
-                => ForCharClassRun(
-                    Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan),
-                    Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan)),
-                    simplePatternPlan.RunPlan,
-                    simplePatternPlan.IsUtf8ByteSafe),
-            NativeExecutionKind.AsciiSimplePattern when CanUseFixedTokenPattern(simplePatternPlan)
-                => ForFixedTokenPattern(
-                    Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan),
-                    Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan)),
-                    simplePatternPlan),
+            var instructions = Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan);
+            var result = ForCharClassRun(instructions, Utf8AsciiDeterministicProgram.Create(instructions),
+                simplePatternPlan.RunPlan, simplePatternPlan.IsUtf8ByteSafe);
+            scope.Complete();
+            return result;
+        }
+        if (executionKind == NativeExecutionKind.AsciiSimplePattern && CanUseFixedTokenPattern(simplePatternPlan))
+        {
+            var instructions = Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan);
+            var result = ForFixedTokenPattern(instructions, Utf8AsciiDeterministicProgram.Create(instructions), simplePatternPlan);
+            scope.Complete();
+            return result;
+        }
+        var selected = executionKind switch
+        {
             NativeExecutionKind.AsciiSimplePattern when CanUseLiteralFamilyRunPattern(simplePatternPlan)
                 => ForLiteralFamilyRun(
                     Utf8StructuralLinearInstructionProgram.CreateLiteralFamilyRun(simplePatternPlan),
@@ -754,6 +772,8 @@ internal readonly partial struct Utf8StructuralLinearProgram
                     searchPlan),
             _ => default,
         };
+        scope.Complete();
+        return selected;
     }
 
     private static bool CanUseFixedTokenPattern(AsciiSimplePatternPlan simplePatternPlan)
@@ -767,6 +787,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
 
         foreach (var check in simplePatternPlan.FixedLiteralChecks)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (check.Offset < 0)
             {
                 return false;
@@ -792,6 +813,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
         var runStart = 0;
         while (runStart < firstBranch.Length && firstBranch[runStart].Kind == AsciiSimplePatternTokenKind.Literal)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             runStart++;
         }
 
@@ -810,6 +832,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
 
         for (var i = runStart; i < firstBranch.Length; i++)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (firstBranch[i].Kind != AsciiSimplePatternTokenKind.CharClass ||
                 firstBranch[i].CharClass != runClass)
             {
@@ -819,6 +842,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
 
         foreach (var branch in simplePatternPlan.Branches)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             if (branch.Length != firstBranch.Length)
             {
                 return false;
@@ -826,6 +850,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
 
             for (var i = 0; i < runStart; i++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (branch[i].Kind != AsciiSimplePatternTokenKind.Literal)
                 {
                     return false;
@@ -834,6 +859,7 @@ internal readonly partial struct Utf8StructuralLinearProgram
 
             for (var i = runStart; i < branch.Length; i++)
             {
+                Utf8ConstructionScope.ChargeWork(1);
                 if (branch[i].Kind != AsciiSimplePatternTokenKind.CharClass ||
                     branch[i].CharClass != runClass)
                 {

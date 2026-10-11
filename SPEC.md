@@ -915,7 +915,19 @@ kernel classification and exact trailing-search preparation charge their bounded
 scans before execution. Structural attempts keep root/wrapper continuations live;
 late decline or denial recovers completed child loans and never refunds work.
 Quoted-relation edge extraction borrows original children instead of acquiring
-a synthetic concatenation and changing their parent links. Other simple-plan
+a synthetic concatenation and changing their parent links.
+Structural linear preparation admits instruction and deterministic-step arrays
+against both construction bytes and instruction capacity before acquisition.
+Fixed-width check arrays use byte admission; ineligible views decline before
+acquiring those arrays. Conversion, eligibility and classification scans share
+construction work and the owner's original cancellation/deadline authority.
+The class-run and fixed-token routes derive both views from one instruction
+program. Failed conversion or multi-literal search preparation restores parent
+capacity without refunding work. Scalar lowering admits generated decimal group
+name strings and formats/classifies them with bounded stack scratch. These
+additional acquisitions can reach the provisional construction backstop earlier;
+they preserve matching and capture-name semantics and do not qualify a complete
+retained-cache certificate or public construction policy. Other simple-plan
 branch/token/search extraction, complete token-run/search-set acquisition, remaining
 structural predicate/scalar-width work and complete retained/shared policies
 remain open. This is buffer/work/depth admission for covered preparation, not

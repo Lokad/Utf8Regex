@@ -74,7 +74,8 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceLowerer.Lower(Leaf, null, false, false, false));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(1024ul, failure.Limit); Assert.Equal(1104ul, failure.Requested);
+        // The retained numeric group-zero name now owns its 48-byte text loan.
+        Assert.Equal(1024ul, failure.Limit); Assert.Equal(1152ul, failure.Requested);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.InRange(owner.Budget.PeakBytes, 128ul, 1024ul); Assert.Equal(0ul, owner.Budget.Depth);
     }

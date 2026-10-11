@@ -4,6 +4,8 @@ namespace Lokad.Utf8Regex.Internal;
 /// construction. Scalar tree conversion/lowering arrays share byte admission;
 /// instruction arrays also share instruction-slot admission. Adapter byte-pattern
 /// decoding admits its retained text in the same owner before acquisition.
+/// Structural linear instructions/steps share instruction and byte admission;
+/// fixed-width checks and generated scalar group names share byte admission.
 /// Covered scans, parser/conversion loops, vectors/maps/sorts and preparation
 /// resumes share cumulative work admission; core/Python parser, preparation and
 /// byte-safe DFA frames share live depth admission. DFA/NFA state vectors,
