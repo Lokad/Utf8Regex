@@ -1,11 +1,37 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2RangeBufferAdmissionTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_budget")]
+    private static extern ref Pcre2ResourceBudget FamilyBudget(ref Pcre2LiteralFamilyGlobalMatchCursor cursor);
+
+    [Fact]
+    public void LiteralFamilyRangesBorrowTheLiveCursorLedger()
+    {
+        var compiled = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)").DebugCompiledProgram;
+        var program = Assert.IsAssignableFrom<Pcre2LiteralFamilyDirectProgram>(compiled.Operations.Enumerate);
+        var cursor = new Pcre2LiteralFamilyGlobalMatchCursor(program,
+            Utf8ValidatedInput.Create("abz ab"u8), new Utf8BytePosition(0), compiled.Request);
+        ref var budget = ref FamilyBudget(ref cursor);
+        budget.ReserveWorking(13);
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
+        {
+            for (var i = 0; i < 17; i++) ledger.Add(new(i, 1), cursor.WorkingBufferControl);
+            Assert.Equal(13UL + 32 + 12 * 32, budget.ReservedWorkingBytes);
+            Assert.Equal(17, ledger.Count);
+        }
+        finally { ledger.Dispose(cursor.WorkingBufferControl); }
+        Assert.Equal(13UL, budget.ReservedWorkingBytes);
+        budget.ReleaseWorking(13);
+    }
+
     [Theory]
     [InlineData(223UL, false)] [InlineData(224UL, true)]
     [InlineData(639UL, false)] [InlineData(640UL, true)]

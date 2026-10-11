@@ -3003,7 +3003,7 @@ internal static class Pcre2GlobalOperationDriver
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
             cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
-                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram, input, start)
+                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram, input, start, compiledProgram.Request)
                 : Pcre2GlobalMatchCursor.CreateBacktracking(
                     literalFamilyProgram.Fallback,
                     compiledProgram.CandidateSearchPlan,
@@ -3079,8 +3079,7 @@ internal ref struct Pcre2GlobalMatchCursor
 {
     [UnscopedRef]
     internal Pcre2CaptureProjectionBudget WorkingBufferControl => _kind == Pcre2GlobalCursorKind.Direct
-        ? _direct.WorkingBufferControl
-        : throw new InvalidOperationException("This cursor has no replacement buffer authority.");
+        ? _direct.WorkingBufferControl : _literalFamily.WorkingBufferControl;
 
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
 
@@ -3124,8 +3123,9 @@ internal ref struct Pcre2GlobalMatchCursor
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
         Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
-        Utf8BytePosition start) =>
-        new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start));
+        Utf8BytePosition start,
+        Pcre2CompileRequest request) =>
+        new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start, request));
 
     internal static Pcre2GlobalMatchCursor CreateCharacter(
         Pcre2CharacterProgram program,
@@ -3731,16 +3731,24 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
     private Utf8ValidatedInput _input;
     private Utf8ProjectionCursor _projection;
     private readonly Pcre2FiniteLiteralBoundaryProjection? _boundaryProjection;
+    private Pcre2ResourceBudget _budget;
+
+    [UnscopedRef]
+    internal Pcre2CaptureProjectionBudget WorkingBufferControl => new(ref _budget);
 
     internal Pcre2LiteralFamilyGlobalMatchCursor(
         Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
-        Utf8BytePosition start)
+        Utf8BytePosition start,
+        Pcre2CompileRequest request)
     {
         _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
         _projection = input.CreateProjectionCursor();
         _boundaryProjection = (program as Pcre2FiniteLiteralLanguageDirectProgram)?.BoundaryProjection;
+        // The selector admits this route only for unmetered matching. Shaping
+        // still owns an aggregate working ledger on this same operation cursor.
+        _budget = new(request.DefaultLimits, request.MatchTimeout, false);
         Current = default;
     }
 
