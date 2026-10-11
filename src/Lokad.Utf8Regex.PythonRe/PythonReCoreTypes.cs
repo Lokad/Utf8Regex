@@ -28,34 +28,6 @@ internal readonly struct PythonReGroupData
 
     public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
 
-    public static PythonReGroupData FromUtf8Match(Utf8ValueMatch match) => FromUtf8Match(match, 0, 0);
-
-    public static PythonReGroupData FromUtf8Match(
-        Utf8ValueMatch match,
-        int byteBaseOffset,
-        int utf16BaseOffset)
-    {
-        if (!match.Success)
-        {
-            return new PythonReGroupData
-            {
-                Number = 0,
-                Success = false,
-            };
-        }
-
-        if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
-            throw new InvalidOperationException("Owned scalar matches must have a complete UTF-8 byte range.");
-        return new PythonReGroupData
-        {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = byteBaseOffset + indexInBytes,
-            EndOffsetInBytes = byteBaseOffset + indexInBytes + lengthInBytes,
-            StartOffsetInUtf16 = utf16BaseOffset + match.IndexInUtf16,
-            EndOffsetInUtf16 = utf16BaseOffset + match.IndexInUtf16 + match.LengthInUtf16,
-        };
-    }
 }
 
 internal static class PythonReValueTextExtractor
@@ -70,15 +42,6 @@ internal static class PythonReValueTextExtractor
         return Encoding.UTF8.GetString(input[data.StartOffsetInBytes..data.EndOffsetInBytes]);
     }
 
-    public static byte[] GetValueBytes(ReadOnlySpan<byte> input, PythonReGroupData data)
-    {
-        if (!data.Success)
-        {
-            return [];
-        }
-
-        return input[data.StartOffsetInBytes..data.EndOffsetInBytes].ToArray();
-    }
 }
 
 /// <summary>Provides a stack-only match view over the original UTF-8 input.</summary>
@@ -157,18 +120,6 @@ public readonly struct Utf8PythonMatchData
     /// <summary>Gets the matched text, or an empty string after no match.</summary>
     public string ValueText { get; init; }
 
-    internal static Utf8PythonMatchData Create(ReadOnlySpan<byte> input, PythonReGroupData data)
-    {
-        return new Utf8PythonMatchData
-        {
-            Success = data.Success,
-            StartOffsetInBytes = data.Success ? data.StartOffsetInBytes : 0,
-            EndOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0,
-            StartOffsetInUtf16 = data.Success ? data.StartOffsetInUtf16 : 0,
-            EndOffsetInUtf16 = data.Success ? data.EndOffsetInUtf16 : 0,
-            ValueText = data.Success ? Encoding.UTF8.GetString(input[data.StartOffsetInBytes..data.EndOffsetInBytes]) : string.Empty,
-        };
-    }
 }
 
 /// <summary>Describes CPython <c>findall</c> result shaping from the pattern's capture count.</summary>

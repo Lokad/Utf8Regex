@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -49,8 +48,7 @@ public sealed partial class Utf8PythonRegex
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
-            var match = _utf8Regex.Match(input, cancellationToken);
-            return Utf8PythonValueMatchFromUtf8Regex(input, match);
+            return MatchValueNative(input, startOffsetInBytes, 0, cancellationToken);
         }
         return MatchValueScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
@@ -80,27 +78,12 @@ public sealed partial class Utf8PythonRegex
         if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null &&
             !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
         {
-            var end = PythonReAsciiPrefixDigitMatcher.MatchValidated(
-                input,
-                _asciiLiteralPrefixDigitMatchPrefix);
-            return end == 0
-                ? default
-                : Utf8PythonValueMatch.Create(input, new PythonReGroupData
-                {
-                    Number = 0,
-                    Success = true,
-                    StartOffsetInBytes = 0,
-                    EndOffsetInBytes = end,
-                    StartOffsetInUtf16 = 0,
-                    EndOffsetInUtf16 = end,
-                });
+            return MatchValueNative(input, startOffsetInBytes, 1, cancellationToken);
         }
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
-            var match = _utf8Regex.Match(input, cancellationToken);
-            if (!match.Success || match.IndexInUtf16 != 0) return default;
-            return Utf8PythonValueMatchFromUtf8Regex(input, match);
+            return MatchValueNative(input, startOffsetInBytes, 1, cancellationToken);
         }
         return MatchValueScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
@@ -127,34 +110,20 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch FullMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        ValidateStartOffset(input, startOffsetInBytes);
+        ValidateScalarStartOffset(input, startOffsetInBytes);
         if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
             !cancellationToken.CanBeCanceled)
         {
-            var validation = Utf8InputAnalyzer.ValidateOnly(input);
-            var tail = input[startOffsetInBytes..];
-            if (tail.Length < _asciiDotAllFullMatchPrefix.Length ||
-                tail.Length - _asciiDotAllFullMatchPrefix.Length < _asciiDotAllFullMatchSuffix.Length ||
-                !tail.StartsWith(_asciiDotAllFullMatchPrefix) ||
-                !tail.EndsWith(_asciiDotAllFullMatchSuffix))
-            {
-                return default;
-            }
-
-            var startOffsetInUtf16 = startOffsetInBytes == 0
-                ? 0
-                : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            return Utf8PythonValueMatch.Create(input, new PythonReGroupData
-            {
-                Number = 0,
-                Success = true,
-                StartOffsetInBytes = startOffsetInBytes,
-                EndOffsetInBytes = input.Length,
-                StartOffsetInUtf16 = startOffsetInUtf16,
-                EndOffsetInUtf16 = validation.Utf16Length,
-            });
+            return MatchValueNative(input, startOffsetInBytes, 2, cancellationToken);
         }
         return MatchValueScalar(input, startOffsetInBytes, 2, cancellationToken);
+    }
+
+    private Utf8PythonValueMatch MatchValueNative(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, CancellationToken cancellationToken)
+    {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+        return MaterializeNativeMatchValue(input, startOffsetInBytes, kind, ref invocation);
     }
 
     /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation before matching begins.</summary>

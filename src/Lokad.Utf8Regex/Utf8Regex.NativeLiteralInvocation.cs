@@ -8,17 +8,17 @@ namespace Lokad.Utf8Regex;
 /// <summary>Supplies shared invocation state to metered native literal operations.</summary>
 public sealed partial class Utf8Regex
 {
-    // A string-producing adapter borrows discovery's actual invocation. Keep
+    // A result-producing adapter borrows discovery's actual invocation. Keep
     // complete-subject validation and the prepared literal route inside it;
     // derived coordinates are unnecessary for the borrowed byte range.
     internal bool FindLiteralForResult(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation,
-        out int start, out int end)
+        out int start, out int end, out Utf8ValidationResult validation)
     {
         start = end = -1;
         if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
             _preparedRegex.LiteralUtf8 is not { } literal || UsesRightToLeft())
             throw new InvalidOperationException("Literal result discovery requires an exact LTR literal.");
-        _ = Utf8Validation.Validate(input, ref invocation);
+        validation = Utf8Validation.Validate(input, ref invocation);
         var control = new Utf8InvocationBufferControl(ref invocation);
         Utf8InvocationOutput.Checkpoint(control);
         if (literal.Length == 0)

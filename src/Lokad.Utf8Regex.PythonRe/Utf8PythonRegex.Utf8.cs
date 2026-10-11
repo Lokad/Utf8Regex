@@ -173,38 +173,16 @@ public sealed partial class Utf8PythonRegex
         {
             var control = new Utf8InvocationBufferControl(ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
-            int start, end;
-            if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)
+            if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
+                out var start, out var end, out var validation))
             {
-                _ = Utf8Validation.Validate(input, ref invocation);
-                start = 0;
-                end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(input, prefix);
-                if (end == 0) { Utf8InvocationOutput.Checkpoint(control); return null; }
-            }
-            else if (kind == 2 && _asciiDotAllFullMatchPrefix is { } head && _asciiDotAllFullMatchSuffix is { } tail)
-            {
-                _ = Utf8Validation.Validate(input, ref invocation);
-                var subject = input[startOffsetInBytes..];
-                if (subject.Length < head.Length || subject.Length - head.Length < tail.Length ||
-                    !subject.StartsWith(head) || !subject.EndsWith(tail))
-                {
-                    Utf8InvocationOutput.Checkpoint(control);
-                    return null;
-                }
-                start = startOffsetInBytes;
-                end = input.Length;
-            }
-            else
-            {
-                if (_utf8Regex is null) throw new InvalidOperationException("Native string discovery requires its prepared core.");
-                if (!_utf8Regex.FindLiteralForResult(input, ref invocation, out start, out end) || kind == 1 && start != 0)
-                {
-                    Utf8InvocationOutput.Checkpoint(control);
-                    return null;
-                }
+                Utf8InvocationOutput.Checkpoint(control);
+                return null;
             }
             var bytes = input[start..end];
-            var count = Utf8Validation.Validate(bytes, ref invocation).Utf16Length;
+            var count = validation.IsAscii ? bytes.Length
+                : start == 0 && end == input.Length ? validation.Utf16Length
+                : Utf8Validation.Validate(bytes, ref invocation).Utf16Length;
             var completed = results.DecodeUtf8(bytes, count, ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
             return completed;
@@ -213,5 +191,67 @@ public sealed partial class Utf8PythonRegex
         {
             throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _translation.Pattern, MatchTimeout);
         }
+    }
+
+    internal Utf8PythonValueMatch MaterializeNativeMatchValue(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, scoped ref Utf8SliceInvocation invocation)
+    {
+        try
+        {
+            var control = new Utf8InvocationBufferControl(ref invocation);
+            Utf8PythonValueMatch result = default;
+            if (TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
+                out var start, out var end, out var validation))
+            {
+                var startUtf16 = validation.IsAscii || start == 0 ? start
+                    : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
+                var endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
+                    : startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
+                result = Utf8PythonValueMatch.Create(input, new PythonReGroupData
+                {
+                    Number = 0, Success = true,
+                    StartOffsetInBytes = start, EndOffsetInBytes = end,
+                    StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
+                });
+            }
+            Utf8InvocationOutput.Checkpoint(control);
+            return result;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _translation.Pattern, MatchTimeout);
+        }
+    }
+
+    private bool TryDiscoverNativeMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, int kind,
+        ref Utf8SliceInvocation invocation, out int start, out int end, out Utf8ValidationResult validation)
+    {
+        ValidateScalarStartOffset(input, startOffsetInBytes);
+        var control = new Utf8InvocationBufferControl(ref invocation);
+        Utf8InvocationOutput.Checkpoint(control);
+        start = end = -1;
+        validation = default;
+        if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)
+        {
+            validation = Utf8Validation.Validate(input, ref invocation);
+            start = 0;
+            end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(input, prefix, ref invocation);
+            return end != 0;
+        }
+        if (kind == 2 && _asciiDotAllFullMatchPrefix is { } head && _asciiDotAllFullMatchSuffix is { } tail)
+        {
+            validation = Utf8Validation.Validate(input, ref invocation);
+            var subject = input[startOffsetInBytes..];
+            if (subject.Length < head.Length || subject.Length - head.Length < tail.Length ||
+                !PythonReAsciiPrefixDigitMatcher.MatchesPrefix(subject, head, ref invocation) ||
+                !PythonReAsciiPrefixDigitMatcher.MatchesPrefix(subject[(subject.Length - tail.Length)..], tail, ref invocation))
+                return false;
+            start = startOffsetInBytes;
+            end = input.Length;
+            return true;
+        }
+        if (_utf8Regex is null) throw new InvalidOperationException("Native result discovery requires its prepared core.");
+        return _utf8Regex.FindLiteralForResult(input, ref invocation, out start, out end, out validation) &&
+            (kind != 1 || start == 0);
     }
 }

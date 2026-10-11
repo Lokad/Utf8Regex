@@ -3588,7 +3588,8 @@ internal sealed class PythonReBenchmarkContext
             throw new InvalidOperationException("The ASCII prefix-digit one-shot replay is unavailable.");
         }
 
-        var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
         return end == 0
             ? default
             : new PythonReBenchmarkValueResult(true, 0, end, 0, end);
@@ -3601,7 +3602,9 @@ internal sealed class PythonReBenchmarkContext
             throw new InvalidOperationException("The ASCII prefix-digit one-shot replay is unavailable.");
         }
 
-        var end = PythonReAsciiPrefixDigitMatcher.MatchValidated(InputBytes, _oneShotAsciiPrefix);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        _ = Utf8Validation.Validate(InputBytes, ref invocation);
+        var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix, ref invocation);
         return end == 0
             ? default
             : new PythonReBenchmarkValueResult(true, 0, end, 0, end);
