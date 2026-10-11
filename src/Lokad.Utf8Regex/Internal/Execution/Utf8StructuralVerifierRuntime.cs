@@ -85,7 +85,7 @@ internal sealed class Utf8ByteSafeLinearVerifierRuntime : Utf8StructuralVerifier
             return false;
         }
 
-        return Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix(input, Plan.ByteSafeProgram, matchIndex, captures: null, budget, out matchedLength);
+        return Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix(input, Plan.ByteSafeProgram, matchIndex, budget, out matchedLength);
     }
 }
 

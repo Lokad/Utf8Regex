@@ -143,7 +143,6 @@ public sealed partial class Utf8Regex
                 _preparedRegex.SearchPlan,
                 _preparedRegex.SimplePatternPlan,
                 0,
-                captures: null,
                 budget,
                 out _) >= 0;
         }

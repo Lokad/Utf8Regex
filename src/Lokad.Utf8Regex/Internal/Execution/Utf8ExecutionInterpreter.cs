@@ -14,7 +14,7 @@ internal static partial class Utf8ExecutionInterpreter
         int startIndex,
         out int matchedLength)
     {
-        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex, captures: null, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
+        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
     }
 
     // PLAN.md D06: single owner for the interpreter-backed simple-pattern Count loop; both compiled runtimes reach it only after their route-specific preconditions.
@@ -49,7 +49,6 @@ internal static partial class Utf8ExecutionInterpreter
                 searchPlan,
                 plan,
                 index,
-                captures: null,
                 budget,
                 out var matchedLength);
             if (found < 0)
@@ -70,7 +69,6 @@ internal static partial class Utf8ExecutionInterpreter
         in Utf8SearchPlan searchPlan,
         in AsciiSimplePatternPlan plan,
         int startIndex,
-        Utf8CaptureSlots? captures,
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
@@ -80,8 +78,7 @@ internal static partial class Utf8ExecutionInterpreter
             return -1;
         }
 
-        if (captures is null &&
-            TryFindNextSingleBranchFixedLengthSimplePattern(input, searchPlan, plan, startIndex, budget, out var fastCandidate, out matchedLength))
+        if (TryFindNextSingleBranchFixedLengthSimplePattern(input, searchPlan, plan, startIndex, budget, out var fastCandidate, out matchedLength))
         {
             return fastCandidate;
         }
@@ -102,7 +99,7 @@ internal static partial class Utf8ExecutionInterpreter
                 }
 
                 Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
-                if (TryMatchSimplePatternAt(input, program, plan, candidate, captures, budget, out matchedLength))
+                if (TryMatchSimplePatternAt(input, program, plan, candidate, budget, out matchedLength))
                 {
                     Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
                     return candidate;
@@ -143,7 +140,7 @@ internal static partial class Utf8ExecutionInterpreter
                     else
                     {
                         Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
-                        if (TryMatchSimplePatternAt(input, program, plan, candidate, captures, budget, out matchedLength))
+                        if (TryMatchSimplePatternAt(input, program, plan, candidate, budget, out matchedLength))
                         {
                             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
                             return candidate;
@@ -161,7 +158,7 @@ internal static partial class Utf8ExecutionInterpreter
         for (var index = startIndex; index <= input.Length; index++)
         {
             budget.Step();
-            if (TryMatchSimplePatternAt(input, program, plan, index, captures, budget, out matchedLength))
+            if (TryMatchSimplePatternAt(input, program, plan, index, budget, out matchedLength))
             {
                 return index;
             }
@@ -341,18 +338,17 @@ internal static partial class Utf8ExecutionInterpreter
         int startIndex,
         out int matchedLength)
     {
-        return TryMatchPrefix(input, program, startIndex, captures: null, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
+        return TryMatchPrefix(input, program, startIndex, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
     }
 
     public static bool TryMatchPrefix(
         ReadOnlySpan<byte> input,
         Utf8ExecutionProgram? program,
         int startIndex,
-        Utf8CaptureSlots? captures,
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
-        return Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix(input, program, startIndex, captures, budget, out matchedLength);
+        return Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix(input, program, startIndex, budget, out matchedLength);
     }
 
     public static bool TryMatchSimplePatternAt(
@@ -360,17 +356,10 @@ internal static partial class Utf8ExecutionInterpreter
         Utf8ExecutionProgram? program,
         AsciiSimplePatternPlan plan,
         int startIndex,
-        Utf8CaptureSlots? captures,
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
-        if (captures is null && TryMatchSimplePatternWithoutCaptures(input, plan, startIndex, out matchedLength))
-        {
-            return true;
-        }
-
-        if (captures is not null &&
-            TryMatchDeterministicSimplePatternWithCaptures(input, program, plan, startIndex, captures, budget, out matchedLength))
+        if (TryMatchSimplePatternWithoutCaptures(input, plan, startIndex, out matchedLength))
         {
             return true;
         }
@@ -381,17 +370,7 @@ internal static partial class Utf8ExecutionInterpreter
             return false;
         }
 
-        return TryMatchPrefix(input, program, startIndex, captures, budget, out matchedLength);
-    }
-
-    private static bool TryMatchDeterministicSimplePatternWithCaptures(
-        ReadOnlySpan<byte> input, Utf8ExecutionProgram? program, AsciiSimplePatternPlan plan,
-        int startIndex, Utf8CaptureSlots captures, Utf8ExecutionDeadline deadline, out int matchedLength)
-    {
-        matchedLength = 0;
-        if (program is null || !TryGetDeterministicCaptureLayout(program, plan, out _)) return false;
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, deadline, CancellationToken.None);
-        return TryMatchDeterministicProgram(input, program, startIndex, captures, ref invocation, out matchedLength, out _);
+        return TryMatchPrefix(input, program, startIndex, budget, out matchedLength);
     }
 
     internal static bool TryMatchProgramAt(
@@ -399,180 +378,14 @@ internal static partial class Utf8ExecutionInterpreter
         Utf8ExecutionProgram program,
         int instructionIndex,
         int startIndex,
-        Utf8CaptureSlots? captures,
         Utf8ExecutionDeadline budget,
         out int endIndex)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        var matched = TryMatchProgram(input, program, instructionIndex, startIndex, captures, ref invocation, out endIndex, out var breach);
+        var matched = TryMatchProgram(input, program, instructionIndex, startIndex, ref invocation, out endIndex, out var breach);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned byte-safe matching breached an unlimited invocation budget.");
         return matched;
-    }
-
-    private static bool IsDeterministicCaptureProgram(Utf8ExecutionProgram program)
-    {
-        for (var index = 0; index < program.Instructions.Count; index++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            var instruction = program.Instructions[index];
-            if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
-            {
-                continue;
-            }
-
-            switch (instruction.NodeKind)
-            {
-                case Utf8ExecutionNodeKind.Capture:
-                case Utf8ExecutionNodeKind.Group:
-                case Utf8ExecutionNodeKind.Concatenate:
-                case Utf8ExecutionNodeKind.One:
-                case Utf8ExecutionNodeKind.Multi:
-                case Utf8ExecutionNodeKind.Set:
-                case Utf8ExecutionNodeKind.Bol:
-                case Utf8ExecutionNodeKind.Beginning:
-                case Utf8ExecutionNodeKind.Start:
-                case Utf8ExecutionNodeKind.Eol:
-                case Utf8ExecutionNodeKind.EndZ:
-                case Utf8ExecutionNodeKind.End:
-                    break;
-
-                default:
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static bool TryGetDeterministicCaptureLayout(
-        Utf8ExecutionProgram? program, AsciiSimplePatternPlan plan, out Utf8DeterministicCaptureLayout layout)
-    {
-        layout = default;
-        if (program?.DeterministicCaptureLayout is not { } cached ||
-            plan.Branches.Length != 1 || !plan.IsFixedLength) return false;
-        layout = cached;
-        return true;
-    }
-
-    internal static Utf8DeterministicCaptureLayout? CreateDeterministicCaptureLayout(Utf8ExecutionProgram program)
-    {
-        if (program.Instructions.Count == 0) return null;
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        using var frames = Utf8ConstructionFrames<CaptureLayoutFrame>.Create(budget, new(0, 0, -1));
-        if (!IsDeterministicCaptureProgram(program)) return null;
-        using var captures = Utf8ConstructionBuffer<KeyValuePair<int, Utf8DeterministicCaptureSlice>>.Create(budget);
-        using var indices = Utf8ConstructionMap<int, int>.Create(budget, EqualityComparer<int>.Default);
-        var offset = 0;
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var frameIndex = frames.Count - 1;
-            var frame = frames[frameIndex];
-            var instruction = program.Instructions[frame.Enter];
-            if (instruction.Kind != Utf8ExecutionInstructionKind.Enter) return null;
-            var container = instruction.NodeKind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group or Utf8ExecutionNodeKind.Concatenate;
-            var next = frame.NextChild < 0 ? frame.Enter + 1 : frame.NextChild;
-            if (container && next < instruction.PartnerIndex)
-            {
-                frames[frameIndex] = frame with { NextChild = program.Instructions[next].PartnerIndex + 1 };
-                frames.Push(new(next, offset, -1));
-                continue;
-            }
-            if (instruction.NodeKind == Utf8ExecutionNodeKind.Capture)
-            {
-                var capture = new KeyValuePair<int, Utf8DeterministicCaptureSlice>(
-                    instruction.CaptureNumber, new(frame.Start, offset - frame.Start));
-                if (indices.TryGetValue(instruction.CaptureNumber, out var index)) captures[index] = capture;
-                else
-                {
-                    indices[instruction.CaptureNumber] = captures.Count;
-                    captures.Add(capture);
-                }
-            }
-            if (!container)
-            {
-                var width = instruction.NodeKind switch
-                {
-                    Utf8ExecutionNodeKind.One or Utf8ExecutionNodeKind.Set => 1,
-                    Utf8ExecutionNodeKind.Multi => instruction.Text?.Length ?? 0,
-                    _ => 0,
-                };
-                // A specialization decline cannot reject an otherwise valid pattern.
-                if (offset > int.MaxValue - width) return null;
-                offset += width;
-            }
-            frames.Pop();
-        }
-        var result = new Utf8DeterministicCaptureLayout(offset, captures.Take());
-        scope.Complete();
-        return result;
-    }
-
-    private readonly record struct CaptureLayoutFrame(int Enter, int Start, int NextChild);
-
-    // Fixed deterministic discovery borrows immutable preparation and caller-owned
-    // slots. There is no invocation-owned continuation array, capture stack or
-    // journal to admit. Final slots are projected only after the whole attempt
-    // succeeds, using the cached final values for shared capture numbers.
-    internal static bool TryMatchDeterministicProgram(
-        ReadOnlySpan<byte> input, Utf8ExecutionProgram program, int startIndex, Utf8CaptureSlots captures,
-        ref Utf8SliceInvocation invocation, out int matchedLength, out Utf8ExecutionLimitKind breach)
-    {
-        matchedLength = 0;
-        breach = Utf8ExecutionLimitKind.None;
-        var index = startIndex;
-        var successful = false;
-        try
-        {
-            breach = captures.TryClear(ref invocation);
-            if (breach != Utf8ExecutionLimitKind.None || program.DeterministicCaptureLayout is not { } layout ||
-                (uint)startIndex > (uint)input.Length) return false;
-            breach = invocation.Budget.TryNoteDepth(1);
-            if (breach != Utf8ExecutionLimitKind.None) return false;
-            for (var pc = 0; pc <= program.Instructions[0].PartnerIndex;)
-            {
-                breach = invocation.TryChargeStep();
-                if (breach != Utf8ExecutionLimitKind.None) return false;
-                var instruction = program.Instructions[pc];
-                if (instruction.Kind == Utf8ExecutionInstructionKind.Exit ||
-                    instruction.NodeKind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group or Utf8ExecutionNodeKind.Concatenate)
-                {
-                    pc++;
-                    continue;
-                }
-                var hit = instruction.NodeKind switch
-                {
-                    Utf8ExecutionNodeKind.One => TryMatchOne(input, instruction, index, out index),
-                    Utf8ExecutionNodeKind.Set => TryMatchSet(input, instruction, index, out index),
-                    Utf8ExecutionNodeKind.Multi => TryMatchProgramText(input, instruction, index, ref invocation, out index, out breach),
-                    Utf8ExecutionNodeKind.Bol => IsBeginningOfLine(input, index, instruction.Options),
-                    Utf8ExecutionNodeKind.Beginning => index == 0,
-                    Utf8ExecutionNodeKind.Start => index == (invocation.AnchorOriginByte < 0 ? startIndex : invocation.AnchorOriginByte),
-                    Utf8ExecutionNodeKind.Eol => IsEndAnchorMatch(input, index, instruction.Options),
-                    Utf8ExecutionNodeKind.EndZ => index == input.Length || index == input.Length - 1 && input[index] == (byte)'\n',
-                    Utf8ExecutionNodeKind.End => index == input.Length,
-                    _ => false,
-                };
-                if (!hit) return false;
-                pc = instruction.PartnerIndex + 1;
-            }
-            foreach (var capture in layout.Captures)
-            {
-                breach = invocation.TryChargeStep();
-                if (breach != Utf8ExecutionLimitKind.None) return false;
-                captures.Set(capture.Key, startIndex + capture.Value.Offset, capture.Value.Length);
-            }
-            matchedLength = index - startIndex;
-            successful = true;
-            return true;
-        }
-        finally
-        {
-            if (!successful) captures.Clear();
-        }
-
     }
 
     private static bool MatchesFixedLiterals(ReadOnlySpan<byte> input, int candidateStart, AsciiSimplePatternPlan plan)

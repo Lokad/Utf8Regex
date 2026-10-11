@@ -31,7 +31,7 @@ public sealed class Utf8ProgramContinuationTests
         // Keep the standing stable interpreted oracle for diagnosed .NET 10.0.12
         // compiled finite-lazy capture defects; compiled owned preparation is tested.
         var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(oracle.GetGroupNumbers().Max() + 1);
+        var scalar = Utf8ScalarCaptureWitness.Lower(Patterns[family], options, 0, 0);
         var texts = new List<string> { "", "aab", "aaab", "aaaab", "abc", "ab", "abcd", "bd", "ABc", "\naab\n", "aab\r\n", "aab\nx", "\naab\nx" };
         var layer = new List<string> { "" };
         for (var length = 1; length <= 4; length++)
@@ -41,27 +41,20 @@ public sealed class Utf8ProgramContinuationTests
         }
         foreach (var text in texts)
         for (var start = 0; start <= text.Length; start++)
-            AssertAt(prepared.ExecutionProgram, oracle, captures, text, start);
+            AssertAt(prepared.ExecutionProgram, scalar, oracle, text, start);
     }
 
-    private static void AssertAt(Utf8ExecutionProgram program, Regex oracle, Utf8CaptureSlots captures, string text, int start)
+    private static void AssertAt(Utf8ExecutionProgram program, Utf8SliceProgram scalar, Regex oracle, string text, int start)
     {
         var expected = oracle.Match(text, start);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         var success = Utf8ExecutionInterpreter.TryMatchProgram(Encoding.ASCII.GetBytes(text), program, 0, start,
-            captures, ref invocation, out var end, out var breach);
+            ref invocation, out var end, out var breach);
         Assert.Equal(Utf8ExecutionLimitKind.None, breach);
         Assert.Equal(expected.Success && expected.Index == start, success);
         Assert.Equal(success ? expected.Index + expected.Length : 0, end);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        foreach (var number in oracle.GetGroupNumbers())
-        {
-            var present = captures.TryGet(number, out var actualStart, out var actualLength);
-            Assert.Equal(success && expected.Groups[number].Success, present);
-            if (!present) continue;
-            Assert.Equal(expected.Groups[number].Index, actualStart);
-            Assert.Equal(expected.Groups[number].Length, actualLength);
-        }
+        Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, text, start);
     }
 
     private static Utf8ExecutionNode Deep(Utf8ExecutionNode node, int depth, int shape)
@@ -89,9 +82,9 @@ public sealed class Utf8ProgramContinuationTests
         var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
         Assert.NotNull(program);
         var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(oracle.GetGroupNumbers().Max() + 1);
-        AssertAt(program, oracle, captures, family switch { 0 => "abc", 8 => "b", _ => "aab" }, 0);
-        AssertAt(program, oracle, captures, "aaad", 0);
+        var scalar = Utf8ScalarCaptureWitness.Lower(Patterns[family], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), depth, shape);
+        AssertAt(program, scalar, oracle, family switch { 0 => "abc", 8 => "b", _ => "aab" }, 0);
+        AssertAt(program, scalar, oracle, "aaad", 0);
     }
 
     public static IEnumerable<object[]> ResourceCases()
@@ -103,16 +96,15 @@ public sealed class Utf8ProgramContinuationTests
 
     [Theory]
     [MemberData(nameof(ResourceCases))]
-    public void EveryDeniedContinuationOrMutationReleasesStorageAndRecovers(int depth, int shape, int family)
+    public void EveryDeniedByteContinuationReleasesStorageAndRecovers(int depth, int shape, int family)
     {
         var prepared = Utf8FrontEnd.Compile(Patterns[family], RegexOptions.CultureInvariant);
         Assert.NotNull(prepared.ExecutionTree);
         var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
         Assert.NotNull(program);
         var input = Encoding.ASCII.GetBytes(family == 0 ? "abc" : "aab");
-        var captures = new Utf8CaptureSlots(2);
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, captures, ref baseline, out _, out _));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref baseline, out _, out _));
         Assert.True(baseline.Budget.PeakDepth > depth);
         Assert.True(baseline.Budget.PeakWorkingBytes > 0);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
@@ -125,23 +117,21 @@ public sealed class Utf8ProgramContinuationTests
             .Concat(new[] { new Utf8ExecutionLimits(0, 0, 1), new Utf8ExecutionLimits(0, 0, baseline.Budget.PeakWorkingBytes - 1) }))
         {
             var denied = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.False(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, captures, ref denied, out var end, out var breach));
+            Assert.False(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref denied, out var end, out var breach));
             Assert.Equal(limits.MaxWorkSteps != 0 ? Utf8ExecutionLimitKind.WorkSteps : limits.MaxDepth != 0 ? Utf8ExecutionLimitKind.Depth : Utf8ExecutionLimitKind.WorkingBytes, breach);
             Assert.Equal(0, end);
             Assert.Equal(0UL, denied.Ledger.ReservedBytes);
-            foreach (var slot in Enumerable.Range(0, 2)) Assert.False(captures.TryGet(slot, out _, out _));
         }
         using var source = new CancellationTokenSource();
         var canceled = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         canceled.CheckpointHook = _ => source.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, captures, ref canceled, out _, out _));
+            Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref canceled, out _, out _));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
-        foreach (var slot in Enumerable.Range(0, 2)) Assert.False(captures.TryGet(slot, out _, out _));
         var recovery = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(recovery.Ledger.TryReserve(7));
-        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, captures, ref recovery, out _, out _));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref recovery, out _, out _));
         Assert.Equal(7UL, recovery.Ledger.ReservedBytes);
         recovery.Ledger.Release(7);
     }
@@ -149,13 +139,12 @@ public sealed class Utf8ProgramContinuationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void LongLiteralChecksClearCapturesAndReturnEveryLoan(bool expire)
+    public void LongLiteralByteChecksReturnEveryLoan(bool expire)
     {
         var text = new string('a', 256 * 1024);
         var prepared = Utf8FrontEnd.Compile("(" + text + ")", RegexOptions.CultureInvariant);
         Assert.NotNull(prepared.ExecutionProgram);
         var input = Encoding.ASCII.GetBytes(text);
-        var captures = new Utf8CaptureSlots(2);
         using var source = new CancellationTokenSource();
         // Expire at the admitted checkpoint itself. A wall clock can expire
         // during JIT or scheduling before the hook, losing this witness's entry.
@@ -167,16 +156,15 @@ public sealed class Utf8ProgramContinuationTests
         invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
         if (expire)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, captures, ref invocation, out _, out _));
+                Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, ref invocation, out _, out _));
         else
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
-                Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, captures, ref invocation, out _, out _));
+                Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, ref invocation, out _, out _));
             Assert.Equal(source.Token, failure.CancellationToken);
         }
         Assert.True(entered);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        foreach (var slot in Enumerable.Range(0, 2)) Assert.False(captures.TryGet(slot, out _, out _));
     }
 
     [Fact]
@@ -262,41 +250,25 @@ public sealed class Utf8ProgramContinuationTests
     [InlineData("(?m:\\A(a)(b))", true)]
     [InlineData("(?m:(a)(b)\\Z)", false)]
     [InlineData("(?m:(a)(b)\\Z)", true)]
-    public void DeterministicAndGeneralAnchorsAgreeWithAbsoluteAndCallerOriginSemantics(string pattern, bool compiled)
+    public void ByteAndScalarAnchorsAgreeWithAbsoluteAndCallerOriginSemantics(string pattern, bool compiled)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var prepared = Utf8FrontEnd.Compile(pattern, options);
         Assert.NotNull(prepared.ExecutionProgram);
-        Assert.NotNull(prepared.ExecutionProgram.DeterministicCaptureLayout);
+        var scalar = Utf8ScalarCaptureWitness.Lower(pattern, options, 0, 0);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(3);
         foreach (var text in new[] { "", "ab", "xab", "\nab", "ab\n", "ab\nx", "\nab\nx" })
         for (var start = 0; start <= text.Length; start++)
-        {
-            AssertAt(prepared.ExecutionProgram, oracle, captures, text, start);
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var expected = oracle.Match(text, start);
-            var hit = Utf8ExecutionInterpreter.TryMatchDeterministicProgram(Encoding.ASCII.GetBytes(text), prepared.ExecutionProgram,
-                start, captures, ref invocation, out var length, out var breach);
-            Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-            Assert.Equal(expected.Success && expected.Index == start, hit);
-            Assert.Equal(hit ? expected.Length : 0, length);
-            foreach (var number in oracle.GetGroupNumbers())
-            {
-                var present = captures.TryGet(number, out var index, out var width);
-                Assert.Equal(hit && expected.Groups[number].Success, present);
-                if (!present) continue;
-                Assert.Equal(expected.Groups[number].Index, index);
-                Assert.Equal(expected.Groups[number].Length, width);
-            }
-        }
+            AssertAt(prepared.ExecutionProgram, scalar, oracle, text, start);
         if (!pattern.StartsWith("\\G", StringComparison.Ordinal)) return;
+        var starts = new int[scalar.GroupCount]; var ends = new int[scalar.GroupCount];
         var origin = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         origin.AnchorOriginByte = 0;
-        Assert.False(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, prepared.ExecutionProgram, 0, 1, captures, ref origin, out _, out _));
-        Assert.False(Utf8ExecutionInterpreter.TryMatchDeterministicProgram("xab"u8, prepared.ExecutionProgram, 1, captures, ref origin, out _, out _));
+        Assert.False(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, prepared.ExecutionProgram, 0, 1, ref origin, out _, out _));
+        Assert.False(Utf8SliceRunner.TryMatchAt(scalar, "xab"u8, 1, starts, ends, true, ref origin).IsMatch);
         origin.AnchorOriginByte = 1;
-        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, prepared.ExecutionProgram, 0, 1, captures, ref origin, out _, out _));
-        Assert.True(Utf8ExecutionInterpreter.TryMatchDeterministicProgram("xab"u8, prepared.ExecutionProgram, 1, captures, ref origin, out _, out _));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, prepared.ExecutionProgram, 0, 1, ref origin, out _, out _));
+        Assert.True(Utf8SliceRunner.TryMatchAt(scalar, "xab"u8, 1, starts, ends, true, ref origin).IsMatch);
         Assert.Equal(0UL, origin.Ledger.ReservedBytes);
     }
 }

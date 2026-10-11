@@ -94,14 +94,7 @@ internal static class Utf8NativeReplacementExecutor
         ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes, match.BranchId));
         foreach (var groupNumber in plan.ReferencedCaptureGroups)
         {
-            if (match.CaptureSlots is not null && match.CaptureSlots.TryGet(groupNumber, out var start, out var length))
-            {
-                ledger.Add(new Utf8ReplacementRange(start, length, groupNumber));
-            }
-            else
-            {
-                ledger.Add(new Utf8ReplacementRange(-1, 0, groupNumber));
-            }
+            ledger.Add(new Utf8ReplacementRange(-1, 0, groupNumber));
         }
     }
 
@@ -119,8 +112,6 @@ internal static class Utf8NativeReplacementExecutor
                 {
                     Utf8ReplacementInstructionKind.Literal => instruction.LiteralUtf8.Length,
                     Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0 => match.LengthInBytes,
-                    Utf8ReplacementInstructionKind.Group when match.CaptureSlots is not null &&
-                        match.CaptureSlots.TryGet(instruction.GroupNumber, out _, out var captureLength) => captureLength,
                     Utf8ReplacementInstructionKind.WholeMatch => match.LengthInBytes,
                     Utf8ReplacementInstructionKind.LeftPortion => match.IndexInBytes,
                     Utf8ReplacementInstructionKind.RightPortion => input.Length - (match.IndexInBytes + match.LengthInBytes),

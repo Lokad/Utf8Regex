@@ -228,7 +228,7 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     public Utf8OperationMatch Current
-        => new(CurrentValueMatch, branchId: 0, captureSlots: null);
+        => new(CurrentValueMatch, branchId: 0);
 
     /// <summary>Gets the alternate index of the last literal match, or -1 when the last
     /// successful move did not come from a literal search. Singular literals always report 0.</summary>

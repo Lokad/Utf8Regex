@@ -6,21 +6,13 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8DeterministicCaptureContinuationTests
+public sealed class Utf8ScalarCaptureContinuationTests
 {
     private static readonly string[] Patterns =
     [
         "(a)(b)", "((ab)(c))", "(?<x>a(?<x>b)c)(d)", "^(?<x>ab)[0-9]$",
         "(?m:^(a)(b)$)", "(?i:(a)(bc))", "(a)([A-Z])", "(a)(b$)",
     ];
-
-    private static Utf8ExecutionNode Deep(Utf8ExecutionNode node, int depth, int shape)
-    {
-        for (var index = 0; index < depth; index++)
-            node = new Utf8ExecutionNode(shape switch { 0 => Utf8ExecutionNodeKind.Concatenate, 1 => Utf8ExecutionNodeKind.Group, _ => Utf8ExecutionNodeKind.Capture },
-                RegexOptions.CultureInvariant, [node], "", '\0', 0, 1, 1);
-        return node;
-    }
 
     public static IEnumerable<object[]> Cases()
     {
@@ -33,158 +25,130 @@ public sealed class Utf8DeterministicCaptureContinuationTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void DeepCachedLayoutsAndIterativeMatchingRetainFinalGroups(int depth, int shape, int family, bool compiled)
+    public void DeepOwnedLoweringAndMatchingRetainAllCaptureHistories(int depth, int shape, int family, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var prepared = Utf8FrontEnd.Compile(Patterns[family], options);
-        Assert.NotNull(prepared.ExecutionTree);
-        Assert.NotNull(prepared.ExecutionProgram);
-        var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
-        Assert.NotNull(program);
-        var layout = Assert.IsType<Utf8DeterministicCaptureLayout>(program.DeterministicCaptureLayout);
-        var cached = Assert.IsType<Utf8DeterministicCaptureLayout>(program.DeterministicCaptureLayout);
-        Assert.Same(layout.Captures, cached.Captures);
-        var baseline = Assert.IsType<Utf8DeterministicCaptureLayout>(prepared.ExecutionProgram.DeterministicCaptureLayout);
-        Assert.Equal(baseline.MatchLength, layout.MatchLength);
-        Assert.Equal(baseline.Captures.OrderBy(static pair => pair.Key), layout.Captures.OrderBy(static pair => pair.Key));
-        var oracle = new Regex(Patterns[family], options);
-        var numbers = oracle.GetGroupNumbers();
-        var captures = new Utf8CaptureSlots(numbers.Max() + 1);
+        var program = Utf8ScalarCaptureWitness.Lower(Patterns[family], options, depth, shape);
+        var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
         foreach (var subject in new[] { "", "ab", "abc", "abcd", "xxabyy", "aZ", "ABc", "\nab\n", "ab\n", "ab\r\n", "ab!\n", "ab1" })
         for (var start = 0; start <= subject.Length; start++)
-        {
-            var input = Encoding.ASCII.GetBytes(subject);
-            var expected = oracle.Match(subject, start);
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var success = Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, program, start, captures, ref invocation, out var length, out var breach);
-            Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-            Assert.Equal(expected.Success && expected.Index == start, success);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-            foreach (var number in numbers)
-            {
-                var present = captures.TryGet(number, out var actualStart, out var actualLength);
-                Assert.Equal(success && expected.Groups[number].Success, present);
-                if (!present) continue;
-                Assert.Equal(expected.Groups[number].Index, actualStart);
-                Assert.Equal(expected.Groups[number].Length, actualLength);
-            }
-            if (success) Assert.Equal(expected.Length, length);
-            else Assert.Equal(0, length);
-        }
+            Utf8ScalarCaptureWitness.AssertAsciiAt(program, oracle, subject, start);
     }
 
     [Theory]
-    [InlineData(65, 0)]
-    [InlineData(65, 1)]
-    [InlineData(65, 2)]
-    [InlineData(4097, 0)]
-    [InlineData(4097, 1)]
-    [InlineData(4097, 2)]
-    public void DeepMatchingUsesConstantDepthAndBorrowedStorageAndClearsEveryFailedAttempt(int depth, int shape)
+    [InlineData(65, 0)] [InlineData(65, 1)] [InlineData(65, 2)]
+    [InlineData(4097, 0)] [InlineData(4097, 1)] [InlineData(4097, 2)]
+    public void ScalarCaptureWorkAndStorageDenialRestoreBorrowedLoansAndRecover(int depth, int shape)
     {
-        var prepared = Utf8FrontEnd.Compile("(a)(b)", RegexOptions.CultureInvariant);
-        Assert.NotNull(prepared.ExecutionTree);
-        var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
-        Assert.NotNull(program);
-        var captures = new Utf8CaptureSlots(3);
-        var input = "ab"u8.ToArray();
-        var baseline = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 1, 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, program, 0, captures, ref baseline, out var length, out var breach));
-        Assert.Equal(2, length);
-        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-        Assert.Equal(1U, baseline.Budget.PeakDepth);
-        Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
-        Assert.Equal(0UL, baseline.Budget.PeakWorkingBytes);
-        var cutoffs = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1)).Select(static value => (ulong)value)
-            : new[] { 1UL, 2UL, 63UL, 64UL, 127UL, 128UL, 4095UL, 4096UL, baseline.Budget.Steps - 1 };
-        foreach (var work in cutoffs)
+        var program = Utf8ScalarCaptureWitness.Lower("(a)(b)", RegexOptions.CultureInvariant, depth, shape);
+        var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
+        var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Assert.True(baseline.Ledger.TryReserve(7));
+        var outcome = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends, true, true, ref baseline);
+        Assert.True(outcome.IsMatch);
+        Assert.Equal(2, outcome.EndIndex);
+        Assert.Equal(new[] { 0 }, outcome.CaptureStarts?[0]);
+        Assert.Equal(new[] { 1 }, outcome.CaptureStarts?[1]);
+        Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref baseline);
+        Assert.Equal(7UL, baseline.Ledger.ReservedBytes);
+        baseline.Ledger.Release(7);
+        var limits = Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1))
+            .Select(static work => new Utf8ExecutionLimits((ulong)work, 0, 0))
+            .Concat(new[] { new Utf8ExecutionLimits(0, 0, baseline.Budget.PeakWorkingBytes - 1) });
+        foreach (var limit in limits)
         {
-            var limited = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 1, 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.False(Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, program, 0, captures, ref limited, out length, out breach));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, breach);
-            Assert.Equal(0, length);
-            foreach (var slot in Enumerable.Range(0, 3)) Assert.False(captures.TryGet(slot, out _, out _));
-            Assert.Equal(0UL, limited.Ledger.ReservedBytes);
+            var denied = new Utf8SliceInvocation(limit, Regex.InfiniteMatchTimeout, CancellationToken.None);
+            Assert.True(denied.Ledger.TryReserve(7));
+            var failed = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends, true, true, ref denied);
+            Assert.False(failed.IsMatch);
+            Assert.Equal(limit.MaxWorkSteps == 0 ? Utf8ExecutionLimitKind.WorkingBytes : Utf8ExecutionLimitKind.WorkSteps, failed.Breach);
+            Assert.Null(failed.CaptureStarts);
+            Assert.Null(failed.CaptureLengths);
+            Assert.Equal(7UL, denied.Ledger.ReservedBytes);
+            denied.Ledger.Release(7);
         }
-        using var source = new CancellationTokenSource();
-        var canceled = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
-        canceled.CheckpointHook = steps => { if (steps >= 64) source.Cancel(); };
-        var failure = Assert.Throws<OperationCanceledException>(() =>
-            Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, program, 0, captures, ref canceled, out _, out _));
-        Assert.Equal(source.Token, failure.CancellationToken);
-        foreach (var slot in Enumerable.Range(0, 3)) Assert.False(captures.TryGet(slot, out _, out _));
-        Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
-        var recovered = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 1, 7), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(recovered.Ledger.TryReserve(7)); // An unrelated caller-owned lease remains untouched.
-        Assert.True(Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, program, 0, captures, ref recovered, out _, out _));
-        Assert.Equal(7UL, recovered.Ledger.ReservedBytes);
-        recovered.Ledger.Release(7);
+        Utf8ScalarCaptureWitness.AssertAsciiAt(program, new Regex("(a)(b)", RegexOptions.CultureInvariant), "ab", 0);
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LongLiteralBlocksPollCancellationAndDeadlineAndClearUnpublishedCaptures(bool expire)
+    [InlineData(false)] [InlineData(true)]
+    public void ScalarCaptureCancellationAndDeadlineReturnEveryLoan(bool expire)
     {
-        using var clock = Utf8DeadlineTestClock.Start();
         var text = new string('a', 256 * 1024);
-        var prepared = Utf8FrontEnd.Compile("(" + text + ")", RegexOptions.CultureInvariant);
-        Assert.NotNull(prepared.ExecutionProgram);
+        var program = Utf8ScalarCaptureWitness.Lower("(" + text + ")", RegexOptions.CultureInvariant, 0, 0);
         var input = Encoding.ASCII.GetBytes(text);
-        var captures = new Utf8CaptureSlots(2);
+        var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         using var source = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
+        Assert.True(invocation.Ledger.TryReserve(7));
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(50); else source.Cancel(); };
+        invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
         if (expire)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, prepared.ExecutionProgram, 0, captures, ref invocation, out _, out _));
+                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, true, ref invocation));
         else
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
-                Utf8ExecutionInterpreter.TryMatchDeterministicProgram(input, prepared.ExecutionProgram, 0, captures, ref invocation, out _, out _));
+                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, true, ref invocation));
             Assert.Equal(source.Token, failure.CancellationToken);
         }
         Assert.True(entered);
-        Assert.False(captures.TryGet(0, out _, out _));
-        Assert.False(captures.TryGet(1, out _, out _));
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(7);
+        Utf8ScalarCaptureWitness.AssertAsciiAt(program, new Regex("(" + text + ")"), text, 0);
     }
 
     [Fact]
-    public void LegacyDeterministicEntrySharesTheCallersExpiredDeadlineAndRecovers()
+    public void ByteVerifierSharesTheCallersExpiredDeadlineAndRecovers()
     {
         var prepared = Utf8FrontEnd.Compile("(a)(b)", RegexOptions.CultureInvariant);
-        Assert.True(Utf8AsciiSimplePatternLowerer.TryCreatePlan(Utf8FrontEnd.Analyze("(a)(b)", RegexOptions.CultureInvariant).SemanticRegex,
-            RegexOptions.CultureInvariant, out var plan, out _));
-        var captures = new Utf8CaptureSlots(3);
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1));
-        // TickCount64 can advance in roughly 16 ms quanta on Windows. Wait
-        // beyond that resolution before testing the existing authority.
-        Thread.Sleep(50);
-        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Utf8ExecutionInterpreter.TryMatchSimplePatternAt(
-            "ab"u8, prepared.ExecutionProgram, plan, 0, captures, deadline, out _));
-        Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("ab"u8, prepared.ExecutionProgram,
-            plan, 0, captures, Utf8ExecutionDeadline.Infinite, out var length));
+        ticks = 50;
+        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Utf8ExecutionInterpreter.TryMatchPrefix(
+            "ab"u8, prepared.ExecutionProgram, 0, deadline, out _));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("ab"u8, prepared.ExecutionProgram,
+            0, Utf8ExecutionDeadline.Infinite, out var length));
         Assert.Equal(2, length);
     }
 
     [Fact]
-    public void WarmDeterministicDiscoveryAndCaptureProjectionDoNotAllocate()
+    public void WarmByteSimplePatternDiscoveryDoesNotAllocate()
     {
         var prepared = Utf8FrontEnd.Compile("(?<x>a(?<x>b)c)(d)", RegexOptions.CultureInvariant);
         Assert.True(Utf8AsciiSimplePatternLowerer.TryCreatePlan(Utf8FrontEnd.Analyze("(?<x>a(?<x>b)c)(d)", RegexOptions.CultureInvariant).SemanticRegex,
             RegexOptions.CultureInvariant, out var plan, out _));
-        var captures = new Utf8CaptureSlots(3);
         for (var index = 0; index < 32; index++)
             Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, prepared.ExecutionProgram,
-                plan, 0, captures, Utf8ExecutionDeadline.Infinite, out _));
+                plan, 0, Utf8ExecutionDeadline.Infinite, out _));
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < 256; index++)
             Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, prepared.ExecutionProgram,
-                plan, 0, captures, Utf8ExecutionDeadline.Infinite, out _));
+                plan, 0, Utf8ExecutionDeadline.Infinite, out _));
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void SupplementaryCapturesQuantifyAndReplaceWholeScalars(bool compiled, bool rtl)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
+            (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
+        var regex = new Utf8Regex("(?<x>.)+", options);
+        var input = "a😀𐐨"u8;
+        var match = regex.MatchDetailed(input);
+        Assert.True(match.Success);
+        Assert.Equal((0, 9), (match.IndexInBytes, match.LengthInBytes));
+        var group = match.GetGroup("x");
+        Assert.Equal(3, group.CaptureCount);
+        Assert.Equal(rtl ? "a" : "𐐨", group.GetValueString());
+        Assert.Equal(rtl ? (0, 1) : (5, 4), (group.IndexInBytes, group.LengthInBytes));
+        Assert.Equal(rtl ? "<a>" : "<𐐨>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
     }
 
     public static IEnumerable<object[]> PublicCases()

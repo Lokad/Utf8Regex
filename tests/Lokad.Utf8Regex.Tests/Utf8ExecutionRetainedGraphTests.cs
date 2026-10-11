@@ -61,10 +61,11 @@ public sealed class Utf8ExecutionRetainedGraphTests
         if (kind == "captures")
         {
             Assert.NotNull(prepared.ExecutionProgram);
-            Assert.True(prepared.ExecutionProgram.DeterministicCaptureLayout.HasValue);
-            var layout = prepared.ExecutionProgram.DeterministicCaptureLayout.Value;
-            Assert.Equal(4, layout.MatchLength);
-            Assert.Contains(layout.Captures, static pair => pair.Key == 900 && pair.Value.Offset == 3 && pair.Value.Length == 1);
+            var match = new Utf8Regex(pattern, options).MatchDetailed("abca"u8);
+            Assert.True(match.Success);
+            Assert.Equal(4, match.LengthInBytes);
+            Assert.Equal((3, 1), (match.GetGroup(900).IndexInBytes, match.GetGroup(900).LengthInBytes));
+            Assert.Equal(2, match.GetGroup("n").CaptureCount);
         }
     }
 
@@ -287,7 +288,7 @@ public sealed class Utf8ExecutionRetainedGraphTests
                 {
                     Utf8ExecutionTree => (1, 48ul),
                     Utf8ExecutionNode => (8, 80ul),
-                    Utf8ExecutionProgram => (2, 64ul),
+                    Utf8ExecutionProgram => (1, 48ul),
                     Utf8ScalarClass => (1, 48ul),
                     _ => throw new InvalidOperationException("Unqualified execution graph: " + type),
                 };

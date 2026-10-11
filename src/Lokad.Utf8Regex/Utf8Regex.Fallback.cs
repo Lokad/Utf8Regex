@@ -880,7 +880,6 @@ public sealed partial class Utf8Regex
             _preparedRegex.SearchPlan,
             _preparedRegex.SimplePatternPlan,
             startIndex,
-            captures: null,
             budget,
             out matchedLength);
     }

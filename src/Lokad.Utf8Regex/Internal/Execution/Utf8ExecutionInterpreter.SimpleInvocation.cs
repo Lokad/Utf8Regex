@@ -17,7 +17,7 @@ internal static partial class Utf8ExecutionInterpreter
         if (program is null || (uint)floor > (uint)input.Length) return Utf8ExecutionLimitKind.None;
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            index = FindNextSimplePattern(input, program, search, plan, floor, null,
+            index = FindNextSimplePattern(input, program, search, plan, floor,
                 invocation.Budget.Deadline, out length);
             return Utf8ExecutionLimitKind.None;
         }

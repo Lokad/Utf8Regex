@@ -35,7 +35,7 @@ internal static class Utf8ExecutionProgramLowerer
                 enterIndex = instructions.Count;
                 instructions.Add(new Utf8ExecutionInstruction(
                     Utf8ExecutionInstructionKind.Enter, node.Kind, node.Options,
-                    node.Payload, charClass, node.Ch, node.CaptureNumber, node.Min, node.Max, -1));
+                    node.Payload, charClass, node.Ch, node.Min, node.Max, -1));
             }
             if (frame.NextChild < node.Children.Count)
             {
@@ -47,13 +47,13 @@ internal static class Utf8ExecutionProgramLowerer
             var exitIndex = instructions.Count;
             instructions.Add(new Utf8ExecutionInstruction(
                 Utf8ExecutionInstructionKind.Exit, node.Kind, node.Options,
-                node.Payload, instructions[enterIndex].CharClass, node.Ch, node.CaptureNumber, node.Min, node.Max, enterIndex));
+                node.Payload, instructions[enterIndex].CharClass, node.Ch, node.Min, node.Max, enterIndex));
             instructions[enterIndex] = instructions[enterIndex] with { PartnerIndex = exitIndex };
             frames.Pop();
         }
         var result = budget.AllocateObject(
-            (Instructions: (IReadOnlyList<Utf8ExecutionInstruction>)instructions.Take(), Layout: default(Utf8DeterministicCaptureLayout?)),
-            static state => new Utf8ExecutionProgram(state.Instructions));
+            new ValueTuple<IReadOnlyList<Utf8ExecutionInstruction>>(instructions.Take()),
+            static state => new Utf8ExecutionProgram(state.Item1));
         scope.Complete();
         return result;
     }

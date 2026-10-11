@@ -4,11 +4,10 @@ internal readonly struct Utf8OperationMatch
 {
     private readonly Utf8ValueMatch _valueMatch;
 
-    public Utf8OperationMatch(Utf8ValueMatch valueMatch, int branchId, Utf8CaptureSlots? captureSlots)
+    public Utf8OperationMatch(Utf8ValueMatch valueMatch, int branchId)
     {
         _valueMatch = valueMatch;
         BranchId = branchId;
-        CaptureSlots = captureSlots;
     }
 
     public bool Success => _valueMatch.Success;
@@ -25,12 +24,10 @@ internal readonly struct Utf8OperationMatch
 
     public int BranchId { get; }
 
-    public Utf8CaptureSlots? CaptureSlots { get; }
-
     public Utf8ValueMatch ToValueMatch() => _valueMatch;
 
-    public static Utf8OperationMatch NoMatch => new(Utf8ValueMatch.NoMatch, branchId: -1, captureSlots: null);
+    public static Utf8OperationMatch NoMatch => new(Utf8ValueMatch.NoMatch, branchId: -1);
 
     public static implicit operator Utf8OperationMatch(Utf8ValueMatch valueMatch) =>
-        new(valueMatch, branchId: 0, captureSlots: null);
+        new(valueMatch, branchId: 0);
 }

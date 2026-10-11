@@ -4,138 +4,79 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// The exact-zero warm lane requires a quiet shared pool. Parallel fixtures can
-// borrow its working leaves; the held byte interval and threshold stay intact.
+// Keep the same input, 16 warm calls, 256 measured calls and exact zero-byte
+// threshold on the live byte verifier. Capture publication is tested separately.
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8ReversibleMatchStateTests
 {
     [Fact]
-    public void CaptureJournalRollsBackOnlyMutationsAfterCheckpoint()
+    public void ScalarRollbackKeepsEarlierCapturesAndDiscardsFailedBranchHistory()
     {
-        var captures = new Utf8CaptureSlots(3);
-        captures.BeginInvocation();
-        try
-        {
-            captures.Set(1, 2, 3);
-            var outer = captures.CreateCheckpoint();
-            captures.Set(1, 5, 7);
-            captures.Set(2, 11, 13);
-            var inner = captures.CreateCheckpoint();
-            captures.Set(2, 17, 19);
-
-            captures.Rollback(inner);
-            Assert.True(captures.TryGet(2, out var innerStart, out var innerLength));
-            Assert.Equal(11, innerStart);
-            Assert.Equal(13, innerLength);
-
-            captures.Rollback(outer);
-            Assert.True(captures.TryGet(1, out var outerStart, out var outerLength));
-            Assert.Equal(2, outerStart);
-            Assert.Equal(3, outerLength);
-            Assert.False(captures.TryGet(2, out _, out _));
-        }
-        finally
-        {
-            captures.EndInvocation();
-        }
+        var regex = new Utf8Regex("(?<x>😀)(?:(?<x>𐐨)(?<y>a)q|(?<x>𐐨)(?<y>a))z", RegexOptions.CultureInvariant);
+        var match = regex.MatchDetailed("😀𐐨az"u8);
+        Assert.True(match.Success);
+        Assert.Equal((0, 10), (match.IndexInBytes, match.LengthInBytes));
+        var x = match.GetGroup("x");
+        Assert.Equal(2, x.CaptureCount);
+        Assert.Equal((0, 4), (x.GetCapture(0).IndexInBytes, x.GetCapture(0).LengthInBytes));
+        Assert.Equal((4, 4), (x.GetCapture(1).IndexInBytes, x.GetCapture(1).LengthInBytes));
+        var y = match.GetGroup("y");
+        Assert.Equal(1, y.CaptureCount);
+        Assert.Equal((8, 1), (y.IndexInBytes, y.LengthInBytes));
     }
 
     [Fact]
     public void HugeSyntacticRepeatUsesReachableSubjectBound()
     {
-        var prepared = Utf8FrontEnd.Compile("((?:a|b){0,2147483647})z", RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(2);
-
-        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix(
-            "abz"u8,
-            prepared.ExecutionProgram,
-            0,
-            captures,
-            Utf8ExecutionDeadline.Infinite,
-            out var matchedLength));
-        Assert.Equal(3, matchedLength);
-        Assert.True(captures.TryGet(1, out var captureStart, out var captureLength));
-        Assert.Equal(0, captureStart);
-        Assert.Equal(2, captureLength);
+        var regex = new Utf8Regex("((?:a|b){0,2147483647})z", RegexOptions.CultureInvariant);
+        var match = regex.MatchDetailed("abz"u8);
+        Assert.True(match.Success);
+        Assert.Equal(3, match.LengthInBytes);
+        Assert.Equal((0, 2), (match.GetGroup(1).IndexInBytes, match.GetGroup(1).LengthInBytes));
     }
 
     [Fact]
-    public void FailedAlternativeRestoresCaptureSlots()
+    public void FailedAlternativeRestoresScalarCaptures()
     {
-        var prepared = Utf8FrontEnd.Compile("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(3);
-
-        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix(
-            "bd"u8,
-            prepared.ExecutionProgram,
-            0,
-            captures,
-            Utf8ExecutionDeadline.Infinite,
-            out var matchedLength));
-        Assert.Equal(2, matchedLength);
-        Assert.False(captures.TryGet(1, out _, out _));
-        Assert.True(captures.TryGet(2, out var captureStart, out var captureLength));
-        Assert.Equal(0, captureStart);
-        Assert.Equal(1, captureLength);
+        var regex = new Utf8Regex("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
+        var match = regex.MatchDetailed("bd"u8);
+        Assert.True(match.Success);
+        Assert.Equal(2, match.LengthInBytes);
+        Assert.False(match.GetGroup(1).Success);
+        Assert.Equal(0, match.GetGroup(1).CaptureCount);
+        Assert.Equal((0, 1), (match.GetGroup(2).IndexInBytes, match.GetGroup(2).LengthInBytes));
     }
 
     [Fact]
-    public void TimeoutReturnsJournalAndAllowsCaptureStateReuse()
+    public void TimeoutReturnsScalarWorkingStorageAndAllowsProgramReuse()
     {
-        var prepared = Utf8FrontEnd.Compile("((?:a|b)*)z", RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(2);
-        var longInput = new byte[64 * 1024];
-        Array.Fill(longInput, (byte)'a');
-
+        var program = Utf8ScalarCaptureWitness.Lower("((?:a|b)*)z", RegexOptions.CultureInvariant, 0, 0);
+        var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
+        var input = new byte[64 * 1024]; Array.Fill(input, (byte)'a');
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
+            TimeSpan.FromTicks(1), CancellationToken.None);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        ticks = 50;
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-            Utf8ExecutionInterpreter.TryMatchPrefix(
-                longInput,
-                prepared.ExecutionProgram,
-                0,
-                captures,
-                Utf8ExecutionDeadline.Start(TimeSpan.FromTicks(1)),
-                out _));
-
-        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix(
-            "abz"u8,
-            prepared.ExecutionProgram,
-            0,
-            captures,
-            Utf8ExecutionDeadline.Infinite,
-            out var matchedLength));
-        Assert.Equal(3, matchedLength);
+            Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, true, ref invocation));
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(7);
+        Utf8ScalarCaptureWitness.AssertAsciiAt(program, new Regex("((?:a|b)*)z"), "abz", 0);
     }
 
     [Fact]
-    public void WarmCaptureBacktrackingHasNoTemporaryAllocation()
+    public void WarmByteBacktrackingHasNoTemporaryAllocation()
     {
         var prepared = Utf8FrontEnd.Compile("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
-        var captures = new Utf8CaptureSlots(3);
-
         for (var i = 0; i < 16; i++)
-        {
-            Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix(
-                "bd"u8,
-                prepared.ExecutionProgram,
-                0,
-                captures,
-                Utf8ExecutionDeadline.Infinite,
-                out _));
-        }
-
+            Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram,
+                0, Utf8ExecutionDeadline.Infinite, out _));
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 256; i++)
-        {
-            Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix(
-                "bd"u8,
-                prepared.ExecutionProgram,
-                0,
-                captures,
-                Utf8ExecutionDeadline.Infinite,
-                out _));
-        }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        Assert.Equal(0, allocated);
+            Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram,
+                0, Utf8ExecutionDeadline.Infinite, out _));
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 }

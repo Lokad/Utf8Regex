@@ -481,7 +481,6 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
                 _regexPlan.SearchPlan,
                 _regexPlan.SimplePatternPlan,
                 0,
-                captures: null,
                 budget,
                 out _) >= 0;
         }
@@ -618,7 +617,6 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
                 _regexPlan.SearchPlan,
                 _regexPlan.SimplePatternPlan,
                 0,
-                captures: null,
                 budget,
                 out var matchLength);
             if (index < 0)

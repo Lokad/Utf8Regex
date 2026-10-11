@@ -5,19 +5,17 @@ internal static partial class Utf8ExecutionInterpreter
     // Immutable active-node versions let saved choices restore any enclosing
     // group or loop without cloning a continuation stack or losing inner choices.
     private readonly record struct ProgramFrame(int Parent, int Enter, int Start, int Count, uint Depth, bool Stop);
-    private readonly record struct ProgramChoice(int Pc, int Index, int Head, Utf8CaptureCheckpoint Checkpoint, bool Repeat);
+    private readonly record struct ProgramChoice(int Pc, int Index, int Head, bool Repeat);
 
     internal static bool TryMatchProgram(
         ReadOnlySpan<byte> input, Utf8ExecutionProgram program, int instructionIndex, int startIndex,
-        Utf8CaptureSlots? captures, ref Utf8SliceInvocation invocation,
+        ref Utf8SliceInvocation invocation,
         out int endIndex, out Utf8ExecutionLimitKind breach)
     {
         endIndex = 0;
         breach = Utf8ExecutionLimitKind.None;
         var nodes = new Utf8InvocationStateBuffer<ProgramFrame>();
         var choices = new Utf8InvocationStateBuffer<ProgramChoice>();
-        var journaling = false;
-        var successful = false;
         var head = -1;
         var pc = instructionIndex;
         var index = startIndex;
@@ -25,11 +23,9 @@ internal static partial class Utf8ExecutionInterpreter
         var origin = invocation.AnchorOriginByte < 0 ? startIndex : invocation.AnchorOriginByte;
         try
         {
-            if (captures is not null) breach = captures.TryClear(ref invocation);
-            if (breach != Utf8ExecutionLimitKind.None || (uint)startIndex > (uint)input.Length ||
+            if ((uint)startIndex > (uint)input.Length ||
                 (uint)instructionIndex >= (uint)program.Instructions.Count ||
                 program.Instructions[instructionIndex].Kind != Utf8ExecutionInstructionKind.Enter) return false;
-            if (captures is not null) { captures.BeginInvocation(); journaling = true; }
             while (true)
             {
                 breach = invocation.TryChargeStep();
@@ -52,7 +48,7 @@ internal static partial class Utf8ExecutionInterpreter
                         else
                         {
                             index = next;
-                            breach = CompleteProgramIteration(program, ref nodes, ref choices, captures, index,
+                            breach = CompleteProgramIteration(program, ref nodes, ref choices, index,
                                 ref invocation, ref head, out pc, out repeat);
                         }
                     }
@@ -66,7 +62,7 @@ internal static partial class Utf8ExecutionInterpreter
                         {
                             var sibling = instruction.PartnerIndex + 1;
                             if (sibling < program.Instructions[nodes[head].Enter].PartnerIndex)
-                                breach = choices.TryPush(new ProgramChoice(sibling, index, head, captures?.CreateCheckpoint() ?? default, false), ref invocation);
+                                breach = choices.TryPush(new ProgramChoice(sibling, index, head, false), ref invocation);
                             if (breach != Utf8ExecutionLimitKind.None) return false;
                         }
                         var depth = head < 0 ? 1U : nodes[head].Depth + 1;
@@ -86,7 +82,7 @@ internal static partial class Utf8ExecutionInterpreter
                             case Utf8ExecutionNodeKind.Loop:
                             case Utf8ExecutionNodeKind.LazyLoop:
                                 if (instruction.Max < instruction.Min) failed = true;
-                                else breach = ScheduleProgramLoop(program, nodes[head], head, index, captures,
+                                else breach = ScheduleProgramLoop(program, nodes[head], head, index,
                                     ref choices, ref invocation, out pc, out repeat);
                                 break;
                             default:
@@ -98,19 +94,14 @@ internal static partial class Utf8ExecutionInterpreter
                     else
                     {
                         var closed = nodes[head];
-                        var enter = program.Instructions[closed.Enter];
                         if (closed.Enter != instruction.PartnerIndex)
                             throw new InvalidOperationException("A program exit does not match its active continuation.");
-                        if (enter.NodeKind == Utf8ExecutionNodeKind.Capture && captures is not null)
-                            breach = captures.TrySet(enter.CaptureNumber, closed.Start, index - closed.Start, ref invocation);
-                        if (breach != Utf8ExecutionLimitKind.None) return false;
                         head = closed.Parent;
                         if (head < 0)
                         {
                             breach = invocation.TryChargeInputStep();
                             if (breach != Utf8ExecutionLimitKind.None) return false;
                             endIndex = index;
-                            successful = true;
                             return true;
                         }
                         pc++;
@@ -120,7 +111,7 @@ internal static partial class Utf8ExecutionInterpreter
                             pc = parentInstruction.PartnerIndex;
                         else if (parentInstruction.NodeKind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop &&
                             pc == parentInstruction.PartnerIndex)
-                            breach = CompleteProgramIteration(program, ref nodes, ref choices, captures, index,
+                            breach = CompleteProgramIteration(program, ref nodes, ref choices, index,
                                 ref invocation, ref head, out pc, out repeat);
                     }
                 }
@@ -129,8 +120,6 @@ internal static partial class Utf8ExecutionInterpreter
                 if (choices.Count == 0) return false;
                 var choice = choices[choices.Count - 1];
                 choices.Pop();
-                if (captures is not null) breach = captures.TryRollback(choice.Checkpoint, ref invocation);
-                if (breach != Utf8ExecutionLimitKind.None) return false;
                 pc = choice.Pc;
                 index = choice.Index;
                 head = choice.Head;
@@ -139,12 +128,6 @@ internal static partial class Utf8ExecutionInterpreter
         }
         finally
         {
-            if (journaling && captures is not null)
-            {
-                if (!successful) captures.Rollback(default);
-                captures.EndInvocation(ref invocation);
-            }
-            if (!successful) captures?.Clear();
             choices.Release(ref invocation);
             nodes.Release(ref invocation);
         }
@@ -160,7 +143,7 @@ internal static partial class Utf8ExecutionInterpreter
 
     private static Utf8ExecutionLimitKind CompleteProgramIteration(
         Utf8ExecutionProgram program, ref Utf8InvocationStateBuffer<ProgramFrame> nodes,
-        ref Utf8InvocationStateBuffer<ProgramChoice> choices, Utf8CaptureSlots? captures, int index,
+        ref Utf8InvocationStateBuffer<ProgramChoice> choices, int index,
         ref Utf8SliceInvocation invocation, ref int head, out int pc, out bool repeat)
     {
         var loop = nodes[head];
@@ -168,11 +151,11 @@ internal static partial class Utf8ExecutionInterpreter
         var breach = PushProgramNode(ref nodes, updated, ref invocation, out head);
         pc = 0; repeat = false;
         return breach != Utf8ExecutionLimitKind.None ? breach
-            : ScheduleProgramLoop(program, updated, head, index, captures, ref choices, ref invocation, out pc, out repeat);
+            : ScheduleProgramLoop(program, updated, head, index, ref choices, ref invocation, out pc, out repeat);
     }
 
     private static Utf8ExecutionLimitKind ScheduleProgramLoop(
-        Utf8ExecutionProgram program, ProgramFrame loop, int head, int index, Utf8CaptureSlots? captures,
+        Utf8ExecutionProgram program, ProgramFrame loop, int head, int index,
         ref Utf8InvocationStateBuffer<ProgramChoice> choices, ref Utf8SliceInvocation invocation, out int pc, out bool repeat)
     {
         var instruction = program.Instructions[loop.Enter];
@@ -181,7 +164,7 @@ internal static partial class Utf8ExecutionInterpreter
         if (loop.Count >= instruction.Max || loop.Stop && loop.Count >= instruction.Min) return Utf8ExecutionLimitKind.None;
         if (loop.Count < instruction.Min) { repeat = true; return Utf8ExecutionLimitKind.None; }
         var lazy = instruction.NodeKind == Utf8ExecutionNodeKind.LazyLoop;
-        var breach = choices.TryPush(new ProgramChoice(pc, index, head, captures?.CreateCheckpoint() ?? default, lazy), ref invocation);
+        var breach = choices.TryPush(new ProgramChoice(pc, index, head, lazy), ref invocation);
         repeat = !lazy;
         return breach;
     }

@@ -75,7 +75,6 @@ public sealed class Utf8OwnedPreparationContinuationTests
                 Assert.Equal(node.Text, instruction.Text);
                 Assert.Same(node.Payload, instruction.Payload);
                 Assert.Equal(node.Ch, instruction.Ch);
-                Assert.Equal(node.CaptureNumber, instruction.CaptureNumber);
                 Assert.Equal(node.Min, instruction.Min);
                 Assert.Equal(node.Max, instruction.Max);
                 entered.Push(index);

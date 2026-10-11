@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Caching;
 
 // Complete library-owned execution IR, including physical instruction/child
-// arrays, inline capture layout and canonical scalar class payloads. Prepared
+// arrays and canonical scalar class payloads. Prepared
 // search plans, runtime helpers and opaque CLR graphs have separate ownership.
 internal static class Utf8ExecutionRetainedStorage
 {
@@ -36,7 +36,6 @@ internal static class Utf8ExecutionRetainedStorage
                         throw new InvalidOperationException("Execution instructions require a qualified physical array.");
                     if (storage.TryAdd(instructions, Utf8ConstructionBudget.ArrayBytes<Utf8ExecutionInstruction>(instructions.Length)))
                         foreach (var instruction in instructions) { storage.Check(); pending.Push(instruction.Payload); }
-                    if (body.DeterministicCaptureLayout is { } layout) storage.Array(layout.Captures);
                     break;
                 case Utf8ScalarClass scalarClass:
                     if (storage.TryAdd(scalarClass, Utf8ScalarClass.ObjectBytes)) storage.Array(scalarClass.Data);

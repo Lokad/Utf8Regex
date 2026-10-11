@@ -9,7 +9,6 @@ internal readonly record struct Utf8ExecutionInstruction(
     object Payload,
     AsciiCharClass? CharClass,
     char Ch,
-    int CaptureNumber,
     int Min,
     int Max,
     int PartnerIndex)

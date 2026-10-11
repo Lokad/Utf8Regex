@@ -38,7 +38,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
                 var expected = accepted.Contains((char)value);
                 Assert.Equal(expected, atom.CharClass.Value.Contains((byte)value));
                 Assert.Equal(expected, Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix([(byte)value],
-                    analysis.ExecutionProgram, 0, null, Utf8ExecutionDeadline.Infinite, out var length));
+                    analysis.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out var length));
                 Assert.Equal(expected ? 1 : 0, length);
             }
         }
@@ -48,10 +48,10 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Loop));
         Assert.True(compact.CharClass.HasValue);
         Assert.Equal(string.Empty, compact.Text);
-        Assert.True(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("ab"u8, dot.ExecutionProgram, 0, null,
+        Assert.True(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("ab"u8, dot.ExecutionProgram, 0,
             Utf8ExecutionDeadline.Infinite, out var consumed));
         Assert.Equal(2, consumed);
-        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("😀"u8, dot.ExecutionProgram, 0, null,
+        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("😀"u8, dot.ExecutionProgram, 0,
             Utf8ExecutionDeadline.Infinite, out consumed));
         Assert.Equal(0, consumed);
         Assert.Equal(4, new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).LengthInBytes);
@@ -64,7 +64,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Assert.NotNull(emptyProgram);
         Assert.True(emptyProgram.Instructions[0].CharClass.HasValue);
         Assert.True(emptyProgram.Instructions[0].CharClass.Value.IsEmpty);
-        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("a"u8, emptyProgram, 0, null,
+        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("a"u8, emptyProgram, 0,
             Utf8ExecutionDeadline.Infinite, out _));
         var literal = Utf8ExecutionProgramLowerer.Lower(new(new(Utf8ExecutionNodeKind.One,
             RegexOptions.None, [], string.Empty, 'a', 0, 1, 1)));
@@ -76,7 +76,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Loop));
         Assert.NotNull(unprovedClass.ScalarClass);
         Assert.Null(unprovedClass.CharClass);
-        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("\0"u8, unproved.ExecutionProgram, 0, null,
+        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("\0"u8, unproved.ExecutionProgram, 0,
             Utf8ExecutionDeadline.Infinite, out _));
     }
 
@@ -108,7 +108,6 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         {
             case 0: Assert.NotNull(Utf8ExecutionTreeLowerer.Lower(input.Semantic)); break;
             case 1: Assert.NotNull(Utf8ExecutionProgramLowerer.Lower(input.Tree)); break;
-            case 2: Assert.NotNull(Utf8ExecutionInterpreter.CreateDeterministicCaptureLayout(input.Program)); break;
             default: throw new ArgumentOutOfRangeException(nameof(route));
         }
     }
@@ -116,7 +115,6 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     [Theory]
     [InlineData(0, 0)] [InlineData(0, 1)] [InlineData(0, 2)]
     [InlineData(1, 0)] [InlineData(1, 1)] [InlineData(1, 2)]
-    [InlineData(2, 0)] [InlineData(2, 1)] [InlineData(2, 2)]
     public void RootAdmissionPrecedesTraversalAndLeavesParentIntact(int route, int denial)
     {
         var input = Make(0);
@@ -141,7 +139,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void ChildDepthDenialUnwindsAndAllowsRecovery(int route)
     {
         var input = Make(32);
@@ -164,7 +162,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void GrowingStorageDenialReleasesAllPayloadAndScratchLoans(int route)
     {
         var input = Make(128);
@@ -183,7 +181,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void EveryWorkCutoffRestoresParentWithoutRefundingSpentWork(int route)
     {
         var input = Make(3);
@@ -220,7 +218,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void EveryByteCutoffAdmitsBeforeAcquisitionAndRestoresParent(int route)
     {
         var input = Make(3);
@@ -255,7 +253,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)] [InlineData(1)]
     public void SuccessfulResultsTransferPayloadLoansWhileScratchDepthCloses(int route)
     {
         var input = Make(3);
@@ -298,35 +296,14 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     }
 
     [Fact]
-    public void CaptureLayoutKeepsLastSharedDeclarationWithoutRetainingHashTable()
+    public void ScalarSharedDeclarationsRetainEveryCaptureAndTheFinalByteRange()
     {
-        var prepared = Utf8FrontEnd.Compile("(?<x>a)(?<x>bc)", RegexOptions.CultureInvariant);
-        Assert.NotNull(prepared.ExecutionProgram);
-        var layout = Assert.IsType<Utf8DeterministicCaptureLayout>(prepared.ExecutionProgram.DeterministicCaptureLayout);
-        var captures = Assert.IsType<KeyValuePair<int, Utf8DeterministicCaptureSlice>[]>(layout.Captures);
-        Assert.Equal(3, layout.MatchLength);
-        Assert.Equal(new Utf8DeterministicCaptureSlice(1, 2), captures.Single(static pair => pair.Key == 1).Value);
-        Assert.Equal(new Utf8DeterministicCaptureSlice(0, 3), captures.Single(static pair => pair.Key == 0).Value);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var sum = 0;
-        for (var repeat = 0; repeat < 1000; repeat++) foreach (var pair in captures) sum += pair.Value.Length;
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(5000, sum);
-        Assert.Equal(0, allocated);
-    }
-
-    [Fact]
-    public void UnsupportedCaptureLayoutDeclinesWithoutRetainingScratch()
-    {
-        var input = new Utf8ExecutionTree(new(Utf8ExecutionNodeKind.Alternate, RegexOptions.None, [], "", '\0', 0, 0, 0));
-        var program = Utf8ExecutionProgramLowerer.Lower(input);
-        Assert.NotNull(program);
-        using var owner = Utf8ConstructionScope.Enter();
-        Assert.Null(Utf8ExecutionInterpreter.CreateDeterministicCaptureLayout(program));
-        Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Reserved);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
-        Assert.True(owner.Budget.WorkSteps > 0);
+        var regex = new Utf8Regex("(?<x>a)(?<x>😀)", RegexOptions.CultureInvariant);
+        var match = regex.MatchDetailed("a😀"u8);
+        Assert.True(match.Success);
+        var group = match.GetGroup("x");
+        Assert.Equal(2, group.CaptureCount);
+        Assert.Equal((1, 4), (group.IndexInBytes, group.LengthInBytes));
+        Assert.Equal("😀", group.GetValueString());
     }
 }

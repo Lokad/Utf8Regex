@@ -270,12 +270,11 @@ public sealed class Utf8SharedStatePoolTests
                     Utf8ExactStatePool<ReferenceState>.Return(items, true);
                     Assert.Equal(default, items[0]);
                     var prepared = Utf8FrontEnd.Compile("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
-                    var captures = new Utf8CaptureSlots(3);
                     for (var index = 0; index < 16; index++)
-                        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, captures, Utf8ExecutionDeadline.Infinite, out _));
+                        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out _));
                     var before = GC.GetAllocatedBytesForCurrentThread();
                     for (var index = 0; index < 256; index++)
-                        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, captures, Utf8ExecutionDeadline.Infinite, out _));
+                        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out _));
                     Assert.True(GC.GetAllocatedBytesForCurrentThread() - before > 0);
                 }
                 catch (Exception error) { failure = error; }
@@ -288,7 +287,7 @@ public sealed class Utf8SharedStatePoolTests
             Assert.Same(original, Utf8ExactStatePool<ReferenceState>.Rent(16, false));
             // Exact original fixture input, warmup, interval and zero-byte guard
             // still pass once the optional pool is available without contention.
-            new Utf8ReversibleMatchStateTests().WarmCaptureBacktrackingHasNoTemporaryAllocation();
+            new Utf8ReversibleMatchStateTests().WarmByteBacktrackingHasNoTemporaryAllocation();
         }
         finally
         {
@@ -317,49 +316,6 @@ public sealed class Utf8SharedStatePoolTests
             if (allow) Assert.Equal(455ul, invocation.Budget.PeakWorkingBytes);
         }
         finally { buffer.Release(ref invocation); }
-        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(192, false)] [InlineData(223, false)] [InlineData(224, true)]
-    public void CaptureJournalIncludesItsFullArrayBeforeMutatingSlots(ulong maximum, bool allow)
-    {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, maximum), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var captures = new Utf8CaptureSlots(2);
-        captures.BeginInvocation();
-        try
-        {
-            Assert.Equal(allow ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, captures.TrySet(1, 2, 3, ref invocation));
-            Assert.Equal(allow, captures.TryGet(1, out var start, out var length));
-            if (allow) { Assert.Equal(2, start); Assert.Equal(3, length); }
-            Assert.Equal(allow ? 224ul : 0ul, invocation.Ledger.ReservedBytes);
-        }
-        finally { captures.EndInvocation(ref invocation); }
-        Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(646, false)] [InlineData(647, true)]
-    public void CaptureJournalGrowthAdmitsHeadersAndRestoresCheckpointState(ulong maximum, bool allow)
-    {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, maximum), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var captures = new Utf8CaptureSlots(2);
-        captures.BeginInvocation();
-        var checkpoint = captures.CreateCheckpoint();
-        try
-        {
-            for (var index = 0; index < 16; index++) Assert.Equal(Utf8ExecutionLimitKind.None, captures.TrySet(1, index, 1, ref invocation));
-            Assert.Equal(231ul, invocation.Ledger.ReservedBytes);
-            Assert.Equal(allow ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, captures.TrySet(1, 99, 1, ref invocation));
-            Assert.True(captures.TryGet(1, out var start, out _));
-            Assert.Equal(allow ? 99 : 15, start);
-            Assert.Equal(allow ? 423ul : 231ul, invocation.Ledger.ReservedBytes);
-            if (allow) Assert.Equal(647ul, invocation.Budget.PeakWorkingBytes);
-            Assert.Equal(Utf8ExecutionLimitKind.None, captures.TryRollback(checkpoint, ref invocation));
-            Assert.False(captures.TryGet(1, out _, out _));
-        }
-        finally { captures.EndInvocation(ref invocation); }
         Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
     }
 
