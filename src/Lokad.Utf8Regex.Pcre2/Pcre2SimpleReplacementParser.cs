@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal;
 namespace Lokad.Utf8Regex.Pcre2;
 
 // This optimizer publishes complete UTF-8 fragments. Declines restore speculative
-// capacity and roots without refunding work; the full evaluator owns other grammar.
+// capacity and roots without refunding work; the prepared compiler owns other grammar.
 internal static class Pcre2SimpleReplacementParser
 {
     internal static Pcre2SimpleReplacementPlan Literal(string replacement)
@@ -12,6 +12,7 @@ internal static class Pcre2SimpleReplacementParser
         using var storage = Utf8ConstructionSession.Create(scope.Budget);
         var segments = storage.Allocate<Pcre2SimpleReplacementSegment>(1);
         segments[0] = FromLiteral(storage, replacement.AsSpan());
+        Pcre2ReplacementPreparationControl.Check();
         storage.Complete(); scope.Complete();
         return new(segments);
     }
@@ -26,6 +27,7 @@ internal static class Pcre2SimpleReplacementParser
         var literalStart = 0;
         for (var index = 0; index < replacement.Length; index++)
         {
+            Pcre2ReplacementPreparationControl.Check();
             storage.Budget.ChargeWork(1);
             if (replacement[index] != '$' || index + 1 == replacement.Length) continue;
             storage.Budget.ChargeWork(1);
@@ -56,12 +58,13 @@ internal static class Pcre2SimpleReplacementParser
         if (segments.Count == 0 || literalStart < replacement.Length)
             segments.Add(FromLiteral(storage, replacement.AsSpan(literalStart)));
         plan = new(storage.Copy(segments));
+        Pcre2ReplacementPreparationControl.Check();
         storage.Complete(); scope.Complete();
         return true;
     }
 
     private static Pcre2SimpleReplacementSegment FromLiteral(Utf8ConstructionSession storage, ReadOnlySpan<char> literal)
-        => new(storage.EncodeRepairedUtf8(literal), false);
+        => new(storage.EncodeRepairedUtf8(literal, default(Pcre2ReplacementTextControl)), false);
 }
 
 // Value descriptors borrow the admitted segment array and its payloads.

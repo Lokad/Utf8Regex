@@ -289,7 +289,9 @@ public sealed partial class Utf8Pcre2Regex
         try
         {
             // Attribution now measures the actual UTF-8 expansion and returns byte length.
-            writer.AppendTemplate(replacement, substitutionOptions, null, groups, value.StartOffsetInBytes,
+            writer.AppendTemplate((substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+                ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+                : GetReplacementPreparation(replacement, substitutionOptions), substitutionOptions, groups, value.StartOffsetInBytes,
                 value.EndOffsetInBytes - value.StartOffsetInBytes, match.Mark);
             return writer.Length;
         }

@@ -73,10 +73,15 @@ internal sealed class Utf8ConstructionSession(
     // Replacement text repairs invalid UTF-16 inside each independent literal
     // fragment. Pattern encoding remains strict; this is shared interop work.
     internal byte[] EncodeRepairedUtf8(ReadOnlySpan<char> text)
+        => EncodeRepairedUtf8(text, default(Utf8ConstructionTextNoControl));
+
+    internal byte[] EncodeRepairedUtf8<TControl>(ReadOnlySpan<char> text, TControl control)
+        where TControl : struct, IUtf8ConstructionTextControl
     {
         var count = 0;
         for (var index = 0; index < text.Length;)
         {
+            control.Check();
             budget.ChargeWork(1);
             var rune = ReadScalar(text, ref index);
             count = checked(count + rune.Utf8SequenceLength);
@@ -85,6 +90,7 @@ internal sealed class Utf8ConstructionSession(
         var written = 0;
         for (var index = 0; index < text.Length;)
         {
+            control.Check();
             budget.ChargeWork(1);
             var rune = ReadScalar(text, ref index);
             budget.ChargeWork((ulong)rune.Utf8SequenceLength);
@@ -110,4 +116,15 @@ internal sealed class Utf8ConstructionSession(
         arrays.Dispose();
         budget.LeaveDepth();
     }
+}
+
+// Generic interop encoding shares construction admission while a caller can
+// additionally observe its synchronous operation control without a delegate.
+internal interface IUtf8ConstructionTextControl
+{
+    void Check();
+}
+internal readonly struct Utf8ConstructionTextNoControl : IUtf8ConstructionTextControl
+{
+    public void Check() { }
 }

@@ -90,8 +90,8 @@ public sealed class Pcre2ReplacementByteExpansionTests
         try
         {
             Assert.Equal(4ul, writer.ReservedWorkingBytes);
-            writer.AppendTemplate("café😀", Pcre2SubstitutionOptions.None, null, [], 0, 4, null);
-            Assert.Equal(16ul, writer.ReservedWorkingBytes);
+            writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀", Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null);
+            Assert.Equal(9ul, writer.ReservedWorkingBytes);
             var result = writer.Complete();
             Assert.Equal("café😀"u8.ToArray(), result);
             Assert.Equal(0ul, writer.ReservedWorkingBytes);
@@ -104,7 +104,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         try
         {
             Pcre2MatchException? failure = null;
-            try { limited.AppendTemplate("café😀", Pcre2SubstitutionOptions.None, null, [], 0, 4, null); }
+            try { limited.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀", Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null); }
             catch (Pcre2MatchException error) { failure = error; }
             Assert.NotNull(failure);
             Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
@@ -128,7 +128,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         try
         {
             Exception? failure = null;
-            try { writer.AppendTemplate(new string('x', 256), Pcre2SubstitutionOptions.None, null, [], 0, 4, null); }
+            try { writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse(new string('x', 256), Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null); }
             catch (Exception error) { failure = error; }
             if (deadline) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

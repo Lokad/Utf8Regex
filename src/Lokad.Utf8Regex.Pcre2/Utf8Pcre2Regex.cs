@@ -1683,6 +1683,16 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions,
         CancellationToken cancellationToken)
     {
+        using var preparationControl = Pcre2ReplacementPreparationControl.EnterOperation(_program.Request.MatchTimeout, cancellationToken);
+        var result = ReplaceCoreWithPreparationControl(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken);
+        Pcre2ReplacementPreparationControl.Check();
+        return result;
+    }
+
+    private byte[] ReplaceCoreWithPreparationControl(ReadOnlySpan<byte> input, string replacement,
+        Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
         if (RejectsReplacementIteration())
         {
             throw new NotSupportedException("SPEC-PCRE2 rejects replacement for lookaround-\\K iterative matches.");
@@ -1757,8 +1767,9 @@ public sealed partial class Utf8Pcre2Regex
     {
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simple = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? Pcre2SimpleReplacementParser.Literal(replacement) : GetSimpleReplacementPlan(replacement, templateOptions);
+        var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+            : GetReplacementPreparation(replacement, templateOptions);
         var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None, token);
         if (!enumerator.MoveNext()) return replacementOnly ? [] : input.ToArray();
         var writer = CreateTemplateWriter(input, token);
@@ -1771,7 +1782,7 @@ public sealed partial class Utf8Pcre2Regex
                 var match = MatchDetailed(input, value.StartOffsetInBytes, Pcre2MatchOptions.None, token);
                 if (!match.Success) throw new InvalidOperationException("Translated enumeration produced a match that MatchDetailed(...) could not reproduce.");
                 if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
-                writer.AppendTemplate(replacement, templateOptions, simple, CaptureGroups(match), value.StartOffsetInBytes,
+                writer.AppendTemplate(preparation, templateOptions, CaptureGroups(match), value.StartOffsetInBytes,
                     value.EndOffsetInBytes - value.StartOffsetInBytes, match.Mark);
                 position = value.EndOffsetInBytes;
             } while (enumerator.MoveNext());
@@ -1790,8 +1801,9 @@ public sealed partial class Utf8Pcre2Regex
         if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0 ? [] : input.ToArray();
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simple = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? Pcre2SimpleReplacementParser.Literal(replacement) : GetSimpleReplacementPlan(replacement, templateOptions);
+        var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+            : GetReplacementPreparation(replacement, templateOptions);
         var writer = CreateTemplateWriter(input, token);
         try
         {
@@ -1801,7 +1813,7 @@ public sealed partial class Utf8Pcre2Regex
                 var groups = cursor.ProjectCurrentCaptures();
                 var value = groups[0];
                 if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
-                writer.AppendTemplate(replacement, templateOptions, simple, groups, value.StartOffsetInBytes,
+                writer.AppendTemplate(preparation, templateOptions, groups, value.StartOffsetInBytes,
                     value.EndOffsetInBytes - value.StartOffsetInBytes, cursor.Current.Mark);
                 position = value.EndOffsetInBytes;
             } while (cursor.MoveNext());
@@ -1819,8 +1831,9 @@ public sealed partial class Utf8Pcre2Regex
         if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0 ? [] : input.ToArray();
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simple = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? Pcre2SimpleReplacementParser.Literal(replacement) : GetSimpleReplacementPlan(replacement, templateOptions);
+        var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+            : GetReplacementPreparation(replacement, templateOptions);
         var writer = CreateTemplateWriter(input, token);
         try
         {
@@ -1831,7 +1844,7 @@ public sealed partial class Utf8Pcre2Regex
                 var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
                 var value = groups[0];
                 if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
-                writer.AppendTemplate(replacement, templateOptions, simple, groups, value.StartOffsetInBytes,
+                writer.AppendTemplate(preparation, templateOptions, groups, value.StartOffsetInBytes,
                     value.EndOffsetInBytes - value.StartOffsetInBytes, null);
                 position = value.EndOffsetInBytes;
             } while (cursor.MoveNext());
@@ -1896,28 +1909,34 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private Pcre2SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions)
+    private Pcre2SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions options)
+        => GetReplacementPreparation(replacement, options).Simple;
+
+    private Pcre2ReplacementPreparation GetReplacementPreparation(string replacement, Pcre2SubstitutionOptions options)
     {
-        return _replacementComponent.GetOrAdd(
-            new Pcre2SimpleReplacementCacheKey(replacement, substitutionOptions),
-            static key => TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var plan) ? plan : null);
+        using var control = Pcre2ReplacementPreparationControl.JoinOrEnter(_program.Request.MatchTimeout);
+        var result = _replacementComponent.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), static key =>
+            TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var simple)
+                ? new(simple, null) : new(null, Pcre2PreparedReplacementParser.Parse(key.Replacement, key.Options)));
+        Pcre2ReplacementPreparationControl.Check();
+        return result;
     }
 
     private static bool TryParseSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions, out Pcre2SimpleReplacementPlan plan)
         => Pcre2SimpleReplacementParser.TryParse(replacement, substitutionOptions, out plan);
 
-    private readonly record struct Pcre2SimpleReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
+    private readonly record struct Pcre2ReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
 
     private sealed class Pcre2ReplacementComponent
     {
         private const int Capacity = 16;
-        private readonly Utf8BoundedPreparationCache<Pcre2SimpleReplacementCacheKey, Pcre2SimpleReplacementPlan?> _plans = new(Capacity);
+        private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _plans = new(Capacity);
 
         internal int Count => _plans.Count;
 
-        internal Pcre2SimpleReplacementPlan? GetOrAdd(
-            Pcre2SimpleReplacementCacheKey key,
-            Func<Pcre2SimpleReplacementCacheKey, Pcre2SimpleReplacementPlan?> factory)
+        internal Pcre2ReplacementPreparation GetOrAdd(
+            Pcre2ReplacementCacheKey key,
+            Func<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> factory)
             => _plans.GetOrAdd(key, factory);
     }
 
