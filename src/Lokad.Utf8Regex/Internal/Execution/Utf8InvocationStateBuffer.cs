@@ -29,7 +29,7 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
             var old = _items;
             var capacity = old is null ? 16 : old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength;
             if (capacity <= _count) return Utf8ExecutionLimitKind.WorkingBytes;
-            var bytes = (ulong)(uint)capacity * (ulong)(uint)Unsafe.SizeOf<T>();
+            var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
             if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
             var adopted = false;
             try

@@ -289,7 +289,7 @@ public sealed class Utf8LinearRuntimeContinuationTests
         var retained = Utf8ExactStatePool<ReferenceState>.RetainedBytes;
         var finite = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 4096), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, buffer.TryPush(value, ref finite));
-        Assert.Equal((ulong)(16 * Unsafe.SizeOf<ReferenceState>()), finite.Ledger.ReservedBytes);
+        Assert.Equal(Utf8ConstructionBudget.ArrayBytes<ReferenceState>(16), finite.Ledger.ReservedBytes);
         buffer.Pop();
         buffer.Release(ref finite);
         Assert.Equal(retained, Utf8ExactStatePool<ReferenceState>.RetainedBytes);
