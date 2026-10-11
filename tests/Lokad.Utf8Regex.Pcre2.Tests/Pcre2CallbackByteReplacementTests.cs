@@ -152,15 +152,15 @@ public sealed class Pcre2CallbackByteReplacementTests
                     Assert.Equal(512ul, state.Scope.Invocation.Ledger.ReservedBytes);
                     var alias = writer;
                     alias.Append("😀"u8);
-                    Assert.Equal(528ul, state.Scope.Invocation.Ledger.ReservedBytes);
+                    Assert.Equal(560ul, state.Scope.Invocation.Ledger.ReservedBytes);
                     writer = default;
                     writer.Append("𐐨"u8);
-                    Assert.Equal(800ul, state.Scope.Invocation.Ledger.ReservedBytes);
+                    Assert.Equal(864ul, state.Scope.Invocation.Ledger.ReservedBytes);
                     alias.Append("discarded"u8);
                 }
                 else
                 {
-                    Assert.Equal(528ul, state.Scope.Invocation.Ledger.ReservedBytes);
+                    Assert.Equal(560ul, state.Scope.Invocation.Ledger.ReservedBytes);
                     writer.Append("𐐨"u8);
                 }
             });

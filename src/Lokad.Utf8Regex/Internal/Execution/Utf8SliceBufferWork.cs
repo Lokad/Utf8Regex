@@ -5,9 +5,8 @@ internal static class Utf8SliceBufferWork
 {
     internal static void Checkpoint(ref Utf8SliceInvocation invocation)
     {
-        if (invocation.IsUnmetered) return;
-        if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException("Owned buffer work exceeded the invocation budget.");
+        if (invocation.IsUnmetered && invocation.CheckpointHook is null) return;
+        Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
     }
 
     internal static void Copy(ReadOnlySpan<char> source, Span<char> destination, ref Utf8SliceInvocation invocation)
@@ -22,14 +21,13 @@ internal static class Utf8SliceBufferWork
     }
 
     internal static void Copy(ReadOnlySpan<byte> source, Span<byte> destination, ref Utf8SliceInvocation invocation)
+        => Utf8InvocationOutput.Copy(source, destination, new Utf8InvocationBufferControl(ref invocation));
+
+    internal static int Utf16BlockLength(ReadOnlySpan<char> remaining)
     {
-        for (var offset = 0; offset < source.Length;)
-        {
-            Checkpoint(ref invocation);
-            var count = Math.Min(4096, source.Length - offset);
-            source.Slice(offset, count).CopyTo(destination.Slice(offset, count));
-            offset += count;
-        }
+        var count = Math.Min(2048, remaining.Length);
+        if (count < remaining.Length && char.IsHighSurrogate(remaining[count - 1]) && char.IsLowSurrogate(remaining[count])) count--;
+        return count;
     }
 
     // Fragments may be malformed before the completed byte stream is assembled.
@@ -61,7 +59,7 @@ internal static class Utf8SliceBufferWork
     internal static string DecodeUtf8(ReadOnlySpan<byte> bytes, int charCount, ref Utf8SliceInvocation invocation)
     {
         var state = new DecodeState(bytes, ref invocation);
-        return string.Create(charCount, state, static (destination, decode) =>
+        var result = string.Create(charCount, state, static (destination, decode) =>
         {
             var written = 0;
             for (var offset = 0; offset < decode.Bytes.Length;)
@@ -72,6 +70,8 @@ internal static class Utf8SliceBufferWork
                 offset += count;
             }
         });
+        Checkpoint(ref invocation);
+        return result;
     }
 
     private ref struct DecodeState(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)

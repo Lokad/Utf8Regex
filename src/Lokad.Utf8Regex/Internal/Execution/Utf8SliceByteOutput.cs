@@ -35,6 +35,8 @@ internal sealed class Utf8SliceByteOutputScope
         {
             // Admit fixed scope/deadline storage before constructing either.
             var invocation = new Utf8SliceInvocation(limits, timeout, token) { Ledger = initialLedger };
+            if (invocation.Budget.TryNoteWorkingBytes(ControlBytes) != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Owned byte output exceeded the invocation storage budget.");
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             return new(invocation);
         }
@@ -45,7 +47,7 @@ internal sealed class Utf8SliceByteOutputScope
     {
         ThrowIfClosed();
         Utf8SliceBufferWork.Checkpoint(ref Invocation);
-        if (!Invocation.Ledger.TryReserve(ControlBytes))
+        if (new Utf8InvocationBufferControl(ref Invocation).TryReserveWorking(ControlBytes) != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned byte output exceeded the invocation storage budget.");
         try
         {
@@ -117,10 +119,11 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         CheckLive();
         Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
         long needed = _length;
+        var written = _length;
         for (var offset = 0; offset < text.Length;)
         {
             Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-            var count = EncodingBlockLength(text[offset..]);
+            var count = Utf8SliceBufferWork.Utf16BlockLength(text[offset..]);
             needed += Encoding.UTF8.GetByteCount(text.Slice(offset, count));
             offset += count;
         }
@@ -129,17 +132,12 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         for (var offset = 0; offset < text.Length;)
         {
             Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-            var count = EncodingBlockLength(text[offset..]);
-            _length += Encoding.UTF8.GetBytes(text.Slice(offset, count), buffer.AsSpan(_length));
+            var count = Utf8SliceBufferWork.Utf16BlockLength(text[offset..]);
+            written += Encoding.UTF8.GetBytes(text.Slice(offset, count), buffer.AsSpan(written));
             offset += count;
         }
-    }
-
-    private static int EncodingBlockLength(ReadOnlySpan<char> text)
-    {
-        var count = Math.Min(2048, text.Length);
-        if (count < text.Length && char.IsHighSurrogate(text[count - 1]) && char.IsLowSurrogate(text[count])) count--;
-        return count;
+        Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
+        _length = written;
     }
 
     private byte[] EnsureCapacity(long needed)
@@ -148,11 +146,12 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         var buffer = _buffer;
         if (buffer is not null && needed <= buffer.Length) return buffer;
         var capacity = (int)Math.Max(needed, Math.Min(Array.MaxLength, Math.Max(16L, (long)(buffer?.Length ?? 0) * 2)));
-        var reservation = (ulong)capacity;
-        if (!scope.Invocation.Ledger.TryReserve(reservation))
+        var reservation = Utf8ConstructionBudget.ArrayBytes<byte>(capacity);
+        if (new Utf8InvocationBufferControl(ref scope.Invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned byte output exceeded the invocation storage budget.");
         try
         {
+            Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
             var next = new byte[capacity];
             if (buffer is not null) Utf8SliceBufferWork.Copy(buffer.AsSpan(0, _length), next, ref scope.Invocation);
             scope.Invocation.Ledger.Release(_reservedBytes);
@@ -170,11 +169,12 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
         {
             var capacity = Math.Min(Array.MaxLength, Math.Max(16L, (long)(pieces?.Length ?? 0) * 2));
             if (_pieceCount >= capacity) throw new InvalidOperationException("Owned byte output has too many pieces.");
-            var reservation = (ulong)capacity * 4;
-            if (!scope.Invocation.Ledger.TryReserve(reservation))
+            var reservation = Utf8ConstructionBudget.ArrayBytes<int>((int)capacity);
+            if (new Utf8InvocationBufferControl(ref scope.Invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned byte pieces exceeded the invocation storage budget.");
             try
             {
+                Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
                 var next = new int[(int)capacity];
                 if (pieces is not null)
                 {
@@ -231,12 +231,12 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
     internal byte[] ToArray()
     {
         var bytes = GetValidatedBytes();
-        var reservation = (ulong)bytes.Length;
-        if (!scope.Invocation.Ledger.TryReserve(reservation))
+        var reservation = Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length);
+        if (new Utf8InvocationBufferControl(ref scope.Invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned byte result exceeded the invocation storage budget.");
         try
         {
-            var result = new byte[bytes.Length];
+            var result = bytes.IsEmpty ? [] : new byte[bytes.Length];
             Utf8SliceBufferWork.Copy(bytes, result, ref scope.Invocation);
             return result;
         }
@@ -266,8 +266,8 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
             chars += Encoding.UTF8.GetCharCount(bytes.Slice(offset, count));
             offset += count;
         }
-        var reservation = (ulong)chars * 2;
-        if (!scope.Invocation.Ledger.TryReserve(reservation))
+        var reservation = Utf8ConstructionBudget.StringBytes(chars);
+        if (new Utf8InvocationBufferControl(ref scope.Invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned string result exceeded the invocation storage budget.");
         try { return Utf8SliceBufferWork.DecodeUtf8(bytes, chars, ref scope.Invocation); }
         finally { scope.Invocation.Ledger.Release(reservation); }

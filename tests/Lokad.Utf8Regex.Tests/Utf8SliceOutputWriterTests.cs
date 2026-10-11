@@ -50,7 +50,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void FiniteHeapFailClosesGrowthKeepingOldBuffer()
     {
-        var invocation = Invoke(0, 0, 16);
+        var invocation = Invoke(0, 0, 96);
         Assert.True(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.True(writer.Append("abcd"u8, ref invocation));
         Assert.False(writer.Append("0123456789abcdef"u8, ref invocation));
@@ -63,7 +63,7 @@ public sealed class Utf8SliceOutputWriterTests
     [Fact]
     public void RentBeyondHeapFailsWithoutReservation()
     {
-        var invocation = Invoke(0, 0, 7);
+        var invocation = Invoke(0, 0, 47);
         Assert.False(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.False(writer.Append("x"u8, ref invocation));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);

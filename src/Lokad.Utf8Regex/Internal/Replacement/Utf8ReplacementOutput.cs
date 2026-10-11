@@ -69,27 +69,30 @@ internal ref struct Utf8ReplacementOutputSink
 
     internal int BytesWritten { get; private set; }
 
-    internal void Append(ReadOnlySpan<byte> value)
+    internal void Append<TControl>(ReadOnlySpan<byte> value, scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
-        value.CopyTo(_destination[BytesWritten..]);
+        Utf8InvocationOutput.Copy(value, _destination[BytesWritten..], control);
         BytesWritten += value.Length;
     }
 
-    internal void AppendSlice(ReadOnlySpan<byte> input, int start, int length)
+    internal void AppendSlice<TControl>(ReadOnlySpan<byte> input, int start, int length, scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
         if (length != 0)
         {
-            Append(input.Slice(start, length));
+            Append(input.Slice(start, length), control);
         }
     }
 }
 
 internal static class Utf8ReplacementOutput
 {
-    internal static bool TryCopyUnchanged(
+    internal static bool TryCopyUnchanged<TControl>(
         ReadOnlySpan<byte> input,
         Span<byte> destination,
-        out int bytesWritten)
+        out int bytesWritten, scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
         if (input.Length > destination.Length)
         {
@@ -97,7 +100,7 @@ internal static class Utf8ReplacementOutput
             return false;
         }
 
-        input.CopyTo(destination);
+        Utf8InvocationOutput.Copy(input, destination, control);
         bytesWritten = input.Length;
         return true;
     }

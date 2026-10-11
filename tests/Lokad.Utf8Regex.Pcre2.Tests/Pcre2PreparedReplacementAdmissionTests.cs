@@ -112,24 +112,24 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     {
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:B}", Pcre2SubstitutionOptions.Extended));
         var groups = new[] { Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1), Pcre2GroupData.FromByteOffsets("x"u8, 1, 0, 1) };
-        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 65, Timeout.InfiniteTimeSpan, default);
+        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 144, Timeout.InfiniteTimeSpan, default);
         try
         {
-            Assert.Equal(1ul, writer.ReservedWorkingBytes);
+            Assert.Equal(48ul, writer.ReservedWorkingBytes);
             writer.AppendTemplate(preparation, Pcre2SubstitutionOptions.Extended, groups, 0, 1, null);
-            Assert.Equal(65ul, writer.ReservedWorkingBytes);
+            Assert.Equal(144ul, writer.ReservedWorkingBytes);
             Assert.Equal("A"u8.ToArray(), writer.Complete());
             Assert.Equal(0ul, writer.ReservedWorkingBytes);
         }
         finally { writer.Release(); }
-        var denied = new Pcre2ReplacementTemplateWriter("x"u8, [], 64, Timeout.InfiniteTimeSpan, default);
+        var denied = new Pcre2ReplacementTemplateWriter("x"u8, [], 143, Timeout.InfiniteTimeSpan, default);
         try
         {
             Pcre2MatchException? failure = null;
             try { denied.AppendTemplate(preparation, Pcre2SubstitutionOptions.Extended, groups, 0, 1, null); }
             catch (Pcre2MatchException error) { failure = error; }
             Assert.NotNull(failure); Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
-            Assert.Equal(1ul, denied.ReservedWorkingBytes);
+            Assert.Equal(48ul, denied.ReservedWorkingBytes);
         }
         finally { denied.Release(); }
         Assert.Equal(0ul, denied.ReservedWorkingBytes);
@@ -198,14 +198,14 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     {
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:${missing:+B:C}}", Pcre2SubstitutionOptions.Extended));
         var groups = new[] { Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1), Pcre2GroupData.FromByteOffsets("x"u8, 1, 0, 1) };
-        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 65, Timeout.InfiniteTimeSpan, default);
+        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 144, Timeout.InfiniteTimeSpan, default);
         try
         {
             Pcre2SubstitutionException? failure = null;
             try { writer.AppendTemplate(preparation, Pcre2SubstitutionOptions.Extended, groups, 0, 1, null); }
             catch (Pcre2SubstitutionException error) { failure = error; }
             Assert.NotNull(failure); Assert.Equal(Pcre2ErrorKind.UnknownReplacementGroup, failure.ErrorKind);
-            Assert.Equal(0, writer.Length); Assert.Equal(65ul, writer.ReservedWorkingBytes);
+            Assert.Equal(0, writer.Length); Assert.Equal(144ul, writer.ReservedWorkingBytes);
         }
         finally { writer.Release(); }
         Assert.Equal(0ul, writer.ReservedWorkingBytes);

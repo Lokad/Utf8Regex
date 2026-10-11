@@ -300,12 +300,13 @@ public sealed partial class Utf8Regex
                 _preparedRegex.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral &&
                 _preparedRegex.LiteralUtf8 is { Length: > 0 } literal)
             {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, CreateExecutionBudget(), CancellationToken.None);
                 return Utf8ExactLiteralReplacement.Replace(
                     input,
                     literal,
                     literalReplacementUtf8,
                     maximumReplacementCount,
-                    CreateExecutionBudget(),
+                    ref invocation,
                     out replacementCount);
             }
 

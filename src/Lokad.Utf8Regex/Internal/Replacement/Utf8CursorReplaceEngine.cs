@@ -16,22 +16,20 @@ internal static class Utf8CursorReplaceEngine
         out int replacementCount)
     {
         var ledger = new Utf8ReplacementRangeLedger();
+        ulong outputReservation = 0;
         try
         {
             var reverse = cursor.IsRightToLeft;
             var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
             replacementCount = ledger.Count;
-            if (ledger.Count == 0)
-            {
-                return input.ToArray();
-            }
-
-            var output = new byte[outputLength.Value];
-            Emit(input, replacement, output, ledger.WrittenRanges, reverse);
+            var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
+            if (ledger.Count == 0) Utf8InvocationOutput.Copy(input, output, cursor.WorkingBufferControl);
+            else Emit(input, replacement, output, ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
             return output;
         }
         finally
         {
+            cursor.WorkingBufferControl.ReleaseWorking(outputReservation);
             ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
@@ -50,7 +48,7 @@ internal static class Utf8CursorReplaceEngine
             var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
             if (ledger.Count == 0)
             {
-                return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten);
+                return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten, cursor.WorkingBufferControl);
             }
 
             if (outputLength.Value > destination.Length)
@@ -59,7 +57,7 @@ internal static class Utf8CursorReplaceEngine
                 return false;
             }
 
-            Emit(input, replacement, destination, ledger.WrittenRanges, reverse);
+            Emit(input, replacement, destination, ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
             bytesWritten = outputLength.Value;
             return true;
         }
@@ -96,7 +94,7 @@ internal static class Utf8CursorReplaceEngine
         ReadOnlySpan<byte> replacement,
         Span<byte> destination,
         ReadOnlySpan<Utf8ReplacementRange> matches,
-        bool reverse)
+        bool reverse, scoped Utf8InvocationBufferControl control)
     {
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);
@@ -105,11 +103,11 @@ internal static class Utf8CursorReplaceEngine
         for (var index = 0; index < matches.Length; index++)
         {
             var match = matches[reverse ? matches.Length - index - 1 : index];
-            sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition);
-            sink.Append(replacement);
+            sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition, control);
+            sink.Append(replacement, control);
             sourcePosition = match.Start + match.Length;
         }
 
-        sink.Append(input[sourcePosition..]);
+        sink.Append(input[sourcePosition..], control);
     }
 }

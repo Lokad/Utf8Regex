@@ -1451,6 +1451,7 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         var ledger = new Utf8ReplacementRangeLedger();
+        ulong outputReservation = 0;
         try
         {
             var outputLength = BuildLiteralDriverReplacementRanges(
@@ -1461,16 +1462,18 @@ public sealed partial class Utf8Pcre2Regex
                 ref ledger);
             if (ledger.Count == 0)
             {
-                result = replacementOnly ? [] : input.ToArray();
+                result = Utf8InvocationOutput.AllocateBytes(replacementOnly ? 0 : input.Length, cursor.WorkingBufferControl, out outputReservation);
+                if (!replacementOnly) Utf8InvocationOutput.Copy(input, result, cursor.WorkingBufferControl);
                 return true;
             }
 
-            result = new byte[outputLength.Value];
-            EmitLiteralDriverReplacement(input, plan, replacementOnly, result, ledger.WrittenRanges);
+            result = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
+            EmitLiteralDriverReplacement(input, plan, replacementOnly, result, ledger.WrittenRanges, cursor.WorkingBufferControl);
             return true;
         }
         finally
         {
+            cursor.WorkingBufferControl.ReleaseWorking(outputReservation);
             ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
@@ -1531,7 +1534,7 @@ public sealed partial class Utf8Pcre2Regex
             {
                 if (!replacementOnly)
                 {
-                    input.CopyTo(destination);
+                    Utf8InvocationOutput.Copy(input, destination, cursor.WorkingBufferControl);
                 }
 
                 bytesWritten = outputLength.Value;
@@ -1539,7 +1542,7 @@ public sealed partial class Utf8Pcre2Regex
                 return true;
             }
 
-            EmitLiteralDriverReplacement(input, plan, replacementOnly, destination, ledger.WrittenRanges);
+            EmitLiteralDriverReplacement(input, plan, replacementOnly, destination, ledger.WrittenRanges, cursor.WorkingBufferControl);
             bytesWritten = outputLength.Value;
             status = OperationStatus.Done;
             return true;
@@ -1644,7 +1647,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2SimpleReplacementPlan plan,
         bool replacementOnly,
         Span<byte> destination,
-        ReadOnlySpan<Utf8ReplacementRange> matches)
+        ReadOnlySpan<Utf8ReplacementRange> matches, scoped Pcre2CaptureProjectionBudget control)
     {
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);
@@ -1652,18 +1655,18 @@ public sealed partial class Utf8Pcre2Regex
         {
             if (!replacementOnly)
             {
-                sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition);
+                sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition, control);
             }
 
             foreach (var segment in plan.Segments)
             {
                 if (segment.IsWholeMatch)
                 {
-                    sink.AppendSlice(input, match.Start, match.Length);
+                    sink.AppendSlice(input, match.Start, match.Length, control);
                 }
                 else
                 {
-                    sink.Append(segment.LiteralUtf8);
+                    sink.Append(segment.LiteralUtf8, control);
                 }
             }
 
@@ -1672,7 +1675,7 @@ public sealed partial class Utf8Pcre2Regex
 
         if (!replacementOnly)
         {
-            sink.Append(input[sourcePosition..]);
+            sink.Append(input[sourcePosition..], control);
         }
     }
 

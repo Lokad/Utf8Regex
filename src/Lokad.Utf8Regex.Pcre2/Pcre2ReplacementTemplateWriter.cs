@@ -1,6 +1,6 @@
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -26,7 +26,11 @@ internal ref struct Pcre2ReplacementTemplateWriter
         _input = input; _names = names; _groups = []; _mark = null;
         _frames = []; _frameCount = 0; _frameReservation = 0;
         _invocation = new(new Utf8ExecutionLimits(0, 0, heapLimit), timeout, token);
-        if (!Utf8SliceOutputWriter.Rent(input.Length, ref _invocation, out _writer)) ThrowHeapLimitExceeded();
+        try
+        {
+            if (!Utf8SliceOutputWriter.Rent(input.Length, ref _invocation, out _writer)) ThrowHeapLimitExceeded();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
     }
 
     internal int Length => _writer.Length;
@@ -120,7 +124,16 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private static int Root(Pcre2PreparedReplacementPlan plan, int fragment, bool quoted)
         => fragment < 0 ? 0 : quoted ? plan.Fragments[fragment].Quoted : plan.Fragments[fragment].Normal;
 
-    internal byte[] Complete() { ReleaseFrames(); return _writer.ToArrayAndRelease(ref _invocation); }
+    internal byte[] Complete()
+    {
+        ReleaseFrames();
+        try
+        {
+            if (!_writer.TryToArrayAndRelease(ref _invocation, out var result)) ThrowHeapLimitExceeded();
+            return result;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+    }
     internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
 
     private void Push(Pcre2ReplacementRuntimeFrame frame)
@@ -129,8 +142,8 @@ internal ref struct Pcre2ReplacementTemplateWriter
         if (_frameCount == _frames.Length)
         {
             var capacity = checked(Math.Max(4, _frames.Length * 2));
-            var bytes = (ulong)capacity * (ulong)Unsafe.SizeOf<Pcre2ReplacementRuntimeFrame>();
-            if (!_invocation.Ledger.TryReserve(bytes)) ThrowHeapLimitExceeded();
+            var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2ReplacementRuntimeFrame>(capacity);
+            if (new Utf8InvocationBufferControl(ref _invocation).TryReserveWorking(bytes) != Utf8ExecutionLimitKind.None) ThrowHeapLimitExceeded();
             try
             {
                 var grown = new Pcre2ReplacementRuntimeFrame[capacity];
@@ -152,7 +165,8 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private void AppendBytes(scoped ReadOnlySpan<byte> bytes)
     {
         CheckWork();
-        if (!_writer.Append(bytes, ref _invocation)) ThrowHeapLimitExceeded();
+        try { if (!_writer.Append(bytes, ref _invocation)) ThrowHeapLimitExceeded(); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
     }
 
     private void CheckWork()
@@ -164,8 +178,11 @@ internal ref struct Pcre2ReplacementTemplateWriter
                 throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
-        { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
+        { throw DeadlineFailure(); }
     }
+
+    private static Pcre2MatchException DeadlineFailure()
+        => new("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
 
     private static void ThrowHeapLimitExceeded()
         => throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);

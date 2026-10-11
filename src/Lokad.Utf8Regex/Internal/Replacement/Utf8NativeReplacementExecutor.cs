@@ -26,7 +26,7 @@ internal static class Utf8NativeReplacementExecutor
         try
         {
             var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
-            return EmitAllocated(input, plan, outputLength, ref ledger);
+            return EmitAllocated(input, plan, outputLength, ref ledger, cursor.WorkingBufferControl);
         }
         finally
         {
@@ -45,7 +45,7 @@ internal static class Utf8NativeReplacementExecutor
         try
         {
             var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
-            return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten);
+            return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten, cursor.WorkingBufferControl);
         }
         finally
         {
@@ -128,16 +128,16 @@ internal static class Utf8NativeReplacementExecutor
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
         Utf8ReplacementOutputLength outputLength,
-        ref Utf8ReplacementRangeLedger ledger)
+        ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
     {
-        if (ledger.Count == 0)
+        var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, control, out var reservation);
+        try
         {
-            return input.ToArray();
+            if (ledger.Count == 0) Utf8InvocationOutput.Copy(input, output, control);
+            else Emit(input, plan, output, ledger.WrittenRanges, control);
+            return output;
         }
-
-        var output = new byte[outputLength.Value];
-        Emit(input, plan, output, ledger.WrittenRanges);
-        return output;
+        finally { control.ReleaseWorking(reservation); }
     }
 
     private static bool TryEmit(
@@ -146,11 +146,11 @@ internal static class Utf8NativeReplacementExecutor
         Utf8ReplacementOutputLength outputLength,
         Span<byte> destination,
         ref Utf8ReplacementRangeLedger ledger,
-        out int bytesWritten)
+        out int bytesWritten, scoped Utf8InvocationBufferControl control)
     {
         if (ledger.Count == 0)
         {
-            return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten);
+            return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten, control);
         }
 
         if (outputLength.Value > destination.Length)
@@ -159,7 +159,7 @@ internal static class Utf8NativeReplacementExecutor
             return false;
         }
 
-        Emit(input, plan, destination, ledger.WrittenRanges);
+        Emit(input, plan, destination, ledger.WrittenRanges, control);
         bytesWritten = outputLength.Value;
         return true;
     }
@@ -168,7 +168,7 @@ internal static class Utf8NativeReplacementExecutor
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
         Span<byte> destination,
-        ReadOnlySpan<Utf8ReplacementRange> ranges)
+        ReadOnlySpan<Utf8ReplacementRange> ranges, scoped Utf8InvocationBufferControl control)
     {
         var stride = plan.ReferencedCaptureGroups.Length + 1;
         var sourcePosition = 0;
@@ -178,19 +178,19 @@ internal static class Utf8NativeReplacementExecutor
             var snapshot = new Utf8ReplacementMatchSnapshot(
                 ranges[offset],
                 ranges.Slice(offset + 1, stride - 1));
-            sink.AppendSlice(input, sourcePosition, snapshot.Match.Start - sourcePosition);
-            AppendReplacement(ref sink, input, plan, snapshot);
+            sink.AppendSlice(input, sourcePosition, snapshot.Match.Start - sourcePosition, control);
+            AppendReplacement(ref sink, input, plan, snapshot, control);
             sourcePosition = snapshot.Match.Start + snapshot.Match.Length;
         }
 
-        sink.Append(input[sourcePosition..]);
+        sink.Append(input[sourcePosition..], control);
     }
 
     private static void AppendReplacement(
         ref Utf8ReplacementOutputSink sink,
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
-        Utf8ReplacementMatchSnapshot match)
+        Utf8ReplacementMatchSnapshot match, scoped Utf8InvocationBufferControl control)
     {
         foreach (var instruction in plan.Instructions)
         {
@@ -199,32 +199,32 @@ internal static class Utf8NativeReplacementExecutor
                 case Utf8ReplacementInstructionKind.Literal:
                     if (instruction.LiteralUtf8.Length > 0)
                     {
-                        sink.Append(instruction.LiteralUtf8);
+                        sink.Append(instruction.LiteralUtf8, control);
                     }
                     break;
 
                 case Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0:
                 case Utf8ReplacementInstructionKind.WholeMatch:
-                    sink.AppendSlice(input, match.Match.Start, match.Match.Length);
+                    sink.AppendSlice(input, match.Match.Start, match.Match.Length, control);
                     break;
 
                 case Utf8ReplacementInstructionKind.Group:
                     if (match.TryGetCapture(instruction.GroupNumber, out var capture))
                     {
-                        sink.AppendSlice(input, capture.Start, capture.Length);
+                        sink.AppendSlice(input, capture.Start, capture.Length, control);
                     }
                     break;
 
                 case Utf8ReplacementInstructionKind.LeftPortion:
-                    sink.Append(input[..match.Match.Start]);
+                    sink.Append(input[..match.Match.Start], control);
                     break;
 
                 case Utf8ReplacementInstructionKind.RightPortion:
-                    sink.Append(input[(match.Match.Start + match.Match.Length)..]);
+                    sink.Append(input[(match.Match.Start + match.Match.Length)..], control);
                     break;
 
                 case Utf8ReplacementInstructionKind.WholeString:
-                    sink.Append(input);
+                    sink.Append(input, control);
                     break;
 
                 default:

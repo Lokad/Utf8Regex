@@ -126,16 +126,16 @@ public sealed class Utf8OwnedReplacementInteropTests
     public void OutputGrowthAndFinalMaterializationAdmitOverlapAndBalanceAfterDenial()
     {
         const ulong controls = 2 * Utf8SliceByteOutputScope.ControlBytes;
-        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 47), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 111), Regex.InfiniteMatchTimeout, CancellationToken.None);
         var writer = scope.CreateBuffer();
         try
         {
             writer.Append("abcdefghijklmnop"u8);
-            Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+            Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             Assert.Throws<InvalidOperationException>(() => writer.Append("q"u8));
-            Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+            Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToArray());
-            Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+            Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             writer.Release();
             writer.Release();
             Assert.Equal(Utf8SliceByteOutputScope.ControlBytes, scope.Invocation.Ledger.ReservedBytes);
@@ -146,8 +146,8 @@ public sealed class Utf8OwnedReplacementInteropTests
         foreach (var encode in new[] { false, true })
         foreach (var exact in new[] { false, true })
         {
-            var finalBytes = encode ? 16UL : 32UL;
-            scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 16 + finalBytes - (exact ? 0UL : 1UL)),
+            var finalBytes = encode ? 48UL : 80UL;
+            scope = Utf8SliceByteOutputScope.Enter(new(0, 0, controls + 48 + finalBytes - (exact ? 0UL : 1UL)),
                 Regex.InfiniteMatchTimeout, CancellationToken.None);
             writer = scope.CreateBuffer();
             try
@@ -163,7 +163,7 @@ public sealed class Utf8OwnedReplacementInteropTests
                     if (encode) _ = writer.ToArray();
                     else _ = writer.ToValidatedString();
                 });
-                Assert.Equal(controls + 16, scope.Invocation.Ledger.ReservedBytes);
+                Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             }
             finally { scope.Release(); }
             Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);

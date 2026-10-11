@@ -159,7 +159,7 @@ public sealed class Utf8SliceByteEvaluatorTests
         AssertOwned(regex);
 
         const ulong control = Utf8SliceByteOutputScope.ControlBytes;
-        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control * 3 + 32), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control * 3 + 96), Regex.InfiniteMatchTimeout, CancellationToken.None);
         try
         {
             var buffer = scope.CreateBuffer();
@@ -169,7 +169,7 @@ public sealed class Utf8SliceByteEvaluatorTests
                 next.Append("X"u8);
                 scope.Retain(next);
                 buffer = next;
-                Assert.Equal(control * 2 + 16, scope.Invocation.Ledger.ReservedBytes);
+                Assert.Equal(control * 2 + 48, scope.Invocation.Ledger.ReservedBytes);
             }
             Assert.Equal("X"u8.ToArray(), buffer.ToArray());
         }
@@ -227,13 +227,13 @@ public sealed class Utf8SliceByteEvaluatorTests
         finally { scope.Release(); }
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
 
-        scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control * 2 + 47), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control * 2 + 111), Regex.InfiniteMatchTimeout, CancellationToken.None);
         try
         {
             var buffer = scope.CreateBuffer();
             buffer.Append("abcdefghijklmnop"u8);
             Assert.Throws<InvalidOperationException>(() => buffer.Append("q"u8));
-            Assert.Equal(control * 2 + 16, scope.Invocation.Ledger.ReservedBytes);
+            Assert.Equal(control * 2 + 48, scope.Invocation.Ledger.ReservedBytes);
             Assert.Equal("abcdefghijklmnop"u8.ToArray(), buffer.ToArray());
         }
         finally { scope.Release(); }
@@ -242,8 +242,8 @@ public sealed class Utf8SliceByteEvaluatorTests
         foreach (var textResult in new[] { false, true })
         foreach (var exact in new[] { false, true })
         {
-            var resultBytes = textResult ? 32UL : 16UL;
-            scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control * 2 + 16 + resultBytes - (exact ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None);
+            var resultBytes = textResult ? 80UL : 48UL;
+            scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control * 2 + 48 + resultBytes - (exact ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None);
             try
             {
                 var buffer = scope.CreateBuffer();
@@ -258,7 +258,7 @@ public sealed class Utf8SliceByteEvaluatorTests
                     if (textResult) _ = buffer.ToValidatedString();
                     else _ = buffer.ToArray();
                 });
-                Assert.Equal(control * 2 + 16, scope.Invocation.Ledger.ReservedBytes);
+                Assert.Equal(control * 2 + 48, scope.Invocation.Ledger.ReservedBytes);
             }
             finally { scope.Release(); }
             Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);
@@ -473,7 +473,7 @@ public sealed class Utf8SliceByteEvaluatorTests
             var buffer = scope.CreateBuffer();
             Assert.Throws<InvalidOperationException>(() => buffer.Append(new byte[20000]));
             Assert.True(scope.Invocation.Budget.Steps > steps);
-            Assert.Equal(Utf8SliceByteOutputScope.ControlBytes * 2 + (steps == 2 ? 0UL : 20000UL), scope.Invocation.Ledger.ReservedBytes);
+            Assert.Equal(Utf8SliceByteOutputScope.ControlBytes * 2 + (steps == 2 ? 0UL : 20032UL), scope.Invocation.Ledger.ReservedBytes);
         }
         finally { scope.Release(); }
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);

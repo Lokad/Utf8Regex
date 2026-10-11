@@ -86,12 +86,12 @@ public sealed class Pcre2ReplacementByteExpansionTests
     [Fact]
     public void GrowingOutputAdmitsOldAndNewWorkingBuffersAndAlwaysReleases()
     {
-        var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [], 32, Timeout.InfiniteTimeSpan, default);
+        var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [], 96, Timeout.InfiniteTimeSpan, default);
         try
         {
-            Assert.Equal(4ul, writer.ReservedWorkingBytes);
+            Assert.Equal(48ul, writer.ReservedWorkingBytes);
             writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀", Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null);
-            Assert.Equal(9ul, writer.ReservedWorkingBytes);
+            Assert.Equal(48ul, writer.ReservedWorkingBytes);
             var result = writer.Complete();
             Assert.Equal("café😀"u8.ToArray(), result);
             Assert.Equal(0ul, writer.ReservedWorkingBytes);
@@ -100,7 +100,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         writer.Release();
         Assert.Equal(0ul, writer.ReservedWorkingBytes);
 
-        var limited = new Pcre2ReplacementTemplateWriter("😀"u8, [], 11, Timeout.InfiniteTimeSpan, default);
+        var limited = new Pcre2ReplacementTemplateWriter("😀"u8, [], 95, Timeout.InfiniteTimeSpan, default);
         try
         {
             Pcre2MatchException? failure = null;
@@ -108,7 +108,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
             catch (Pcre2MatchException error) { failure = error; }
             Assert.NotNull(failure);
             Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
-            Assert.Equal(4ul, limited.ReservedWorkingBytes);
+            Assert.Equal(48ul, limited.ReservedWorkingBytes);
         }
         finally { limited.Release(); }
         Assert.Equal(0ul, limited.ReservedWorkingBytes);

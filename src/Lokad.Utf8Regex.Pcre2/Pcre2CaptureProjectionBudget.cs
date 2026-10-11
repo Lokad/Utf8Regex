@@ -66,6 +66,7 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
 
     public Utf8ExecutionLimitKind TryChargeWorkspaceStep()
     {
+        Pcre2ReplacementPreparationControl.Check();
         ChargeWorkspaceStep();
         return Utf8ExecutionLimitKind.None;
     }
