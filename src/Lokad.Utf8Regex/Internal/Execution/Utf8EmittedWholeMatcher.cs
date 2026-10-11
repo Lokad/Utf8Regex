@@ -21,9 +21,9 @@ internal sealed partial class Utf8EmittedWholeMatcher
         typeof(ReadOnlySpan<byte>).GetProperty("Item")?.GetMethod ??
         throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Item");
 
-    private readonly MatchDelegate _match;
+    private readonly Utf8EmittedDelegate<MatchDelegate> _match;
 
-    private Utf8EmittedWholeMatcher(MatchDelegate match)
+    private Utf8EmittedWholeMatcher(Utf8EmittedDelegate<MatchDelegate> match)
     {
         _match = match;
     }
@@ -105,7 +105,7 @@ internal sealed partial class Utf8EmittedWholeMatcher
             scope.Complete();
             return true;
 
-            MatchDelegate CompileBoundedDate()
+            Utf8EmittedDelegate<MatchDelegate> CompileBoundedDate()
             {
                 using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAnchoredBoundedDateMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
 
@@ -216,7 +216,7 @@ internal sealed partial class Utf8EmittedWholeMatcher
                     charClass.Count is > 0 and <= MaxSmallPositiveSetSize;
             }
 
-            MatchDelegate CompileOptionalField()
+            Utf8EmittedDelegate<MatchDelegate> CompileOptionalField()
             {
                 using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAnchoredOptionalFieldMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
 
@@ -347,7 +347,7 @@ internal sealed partial class Utf8EmittedWholeMatcher
             scope.Complete();
             return true;
 
-            MatchDelegate CompileRepeatedDigitGroup()
+            Utf8EmittedDelegate<MatchDelegate> CompileRepeatedDigitGroup()
             {
                 using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitRepeatedDigitGroupMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
 
@@ -400,7 +400,7 @@ internal sealed partial class Utf8EmittedWholeMatcher
         finally { budget.LeaveDepth(); }
     }
 
-    internal int MatchWhole(ReadOnlySpan<byte> input) => _match(input);
+    internal int MatchWhole(ReadOnlySpan<byte> input) => _match.Callback(input);
 
     private static bool CanCreate(AsciiSimplePatternAnchoredValidatorPlan plan)
     {
@@ -442,7 +442,7 @@ internal sealed partial class Utf8EmittedWholeMatcher
         return true;
     }
 
-    private static MatchDelegate Compile(AsciiSimplePatternAnchoredValidatorPlan plan, bool allowTrailingNewline)
+    private static Utf8EmittedDelegate<MatchDelegate> Compile(AsciiSimplePatternAnchoredValidatorPlan plan, bool allowTrailingNewline)
     {
         using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitAnchoredValidatorMatch", typeof(int), typeof(Utf8EmittedWholeMatcher), typeof(ReadOnlySpan<byte>));
 
@@ -589,15 +589,15 @@ internal sealed partial class Utf8EmittedWholeMatcher
         emitter.MarkLabel(matchedLabel);
     }
 
-    private static bool Validate(MatchDelegate match)
+    private static bool Validate(Utf8EmittedDelegate<MatchDelegate> match)
     {
         try
         {
             Utf8ConstructionScope.ChargeWork(10);
-            _ = match(ReadOnlySpan<byte>.Empty);
-            _ = match([0]);
-            _ = match("A0f"u8);
-            _ = match("AB0f"u8);
+            _ = match.Callback(ReadOnlySpan<byte>.Empty);
+            _ = match.Callback([0]);
+            _ = match.Callback("A0f"u8);
+            _ = match.Callback("AB0f"u8);
             return true;
         }
         catch (InvalidProgramException)

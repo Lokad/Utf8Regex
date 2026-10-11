@@ -27,7 +27,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         Utf8ConstructionBuffer<Instruction> Instructions, Utf8ConstructionBuffer<Type> Locals,
         Utf8ConstructionMap<MethodBase, MethodToken> Methods, Utf8ConstructionMap<Type, nint> Types,
         Utf8ConstructionBuffer<ScratchArray> Scratch,
-        bool Returns, bool Completed, bool Disposed);
+        int ParameterCount, bool Returns, bool Completed, bool Disposed);
 
     private readonly Utf8ConstructionScope _scope;
     private readonly Utf8ConstructionBudget _budget;
@@ -41,6 +41,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     private readonly Utf8ConstructionMap<MethodBase, MethodToken> _methods;
     private readonly Utf8ConstructionMap<Type, nint> _types;
     private readonly Utf8ConstructionBuffer<ScratchArray> _scratch;
+    private readonly int _parameterCount;
     private readonly bool _returns;
     private bool _completed;
     private bool _disposed;
@@ -50,7 +51,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         _scope = state.Scope; _budget = state.Budget; _method = state.Method; _info = state.Info;
         _code = state.Code; _labels = state.Labels; _fixups = state.Fixups;
         _instructions = state.Instructions; _locals = state.Locals;
-        _methods = state.Methods; _types = state.Types; _scratch = state.Scratch; _returns = state.Returns;
+        _methods = state.Methods; _types = state.Types; _scratch = state.Scratch; _parameterCount = state.ParameterCount; _returns = state.Returns;
         _completed = state.Completed; _disposed = state.Disposed;
     }
 
@@ -102,7 +103,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
                     Utf8ConstructionMap<MethodBase, MethodToken>.Create(budget, EqualityComparer<MethodBase>.Default),
                     Utf8ConstructionMap<Type, nint>.Create(budget, EqualityComparer<Type>.Default),
                     Utf8ConstructionBuffer<ScratchArray>.Create(budget),
-                    result != typeof(void), false, false);
+                    copied.Length, result != typeof(void), false, false);
                 return budget.AllocateObject(state, static value => new Utf8DynamicIlBuilder(value));
             }
             finally { budget.ReleaseArray(copied, false); }
@@ -376,7 +377,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         else throw new InvalidOperationException("The CLI signature cannot represent the value.");
     }
 
-    internal TDelegate CreateDelegate<TDelegate>() where TDelegate : Delegate
+    internal Utf8EmittedDelegate<TDelegate> CreateDelegate<TDelegate>() where TDelegate : Delegate
     {
         CheckMutable();
         foreach (var fixup in _fixups)
@@ -410,7 +411,12 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
             // The CLR call is opaque: recheck the same authority before publishing.
             _budget.ChargeWork(0);
             _completed = true; _scope.Complete();
-            return result;
+            // These are the three final copies, not spare construction buffers.
+            // DynamicMethod and DynamicILInfo metadata and native JIT storage are excluded.
+            var retained = checked(Utf8ConstructionBudget.ArrayBytes<Type>(_parameterCount) +
+                Utf8ConstructionBudget.ArrayBytes<byte>(code.Length) +
+                Utf8ConstructionBudget.ArrayBytes<byte>(localSignature.Length));
+            return new(result, retained);
         }
         finally
         {

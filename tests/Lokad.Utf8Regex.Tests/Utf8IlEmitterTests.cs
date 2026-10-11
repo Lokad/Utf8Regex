@@ -28,7 +28,7 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanDelegate>();
-        Assert.Equal(12, del(null, "hello"u8));
+        Assert.Equal(12, del.Callback(null, "hello"u8));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal((int)(byte)'b', del(null, "zabc"u8, 1));
+        Assert.Equal((int)(byte)'b', del.Callback(null, "zabc"u8, 1));
     }
 
     [Fact]
@@ -90,10 +90,10 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(1, del(null, " \t"u8, 0));
-        Assert.Equal(2, del(null, "Az"u8, 0));
-        Assert.Equal(3, del(null, "_z"u8, 0));
-        Assert.Equal(0, del(null, "-z"u8, 0));
+        Assert.Equal(1, del.Callback(null, " \t"u8, 0));
+        Assert.Equal(2, del.Callback(null, "Az"u8, 0));
+        Assert.Equal(3, del.Callback(null, "_z"u8, 0));
+        Assert.Equal(0, del.Callback(null, "-z"u8, 0));
     }
 
     [Fact]
@@ -125,9 +125,9 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexLengthDelegate>();
-        Assert.Equal(1, del(null, "zabc"u8, 1, 4));
-        Assert.Equal(0, del(null, "zaxc"u8, 1, 4));
-        Assert.Equal(0, del(null, "za"u8, 1, 2));
+        Assert.Equal(1, del.Callback(null, "zabc"u8, 1, 4));
+        Assert.Equal(0, del.Callback(null, "zaxc"u8, 1, 4));
+        Assert.Equal(0, del.Callback(null, "za"u8, 1, 2));
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexLengthDelegate>();
-        Assert.Equal(6, del(null, [] , 4, 3));
+        Assert.Equal(6, del.Callback(null, [] , 4, 3));
     }
 
     [Fact]
@@ -182,9 +182,9 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(1, del(null, "abc"u8, 0));
-        Assert.Equal(2, del(null, "za"u8, 0));
-        Assert.Equal(0, del(null, "mx"u8, 0));
+        Assert.Equal(1, del.Callback(null, "abc"u8, 0));
+        Assert.Equal(2, del.Callback(null, "za"u8, 0));
+        Assert.Equal(0, del.Callback(null, "mx"u8, 0));
     }
 
     [Fact]
@@ -206,8 +206,8 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(3, del(null, [] , 2));
-        Assert.Equal(3, del(null, [] , 9));
+        Assert.Equal(3, del.Callback(null, [] , 2));
+        Assert.Equal(3, del.Callback(null, [] , 9));
     }
 
     [Fact]
@@ -244,9 +244,9 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexLengthDelegate>();
-        Assert.Equal(-1, del(null, [] , 2, 5));
-        Assert.Equal(1, del(null, [] , 5, 2));
-        Assert.Equal(0, del(null, [] , 3, 3));
+        Assert.Equal(-1, del.Callback(null, [] , 2, 5));
+        Assert.Equal(1, del.Callback(null, [] , 5, 2));
+        Assert.Equal(0, del.Callback(null, [] , 3, 3));
     }
 
     [Fact]
@@ -274,8 +274,8 @@ public sealed class Utf8IlEmitterTests
         il.Emit(OpCodes.Ret);
 
         var del = dynamicMethod.CreateDelegate<DummySpanIndexDelegate>();
-        Assert.Equal(1, del(null, "\r"u8, 0));
-        Assert.Equal(1, del(null, "\n"u8, 0));
-        Assert.Equal(0, del(null, " "u8, 0));
+        Assert.Equal(1, del.Callback(null, "\r"u8, 0));
+        Assert.Equal(1, del.Callback(null, "\n"u8, 0));
+        Assert.Equal(0, del.Callback(null, " "u8, 0));
     }
 }

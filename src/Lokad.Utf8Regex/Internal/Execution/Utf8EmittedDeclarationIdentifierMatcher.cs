@@ -36,11 +36,11 @@ internal sealed partial class Utf8EmittedKernelMatcher
 
     private readonly Utf8EmittedKernelPlan _plan;
     private readonly PreparedByteSet? _anchorSearch;
-    private readonly FindNextDelegate _findNext;
-    private readonly CountDelegate _count;
+    private readonly Utf8EmittedDelegate<FindNextDelegate> _findNext;
+    private readonly Utf8EmittedDelegate<CountDelegate> _count;
 
     private readonly record struct ConstructionState(Utf8EmittedKernelPlan Plan,
-        PreparedByteSet? AnchorSearch, FindNextDelegate FindNext, CountDelegate Count);
+        PreparedByteSet? AnchorSearch, Utf8EmittedDelegate<FindNextDelegate> FindNext, Utf8EmittedDelegate<CountDelegate> Count);
 
     private Utf8EmittedKernelMatcher(ConstructionState state)
     {
@@ -115,9 +115,9 @@ internal sealed partial class Utf8EmittedKernelMatcher
         finally { budget.LeaveDepth(); }
     }
 
-    internal int FindNext(ReadOnlySpan<byte> input, int startIndex, out int matchedLength) => _findNext(this, input, startIndex, out matchedLength);
+    internal int FindNext(ReadOnlySpan<byte> input, int startIndex, out int matchedLength) => _findNext.Callback(this, input, startIndex, out matchedLength);
 
-    internal int Count(ReadOnlySpan<byte> input) => _count(this, input);
+    internal int Count(ReadOnlySpan<byte> input) => _count.Callback(this, input);
 
     private int FindNextAnchorRelative(ReadOnlySpan<byte> input, int startIndex)
     {
@@ -204,7 +204,7 @@ internal sealed partial class Utf8EmittedKernelMatcher
         return true;
     }
 
-    private static FindNextDelegate CompileFindNext(Utf8EmittedKernelPlan plan)
+    private static Utf8EmittedDelegate<FindNextDelegate> CompileFindNext(Utf8EmittedKernelPlan plan)
     {
         var name = plan.Kind switch
         {
@@ -220,7 +220,7 @@ internal sealed partial class Utf8EmittedKernelMatcher
         return dynamicMethod.CreateDelegate<FindNextDelegate>();
     }
 
-    private static CountDelegate CompileCount(Utf8EmittedKernelPlan plan)
+    private static Utf8EmittedDelegate<CountDelegate> CompileCount(Utf8EmittedKernelPlan plan)
     {
         var name = plan.Kind switch
         {

@@ -12,7 +12,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
     {
         var method = typeof(Utf8EmittedSearchGuidedFallback).GetMethod("CompileCount", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new MissingMethodException("The production emitted Count compiler is missing.");
-        try { return (Delegate)(method.Invoke(null, null) ?? throw new InvalidOperationException("Count compilation returned no delegate.")); }
+        try { return Assert.IsType<Utf8EmittedDelegate<Utf8EmittedSearchGuidedFallback.CountDelegate>>(method.Invoke(null, null)).Callback; }
         catch (TargetInvocationException error) when (error.InnerException is Exception cause)
         {
             ExceptionDispatchInfo.Capture(cause).Throw();
@@ -231,7 +231,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
                 il.Emit(OpCodes.Ldloc, local); il.Emit(OpCodes.Ldind_I4);
             }
             il.Emit(OpCodes.Ret);
-            result = shape == 2 ? il.CreateDelegate<RefInt>() : il.CreateDelegate<Func<int, int>>();
+            result = shape == 2 ? il.CreateDelegate<RefInt>().Callback : il.CreateDelegate<Func<int, int>>().Callback;
         }
         if (shape == 2)
         {

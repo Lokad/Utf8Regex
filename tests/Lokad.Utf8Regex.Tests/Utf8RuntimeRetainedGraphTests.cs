@@ -62,7 +62,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
         foreach(var type in RuntimeTypes(library)) Assert.Contains(type,layouts);
         foreach(var type in library.GetTypes().Where(static type=>type.IsSubclassOf(typeof(MulticastDelegate))&&
             type.DeclaringType is not null&&RuntimeTypeNames.Contains(type.DeclaringType.Name))) Assert.Contains(type,layouts);
-        Assert.Equal(91,layouts.Count);
+        Assert.Equal(100,layouts.Count);
         var expected=InspectRuntimeGraph(roots);
         Assert.True(expected.Keys.OfType<string>().Count(static text=>text=="qqq")>1);
         AssertManifest(expected,Collect(roots));
@@ -215,12 +215,19 @@ public sealed class Utf8RuntimeRetainedGraphTests
             {
                 var invoke=type.GetMethod("Invoke");Assert.NotNull(invoke);
                 var method=new DynamicMethod("StoredLayout_"+type.Name,invoke.ReturnType,invoke.GetParameters().Select(static p=>p.ParameterType).ToArray(),typeof(Utf8RuntimeRetainedGraphTests).Module);
-                var il=method.GetILGenerator();Assert.True(invoke.ReturnType==typeof(int)||invoke.ReturnType==typeof(bool));
-                il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ret);var callback=method.CreateDelegate(type);values.Add(type,callback);layouts.Add(type);return callback;
+                Assert.True(invoke.ReturnType==typeof(int)||invoke.ReturnType==typeof(bool));
+                var info=method.GetDynamicILInfo();info.SetCode([0x16,0x2a],1);info.SetLocalSignature([0x07,0x00]);
+                var callback=method.CreateDelegate(type);values.Add(type,callback);layouts.Add(type);return callback;
             }
             if(!Assert.IsType<bool>(referenceTest.MakeGenericMethod(type).Invoke(null,[])))
             {var primitive=Activator.CreateInstance(type);Assert.NotNull(primitive);return primitive;}
             if(type.IsAbstract)return Build(RuntimeTypes(library).First(candidate=>!candidate.IsAbstract&&type.IsAssignableFrom(candidate)));
+            if(type.IsGenericType&&type.GetGenericTypeDefinition()==typeof(Utf8EmittedDelegate<>))
+            {
+                var callback=Assert.IsAssignableFrom<Delegate>(Build(type.GetGenericArguments()[0]));
+                var receipt=Activator.CreateInstance(type,callback,Utf8EmittedManagedStorageTests.InspectManagedCopies(callback));
+                Assert.NotNull(receipt);layouts.Add(type);return receipt;
+            }
             Assert.Equal(library,type.Assembly);var result=RuntimeHelpers.GetUninitializedObject(type);
             if(!type.IsValueType)values.Add(type,result);layouts.Add(type);
             foreach(var field in Fields(type))
@@ -313,6 +320,15 @@ public sealed class Utf8RuntimeRetainedGraphTests
                 continue;
             }
             var fields=Fields(type);
+            if(type.IsGenericType&&type.GetGenericTypeDefinition()==typeof(Utf8EmittedDelegate<>))
+            {
+                var emitted=Assert.IsAssignableFrom<Delegate>(type.GetProperty("Callback")?.GetValue(value));
+                var bytes=Utf8EmittedManagedStorageTests.InspectManagedCopies(emitted);
+                Assert.Equal(bytes,type.GetProperty("ManagedArrayBytes")?.GetValue(value));
+                var extent=80ul+bytes;
+                if(!seen.TryAdd(emitted,extent))Assert.Equal(extent,seen[emitted]);
+                continue;
+            }
             if(value is Delegate callback)
             {
                 // Only direct Delegate/MulticastDelegate state is qualified here.
@@ -347,11 +363,11 @@ public sealed class Utf8RuntimeRetainedGraphTests
         {
             nameof(Utf8ExactLiteralCompiledEngineRuntime) or nameof(Utf8LiteralFamilyCompiledEngineRuntime)
                 =>Utf8ConstructionBudget.ObjectBytes<Utf8LiteralCompiledEngineRuntime>(),
-            nameof(Utf8EmittedWholeMatcher)=>Utf8ConstructionBudget.ObjectBytes<Utf8EmittedWholeMatcher.MatchDelegate>(),
+            nameof(Utf8EmittedWholeMatcher)=>Utf8ConstructionBudget.ObjectBytes<Utf8EmittedDelegate<Utf8EmittedWholeMatcher.MatchDelegate>>(),
             nameof(Utf8EmittedDeterministicMatcher)=>Utf8ConstructionBudget.ObjectBytes<
-                (Utf8EmittedDeterministicMatcher.FindNextDelegate,byte[],AsciiCharClass[],bool)>(),
+                (Utf8EmittedDelegate<Utf8EmittedDeterministicMatcher.FindNextDelegate>,byte[],AsciiCharClass[],bool)>(),
             nameof(Utf8EmittedSearchGuidedFallback)=>Utf8ConstructionBudget.ObjectBytes<
-                (Utf8SearchPlan,Utf8VerifierRuntime,Utf8EmittedSearchGuidedFallback.IsMatchDelegate,Utf8EmittedSearchGuidedFallback.CountDelegate)>(),
+                (Utf8SearchPlan,Utf8VerifierRuntime,Utf8EmittedDelegate<Utf8EmittedSearchGuidedFallback.IsMatchDelegate>,Utf8EmittedDelegate<Utf8EmittedSearchGuidedFallback.CountDelegate>)>(),
             "CompositeTrailingLiteralSearch"=>Utf8ConstructionBudget.ObjectBytes<(PreparedSubstringSearch,int,int)>(),
             nameof(PreparedByteSet)=>Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>(),
             nameof(PreparedAsciiIgnoreCaseLiteralSetSearchData)=>StateBytes(typeof(Utf8Regex).Assembly.GetType(

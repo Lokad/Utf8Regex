@@ -21,14 +21,14 @@ internal sealed partial class Utf8EmittedSearchGuidedFallback
 
     private readonly Utf8SearchPlan _searchPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly IsMatchDelegate _isMatch;
-    private readonly CountDelegate _count;
+    private readonly Utf8EmittedDelegate<IsMatchDelegate> _isMatch;
+    private readonly Utf8EmittedDelegate<CountDelegate> _count;
 
     private Utf8EmittedSearchGuidedFallback(
         Utf8SearchPlan searchPlan,
         Utf8VerifierRuntime verifierRuntime,
-        IsMatchDelegate isMatch,
-        CountDelegate count)
+        Utf8EmittedDelegate<IsMatchDelegate> isMatch,
+        Utf8EmittedDelegate<CountDelegate> count)
     {
         _searchPlan = searchPlan;
         _verifierRuntime = verifierRuntime;
@@ -57,9 +57,9 @@ internal sealed partial class Utf8EmittedSearchGuidedFallback
         finally { budget.LeaveDepth(); }
     }
 
-    internal bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation) => _isMatch(this, input, validation, ref invocation);
+    internal bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation) => _isMatch.Callback(this, input, validation, ref invocation);
 
-    internal int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation) => _count(this, input, validation, ref invocation);
+    internal int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation) => _count.Callback(this, input, validation, ref invocation);
 
     private static bool TryFindNextVerifiedMatch(
         Utf8EmittedSearchGuidedFallback backend,
@@ -88,7 +88,7 @@ internal sealed partial class Utf8EmittedSearchGuidedFallback
             : verification.IndexInBytes + verification.LengthInBytes;
     }
 
-    private static IsMatchDelegate CompileIsMatch()
+    private static Utf8EmittedDelegate<IsMatchDelegate> CompileIsMatch()
     {
         using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitSearchGuidedFallbackIsMatch", typeof(bool), typeof(Utf8EmittedSearchGuidedFallback), typeof(Utf8EmittedSearchGuidedFallback), typeof(ReadOnlySpan<byte>), typeof(Utf8ValidationResult), typeof(Utf8SliceInvocation).MakeByRefType());
 
@@ -107,7 +107,7 @@ internal sealed partial class Utf8EmittedSearchGuidedFallback
         return dynamicMethod.CreateDelegate<IsMatchDelegate>();
     }
 
-    private static CountDelegate CompileCount()
+    private static Utf8EmittedDelegate<CountDelegate> CompileCount()
     {
         using var dynamicMethod = Utf8DynamicIlBuilder.Create("Utf8Regex_EmitSearchGuidedFallbackCount", typeof(int), typeof(Utf8EmittedSearchGuidedFallback), typeof(Utf8EmittedSearchGuidedFallback), typeof(ReadOnlySpan<byte>), typeof(Utf8ValidationResult), typeof(Utf8SliceInvocation).MakeByRefType());
 

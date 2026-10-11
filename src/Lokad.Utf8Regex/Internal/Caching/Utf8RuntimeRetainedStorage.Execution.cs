@@ -6,8 +6,8 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-// Typed owned state; runtime method/resolver/JIT descendants of delegates
-// remain outside this declared retained subgraph. Inline metadata belongs to its owner.
+// Typed owned state includes final managed-copy receipts. Other CLR method,
+// resolver and native JIT metadata remains excluded. Inline state belongs to its owner.
 
 internal readonly partial struct PreparedAsciiDelimitedTokenSearch
 {
@@ -131,8 +131,8 @@ internal sealed partial class Utf8EmittedDeterministicMatcher
     internal void CollectRetainedStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl
     {
-        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<(FindNextDelegate, byte[], AsciiCharClass[], bool)>())) return;
-        Utf8RuntimeRetainedStorage.CollectDelegate(_findNext, storage);
+        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<(Utf8EmittedDelegate<FindNextDelegate>, byte[], AsciiCharClass[], bool)>())) return;
+        _findNext.CollectRetainedStorage(storage);
         Utf8PreparedRetainedStorage.CollectArray(_searchLiteral, storage);
         Utf8PreparedRetainedStorage.CollectArray(_charClasses, storage);
     }
@@ -146,8 +146,8 @@ internal sealed partial class Utf8EmittedKernelMatcher
         if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<ConstructionState>())) return;
         _plan.CollectRetainedStorage(storage);
         _anchorSearch?.CollectRetainedStorage(storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_findNext, storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_count, storage);
+        _findNext.CollectRetainedStorage(storage);
+        _count.CollectRetainedStorage(storage);
     }
 }
 
@@ -169,10 +169,10 @@ internal sealed partial class Utf8EmittedLiteralFamilyCounter
         where TControl : struct, IUtf8ConstructionTextControl
     {
         if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<ConstructionState>())) return;
-        Utf8RuntimeRetainedStorage.CollectDelegate(_count, storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_asciiValidatedCount, storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_isMatch, storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_tryMatch, storage);
+        _count.CollectRetainedStorage(storage);
+        _asciiValidatedCount?.CollectRetainedStorage(storage);
+        _isMatch.CollectRetainedStorage(storage);
+        _tryMatch.CollectRetainedStorage(storage);
         _plan.CollectRetainedStorage(storage);
         _countProgram.CollectRetainedStorage(storage);
         _firstMatchProgram.CollectRetainedStorage(storage);
@@ -184,11 +184,11 @@ internal sealed partial class Utf8EmittedSearchGuidedFallback
     internal void CollectRetainedStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl
     {
-        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<(Utf8SearchPlan, Utf8VerifierRuntime, IsMatchDelegate, CountDelegate)>())) return;
+        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<(Utf8SearchPlan, Utf8VerifierRuntime, Utf8EmittedDelegate<IsMatchDelegate>, Utf8EmittedDelegate<CountDelegate>)>())) return;
         _searchPlan.CollectRetainedStorage(storage);
         _verifierRuntime?.CollectRetainedStorage(storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_isMatch, storage);
-        Utf8RuntimeRetainedStorage.CollectDelegate(_count, storage);
+        _isMatch.CollectRetainedStorage(storage);
+        _count.CollectRetainedStorage(storage);
     }
 }
 
@@ -207,8 +207,8 @@ internal sealed partial class Utf8EmittedWholeMatcher
     internal void CollectRetainedStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl
     {
-        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<MatchDelegate>())) return;
-        Utf8RuntimeRetainedStorage.CollectDelegate(_match, storage);
+        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<Utf8EmittedDelegate<MatchDelegate>>())) return;
+        _match.CollectRetainedStorage(storage);
     }
 }
 

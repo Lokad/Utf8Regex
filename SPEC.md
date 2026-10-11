@@ -987,13 +987,20 @@ Serialized IL byte capacity conservatively counts against the provisional
 instruction-capacity gate, including the managed runtime code copy. Parameter,
 code and local-signature managed copies are admitted separately before CLR calls.
 Complete delegate field state and its retaining descriptor are admitted before
-publication. Owned code, fixup and stack walks spend shared work; pending stack
+publication. Each builder publishes one delegate with an immutable receipt for
+its final CLR-managed parameter, code and local-signature copies. The receipt
+uses final array lengths and modeled headers, not transient construction peaks.
+Emitted wrapper descriptors include the inline receipt state. Retained collection
+reserves delegate metadata plus these copies under that delegate's identity;
+aliases share one allowance. Independent runtime inspection qualifies the actual
+copy extents. Production does not inspect private CLR fields or retain emission
+scratch. Owned code, fixup and stack walks spend shared work; pending stack
 analysis frames share live depth. Resource failures, cancellation and deadlines
 restore child capacity/depth/object loans while preserving spent work. The same
 interruption authority is checked again after opaque delegate creation.
-CLR reflection records, token resolver internals, dynamic-method metadata and
-native JIT storage remain the named runtime-metadata exclusion, distinct from
-these admitted managed arrays. Complete adapter program/AST storage, public
+CLR reflection records, token resolver internals, dynamic-method metadata,
+method-signature metadata and native JIT storage remain the named runtime-metadata
+exclusion, distinct from these admitted and retained managed copies. Complete adapter program/AST storage, public
 construction controls/defaults and retained policies remain unqualified. This
 covered producer does not establish a process RSS or cumulative GC bound.
 Byte-safe DFA construction shares the enclosing construction owner for its

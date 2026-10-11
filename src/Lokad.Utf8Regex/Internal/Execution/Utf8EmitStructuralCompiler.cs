@@ -29,13 +29,13 @@ internal sealed partial class Utf8EmittedDeterministicMatcher
         typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(FoldCase), BindingFlags.Static | BindingFlags.NonPublic) ??
         throw new MissingMethodException(typeof(Utf8EmittedDeterministicMatcher).FullName, nameof(FoldCase));
 
-    private readonly FindNextDelegate _findNext;
+    private readonly Utf8EmittedDelegate<FindNextDelegate> _findNext;
     private readonly byte[] _searchLiteral;
     private readonly AsciiCharClass[] _charClasses;
     private readonly bool _ignoreCase;
 
     private Utf8EmittedDeterministicMatcher(
-        FindNextDelegate findNext,
+        Utf8EmittedDelegate<FindNextDelegate> findNext,
         byte[] searchLiteral,
         AsciiCharClass[] charClasses,
         bool ignoreCase)
@@ -73,7 +73,7 @@ internal sealed partial class Utf8EmittedDeterministicMatcher
         finally { budget.LeaveDepth(); }
     }
 
-    internal int FindNext(ReadOnlySpan<byte> input, int startIndex, out int matchedLength) => _findNext(this, input, startIndex, out matchedLength);
+    internal int FindNext(ReadOnlySpan<byte> input, int startIndex, out int matchedLength) => _findNext.Callback(this, input, startIndex, out matchedLength);
 
     internal int Count(ReadOnlySpan<byte> input)
     {
@@ -173,7 +173,7 @@ internal sealed partial class Utf8EmittedDeterministicMatcher
             return true;
         }
 
-        internal static FindNextDelegate CompileFindNext(
+        internal static Utf8EmittedDelegate<FindNextDelegate> CompileFindNext(
             Utf8StructuralLinearProgram program,
             AsciiCharClass[] charClasses)
         {
