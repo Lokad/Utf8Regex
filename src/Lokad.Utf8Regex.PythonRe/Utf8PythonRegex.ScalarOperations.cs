@@ -9,9 +9,14 @@ public sealed partial class Utf8PythonRegex
 {
     private PythonReScalarMatchCursor CreateScalarCursor(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
+        => CreateScalarCursor(input, startOffsetInBytes, 0, cancellationToken);
+
+    private PythonReScalarMatchCursor CreateScalarCursor(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, CancellationToken cancellationToken)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        return new PythonReScalarMatchCursor(input, ScalarProgram, _coreGroupNumbersByPythonGroup,
+        var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
+        return new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
             startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
     }
 
@@ -23,30 +28,62 @@ public sealed partial class Utf8PythonRegex
         // The cursor validates the whole subject inside the owning invocation.
     }
 
-    private void MatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        int kind, bool materializeValues, CancellationToken cancellationToken,
-        out PythonReGroupData[] groups, out Utf8PythonDetailedMatchData detailed)
+    private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        CancellationToken cancellationToken)
     {
-        groups = [];
-        detailed = default;
-        var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
-        ValidateScalarStartOffset(input, startOffsetInBytes);
-        var cursor = new PythonReScalarMatchCursor(input, program,
-            _coreGroupNumbersByPythonGroup, startOffsetInBytes, MatchTimeout,
-            _translation.Pattern, cancellationToken);
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
-            PythonReGroupData[] completedGroups = [];
-            Utf8PythonDetailedMatchData completedDetailed = default;
+            var found = cursor.MoveNext();
+            cursor.Checkpoint();
+            return found;
+        }
+        finally { cursor.Dispose(); }
+    }
+
+    private Utf8PythonValueMatch MatchValueScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, CancellationToken cancellationToken)
+    {
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
+        try
+        {
+            var completed = kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition();
+            var result = completed ? Utf8PythonValueMatch.Create(input, cursor.SnapshotValueData()) : default;
+            cursor.Checkpoint();
+            return result;
+        }
+        finally { cursor.Dispose(); }
+    }
+
+    private Utf8PythonMatchContext MatchContextScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, CancellationToken cancellationToken)
+    {
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
+        try
+        {
+            Utf8PythonMatchContext result = default;
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
-                if (materializeValues) completedDetailed = cursor.SnapshotDetailed(_nameEntries);
-                else completedGroups = cursor.SnapshotGroups();
+                var groups = cursor.SnapshotGroups();
+                var names = cursor.SnapshotNameEntries(_nameEntries);
+                result = new Utf8PythonMatchContext(input, groups, names);
             }
             cursor.Checkpoint();
-            groups = completedGroups;
-            detailed = completedDetailed;
-            return;
+            return result;
+        }
+        finally { cursor.Dispose(); }
+    }
+
+    private Utf8PythonDetailedMatchData MatchDataScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        int kind, CancellationToken cancellationToken)
+    {
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
+        try
+        {
+            var result = (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
+                ? cursor.SnapshotDetailed(_nameEntries) : default;
+            cursor.Checkpoint();
+            return result;
         }
         finally { cursor.Dispose(); }
     }

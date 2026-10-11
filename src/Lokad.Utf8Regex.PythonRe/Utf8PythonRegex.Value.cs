@@ -1,10 +1,5 @@
-using System.Buffers;
-using System.Text;
-using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -18,7 +13,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Tests for a match at or after a zero-based UTF-8 byte offset.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        return Search(input, startOffsetInBytes).Success;
+        return IsMatchCore(input, startOffsetInBytes, CancellationToken.None);
     }
 
     /// <summary>Tests for a match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -29,7 +24,15 @@ public sealed partial class Utf8PythonRegex
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Search(input, startOffsetInBytes, cancellationToken).Success;
+        return IsMatchCore(input, startOffsetInBytes, cancellationToken);
+    }
+
+    private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
+            return _utf8Regex.IsMatch(input, cancellationToken);
+        return IsMatchScalar(input, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Finds the first match in the UTF-8 input.</summary>
@@ -49,8 +52,7 @@ public sealed partial class Utf8PythonRegex
             var match = _utf8Regex.Match(input, cancellationToken);
             return Utf8PythonValueMatchFromUtf8Regex(input, match);
         }
-        MatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var groups, out _);
-        return groups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, groups[0]);
+        return MatchValueScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
     /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -100,8 +102,7 @@ public sealed partial class Utf8PythonRegex
             if (!match.Success || match.IndexInUtf16 != 0) return default;
             return Utf8PythonValueMatchFromUtf8Regex(input, match);
         }
-        MatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var groups, out _);
-        return groups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, groups[0]);
+        return MatchValueScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
     /// <summary>Matches exactly at a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -153,8 +154,7 @@ public sealed partial class Utf8PythonRegex
                 EndOffsetInUtf16 = validation.Utf16Length,
             });
         }
-        MatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _);
-        return scalarGroups.Length == 0 ? default : Utf8PythonValueMatch.Create(input, scalarGroups[0]);
+        return MatchValueScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 
     /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation before matching begins.</summary>

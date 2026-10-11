@@ -121,42 +121,78 @@ internal ref struct PythonReScalarMatchCursor
 
     private bool MoveNextCore(bool search)
     {
-        while (!_finished)
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        try
         {
-            Checkpoint();
-            _invocation.AnchorOriginByte = _position;
-            Utf8SliceMatchOutcome outcome;
-            try
+            while (!_finished)
             {
-                outcome = Utf8SliceRunner.TryMatchAt(_program, _input, _position,
-                    _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _invocation);
+                Checkpoint();
+                _invocation.AnchorOriginByte = _position;
+                Utf8SliceMatchOutcome outcome;
+                try
+                {
+                    outcome = Utf8SliceRunner.TryMatchAt(_program, _input, _position,
+                        _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref workspace, ref _invocation);
+                }
+                catch (Utf8ExecutionDeadlineExpiredException)
+                {
+                    throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
+                }
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
+                if (outcome.IsMatch)
+                {
+                    StartOffsetInBytes = _position;
+                    EndOffsetInBytes = outcome.EndIndex;
+                    _retryNonEmpty = outcome.EndIndex == _position;
+                    _position = outcome.EndIndex;
+                    return true;
+                }
+                _retryNonEmpty = false;
+                if (!search) { _finished = true; return false; }
+                if (_position == _input.Length)
+                {
+                    _finished = true;
+                    return false;
+                }
+                if (Rune.DecodeFromUtf8(_input[_position..], out _, out var width) != OperationStatus.Done)
+                    throw Utf8Validation.CreateInvalidUtf8Exception(_position);
+                _position += width;
             }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(_input), _pattern, _timeout);
-            }
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
-            if (outcome.IsMatch)
-            {
-                StartOffsetInBytes = _position;
-                EndOffsetInBytes = outcome.EndIndex;
-                _retryNonEmpty = outcome.EndIndex == _position;
-                _position = outcome.EndIndex;
-                return true;
-            }
-            _retryNonEmpty = false;
-            if (!search) { _finished = true; return false; }
-            if (_position == _input.Length)
-            {
-                _finished = true;
-                return false;
-            }
-            if (Rune.DecodeFromUtf8(_input[_position..], out _, out var width) != OperationStatus.Done)
-                throw Utf8Validation.CreateInvalidUtf8Exception(_position);
-            _position += width;
+            return false;
         }
-        return false;
+        finally { workspace.Release(ref _invocation); }
+    }
+
+    internal PythonReGroupData SnapshotValueData()
+    {
+        Checkpoint();
+        try
+        {
+            var start = StartOffsetInBytes;
+            var end = EndOffsetInBytes;
+            var startUtf16 = _validation.IsAscii ? start : Utf8Validation.Validate(_input[..start], ref _invocation).Utf16Length;
+            var lengthUtf16 = _validation.IsAscii ? end - start : Utf8Validation.Validate(_input[start..end], ref _invocation).Utf16Length;
+            var value = new PythonReGroupData
+            {
+                Number = 0, Success = true,
+                StartOffsetInBytes = start, EndOffsetInBytes = end,
+                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = startUtf16 + lengthUtf16,
+            };
+            Checkpoint();
+            return value;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names)
+    {
+        Checkpoint();
+        var copied = AllocateResultArray<PythonReNameEntry>(names.Length);
+        try { Utf8InvocationResultLedger.Copy<PythonReNameEntry, Utf8InvocationBufferControl>(names, copied, new(ref _invocation)); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+        Checkpoint();
+        return copied;
     }
 
     internal PythonReGroupData[] SnapshotGroups()
@@ -230,9 +266,7 @@ internal ref struct PythonReScalarMatchCursor
                     ValueText = group.Success ? GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty,
                 };
             }
-            var copiedNames = AllocateResultArray<PythonReNameEntry>(names.Length);
-            try { Utf8InvocationResultLedger.Copy<PythonReNameEntry, Utf8InvocationBufferControl>(names, copiedNames, new(ref _invocation)); }
-            catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+            var copiedNames = SnapshotNameEntries(names);
             var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames };
             Checkpoint();
             return result;

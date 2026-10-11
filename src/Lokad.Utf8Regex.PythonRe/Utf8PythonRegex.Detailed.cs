@@ -13,8 +13,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext SearchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        MatchScalar(input, startOffsetInBytes, 0, false, cancellationToken, out var scalarGroups, out _);
-        return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
+        return MatchContextScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
     /// <summary>Finds the first capture context at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -37,8 +36,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        MatchScalar(input, startOffsetInBytes, 1, false, cancellationToken, out var scalarGroups, out _);
-        return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
+        return MatchContextScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
     /// <summary>Matches at a zero-based UTF-8 byte offset and exposes its capture context, observing cancellation before matching begins.</summary>
@@ -61,8 +59,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext FullMatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        MatchScalar(input, startOffsetInBytes, 2, false, cancellationToken, out var scalarGroups, out _);
-        return scalarGroups.Length == 0 ? default : new Utf8PythonMatchContext(input, scalarGroups, _nameEntries);
+        return MatchContextScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 
     /// <summary>Matches the complete UTF-8 suffix and exposes its capture context, observing cancellation before matching begins.</summary>
@@ -145,8 +142,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData SearchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        MatchScalar(input, startOffsetInBytes, 0, true, cancellationToken, out _, out var scalarData);
-        return scalarData;
+        return MatchDataScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
     /// <summary>Finds and materializes capture data after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
@@ -169,8 +165,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData MatchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        MatchScalar(input, startOffsetInBytes, 1, true, cancellationToken, out _, out var scalarData);
-        return scalarData;
+        return MatchDataScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
     /// <summary>Matches at a zero-based UTF-8 byte offset and materializes all capture data, observing cancellation before matching begins.</summary>
@@ -193,8 +188,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData FullMatchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        MatchScalar(input, startOffsetInBytes, 2, true, cancellationToken, out _, out var scalarData);
-        return scalarData;
+        return MatchDataScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 
     /// <summary>Matches the complete UTF-8 suffix and materializes all capture data, observing cancellation before matching begins.</summary>

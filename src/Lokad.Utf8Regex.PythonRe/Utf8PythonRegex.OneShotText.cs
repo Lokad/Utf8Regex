@@ -21,9 +21,7 @@ public sealed partial class Utf8PythonRegex
             finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
         }
 
-        var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
-        var cursor = new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
-            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
         try
         {
             string? completed = null;

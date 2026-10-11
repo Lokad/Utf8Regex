@@ -326,7 +326,7 @@ internal static partial class Utf8SliceRunner
         finally { workspace.Release(ref invocation); }
     }
 
-    private static Utf8SliceMatchOutcome TryMatchAt(
+    internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         int start,
@@ -338,6 +338,11 @@ internal static partial class Utf8SliceRunner
         ref AttemptWorkspace workspace,
         ref Utf8SliceInvocation invocation)
     {
+        // Profile cursors can reuse this admitted workspace across candidate
+        // attempts while preserving their own empty-match and anchor progress.
+        if (program.IsNonBacktracking)
+            return TryMatchAt(program, input, start, captureStarts, captureEnds,
+                collectHistory, requireNonEmpty, startIsScalarBoundary, ref invocation);
         if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
             start < input.Length && (input[start] & 0xC0) == 0x80)
             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
@@ -1457,7 +1462,7 @@ internal static partial class Utf8SliceRunner
 
     // One search/Count call retains its admitted scratch between candidates.
     // State is reset for each attempt; no workspace escapes or crosses invocations.
-    private struct AttemptWorkspace
+    internal struct AttemptWorkspace
     {
         internal int[] Counts;
         internal int[] Positions;
@@ -1515,7 +1520,7 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    private struct ChunkedStacks
+    internal struct ChunkedStacks
     {
         private Utf8SliceFrame[][] _frameTables;
         private Utf8SliceTrailEntry[][] _trailTables;

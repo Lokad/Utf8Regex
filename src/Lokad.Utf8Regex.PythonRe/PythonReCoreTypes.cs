@@ -379,12 +379,13 @@ public readonly ref struct Utf8PythonMatchContext
     private readonly PythonReGroupData[]? _groups;
     private readonly PythonReNameEntry[]? _nameEntries;
 
-    internal Utf8PythonMatchContext(ReadOnlySpan<byte> input, PythonReGroupData[]? groups, PythonReNameEntry[]? nameEntries)
+    internal Utf8PythonMatchContext(ReadOnlySpan<byte> input, PythonReGroupData[] groups, PythonReNameEntry[] nameEntries)
     {
         _input = input;
         _groups = groups;
-        // PLAN.md C09: contexts own their name entries; empty arrays stay shared (no slots to mutate).
-        _nameEntries = nameEntries is { Length: > 0 } ? (PythonReNameEntry[])nameEntries.Clone() : nameEntries;
+        // The producer admits and copies both owned roots before publication.
+        // Array mutation affects this context, never the instance's catalog.
+        _nameEntries = nameEntries;
     }
 
     /// <summary>Gets whether group zero represents a successful match.</summary>
