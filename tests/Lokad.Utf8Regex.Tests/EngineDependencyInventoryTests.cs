@@ -225,8 +225,10 @@ public sealed class EngineDependencyInventoryTests
             NamesIn(pcre2Directory, "new Utf8Regex("));
 
         var pythonDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex.PythonRe");
+        // FindAll shaping delegates its shared-invocation count/range backend
+        // to Utf8.cs; the public entry-point file has no core execution calls.
         Assert.Equal(
-            new[] { "Utf8PythonRegex.FindAll.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
+            new[] { "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
             NamesIn(pythonDirectory, "_utf8Regex", "new Utf8Regex("));
 
         var coreDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex");
