@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -109,6 +110,14 @@ public sealed class Utf8CompiledScalarConsumerTests
     [InlineData(false)] [InlineData(true)]
     public void GeneralCompiledCursorOwnsReferencesAndEmptyScalarAdvancement(bool rtl)
     {
+        var invocation = ExerciseCompiledCursorCopies(rtl);
+        CollectReleasedCursorStorage();
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8SliceInvocation ExerciseCompiledCursorCopies(bool rtl)
+    {
         var pattern = rtl ? @"\k<x>(?<x>.)|$" : @"(?<x>.)\k<x>|$";
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0));
         var input = "é😀😀z"u8.ToArray();
@@ -116,6 +125,7 @@ public sealed class Utf8CompiledScalarConsumerTests
             Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite);
         Assert.True(cursor.DebugIsOwnedSlice);
         var retained = cursor.DebugInvocationReservedBytes;
+        var invocation = cursor.ExportWorkingInvocation();
         var sibling = cursor;
         var ranges = new List<(int, int)>();
         while (cursor.MoveNext())
@@ -129,15 +139,22 @@ public sealed class Utf8CompiledScalarConsumerTests
         Assert.True(sibling.MoveNext());
         Assert.Equal(ranges[0], (sibling.CurrentValueMatch.IndexInBytes, sibling.CurrentValueMatch.LengthInBytes));
         while (sibling.MoveNext()) { }
-        // Both holders have dropped their tables. Collection may now return
-        // the loans; a reservation surviving EOF is not a lifetime guarantee.
-        CollectReleasedCursorStorage();
-        Assert.Equal(0UL, sibling.DebugInvocationReservedBytes);
+        // Return only the ledger owner. All cursor and temporary table holders
+        // leave this non-inlined scope before the caller checks reclamation.
+        return invocation;
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void GeneralCursorOffsetRetainsFullAssertionContextAndNfaStart(bool nonBacktracking)
+    {
+        var invocation = ExerciseOffsetCursorCopies(nonBacktracking);
+        CollectReleasedCursorStorage();
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Utf8SliceInvocation ExerciseOffsetCursorCopies(bool nonBacktracking)
     {
         var pattern = nonBacktracking ? "😀|z" : @"(?<=é).|z";
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant | (nonBacktracking ? RegexOptions.NonBacktracking : 0));
@@ -146,6 +163,7 @@ public sealed class Utf8CompiledScalarConsumerTests
             Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite, 2, 1);
         Assert.True(cursor.DebugIsOwnedSlice);
         var retained = cursor.DebugInvocationReservedBytes;
+        var invocation = cursor.ExportWorkingInvocation();
         var sibling = cursor;
         Assert.True(cursor.MoveNext()); Assert.Equal((2, 4), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
         Assert.True(cursor.MoveNext()); Assert.Equal((6, 1), (cursor.CurrentValueMatch.IndexInBytes, cursor.CurrentValueMatch.LengthInBytes));
@@ -155,8 +173,7 @@ public sealed class Utf8CompiledScalarConsumerTests
         Assert.True(sibling.MoveNext());
         Assert.Equal((2, 4), (sibling.CurrentValueMatch.IndexInBytes, sibling.CurrentValueMatch.LengthInBytes));
         while (sibling.MoveNext()) { }
-        CollectReleasedCursorStorage();
-        Assert.Equal(0UL, sibling.DebugInvocationReservedBytes);
+        return invocation;
     }
 
     [Theory]
