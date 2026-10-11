@@ -12,7 +12,7 @@ public sealed class PythonReResultExtentTests
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
 
     [Fact]
-    public void DetailedGraphIncludesAllOwnedChildrenAndReleasesTemporaryGroups()
+    public void DetailedGraphIncludesAllOwnedChildrenWithoutTemporaryGroups()
     {
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
@@ -30,7 +30,7 @@ public sealed class PythonReResultExtentTests
             var graph = ArrayBytes<Utf8PythonGroupMatchData>(2) + ArrayBytes<PythonReNameEntry>(257) + 2 * 48UL;
             Assert.Equal(graph, cursor.ResultReservation);
             Assert.Equal(baseline + graph, cursor.ReservedBytes);
-            Assert.Equal(baseline + graph + ArrayBytes<PythonReGroupData>(2), cursor.WorkingInvocation.Budget.PeakWorkingBytes);
+            Assert.Equal(baseline + graph, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
             Assert.NotSame(names, result.NameEntries);
             Assert.Same(names[0].Name, result.NameEntries[0].Name);
             Assert.Equal("😀", result.Groups[1].ValueText);

@@ -275,29 +275,33 @@ internal struct PythonReScalarMatchState
 
     internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
     {
-        var groups = SnapshotGroups(input);
-        try
+        Checkpoint(input);
+        EnsureMap(input);
+        // Owned snapshots project directly from capture slots. Borrowed contexts
+        // still use SnapshotGroups; no temporary range array is needed here.
+        var projected = AllocateResultArray<Utf8PythonGroupMatchData>(input, _numbersByPython.Length);
+        for (var i = 0; i < projected.Length; i++)
         {
-            var projected = AllocateResultArray<Utf8PythonGroupMatchData>(input, groups.Length);
-            for (var i = 0; i < groups.Length; i++)
-            {
-                Checkpoint(input);
-                var group = groups[i];
-                projected[i] = new Utf8PythonGroupMatchData
-                {
-                    Number = group.Number, Success = group.Success,
-                    StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
-                    StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
-                    HasContiguousByteRange = group.HasContiguousByteRange,
-                    ValueText = group.Success ? GetText(input, group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty,
-                };
-            }
-            var copiedNames = SnapshotNameEntries(input, names);
-            var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames };
             Checkpoint(input);
-            return result;
+            if (!TryGetCaptureByteRange(i, out var start, out var end))
+            {
+                projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
+                continue;
+            }
+            projected[i] = new Utf8PythonGroupMatchData
+            {
+                Number = i, Success = true,
+                StartOffsetInBytes = start, EndOffsetInBytes = end,
+                StartOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(start),
+                EndOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(end),
+                HasContiguousByteRange = true,
+                ValueText = GetText(input, start, end),
+            };
         }
-        finally { ReleaseResultArray(groups); }
+        var copiedNames = SnapshotNameEntries(input, names);
+        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames };
+        Checkpoint(input);
+        return result;
     }
 
     internal string GetText(ReadOnlySpan<byte> input, int start, int end)
