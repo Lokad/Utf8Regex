@@ -167,13 +167,7 @@ internal ref struct PythonReScalarMatchCursor
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
             if ((pythonGroup & 255) == 0) Checkpoint();
-            var slot = Array.BinarySearch(_program.GroupNumbers, _numbersByPython[pythonGroup]) - 1;
-            var start = pythonGroup == 0 ? StartOffsetInBytes : slot >= 0 ? _slots.Starts[slot] : -1;
-            var end = pythonGroup == 0 ? EndOffsetInBytes : slot >= 0 ? _slots.Ends[slot] : -1;
-            // Reverse lookbehind bodies publish raw edges even inside an LTR
-            // outer program. Public capture ranges are always normalized bytes.
-            if (start >= 0 && end >= 0 && end < start) (start, end) = (end, start);
-            groups[pythonGroup] = start < 0 || end < 0
+            groups[pythonGroup] = !TryGetCaptureByteRange(pythonGroup, out var start, out var end)
                 ? new PythonReGroupData { Number = pythonGroup, Success = false }
                 : new PythonReGroupData
                 {
@@ -185,6 +179,20 @@ internal ref struct PythonReScalarMatchCursor
         }
         Checkpoint();
         return groups;
+    }
+
+    internal bool TryGetCaptureByteRange(int number, out int start, out int end)
+    {
+        start = end = -1;
+        if ((uint)number >= (uint)_numbersByPython.Length) return false;
+        var slot = Array.BinarySearch(_program.GroupNumbers, _numbersByPython[number]) - 1;
+        start = number == 0 ? StartOffsetInBytes : slot >= 0 ? _slots.Starts[slot] : -1;
+        end = number == 0 ? EndOffsetInBytes : slot >= 0 ? _slots.Ends[slot] : -1;
+        // Reverse lookbehind captures publish raw edges inside an LTR program.
+        // Byte-only template expansion does not need a coordinate map/snapshot.
+        if (start < 0 || end < 0) return false;
+        if (end < start) (start, end) = (end, start);
+        return true;
     }
 
     internal void EnsureMap()
@@ -257,12 +265,71 @@ internal ref struct PythonReScalarMatchCursor
         return bytes;
     }
 
-    internal void AppendBytes(ArrayBufferWriter<byte> writer, ReadOnlySpan<byte> bytes)
+    internal Utf8SliceOutputWriter CreateOutputWriter()
     {
-        Checkpoint();
-        CopyBytes(bytes, writer.GetSpan(bytes.Length));
-        writer.Advance(bytes.Length);
+        try
+        {
+            if (!Utf8SliceOutputWriter.Rent(256, ref _invocation, out var writer))
+                throw new InvalidOperationException("Python output exceeded the working storage budget.");
+            return writer;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
     }
+
+    internal void AppendBytes(scoped ref Utf8SliceOutputWriter writer, scoped ReadOnlySpan<byte> bytes)
+    {
+        try
+        {
+            Checkpoint();
+            if (!writer.Append(bytes, ref _invocation))
+                throw new InvalidOperationException("Python output exceeded the working storage budget.");
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal void AppendText(scoped ref Utf8SliceOutputWriter writer, string text)
+    {
+        try
+        {
+            // Observe a callback's token/deadline before scanning its return.
+            Checkpoint();
+            ArgumentNullException.ThrowIfNull(text);
+            if (!writer.AppendUtf16(text, ref _invocation))
+                throw new InvalidOperationException("Python output exceeded the working storage budget.");
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer, bool validateOutput)
+    {
+        try
+        {
+            Checkpoint();
+            if (validateOutput) _ = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
+            var result = AllocateResultArray<byte>(writer.Length);
+            CopyBytes(writer.WrittenBytes, result);
+            writer.Release(ref _invocation);
+            return result;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal string CompleteOutputText(scoped ref Utf8SliceOutputWriter writer)
+    {
+        try
+        {
+            Checkpoint();
+            var validation = Utf8Validation.Validate(writer.WrittenBytes, ref _invocation);
+            var result = _results.DecodeUtf8(writer.WrittenBytes, validation.Utf16Length, ref _invocation);
+            Checkpoint();
+            writer.Release(ref _invocation);
+            return result;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal void ReleaseOutput(scoped ref Utf8SliceOutputWriter writer)
+        => writer.Release(ref _invocation);
 
     internal void CopyBytes(ReadOnlySpan<byte> source, Span<byte> destination)
     {

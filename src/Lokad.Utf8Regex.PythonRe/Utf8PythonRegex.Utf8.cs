@@ -133,30 +133,39 @@ public sealed partial class Utf8PythonRegex
     }
 
     private bool TryReplaceViaUtf8Literal(
-        ReadOnlySpan<byte> input,
-        PythonReReplacementPlan plan,
-        int count,
-        int startOffsetInBytes,
-        out byte[] resultBytes,
-        out int replacementCount)
+        ReadOnlySpan<byte> input, PythonReReplacementPlan plan, int count, int startOffsetInBytes,
+        bool textOutput, out byte[] resultBytes, out string resultText, out int replacementCount)
     {
-        if (_canMatchEmpty || count < 0 ||
-            startOffsetInBytes != 0 ||
-            !_canUseZeroOffsetUtf8ValueFastPath ||
-            _utf8Regex is null ||
-            !plan.TryGetLiteralUtf8(out var literalBytes))
-        {
-            resultBytes = [];
-            replacementCount = 0;
-            return false;
-        }
+        resultBytes = [];
+        resultText = string.Empty;
+        replacementCount = 0;
+        if (_canMatchEmpty || count < 0 || startOffsetInBytes != 0 ||
+            !_canUseZeroOffsetUtf8ValueFastPath || _utf8Regex is null ||
+            !plan.TryGetLiteralUtf8(out var literalBytes)) return false;
 
-        var maximumReplacementCount = count == 0 ? int.MaxValue : count;
-        resultBytes = _utf8Regex.ReplaceLiteralWithCount(
-            input,
-            literalBytes,
-            maximumReplacementCount,
-            out replacementCount);
-        return true;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+        Utf8InvocationResultLedger results = default;
+        try
+        {
+            var bytes = _utf8Regex.ReplaceExactLiteralForResult(input, literalBytes,
+                count == 0 ? int.MaxValue : count, ref invocation, ref results, out var replaced);
+            var text = string.Empty;
+            if (textOutput)
+            {
+                var validation = Utf8Validation.Validate(bytes, ref invocation);
+                text = results.DecodeUtf8(bytes, validation.Utf16Length, ref invocation);
+                results.ReleaseArray(bytes, new Utf8InvocationBufferControl(ref invocation));
+            }
+            Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+            if (textOutput) resultText = text;
+            else resultBytes = bytes;
+            replacementCount = replaced;
+            return true;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+        }
+        finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
     }
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.PythonRe;
 
@@ -3792,14 +3793,20 @@ internal sealed class PythonReBenchmarkContext
     internal PythonReBenchmarkReplacementResult ExecuteUtf8CoreCountedLiteralReplacement()
     {
         EnsureReplacementPhases();
-        var bytes = GetCoreReplacementRegex().ReplaceLiteralWithCount(
-            InputBytes,
-            _preparedLiteralReplacementUtf8,
-            out var replacementCount);
-        var returnedCount = IsSubnOperation ? replacementCount : (int?)null;
-        return IsUtf8ReplacementOperation
-            ? new PythonReBenchmarkReplacementResult(string.Empty, bytes, returnedCount)
-            : new PythonReBenchmarkReplacementResult(s_strictUtf8.GetString(bytes), null, returnedCount);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Utf8InvocationResultLedger results = default;
+        try
+        {
+            var bytes = GetCoreReplacementRegex().ReplaceExactLiteralForResult(InputBytes,
+                _preparedLiteralReplacementUtf8, int.MaxValue, ref invocation, ref results, out var replacementCount);
+            var returnedCount = IsSubnOperation ? replacementCount : (int?)null;
+            if (IsUtf8ReplacementOperation)
+                return new PythonReBenchmarkReplacementResult(string.Empty, bytes, returnedCount);
+            var validation = Utf8Validation.Validate(bytes, ref invocation);
+            var text = results.DecodeUtf8(bytes, validation.Utf16Length, ref invocation);
+            return new PythonReBenchmarkReplacementResult(text, null, returnedCount);
+        }
+        finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
     }
 
     internal int ExecuteUtf8CoreReplacementCount()

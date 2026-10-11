@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -174,35 +175,20 @@ internal readonly record struct PythonReReplacementPlan(PythonReReplacementToken
     public bool TryGetLiteralUtf8(out byte[] literal)
     { literal = LiteralUtf8 ?? []; return LiteralUtf8 is not null; }
 
-    public byte[] ExpandToUtf8(ReadOnlySpan<byte> input, PythonReGroupData[] groups)
+    internal void AppendToUtf8(ReadOnlySpan<byte> input,
+        scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer)
     {
-        if (Tokens.Length == 0) return [];
-        // Invocation/result capacity remains a separate common-policy gate.
-        var length = 0;
+        cursor.Checkpoint();
         foreach (var token in Tokens)
         {
-            switch (token.Kind)
-            {
-                case PythonReReplacementTokenKind.Literal: length = checked(length + token.RequiredUtf8.Length); break;
-                case PythonReReplacementTokenKind.GroupNumber:
-                    if ((uint)token.Number < (uint)groups.Length && groups[token.Number].Success)
-                        length = checked(length + (groups[token.Number].EndOffsetInBytes - groups[token.Number].StartOffsetInBytes));
-                    break;
-            }
-        }
-        if (length == 0) return [];
-        var result = new byte[length];
-        var offset = 0;
-        foreach (var token in Tokens)
-        {
+            cursor.Checkpoint();
             ReadOnlySpan<byte> value = token.Kind == PythonReReplacementTokenKind.Literal ? token.RequiredUtf8.AsSpan() :
-                (uint)token.Number < (uint)groups.Length && groups[token.Number].Success
-                    ? input[groups[token.Number].StartOffsetInBytes..groups[token.Number].EndOffsetInBytes] : [];
-            value.CopyTo(result.AsSpan(offset));
-            offset += value.Length;
+                cursor.TryGetCaptureByteRange(token.Number, out var start, out var end) ? input[start..end] : [];
+            cursor.AppendBytes(ref writer, value);
         }
-        return result;
+        cursor.Checkpoint();
     }
+
 }
 
 internal readonly record struct PythonReReplacementToken(PythonReReplacementTokenKind Kind, byte[]? Utf8, int Number)

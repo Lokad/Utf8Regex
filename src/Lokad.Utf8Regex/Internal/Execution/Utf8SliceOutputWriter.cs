@@ -12,6 +12,7 @@ internal struct Utf8SliceOutputWriter
     private ulong _reservedBytes;
 
     internal int Length => _length;
+    internal readonly ReadOnlySpan<byte> WrittenBytes => _buffer is null ? [] : _buffer.AsSpan(0, _length);
 
     internal static bool Rent(int initialCapacity, ref Utf8SliceInvocation invocation, out Utf8SliceOutputWriter writer)
     {

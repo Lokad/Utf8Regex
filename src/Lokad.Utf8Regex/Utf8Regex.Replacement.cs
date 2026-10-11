@@ -273,55 +273,23 @@ public sealed partial class Utf8Regex
         return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor, out replacementCount);
     }
 
-    internal byte[] ReplaceLiteralWithCount(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> literalReplacementUtf8,
-        out int replacementCount)
-        => ReplaceLiteralWithCount(
-            input,
-            literalReplacementUtf8,
-            int.MaxValue,
-            out replacementCount);
-
-    internal byte[] ReplaceLiteralWithCount(
+    // Borrow the adapter's operation and result owner through final shaping.
+    internal byte[] ReplaceExactLiteralForResult(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> literalReplacementUtf8,
         int maximumReplacementCount,
+        ref Utf8SliceInvocation invocation,
+        ref Utf8InvocationResultLedger results,
         out int replacementCount)
     {
-        try
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
-            var validation = TryUseAsciiInputValidationShortcut(input)
-                ? default
-                : Utf8Validation.Validate(input);
-            _ = Utf8Validation.Validate(literalReplacementUtf8);
-            if (!UsesRightToLeft() &&
-                _preparedRegex.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral &&
-                _preparedRegex.LiteralUtf8 is { Length: > 0 } literal)
-            {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, CreateExecutionBudget(), CancellationToken.None);
-                return Utf8ExactLiteralReplacement.Replace(
-                    input,
-                    literal,
-                    literalReplacementUtf8,
-                    maximumReplacementCount,
-                    ref invocation,
-                    out replacementCount);
-            }
-
-            if (maximumReplacementCount != int.MaxValue)
-            {
-                throw new InvalidOperationException(
-                    "Bounded literal replacement requires the exact ASCII literal execution route.");
-            }
-
-            return ReplaceLiteralBytesCore(input, validation, literalReplacementUtf8, out replacementCount);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
+        if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
+            _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
+            throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
+        _ = Utf8Validation.Validate(input, ref invocation);
+        _ = Utf8Validation.Validate(literalReplacementUtf8, ref invocation);
+        return Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
+            maximumReplacementCount, ref invocation, ref results, out replacementCount);
     }
 
     private OperationStatus TryReplaceLiteralBytesCore(

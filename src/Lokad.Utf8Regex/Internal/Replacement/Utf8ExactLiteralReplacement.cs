@@ -10,6 +10,7 @@ internal static class Utf8ExactLiteralReplacement
         ReadOnlySpan<byte> replacement,
         int maximumReplacementCount,
         ref Utf8SliceInvocation invocation,
+        ref Utf8InvocationResultLedger results,
         out int replacementCount)
     {
         if (literal.IsEmpty)
@@ -39,33 +40,29 @@ internal static class Utf8ExactLiteralReplacement
         }
 
         var outputLength = checked(input.Length + replacementCount * (replacement.Length - literal.Length));
-        var output = Utf8InvocationOutput.AllocateBytes(outputLength, control, out var reservation);
-        try
+        var output = results.AllocateArray<byte, Utf8InvocationBufferControl>(outputLength, control);
+        var sourcePosition = 0;
+        var destinationPosition = 0;
+        var remainingReplacements = replacementCount;
+        while (remainingReplacements > 0)
         {
-            var sourcePosition = 0;
-            var destinationPosition = 0;
-            var remainingReplacements = replacementCount;
-            while (remainingReplacements > 0)
+            Utf8InvocationOutput.Checkpoint(control);
+            var relativeIndex = input[sourcePosition..].IndexOf(literal);
+            if (relativeIndex < 0)
             {
-                Utf8InvocationOutput.Checkpoint(control);
-                var relativeIndex = input[sourcePosition..].IndexOf(literal);
-                if (relativeIndex < 0)
-                {
-                    throw new InvalidOperationException(
-                        "The exact replacement copy pass lost a preflighted match.");
-                }
-
-                Utf8InvocationOutput.Copy(input.Slice(sourcePosition, relativeIndex), output.AsSpan(destinationPosition), control);
-                destinationPosition += relativeIndex;
-                Utf8InvocationOutput.Copy(replacement, output.AsSpan(destinationPosition), control);
-                destinationPosition += replacement.Length;
-                sourcePosition += relativeIndex + literal.Length;
-                remainingReplacements--;
+                throw new InvalidOperationException(
+                    "The exact replacement copy pass lost a preflighted match.");
             }
 
-            Utf8InvocationOutput.Copy(input[sourcePosition..], output.AsSpan(destinationPosition), control);
-            return output;
+            Utf8InvocationOutput.Copy(input.Slice(sourcePosition, relativeIndex), output.AsSpan(destinationPosition), control);
+            destinationPosition += relativeIndex;
+            Utf8InvocationOutput.Copy(replacement, output.AsSpan(destinationPosition), control);
+            destinationPosition += replacement.Length;
+            sourcePosition += relativeIndex + literal.Length;
+            remainingReplacements--;
         }
-        finally { control.ReleaseWorking(reservation); }
+
+        Utf8InvocationOutput.Copy(input[sourcePosition..], output.AsSpan(destinationPosition), control);
+        return output;
     }
 }

@@ -1,10 +1,8 @@
-using System.Buffers;
-using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-internal delegate byte[] PythonReScalarReplacementFactory<TState>(ReadOnlySpan<byte> input, TState state, scoped ref PythonReScalarMatchCursor cursor);
+internal delegate void PythonReScalarReplacementAppender<TState>(ReadOnlySpan<byte> input, TState state, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer);
 
 /// <summary>Shared scalar discovery for Python global operations.</summary>
 public sealed partial class Utf8PythonRegex
@@ -256,37 +254,41 @@ public sealed partial class Utf8PythonRegex
     }
 
     private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
-        PythonReScalarReplacementFactory<TState> replacementFactory, int count, int startOffsetInBytes,
-        CancellationToken cancellationToken, out Utf8PythonSubnUtf8Result result)
+        PythonReScalarReplacementAppender<TState> appendReplacement, int count, int startOffsetInBytes,
+        CancellationToken cancellationToken, bool textOutput, bool validateOutput,
+        out Utf8PythonSubnUtf8Result bytesResult, out Utf8PythonSubnResult textResult)
     {
-        result = default;
+        bytesResult = default;
+        textResult = default;
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8SliceOutputWriter writer = default;
         try
         {
-            var builder = new ArrayBufferWriter<byte>();
+            writer = cursor.CreateOutputWriter();
             var last = 0;
             var replaced = 0;
             while ((count == 0 || replaced < count) && cursor.MoveNext())
             {
-                cursor.AppendBytes(builder, input[last..cursor.StartOffsetInBytes]);
+                cursor.AppendBytes(ref writer, input[last..cursor.StartOffsetInBytes]);
                 var resultMarker = cursor.ResultReservation;
                 try
                 {
-                    var replacement = replacementFactory(input, state, ref cursor);
-                    // User callback time/storage is excluded from resource accounting;
-                    // the invocation deadline/token is observed immediately on return.
+                    appendReplacement(input, state, ref cursor, ref writer);
                     cursor.Checkpoint();
-                    cursor.AppendBytes(builder, replacement);
                 }
                 finally { cursor.ReleaseResultsSince(resultMarker); }
                 last = cursor.EndOffsetInBytes;
                 replaced++;
             }
-            cursor.AppendBytes(builder, input[last..]);
-            result = new Utf8PythonSubnUtf8Result { ResultBytes = builder.WrittenSpan.ToArray(), ReplacementCount = replaced };
+            cursor.AppendBytes(ref writer, input[last..]);
+            byte[] completedBytes = [];
+            string completedText = string.Empty;
+            if (textOutput) completedText = cursor.CompleteOutputText(ref writer);
+            else completedBytes = cursor.CompleteOutputBytes(ref writer, validateOutput);
             cursor.Checkpoint();
-            return;
+            if (textOutput) textResult = new Utf8PythonSubnResult { ResultText = completedText, ReplacementCount = replaced };
+            else bytesResult = new Utf8PythonSubnUtf8Result { ResultBytes = completedBytes, ReplacementCount = replaced };
         }
-        finally { cursor.Dispose(); }
+        finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
     }
 }

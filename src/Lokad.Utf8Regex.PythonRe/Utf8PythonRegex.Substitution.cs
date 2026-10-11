@@ -61,10 +61,6 @@ public sealed partial class Utf8PythonRegex
         return SubnToStringTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None).ResultText;
     }
 
-    // R04: template substitution on literal shapes discovers through the shared owned cursor
-    // and expands every replacement from owned group spans; the first hit validates the branch
-    // channel before any output, so an unknown branch still declines cleanly to managed routes.
-
     /// <summary>Replaces matches after a byte offset and returns a string, observing cancellation before matching begins.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
@@ -103,12 +99,13 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var scalarPlan = GetReplacementPlan(replacement);
         if (!cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, out var literalBytes, out var literalCount))
-            return new Utf8PythonSubnResult { ResultText = Encoding.UTF8.GetString(literalBytes), ReplacementCount = literalCount };
+            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, true, out _, out var literalText, out var literalCount))
+            return new Utf8PythonSubnResult { ResultText = literalText, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan,
-                static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor) => plan.ExpandToUtf8(source, cursor.SnapshotGroups()),
-                count, startOffsetInBytes, cancellationToken, out var scalarResult);
-        return new Utf8PythonSubnResult { ResultText = Encoding.UTF8.GetString(scalarResult.ResultBytes), ReplacementCount = scalarResult.ReplacementCount };
+                static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                    plan.AppendToUtf8(source, ref cursor, ref writer),
+                count, startOffsetInBytes, cancellationToken, true, false, out _, out var scalarResult);
+        return scalarResult;
     }
 
     /// <summary>Replaces matches after a byte offset and returns the string plus count, observing cancellation before matching begins.</summary>
@@ -148,11 +145,12 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var scalarPlan = GetReplacementPlan(replacement);
         if (!cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, out var literalBytes, out var literalCount))
+            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, false, out var literalBytes, out _, out var literalCount))
             return new Utf8PythonSubnUtf8Result { ResultBytes = literalBytes, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan,
-                static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor) => plan.ExpandToUtf8(source, cursor.SnapshotGroups()),
-                count, startOffsetInBytes, cancellationToken, out var scalarResult);
+                static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                    plan.AppendToUtf8(source, ref cursor, ref writer),
+                count, startOffsetInBytes, cancellationToken, false, false, out var scalarResult, out _);
         return scalarResult;
     }
 
@@ -232,10 +230,6 @@ public sealed partial class Utf8PythonRegex
         return SubnToString(input, state, evaluator, count, startOffsetInBytes).ResultText;
     }
 
-    // R04: evaluator substitution on literal shapes discovers through the shared owned cursor
-    // and shapes every callback argument from owned spans; the first hit validates the branch
-    // channel before any output, so an unknown branch still declines cleanly to managed routes.
-
     /// <summary>Replaces matches after a byte offset with a stateful evaluator and returns a string, observing cancellation before matching begins.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
@@ -284,9 +278,10 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken)
     {
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
-                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor) => Encoding.UTF8.GetBytes(s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
-                count, startOffsetInBytes, cancellationToken, out var scalarResult);
-        return new Utf8PythonSubnResult { ResultText = Encoding.UTF8.GetString(scalarResult.ResultBytes), ReplacementCount = scalarResult.ReplacementCount };
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                    cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+                count, startOffsetInBytes, cancellationToken, true, false, out _, out var scalarResult);
+        return scalarResult;
     }
 
     /// <summary>Evaluates replacements after a byte offset and returns the string plus count, observing cancellation before matching begins.</summary>
@@ -337,8 +332,9 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken)
     {
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
-                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor) => Encoding.UTF8.GetBytes(s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
-                count, startOffsetInBytes, cancellationToken, out var scalarResult);
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                    cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+                count, startOffsetInBytes, cancellationToken, false, false, out var scalarResult, out _);
         return scalarResult;
     }
 
@@ -429,8 +425,9 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken)
     {
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
-                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor) => s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names)),
-                count, startOffsetInBytes, cancellationToken, out var scalarResult);
+                static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
+                    cursor.AppendBytes(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
+                count, startOffsetInBytes, cancellationToken, false, true, out var scalarResult, out _);
         return scalarResult;
     }
 
