@@ -13,17 +13,19 @@ internal sealed class Utf8ReplacementPlanCache
     internal static Utf8ReplacementPlanCache Create()
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var plans = Utf8BoundedPreparationCache<string, Utf8AnalyzedReplacement>.Create(Capacity, StringComparer.Ordinal);
+        var plans = Utf8BoundedPreparationCache<string, Utf8AnalyzedReplacement>.CreateRetained(Capacity, StringComparer.Ordinal);
         var result = owner.Budget.AllocateObject(plans, static value => new Utf8ReplacementPlanCache(value));
         owner.Complete();
         return result;
     }
 
     internal int Count => _plans.Count;
+    internal ulong PayloadBytes => _plans.PayloadBytes;
+    internal ulong MaximumPayloadBytes => _plans.MaximumPayloadBytes;
 
     internal Utf8AnalyzedReplacement GetOrAdd<TState>(
         string replacement,
         TState state,
         Func<string, TState, Utf8AnalyzedReplacement> factory)
-        => _plans.GetOrAdd(replacement, state, factory);
+        => _plans.GetOrAdd(replacement, state, factory, default(Utf8ConstructionTextNoControl), default(Utf8ReplacementRetainedStorage));
 }

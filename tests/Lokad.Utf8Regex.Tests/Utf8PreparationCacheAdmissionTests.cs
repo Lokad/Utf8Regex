@@ -24,7 +24,7 @@ public sealed class Utf8PreparationCacheAdmissionTests
             types.Add(allocation.Value.GetType());
         Assert.Equal(3, types.Count);
         var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.DeclaredOnly;
-        Assert.All(types, type => Assert.Equal(7, type.GetFields(flags).Length));
+        Assert.All(types, type => Assert.Equal(type == cache.GetType() ? 10 : 8, type.GetFields(flags).Length));
         cache.Clear();
         Assert.Equal(Utf8BoundedPreparationCache<string, string>.ObjectBytes, cache.MetadataBytes);
         // The still-live construction owner retains its independent tracking

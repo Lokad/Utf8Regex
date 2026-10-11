@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Caching;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -24,7 +25,8 @@ public sealed partial class Utf8PythonRegex
         _replacementPlanCache.GetOrAdd(
             replacement,
             this,
-            static (template, self) => PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups));
+            static (template, self) => PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups),
+            default(Utf8ConstructionTextNoControl), default(PythonReReplacementRetainedStorage));
 
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)

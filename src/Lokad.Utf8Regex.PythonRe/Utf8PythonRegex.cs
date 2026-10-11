@@ -250,7 +250,7 @@ public sealed partial class Utf8PythonRegex
             _canUseZeroOffsetUtf8SearchValueFastPath &&
             _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
         ResourcePolicy = resourcePolicy;
-        _replacementPlanCache = Utf8BoundedPreparationCache<string, PythonReReplacementPlan>.Create(ReplacementPlanCacheCapacity, StringComparer.Ordinal);
+        _replacementPlanCache = Utf8BoundedPreparationCache<string, PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, StringComparer.Ordinal);
         construction.Complete();
     }
 
@@ -300,6 +300,7 @@ public sealed partial class Utf8PythonRegex
     internal PythonReDirectBackendKind DebugCountBackend => PythonReDirectBackendKind.Utf8Regex;
 
     internal int DebugReplacementPlanCacheEntryCount => _replacementPlanCache.Count;
+    internal ulong DebugReplacementPlanCachePayloadBytes => _replacementPlanCache.PayloadBytes;
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 

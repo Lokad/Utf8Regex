@@ -11,6 +11,7 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
     internal readonly record struct Entry(TKey Key, TValue Value, int Hash, bool Used);
     private Entry[] _entries = [];
     internal int Count { get; private set; }
+    internal ulong StorageBytes => Utf8ConstructionBudget.ArrayBytes<Entry>(_entries.Length);
 
     internal static Utf8ConstructionMap<TKey, TValue> Create(Utf8ConstructionBudget owner, IEqualityComparer<TKey> equality) =>
         owner.AllocateObject((owner, equality, Array.Empty<Entry>(), 0), static state => new Utf8ConstructionMap<TKey, TValue>(state.owner, state.equality));
@@ -24,6 +25,17 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
         _entries = [];
         Count = 0;
         arena.Adopt(entries, true);
+        return result;
+    }
+
+    // Transfers the funded physical table to an owner that supplies its own
+    // immutable publication and reference-release protocol.
+    internal Entry[] TakeEntries(out int count)
+    {
+        var result = _entries;
+        count = Count;
+        _entries = [];
+        Count = 0;
         return result;
     }
 

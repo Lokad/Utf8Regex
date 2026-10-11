@@ -1939,18 +1939,40 @@ public sealed partial class Utf8Pcre2Regex
         internal static Pcre2ReplacementComponent Create()
         {
             using var owner = Utf8ConstructionScope.Enter();
-            var plans = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.Create(Capacity);
+            var plans = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(Capacity, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
             var result = owner.Budget.AllocateObject(plans, static value => new Pcre2ReplacementComponent(value));
             owner.Complete();
             return result;
         }
 
         internal int Count => _plans.Count;
+        internal ulong PayloadBytes => _plans.PayloadBytes;
 
         internal Pcre2ReplacementPreparation GetOrAdd(
             Pcre2ReplacementCacheKey key,
             Func<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> factory)
-            => _plans.GetOrAdd(key, factory, static (item, prepare) => prepare(item), default(Pcre2ReplacementTextControl));
+            => _plans.GetOrAdd(key, factory, static (item, prepare) => prepare(item), default(Pcre2ReplacementTextControl), default(Pcre2ReplacementRetainedStorage));
+    }
+
+    private readonly struct Pcre2ReplacementRetainedStorage : IUtf8RetainedStorage<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>
+    {
+        public bool IsCertified => true;
+        public void CollectKey<TControl>(Pcre2ReplacementCacheKey key, Utf8RetainedPayloadBuilder<TControl> storage)
+            where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key.Replacement);
+        public void CollectValue<TControl>(Pcre2ReplacementPreparation value, Utf8RetainedPayloadBuilder<TControl> storage)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            if (value.Simple is { } simple)
+            {
+                storage.Array(simple.Segments);
+                foreach (var segment in simple.Segments) storage.Array(segment.LiteralUtf8);
+            }
+            if (value.Prepared is { } prepared)
+            {
+                storage.Array(prepared.Instructions); storage.Array(prepared.Fragments);
+                foreach (var instruction in prepared.Instructions) storage.Array(instruction.Payload);
+            }
+        }
     }
 
 }
