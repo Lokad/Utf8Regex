@@ -7,6 +7,8 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
+// Forced collections must not pause parallel deadline-sensitive operations.
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8EmittedManagedStorageTests
 {
     [Theory]
