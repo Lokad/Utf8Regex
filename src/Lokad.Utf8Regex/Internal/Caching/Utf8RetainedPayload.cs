@@ -76,20 +76,25 @@ internal sealed class Utf8RetainedPayloadBuilder<TControl> : IDisposable
     internal void Array<T>(T[]? value) { if (value is not null) Add(value, Utf8ConstructionBudget.ArrayBytes<T>(value.Length)); }
     internal void Object<TState>(object value) => Add(value, Utf8ConstructionBudget.ObjectBytes<TState>());
 
-    internal void Add(object value, ulong bytes)
+    internal void Add(object value, ulong bytes) => TryAdd(value, bytes);
+
+    // Graph walkers expand each identity once, including shared assertion bodies.
+    // An inconsistent extent still fails even when that identity was seen before.
+    internal bool TryAdd(object value, ulong bytes)
     {
         Check();
-        if (Exceeded || bytes == 0) return;
+        if (Exceeded || bytes == 0) return false;
         var identity = new Utf8RetainedPayloadIdentity(value);
         if (_seen.TryGetValue(identity, out var previous))
         {
             if (previous != bytes) throw new InvalidOperationException("One retained object has inconsistent physical extents.");
-            return;
+            return false;
         }
-        if (bytes > _maximum - _bytes) { Exceeded = true; return; }
+        if (bytes > _maximum - _bytes) { Exceeded = true; return false; }
         _seen.Add(identity, bytes);
         _values.Add(new(value, bytes));
         _bytes += bytes;
+        return true;
     }
 
     internal Utf8RetainedPayloadExtent[] Finish()

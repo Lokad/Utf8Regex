@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -14,6 +15,20 @@ internal sealed class Utf8SliceClassProgram
     private Utf8SliceClassProgram(Segment[] segments)
     {
         _segments = segments;
+    }
+
+    internal void CollectStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage, Utf8ConstructionBuffer<object> pending)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<ValueTuple<Segment[]>>())) return;
+        storage.Array(_segments);
+        foreach (ref readonly var segment in _segments.AsSpan())
+        {
+            storage.Array(segment.Mask16);
+            storage.Array(segment.Members);
+            storage.Array(segment.Categories);
+            foreach (var member in segment.Categories) { storage.Check(); pending.Push(member); }
+        }
     }
 
     internal static Utf8SliceNode Subtract(Utf8ConstructionBuffer<Utf8SliceNode> operands, Utf8ConstructionArena arena)

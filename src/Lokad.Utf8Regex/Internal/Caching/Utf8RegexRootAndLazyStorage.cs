@@ -2,9 +2,10 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Caching;
 
-// This collector certifies its declared root/descendant subgraph only. It does
-// not describe the immutable prepared/program/runtime payload or opaque CLR
-// storage. Reserve bounded replacement descendants before parent publication;
+// This collector certifies its declared root/descendant subgraph, including
+// the complete owned scalar program graph. Other immutable
+// prepared/runtime payload and opaque CLR storage remain outside the scope.
+// Reserve bounded replacement descendants before parent publication;
 // their already-enforced maxima cover lazy growth without mutable manifests.
 internal readonly struct Utf8RegexRootAndLazyStorage : IUtf8RetainedStorage<Utf8RegexCacheKey, Utf8Regex>
 {

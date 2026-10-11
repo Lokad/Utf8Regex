@@ -37,15 +37,16 @@ public sealed partial class Utf8Regex
 
     internal static ulong CachedObjectBytes => Utf8ConstructionBudget.ObjectBytes<CachedConstructionState>();
 
-    // The global owner covers this facade and its bounded replacement child.
-    // Prepared/program/runtime graphs and framework storage remain outside this
-    // declared subgraph until their complete collectors are qualified.
+    // The global owner covers this facade, its complete scalar program graph,
+    // and its bounded replacement child. Other prepared/runtime graphs and
+    // opaque framework storage remain outside this declared subgraph.
     internal void CollectCacheRoots<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl
     {
         storage.Add(this, CachedObjectBytes);
         storage.Text(Pattern);
         storage.Add(_replacementCache, _replacementCache.MaximumRetainedBytes);
+        Utf8ScalarProgramRetainedStorage.Collect(_ownedSliceProgram, storage);
     }
 
     internal static Utf8Regex CreateAdmittedForCache(string pattern, RegexOptions options, TimeSpan matchTimeout)

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -11,6 +12,19 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
 {
     internal static Utf8ConstructionReadOnlyMap<TKey, TValue> Empty { get; } = new([], EqualityComparer<TKey>.Default, 0);
     public int Count { get; } = count;
+
+    // The comparer is a borrowed shared framework singleton. Collect the actual
+    // table capacity; the caller separately collects reference-bearing entries.
+    internal ReadOnlySpan<Utf8ConstructionMap<TKey, TValue>.Entry> CollectStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        if (!ReferenceEquals(comparer, EqualityComparer<TKey>.Default) && !ReferenceEquals(comparer, StringComparer.Ordinal))
+            throw new InvalidOperationException("An owned comparer requires its own retained collector.");
+        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<
+            (Utf8ConstructionMap<TKey, TValue>.Entry[], IEqualityComparer<TKey>, int)>())) return [];
+        storage.Array(entries);
+        return entries;
+    }
     public TValue this[TKey key] => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();
     public IEnumerable<TKey> Keys => Create(new KeyView(this), static state => (IEnumerable<TKey>)state);
     public IEnumerable<TValue> Values => Create(new ValueView(this), static state => (IEnumerable<TValue>)state);

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -15,6 +16,23 @@ internal sealed class Utf8CaptureCatalog
         bool HasSharedCaptureDeclarations, bool HasExplicitCaptureNumbers);
 
     private readonly record struct AutomaticDefinition(int Index, int OpenPosition);
+
+    internal void CollectStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<ConstructionState>())) return;
+        storage.Array(DefinitionNumbers);
+        storage.Array(GroupNumbers);
+        storage.Array(GroupNames);
+        foreach (var name in GroupNames) storage.Text(name);
+        if (NameToNumber is { } names)
+            foreach (var entry in names.CollectStorage(storage))
+            {
+                storage.Check();
+                if (entry.Used) storage.Text(entry.Key);
+            }
+        if (SparseMapping is { } numbers) numbers.CollectStorage(storage);
+    }
 
     private Utf8CaptureCatalog(ConstructionState state)
     {
