@@ -7,13 +7,12 @@ internal static partial class Utf8SliceRunner
     private struct AssertionCursor
     {
         internal AssertionCursor(Utf8SliceProgram program, int start, int[] counts, int[] positions,
-            bool collectHistory, bool requireNonEmpty, bool aligned, int frameBase)
+            bool requireNonEmpty, bool aligned, int frameBase)
         {
             Program = program;
             Start = start;
             Counts = counts;
             Positions = positions;
-            CollectHistory = collectHistory;
             RequireNonEmpty = requireNonEmpty;
             Aligned = aligned;
             FrameBase = frameBase;
@@ -27,7 +26,6 @@ internal static partial class Utf8SliceRunner
         internal int Start;
         internal int[] Counts;
         internal int[] Positions;
-        internal bool CollectHistory;
         internal bool RequireNonEmpty;
         internal bool Aligned;
         internal int FrameBase;
@@ -47,7 +45,7 @@ internal static partial class Utf8SliceRunner
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation)
     {
         var current = new AssertionCursor(program, start, counts, positions,
-            collectHistory, requireNonEmpty, startIsScalarBoundary, stacks.FrameCount);
+            requireNonEmpty, startIsScalarBoundary, stacks.FrameCount);
         var continuations = new Utf8InvocationStateBuffer<AssertionContinuation>();
         var resumeFailure = false;
         try
@@ -135,7 +133,7 @@ internal static partial class Utf8SliceRunner
                         var aligned = (uint)assertionStart >= (uint)input.Length ||
                             (input[assertionStart] & 0xC0) != 0x80;
                         current = new(body, assertionStart, nextCounts, nextPositions,
-                            false, false, aligned, frameMark);
+                            false, aligned, frameMark);
                         current.RequiredEnd = assertion.ForwardScalarCount.HasValue ? expectedEnd : null;
                         current.RepeatReservation = nextReservation;
                         adopted = true;

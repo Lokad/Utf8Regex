@@ -545,7 +545,6 @@ internal static partial class Utf8SliceRunner
         var start = cursor.Start;
         var counts = cursor.Counts;
         var positions = cursor.Positions;
-        var collectHistory = cursor.CollectHistory;
         var requireNonEmpty = cursor.RequireNonEmpty;
         var startIsScalarBoundary = cursor.Aligned;
         var frameBase = cursor.FrameBase;
