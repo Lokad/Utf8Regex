@@ -4,9 +4,18 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Caching;
 
 // PCRE2-INTEGRATION-POINT: common ownership of immutable prepared payloads.
-// Collectors describe complete field states, never transient construction
-// reservations or reflection estimates. String and array loans include their
-// physical headers and capacities under the construction accounting model.
+// Collectors declare their scope explicitly. Complete-payload collectors cover
+// immutable values. Root/descendant collectors reserve each bounded child's
+// enforced maximum before publication, including future lazy growth. Neither
+// scope may substitute transient construction reservations or reflection
+// estimates. String/array loans include modeled headers and physical capacity.
+internal enum Utf8RetainedStorageScope : byte
+{
+    Uncertified = 0,
+    CompletePayload = 1,
+    RootsAndBoundedDescendants = 2,
+}
+
 internal readonly record struct Utf8RetainedPayloadExtent(object Value, ulong Bytes);
 
 internal readonly struct Utf8RetainedPayloadIdentity(object value) : IEquatable<Utf8RetainedPayloadIdentity>
@@ -20,6 +29,7 @@ internal readonly struct Utf8RetainedPayloadIdentity(object value) : IEquatable<
 internal interface IUtf8RetainedStorage<TKey, TValue>
 {
     bool IsCertified { get; }
+    Utf8RetainedStorageScope Scope { get; }
     void CollectKey<TControl>(TKey key, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl;
     void CollectValue<TControl>(TValue value, Utf8RetainedPayloadBuilder<TControl> storage)
@@ -29,6 +39,7 @@ internal interface IUtf8RetainedStorage<TKey, TValue>
 internal readonly struct Utf8UncertifiedStorage<TKey, TValue> : IUtf8RetainedStorage<TKey, TValue>
 {
     public bool IsCertified => false;
+    public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.Uncertified;
     public void CollectKey<TControl>(TKey key, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl { }
     public void CollectValue<TControl>(TValue value, Utf8RetainedPayloadBuilder<TControl> storage)

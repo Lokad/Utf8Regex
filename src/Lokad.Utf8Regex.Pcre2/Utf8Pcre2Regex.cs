@@ -1957,6 +1957,7 @@ public sealed partial class Utf8Pcre2Regex
     private readonly struct Pcre2ReplacementRetainedStorage : IUtf8RetainedStorage<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>
     {
         public bool IsCertified => true;
+        public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public void CollectKey<TControl>(Pcre2ReplacementCacheKey key, Utf8RetainedPayloadBuilder<TControl> storage)
             where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key.Replacement);
         public void CollectValue<TControl>(Pcre2ReplacementPreparation value, Utf8RetainedPayloadBuilder<TControl> storage)

@@ -5,6 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<string, Utf8AnalyzedReplacement>
 {
     public bool IsCertified => true;
+    public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
     public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
 

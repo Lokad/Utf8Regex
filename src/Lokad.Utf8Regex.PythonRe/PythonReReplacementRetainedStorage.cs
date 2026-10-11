@@ -6,6 +6,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 internal readonly struct PythonReReplacementRetainedStorage : IUtf8RetainedStorage<string, PythonReReplacementPlan>
 {
     public bool IsCertified => true;
+    public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
     public void CollectKey<TControl>(string key, Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl => storage.Text(key);
     public void CollectValue<TControl>(PythonReReplacementPlan value, Utf8RetainedPayloadBuilder<TControl> storage)

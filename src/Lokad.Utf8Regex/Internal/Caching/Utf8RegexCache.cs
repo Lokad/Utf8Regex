@@ -4,6 +4,10 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 
 internal static class Utf8RegexCache
 {
+    // Retained keys, facade metadata and bounded replacement descendants only.
+    // This internal migration backstop is not a complete program/process cap
+    // or a qualified public safe default.
+    internal const ulong MaximumRootAndLazyBytes = 64 * 1024 * 1024;
     private static Utf8BoundedPreparationCache<Utf8RegexCacheKey, Utf8Regex>? s_cache;
 
     // Failed admission must not poison a static type initializer. Construction
@@ -13,7 +17,9 @@ internal static class Utf8RegexCache
 
     private static Utf8BoundedPreparationCache<Utf8RegexCacheKey, Utf8Regex> Initialize()
     {
-        var created = Utf8BoundedPreparationCache<Utf8RegexCacheKey, Utf8Regex>.Create(15);
+        var created = Utf8BoundedPreparationCache<Utf8RegexCacheKey, Utf8Regex>.CreateRootAndDescendantRetained(
+            15, EqualityComparer<Utf8RegexCacheKey>.Default,
+            Utf8BoundedPreparationCache<Utf8RegexCacheKey, Utf8Regex>.DefaultMaximumMetadataBytes, MaximumRootAndLazyBytes);
         return Interlocked.CompareExchange(ref s_cache, created, null) ?? created;
     }
 
@@ -34,11 +40,16 @@ internal static class Utf8RegexCache
         var keyOptions = normalizedOptions | (options & RegexOptions.Compiled);
         var key = new Utf8RegexCacheKey(pattern, culture, keyOptions, matchTimeout);
         return Cache.GetOrAdd(
-            key,
-            static cacheKey => Utf8Regex.CreateAdmittedForCache(cacheKey.Pattern, cacheKey.Options, cacheKey.MatchTimeout));
+            key, 0,
+            static (cacheKey, _) => Utf8Regex.CreateAdmittedForCache(cacheKey.Pattern, cacheKey.Options, cacheKey.MatchTimeout),
+            default(Utf8ConstructionTextNoControl), default(Utf8RegexRootAndLazyStorage));
     }
 
     public static int EntryCount => Cache.Count;
+
+    internal static ulong RootAndLazyBytes => Cache.PayloadBytes;
+    internal static ulong MetadataBytes => Cache.MetadataBytes;
+    internal static Utf8RetainedStorageScope StorageScope => Cache.StorageScope;
 
     public static int MaxEntries
     {
