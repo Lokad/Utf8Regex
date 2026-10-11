@@ -13,6 +13,8 @@ internal sealed class Utf8RegexProgram
         Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher,
         Utf8CaptureCatalog CaptureCatalog);
 
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<ConstructionState>();
+
     private Utf8RegexProgram(ConstructionState state)
     {
         PreparedRegex = state.PreparedRegex;

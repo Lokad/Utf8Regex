@@ -38,16 +38,30 @@ public sealed partial class Utf8Regex
     internal static ulong CachedObjectBytes => Utf8ConstructionBudget.ObjectBytes<CachedConstructionState>();
 
     // The global owner covers this facade, complete scalar/prepared graphs
-    // and its bounded replacement child. Runtime/facade helpers and
-    // opaque framework storage remain outside this declared subgraph.
+    // and its bounded replacement child, program metadata and closed facade
+    // helpers. Compiled runtime/delegate and opaque framework descendants
+    // remain outside this declared subgraph.
     internal void CollectCacheRoots<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
         where TControl : struct, IUtf8ConstructionTextControl
     {
         storage.Add(this, CachedObjectBytes);
+        storage.Add(_program, Utf8RegexProgram.ObjectBytes);
         storage.Text(Pattern);
         storage.Add(_replacementCache, _replacementCache.MaximumRetainedBytes);
         Utf8ScalarProgramRetainedStorage.Collect(_ownedSliceProgram, storage);
         Utf8PreparedRetainedStorage.Collect(_preparedRegex, storage);
+        CollectFacadeHelpers(storage);
+    }
+
+    internal void CollectFacadeHelpers<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        _invariantCyrillicLiteralCountStrategy?.CollectRetainedStorage(storage);
+        _packedNibbleLiteralFamilyCountStrategy?.CollectRetainedStorage(storage);
+        _literalFamilyCaptureMap?.CollectRetainedStorage(storage);
+        _groupedLiteralSpanTable?.CollectRetainedStorage(storage);
+        storage.Array(_caretAnchoredGroupedLiteralUtf8);
+        _alternationBranchSpanMap?.CollectRetainedStorage(storage);
     }
 
     internal static Utf8Regex CreateAdmittedForCache(string pattern, RegexOptions options, TimeSpan matchTimeout)

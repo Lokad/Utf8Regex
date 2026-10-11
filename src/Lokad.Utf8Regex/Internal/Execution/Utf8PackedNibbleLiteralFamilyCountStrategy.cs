@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
+internal sealed partial class Utf8PackedNibbleLiteralFamilyCountStrategy
 {
     private readonly PreparedMultiLiteralCandidatePrefilter _prefilter;
 
@@ -38,7 +38,8 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
             return false;
         }
 
-        strategy = new Utf8PackedNibbleLiteralFamilyCountStrategy(prefilter);
+        strategy = Utf8ConstructionScope.CurrentBudget.AllocateObject(prefilter,
+            static state => new Utf8PackedNibbleLiteralFamilyCountStrategy(state));
         return true;
     }
 

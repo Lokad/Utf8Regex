@@ -18,7 +18,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // lookarounds, backreferences, and empty nodes decline; a null map means
 // the dispatcher selects another route. Construction is eager and pure over the owned
 // tree: no fallback engine is built here.
-internal sealed class Utf8AlternationBranchSpanMap
+internal sealed partial class Utf8AlternationBranchSpanMap
 {
     private Utf8AlternationBranchSpanMap(
         int[] wholeMatchGroups,
