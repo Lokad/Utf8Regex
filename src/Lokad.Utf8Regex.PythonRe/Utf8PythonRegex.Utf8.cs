@@ -22,27 +22,62 @@ public sealed partial class Utf8PythonRegex
 
         try
         {
-            matches = new Utf8PythonMatchData[ranges.Count];
-            for (var i = 0; i < matches.Length; i++)
+            var completed = ranges.AllocateResultArray<Utf8PythonMatchData>(ranges.Count);
+            for (var i = 0; i < completed.Length; i++)
             {
                 var range = ranges[i];
-                matches[i] = new Utf8PythonMatchData
+                completed[i] = new Utf8PythonMatchData
                 {
                     Success = true,
                     StartOffsetInBytes = range.IndexInBytes,
                     EndOffsetInBytes = range.IndexInBytes + range.LengthInBytes,
                     StartOffsetInUtf16 = range.IndexInUtf16,
                     EndOffsetInUtf16 = range.IndexInUtf16 + range.LengthInUtf16,
-                    ValueText = Encoding.UTF8.GetString(input.Slice(range.IndexInBytes, range.LengthInBytes)),
+                    ValueText = ranges.GetText(input, range),
                 };
             }
-
+            ranges.Checkpoint();
+            matches = completed;
             return true;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
         }
         finally
         {
             ranges.Dispose();
         }
+    }
+
+    private bool TryFindAllCanonicalLiteral(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        out Utf8PythonFindAllResult result)
+    {
+        result = default;
+        if (_repeatedExactFindAllString is not { } canonical || _utf8Regex is null) return false;
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+        Utf8InvocationResultLedger ledger = default;
+        try
+        {
+            var count = _utf8Regex.CountForResult(input, startOffsetInBytes, ref invocation);
+            var control = new Utf8InvocationBufferControl(ref invocation);
+            var values = ledger.AllocateArray<string, Utf8InvocationBufferControl>(count, control);
+            for (var offset = 0; offset < values.Length;)
+            {
+                Utf8InvocationOutput.Checkpoint(control);
+                var length = Math.Min(256, values.Length - offset);
+                values.AsSpan(offset, length).Fill(canonical);
+                offset += length;
+            }
+            Utf8InvocationOutput.Checkpoint(control);
+            result = new Utf8PythonFindAllResult { Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [] };
+            return true;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+        }
+        finally { ledger.Release(new Utf8InvocationBufferControl(ref invocation)); }
     }
 
     private bool TryCollectUtf8MatchRanges(

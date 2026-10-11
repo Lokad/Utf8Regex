@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -17,6 +18,7 @@ internal ref struct PythonReScalarMatchCursor
     private readonly string _pattern;
     private readonly TimeSpan _timeout;
     private Utf8SliceInvocation _invocation;
+    private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8ValidationResult _validation;
     private Utf8BoundaryMap _map;
@@ -29,6 +31,13 @@ internal ref struct PythonReScalarMatchCursor
     internal PythonReScalarMatchCursor(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout,
         string pattern, CancellationToken cancellationToken)
+        : this(input, program, numbersByPython, startOffsetInBytes, timeout, pattern,
+            cancellationToken, Utf8ExecutionLimits.Unlimited)
+    { }
+
+    internal PythonReScalarMatchCursor(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout,
+        string pattern, CancellationToken cancellationToken, Utf8ExecutionLimits limits)
     {
         this = default;
         _input = input;
@@ -38,7 +47,7 @@ internal ref struct PythonReScalarMatchCursor
         _timeout = timeout;
         _position = startOffsetInBytes;
         _slots = new Utf8SliceSlots([], []);
-        _invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, cancellationToken);
+        _invocation = new Utf8SliceInvocation(limits, timeout, cancellationToken);
         try
         {
             _validation = Utf8Validation.Validate(input, ref _invocation);
@@ -59,6 +68,38 @@ internal ref struct PythonReScalarMatchCursor
     internal int StartOffsetInBytes { get; private set; }
     internal int EndOffsetInBytes { get; private set; }
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
+    internal readonly ulong ResultReservation => _results.ReservedBytes;
+    [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
+
+    internal T[] AllocateResultArray<T>(int count)
+    {
+        try { return _results.AllocateArray<T, Utf8InvocationBufferControl>(count, new(ref _invocation)); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal void ReleaseResultArray<T>(T[] array)
+        => _results.ReleaseArray(array, new Utf8InvocationBufferControl(ref _invocation));
+
+    internal void ReleaseResultsSince(ulong marker)
+        => _results.ReleaseSince(marker, new Utf8InvocationBufferControl(ref _invocation));
+
+    internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value)
+    {
+        try { buffer.Add(value, new Utf8InvocationBufferControl(ref _invocation)); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
+    {
+        try { return buffer.ToArray(ref _results, new Utf8InvocationBufferControl(ref _invocation)); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+    }
+
+    internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
+        => buffer.Release(new Utf8InvocationBufferControl(ref _invocation));
+
+    private readonly RegexMatchTimeoutException TimeoutFailure()
+        => new(Encoding.UTF8.GetString(_input), _pattern, _timeout);
 
     internal void Checkpoint()
     {
@@ -122,7 +163,7 @@ internal ref struct PythonReScalarMatchCursor
     {
         Checkpoint();
         EnsureMap();
-        var groups = new PythonReGroupData[_numbersByPython.Length];
+        var groups = AllocateResultArray<PythonReGroupData>(_numbersByPython.Length);
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
             if ((pythonGroup & 255) == 0) Checkpoint();
@@ -165,23 +206,30 @@ internal ref struct PythonReScalarMatchCursor
     internal Utf8PythonDetailedMatchData SnapshotDetailed(PythonReNameEntry[] names)
     {
         var groups = SnapshotGroups();
-        var projected = new Utf8PythonGroupMatchData[groups.Length];
-        for (var i = 0; i < groups.Length; i++)
+        try
         {
-            Checkpoint();
-            var group = groups[i];
-            projected[i] = new Utf8PythonGroupMatchData
+            var projected = AllocateResultArray<Utf8PythonGroupMatchData>(groups.Length);
+            for (var i = 0; i < groups.Length; i++)
             {
-                Number = group.Number, Success = group.Success,
-                StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
-                StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
-                HasContiguousByteRange = group.HasContiguousByteRange,
-                ValueText = group.Success ? GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty,
-            };
+                Checkpoint();
+                var group = groups[i];
+                projected[i] = new Utf8PythonGroupMatchData
+                {
+                    Number = group.Number, Success = group.Success,
+                    StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
+                    StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
+                    HasContiguousByteRange = group.HasContiguousByteRange,
+                    ValueText = group.Success ? GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty,
+                };
+            }
+            var copiedNames = AllocateResultArray<PythonReNameEntry>(names.Length);
+            try { Utf8InvocationResultLedger.Copy<PythonReNameEntry, Utf8InvocationBufferControl>(names, copiedNames, new(ref _invocation)); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
+            var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames };
+            Checkpoint();
+            return result;
         }
-        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = (PythonReNameEntry[])names.Clone() };
-        Checkpoint();
-        return result;
+        finally { ReleaseResultArray(groups); }
     }
 
     internal string GetText(int start, int end)
@@ -190,7 +238,7 @@ internal ref struct PythonReScalarMatchCursor
         EnsureMap();
         try
         {
-            var text = Utf8SliceBufferWork.DecodeUtf8(_input[start..end],
+            var text = _results.DecodeUtf8(_input[start..end],
                 _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start), ref _invocation);
             Checkpoint();
             return text;
@@ -204,7 +252,7 @@ internal ref struct PythonReScalarMatchCursor
     internal byte[] GetBytes(int start, int end)
     {
         Checkpoint();
-        var bytes = new byte[end - start];
+        var bytes = AllocateResultArray<byte>(end - start);
         CopyBytes(_input[start..end], bytes);
         return bytes;
     }
@@ -231,6 +279,7 @@ internal ref struct PythonReScalarMatchCursor
 
     internal void Dispose()
     {
+        _results.Release(new Utf8InvocationBufferControl(ref _invocation));
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
         _slots = new Utf8SliceSlots([], []);
         _invocation.Ledger.Release(_mapReservation);

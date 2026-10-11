@@ -38,12 +38,16 @@ public sealed partial class Utf8PythonRegex
             _translation.Pattern, cancellationToken);
         try
         {
+            PythonReGroupData[] completedGroups = [];
+            Utf8PythonDetailedMatchData completedDetailed = default;
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
-                if (materializeValues) detailed = cursor.SnapshotDetailed(_nameEntries);
-                else groups = cursor.SnapshotGroups();
+                if (materializeValues) completedDetailed = cursor.SnapshotDetailed(_nameEntries);
+                else completedGroups = cursor.SnapshotGroups();
             }
             cursor.Checkpoint();
+            groups = completedGroups;
+            detailed = completedDetailed;
             return;
         }
         finally { cursor.Dispose(); }
@@ -54,19 +58,20 @@ public sealed partial class Utf8PythonRegex
     {
         matches = [];
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8InvocationResultBuffer<Utf8PythonDetailedMatchData> list = default;
         try
         {
-            List<Utf8PythonDetailedMatchData> list = [];
             while (cursor.MoveNext())
             {
-                list.Add(cursor.SnapshotDetailed(_nameEntries));
+                cursor.AddResult(ref list, cursor.SnapshotDetailed(_nameEntries));
                 cursor.Checkpoint();
             }
-            matches = list.ToArray();
+            var completed = cursor.CompleteResults(ref list);
             cursor.Checkpoint();
+            matches = completed;
             return;
         }
-        finally { cursor.Dispose(); }
+        finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
     }
 
     private void FindAllScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
@@ -74,26 +79,32 @@ public sealed partial class Utf8PythonRegex
     {
         matches = [];
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8InvocationResultBuffer<Utf8PythonMatchData> list = default;
         try
         {
-            List<Utf8PythonMatchData> list = [];
             while (cursor.MoveNext())
             {
-                var group = cursor.SnapshotGroups()[0];
-                list.Add(new Utf8PythonMatchData
+                var groups = cursor.SnapshotGroups();
+                try
                 {
-                    Success = true,
-                    StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
-                    StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
-                    ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes),
-                });
+                    var group = groups[0];
+                    cursor.AddResult(ref list, new Utf8PythonMatchData
+                    {
+                        Success = true,
+                        StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
+                        StartOffsetInUtf16 = group.StartOffsetInUtf16, EndOffsetInUtf16 = group.EndOffsetInUtf16,
+                        ValueText = cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes),
+                    });
+                }
+                finally { cursor.ReleaseResultArray(groups); }
                 cursor.Checkpoint();
             }
-            matches = list.ToArray();
+            var completed = cursor.CompleteResults(ref list);
             cursor.Checkpoint();
+            matches = completed;
             return;
         }
-        finally { cursor.Dispose(); }
+        finally { cursor.ReleaseResults(ref list); cursor.Dispose(); }
     }
 
     private void FindAllScalarStrings(ReadOnlySpan<byte> input, int startOffsetInBytes,
@@ -101,42 +112,47 @@ public sealed partial class Utf8PythonRegex
     {
         result = default;
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8InvocationResultBuffer<string> scalars = default;
+        Utf8InvocationResultBuffer<string[]> tuples = default;
         try
         {
-            List<string> scalars = [];
-            List<string[]> tuples = [];
             var count = _translation.CaptureGroupCount;
             while (cursor.MoveNext())
             {
                 var groups = cursor.SnapshotGroups();
-                if (count <= 1)
+                try
                 {
-                    var group = groups[count];
-                    scalars.Add(!group.Success ? string.Empty : count == 1 && _optionalExactCaptureFindAllValue is { } exact
-                        ? exact : cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes));
-                }
-                else
-                {
-                    var tuple = new string[count];
-                    for (var i = 0; i < count; i++)
+                    if (count <= 1)
                     {
-                        var group = groups[i + 1];
-                        tuple[i] = group.Success ? cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty;
-                        cursor.Checkpoint();
+                        var group = groups[count];
+                        cursor.AddResult(ref scalars, !group.Success ? string.Empty : count == 1 && _optionalExactCaptureFindAllValue is { } exact
+                            ? exact : cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes));
                     }
-                    tuples.Add(tuple);
+                    else
+                    {
+                        var tuple = cursor.AllocateResultArray<string>(count);
+                        for (var i = 0; i < count; i++)
+                        {
+                            var group = groups[i + 1];
+                            tuple[i] = group.Success ? cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : string.Empty;
+                            cursor.Checkpoint();
+                        }
+                        cursor.AddResult(ref tuples, tuple);
+                    }
                 }
+                finally { cursor.ReleaseResultArray(groups); }
                 cursor.Checkpoint();
             }
-            result = new Utf8PythonFindAllResult
+            var completed = new Utf8PythonFindAllResult
             {
                 Shape = count == 0 ? Utf8PythonFindAllShape.FullMatch : count == 1 ? Utf8PythonFindAllShape.SingleGroup : Utf8PythonFindAllShape.GroupTuple,
-                ScalarValues = scalars.ToArray(), TupleValues = tuples.ToArray(),
+                ScalarValues = cursor.CompleteResults(ref scalars), TupleValues = cursor.CompleteResults(ref tuples),
             };
             cursor.Checkpoint();
+            result = completed;
             return;
         }
-        finally { cursor.Dispose(); }
+        finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
     }
 
     private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
@@ -144,41 +160,46 @@ public sealed partial class Utf8PythonRegex
     {
         result = default;
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8InvocationResultBuffer<byte[]> scalars = default;
+        Utf8InvocationResultBuffer<byte[][]> tuples = default;
         try
         {
-            List<byte[]> scalars = [];
-            List<byte[][]> tuples = [];
             var count = _translation.CaptureGroupCount;
             while (cursor.MoveNext())
             {
                 var groups = cursor.SnapshotGroups();
-                if (count <= 1)
+                try
                 {
-                    var group = groups[count];
-                    scalars.Add(group.Success ? cursor.GetBytes(group.StartOffsetInBytes, group.EndOffsetInBytes) : []);
-                }
-                else
-                {
-                    var tuple = new byte[count][];
-                    for (var i = 0; i < count; i++)
+                    if (count <= 1)
                     {
-                        var group = groups[i + 1];
-                        tuple[i] = group.Success ? cursor.GetBytes(group.StartOffsetInBytes, group.EndOffsetInBytes) : [];
-                        cursor.Checkpoint();
+                        var group = groups[count];
+                        cursor.AddResult(ref scalars, group.Success ? cursor.GetBytes(group.StartOffsetInBytes, group.EndOffsetInBytes) : []);
                     }
-                    tuples.Add(tuple);
+                    else
+                    {
+                        var tuple = cursor.AllocateResultArray<byte[]>(count);
+                        for (var i = 0; i < count; i++)
+                        {
+                            var group = groups[i + 1];
+                            tuple[i] = group.Success ? cursor.GetBytes(group.StartOffsetInBytes, group.EndOffsetInBytes) : [];
+                            cursor.Checkpoint();
+                        }
+                        cursor.AddResult(ref tuples, tuple);
+                    }
                 }
+                finally { cursor.ReleaseResultArray(groups); }
                 cursor.Checkpoint();
             }
-            result = new Utf8PythonFindAllUtf8Result
+            var completed = new Utf8PythonFindAllUtf8Result
             {
                 Shape = count == 0 ? Utf8PythonFindAllShape.FullMatch : count == 1 ? Utf8PythonFindAllShape.SingleGroup : Utf8PythonFindAllShape.GroupTuple,
-                ScalarValues = scalars.ToArray(), TupleValues = tuples.ToArray(),
+                ScalarValues = cursor.CompleteResults(ref scalars), TupleValues = cursor.CompleteResults(ref tuples),
             };
             cursor.Checkpoint();
+            result = completed;
             return;
         }
-        finally { cursor.Dispose(); }
+        finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
     }
 
     private void SplitScalar(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes,
@@ -187,43 +208,51 @@ public sealed partial class Utf8PythonRegex
         items = [];
         values = [];
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8InvocationResultBuffer<Utf8PythonSplitItem> parts = default;
         try
         {
-            List<Utf8PythonSplitItem> parts = [];
             var last = startOffsetInBytes;
             var splits = 0;
             while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
             {
-                parts.Add(new Utf8PythonSplitItem { ValueText = cursor.GetText(last, cursor.StartOffsetInBytes) });
+                cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = cursor.GetText(last, cursor.StartOffsetInBytes) });
                 var groups = cursor.SnapshotGroups();
-                for (var i = 1; i < groups.Length; i++)
+                try
                 {
-                    var group = groups[i];
-                    parts.Add(new Utf8PythonSplitItem
+                    for (var i = 1; i < groups.Length; i++)
                     {
-                        IsCapture = true, CaptureGroupNumber = i,
-                        ValueText = group.Success ? cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : null,
-                    });
-                    cursor.Checkpoint();
+                        var group = groups[i];
+                        cursor.AddResult(ref parts, new Utf8PythonSplitItem
+                        {
+                            IsCapture = true, CaptureGroupNumber = i,
+                            ValueText = group.Success ? cursor.GetText(group.StartOffsetInBytes, group.EndOffsetInBytes) : null,
+                        });
+                        cursor.Checkpoint();
+                    }
                 }
+                finally { cursor.ReleaseResultArray(groups); }
                 last = cursor.EndOffsetInBytes;
                 splits++;
             }
-            parts.Add(new Utf8PythonSplitItem { ValueText = cursor.GetText(last, input.Length) });
-            items = parts.ToArray();
+            cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = cursor.GetText(last, input.Length) });
+            Utf8PythonSplitItem[] completedItems = [];
+            string?[] completedValues = [];
             if (stringsOnly)
             {
-                values = new string?[items.Length];
-                for (var i = 0; i < values.Length; i++)
+                completedValues = cursor.AllocateResultArray<string?>(parts.Count);
+                for (var i = 0; i < completedValues.Length; i++)
                 {
                     if ((i & 255) == 0) cursor.Checkpoint();
-                    values[i] = items[i].ValueText;
+                    completedValues[i] = parts[i].ValueText;
                 }
             }
+            else completedItems = cursor.CompleteResults(ref parts);
             cursor.Checkpoint();
+            items = completedItems;
+            values = completedValues;
             return;
         }
-        finally { cursor.Dispose(); }
+        finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
     }
 
     private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
@@ -240,11 +269,16 @@ public sealed partial class Utf8PythonRegex
             while ((count == 0 || replaced < count) && cursor.MoveNext())
             {
                 cursor.AppendBytes(builder, input[last..cursor.StartOffsetInBytes]);
-                var replacement = replacementFactory(input, state, ref cursor);
-                // User callback time/storage is excluded from resource accounting;
-                // the invocation deadline/token is observed immediately on return.
-                cursor.Checkpoint();
-                cursor.AppendBytes(builder, replacement);
+                var resultMarker = cursor.ResultReservation;
+                try
+                {
+                    var replacement = replacementFactory(input, state, ref cursor);
+                    // User callback time/storage is excluded from resource accounting;
+                    // the invocation deadline/token is observed immediately on return.
+                    cursor.Checkpoint();
+                    cursor.AppendBytes(builder, replacement);
+                }
+                finally { cursor.ReleaseResultsSince(resultMarker); }
                 last = cursor.EndOffsetInBytes;
                 replaced++;
             }

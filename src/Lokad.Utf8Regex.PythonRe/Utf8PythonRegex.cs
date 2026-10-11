@@ -23,11 +23,13 @@ public sealed partial class Utf8PythonRegex
     {
         private Utf8InvocationStateBuffer<PythonReUtf8MatchRange> _ranges;
         private Utf8SliceInvocation _invocation;
+        private Utf8InvocationResultLedger _results;
 
         internal PythonReUtf8MatchRangeBuffer(Utf8SliceInvocation invocation)
         {
             _invocation = invocation;
             _ranges = default;
+            _results = default;
         }
 
         internal readonly int Count => _ranges.Count;
@@ -41,7 +43,27 @@ public sealed partial class Utf8PythonRegex
                 throw new InvalidOperationException($"Python range storage exceeded {breach}.");
         }
 
-        internal void Dispose() => _ranges.Release(ref _invocation);
+        internal T[] AllocateResultArray<T>(int count)
+            => _results.AllocateArray<T, Utf8InvocationBufferControl>(count, new(ref _invocation));
+
+        internal string GetText(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
+            => _results.DecodeUtf8(input.Slice(range.IndexInBytes, range.LengthInBytes), range.LengthInUtf16, ref _invocation);
+
+        internal byte[] GetBytes(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
+        {
+            var bytes = AllocateResultArray<byte>(range.LengthInBytes);
+            Utf8InvocationOutput.Copy(input.Slice(range.IndexInBytes, range.LengthInBytes), bytes,
+                new Utf8InvocationBufferControl(ref _invocation));
+            return bytes;
+        }
+
+        internal void Checkpoint() => Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref _invocation));
+
+        internal void Dispose()
+        {
+            _ranges.Release(ref _invocation);
+            _results.Release(new Utf8InvocationBufferControl(ref _invocation));
+        }
     }
 
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);

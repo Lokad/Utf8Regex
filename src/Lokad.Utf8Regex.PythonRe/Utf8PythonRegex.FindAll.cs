@@ -60,61 +60,28 @@ public sealed partial class Utf8PythonRegex
             return scalarResult;
         }
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_translation.CaptureGroupCount == 0)
+        if (TryFindAllCanonicalLiteral(input, startOffsetInBytes, out var canonicalResult)) return canonicalResult;
+        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
         {
-            if (_repeatedExactFindAllString is not null &&
-                _utf8Regex is not null)
+            try
             {
-                var validatedInput = Utf8ValidatedInput.Create(input);
-                var start = validatedInput.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-                var values = new string[_utf8Regex.ByteOffsetExecution.CountPrepared(validatedInput, start)];
-                Array.Fill(values, _repeatedExactFindAllString);
+                var values = ranges.AllocateResultArray<string>(ranges.Count);
+                for (var i = 0; i < values.Length; i++)
+                {
+                    if ((i & 255) == 0) ranges.Checkpoint();
+                    values[i] = _repeatedExactFindAllString ?? ranges.GetText(input, ranges[i]);
+                }
+                ranges.Checkpoint();
                 return new Utf8PythonFindAllResult
                 {
-                    Shape = Utf8PythonFindAllShape.FullMatch,
-                    ScalarValues = values,
-                    TupleValues = [],
+                    Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [],
                 };
             }
-
-            if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+            catch (Utf8ExecutionDeadlineExpiredException)
             {
-                try
-                {
-                    var values = new string[ranges.Count];
-                    if (_repeatedExactFindAllString is not null)
-                    {
-                        Array.Fill(values, _repeatedExactFindAllString);
-                    }
-                    else
-                    {
-                        for (var i = 0; i < values.Length; i++)
-                        {
-                            var range = ranges[i];
-                            values[i] = Encoding.UTF8.GetString(input.Slice(range.IndexInBytes, range.LengthInBytes));
-                        }
-                    }
-
-                    return new Utf8PythonFindAllResult
-                    {
-                        Shape = Utf8PythonFindAllShape.FullMatch,
-                        ScalarValues = values,
-                        TupleValues = [],
-                    };
-                }
-                finally
-                {
-                    ranges.Dispose();
-                }
+                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
             }
-
-            var matches = FindAll(input, startOffsetInBytes);
-            return new Utf8PythonFindAllResult
-            {
-                Shape = Utf8PythonFindAllShape.FullMatch,
-                ScalarValues = matches.Select(x => x.ValueText).ToArray(),
-                TupleValues = [],
-            };
+            finally { ranges.Dispose(); }
         }
         FindAllScalarStrings(input, startOffsetInBytes, cancellationToken, out var remaining);
         return remaining;
@@ -145,45 +112,23 @@ public sealed partial class Utf8PythonRegex
             return scalarResult;
         }
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_translation.CaptureGroupCount == 0)
+        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
         {
-            if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+            try
             {
-                try
+                var values = ranges.AllocateResultArray<byte[]>(ranges.Count);
+                for (var i = 0; i < values.Length; i++) values[i] = ranges.GetBytes(input, ranges[i]);
+                ranges.Checkpoint();
+                return new Utf8PythonFindAllUtf8Result
                 {
-                    var directValues = new byte[ranges.Count][];
-                    for (var i = 0; i < directValues.Length; i++)
-                    {
-                        var range = ranges[i];
-                        directValues[i] = input.Slice(range.IndexInBytes, range.LengthInBytes).ToArray();
-                    }
-
-                    return new Utf8PythonFindAllUtf8Result
-                    {
-                        Shape = Utf8PythonFindAllShape.FullMatch,
-                        ScalarValues = directValues,
-                        TupleValues = [],
-                    };
-                }
-                finally
-                {
-                    ranges.Dispose();
-                }
+                    Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [],
+                };
             }
-
-            var matches = FindAll(input, startOffsetInBytes);
-            var values = new byte[matches.Length][];
-            for (var i = 0; i < matches.Length; i++)
+            catch (Utf8ExecutionDeadlineExpiredException)
             {
-                values[i] = input[matches[i].StartOffsetInBytes..matches[i].EndOffsetInBytes].ToArray();
+                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
             }
-
-            return new Utf8PythonFindAllUtf8Result
-            {
-                Shape = Utf8PythonFindAllShape.FullMatch,
-                ScalarValues = values,
-                TupleValues = [],
-            };
+            finally { ranges.Dispose(); }
         }
         FindAllScalarUtf8(input, startOffsetInBytes, cancellationToken, out var remaining);
         return remaining;
