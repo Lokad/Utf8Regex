@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -97,13 +98,23 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void TimedOutInstanceRemainsUsableForSubsequentOperations()
     {
-        // PLAN.md M1: a deadline unwinds through pooled search, capture, and
-        // replacement buffers; the same instance must keep answering with
-        // oracle parity afterwards instead of retaining per-operation state.
+        // Expire one invocation, then hold time before each fresh deadline.
+        // Recovery depends on discarding expired state, without assuming every
+        // successful operation fits a physical 1 ms scheduling interval.
+        long ticks = 0;
+        var clockReads = 0;
+        var expire = true;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (expire && ++clockReads > 8) ticks++;
+            return ticks;
+        });
         var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         var oracle = new Regex(@"(a+)+$", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(CreateCatastrophicInput()));
+        Assert.True(clockReads > 8);
+        expire = false;
 
         byte[] input = Encoding.UTF8.GetBytes("aaabaaa");
         const string text = "aaabaaa";
