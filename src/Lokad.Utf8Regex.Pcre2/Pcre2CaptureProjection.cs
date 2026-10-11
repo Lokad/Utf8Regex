@@ -13,6 +13,27 @@ internal static partial class Pcre2Runner
         ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
         ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget)
     {
+        var projectionBudget = new Pcre2CaptureProjectionBudget(ref budget);
+        return ProjectCaptureGroups(captureSlotCount, matchStart, matchEnd,
+            captureStarts, captureEnds, 0, false, ref input, projectionBudget);
+    }
+
+    internal static Pcre2GroupData[] ProjectSliceCaptures(
+        int captureSlotCount, int matchStart, int matchEnd,
+        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
+        ref Utf8ValidatedInput input, ref Utf8SliceInvocation invocation)
+    {
+        var projectionBudget = new Pcre2CaptureProjectionBudget(ref invocation);
+        return ProjectCaptureGroups(captureSlotCount, matchStart, matchEnd,
+            captureStarts, captureEnds, -1, true, ref input, projectionBudget);
+    }
+
+    private static Pcre2GroupData[] ProjectCaptureGroups(
+        int captureSlotCount, int matchStart, int matchEnd,
+        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
+        int slotOffset, bool normalizeDirection,
+        ref Utf8ValidatedInput input, scoped Pcre2CaptureProjectionBudget budget)
+    {
         const int MaximumStackEndpointCount = 64;
         var endpointCapacity = checked(captureSlotCount * 2);
         var stagingLength = checked(endpointCapacity * 2);
@@ -38,13 +59,14 @@ internal static partial class Pcre2Runner
             for (var slot = 0; slot < captureSlotCount; slot++)
             {
                 if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
-                var captureStart = slot == 0 ? matchStart : captureStarts[slot];
-                var captureEnd = slot == 0 ? matchEnd : captureEnds[slot];
-                if (slot != 0 && (captureStart < 0 || captureEnd < captureStart)) continue;
+                var hasCapture = ReadCaptureEdges(slot, matchStart, matchEnd,
+                    captureStarts, captureEnds, slotOffset, normalizeDirection,
+                    out var captureStart, out var captureEnd);
+                if (!hasCapture) continue;
                 if (input.IsScalarBoundary(new Utf8BytePosition(captureStart))) endpoints[endpointCount++] = captureStart;
                 if (input.IsScalarBoundary(new Utf8BytePosition(captureEnd))) endpoints[endpointCount++] = captureEnd;
             }
-            SortCaptureEndpoints(endpoints[..endpointCount], ref budget);
+            SortCaptureEndpoints(endpoints[..endpointCount], budget);
             var uniqueCount = 0;
             for (var index = 0; index < endpointCount; index++)
             {
@@ -54,16 +76,17 @@ internal static partial class Pcre2Runner
             var sortedEndpoints = endpoints[..uniqueCount];
             var projection = input.CreateProjectionCursor();
             for (var index = 0; index < uniqueCount; index++)
-                utf16Endpoints[index] = ProjectCaptureEndpoint(ref input, ref projection, sortedEndpoints[index], ref budget);
+                utf16Endpoints[index] = ProjectCaptureEndpoint(ref input, ref projection, sortedEndpoints[index], budget);
 
             budget.ChargeWorkspaceStep();
             var groups = captureSlotCount == 0 ? [] : new Pcre2GroupData[captureSlotCount];
             for (var slot = 0; slot < captureSlotCount; slot++)
             {
                 if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
-                var captureStart = slot == 0 ? matchStart : captureStarts[slot];
-                var captureEnd = slot == 0 ? matchEnd : captureEnds[slot];
-                if (slot != 0 && (captureStart < 0 || captureEnd < captureStart))
+                var hasCapture = ReadCaptureEdges(slot, matchStart, matchEnd,
+                    captureStarts, captureEnds, slotOffset, normalizeDirection,
+                    out var captureStart, out var captureEnd);
+                if (!hasCapture)
                 {
                     groups[slot] = new Pcre2GroupData { Number = slot, Success = false };
                     continue;
@@ -95,8 +118,20 @@ internal static partial class Pcre2Runner
         }
     }
 
+    private static bool ReadCaptureEdges(int slot, int matchStart, int matchEnd,
+        ReadOnlySpan<int> starts, ReadOnlySpan<int> ends, int slotOffset,
+        bool normalizeDirection, out int start, out int end)
+    {
+        if (slot == 0) { start = matchStart; end = matchEnd; return true; }
+        start = starts[slot + slotOffset];
+        end = ends[slot + slotOffset];
+        if (start < 0 || end < 0) return false;
+        if (normalizeDirection && start > end) (start, end) = (end, start);
+        return end >= start;
+    }
+
     private static int ProjectCaptureEndpoint(ref Utf8ValidatedInput input,
-        ref Utf8ProjectionCursor projection, int endpoint, ref Pcre2ResourceBudget budget)
+        ref Utf8ProjectionCursor projection, int endpoint, scoped Pcre2CaptureProjectionBudget budget)
     {
         if (budget.IsUnmetered || input.IsAscii)
         {
@@ -114,19 +149,19 @@ internal static partial class Pcre2Runner
         return projection.Project(new Utf8BytePosition(endpoint)).Value;
     }
 
-    private static void SortCaptureEndpoints(Span<int> values, ref Pcre2ResourceBudget budget)
+    private static void SortCaptureEndpoints(scoped Span<int> values, scoped Pcre2CaptureProjectionBudget budget)
     {
         if (budget.IsUnmetered) { values.Sort(); return; }
-        for (var root = values.Length / 2 - 1; root >= 0; root--) SiftCaptureEndpoint(values, root, values.Length, ref budget);
+        for (var root = values.Length / 2 - 1; root >= 0; root--) SiftCaptureEndpoint(values, root, values.Length, budget);
         for (var end = values.Length - 1; end > 0; end--)
         {
             budget.ChargeWorkspaceStep();
             (values[0], values[end]) = (values[end], values[0]);
-            SiftCaptureEndpoint(values, 0, end, ref budget);
+            SiftCaptureEndpoint(values, 0, end, budget);
         }
     }
 
-    private static void SiftCaptureEndpoint(Span<int> values, int root, int count, ref Pcre2ResourceBudget budget)
+    private static void SiftCaptureEndpoint(scoped Span<int> values, int root, int count, scoped Pcre2CaptureProjectionBudget budget)
     {
         while (root < count / 2)
         {

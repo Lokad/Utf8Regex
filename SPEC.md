@@ -1166,6 +1166,18 @@ cursor advancement. This transfer does not establish an external retained-result
 limit or enable MaxResultBytes. Other projection producers and public copied
 lifetime, cancellation and combined working/retained policies remain open.
 
+Shared slice capture-slot pairs admit both complete exact arrays, including
+headers, before acquisition; failure and release restore that reservation.
+PCRE2 slice detailed matches and cursor capture re-queries use that same batch
+projector, borrowing the slice invocation's storage, work, deadline and token.
+Their zero-based capture slots and reversed lookbehind edges normalize directly;
+no one-based slot copy or per-capture prefix scan is needed. Group and endpoint
+arrays are admitted alongside live slice slots. The final group loan remains
+live through slot cleanup and detaches only on publication. Controlled sorting
+and projection windows observe live cancellation and the existing deadline,
+without restarting either counter. Other facade/core projection producers,
+external retained-result limits and complete public policies remain open.
+
 ## 6. Performance and benchmarking
 
 Performance rules:

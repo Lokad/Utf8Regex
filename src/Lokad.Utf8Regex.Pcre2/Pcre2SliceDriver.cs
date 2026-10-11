@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -60,6 +61,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     internal Pcre2GroupData[] CaptureGroupsAt(int startByte, bool requireNonEmpty)
     {
         var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        Pcre2GroupData[]? projected = null;
         try
         {
             Array.Fill(slots.Starts, -1);
@@ -81,13 +83,13 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                     "Slice re-query missed a yielded match.");
             }
 
-            return Pcre2SliceDriver.ProjectSliceGroups(
+            return projected = Pcre2SliceDriver.ProjectSliceGroups(
                 _program,
-                _input.Bytes,
+                ref _input,
                 startByte,
                 outcome.EndIndex,
                 slots.Starts,
-                slots.Ends);
+                slots.Ends, ref _invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -97,7 +99,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         }
         finally
         {
-            Utf8SliceRunner.ReleaseSlots(slots, ref _invocation);
+            try { Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
+            finally { if (projected is not null) Pcre2SliceDriver.DetachProjectedGroups(projected, ref _invocation); }
         }
     }
 
@@ -258,6 +261,7 @@ internal static class Pcre2SliceDriver
     {
         var invocation = CreateInvocation(request, cancellationToken);
         var slots = Pcre2SliceDriver.RentProgramSlots(program, ref invocation);
+        Pcre2GroupData[]? projected = null;
         try
         {
             var bytes = input.Bytes;
@@ -282,13 +286,13 @@ internal static class Pcre2SliceDriver
                     continue;
                 }
 
-                groups = ProjectSliceGroups(
+                groups = projected = ProjectSliceGroups(
                     program,
-                    bytes,
+                    ref input,
                     position,
                     outcome.EndIndex,
                     slots.Starts,
-                    slots.Ends);
+                    slots.Ends, ref invocation);
                 mark = null;
                 return true;
             }
@@ -305,41 +309,23 @@ internal static class Pcre2SliceDriver
         }
         finally
         {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+            try { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+            finally { if (projected is not null) DetachProjectedGroups(projected, ref invocation); }
         }
     }
 
-    // Slice capture slots are zero-based for groups 1..N while
-    // Pcre2Runner.ProjectCaptures expects one-based slots, so the
-    // shared batch projector cannot consume them directly. Project
-    // group by group instead: every slice range starts and ends on
-    // scalar boundaries, where FromByteOffsets agrees exactly with
-    // the batch projector (same flags, same prefix code-unit counts).
+    // Slice slots are zero-based and backward assertions reverse their edges.
+    // The shared batch projector handles both layouts without copied slot vectors.
     internal static Pcre2GroupData[] ProjectSliceGroups(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        int matchStart,
-        int matchEnd,
-        int[] captureStarts,
-        int[] captureEnds)
-    {
-        var groups = new Pcre2GroupData[program.GroupCount + 1];
-        groups[0] = Pcre2GroupData.FromByteOffsets(
-            input, 0, matchStart, matchEnd);
-        for (var group = 1; group <= program.GroupCount; group++)
-        {
-            var captureStart = captureStarts[group - 1];
-            var captureEnd = captureEnds[group - 1];
-            // A backward assertion stores its opening edge before its closing
-            // edge; project the normalized public span independently of direction.
-            groups[group] = captureStart < 0 || captureEnd < 0
-                ? new Pcre2GroupData { Number = group, Success = false }
-                : Pcre2GroupData.FromByteOffsets(
-                    input, group, Math.Min(captureStart, captureEnd), Math.Max(captureStart, captureEnd));
-        }
+        Utf8SliceProgram program, ref Utf8ValidatedInput input,
+        int matchStart, int matchEnd, int[] captureStarts, int[] captureEnds,
+        ref Utf8SliceInvocation invocation) =>
+        Pcre2Runner.ProjectSliceCaptures(checked(program.GroupCount + 1),
+            matchStart, matchEnd, captureStarts, captureEnds, ref input, ref invocation);
 
-        return groups;
-    }
+    // Single lexical publishing owner; immutable external arrays are never pooled.
+    internal static void DetachProjectedGroups(Pcre2GroupData[] groups, ref Utf8SliceInvocation invocation)
+        => invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length));
 
     // Slot admission fail-closes inside the shared runner with
     // InvalidOperationException; surface it with the PCRE2 heap
