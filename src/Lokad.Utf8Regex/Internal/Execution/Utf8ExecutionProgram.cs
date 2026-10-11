@@ -2,6 +2,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8ExecutionProgram
 {
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<
+        (IReadOnlyList<Utf8ExecutionInstruction>, Utf8DeterministicCaptureLayout?)>();
+
     public Utf8ExecutionProgram(IReadOnlyList<Utf8ExecutionInstruction> instructions)
     {
         Instructions = instructions;

@@ -169,6 +169,8 @@ public sealed class Utf8GlobalCacheDescendantTests
                 var manifest = Assert.IsType<Utf8RetainedPayloadExtent[]>(Field(entry, "Payloads"));
                 var regex = Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1;
                 var scalar = Utf8ScalarRetainedGraphTests.InspectScalarGraph(Utf8ScalarRetainedGraphTests.ScalarProgram(regex));
+                foreach (var pair in Utf8ExecutionRetainedGraphTests.InspectExecutionGraph(Utf8ExecutionRetainedGraphTests.Prepared(regex)))
+                    if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
                 foreach (var pair in scalar)
                     Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
                 Add(manifest, Utf8ConstructionBudget.ArrayBytes<Utf8RetainedPayloadExtent>(manifest.Length));

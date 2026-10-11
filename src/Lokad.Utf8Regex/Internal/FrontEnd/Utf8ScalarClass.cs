@@ -10,6 +10,7 @@ internal sealed class Utf8ScalarClass
     internal const int RangePredicateCode = 101;
 
     private readonly record struct ConstructionState(int[] Data);
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<ConstructionState>();
     private Utf8ScalarClass(ConstructionState state)
     {
         Data = state.Data;

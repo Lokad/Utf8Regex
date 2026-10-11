@@ -4,6 +4,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8ExecutionNode
 {
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<
+        (Utf8ExecutionNodeKind, RegexOptions, IReadOnlyList<Utf8ExecutionNode>, object, char, int, int, int)>();
+
     public Utf8ExecutionNode(
         Utf8ExecutionNodeKind kind,
         RegexOptions options,
