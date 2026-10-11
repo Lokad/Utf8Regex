@@ -2181,7 +2181,7 @@ internal static class Pcre2SingleTokenRepeatRunner
     }
 }
 
-internal static class Pcre2Runner
+internal static partial class Pcre2Runner
 {
     internal static bool TryIsMatch(
         Pcre2CompiledProgram compiledProgram,
@@ -2726,7 +2726,9 @@ internal static class Pcre2Runner
         try
         {
             var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-            return Pcre2BacktrackingRunner.MatchDetailed(program, candidateSearch, ref input, start, matchOptions, ref budget);
+            var result = Pcre2BacktrackingRunner.MatchDetailed(program, candidateSearch, ref input, start, matchOptions, ref budget);
+            result.CaptureResult.DetachProjectedWorking(ref budget);
+            return result;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -2734,109 +2736,7 @@ internal static class Pcre2Runner
         }
     }
 
-    internal static Pcre2GroupData[] ProjectCaptures(
-        int captureSlotCount,
-        int matchStart,
-        int matchEnd,
-        ReadOnlySpan<int> captureStarts,
-        ReadOnlySpan<int> captureEnds,
-        ref Utf8ValidatedInput input)
-    {
-        const int MaximumStackEndpointCount = 64;
-        var endpointCapacity = checked(captureSlotCount * 2);
-        var stagingLength = checked(endpointCapacity * 2);
-        int[]? rentedStaging = null;
-        try
-        {
-            scoped Span<int> staging;
-            if (endpointCapacity <= MaximumStackEndpointCount)
-            {
-                staging = stackalloc int[stagingLength];
-            }
-            else
-            {
-                rentedStaging = ArrayPool<int>.Shared.Rent(stagingLength);
-                staging = rentedStaging.AsSpan(0, stagingLength);
-            }
 
-            var endpoints = staging[..endpointCapacity];
-            var utf16Endpoints = staging[endpointCapacity..];
-            var endpointCount = 0;
-            for (var slot = 0; slot < captureSlotCount; slot++)
-            {
-                var captureStart = slot == 0 ? matchStart : captureStarts[slot];
-                var captureEnd = slot == 0 ? matchEnd : captureEnds[slot];
-                if (slot != 0 && (captureStart < 0 || captureEnd < captureStart))
-                {
-                    continue;
-                }
-
-                if (input.IsScalarBoundary(new Utf8BytePosition(captureStart)))
-                {
-                    endpoints[endpointCount++] = captureStart;
-                }
-
-                if (input.IsScalarBoundary(new Utf8BytePosition(captureEnd)))
-                {
-                    endpoints[endpointCount++] = captureEnd;
-                }
-            }
-
-            endpoints[..endpointCount].Sort();
-            var uniqueCount = 0;
-            for (var index = 0; index < endpointCount; index++)
-            {
-                if (uniqueCount == 0 || endpoints[index] != endpoints[uniqueCount - 1])
-                {
-                    endpoints[uniqueCount++] = endpoints[index];
-                }
-            }
-
-            var sortedEndpoints = endpoints[..uniqueCount];
-            var projection = input.CreateProjectionCursor();
-            for (var index = 0; index < uniqueCount; index++)
-            {
-                utf16Endpoints[index] = projection.Project(new Utf8BytePosition(sortedEndpoints[index])).Value;
-            }
-
-            var groups = new Pcre2GroupData[captureSlotCount];
-            for (var slot = 0; slot < captureSlotCount; slot++)
-            {
-                var captureStart = slot == 0 ? matchStart : captureStarts[slot];
-                var captureEnd = slot == 0 ? matchEnd : captureEnds[slot];
-                if (slot != 0 && (captureStart < 0 || captureEnd < captureStart))
-                {
-                    groups[slot] = new Pcre2GroupData { Number = slot, Success = false };
-                    continue;
-                }
-
-                var startIndex = sortedEndpoints.BinarySearch(captureStart);
-                var endIndex = sortedEndpoints.BinarySearch(captureEnd);
-                var hasUtf16Projection = startIndex >= 0 && endIndex >= 0;
-                groups[slot] = new Pcre2GroupData
-                {
-                    Number = slot,
-                    Success = true,
-                    StartOffsetInBytes = captureStart,
-                    EndOffsetInBytes = captureEnd,
-                    StartOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[startIndex] : 0,
-                    EndOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[endIndex] : 0,
-                    CoordinateFlagsSpecified = true,
-                    Utf8SliceIsWellFormed = captureStart <= captureEnd && hasUtf16Projection,
-                    Utf16ProjectionIsExact = hasUtf16Projection,
-                };
-            }
-
-            return groups;
-        }
-        finally
-        {
-            if (rentedStaging is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedStaging);
-            }
-        }
-    }
 }
 
 internal static class Pcre2GlobalOperationDriver
@@ -3923,6 +3823,8 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
             {
                 throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
             }
+
+            match.CaptureResult.DetachProjectedWorking(ref _budget);
 
             if (match.Success)
             {

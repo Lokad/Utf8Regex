@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
@@ -109,6 +110,14 @@ internal readonly struct Pcre2BacktrackingCaptureResult
     internal Pcre2CaptureByteRange[] AssertionRanges => _value as Pcre2CaptureByteRange[] ?? [];
 
     internal Pcre2GroupData[] ProjectedGroups => _value as Pcre2GroupData[] ?? [];
+
+    // The lexical publishing caller invokes this once, after VM scratch exits.
+    // Final arrays are immutable external result storage and never pool leaves.
+    internal void DetachProjectedWorking(ref Pcre2ResourceBudget budget)
+    {
+        if (_value is Pcre2GroupData[] groups)
+            budget.ReleaseWorking(Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length));
+    }
 }
 
 internal enum Pcre2CaptureMaterialization : byte
@@ -1060,53 +1069,59 @@ internal static class Pcre2BacktrackingRunner
                         break;
 
                     case Pcre2BacktrackingInstructionKind.Assertion:
-                        if (TryEvaluateAssertion(
-                                program.AssertionPrograms[instruction.AssertionProgramId],
-                                instruction.AssertionKind,
-                                input,
-                                ref projectionInput,
-                                inputIndex,
-                                firstMatchingPosition,
-                                matchOptions,
-                                captureStarts,
-                                captureEnds,
-                                depthBase + frames.Count + subroutineCalls.Count + 1,
-                                ref budget,
-                                out var assertionCaptures,
-                                out var assertionMark,
-                                out var assertionReportedStart))
+                        Pcre2CaptureByteRange[] assertionCaptures = [];
+                        try
                         {
-                            if (assertionReportedStart >= 0)
+                            if (TryEvaluateAssertion(
+                                    program.AssertionPrograms[instruction.AssertionProgramId],
+                                    instruction.AssertionKind,
+                                    input,
+                                    ref projectionInput,
+                                    inputIndex,
+                                    firstMatchingPosition,
+                                    matchOptions,
+                                    captureStarts,
+                                    captureEnds,
+                                    depthBase + frames.Count + subroutineCalls.Count + 1,
+                                    ref budget,
+                                    out assertionCaptures,
+                                    out var assertionMark,
+                                    out var assertionReportedStart))
                             {
-                                reportedStartOffsetInBytes = assertionReportedStart;
-                                matchBoundaryWasReset = true;
+                                if (assertionReportedStart >= 0)
+                                {
+                                    reportedStartOffsetInBytes = assertionReportedStart;
+                                    matchBoundaryWasReset = true;
+                                }
+
+                                MergeAssertionCaptures(
+                                    assertionCaptures,
+                                    subroutineCalls.Count,
+                                    captureStarts,
+                                    captureEnds,
+                                    captureOpenStarts,
+                                    captureOwners,
+                                    captureOpenOwners,
+                                    ref captureMutations,
+                                    ref budget);
+                                MergeAssertionMark(
+                                    program,
+                                    assertionMark,
+                                    inputIndex,
+                                    ref currentMarkId,
+                                    ref currentMarkPosition,
+                                    ref lastEncounteredMarkId,
+                                    ref markMutations,
+                                    ref markTrail,
+                                    ref budget);
+
+                                instructionIndex++;
+                                continue;
                             }
+                            break;
 
-                            MergeAssertionCaptures(
-                                assertionCaptures,
-                                subroutineCalls.Count,
-                                captureStarts,
-                                captureEnds,
-                                captureOpenStarts,
-                                captureOwners,
-                                captureOpenOwners,
-                                ref captureMutations,
-                                ref budget);
-                            MergeAssertionMark(
-                                program,
-                                assertionMark,
-                                inputIndex,
-                                ref currentMarkId,
-                                ref currentMarkPosition,
-                                ref lastEncounteredMarkId,
-                                ref markMutations,
-                                ref markTrail,
-                                ref budget);
-
-                            instructionIndex++;
-                            continue;
                         }
-                        break;
+                        finally { ReleaseAssertionCaptures(assertionCaptures, ref budget); }
 
                     case Pcre2BacktrackingInstructionKind.SubroutineCall:
                         var subroutineSlot = instruction.SubroutineSlot;
@@ -1197,55 +1212,60 @@ internal static class Pcre2BacktrackingRunner
                             _ => false,
                         };
                         Pcre2CaptureByteRange[] conditionalCaptures = [];
-                        if (condition.Kind == Pcre2BacktrackingConditionKind.Assertion)
+                        try
                         {
-                            conditionMet = TryEvaluateAssertion(
-                                program.AssertionPrograms[condition.AssertionProgramId],
-                                condition.AssertionKind,
-                                input,
-                                ref projectionInput,
-                                inputIndex,
-                                firstMatchingPosition,
-                                matchOptions,
+                            if (condition.Kind == Pcre2BacktrackingConditionKind.Assertion)
+                            {
+                                conditionMet = TryEvaluateAssertion(
+                                    program.AssertionPrograms[condition.AssertionProgramId],
+                                    condition.AssertionKind,
+                                    input,
+                                    ref projectionInput,
+                                    inputIndex,
+                                    firstMatchingPosition,
+                                    matchOptions,
+                                    captureStarts,
+                                    captureEnds,
+                                    depthBase + frames.Count + subroutineCalls.Count + 1,
+                                    ref budget,
+                                    out conditionalCaptures,
+                                    out var conditionalMark,
+                                    out var conditionalReportedStart);
+                                if (conditionalReportedStart >= 0)
+                                {
+                                    reportedStartOffsetInBytes = conditionalReportedStart;
+                                    matchBoundaryWasReset = true;
+                                }
+                                MergeAssertionMark(
+                                    program,
+                                    conditionalMark,
+                                    inputIndex,
+                                    ref currentMarkId,
+                                    ref currentMarkPosition,
+                                    ref lastEncounteredMarkId,
+                                    ref markMutations,
+                                    ref markTrail,
+                                    ref budget);
+                            }
+
+                            MergeAssertionCaptures(
+                                conditionalCaptures,
+                                subroutineCalls.Count,
                                 captureStarts,
                                 captureEnds,
-                                depthBase + frames.Count + subroutineCalls.Count + 1,
-                                ref budget,
-                                out conditionalCaptures,
-                                out var conditionalMark,
-                                out var conditionalReportedStart);
-                            if (conditionalReportedStart >= 0)
-                            {
-                                reportedStartOffsetInBytes = conditionalReportedStart;
-                                matchBoundaryWasReset = true;
-                            }
-                            MergeAssertionMark(
-                                program,
-                                conditionalMark,
-                                inputIndex,
-                                ref currentMarkId,
-                                ref currentMarkPosition,
-                                ref lastEncounteredMarkId,
-                                ref markMutations,
-                                ref markTrail,
+                                captureOpenStarts,
+                                captureOwners,
+                                captureOpenOwners,
+                                ref captureMutations,
                                 ref budget);
+
+                            instructionIndex = conditionMet
+                                ? instruction.PrimaryTarget
+                                : instruction.SecondaryTarget;
+                            continue;
+
                         }
-
-                        MergeAssertionCaptures(
-                            conditionalCaptures,
-                            subroutineCalls.Count,
-                            captureStarts,
-                            captureEnds,
-                            captureOpenStarts,
-                            captureOwners,
-                            captureOpenOwners,
-                            ref captureMutations,
-                            ref budget);
-
-                        instructionIndex = conditionMet
-                            ? instruction.PrimaryTarget
-                            : instruction.SecondaryTarget;
-                        continue;
+                        finally { ReleaseAssertionCaptures(conditionalCaptures, ref budget); }
 
                     case Pcre2BacktrackingInstructionKind.AtomicStart:
                         var nextAtomicDepth = checked(depthBase + subroutineCalls.Count + atomicCheckpoints.Count + 1);
@@ -1360,7 +1380,7 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex,
                                 captureStarts,
                                 captureEnds,
-                                ref projectionInput);
+                                ref projectionInput, ref budget);
                             failure = default;
                             match = new Pcre2BacktrackingMatch(
                                 true,
@@ -1456,7 +1476,7 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex,
                                 captureStarts,
                                 captureEnds,
-                                ref projectionInput);
+                                ref projectionInput, ref budget);
                             match = new Pcre2BacktrackingMatch(
                                 true,
                                 reportedStartOffsetInBytes,
@@ -1738,6 +1758,7 @@ internal static class Pcre2BacktrackingRunner
     {
         for (var slot = 1; slot < assertionCaptures.Length; slot++)
         {
+            if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
             var capture = assertionCaptures[slot];
             if (!capture.Success)
             {
@@ -2365,24 +2386,41 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static Pcre2CaptureByteRange[] MaterializeCaptures(
-        int captureSlotCount,
-        int matchStart,
-        int matchEnd,
-        ReadOnlySpan<int> captureStarts,
-        ReadOnlySpan<int> captureEnds)
+        int captureSlotCount, int matchStart, int matchEnd,
+        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
+        ref Pcre2ResourceBudget budget)
     {
-        var captures = new Pcre2CaptureByteRange[captureSlotCount];
-        captures[0] = new Pcre2CaptureByteRange(true, matchStart, matchEnd);
-        for (var slot = 1; slot < captureSlotCount; slot++)
+        var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2CaptureByteRange>(captureSlotCount);
+        budget.ReserveWorking(bytes);
+        Pcre2CaptureByteRange[]? captures = null;
+        try
         {
-            var start = captureStarts[slot];
-            var end = captureEnds[slot];
-            captures[slot] = start >= 0 && end >= start
-                ? new Pcre2CaptureByteRange(true, start, end)
-                : new Pcre2CaptureByteRange(false, 0, 0);
+            budget.ChargeWorkspaceStep();
+            captures = Utf8ExactStatePool<Pcre2CaptureByteRange>.Rent(captureSlotCount, budget.CanRetainWorkspace);
+            captures[0] = new Pcre2CaptureByteRange(true, matchStart, matchEnd);
+            for (var slot = 1; slot < captureSlotCount; slot++)
+            {
+                if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
+                var start = captureStarts[slot];
+                var end = captureEnds[slot];
+                captures[slot] = start >= 0 && end >= start
+                    ? new Pcre2CaptureByteRange(true, start, end)
+                    : new Pcre2CaptureByteRange(false, 0, 0);
+            }
+            return captures;
         }
+        catch
+        {
+            if (captures is not null) Utf8ExactStatePool<Pcre2CaptureByteRange>.Return(captures, budget.CanRetainWorkspace);
+            budget.ReleaseWorking(bytes);
+            throw;
+        }
+    }
 
-        return captures;
+    private static void ReleaseAssertionCaptures(Pcre2CaptureByteRange[] captures, ref Pcre2ResourceBudget budget)
+    {
+        Utf8ExactStatePool<Pcre2CaptureByteRange>.Return(captures, budget.CanRetainWorkspace);
+        budget.ReleaseWorking(Utf8ConstructionBudget.ArrayBytes<Pcre2CaptureByteRange>(captures.Length));
     }
 
     private static Pcre2BacktrackingCaptureResult MaterializeCaptureResult(
@@ -2392,11 +2430,11 @@ internal static class Pcre2BacktrackingRunner
         int matchEnd,
         ReadOnlySpan<int> captureStarts,
         ReadOnlySpan<int> captureEnds,
-        ref Utf8ValidatedInput input) => materialization switch
+        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget) => materialization switch
         {
             Pcre2CaptureMaterialization.AssertionRanges =>
                 Pcre2BacktrackingCaptureResult.FromAssertionRanges(
-                    MaterializeCaptures(captureSlotCount, matchStart, matchEnd, captureStarts, captureEnds)),
+                    MaterializeCaptures(captureSlotCount, matchStart, matchEnd, captureStarts, captureEnds, ref budget)),
             Pcre2CaptureMaterialization.ProjectedFinalSlots =>
                 Pcre2BacktrackingCaptureResult.FromProjectedGroups(
                     Pcre2Runner.ProjectCaptures(
@@ -2405,7 +2443,7 @@ internal static class Pcre2BacktrackingRunner
                         matchEnd,
                         captureStarts,
                         captureEnds,
-                        ref input)),
+                        ref input, ref budget)),
             _ => default,
         };
 }

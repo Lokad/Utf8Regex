@@ -1154,6 +1154,18 @@ workspace payloads only: projection/result vectors, other adapter kernels,
 complete public working/retained authority and full cancellation coverage remain
 separate migration gates. Heap bytes do not certify process RSS or GC traffic.
 
+PCRE2 backtracking capture materialization now shares that VM ledger. Assertion
+capture vectors remain admitted through their parent's merge or negative result;
+failure and cleanup return them without work refunds. Final group arrays and any
+heap endpoint staging are admitted together before acquisition, while VM vectors
+remain live. Endpoint sorting, group loops and scalar-safe projection windows
+spend shared work and check deadlines. Temporary staging returns to the bounded
+pool; final arrays remain charged through VM exit and detach when the result is
+published. Detached arrays stay immutable and valid across later operations and
+cursor advancement. This transfer does not establish an external retained-result
+limit or enable MaxResultBytes. Other projection producers and public copied
+lifetime, cancellation and combined working/retained policies remain open.
+
 ## 6. Performance and benchmarking
 
 Performance rules:
