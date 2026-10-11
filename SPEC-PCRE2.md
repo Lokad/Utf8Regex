@@ -536,6 +536,12 @@ cumulative invocation across advances. Single-shot `IsMatch`/`Match` enforce
 succeeds under any finite limit (see `Pcre2SingleShotLimitTests`). `DepthLimit` and
 `HeapLimitInBytes` constrain backtracking frames and workspace; admitted output
 builders also charge their covered major working capacities before acquisition.
+On the shared owned slice, depth counts simultaneously live fork/repeat frames
+and assertion markers. The prospective depth is checked before frame growth;
+assertion entry checks it before acquiring local repeat or continuation storage.
+A depth-denied entry acquires no such storage. Combined depth/heap failures can
+therefore report depth earlier; original work, cancellation and deadline checks
+remain authoritative. Other managed routes retain their documented metering units.
 Breaches report `DepthLimit` or `HeapLimit`. Zero disables each limit and defaults
 are unlimited. Timeout breach on owned routes reports `Timeout`. The shared
 `Utf8ResourcePolicy` maps onto these limits through explicit constructor overloads

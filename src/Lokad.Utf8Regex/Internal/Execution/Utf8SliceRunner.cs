@@ -653,11 +653,6 @@ internal static partial class Utf8SliceRunner
                         return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                     }
 
-                    if (invocation.Budget.TryNoteDepth((uint)stacks.FrameCount) != Utf8ExecutionLimitKind.None)
-                    {
-                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.Depth, null, null);
-                    }
-
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.Jump:
@@ -723,11 +718,6 @@ internal static partial class Utf8SliceRunner
                         if (!stacks.PushFrame(frame, ref invocation))
                         {
                             return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
-                        }
-
-                        if (invocation.Budget.TryNoteDepth((uint)stacks.FrameCount) != Utf8ExecutionLimitKind.None)
-                        {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.Depth, null, null);
                         }
 
                         if (greedy)
@@ -1557,6 +1547,10 @@ internal static partial class Utf8SliceRunner
 
         internal bool PushFrame(Utf8SliceFrame frame, ref Utf8SliceInvocation invocation)
         {
+            // Admit the prospective live depth before a frame table/chunk can
+            // grow. Assertion, fork and repeat callers share this one rule.
+            Breach = invocation.Budget.TryNoteDepth((uint)_frameCount + 1);
+            if (Breach != Utf8ExecutionLimitKind.None) return false;
             return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, frame, ref invocation, ref _reservedBytes, out Breach);
         }
 

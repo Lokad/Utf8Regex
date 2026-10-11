@@ -97,6 +97,12 @@ internal static partial class Utf8SliceRunner
                         var breach = invocation.TryChargeInputStep();
                         if (breach != Utf8ExecutionLimitKind.None)
                             return new(false, -1, breach, null, null);
+                        // The child needs a marker even when its body has no
+                        // forks. Reject depth before acquiring its local arrays
+                        // or growing the continuation buffer.
+                        var depthBreach = invocation.Budget.TryNoteDepth((uint)stacks.FrameCount + 1);
+                        if (depthBreach != Utf8ExecutionLimitKind.None)
+                            return new(false, -1, depthBreach, null, null);
                         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(body.RepeatCount) * 2);
                         if (!invocation.Ledger.TryReserve(bytes))
                             return new(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
@@ -142,9 +148,6 @@ internal static partial class Utf8SliceRunner
                         if (!stacks.PushFrame(new Utf8SliceFrame { ResumeKind = Utf8SliceResumeKind.Assertion }, ref invocation))
                             return new(false, -1, stacks.Breach, null, null);
                         current.FrameBase = stacks.FrameCount;
-                        breach = invocation.Budget.TryNoteDepth((uint)stacks.FrameCount);
-                        if (breach != Utf8ExecutionLimitKind.None)
-                            return new(false, -1, breach, null, null);
                     }
                     finally
                     {

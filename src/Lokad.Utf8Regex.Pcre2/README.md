@@ -97,6 +97,11 @@ The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
 PythonRe accept their documented cumulative result-capacity policy. Cancellation,
 timeouts, depth/backtracking limits and basic state-growth metering remain active.
 
+Owned slice depth admission checks the prospective live frame count before growth,
+including assertion markers. An exhausted depth limit prevents acquisition of the
+denied frame and assertion repeat/continuation storage. Combined depth/heap limits
+can consequently report depth earlier; cancellation and deadlines are preserved.
+
 ## Contract and development evidence
 
 The public surface uses explicit overloads rather than default-valued
