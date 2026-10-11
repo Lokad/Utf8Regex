@@ -2,7 +2,7 @@
 
 `Lokad.Utf8Regex` is a `net10.0` library whose primary I/O surface is **UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`**. Its matching unit is **one Unicode scalar**, and byte offsets and lengths are the primary result coordinates. The framework target and .NET-shaped API do not impose UTF-16 code-unit matching.
 
-This target contract was revised by explicit user direction on 2026-10-06. Existing unit-subject and BCL compatibility paths are migration debt; the revised specification does not by itself qualify current implementation behavior. The active cutover, operation coverage, cleanup and resource gates are recorded in PLAN.md.
+This target contract was revised by explicit user direction on 2026-10-06. Former unit-subject and production BCL execution paths are superseded. Production BCL matcher/result removal is qualified through shipped dependency audits; remaining scalar coverage, former parity cleanup and resource gates are recorded separately in PLAN.md. The specification does not by itself qualify current implementation behavior.
 
 ## 1. Charter
 
@@ -64,7 +64,21 @@ change its case behavior. Supplementary comparisons operate on complete Runes.
 
 ### 3.4 Timeout behavior
 
-Timeout behavior must mirror .NET’s model: the timeout is **approximate**, and the engine throws `RegexMatchTimeoutException` at its next timing check after the interval elapses. Timeouts exist to prevent excessive backtracking from monopolizing the process. ([Microsoft Learn][4])
+Retain `TimeSpan` configuration and `RegexMatchTimeoutException` identity, with an
+owned invocation deadline that is never restarted by a candidate, nested
+verification, result projection or lazy advance. Check the deadline after bounded
+library work and before publishing a result. Validation, search, matching,
+capture projection, copying and output belong to the same operation authority.
+Construction has its own contract; reusable instances and caches never retain an
+evaluation deadline.
+
+Responsiveness is measured in bounded library work between checkpoints, not an
+exact wall-clock return time. OS scheduling, CLR compilation/GC and arbitrary
+evaluator code cannot be synchronously preempted by the library. Observe the
+deadline before and after invoking an evaluator. Checkpoint precedence and those
+external exclusions require qualification; a runtime's timeout rounding or
+checkpoint defects do not define the owned contract. Full route coverage remains
+an acceptance gate, distinct from the qualified development slices below.
 
 ### 3.5 UTF-8 validity
 
@@ -80,9 +94,23 @@ Existing UTF-16 coordinate properties are derived interoperability coordinates. 
 
 Every execution operation has an explicit `CancellationToken` twin. The token is observed **before matching begins**: an already-canceled token throws `OperationCanceledException` carrying that token, ahead of input validation, limit checks, timeout checks, and matching. There are no optional token parameters; each twin is a distinct overload.
 
-Lazy enumerators (`EnumerateMatches`, `EnumerateSplits`) observe the token when enumeration begins, not during enumeration. Evaluator-driven replacement (`Replace`/`ReplaceToString` with a callback) additionally observes the token on every match iteration, including the BCL fallback loop, so canceling from inside the callback aborts deterministically. Other in-scan cancellation polling is future work, not a current promise. Timeouts stay approximate per 3.4 and keep `RegexMatchTimeoutException`.
+The target requires synchronous cooperative cancellation during validation,
+search, verification, matching, capture projection, copying and output, after
+bounded library work and before result publication. Lazy enumerators retain the
+invocation token and cumulative authority through each `MoveNext`, including a
+long failed advance before any result. Copying a cursor must not restart its work
+allowance, deadline or polling cadence. The token belongs to the operation, never
+to the reusable regex or cache. Check before and after evaluator callbacks;
+callback checks supplement engine polling. Cancellation throws
+`OperationCanceledException` carrying the original token. The scheduling and
+external-code exclusions in 3.4 apply; no asynchronous worker is required.
 
-Development owned execution additionally retains its invocation token/deadline
+These are target requirements. Current in-flight coverage is partial and must be
+proved route by route; neither entry-only checks nor passing semantic comparisons
+qualify it. Production BCL matcher/result dependencies are removed in the
+qualified development source and must not be reintroduced to service a gap.
+
+Qualified development slices retain their invocation token/deadline
 through qualified validation, search, projection and lazy advances. Metered
 invocation transfers and copies share cumulative work/depth counters from entry;
 copying a value enumerator preserves its independent position without restarting
@@ -109,7 +137,23 @@ finalizers. Lazy getter/result bounds, other execution routes and fixed object
 overhead still require admission work; this does not enable the core's unsupported
 finite public policies or establish a complete memory cap.
 
-The core library defines no work, depth, or memory budgets; the only configured cap is the instance `MatchTimeout` (default `Regex.InfiniteMatchTimeout`, i.e. unlimited). The shared `Utf8ResourcePolicy` (nullable work-steps, depth, working-bytes, and result-bytes budgets plus an `Unlimited` singleton) is accepted by an explicit constructor overload for forward compatibility, but any finite budget is rejected loudly with `NotSupportedException`: this profile enforces only match timeouts. Finite behavior beyond timeouts is opt-in future API, never silent and never safe-by-default without evidence.
+The target requires common construction, invocation, working-storage, result and
+retained-storage policies across the core, PCRE2 and PythonRe profiles. Admit
+library-owned capacity before acquisition, charge overlapping live buffers together,
+and keep spent work cumulative across candidates and suboperations. A resource
+breach is distinct from cancellation, timeout and no-match. Freeze compatible
+public controls, ownership/lifetime rules, checkpoint precedence and qualified
+safe defaults through the R01/R06 gates in PLAN.md; partial internal admission
+must not be advertised as complete public bounds or a process-RSS guarantee.
+
+Current public support is narrower: core and PythonRe accept the shared
+`Utf8ResourcePolicy` only when its work/depth/working/result budgets are unlimited;
+finite budgets throw `NotSupportedException`. Their configured public cap is
+`MatchTimeout`, defaulting to `Regex.InfiniteMatchTimeout`. PCRE2 supports finite
+work/depth/working budgets under its existing profile contract. Result-byte caps
+remain unsupported in every profile. Internal producer loans and cumulative
+counters described here are qualified slices, not completion of those policies
+or evidence for safe defaults.
 
 ```csharp
 using var canceled = new CancellationTokenSource();
@@ -432,7 +476,7 @@ extents and retaining roots before acquisition, while referenced scalar/native
 payloads keep independent loans. Their shared immutable empty cursor state is
 borrowed. Failed preparation restores parent byte/depth/object loans without
 refunding work. These covered acquisitions do not establish complete retained
-cache policies or retire the remaining production BCL consumers.
+cache policies. Shipped BCL matcher/result retirement is qualified separately.
 Owned candidate verification borrows the cached scalar program and executes on
 the complete validated subject. Conservative candidate ends never truncate
 lookaround/anchor context; successful starts and ends are scalar byte boundaries.
@@ -471,7 +515,7 @@ them; EOF releases temporary VM scratch rather than invalidating those copies.
 The former BCL match/enumerator bridges, verifier-only cursor arguments and
 quoted/Unicode-count engine callbacks are removed. Bounded letter runs count
 complete scalars; zero-minimum shapes decline to the scalar VM. These consumer
-replacements do not retire remaining public BCL routes, result/metadata holders,
+replacements do not qualify remaining result/metadata holders,
 shared pool/cache policies or the final dependency and R07 gates.
 Python parser branch/sequence/class-item arrays, capture/open-group metadata,
 their collection/arena descriptors, and old/new growth and final-copy overlap
@@ -1065,7 +1109,7 @@ subtraction declines that proof without invoking its legacy allocating predicate
 The duplicate window-width formulas and unused line-safety frame state are removed.
 Alternate/set results and the facts container still require complete admission;
 these facts do not prove complete construction/retained bounds or that other
-native width producers and remaining BCL routes meet the scalar contract.
+native width producers meet the scalar contract.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
 temporary reference maps, copied child arrays, node/tree/program objects and
 their retaining descriptors. Program vectors charge aggregate instruction slots

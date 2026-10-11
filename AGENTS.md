@@ -3,7 +3,7 @@
 `Lokad.Utf8Regex` is a `net10.0` library that matches **Unicode scalars over strict UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`**, with byte offsets and lengths as the primary coordinates. The user selected this contract on 2026-10-06; exact .NET UTF-16 matching is superseded.
 
 - Dot, classes, quantifiers, captures, references, lookarounds, RTL and empty-match advancement must respect complete scalar boundaries. A supplementary scalar such as 😀 is one dot match, with four UTF-8 bytes.
-- `System.Text.RegularExpressions.Regex` is a test/benchmark comparator only where its code-unit behavior overlaps the scalar contract. Production BCL fallbacks are temporary migration debt to remove.
+- `System.Text.RegularExpressions.Regex` is a test/benchmark comparator only where its code-unit behavior overlaps the scalar contract. Shipped BCL matcher/result dependencies are removed in the qualified development source; keep them absent and qualify uncovered behavior in the owned engine.
 - Keep useful regex grammar, shared captures, resource admission and synchronous cancellation. UTF-16 coordinates/string APIs are derived interoperability conveniences, not the matching unit or a reason to convert every subject.
 - Retarget old surrogate-half parity tests to explicit scalar outcomes. Remove obsolete unit encodings, VM instructions, selectors and parity-only tooling as their qualified scalar replacements land. Do not merely disable failing tests or preserve a dormant second engine.
 - `SPEC.md` defines the target contract; current implementation coverage must be proved separately. `PLAN.md` records the active migration and cleanup gates.
