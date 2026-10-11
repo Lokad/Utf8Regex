@@ -85,7 +85,8 @@ public sealed class PythonReScalarCursorOwnershipTests
                 Assert.Equal(source.Token, failure.CancellationToken);
             }
             Assert.True(observed);
-            Assert.Equal(8UL, mapped.ReservedBytes);
+            // One retained start/end pair includes both complete array extents.
+            Assert.Equal(96UL, mapped.ReservedBytes);
         }
         finally { mapped.Dispose(); }
         Assert.Equal(0UL, mapped.ReservedBytes);

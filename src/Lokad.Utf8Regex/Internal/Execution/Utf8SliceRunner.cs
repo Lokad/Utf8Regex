@@ -142,15 +142,24 @@ internal static partial class Utf8SliceRunner
 
     internal static Utf8SliceSlots RentSlots(int groups, ref Utf8SliceInvocation invocation)
     {
+        if (TryRentSlots(groups, ref invocation, out var slots) != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Owned slice capture slots exceeded the invocation storage budget.");
+        return slots;
+    }
+
+    internal static Utf8ExecutionLimitKind TryRentSlots(int groups, ref Utf8SliceInvocation invocation, out Utf8SliceSlots slots)
+    {
+        slots = default;
         if (groups == 0)
         {
-            return new Utf8SliceSlots(Array.Empty<int>(), Array.Empty<int>());
+            slots = new Utf8SliceSlots(Array.Empty<int>(), Array.Empty<int>());
+            return Utf8ExecutionLimitKind.None;
         }
 
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
         if (!invocation.Ledger.TryReserve(bytes))
         {
-            throw new InvalidOperationException("Owned slice capture slots breached an unlimited invocation budget.");
+            return Utf8ExecutionLimitKind.WorkingBytes;
         }
 
         try
@@ -159,7 +168,8 @@ internal static partial class Utf8SliceRunner
             var ends = new int[groups];
             Array.Fill(starts, -1);
             Array.Fill(ends, -1);
-            return new Utf8SliceSlots(starts, ends);
+            slots = new Utf8SliceSlots(starts, ends);
+            return Utf8ExecutionLimitKind.None;
         }
         catch
         {
