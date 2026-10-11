@@ -295,7 +295,7 @@ public sealed class Utf8PreparedRetainedGraphTests
                         "Lokad.Utf8Regex.Internal.Search.PreparedAsciiIgnoreCaseLiteralSetSearchDataState", true))),
                     Utf8ExecutionTree => (1, 48ul),
                     Utf8ExecutionNode => (8, 80ul),
-                    Utf8ExecutionProgram => (2, 64ul),
+                    Utf8ExecutionProgram => (1, 48ul),
                     Utf8ScalarClass => (1, 48ul),
                     Utf8CaptureCatalog => (7, 80ul),
                     Utf8ConstructionReadOnlyMap<string, int> => (3, 64ul),
