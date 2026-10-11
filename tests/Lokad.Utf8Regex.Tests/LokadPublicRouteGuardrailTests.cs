@@ -70,7 +70,7 @@ public sealed class LokadPublicRouteGuardrailTests
         // before native/fallback dispatch. No offset through these loops is fixed.
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var runtimeProperty = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(runtimeProperty);
         var runtime = Assert.IsType<Utf8VerifierRuntime>(runtimeProperty.GetValue(regex));
@@ -96,7 +96,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(new[] { "!", "!", "!" }, splits);
         Assert.False(regex.IsMatch("Holmes"u8));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]

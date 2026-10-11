@@ -59,7 +59,7 @@ internal sealed class Utf8RegexProgram
             // Successful owned parsing always finishes capture numbering before
             // publishing the tree. Borrow that catalog for every public route;
             // absent metadata would indicate broken internal preparation.
-            var captureCatalog = preparedRegex.SemanticRegex.RuntimeTree?.CaptureCatalog;
+            var captureCatalog = preparedRegex.SemanticRegex.CaptureCatalog;
             if (captureCatalog is null)
                 throw new InvalidOperationException("Owned preparation must produce capture metadata.");
             var directStructuralFamilyKernelMatcher =

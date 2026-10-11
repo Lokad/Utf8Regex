@@ -59,7 +59,7 @@ public sealed class Utf8MatchFromOffsetDiffTests
                         () => { _ = utf8.EnumerateMatchesFromUtf16Offset(input, offset, token); }).ParamName);
                 }
                 Assert.True(utf8.Inspection.PreparedRegex.ScalarProgram is not null);
-                Assert.True(ReferenceEquals(utf8.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, utf8.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+                Assert.True(ReferenceEquals(utf8.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, utf8.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
                 continue;
             }
             var expected = runtime.Match(text, offset);

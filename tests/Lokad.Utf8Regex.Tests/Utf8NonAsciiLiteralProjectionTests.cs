@@ -158,7 +158,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -203,7 +203,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
             // Detailed captures borrow the same catalog as the scalar program.
-            Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             const int count = int.MaxValue;
             var replaceRegex = new Utf8Regex(pattern, options);
             var expectedReplaced = oracle.Replace(text, "x");

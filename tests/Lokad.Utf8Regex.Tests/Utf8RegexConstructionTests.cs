@@ -1528,7 +1528,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.False(match.GetGroup("open").Success);
         Assert.Equal(1, compiled.Count(input));
         Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(compiled.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, compiled.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(compiled.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, compiled.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]

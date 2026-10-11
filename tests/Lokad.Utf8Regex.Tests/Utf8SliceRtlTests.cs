@@ -619,11 +619,11 @@ public sealed class Utf8SliceRtlOperationTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
@@ -634,7 +634,7 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
         var actualDetailed = detailedRegex.MatchDetailed(input);
@@ -644,7 +644,7 @@ public sealed class Utf8SliceRtlOperationTests
             Assert.Equal(expectedDetailed.Groups.Count, actualDetailed.GroupCount);
         }
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -658,7 +658,7 @@ public sealed class Utf8SliceRtlOperationTests
         }
         Assert.Equal(expectedPositions, actualPositions);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(enumerateRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, enumerateRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(enumerateRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, enumerateRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var splitRegex = new Utf8Regex(pattern, options);
         var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
@@ -674,26 +674,26 @@ public sealed class Utf8SliceRtlOperationTests
         }
         Assert.Equal(expectedSplits, actualSplits);
         Assert.Equal(!splitFallback, splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(splitRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, splitRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(splitRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, splitRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options);
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
         var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(destinationRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, destinationRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(destinationRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, destinationRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> RtlEmptyReplaceDeclineCases()

@@ -223,7 +223,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             Assert.Equal(match.IndexInBytes, regex.MatchDetailed(input).IndexInBytes);
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.Equal(match.LengthInBytes, item.LengthInBytes); count++; }
             Assert.Equal(2, count); Assert.Equal(row.Replaced, regex.ReplaceToString(input, "X"));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 }

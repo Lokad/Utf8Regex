@@ -98,7 +98,7 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
         Assert.Equal(oracle.ToString(), product.Pattern);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(product, oracle, ["-]", "[]", "a]", "a", "-", "[", "😀-]"]);
         Assert.True(product.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(product.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, product.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(product.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, product.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> NestedBracketNarrowingCases()

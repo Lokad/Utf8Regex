@@ -209,7 +209,7 @@ public sealed class Utf8ScalarSubjectTests
             foreach (var split in regex.EnumerateSplits(input, token)) Assert.True(split.IsByteAligned);
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Fact]
@@ -337,7 +337,7 @@ public sealed class Utf8ScalarSubjectTests
             finally { session.Complete(); }
             Assert.Equal(1, regex.Count("ab"u8));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 

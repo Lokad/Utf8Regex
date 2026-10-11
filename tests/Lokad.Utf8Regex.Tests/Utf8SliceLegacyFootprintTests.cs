@@ -38,7 +38,7 @@ public sealed class Utf8SliceLegacyFootprintTests
         bool expectTrailingCoverage,
         string expectedFamily,
         bool expectNullLiteral,
-        bool expectNullRuntimeTree)
+        bool expectNullCaptureCatalog)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
@@ -52,6 +52,6 @@ public sealed class Utf8SliceLegacyFootprintTests
         Assert.Equal(expectTrailingCoverage, prepared.ScalarVerifier.RequiresTrailingAnchorCoverage);
         Assert.Equal(expectedFamily, regex.Inspection.DebugFallbackDirectFamilyKind);
         Assert.Equal(expectNullLiteral, prepared.LiteralUtf8 is null);
-        Assert.Equal(expectNullRuntimeTree, prepared.SemanticRegex.RuntimeTree is null);
+        Assert.Equal(expectNullCaptureCatalog, prepared.SemanticRegex.CaptureCatalog is null);
     }
 }

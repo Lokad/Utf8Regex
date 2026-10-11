@@ -195,7 +195,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
         var prepared = regex.Inspection.PreparedRegex;
         var scalar = prepared.ScalarProgram;
         Assert.NotNull(scalar);
-        Assert.Same(prepared.SemanticRegex.RuntimeTree!.CaptureCatalog, scalar.CaptureCatalog);
+        Assert.Same(prepared.SemanticRegex.CaptureCatalog, scalar.CaptureCatalog);
         Assert.Equal("(?<x>a)", regex.Pattern); Assert.Equal(options, regex.Options);
         Assert.Equal(Regex.InfiniteMatchTimeout, regex.MatchTimeout);
         Parallel.For(0, 32, _ =>

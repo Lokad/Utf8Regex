@@ -375,7 +375,7 @@ public sealed class Utf8SliceEscapeTests
             Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
         finally
         {

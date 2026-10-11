@@ -352,7 +352,7 @@ public sealed class Utf8NativeStructuralPreparationTests
             Assert.Equal(rtl ? "Other" : "Name", detailed.GetGroup(1).GetValueString());
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.True(item.LengthInBytes > 0); count++; }
             Assert.Equal(2, count); Assert.Equal("😀X中X😀", regex.ReplaceToString(input, "X"));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 }

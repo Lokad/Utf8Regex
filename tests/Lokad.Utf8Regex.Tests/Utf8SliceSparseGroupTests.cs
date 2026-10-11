@@ -230,7 +230,7 @@ public sealed class Utf8SliceSparseGroupTests
             Assert.Equal(expectedByteCalls, byteState.Calls);
             Assert.Null(Utf8SliceByteOutputScope.Current);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 

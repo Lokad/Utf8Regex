@@ -12,7 +12,7 @@ public sealed class Utf8ByteSafeProgramOwnershipTests
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static Utf8ExecutionTree Tree(string pattern)
     {
-        var tree = Utf8ExecutionTreeLowerer.Lower(Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant).SemanticRegex);
+        var tree = Utf8ExecutionTreeLowerer.Lower(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant).SemanticRegex);
         Assert.NotNull(tree); return tree;
     }
     private static ulong ObjectBytes(Utf8ConstructionBudget.ObjectAllocation? current, Utf8ConstructionBudget.ObjectAllocation? before)

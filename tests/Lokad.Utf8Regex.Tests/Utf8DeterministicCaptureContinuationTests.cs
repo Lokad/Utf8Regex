@@ -257,7 +257,7 @@ public sealed class Utf8DeterministicCaptureContinuationTests
         }
         finally { session.Complete(); }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         using var recovery = new CancellationTokenSource();
         Assert.True(regex.IsMatch("abxc"u8, recovery.Token));
         Assert.Equal(1, regex.Count("abxc"u8, recovery.Token));
@@ -289,7 +289,7 @@ public sealed class Utf8DeterministicCaptureContinuationTests
         }
         finally { session.Complete(); }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     private static void Invoke(Utf8Regex regex, byte[] input, string operation, CancellationToken token)

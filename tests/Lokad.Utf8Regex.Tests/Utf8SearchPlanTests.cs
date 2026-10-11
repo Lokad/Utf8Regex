@@ -212,7 +212,7 @@ public sealed class Utf8SearchPlanTests
     public void ConstructorCanCreateRequiredLiteralPrefilterForComplexFallbackPattern()
     {
         const string pattern = "(?:foo((?:ASIA|AKIA|AROA|AIDA)[A-Z0-7]{16}).*?[a-zA-Z0-9+/]{40}|[a-zA-Z0-9+/]{40}.*?bar((?:ASIA|AKIA|AROA|AIDA)[A-Z0-7]{16}))";
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
         var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
         Assert.True(family is { Length: > 0 }, DumpNode(analysis.SemanticRegex.RuntimeTree.Root));
 
@@ -573,7 +573,7 @@ public sealed class Utf8SearchPlanTests
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
         var oracle = new System.Text.RegularExpressions.Regex(pattern, RegexOptions.Multiline);
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.Multiline);
+        var analysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.Multiline);
         Assert.NotNull(analysis.SemanticRegex.RuntimeTree);
         var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
         Assert.Null(family);
@@ -1170,7 +1170,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void AnalyzerCanExtractFiniteOrderedWindowGap()
     {
-        var analysis = Utf8FrontEnd.Compile(@"(?:using var|await using var)[A-Z]{1,3}await", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Analyze(@"(?:using var|await using var)[A-Z]{1,3}await", RegexOptions.CultureInvariant);
         var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(analysis.SemanticRegex);
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, searchFacts.Kind);
@@ -1210,7 +1210,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void AnalyzerDoesNotInventLineBoundedWindowForNewlinePermittingGap()
     {
-        var analysis = Utf8FrontEnd.Compile(@"foo\s+bar", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Analyze(@"foo\s+bar", RegexOptions.CultureInvariant);
         var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(analysis.SemanticRegex);
 
         Assert.False(searchFacts.OrderedWindowSameLine);

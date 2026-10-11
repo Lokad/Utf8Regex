@@ -15,7 +15,7 @@ internal sealed class Utf8PreparedRegex
     private readonly record struct ConstructionState(
         Utf8FallbackDirectFamilyPlan FallbackDirectFamily,
         Utf8OperationMatchCursorPlans OperationMatchCursorPlans,
-        Utf8SemanticRegex SemanticRegex,
+        Utf8PreparedSemanticRegex SemanticRegex,
         Utf8RegexFeatures Features,
         string ExecutionPattern,
         NativeExecutionKind ExecutionKind,
@@ -65,7 +65,7 @@ internal sealed class Utf8PreparedRegex
     }
 
     internal static Utf8PreparedRegex Create(
-        Utf8SemanticRegex semanticRegex,
+        Utf8PreparedSemanticRegex semanticRegex,
         Utf8RegexFeatures features,
         string executionPattern,
         NativeExecutionKind executionKind,
@@ -119,7 +119,7 @@ internal sealed class Utf8PreparedRegex
         return result;
     }
 
-    public Utf8SemanticRegex SemanticRegex { get; }
+    public Utf8PreparedSemanticRegex SemanticRegex { get; }
 
     public Utf8RegexFeatures Features { get; }
 

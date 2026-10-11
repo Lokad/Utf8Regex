@@ -44,7 +44,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> MultilineAnchoredSplitOwnedCases()
     {
@@ -100,7 +100,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> MultilineMixedSplitDeclineCases()
@@ -175,13 +175,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredEvaluatorCases()
@@ -215,13 +215,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         });
         Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
         Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> ScopedFoldedAnchoredCases()
     {
@@ -249,12 +249,12 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var enumRegex = new Utf8Regex(pattern, options);
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
@@ -277,7 +277,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.True(enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(enumRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, enumRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(enumRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, enumRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedPrefixCases()
@@ -304,12 +304,12 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
@@ -318,7 +318,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
         Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var enumRegex = new Utf8Regex(pattern, options);
         var expectedEnum = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedEnumMatch in oracle.Matches(text))
@@ -340,7 +340,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.True(enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(enumRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, enumRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(enumRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, enumRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -408,12 +408,12 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
@@ -422,7 +422,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
         Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -455,7 +455,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -537,7 +537,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -601,13 +601,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedDetailedEvaluatorCases()
@@ -643,7 +643,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -663,13 +663,13 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         });
         Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
         Assert.True(byteRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(byteRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, byteRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "<" + context.GetGroup(0).GetValueString() + ">");
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -724,7 +724,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     [Theory]
     [MemberData(nameof(FoldedFromOffsetCases))]
@@ -745,7 +745,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
 
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     [Theory]
@@ -809,11 +809,11 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text);
         var actualMatch = matchRegex.Match(input);
@@ -824,7 +824,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text);
         var actualDetailed = detailedRegex.MatchDetailed(input);
@@ -834,7 +834,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
         }
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredEnumerationOwnedCases()
     {
@@ -878,7 +878,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredFromOffsetOwnedCases()
     {
@@ -922,11 +922,11 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text, utf16Offset);
         var actualMatch = matchRegex.MatchFromUtf16Offset(input, utf16Offset);
@@ -937,7 +937,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text, utf16Offset);
         var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, utf16Offset);
@@ -947,7 +947,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
         }
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredFromOffsetNonAsciiDeclineCases()
     {
@@ -1025,7 +1025,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredFromOffsetEnumerationNonAsciiDeclineCases()
     {
@@ -1149,11 +1149,11 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var isMatchRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.IsMatch(text, utf16Offset), isMatchRegex.IsMatchFromUtf16Offset(input, utf16Offset));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(isMatchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, isMatchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var countRegex = new Utf8Regex(pattern, options);
         Assert.Equal(oracle.Matches(text, utf16Offset).Count, countRegex.CountFromUtf16Offset(input, utf16Offset));
         Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(countRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, countRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var matchRegex = new Utf8Regex(pattern, options);
         var expectedMatch = oracle.Match(text, utf16Offset);
         var actualMatch = matchRegex.MatchFromUtf16Offset(input, utf16Offset);
@@ -1164,7 +1164,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
         }
         Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(matchRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, matchRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var detailedRegex = new Utf8Regex(pattern, options);
         var expectedDetailed = oracle.Match(text, utf16Offset);
         var actualDetailed = detailedRegex.MatchDetailedFromUtf16Offset(input, utf16Offset);
@@ -1174,7 +1174,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             Assert.Equal(expectedDetailed.Index, actualDetailed.IndexInUtf16);
         }
         Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var enumerateRegex = new Utf8Regex(pattern, options);
         var expected = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text, utf16Offset))
@@ -1188,7 +1188,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         }
         Assert.Equal(expected, actual);
         Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(enumerateRegex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, enumerateRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(enumerateRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, enumerateRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> LineAnchoredAstralResumeShapingCases()
     {

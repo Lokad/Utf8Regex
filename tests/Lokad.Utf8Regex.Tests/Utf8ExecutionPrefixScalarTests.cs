@@ -13,7 +13,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
 {
     private static Utf8ExecutionTree Tree(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
     {
-        var tree = Utf8ExecutionTreeLowerer.Lower(Utf8FrontEnd.Compile(pattern, options).SemanticRegex);
+        var tree = Utf8ExecutionTreeLowerer.Lower(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex);
         Assert.NotNull(tree);
         return tree;
     }
@@ -91,7 +91,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
         {
             var options = RegexOptions.CultureInvariant | direction;
             var front = Utf8FrontEnd.Compile(pattern, options);
-            var tree = Utf8ExecutionTreeLowerer.Lower(front.SemanticRegex);
+            var tree = front.ExecutionTree;
             Assert.NotNull(tree);
             var anchor = Utf8DeterministicAnchorSearch.Create(tree, front.SearchPlan);
             var guards = Utf8DeterministicVerifierGuards.Create(tree, front.SearchPlan);
@@ -192,7 +192,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
         }
         foreach (var pattern in new[] { "(?i:k)", "(?i:abc)", "a(?i:b)c", "(?i:é)" })
         {
-            var semantic = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant).SemanticRegex;
+            var semantic = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant).SemanticRegex;
             var execution = Utf8ExecutionTreeLowerer.Lower(semantic);
             Assert.NotNull(execution); Assert.NotNull(semantic.RuntimeTree);
             var pairs = new Stack<(Utf8TreeNode Owned, Utf8ExecutionNode Lowered)>();

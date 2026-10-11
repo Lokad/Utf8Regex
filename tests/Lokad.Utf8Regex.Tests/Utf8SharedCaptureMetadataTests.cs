@@ -36,7 +36,7 @@ public sealed class Utf8SharedCaptureMetadataTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var program = Utf8RegexProgram.Compile(pattern, options, Regex.InfiniteMatchTimeout);
-        var catalog = program.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog!;
+        var catalog = program.PreparedRegex.SemanticRegex.CaptureCatalog!;
         Assert.NotNull(catalog); Assert.Same(catalog, program.CaptureCatalog);
         // Program metadata borrows the canonical catalog directly. Public array
         // copies, sparse lookups, captures and replacement below share its data.
@@ -58,7 +58,7 @@ public sealed class Utf8SharedCaptureMetadataTests
             Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
         var input = Encoding.UTF8.GetBytes(subject);
         var actual = regex.MatchDetailed(input); var expected = oracle.Match(subject);
-        var preparedCatalog = regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog;
+        var preparedCatalog = regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog;
         Assert.NotNull(preparedCatalog);
         Assert.Equal(preparedCatalog.GroupNumbers.Length - 1, regex.Inspection.AvailableOwnedSliceProgram.GroupCount);
         Assert.Same(preparedCatalog, ContextCatalog(ref actual));

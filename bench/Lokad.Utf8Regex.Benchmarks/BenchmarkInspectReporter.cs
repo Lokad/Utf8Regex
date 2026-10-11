@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Caching;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
@@ -5155,13 +5156,15 @@ internal static partial class BenchmarkInspectReporter
     public static int RunDumpRuntimeTreePattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
-        var analysis = Utf8FrontEnd.Compile(pattern, options);
+        using var owner = Utf8ConstructionScope.Enter();
+        var analysis = Utf8FrontEnd.Analyze(pattern, options);
+        var prepared = Utf8RegexPreparer.Prepare(analysis);
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
-        Console.WriteLine($"ExecutionBackend  : {analysis.ExecutionBackend}");
-        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
-        Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(analysis).Kind}");
-        Console.WriteLine($"FallbackReason    : {analysis.FallbackReason ?? "<native>"}");
+        Console.WriteLine($"ExecutionBackend  : {prepared.ExecutionBackend}");
+        Console.WriteLine($"ExecutionKind     : {prepared.ExecutionKind}");
+        Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(prepared).Kind}");
+        Console.WriteLine($"FallbackReason    : {prepared.FallbackReason ?? "<native>"}");
         Console.WriteLine("RuntimeTree       :");
         Console.WriteLine(DumpNode(analysis.SemanticRegex.RuntimeTree!.Root));
         return 0;

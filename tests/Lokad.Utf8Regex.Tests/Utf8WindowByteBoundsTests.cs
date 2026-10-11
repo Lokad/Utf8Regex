@@ -12,13 +12,13 @@ public sealed class Utf8WindowByteBoundsTests
     [Fact]
     public void LeadingWindowFamiliesKeepPunctuationBranchesAndAdmitEveryWorkCutoff()
     {
-        var semantic = Utf8FrontEnd.Compile("(?:foo|!!).{0,2}bar", RegexOptions.CultureInvariant).SemanticRegex;
+        var semantic = Utf8FrontEnd.Analyze("(?:foo|!!).{0,2}bar", RegexOptions.CultureInvariant).SemanticRegex;
         var facts = Utf8FrontEndSearchAnalyzer.Analyze(semantic);
         Assert.Equal(["foo", "!!"], facts.OrderedWindowLeadingLiteralsUtf8.Select(Encoding.UTF8.GetString));
-        var partial = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Compile("(foo\\s+bar).{0,2}baz", RegexOptions.CultureInvariant).SemanticRegex);
+        var partial = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Analyze("(foo\\s+bar).{0,2}baz", RegexOptions.CultureInvariant).SemanticRegex);
         Assert.Equal(["foo"], partial.OrderedWindowLeadingLiteralsUtf8.Select(Encoding.UTF8.GetString));
         Assert.Null(partial.OrderedWindowMaxGap);
-        var optional = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Compile("((foo)(bar))(baz)?", RegexOptions.CultureInvariant).SemanticRegex);
+        var optional = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Analyze("((foo)(bar))(baz)?", RegexOptions.CultureInvariant).SemanticRegex);
         Assert.Empty(optional.OrderedWindowLeadingLiteralsUtf8);
         var method = typeof(Utf8FrontEndSearchAnalyzer).GetMethod("TryExtractLeadingWindowPhrases", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
@@ -92,7 +92,7 @@ public sealed class Utf8WindowByteBoundsTests
         foreach (var pattern in patterns)
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
         {
-            var semantic = Utf8FrontEnd.Compile(pattern, options).SemanticRegex;
+            var semantic = Utf8FrontEnd.Analyze(pattern, options).SemanticRegex;
             var facts = Utf8FrontEndSearchAnalyzer.Analyze(semantic);
             if (facts.OrderedWindowLeadingLiteralsUtf8.Length == 0 || facts.OrderedWindowTrailingLiteralUtf8.Length == 0) continue;
             var program = Utf8OwnedTreeSliceLowerer.TryLower(semantic.RuntimeTree!, options);
@@ -178,7 +178,7 @@ public sealed class Utf8WindowByteBoundsTests
     [InlineData("[a-z]{2147483646}[0-9]{2}", null, false)]
     public void OrderedWindowFactsUseBytesAndDeclineCombinedOverflow(string gap, int? maximum, bool excludes)
     {
-        var semantic = Utf8FrontEnd.Compile("(?:first|second)" + gap + "last", RegexOptions.CultureInvariant).SemanticRegex;
+        var semantic = Utf8FrontEnd.Analyze("(?:first|second)" + gap + "last", RegexOptions.CultureInvariant).SemanticRegex;
         var facts = Utf8FrontEndSearchAnalyzer.Analyze(semantic);
         Assert.Equal(maximum, facts.OrderedWindowMaxGap);
         Assert.Equal(excludes, facts.OrderedWindowSameLine);
@@ -200,7 +200,7 @@ public sealed class Utf8WindowByteBoundsTests
         {
             var regex = new Utf8Regex(row.Pattern, options);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(property);
             var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
@@ -233,7 +233,7 @@ public sealed class Utf8WindowByteBoundsTests
             Assert.Equal(new[] { "!", "!", "!" }, splits);
             Assert.False(regex.IsMatch("firstlast"u8));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 

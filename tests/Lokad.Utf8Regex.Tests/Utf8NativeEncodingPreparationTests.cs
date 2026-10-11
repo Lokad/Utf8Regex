@@ -245,7 +245,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             if (row.Pattern == "(é😀)") Assert.Equal("é😀", regex.MatchDetailed(bytes).GetGroup(1).GetValueString());
             var count = 0; foreach (var item in regex.EnumerateMatches(bytes)) { Assert.True(item.LengthInBytes > 0); count++; }
             Assert.Equal(row.Count, count); Assert.Equal(row.Replaced, regex.ReplaceToString(bytes, "X"));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 }

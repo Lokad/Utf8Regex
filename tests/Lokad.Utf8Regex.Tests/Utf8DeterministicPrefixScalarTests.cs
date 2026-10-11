@@ -90,7 +90,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
         }
         var malformed = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab\ud800cd");
         Assert.Equal([0, 1], Extract(malformed).Select(set => set.Distance));
-        var ascii = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Compile("[ \\t\\r\\n\\f\\v]*abc[0-9]", RegexOptions.CultureInvariant).SemanticRegex);
+        var ascii = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Analyze("[ \\t\\r\\n\\f\\v]*abc[0-9]", RegexOptions.CultureInvariant).SemanticRegex);
         Assert.Equal(Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace, ascii.FallbackStartTransform.Kind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, ascii.Kind);
         Assert.NotEmpty(ascii.FixedDistanceSets);
@@ -119,7 +119,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
             var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
             Assert.NotNull(tree);
             var sets = Extract(tree.Root);
-            var facts = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Compile(pattern, options).SemanticRegex);
+            var facts = Utf8FrontEndSearchAnalyzer.Analyze(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex);
             var selected = facts.FixedDistanceSets;
             var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
             Assert.NotNull(program);

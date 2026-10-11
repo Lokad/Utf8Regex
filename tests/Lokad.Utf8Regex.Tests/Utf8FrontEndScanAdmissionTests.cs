@@ -320,7 +320,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.Equal(8, args[2]);
 
         // An ASCII intersection cannot certify a byte-sized quoted scalar run.
-        var negative = Utf8FrontEnd.Compile("'[^a]{2}'", RegexOptions.CultureInvariant);
+        var negative = Utf8FrontEnd.Analyze("'[^a]{2}'", RegexOptions.CultureInvariant);
         Assert.NotNull(negative.SemanticRegex.RuntimeTree);
         object?[] declined = [negative.SemanticRegex.RuntimeTree.Root, null, 0];
         Assert.False(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryFindQuotedAsciiRun", declined)));

@@ -136,7 +136,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
         }
         Assert.Equal(expected, regex.Inspection.DebugCountSplitsViaCompiledEngine(input, count));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 
     public static IEnumerable<object?[]> ReplaceParityCases()
@@ -176,6 +176,6 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
         var oracle = new Regex(pattern, options);
         Assert.Equal(Encoding.UTF8.GetByteCount(oracle.Replace(inputText, replacement)), nativeLength);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

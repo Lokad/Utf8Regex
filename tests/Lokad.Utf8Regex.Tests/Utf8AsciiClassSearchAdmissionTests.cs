@@ -213,6 +213,6 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
         var detail = regex.MatchDetailed(subject); Assert.Equal(4, detail.IndexInBytes); Assert.Equal(4, detail.LengthInBytes);
         var count = 0; foreach (var item in regex.EnumerateMatches(subject)) { Assert.True(item.LengthInBytes >= 2); count++; }
         Assert.Equal(2, count); Assert.Equal("😀X中X😀A", regex.ReplaceToString(subject, "X"));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
 }

@@ -97,7 +97,9 @@ internal static class Utf8RegexPreparer
             var operationPlans = Utf8OperationMatchCursorPlans.Create(program, searchPlan, structuralLinearProgram,
                 analyzedRegex.SimplePatternPlan, structuralSearchPlan, structuralVerifier.AsciiProgram);
             var result = Utf8PreparedRegex.Create(
-                analyzedRegex.SemanticRegex,
+                new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
+                    analyzedRegex.SemanticRegex.ExecutionPattern, analyzedRegex.SemanticRegex.ExecutionOptions,
+                    analyzedRegex.SemanticRegex.RuntimeTree?.CaptureCatalog),
                 analyzedRegex.Features,
                 analyzedRegex.ExecutionPattern,
                 analyzedRegex.ExecutionKind,

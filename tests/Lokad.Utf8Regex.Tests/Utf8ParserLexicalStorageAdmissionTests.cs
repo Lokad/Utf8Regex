@@ -355,9 +355,9 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            var semantic = compile ? Utf8FrontEnd.Compile(pattern, Options).SemanticRegex : Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex;
-            Assert.Equal("ab😀", semantic.ExecutionPattern);
-            Assert.Contains(Loans(measured.Budget), loan => ReferenceEquals(loan.Value, semantic.ExecutionPattern));
+            var executionPattern = compile ? Utf8FrontEnd.Compile(pattern, Options).SemanticRegex.ExecutionPattern : Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex.ExecutionPattern;
+            Assert.Equal("ab😀", executionPattern);
+            Assert.Contains(Loans(measured.Budget), loan => ReferenceEquals(loan.Value, executionPattern));
             work = measured.Budget.WorkSteps;
         }
         foreach (var cap in new[] { 0ul, work / 3, work - 1 })
@@ -370,9 +370,18 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             {
                 failure = Record.Exception(() =>
                 {
-                    var semantic = compile ? Utf8FrontEnd.Compile(pattern, Options).SemanticRegex : Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex;
-                    Assert.Equal("ab😀", semantic.ExecutionPattern);
-                    Assert.NotNull(semantic.RuntimeTree);
+                    if (compile)
+                    {
+                        var prepared = Utf8FrontEnd.Compile(pattern, Options);
+                        Assert.Equal("ab😀", prepared.SemanticRegex.ExecutionPattern);
+                        Assert.NotNull(prepared.SemanticRegex.CaptureCatalog);
+                    }
+                    else
+                    {
+                        var semantic = Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex;
+                        Assert.Equal("ab😀", semantic.ExecutionPattern);
+                        Assert.NotNull(semantic.RuntimeTree);
+                    }
                 });
                 if (failure is not null)
                     Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);

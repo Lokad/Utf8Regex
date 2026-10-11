@@ -18,10 +18,11 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             ("(?s:.)", new string(Enumerable.Range(0, 128).Select(static value => (char)value).ToArray())),
         })
         {
-            var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+            var sourceAnalysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
+            var analysis = Lokad.Utf8Regex.Internal.Planning.Utf8RegexPreparer.Prepare(sourceAnalysis);
             Assert.NotNull(analysis.ExecutionTree);
             Assert.NotNull(analysis.ExecutionProgram);
-            var sourceNode = analysis.SemanticRegex.RuntimeTree!.Root;
+            var sourceNode = sourceAnalysis.SemanticRegex.RuntimeTree!.Root;
             while (sourceNode.ScalarClass is null && sourceNode.ChildCount == 1) sourceNode = sourceNode.Child(0);
             var source = sourceNode.ScalarClass;
             Assert.NotNull(source);

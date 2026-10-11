@@ -115,7 +115,7 @@ public sealed class Utf8SliceEcmaTests
             Assert.False(actual.MoveNext());
             Assert.Equal(count, regex.Count(input));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.RuntimeTree!.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
+            Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }
 

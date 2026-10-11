@@ -116,7 +116,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
             Assert.Equal(cost, Assert.Single(loans).Bytes);
         }
         Assert.NotNull(prepared.ScalarProgram);
-        Assert.Same(prepared.SemanticRegex.RuntimeTree!.CaptureCatalog, prepared.ScalarProgram.CaptureCatalog);
+        Assert.Same(prepared.SemanticRegex.CaptureCatalog, prepared.ScalarProgram.CaptureCatalog);
         Assert.Same(prepared.ExecutionProgram, prepared.OperationMatchCursorPlans.ExecutionProgram);
     }
 }

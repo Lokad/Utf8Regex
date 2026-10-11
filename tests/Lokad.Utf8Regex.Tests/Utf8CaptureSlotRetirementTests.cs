@@ -24,7 +24,7 @@ public sealed class Utf8CaptureSlotRetirementTests
     public void CaptureMapsPreserveAlreadyFinalizedCatalogNumbers(string pattern, bool alternation)
     {
         var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var catalog = prepared.SemanticRegex.RuntimeTree!.CaptureCatalog!;
+        var catalog = prepared.SemanticRegex.CaptureCatalog!;
         Assert.Same(catalog, prepared.ScalarProgram!.CaptureCatalog);
         Assert.False(catalog.HasSharedCaptureDeclarations);
         Assert.False(catalog.HasExplicitCaptureNumbers);
