@@ -4,6 +4,9 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
+// The exact-zero warm lane requires a quiet shared pool. Parallel fixtures can
+// borrow its working leaves; the held byte interval and threshold stay intact.
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8ReversibleMatchStateTests
 {
     [Fact]

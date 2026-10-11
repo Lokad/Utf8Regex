@@ -146,7 +146,7 @@ internal sealed class Utf8CaptureSlots
         var capacity = old is null ? Math.Max(16, _starts.Length)
             : old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength;
         if (capacity <= _journalCount) return Utf8ExecutionLimitKind.WorkingBytes;
-        var bytes = (ulong)(uint)capacity * (ulong)(uint)Unsafe.SizeOf<Utf8CaptureMutation>();
+        var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8CaptureMutation>(capacity);
         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
         var adopted = false;
         try
