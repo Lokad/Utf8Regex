@@ -42,14 +42,18 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
                 4 => new Utf8SliceNode.LookaheadNode(root, true),
                 _ => new Utf8SliceNode.LookbehindNode(root, true),
             };
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 1024, ulong.MaxValue, ulong.MaxValue);
+        // Preserve the original graph/frame allowance; separately admit the
+        // finalized program and its construction tracking descriptor.
+        var maximumBytes = 1024ul + Utf8SliceProgram.ObjectBytes
+            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, maximumBytes, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ObjectCheckpoint;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceLowerer.Lower(root, null, false, false, false));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(1024ul, failure.Limit);
+        Assert.Equal(maximumBytes, failure.Limit);
         Assert.True(failure.Requested > failure.Limit);
-        Assert.InRange(owner.Budget.PeakBytes, 113ul, 1024ul);
+        Assert.InRange(owner.Budget.PeakBytes, 113ul, maximumBytes);
         Assert.Equal(112ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
@@ -61,6 +65,19 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
         Assert.Equal(17, parent.Value);
+    }
+
+    [Fact]
+    public void FormerGraphOnlyAllowanceCannotAcquireFinalProgramMetadata()
+    {
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 1024, ulong.MaxValue, ulong.MaxValue);
+        _ = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
+        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceLowerer.Lower(Leaf, null, false, false, false));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(1024ul, failure.Limit); Assert.Equal(1152ul, failure.Requested);
+        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.InRange(owner.Budget.PeakBytes, 112ul, 1024ul); Assert.Equal(0ul, owner.Budget.Depth);
     }
 
     [Theory]
