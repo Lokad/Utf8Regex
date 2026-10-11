@@ -21,60 +21,27 @@ public sealed partial class Utf8PythonRegex
 
     private ref struct PythonReUtf8MatchRangeBuffer
     {
-        private PythonReUtf8MatchRange[]? _ranges;
+        private Utf8InvocationStateBuffer<PythonReUtf8MatchRange> _ranges;
+        private Utf8SliceInvocation _invocation;
 
-        internal int Count { get; private set; }
+        internal PythonReUtf8MatchRangeBuffer(Utf8SliceInvocation invocation)
+        {
+            _invocation = invocation;
+            _ranges = default;
+        }
 
-        internal readonly PythonReUtf8MatchRange this[int index] =>
-            (_ranges ?? throw new InvalidOperationException("The range buffer has not been initialized."))[index];
+        internal readonly int Count => _ranges.Count;
+        internal readonly PythonReUtf8MatchRange this[int index] => _ranges[index];
 
         internal void Add(PythonReUtf8MatchRange range)
         {
-            if (_ranges is null || Count == _ranges.Length)
-            {
-                Grow();
-            }
-
-            (_ranges ?? throw new InvalidOperationException("Growing the range buffer did not initialize it."))[Count] = range;
-            Count++;
+            var breach = _invocation.TryChargeInputStep();
+            if (breach == Utf8ExecutionLimitKind.None) breach = _ranges.TryPush(range, ref _invocation);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException($"Python range storage exceeded {breach}.");
         }
 
-        internal void Dispose()
-        {
-            if (_ranges is null)
-            {
-                return;
-            }
-
-            ArrayPool<PythonReUtf8MatchRange>.Shared.Return(_ranges);
-            _ranges = null;
-            Count = 0;
-        }
-
-        private void Grow()
-        {
-            var newLength = _ranges is null ? 16 : checked(_ranges.Length * 2);
-            var grown = ArrayPool<PythonReUtf8MatchRange>.Shared.Rent(newLength);
-            try
-            {
-                if (_ranges is not null)
-                {
-                    _ranges.AsSpan(0, Count).CopyTo(grown);
-                }
-            }
-            catch
-            {
-                ArrayPool<PythonReUtf8MatchRange>.Shared.Return(grown);
-                throw;
-            }
-
-            var previous = _ranges;
-            _ranges = grown;
-            if (previous is not null)
-            {
-                ArrayPool<PythonReUtf8MatchRange>.Shared.Return(previous);
-            }
-        }
+        internal void Dispose() => _ranges.Release(ref _invocation);
     }
 
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);

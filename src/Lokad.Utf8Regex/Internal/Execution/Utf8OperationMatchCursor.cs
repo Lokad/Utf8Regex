@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -10,6 +11,15 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal ref partial struct Utf8OperationMatchCursor
 {
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8OperationMatchCursor>();
+
+    [UnscopedRef]
+    internal Utf8InvocationBufferControl WorkingBufferControl => new(ref _sliceInvocation);
+
+    internal Utf8SliceInvocation ExportWorkingInvocation()
+    {
+        _sliceInvocation.ShareStorageForCursor();
+        return _sliceInvocation;
+    }
 
     internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;
 

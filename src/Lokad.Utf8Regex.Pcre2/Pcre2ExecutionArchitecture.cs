@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -3076,6 +3077,11 @@ internal static class Pcre2GlobalOperationDriver
 
 internal ref struct Pcre2GlobalMatchCursor
 {
+    [UnscopedRef]
+    internal Pcre2CaptureProjectionBudget WorkingBufferControl => _kind == Pcre2GlobalCursorKind.Direct
+        ? _direct.WorkingBufferControl
+        : throw new InvalidOperationException("This cursor has no replacement buffer authority.");
+
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
 
     private readonly Pcre2GlobalCursorKind _kind;
@@ -3207,6 +3213,9 @@ internal readonly record struct Pcre2DirectGlobalMatch(
 
 internal ref struct Pcre2DirectGlobalMatchCursor
 {
+    [UnscopedRef]
+    internal Pcre2CaptureProjectionBudget WorkingBufferControl => new(ref _budget);
+
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>();
 
     private readonly Pcre2DirectGlobalCursorKind _kind;

@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 // Stack-only borrowed authority for the two existing PCRE2 execution owners.
 // The projector never copies their counters or creates a second invocation.
 // Copies of this readonly view still reference the same mutable owners.
-internal readonly ref struct Pcre2CaptureProjectionBudget
+internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBufferControl
 {
     private readonly ref Pcre2ResourceBudget _vm;
     private readonly ref Utf8SliceInvocation _slice;
@@ -30,7 +30,7 @@ internal readonly ref struct Pcre2CaptureProjectionBudget
         ? _slice.IsUnmetered && _slice.CheckpointHook is null
         : _vm.IsUnmetered;
 
-    internal bool CanRetainWorkspace => _isSlice ? _slice.Ledger.IsUnlimited : _vm.CanRetainWorkspace;
+    public bool CanRetainWorkspace => _isSlice ? _slice.Ledger.IsUnlimited : _vm.CanRetainWorkspace;
 
     internal void ReserveWorking(ulong bytes)
     {
@@ -45,7 +45,7 @@ internal readonly ref struct Pcre2CaptureProjectionBudget
         }
     }
 
-    internal void ReleaseWorking(ulong bytes)
+    public void ReleaseWorking(ulong bytes)
     {
         if (_isSlice) _slice.Ledger.Release(bytes);
         else _vm.ReleaseWorking(bytes);
@@ -56,5 +56,17 @@ internal readonly ref struct Pcre2CaptureProjectionBudget
         if (!_isSlice) { _vm.ChargeWorkspaceStep(); return; }
         if (IsUnmetered) return;
         Pcre2SliceDriver.ThrowIfSliceBreached(_slice.TryChargeInputStep());
+    }
+
+    public Utf8ExecutionLimitKind TryReserveWorking(ulong bytes)
+    {
+        ReserveWorking(bytes);
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    public Utf8ExecutionLimitKind TryChargeWorkspaceStep()
+    {
+        ChargeWorkspaceStep();
+        return Utf8ExecutionLimitKind.None;
     }
 }

@@ -63,8 +63,10 @@ public sealed partial class Utf8PythonRegex
                 ? _utf8Regex.EnumerateMatches(input)
                 : _utf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
 
-            foreach (var match in enumerator)
+            ranges = new PythonReUtf8MatchRangeBuffer(enumerator.ExportWorkingInvocation());
+            while (enumerator.MoveNext())
             {
+                var match = enumerator.Current;
                 if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
                 {
                     ranges.Dispose();
@@ -80,6 +82,12 @@ public sealed partial class Utf8PythonRegex
             }
 
             return true;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            ranges.Dispose();
+            ranges = default;
+            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
         }
         catch
         {

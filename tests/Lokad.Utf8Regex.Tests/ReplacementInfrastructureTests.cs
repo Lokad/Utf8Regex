@@ -4,6 +4,9 @@ using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex.Tests;
 
+// The exact working pool is shared across operation families. Preserve this
+// warmed allocation interval outside concurrent borrowers, with its original cap.
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class ReplacementInfrastructureTests
 {
     [Fact]
@@ -113,19 +116,21 @@ public sealed class ReplacementInfrastructureTests
 
     private static void GrowLedgerAndThrow()
     {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
+            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, CancellationToken.None);
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {
             for (var i = 0; i < 24; i++)
             {
-                ledger.Add(new Utf8ReplacementRange(i, 1, 0));
+                ledger.Add(new Utf8ReplacementRange(i, 1, 0), new Utf8InvocationBufferControl(ref invocation));
             }
 
             throw new InvalidOperationException("injected");
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(new Utf8InvocationBufferControl(ref invocation));
         }
     }
 }

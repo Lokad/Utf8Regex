@@ -1,4 +1,4 @@
-using System.Buffers;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
@@ -14,62 +14,29 @@ internal readonly record struct Utf8ReplacementRange(int Start, int Length, int 
 
 internal ref struct Utf8ReplacementRangeLedger
 {
-    private Utf8ReplacementRange[] _ranges;
-
-    public Utf8ReplacementRangeLedger()
-    {
-        _ranges = [];
-        Count = 0;
-    }
-
-    internal int Count { get; private set; }
-
+    private Utf8InvocationStateBuffer<Utf8ReplacementRange> _ranges;
+    internal readonly int Count => _ranges.Count;
     internal readonly Utf8ReplacementRange this[int index] => _ranges[index];
+    internal readonly ReadOnlySpan<Utf8ReplacementRange> WrittenRanges => _ranges.WrittenItems;
 
-    internal readonly ReadOnlySpan<Utf8ReplacementRange> WrittenRanges => _ranges.AsSpan(0, Count);
-
-    internal void Add(Utf8ReplacementRange range)
+    internal Utf8ExecutionLimitKind TryAdd<TControl>(Utf8ReplacementRange range, scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
-        if (Count == _ranges.Length)
-        {
-            Grow();
-        }
-
-        _ranges[Count] = range;
-        Count++;
+        var breach = control.TryChargeWorkspaceStep();
+        return breach == Utf8ExecutionLimitKind.None ? _ranges.TryPush(range, control) : breach;
     }
 
-    internal void Dispose()
+    internal void Add<TControl>(Utf8ReplacementRange range, scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
-        if (_ranges.Length != 0)
-        {
-            ArrayPool<Utf8ReplacementRange>.Shared.Return(_ranges);
-            _ranges = [];
-            Count = 0;
-        }
+        var breach = TryAdd(range, control);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Owned replacement ranges exceeded {breach}.");
     }
 
-    private void Grow()
-    {
-        var newLength = _ranges.Length == 0 ? 16 : checked(_ranges.Length * 2);
-        var grown = ArrayPool<Utf8ReplacementRange>.Shared.Rent(newLength);
-        try
-        {
-            _ranges.AsSpan(0, Count).CopyTo(grown);
-        }
-        catch
-        {
-            ArrayPool<Utf8ReplacementRange>.Shared.Return(grown);
-            throw;
-        }
-
-        var previous = _ranges;
-        _ranges = grown;
-        if (previous.Length != 0)
-        {
-            ArrayPool<Utf8ReplacementRange>.Shared.Return(previous);
-        }
-    }
+    internal void Dispose<TControl>(scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
+        => _ranges.Release(control);
 }
 
 internal struct Utf8ReplacementOutputLength

@@ -32,7 +32,7 @@ internal static class Utf8CursorReplaceEngine
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
 
@@ -65,7 +65,7 @@ internal static class Utf8CursorReplaceEngine
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
 
@@ -84,7 +84,7 @@ internal static class Utf8CursorReplaceEngine
                 throw new InvalidOperationException("A replacement match is not aligned to UTF-8 scalar boundaries.");
             }
 
-            ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes));
+            ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes), cursor.WorkingBufferControl);
             outputLength.ReplaceRange(match.LengthInBytes, replacementLength);
         }
 

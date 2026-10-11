@@ -1471,7 +1471,7 @@ public sealed partial class Utf8Pcre2Regex
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
 
@@ -1546,7 +1546,7 @@ public sealed partial class Utf8Pcre2Regex
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
 
@@ -1620,7 +1620,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             var match = cursor.Current;
             var matchLength = match.EndOffsetInBytes - match.StartOffsetInBytes;
-            ledger.Add(new Utf8ReplacementRange(match.StartOffsetInBytes, matchLength));
+            ledger.Add(new Utf8ReplacementRange(match.StartOffsetInBytes, matchLength), cursor.WorkingBufferControl);
             var emittedLength = GetLiteralDriverReplacementLength(plan, matchLength);
             outputLength.ReplaceRange(replacementOnly ? 0 : matchLength, emittedLength);
         }

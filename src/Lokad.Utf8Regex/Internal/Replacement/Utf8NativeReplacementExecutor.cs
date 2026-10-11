@@ -30,7 +30,7 @@ internal static class Utf8NativeReplacementExecutor
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
 
@@ -49,7 +49,7 @@ internal static class Utf8NativeReplacementExecutor
         }
         finally
         {
-            ledger.Dispose();
+            ledger.Dispose(cursor.WorkingBufferControl);
         }
     }
 
@@ -77,7 +77,7 @@ internal static class Utf8NativeReplacementExecutor
         while (cursor.MoveNext())
         {
             var current = cursor.Current;
-            AddSnapshot(plan, current, ref ledger);
+            AddSnapshot(plan, current, ref ledger, cursor.WorkingBufferControl);
             outputLength.ReplaceRange(
                 current.LengthInBytes,
                 GetReplacementLength(input, plan, current));
@@ -89,12 +89,12 @@ internal static class Utf8NativeReplacementExecutor
     private static void AddSnapshot(
         Utf8ReplacementPlan plan,
         Utf8OperationMatch match,
-        ref Utf8ReplacementRangeLedger ledger)
+        ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
     {
-        ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes, match.BranchId));
+        ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes, match.BranchId), control);
         foreach (var groupNumber in plan.ReferencedCaptureGroups)
         {
-            ledger.Add(new Utf8ReplacementRange(-1, 0, groupNumber));
+            ledger.Add(new Utf8ReplacementRange(-1, 0, groupNumber), control);
         }
     }
 

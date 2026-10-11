@@ -276,6 +276,15 @@ public sealed class Utf8SharedStatePoolTests
                     for (var index = 0; index < 256; index++)
                         Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out _));
                     Assert.True(GC.GetAllocatedBytesForCurrentThread() - before > 0);
+                    var replacementRegex = new Utf8Regex("foo");
+                    var replacementInput = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo-", 128)));
+                    var replacementDestination = new byte[replacementInput.Length];
+                    _ = replacementRegex.TryReplace(replacementInput, "bar", replacementDestination, out _);
+                    var replacementBefore = GC.GetAllocatedBytesForCurrentThread();
+                    for (var index = 0; index < 100; index++)
+                        Assert.Equal(System.Buffers.OperationStatus.Done,
+                            replacementRegex.TryReplace(replacementInput, "bar", replacementDestination, out _));
+                    Assert.True(GC.GetAllocatedBytesForCurrentThread() - replacementBefore > 128 * 100);
                 }
                 catch (Exception error) { failure = error; }
             });
@@ -288,6 +297,7 @@ public sealed class Utf8SharedStatePoolTests
             // Exact original fixture input, warmup, interval and zero-byte guard
             // still pass once the optional pool is available without contention.
             new Utf8ReversibleMatchStateTests().WarmByteBacktrackingHasNoTemporaryAllocation();
+            new ReplacementInfrastructureTests().DestinationReplacementHasBoundedWarmedAllocationIndependentOfMatchCount();
         }
         finally
         {

@@ -10,6 +10,7 @@ namespace Lokad.Utf8Regex;
 public ref struct Utf8ValueMatchEnumerator
 {
     private Utf8OperationMatchCursor _cursor;
+    internal Utf8SliceInvocation ExportWorkingInvocation() => _cursor.ExportWorkingInvocation();
     internal bool DebugIsOwnedSlice => _cursor.DebugIsOwnedSlice;
     internal ulong DebugInvocationSteps => _cursor.DebugInvocationSteps;
     private ReadOnlySpan<byte> _timeoutInput;

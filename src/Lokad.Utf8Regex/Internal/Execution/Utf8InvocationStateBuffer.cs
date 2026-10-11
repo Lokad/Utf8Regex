@@ -13,6 +13,8 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
 
     internal readonly int Count => _count;
 
+    internal readonly ReadOnlySpan<T> WrittenItems => _items is null ? [] : _items.AsSpan(0, _count);
+
     internal readonly T this[int index]
     {
         get
@@ -23,6 +25,10 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
     }
 
     internal Utf8ExecutionLimitKind TryPush(T value, ref Utf8SliceInvocation invocation)
+        => TryPush(value, new Utf8InvocationBufferControl(ref invocation));
+
+    internal Utf8ExecutionLimitKind TryPush<TControl>(T value, scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
         if (_items is null || _count == _items.Length)
         {
@@ -30,36 +36,35 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
             var capacity = old is null ? 16 : old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength;
             if (capacity <= _count) return Utf8ExecutionLimitKind.WorkingBytes;
             var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
-            if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+            var reservationBreach = control.TryReserveWorking(bytes);
+            if (reservationBreach != Utf8ExecutionLimitKind.None) return reservationBreach;
             var adopted = false;
             try
             {
-                var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                var breach = control.TryChargeWorkspaceStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                var grown = Utf8ExactStatePool<T>.Rent(capacity, invocation.Ledger.IsUnlimited);
+                var grown = Utf8ExactStatePool<T>.Rent(capacity, control.CanRetainWorkspace);
                 try
                 {
                     for (var offset = 0; offset < _count;)
                     {
-                        breach = invocation.TryChargeInputStep();
+                        breach = control.TryChargeWorkspaceStep();
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
                         var count = Math.Min(2048, _count - offset);
                         if (old is not null) old.AsSpan(offset, count).CopyTo(grown.AsSpan(offset, count));
                         offset += count;
                     }
                     _items = grown;
-                    invocation.Ledger.Release(_reservedBytes);
+                    control.ReleaseWorking(_reservedBytes);
                     _reservedBytes = bytes;
                     adopted = true;
-                    if (old is not null) Utf8ExactStatePool<T>.Return(old, invocation.Ledger.IsUnlimited);
+                    if (old is not null) Utf8ExactStatePool<T>.Return(old, control.CanRetainWorkspace);
                 }
-                finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, invocation.Ledger.IsUnlimited); }
+                finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, control.CanRetainWorkspace); }
             }
             finally
             {
-                if (!adopted) invocation.Ledger.Release(bytes);
+                if (!adopted) control.ReleaseWorking(bytes);
             }
         }
         GetItems()[_count++] = value;
@@ -74,10 +79,14 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
     }
 
     internal void Release(ref Utf8SliceInvocation invocation)
+        => Release(new Utf8InvocationBufferControl(ref invocation));
+
+    internal void Release<TControl>(scoped TControl control)
+        where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
-        invocation.Ledger.Release(_reservedBytes);
+        control.ReleaseWorking(_reservedBytes);
         _reservedBytes = 0;
-        if (_items is { } items) Utf8ExactStatePool<T>.Return(items, invocation.Ledger.IsUnlimited);
+        if (_items is { } items) Utf8ExactStatePool<T>.Return(items, control.CanRetainWorkspace);
         _items = null;
         _count = 0;
     }
