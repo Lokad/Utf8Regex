@@ -117,7 +117,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
         if (IsPayloadBounded && (!storage.IsCertified || storage.Scope != _storageScope))
-            throw new InvalidOperationException("Retention requires a certified collector for the owner's declared scope.");
+            throw new InvalidOperationException("Retention requires a certified charge for the owner's declared scope.");
         Utf8ConstructionScope? cleanup = null;
         try
         {
@@ -247,12 +247,11 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     {
         if (!IsPayloadBounded) { fits = true; return 0; }
         if (keyCharge > _maximumPayloadBytes) { fits = false; return 0; }
-        using var builder = Utf8RetainedPayloadBuilder<TControl>.Create(_maximumPayloadBytes - keyCharge, control);
-        storage.CollectValue(value, builder);
-        var valueCharge = builder.FinishCharge(); fits = !builder.Exceeded;
-        // The builder admits value capacity against the remainder, so this sum
+        var remaining = _maximumPayloadBytes - keyCharge;
+        fits = storage.TryGetValueCharge(value, remaining, control, out var valueCharge) && valueCharge <= remaining;
+        // The provider admits value capacity against the remainder, so this sum
         // cannot overflow. Key/value sharing intentionally earns no discount.
-        return keyCharge + valueCharge;
+        return fits ? keyCharge + valueCharge : 0;
     }
 
     private bool Contains(CacheEntry target)

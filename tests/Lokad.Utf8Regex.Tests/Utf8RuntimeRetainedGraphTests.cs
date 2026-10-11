@@ -274,8 +274,14 @@ public sealed class Utf8RuntimeRetainedGraphTests
         // Borrowed test root vector and opaque CLR descendants are outside scope.
         public Utf8RetainedStorageScope Scope=>Utf8RetainedStorageScope.RootsAndBoundedDescendants;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
-        public void CollectValue<TControl>(object[] value,Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl:struct,IUtf8ConstructionTextControl=>CollectRoots(value,storage);
+        public bool TryGetValueCharge<TControl>(object[] value, ulong maximum, TControl control, out ulong charge)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            CollectRoots(value,storage);
+            charge = storage.FinishCharge();
+            return !storage.Exceeded;
+        }
     }
 
     internal static Dictionary<object,ulong> InspectRuntimeGraph(Utf8Regex regex)

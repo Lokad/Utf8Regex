@@ -13,6 +13,12 @@ internal readonly struct Utf8RegexRootAndLazyStorage : IUtf8RetainedStorage<Utf8
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
     public ulong GetKeyCharge(Utf8RegexCacheKey key)
         => checked(Utf8ConstructionBudget.StringBytes(key.Pattern.Length) + Utf8ConstructionBudget.StringBytes(key.Culture.Length));
-    public void CollectValue<TControl>(Utf8Regex value, Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => value.CollectCacheRoots(storage);
+    public bool TryGetValueCharge<TControl>(Utf8Regex value, ulong maximum, TControl control, out ulong charge)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+        value.CollectCacheRoots(storage);
+        charge = storage.FinishCharge();
+        return !storage.Exceeded;
+    }
 }

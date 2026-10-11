@@ -161,9 +161,12 @@ public sealed class Utf8GlobalCacheDescendantTests
         using var storage = Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(ulong.MaxValue, default);
         var collector = default(Utf8RegexRootAndLazyStorage);
         var key = Assert.IsType<Utf8RegexCacheKey>(Field(entry, "Key"));
-        collector.CollectValue(Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1, storage);
+        var value = Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1;
+        Assert.True(collector.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out var charge));
+        value.CollectCacheRoots(storage);
         Assert.False(storage.Exceeded);
-        Assert.Equal(checked(collector.GetKeyCharge(key) + storage.FinishCharge()), Assert.IsType<ulong>(Field(entry, "PayloadCharge")));
+        Assert.Equal(charge, storage.FinishCharge());
+        Assert.Equal(checked(collector.GetKeyCharge(key) + charge), Assert.IsType<ulong>(Field(entry, "PayloadCharge")));
         // The physical field witness includes key text, even when its identity
         // also occurs in the value. Numeric admission may count it twice.
         storage.Text(key.Pattern); storage.Text(key.Culture);

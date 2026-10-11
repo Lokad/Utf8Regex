@@ -1963,18 +1963,34 @@ public sealed partial class Utf8Pcre2Regex
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(Pcre2ReplacementCacheKey key) => Utf8ConstructionBudget.StringBytes(key.Replacement.Length);
-        public void CollectValue<TControl>(Pcre2ReplacementPreparation value, Utf8RetainedPayloadBuilder<TControl> storage)
+        public bool TryGetValueCharge<TControl>(Pcre2ReplacementPreparation value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            ulong total = 0;
+            charge = 0;
+            control.Check(); budget.ChargeWork(1);
             if (value.Simple is { } simple)
             {
-                storage.Array(simple.Segments);
-                foreach (var segment in simple.Segments) storage.Array(segment.LiteralUtf8);
+                if (!Add(Utf8ConstructionBudget.ArrayBytes<Pcre2SimpleReplacementSegment>(simple.Segments.Length))) return false;
+                foreach (var segment in simple.Segments)
+                    if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(segment.LiteralUtf8?.Length ?? 0))) return false;
             }
             if (value.Prepared is { } prepared)
             {
-                storage.Array(prepared.Instructions); storage.Array(prepared.Fragments);
-                foreach (var instruction in prepared.Instructions) storage.Array(instruction.Payload);
+                if (!Add(Utf8ConstructionBudget.ArrayBytes<Pcre2ReplacementInstruction>(prepared.Instructions.Length)
+                    + Utf8ConstructionBudget.ArrayBytes<Pcre2ReplacementFragment>(prepared.Fragments.Length))) return false;
+                foreach (var instruction in prepared.Instructions)
+                    if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(instruction.Payload?.Length ?? 0))) return false;
+            }
+            charge = total;
+            return true;
+
+            bool Add(ulong bytes)
+            {
+                control.Check(); budget.ChargeWork(1);
+                if (bytes > maximum - total) return false;
+                total += bytes; return true;
             }
         }
     }

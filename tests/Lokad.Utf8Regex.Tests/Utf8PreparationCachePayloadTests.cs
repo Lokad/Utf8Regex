@@ -260,8 +260,14 @@ public sealed class Utf8PreparationCachePayloadTests
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(int key) => 0;
-        public void CollectValue<TControl>(object value, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => storage.Add(value, charge);
+        public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong computedCharge)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            storage.Add(value, charge);
+            computedCharge = storage.FinishCharge();
+            return !storage.Exceeded;
+        }
     }
 
     private readonly struct ByteStorage : IUtf8RetainedStorage<string, byte[]>
@@ -269,8 +275,14 @@ public sealed class Utf8PreparationCachePayloadTests
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
-        public void CollectValue<TControl>(byte[] value, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl { storage.Array(value); storage.Array(value); }
+        public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            storage.Array(value); storage.Array(value);
+            charge = storage.FinishCharge();
+            return !storage.Exceeded;
+        }
     }
 
     [Theory]
@@ -297,8 +309,14 @@ public sealed class Utf8PreparationCachePayloadTests
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
-        public void CollectValue<TControl>(byte[] value, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => storage.Array(value);
+        public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            storage.Array(value);
+            charge = storage.FinishCharge();
+            return !storage.Exceeded;
+        }
     }
     private readonly struct TokenControl(CancellationToken token) : IUtf8ConstructionTextControl
     { public void Check() => token.ThrowIfCancellationRequested(); }

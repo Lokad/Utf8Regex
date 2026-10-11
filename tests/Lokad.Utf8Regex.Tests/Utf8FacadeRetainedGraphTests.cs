@@ -245,11 +245,14 @@ public sealed class Utf8FacadeRetainedGraphTests
         // Only the declared helper roots are closed; this is not a whole-regex certificate.
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
-        public void CollectValue<TControl>(Utf8Regex value, Utf8RetainedPayloadBuilder<TControl> storage)
+        public bool TryGetValueCharge<TControl>(Utf8Regex value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
+            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
             var program = Assert.IsType<Utf8RegexProgram>(Field(value, "_program"));
             storage.Add(program, Utf8RegexProgram.ObjectBytes); value.CollectFacadeHelpers(storage);
+            charge = storage.FinishCharge();
+            return !storage.Exceeded;
         }
     }
 

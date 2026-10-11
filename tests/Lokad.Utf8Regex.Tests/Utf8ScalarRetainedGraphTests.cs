@@ -249,8 +249,14 @@ public sealed class Utf8ScalarRetainedGraphTests
         public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
-        public void CollectValue<TControl>(Utf8SliceProgram value, Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl => Utf8ScalarProgramRetainedStorage.Collect(value, storage);
+        public bool TryGetValueCharge<TControl>(Utf8SliceProgram value, ulong maximum, TControl control, out ulong charge)
+            where TControl : struct, IUtf8ConstructionTextControl
+        {
+            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            Utf8ScalarProgramRetainedStorage.Collect(value, storage);
+            charge = storage.FinishCharge();
+            return !storage.Exceeded;
+        }
     }
 
     private static Utf8SliceProgram Copy(Utf8SliceProgram body, Utf8SliceAssertion[] assertions, string[] names, Func<int, int>[] lowerings)

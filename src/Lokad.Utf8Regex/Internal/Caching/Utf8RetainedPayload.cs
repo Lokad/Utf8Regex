@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Caching;
 
 // PCRE2-INTEGRATION-POINT: common ownership of immutable prepared payloads.
-// Collectors declare their scope explicitly. Complete-payload collectors cover
+// Storage providers declare their scope explicitly. Complete-payload charges cover
 // immutable values. Root/descendant collectors reserve each bounded child's
 // enforced maximum before publication, including future lazy growth. Neither
 // scope may substitute transient construction reservations or reflection
@@ -31,7 +31,7 @@ internal interface IUtf8RetainedStorage<TKey, TValue>
     // Keys have closed, length-based storage. Charge them independently of the
     // value graph; shared text may be counted again without an identity map.
     ulong GetKeyCharge(TKey key);
-    void CollectValue<TControl>(TValue value, Utf8RetainedPayloadBuilder<TControl> storage)
+    bool TryGetValueCharge<TControl>(TValue value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl;
 }
 
@@ -40,8 +40,8 @@ internal readonly struct Utf8UncertifiedStorage<TKey, TValue> : IUtf8RetainedSto
     public bool IsCertified => false;
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.Uncertified;
     public ulong GetKeyCharge(TKey key) => 0;
-    public void CollectValue<TControl>(TValue value, Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl { }
+    public bool TryGetValueCharge<TControl>(TValue value, ulong maximum, TControl control, out ulong charge)
+        where TControl : struct, IUtf8ConstructionTextControl { charge = 0; return true; }
 }
 
 internal sealed class Utf8RetainedPayloadBuilder<TControl> : IDisposable

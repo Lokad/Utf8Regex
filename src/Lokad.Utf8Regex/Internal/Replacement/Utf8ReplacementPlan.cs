@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
@@ -37,14 +36,4 @@ internal sealed class Utf8ReplacementPlan
     public IReadOnlyList<Utf8ReplacementInstruction> Instructions { get; }
     internal ReadOnlySpan<int> ReferencedCaptureGroups => _referencedCaptureGroups;
 
-    internal void CollectStorage<TControl>(Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl
-    {
-        storage.Object<(IReadOnlyList<Utf8ReplacementInstruction>, int[])>(this);
-        var instructions = (Utf8ReplacementInstruction[])Instructions;
-        storage.Array(instructions);
-        storage.Array(_referencedCaptureGroups);
-        foreach (var instruction in instructions)
-        { storage.Array(instruction.LiteralUtf8); storage.Text(instruction.LiteralText); }
-    }
 }
