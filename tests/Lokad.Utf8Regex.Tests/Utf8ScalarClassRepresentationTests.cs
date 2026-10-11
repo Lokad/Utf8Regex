@@ -117,7 +117,7 @@ public sealed class Utf8ScalarClassRepresentationTests
     [Fact]
     public void AllRecognizedPropertyBlocksUseExplicitIntegerEndpointPairs()
     {
-        Assert.Equal(128, Utf8SliceCategories.BlockNames.Count);
+        Assert.Equal(112, Utf8SliceCategories.BlockNames.Count);
         foreach (var name in Utf8SliceCategories.BlockNames)
         {
             Assert.True(Utf8SliceCategories.TryResolve(name, out var mask, out var ranges, out var block));

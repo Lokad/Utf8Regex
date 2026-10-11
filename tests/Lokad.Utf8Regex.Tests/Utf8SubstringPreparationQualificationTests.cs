@@ -105,8 +105,8 @@ public sealed class Utf8SubstringPreparationQualificationTests
                     Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                         Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                     Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 }
-                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
                 Assert.Equal(0ul, owner.Budget.Reserved);
                 Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);

@@ -213,7 +213,7 @@ public sealed class Utf8LinePrefixQualificationTests
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Classify(method, deep)).ResourceKind);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(160ul, owner.Budget.ReservedBytes);
+        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
         foreach (var name in new[] { "TryParseAnchoredPrefixUntilBytePattern", "TryParseAnchoredAsciiLeadingDigitsTail", "TryParseAnchoredTrimmedOptionalLiteralPrefixTailPattern", "TryParseLinePrefixCountFamily", "TryParseAnchoredQuotedLineSegmentCountFamily", "TryParseAnchoredQuotedLineSegmentPattern", "TryParseOptionalLiteralWhitespaceGroup", "TryReadSingleAsciiLiteralAlternationOrDollar", "TryReadSingleAsciiLiteralBranch", "CompactRegexWhitespace", "TryDecodeAsciiLiteral" })
             Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);

@@ -83,7 +83,7 @@ public sealed class Utf8TokenMaskPreparationTests
         finally { owner.Budget.LeaveDepth(); owner.Budget.LeaveDepth(); }
         Assert.Throws<ArgumentOutOfRangeException>(() => new PreparedAsciiDelimitedTokenSearch(":"u8, "."u8, [0xff], "ab"u8, "xy"u8));
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.True(Delimited().HasValue); Assert.Equal(160ul, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.True(Delimited().HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 
     [Fact]

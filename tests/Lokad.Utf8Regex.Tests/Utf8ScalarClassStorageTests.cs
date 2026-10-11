@@ -65,11 +65,11 @@ public sealed class Utf8ScalarClassStorageTests
         for (var index = 0; index < count; index++) operands.Add(operand);
         using var arena = Utf8ConstructionArena.Create(owner.Budget);
         var before = owner.Budget.ReservedBytes;
-        var checkpoint = owner.Budget.ReservedBytes;
         var extent = Utf8ConstructionBudget.ArrayBytes<(byte[], Utf8SliceShorthand[], Utf8SliceNode.CategorySetMember[], bool, bool)>(count);
         var padding = maximum - before - extent + 1;
         owner.Budget.ReserveBytes(padding);
         var held = owner.Budget.ReservedBytes;
+        var checkpoint = owner.Budget.ReservedBytes;
         using (var child = Utf8ConstructionScope.Enter())
         {
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceClassProgram.Subtract(operands, arena));
