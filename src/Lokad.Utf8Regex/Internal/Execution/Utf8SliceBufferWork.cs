@@ -3,6 +3,13 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Shared bounded-buffer checkpoint and copy mechanics for owned shaping.</summary>
 internal static class Utf8SliceBufferWork
 {
+    internal static void ChargeResultBytes(ulong bytes, ref Utf8SliceInvocation invocation)
+    {
+        var breach = invocation.Budget.TryChargeResultBytes(bytes);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Owned result materialization exceeded {breach}.");
+    }
+
     internal static void Checkpoint(ref Utf8SliceInvocation invocation)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null) return;

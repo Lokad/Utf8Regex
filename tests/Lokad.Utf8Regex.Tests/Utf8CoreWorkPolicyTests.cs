@@ -323,7 +323,7 @@ public sealed class Utf8CoreWorkPolicyTests
         return result.ToString();
     }
 
-    private static string Run(Utf8Regex regex, string operation, byte[] input, CancellationToken token, int offset = 1)
+    internal static string Run(Utf8Regex regex, string operation, byte[] input, CancellationToken token, int offset = 1)
     {
         var live = token.CanBeCanceled;
         switch (operation)

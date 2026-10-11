@@ -23,10 +23,12 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;
 
-    internal bool WorkLimitExceeded => _sliceInvocation.Budget.WorkLimitExceeded;
+    internal bool HasResourceLimitBreach => _sliceInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None;
 
-    internal Utf8ResourceLimitExceededException CreateExecutionWorkFailure()
-        => new(Utf8ResourceLimitKind.ExecutionWorkSteps, _sliceInvocation.Budget.Limits.MaxWorkSteps, _sliceInvocation.Budget.Steps);
+    internal Utf8ResourceLimitExceededException CreateExecutionResourceFailure()
+        => _sliceInvocation.Budget.LimitBreach == Utf8ExecutionLimitKind.ResultBytes
+            ? new(Utf8ResourceLimitKind.ExecutionResultBytes, _sliceInvocation.Budget.Limits.MaxResultBytes, _sliceInvocation.Budget.ResultBytes)
+            : new(Utf8ResourceLimitKind.ExecutionWorkSteps, _sliceInvocation.Budget.Limits.MaxWorkSteps, _sliceInvocation.Budget.Steps);
 
 
     internal ulong DebugInvocationReservedBytes => _sliceInvocation.Ledger.ReservedBytes;

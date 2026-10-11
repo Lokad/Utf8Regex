@@ -302,6 +302,8 @@ internal static partial class Utf8SliceRunner
         if (!collectHistory) return Utf8ExecutionLimitKind.None;
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int[]>(captureStarts.Length) * 2
             + (ulong)participants * Utf8ConstructionBudget.ArrayBytes<int>(1) * 2);
+        var resultAdmission = invocation.Budget.TryChargeResultBytes(bytes);
+        if (resultAdmission != Utf8ExecutionLimitKind.None) return resultAdmission;
         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
         var published = false;
         try

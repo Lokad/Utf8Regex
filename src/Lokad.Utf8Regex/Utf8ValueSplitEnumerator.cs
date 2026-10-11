@@ -98,7 +98,7 @@ public ref struct Utf8ValueSplitEnumerator
     /// <summary>Advances to the next split segment.</summary>
     /// <returns><see langword="true"/> when another segment is available.</returns>
     /// <exception cref="RegexMatchTimeoutException">The configured matching timeout elapsed.</exception>
-    /// <exception cref="Utf8ResourceLimitExceededException">The cumulative execution work allowance was exhausted.</exception>
+    /// <exception cref="Utf8ResourceLimitExceededException">The cumulative execution work or result-capacity allowance was exhausted.</exception>
     public bool MoveNext()
     {
         try
@@ -122,10 +122,10 @@ public ref struct Utf8ValueSplitEnumerator
                 _timeoutPattern,
                 _timeout);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _matchCursor.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _matchCursor.HasResourceLimitBreach)
         {
             if (_sourceKind is SplitSourceKind.OwnedSlice or SplitSourceKind.OwnedSliceRtl) _matchCursor.AbortOwnedSplitMatches();
-            throw _matchCursor.CreateExecutionWorkFailure();
+            throw _matchCursor.CreateExecutionResourceFailure();
         }
         catch
         {

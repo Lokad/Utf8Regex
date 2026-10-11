@@ -159,7 +159,7 @@ safe defaults through the R01/R06 gates in PLAN.md; partial internal admission
 must not be advertised as complete public bounds or a process-RSS guarantee.
 
 Current public support is narrower: core and PythonRe accept finite
-`Utf8ResourcePolicy.MaxWorkSteps` alone. A finite policy selects owned scalar
+`Utf8ResourcePolicy.MaxWorkSteps`. A finite policy selects owned scalar
 execution with one cumulative invocation through full strict UTF-8 validation,
 discovery, required coordinate/capture projection, output and publication. Lazy
 advances share that allowance, including copies of core value cursors; copies keep
@@ -177,11 +177,31 @@ application-wide meter. Core static cached operations have no policy parameter a
 retain unlimited defaults. Finite policy routes can have different performance
 from qualified unlimited native shortcuts.
 
-Core and PythonRe depth/working/result fields still throw `NotSupportedException`
-before compilation. `MatchTimeout` defaults to `Regex.InfiniteMatchTimeout`. PCRE2
-supports finite work/depth/working budgets under its existing profile contract.
-Result-byte caps remain unsupported in every profile. These are qualified slices,
-not completion of common policies, legacy ownership cleanup or safe-default gates.
+Core also accepts `MaxResultBytes`, alone or with work. It caps cumulative modeled
+major result/staging capacity requested during the operation: rounded array/string
+extents, output controls, output growth/RTL piece tables, capture history/projection
+arrays and coordinate maps. Charges precede covered acquisition, include temporary/
+final capacity and growth, and remain spent after release or later failure. Shared,
+reused or empty storage can be charged conservatively again. This intentionally
+denies some operations earlier than a final payload-size check. No result identities,
+reference counts or GC refunds are required. Coordinate conversion can need a map
+even for a fixed result, so derived-offset operations can consume result capacity.
+Fixed range/boolean/count values, borrowed subjects/program metadata, arbitrary
+caller callback allocations and later standalone getters are excluded. Required
+callback context/output shaping is included. Incidental object overhead is outside
+this model except the existing fixed output-control charges. It is neither exact GC
+allocation traffic nor a bound on matched text length, live caller retention or RSS.
+Denial reports `ExecutionResultBytes`; requested totals saturate and the first
+work/result denial remains sticky across invocation/cursor copies. Previously
+returned results and permitted aliases stay valid. Cancellation/deadline checks
+precede covered result admission. Destination shortage remains its documented
+status; a later interruption during copying can leave a partial destination.
+
+Core and PythonRe depth/working fields, plus PythonRe result bytes, still throw
+`NotSupportedException` before compilation. `MatchTimeout` defaults to
+`Regex.InfiniteMatchTimeout`. PCRE2 supports finite work/depth/working budgets under
+its existing profile contract and still rejects result-byte caps. These are staged
+controls, not completion of common policies, legacy ownership or safe-default gates.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

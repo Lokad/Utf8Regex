@@ -59,16 +59,16 @@ public ref struct Utf8ValueMatchEnumerator
     /// <summary>Advances to the next non-overlapping match.</summary>
     /// <returns><see langword="true"/> when another match is available.</returns>
     /// <exception cref="RegexMatchTimeoutException">The configured matching timeout elapsed.</exception>
-    /// <exception cref="Utf8ResourceLimitExceededException">The cumulative execution work allowance was exhausted.</exception>
+    /// <exception cref="Utf8ResourceLimitExceededException">The cumulative execution work or result-capacity allowance was exhausted.</exception>
     public bool MoveNext()
     {
         try
         {
             return _cursor.MoveNext();
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _cursor.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _cursor.HasResourceLimitBreach)
         {
-            throw _cursor.CreateExecutionWorkFailure();
+            throw _cursor.CreateExecutionResourceFailure();
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
         {

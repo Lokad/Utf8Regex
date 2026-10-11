@@ -47,6 +47,8 @@ internal readonly partial struct Utf8BoundaryMap
             return Utf8ExecutionLimitKind.WorkingBytes;
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>((int)offsetCount)
             + Utf8ConstructionBudget.ArrayBytes<uint>((int)bitCount));
+        breach = invocation.Budget.TryChargeResultBytes(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
         var transferred = false;
         try

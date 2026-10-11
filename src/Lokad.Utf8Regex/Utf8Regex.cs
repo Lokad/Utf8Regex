@@ -65,10 +65,12 @@ public sealed partial class Utf8Regex
 
     /// <summary>Compiles an expression with the specified options, match timeout, and invocation resource policy.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    /// <remarks>A finite work limit selects owned scalar execution and covers validation, matching and required result shaping cumulatively.
+    /// <remarks>A finite work or result limit selects owned scalar execution. Work covers validation, matching and required result shaping cumulatively.
+    /// Result bytes cover cumulative modeled major result/staging capacity, including arrays, text, coordinate maps, growth and output controls.
+    /// Capacity charges precede acquisition, may conservatively count shared storage and are never refunded; fixed values and borrowed input are excluded.
     /// Construction and replacement preparation have separate admission bounds. Caller callback execution and later standalone result getters are outside this work cap.
     /// Copied value enumerators share their work allowance while keeping independent positions; concurrent advancement is unsupported.</remarks>
-    /// <exception cref="NotSupportedException">A depth, working-byte or result-byte budget is set.</exception>
+    /// <exception cref="NotSupportedException">A depth or working-byte budget is set.</exception>
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
@@ -229,17 +231,21 @@ public sealed partial class Utf8Regex
         construction.Complete();
     }
 
-    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, 0, 0);
+    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
 
-    private static Utf8ResourceLimitExceededException CreateExecutionWorkFailure(ref Utf8SliceInvocation invocation)
-        => new(Utf8ResourceLimitKind.ExecutionWorkSteps, invocation.Budget.Limits.MaxWorkSteps, invocation.Budget.Steps);
+    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, 0, 0, ResourcePolicy.MaxResultBytes ?? 0);
+
+    private static Utf8ResourceLimitExceededException CreateExecutionResourceFailure(ref Utf8SliceInvocation invocation)
+        => invocation.Budget.LimitBreach == Utf8ExecutionLimitKind.ResultBytes
+            ? new(Utf8ResourceLimitKind.ExecutionResultBytes, invocation.Budget.Limits.MaxResultBytes, invocation.Budget.ResultBytes)
+            : new(Utf8ResourceLimitKind.ExecutionWorkSteps, invocation.Budget.Limits.MaxWorkSteps, invocation.Budget.Steps);
 
     private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
     {
         resourcePolicy.Validate(paramName);
-        if (resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
+        if (resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue)
         {
-            throw new NotSupportedException("This profile supports execution work limits and match timeouts; depth, working-byte and result-byte limits are not supported.");
+            throw new NotSupportedException("This profile supports execution work, result capacity and match timeout limits; depth and working-byte limits are not supported.");
         }
     }
 
@@ -387,7 +393,7 @@ public sealed partial class Utf8Regex
     /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
-        if (!ResourcePolicy.MaxWorkSteps.HasValue && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole)
+        if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole)
         {
             if (Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input, out _))
             {
@@ -400,7 +406,7 @@ public sealed partial class Utf8Regex
             }
         }
 
-        if (!ResourcePolicy.MaxWorkSteps.HasValue && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken &&
+        if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken &&
             input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0)
         {
             return Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
@@ -411,7 +417,7 @@ public sealed partial class Utf8Regex
                 out _);
         }
 
-        if (!ResourcePolicy.MaxWorkSteps.HasValue && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole)
+        if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole)
         {
             var optionalFieldMatched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
                 input,
@@ -441,13 +447,13 @@ public sealed partial class Utf8Regex
     {
         // Native loops do not yet carry this token through every checkpoint.
         // Keep their no-token selection; live tokens use the owned scalar VM.
-        if (token.CanBeCanceled || ResourcePolicy.MaxWorkSteps.HasValue) return _ownedSliceProgram;
+        if (token.CanBeCanceled || HasFiniteExecutionLimits) return _ownedSliceProgram;
         return GetOwnedSliceProgram(input);
     }
 
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input)
     {
-        if (ResourcePolicy.MaxWorkSteps.HasValue) return _ownedSliceProgram;
+        if (HasFiniteExecutionLimits) return _ownedSliceProgram;
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex) return _ownedSliceProgram;
         if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
@@ -500,9 +506,9 @@ public sealed partial class Utf8Regex
             var validation = Utf8Validation.Validate(input, ref invocation);
             return OwnedSliceMatchDetailedFromByte(input, program, fromByte, validation, null, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
     }
 
@@ -548,7 +554,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (ResourcePolicy.MaxWorkSteps.HasValue) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
+        if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             // Mixed subjects and overlapping prefixes use shared scalar
@@ -711,7 +717,7 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 return utf16Offset == 0 &&
@@ -720,7 +726,7 @@ public sealed partial class Utf8Regex
 
             // Anchored suffixes match at most once at a fixed end position: a start past
             // it misses definitively, otherwise the direct hit itself decides.
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
@@ -735,9 +741,9 @@ public sealed partial class Utf8Regex
             return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                 startByte, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         finally { invocation.Ledger.Release(mapReservation); }
     }
@@ -751,9 +757,9 @@ public sealed partial class Utf8Regex
             _ = Utf8Validation.Validate(input, ref invocation);
             return OwnedSliceIsMatchFromByte(input, program, startByte, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
     }
 
@@ -806,7 +812,7 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (ResourcePolicy.MaxWorkSteps.HasValue) return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
+        if (HasFiniteExecutionLimits) return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
@@ -1114,7 +1120,7 @@ public sealed partial class Utf8Regex
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
             // At most one anchored suffix match exists past the start: count it directly.
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
@@ -1128,9 +1134,9 @@ public sealed partial class Utf8Regex
             return OwnedSliceCountFromByte(input, _ownedSliceProgram,
                 startByte, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         finally { invocation.Ledger.Release(mapReservation); }
     }
@@ -1148,9 +1154,9 @@ public sealed partial class Utf8Regex
             _ = Utf8Validation.Validate(input, ref invocation);
             return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
     }
 
@@ -1207,7 +1213,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (ResourcePolicy.MaxWorkSteps.HasValue) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
+        if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
@@ -1376,7 +1382,7 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
@@ -1391,7 +1397,7 @@ public sealed partial class Utf8Regex
 
             // Folded anchored prefixes serve the same single anchored hit with per-byte
             // invariant folding; nonzero starts and Kelvin/Turkic divergence fall through.
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 if (!ShouldUseKelvinSignFallback(input))
@@ -1407,7 +1413,7 @@ public sealed partial class Utf8Regex
                 }
             }
 
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
@@ -1423,7 +1429,7 @@ public sealed partial class Utf8Regex
 
             // Folded anchored suffixes serve the same single tail hit with per-byte invariant
             // folding through the suffix kernel; non-native folds use scalar execution.
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 if (!ShouldUseKelvinSignFallback(input))
@@ -1443,9 +1449,9 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
                 startByte, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         finally { invocation.Ledger.Release(mapReservation); }
     }
@@ -1459,9 +1465,9 @@ public sealed partial class Utf8Regex
             _ = Utf8Validation.Validate(input, ref invocation);
             return OwnedSliceMatchFromByte(input, program, startByte, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
     }
 
@@ -1716,7 +1722,7 @@ public sealed partial class Utf8Regex
                 out var validation, out var startByte, out mapReservation);
             // Anchored prefixes anchor to offset 0: a nonzero start is a definitive miss,
             // while offset 0 reuses the byte-exact prefix compare without BCL construction.
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
                 _groupNumbers.Length <= 1)
             {
@@ -1730,7 +1736,7 @@ public sealed partial class Utf8Regex
                 return Utf8MatchContext.Unsuccessful(input, map, _program.CaptureCatalog);
             }
 
-            if (!ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
                 _groupNumbers.Length <= 1)
             {
@@ -1748,9 +1754,9 @@ public sealed partial class Utf8Regex
             return OwnedSliceMatchDetailedFromByte(input, _ownedSliceProgram,
                 startByte, validation, map, ref invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         finally { invocation.Ledger.Release(mapReservation); }
     }
@@ -2265,7 +2271,7 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
-        if (ResourcePolicy.MaxWorkSteps.HasValue)
+        if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, Pattern, MatchTimeout);
         if (TryCreateNativeSimpleEnumerator(input, CancellationToken.None, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, CancellationToken.None, out var structuralEnumerator)) return structuralEnumerator;
@@ -2353,9 +2359,9 @@ public sealed partial class Utf8Regex
             var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
             return new Utf8ValueMatchEnumerator(cursor);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -2382,7 +2388,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (ResourcePolicy.MaxWorkSteps.HasValue)
+        if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, cancellationToken).WithTimeoutMapping(input, Pattern, MatchTimeout);
         if (TryCreateNativeSimpleEnumerator(input, cancellationToken, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, cancellationToken, out var structuralEnumerator)) return structuralEnumerator;
@@ -2608,9 +2614,9 @@ public sealed partial class Utf8Regex
             return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {

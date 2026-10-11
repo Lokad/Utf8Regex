@@ -13,6 +13,8 @@ public enum Utf8ResourceLimitKind
     ConstructionDepth,
     /// <summary>Cumulative bounded execution/checkpoint steps in one invocation.</summary>
     ExecutionWorkSteps,
+    /// <summary>Cumulative modeled major result and staging capacity in one invocation.</summary>
+    ExecutionResultBytes,
 }
 
 /// <summary>Reports an owned resource-admission failure, distinct from invalid syntax, no match and timeout.</summary>
@@ -33,6 +35,6 @@ public sealed class Utf8ResourceLimitExceededException : InvalidOperationExcepti
     public ulong Limit { get; }
 
     /// <summary>Gets the combined capacity, work or depth requested before the denied operation.
-    /// An execution work request beyond ulong.MaxValue is reported as ulong.MaxValue.</summary>
+    /// An execution work or result-capacity request beyond ulong.MaxValue is reported as ulong.MaxValue.</summary>
     public ulong Requested { get; }
 }

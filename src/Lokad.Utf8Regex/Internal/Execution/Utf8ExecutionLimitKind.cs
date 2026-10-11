@@ -9,4 +9,5 @@ internal enum Utf8ExecutionLimitKind : byte
     WorkSteps = 1,
     Depth = 2,
     WorkingBytes = 3,
+    ResultBytes = 4,
 }

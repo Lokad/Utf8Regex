@@ -33,7 +33,12 @@ internal struct Utf8ExecutionBudget
 
     // Sticky denial distinguishes an exhausted ulong.MaxValue cap from its
     // last admitted step. Steps saturates; even an unlimited counter never wraps.
-    internal bool WorkLimitExceeded { get; private set; }
+    internal Utf8ExecutionLimitKind LimitBreach { get; private set; }
+    internal bool WorkLimitExceeded => LimitBreach == Utf8ExecutionLimitKind.WorkSteps;
+
+    // Conservative cumulative result/staging capacity requests. No identities,
+    // retention roots or refunds; the first resource denial stays authoritative.
+    internal ulong ResultBytes { get; private set; }
 
     internal uint PeakDepth { get; private set; }
 
@@ -52,6 +57,7 @@ internal struct Utf8ExecutionBudget
         Limits.MaxWorkSteps == 0 &&
         Limits.MaxDepth == 0 &&
         Limits.MaxWorkingBytes == 0 &&
+        Limits.MaxResultBytes == 0 &&
         _deadline.IsInfinite &&
         !_token.CanBeCanceled;
 
@@ -63,8 +69,21 @@ internal struct Utf8ExecutionBudget
         var overflow = Steps == ulong.MaxValue;
         if (!overflow) Steps++;
         _deadline.Step();
-        WorkLimitExceeded |= Limits.MaxWorkSteps != 0 && (overflow || Steps > Limits.MaxWorkSteps);
-        return WorkLimitExceeded ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None;
+        if (LimitBreach == Utf8ExecutionLimitKind.None && Limits.MaxWorkSteps != 0 && (overflow || Steps > Limits.MaxWorkSteps))
+            LimitBreach = Utf8ExecutionLimitKind.WorkSteps;
+        return LimitBreach;
+    }
+
+    internal Utf8ExecutionLimitKind TryChargeResultBytes(ulong bytes)
+    {
+        if (Limits.MaxResultBytes == 0) return LimitBreach;
+        _token.ThrowIfCancellationRequested();
+        _deadline.CheckNow();
+        if (LimitBreach != Utf8ExecutionLimitKind.None) return LimitBreach;
+        var overflow = bytes > ulong.MaxValue - ResultBytes;
+        ResultBytes = overflow ? ulong.MaxValue : ResultBytes + bytes;
+        if (overflow || ResultBytes > Limits.MaxResultBytes) LimitBreach = Utf8ExecutionLimitKind.ResultBytes;
+        return LimitBreach;
     }
 
     internal Utf8ExecutionLimitKind TryNoteDepth(uint depth)

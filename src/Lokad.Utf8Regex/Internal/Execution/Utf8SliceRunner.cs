@@ -1674,6 +1674,8 @@ internal static partial class Utf8SliceRunner
             if (groups == 0) return Utf8ExecutionLimitKind.None;
             var ownedBytes = checked(Utf8ConstructionBudget.ArrayBytes<int[]>(groups) * 2);
             var temporaryBytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
+            var resultAdmission = invocation.Budget.TryChargeResultBytes(checked(ownedBytes + temporaryBytes));
+            if (resultAdmission != Utf8ExecutionLimitKind.None) return resultAdmission;
             if (!invocation.Ledger.TryReserve(checked(ownedBytes + temporaryBytes))) return Utf8ExecutionLimitKind.WorkingBytes;
             int[]? rentedCounts = null;
             int[]? rentedOpen = null;
@@ -1719,6 +1721,8 @@ internal static partial class Utf8SliceRunner
                     if ((group & 255) == 0 && (breach = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return breach;
                     captureBytes = checked(captureBytes + Utf8ConstructionBudget.ArrayBytes<int>(counts[group]) * 2);
                 }
+                breach = invocation.Budget.TryChargeResultBytes(captureBytes);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
                 if (!invocation.Ledger.TryReserve(captureBytes)) return Utf8ExecutionLimitKind.WorkingBytes;
                 ownedBytes = checked(ownedBytes + captureBytes);
                 breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
@@ -1762,6 +1766,8 @@ internal static partial class Utf8SliceRunner
                         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(counts[group]) * 2);
                         // Admit both replacement arrays while old capacity is
                         // held. Copy in bounded blocks, then transfer ownership.
+                        breach = invocation.Budget.TryChargeResultBytes(bytes);
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
                         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
                         ownedBytes += bytes;
                         breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);

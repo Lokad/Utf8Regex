@@ -36,7 +36,7 @@ public sealed class Utf8ResourcePolicyTests
     [InlineData(100ul, 10u, null, null)]
     [InlineData(null, 10u, null, null)]
     [InlineData(null, null, 1024ul, null)]
-    [InlineData(null, null, null, 1024ul)]
+    [InlineData(null, 10u, null, 1024ul)]
     public void FiniteBudgetsAreNotSupportedByCore(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };

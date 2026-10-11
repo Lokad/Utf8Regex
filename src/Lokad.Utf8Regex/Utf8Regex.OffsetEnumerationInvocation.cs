@@ -31,7 +31,7 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out reservation);
-            var eligible = !ResourcePolicy.MaxWorkSteps.HasValue && !UsesRightToLeft() &&
+            var eligible = !HasFiniteExecutionLimits && !UsesRightToLeft() &&
                 (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor;
@@ -59,9 +59,9 @@ public sealed partial class Utf8Regex
             }
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.WorkLimitExceeded)
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
-            throw CreateExecutionWorkFailure(ref invocation);
+            throw CreateExecutionResourceFailure(ref invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         finally { if (reservation != 0) invocation.Ledger.Release(reservation); }

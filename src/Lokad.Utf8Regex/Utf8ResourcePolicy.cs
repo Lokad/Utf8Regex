@@ -13,7 +13,10 @@ public readonly record struct Utf8ResourcePolicy
     /// <summary>Gets the maximum metered workspace size in bytes, or <see langword="null"/> for no cap.</summary>
     public ulong? MaxWorkingBytes { get; init; }
 
-    /// <summary>Gets the maximum result-materialization size in bytes, or <see langword="null"/> for no cap. Reserved: no profile enforces it yet.</summary>
+    /// <summary>Gets the maximum cumulative modeled result/staging capacity in bytes, or <see langword="null"/> for no cap.</summary>
+    /// <remarks>The core charges major array/text extents and output controls before acquisition, including growth and repeated materialization.
+    /// Charges are conservative and are not refunded. Borrowed subjects, fixed value results and later standalone getters are outside this scope.
+    /// This is not a live-retention or process-memory cap. PythonRe and PCRE2 currently reject this field.</remarks>
     public ulong? MaxResultBytes { get; init; }
 
     /// <summary>Gets the policy with every budget unlimited.</summary>
