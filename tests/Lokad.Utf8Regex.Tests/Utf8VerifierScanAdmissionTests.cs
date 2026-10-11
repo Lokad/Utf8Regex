@@ -89,17 +89,17 @@ public sealed class Utf8VerifierScanAdmissionTests
     public void RootDenialPrecedesScratchAndBuilderAcquisition(int route, int denial)
     {
         var input = Make(route, 0);
-        using var owner = new Utf8ConstructionScope(0, denial == 0 ? 112ul : ulong.MaxValue,
+        using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
             1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
-        Assert.Equal(112ul, owner.Budget.PeakBytes);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.PeakBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -110,19 +110,19 @@ public sealed class Utf8VerifierScanAdmissionTests
         var input = Make(route, 32);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
         Assert.Equal(9ul, failure.Requested);
         Assert.Equal(8ul, owner.Budget.PeakDepth);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var spent = owner.Budget.WorkSteps;
         Run(route, Make(route, 0));
         Assert.True(owner.Budget.WorkSteps > spent);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -133,14 +133,14 @@ public sealed class Utf8VerifierScanAdmissionTests
         var input = Make(route, 128);
         using var owner = new Utf8ConstructionScope(0, 2048, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.True(failure.Requested > 2048);
         Assert.InRange(owner.Budget.PeakBytes, 113ul, 2048ul);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -162,7 +162,7 @@ public sealed class Utf8VerifierScanAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Record.Exception(() => Run(route, input));
             if (cutoff < work)
             {
@@ -171,10 +171,10 @@ public sealed class Utf8VerifierScanAdmissionTests
                 Assert.True(breach.Requested > cutoff + 2);
             }
             else Assert.Null(failure);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(0ul, owner.Budget.Reserved);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
         }
@@ -189,7 +189,7 @@ public sealed class Utf8VerifierScanAdmissionTests
         var outer = Node(Utf8ExecutionNodeKind.Alternate, "", Node(Utf8ExecutionNodeKind.Multi, "cat"), inner);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         using (var discarded = Utf8ConstructionScope.Enter())
         {
             object?[] args = [optional, null, false];
@@ -205,9 +205,9 @@ public sealed class Utf8VerifierScanAdmissionTests
             Assert.Empty(Assert.IsType<byte[]>(args[1]));
         }
         Assert.True(owner.Budget.PeakBytes > 2048);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 

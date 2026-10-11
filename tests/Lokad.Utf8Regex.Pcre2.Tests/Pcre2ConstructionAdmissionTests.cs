@@ -14,7 +14,7 @@ public sealed class Pcre2ConstructionAdmissionTests
             Pcre2CandidateSearchProgram.FromLeadingAsciiSet(new byte[] { 0, 64, 96, 127 }, default));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(48ul, owner.Budget.PeakBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0xa5, parent[0]);
         owner.Budget.ReleaseArray(parent, false);
         var program = Pcre2CandidateSearchProgram.FromLeadingAsciiSet(new byte[] { 64, 127 }, default);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);

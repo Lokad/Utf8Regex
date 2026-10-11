@@ -43,7 +43,7 @@ public sealed class PythonReTranslatorFrameAdmissionTests
         Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         var spent = owner.Budget.WorkSteps;
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(new PythonReLiteralNode('a')));
         Assert.True(owner.Budget.WorkSteps > spent);

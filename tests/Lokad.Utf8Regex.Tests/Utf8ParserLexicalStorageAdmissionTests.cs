@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -36,7 +35,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     }
 
     [Fact]
-    public void RetainedParserLiteralHasItsOwnStringAndDescriptorLoan()
+    public void RetainedParserLiteralOwnsItsTextAndFitsNumericAdmission()
     {
         var pattern = new string('a', 256);
         using var owner = Utf8ConstructionScope.Enter();
@@ -45,36 +44,19 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         var literal = tree.Root.Child(0).Str;
         Assert.Equal(pattern, literal);
         Assert.NotSame(pattern, literal);
-        var tracked = false;
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-            tracked |= ReferenceEquals(literal, loan.Value);
-        Assert.True(tracked, "Retained parser literal text requires its actual string capacity and retaining descriptor.");
+        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(literal.Length) + 128ul);
     }
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void CompleteReturnedGraphKeepsExactlyItsArrayAndDescriptorLoans(string pattern, RegexOptions options)
+    public void ReturnedMajorArraysFitNumericAdmissionAlongsideConservativeHelpers(string pattern, RegexOptions options)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var tree = Create(pattern, options);
-        var descriptors = 0ul;
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-        {
-            descriptors += loan.Bytes;
-            if (loan.Value is string text)
-            {
-                Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length) + 64, loan.Bytes);
-                continue;
-            }
-            var fields = loan.Value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var extent = fields.Aggregate(0ul, (size, field) => size + Size(field.FieldType));
-            Assert.True(loan.Bytes >= 32 + ((extent + 15) & ~15ul) + 64,
-                $"Complete instance extent for {loan.Value.GetType()} must remain admitted.");
-        }
         var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var bytes = 0ul;
         Visit(tree);
-        Assert.Equal(descriptors + bytes, owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.ReservedBytes >= bytes + 128ul);
         Assert.True(owner.Budget.PeakBytes > owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.Reserved);
@@ -99,10 +81,6 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         }
     }
 
-    private static ulong Size(Type type) => type.IsValueType
-        ? (ulong)(typeof(Utf8ParserLexicalStorageAdmissionTests).GetMethod(nameof(ValueSize), BindingFlags.Static | BindingFlags.NonPublic)
-            ?.MakeGenericMethod(type).Invoke(null, null) ?? throw new InvalidOperationException()) : 8ul;
-    private static ulong ValueSize<T>() => (ulong)Unsafe.SizeOf<T>();
 
     [Theory]
     [MemberData(nameof(Shapes))]
@@ -118,7 +96,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Create(pattern, options));
@@ -154,11 +132,11 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
             Create("a", Options);
             recoveryPeak = measured.Budget.PeakBytes;
         }
-        foreach (var cap in new[] { 112ul, 224ul, 512ul, 1024ul, 2048ul, peak / 2, peak - 1, peak }.Distinct().Order())
+        foreach (var cap in new[] { 128ul, 224ul, 512ul, 1024ul, 2048ul, peak / 2, peak - 1, peak }.Distinct().Order())
         {
             using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Create(pattern, options));
@@ -185,7 +163,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var breach = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, options));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, breach.ResourceKind);
             Assert.Equal(cap, breach.Limit);
@@ -218,7 +196,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             using var owner = Utf8ConstructionScope.Enter();
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using var cancellation = new CancellationTokenSource();
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -246,12 +224,12 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     }
 
     private static void AssertParent(Utf8ConstructionBudget budget,
-        Utf8ConstructionBudget.ObjectAllocation? checkpoint, ParentValue parent)
+        ulong checkpoint, ParentValue parent)
     {
-        Assert.Equal(112ul, budget.ReservedBytes);
+        Assert.Equal(128ul, budget.ReservedBytes);
         Assert.Equal(0ul, budget.Reserved);
         Assert.Equal(0ul, budget.Depth);
-        Assert.Same(checkpoint, budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -266,7 +244,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, Options, out var diagnostic));
         Assert.True(diagnostic.IsSyntaxError);
         AssertParent(owner.Budget, checkpoint, parent);
@@ -284,11 +262,10 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         var text = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions("(?im)(?-m)😀z", ref options);
         Assert.Equal("😀z", text);
         Assert.Equal(Options | RegexOptions.IgnoreCase, options);
-        Assert.Same(text, owner.Budget.ObjectCheckpoint!.Value);
-        Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length) + 64, owner.Budget.ReservedBytes);
+        Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length), owner.Budget.ReservedBytes);
         var unchanged = "abc";
         Assert.Same(unchanged, Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(unchanged, ref options));
-        Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length) + 64, owner.Budget.ReservedBytes);
+        Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length), owner.Budget.ReservedBytes);
     }
 
     [Theory]
@@ -310,7 +287,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var options = Options;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref options));
@@ -322,7 +299,7 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             using var owner = Utf8ConstructionScope.Enter();
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using var cancellation = new CancellationTokenSource();
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -357,14 +334,14 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
         {
             var executionPattern = compile ? Utf8FrontEnd.Compile(pattern, Options).SemanticRegex.ExecutionPattern : Utf8FrontEnd.Analyze(pattern, Options).SemanticRegex.ExecutionPattern;
             Assert.Equal("ab😀", executionPattern);
-            Assert.Contains(Loans(measured.Budget), loan => ReferenceEquals(loan.Value, executionPattern));
+            Assert.True(measured.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(executionPattern.Length));
             work = measured.Budget.WorkSteps;
         }
         foreach (var cap in new[] { 0ul, work / 3, work - 1 })
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
@@ -395,12 +372,12 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
     [Fact]
     public void LeadingOptionByteBoundaryPublishesOptionsOnlyAfterTheRetainedTextIsAdmitted()
     {
-        var loan = Utf8ConstructionBudget.StringBytes("😀z".Length) + 64;
+        var loan = Utf8ConstructionBudget.StringBytes("😀z".Length);
         foreach (var cap in new[] { 0ul, 1ul, loan - 1, loan })
         {
-            using var owner = new Utf8ConstructionScope(0, 112 + cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, 128 + cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var options = Options;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
@@ -409,18 +386,14 @@ public sealed class Utf8ParserLexicalStorageAdmissionTests
                 {
                     var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                     Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
-                    Assert.Equal(112 + loan, breach.Requested);
+                    Assert.Equal(128 + loan, breach.Requested);
                     Assert.Equal(Options, options);
                 }
                 else { Assert.Null(failure); Assert.Equal(Options | RegexOptions.IgnoreCase, options); }
             }
             AssertParent(owner.Budget, checkpoint, parent);
-            Assert.True(owner.Budget.PeakBytes <= 112 + cap);
+            Assert.True(owner.Budget.PeakBytes <= 128 + cap);
         }
     }
 
-    private static IEnumerable<Utf8ConstructionBudget.ObjectAllocation> Loans(Utf8ConstructionBudget budget)
-    {
-        for (var loan = budget.ObjectCheckpoint; loan is not null; loan = loan.Previous) yield return loan;
-    }
 }

@@ -10,7 +10,6 @@ internal readonly struct Utf8ConstructionFrames<T>(Utf8ConstructionBuffer<T> fra
         var slots = owner.Reserved;
         var bytes = owner.ReservedBytes;
         var depth = owner.Depth;
-        var objects = owner.ObjectCheckpoint;
         owner.EnterDepth();
         Utf8ConstructionBuffer<T>? storage = null;
         try
@@ -23,7 +22,7 @@ internal readonly struct Utf8ConstructionFrames<T>(Utf8ConstructionBuffer<T> fra
         {
             storage?.Dispose();
             owner.LeaveDepth();
-            owner.Rollback(slots, bytes, depth, objects);
+            owner.Rollback(slots, bytes, depth);
             throw;
         }
     }

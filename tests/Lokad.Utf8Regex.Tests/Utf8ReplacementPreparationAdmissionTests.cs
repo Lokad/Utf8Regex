@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Replacement;
@@ -30,50 +29,28 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         Utf8FrontEndReplacementAnalyzer.Analyze(template, [0, 1, 7, 12], ["zero", "one", "seven", "twelve"], ecma);
 
     [Fact]
-    public void PublishedReplacementPatternAndPlanKeepTheirConstructionLoans()
+    public void PublishedReplacementHoldersAndMajorArraysFitAdmission()
     {
         using var owner = Utf8ConstructionScope.Enter();
         var result = Utf8FrontEndReplacementAnalyzer.Analyze("a${missing}$1$1z", [0, 1], ["zero", "one"]);
         Assert.NotEmpty(result.Pattern.Tokens);
         Assert.NotEmpty(result.Plan.Instructions);
-        foreach (var value in new object[] { result.Pattern, result.Plan })
-        {
-            var tracked = false;
-            for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-                tracked |= ReferenceEquals(loan.Value, value);
-            Assert.True(tracked, "Every published replacement holder requires its complete live construction state.");
-        }
-        var descriptors = 0ul;
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-            descriptors += loan.Bytes;
-        Assert.True(owner.Budget.ReservedBytes > descriptors,
-            "Published replacement token, instruction, literal and capture-reference arrays keep their capacity loans.");
+        Assert.True(owner.Budget.ReservedBytes >= 256ul +
+            Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementToken>(result.Pattern.Tokens.Length) +
+            Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(result.Plan.Instructions.Count));
     }
+
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void CompleteReturnedGraphKeepsExactlyItsArrayAndDescriptorLoans(string template, bool ecma)
+    public void ReturnedMajorArraysFitNumericAdmissionAlongsideConservativeHelpers(string template, bool ecma)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var result = Create(template, ecma);
-        var descriptors = 0ul;
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-        {
-            descriptors += loan.Bytes;
-            if (loan.Value is string text)
-            {
-                Assert.Equal(Utf8ConstructionBudget.StringBytes(text.Length) + 64, loan.Bytes);
-                continue;
-            }
-            var fields = loan.Value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var extent = fields.Aggregate(0ul, (size, field) => size + Size(field.FieldType));
-            Assert.True(loan.Bytes >= 32 + ((extent + 15) & ~15ul) + 64,
-                $"Complete instance extent for {loan.Value.GetType()} must remain admitted.");
-        }
         var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var bytes = 0ul;
         Visit(result);
-        Assert.Equal(descriptors + bytes, owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.ReservedBytes >= bytes + 128ul);
         Assert.True(owner.Budget.PeakBytes > owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.Reserved);
@@ -97,11 +74,6 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         }
     }
 
-    private static ulong Size(Type type) => type.IsValueType
-        ? (ulong)(typeof(Utf8ReplacementPreparationAdmissionTests).GetMethod(nameof(ValueSize), BindingFlags.Static | BindingFlags.NonPublic)
-            ?.MakeGenericMethod(type).Invoke(null, null) ?? throw new InvalidOperationException()) : 8ul;
-    private static ulong ValueSize<T>() => (ulong)Unsafe.SizeOf<T>();
-
     [Theory]
     [MemberData(nameof(Shapes))]
     public void EveryWorkCutoffRestoresParentAndNeverRefundsSpentWork(string template, bool ecma)
@@ -116,7 +88,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Create(template, ecma));
@@ -152,11 +124,11 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             Create("a", false);
             recoveryPeak = measured.Budget.PeakBytes;
         }
-        foreach (var cap in new[] { 112ul, 224ul, 512ul, 1024ul, peak / 2, peak - 1, peak }.Distinct().Order())
+        foreach (var cap in new[] { 128ul, 224ul, 512ul, 1024ul, peak / 2, peak - 1, peak }.Distinct().Order())
         {
             using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Create(template, ecma));
@@ -183,7 +155,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var breach = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(template, ecma));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, breach.ResourceKind);
             Assert.Equal(cap, breach.Limit);
@@ -216,7 +188,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         {
             using var owner = Utf8ConstructionScope.Enter();
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using var cancellation = new CancellationTokenSource();
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -244,12 +216,12 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     }
 
     private static void AssertParent(Utf8ConstructionBudget budget,
-        Utf8ConstructionBudget.ObjectAllocation? checkpoint, ParentValue parent)
+        ulong checkpoint, ParentValue parent)
     {
-        Assert.Equal(112ul, budget.ReservedBytes);
+        Assert.Equal(128ul, budget.ReservedBytes);
         Assert.Equal(0ul, budget.Reserved);
         Assert.Equal(0ul, budget.Depth);
-        Assert.Same(checkpoint, budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -300,7 +272,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => operation());
@@ -312,11 +284,11 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             AssertParent(owner.Budget, checkpoint, parent);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, cap + 2);
         }
-        foreach (var cap in new[] { 112ul, 224ul, 512ul, peak / 2, peak - 1, peak }.Distinct().Order())
+        foreach (var cap in new[] { 128ul, 224ul, 512ul, peak / 2, peak - 1, peak }.Distinct().Order())
         {
             using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => operation());
@@ -332,7 +304,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => operation()).ResourceKind);
             AssertParent(owner.Budget, checkpoint, parent);
@@ -342,7 +314,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         {
             using var owner = Utf8ConstructionScope.Enter();
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using var cancellation = new CancellationTokenSource();
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

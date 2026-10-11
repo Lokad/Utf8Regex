@@ -34,7 +34,7 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         from depth in Enumerable.Range(0, 5) select new object[] { family, depth };
 
     private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count)
-        + (search.Count > 3 ? 176ul : 0);
+        + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static PreparedMultiLiteralPackedNibbleSimdPrefilter Prefilter(PreparedAsciiIgnoreCaseLiteralSetSearch set)
         => (PreparedMultiLiteralPackedNibbleSimdPrefilter)typeof(PreparedAsciiIgnoreCaseLiteralSetSearch)
             .GetProperty("CorrelatedPrefilter", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(set)!;
@@ -45,10 +45,10 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
             : values.GroupBy(v => Fold(v[0])).Select(g => g.ToArray()).ToArray();
         var searchCount = values.Any(v => v.Length == 0) ? 0 : groups.SelectMany(g => Fold(g[0][0]) is >= 97 and <= 122
             ? new[] { Fold(g[0][0]), (byte)(Fold(g[0][0]) - 32) } : new[] { Fold(g[0][0]) }).Distinct().Count();
-        var result = Utf8ConstructionBudget.ObjectBytes<PreparedAsciiIgnoreCaseLiteralSetSearchDataState>() + 64
+        var result = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedAsciiIgnoreCaseLiteralSetSearchDataState>())
             + Utf8ConstructionBudget.ArrayBytes<AsciiIgnoreCaseLiteralBucket>(groups.Length)
             + Utf8ConstructionBudget.ArrayBytes<int>(256) + Utf8ConstructionBudget.ArrayBytes<byte>(searchCount)
-            + (searchCount > 3 ? 176ul : 0);
+            + (searchCount > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
         foreach (var group in groups)
         {
             result += Utf8ConstructionBudget.ArrayBytes<byte[]>(group.Length);
@@ -69,7 +69,7 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var search = new PreparedAsciiIgnoreCaseLiteralSetSearch(literals); var masks = Prefilter(search);
         Assert.Equal(literals.Length == 0 ? int.MaxValue : literals.Min(v => v.Length), search.ShortestLength);
-        Assert.Equal(112 + ExpectedLoan(literals, masks), owner.Budget.ReservedBytes);
+        Assert.Equal(128 + ExpectedLoan(literals, masks), owner.Budget.ReservedBytes);
         var groups = literals.Length == 0 ? Array.Empty<byte[][]>() : literals.Any(v => v.Length == 0)
             ? new[] { new[] { Array.Empty<byte>() } } : literals.GroupBy(v => Fold(v[0])).Select(g => g.ToArray()).ToArray();
         Assert.Equal(groups.Length, search.Buckets.Length);
@@ -103,22 +103,22 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value));
             _ = new PreparedAsciiIgnoreCaseLiteralSetSearch(values);
-            peak = funded.Budget.PeakBytes - 112; work = funded.Budget.WorkSteps - 2;
+            peak = funded.Budget.PeakBytes - 128; work = funded.Budget.WorkSteps - 2;
         }
         var successes = 0;
         for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 112 + allowance : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(0, bytes ? 128 + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint; PreparedAsciiIgnoreCaseLiteralSetSearch search = default;
+            var checkpoint = owner.Budget.ReservedBytes; PreparedAsciiIgnoreCaseLiteralSetSearch search = default;
             var error = Record.Exception(() => search = new(values));
-            if (error is null) { successes++; Assert.Equal(112 + ExpectedLoan(values, Prefilter(search)), owner.Budget.ReservedBytes); }
+            if (error is null) { successes++; Assert.Equal(128 + ExpectedLoan(values, Prefilter(search)), owner.Budget.ReservedBytes); }
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
             Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(17, parent.Value);
@@ -134,16 +134,16 @@ public sealed class Utf8FoldedLiteralSetAdmissionTests
         using (var complete = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { _ = new PreparedAsciiIgnoreCaseLiteralSetSearch(values); required = complete.Budget.PeakDepth; }
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => _ = new PreparedAsciiIgnoreCaseLiteralSetSearch(values));
         if ((ulong)depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
-        if (depth == 0) { Assert.Equal(112ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
+        if (depth == 0) { Assert.Equal(128ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
     }
 
     [Fact]

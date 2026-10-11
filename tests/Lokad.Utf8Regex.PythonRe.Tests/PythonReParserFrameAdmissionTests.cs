@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReParserFrameAdmissionTests
 {
     [Fact]
-    public void ProductionParserDescriptorLoanCoversWarmedAcquisitionAndItsTrackingObject()
+    public void ProductionParserConservativeChargeCoversWarmedAcquisition()
     {
         using (var warm = Utf8ConstructionScope.Enter())
             for (var index = 0; index < 1000; index++) _ = PythonReParser.Create("a");
@@ -14,7 +14,8 @@ public sealed class PythonReParserFrameAdmissionTests
         var parser = PythonReParser.Create("a");
         var allocated = (ulong)(GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.InRange(allocated, 1ul, owner.Budget.ReservedBytes);
-        Assert.Same(parser, owner.Budget.ObjectCheckpoint?.Value);
+        Assert.NotNull(parser);
+        Assert.True(owner.Budget.ReservedBytes >= 128);
         Assert.Equal(2ul, owner.Budget.WorkSteps);
     }
 
@@ -29,7 +30,7 @@ public sealed class PythonReParserFrameAdmissionTests
         Assert.Equal(workDenial ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(48ul, owner.Budget.PeakBytes);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         Assert.Equal(1ul, owner.Budget.WorkSteps);
         owner.Budget.ReleaseArray(parent, false);
     }
@@ -49,19 +50,19 @@ public sealed class PythonReParserFrameAdmissionTests
         }
         foreach (var allowance in new[] { 0ul, 128ul, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 112, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue, ulong.MaxValue);
             var parent = PythonReAstFactory.Literal('p');
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             PythonReParseResult actual = default;
             var failure = Record.Exception(() => actual = new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.True(owner.Budget.PeakBytes <= allowance + 112);
+            Assert.True(owner.Budget.PeakBytes <= allowance + 128);
             if (failure is not null)
             {
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-                Assert.Same(parent, checkpoint?.Value);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                Assert.NotNull(parent);
             }
             else
             {
@@ -85,7 +86,7 @@ public sealed class PythonReParserFrameAdmissionTests
             Assert.Equal(depthDenial ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
             Assert.Equal(1ul, owner.Budget.WorkSteps);
             owner.Budget.ReleaseArray(parent, false);
         }
@@ -106,6 +107,6 @@ public sealed class PythonReParserFrameAdmissionTests
         Assert.Equal(4, match.Value.GetValueBytes().Length);
         Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.NotNull(owner.Budget.ObjectCheckpoint);
+        Assert.True(owner.Budget.ReservedBytes > 0);
     }
 }

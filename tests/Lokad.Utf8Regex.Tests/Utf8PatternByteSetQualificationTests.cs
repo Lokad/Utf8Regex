@@ -34,15 +34,15 @@ public sealed class Utf8PatternByteSetQualificationTests
     {
         for (var denial = 0; denial < 3; denial++)
         {
-            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 112ul : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
                 denial == 1 ? 2ul : ulong.MaxValue, denial == 2 ? 0ul : ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static _ => new ParentValue());
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare("Она|он"));
             Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
                 1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
         }
     }
@@ -66,7 +66,7 @@ public sealed class Utf8PatternByteSetQualificationTests
             Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
                 1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
             Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint); Assert.True(owner.Budget.WorkSteps > 0);
+            Assert.True(owner.Budget.WorkSteps > 0);
         }
     }
 
@@ -80,7 +80,7 @@ public sealed class Utf8PatternByteSetQualificationTests
                 Timeout.InfiniteTimeSpan, out var strategy));
             Assert.Null(strategy); Assert.True(owner.Budget.WorkSteps > 0);
             Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
         }
     }
 
@@ -125,7 +125,7 @@ public sealed class Utf8PatternByteSetQualificationTests
                 Utf8EmittedKernelMatcher.TryCreate(prepared, out _));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+            Assert.Equal(0xa5, parent[0]);
         }
         Assert.True(Utf8EmittedKernelMatcher.TryCreate(prepared, out var matcher));
         Assert.Equal(2, matcher.Count("!record Customer struct Worker class lower"u8));

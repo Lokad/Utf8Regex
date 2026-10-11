@@ -50,7 +50,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.Depth);
-        Assert.Null(parent.Budget.ObjectCheckpoint);
+
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.Depth);
-        Assert.Null(parent.Budget.ObjectCheckpoint);
+
     }
 
     [Theory]
@@ -90,7 +90,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
             Assert.Equal(48UL, owner.Budget.ReservedBytes);
             Assert.Equal(8UL, owner.Budget.Reserved);
             Assert.Equal(0UL, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
             Assert.Equal(37, parent[0]);
         }
         using var recovered = Utf8ConstructionScope.Enter();
@@ -135,7 +135,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
             Assert.Equal(48UL, owner.Budget.ReservedBytes);
             Assert.Equal(8UL, owner.Budget.Reserved);
             Assert.Equal(0UL, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
             Assert.Equal(37, parent[0]);
         }
     }
@@ -186,7 +186,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
                 Assert.Equal(48UL, owner.Budget.ReservedBytes);
                 Assert.Equal(8UL, owner.Budget.Reserved);
-                Assert.Null(owner.Budget.ObjectCheckpoint);
+
             }
             Assert.Equal(0UL, owner.Budget.Depth);
             Assert.Equal(37, parent[0]);
@@ -264,7 +264,7 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.Depth);
-        Assert.Null(parent.Budget.ObjectCheckpoint);
+
         Assert.True(parent.Budget.WorkSteps > 0);
     }
 }

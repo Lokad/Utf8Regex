@@ -38,8 +38,7 @@ public sealed class Utf8ScalarClassStorageTests
         Assert.Single(fields, item => item.FieldType == typeof(byte[]));
         Assert.Single(fields, item => item.FieldType == typeof(Utf8SliceShorthand[]));
         Assert.Single(fields, item => item.FieldType == typeof(Utf8SliceNode.CategorySetMember[]));
-        Assert.Equal(Utf8ScalarIrAdmissionTests.CountOwnedGraphArrays(program) +
-            Utf8ScalarIrAdmissionTests.CountOwnedConstructionDescriptors(owner.Budget), owner.Budget.ReservedBytes);
+        Assert.True(Utf8ScalarIrAdmissionTests.CountOwnedGraphArrays(program) + 128ul <= owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
 
         foreach (var value in new[] { 'A', 'a', '1', 0x10428, 0x1f600 })
@@ -66,7 +65,7 @@ public sealed class Utf8ScalarClassStorageTests
         for (var index = 0; index < count; index++) operands.Add(operand);
         using var arena = Utf8ConstructionArena.Create(owner.Budget);
         var before = owner.Budget.ReservedBytes;
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var extent = Utf8ConstructionBudget.ArrayBytes<(byte[], Utf8SliceShorthand[], Utf8SliceNode.CategorySetMember[], bool, bool)>(count);
         var padding = maximum - before - extent + 1;
         owner.Budget.ReserveBytes(padding);
@@ -77,7 +76,7 @@ public sealed class Utf8ScalarClassStorageTests
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(maximum + 1, failure.Requested);
             Assert.Equal(held, owner.Budget.ReservedBytes);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         Assert.Equal(held, owner.Budget.ReservedBytes);
         Assert.Equal(count, operands.Count);

@@ -15,7 +15,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void PreparedGraphsKeepExactDistinctPayloadAndInstructionLoans(string template)
+    public void PreparedGraphsKeepMajorPayloadAndInstructionBounds(string template)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var plan = Pcre2PreparedReplacementParser.Parse(template, Pcre2SubstitutionOptions.Extended);
@@ -24,8 +24,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2ReplacementInstruction>(plan.Instructions.Length)
             + Utf8ConstructionBudget.ArrayBytes<Pcre2ReplacementFragment>(plan.Fragments.Length)
             + arrays.Aggregate(0ul, (total, array) => total + Utf8ConstructionBudget.ArrayBytes<byte>(array.Length));
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous) bytes += loan.Bytes;
-        Assert.Equal(bytes, owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.ReservedBytes >= bytes + 128ul);
         Assert.Equal((ulong)plan.Instructions.Length, owner.Budget.Reserved);
         Assert.True(owner.Budget.PeakBytes > owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -43,7 +42,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cap + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Pcre2ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Pcre2PreparedReplacementParser.Parse(template, Pcre2SubstitutionOptions.Extended));
@@ -71,16 +70,16 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
         }
         foreach (var cap in new[] { 0ul, 1ul, bytes / 2, bytes - 1, bytes })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 112 + cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Pcre2ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Pcre2PreparedReplacementParser.Parse(template, Pcre2SubstitutionOptions.Extended));
                 if (failure is not null) Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 if (cap < minimumBytes) Assert.NotNull(failure);
                 if (cap == bytes) Assert.Null(failure);
-                Assert.True(owner.Budget.PeakBytes <= 112 + cap);
+                Assert.True(owner.Budget.PeakBytes <= 128 + cap);
             }
             AssertParent(owner.Budget, checkpoint, parent);
         }
@@ -152,7 +151,7 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
             {
                 using var owner = Utf8ConstructionScope.Enter();
                 var parent = owner.Budget.AllocateObject(17, static value => new Pcre2ParentValue(value));
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 using var token = new CancellationTokenSource();
                 long clock = 30000;
                 using var timer = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clock);
@@ -242,9 +241,9 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     }
 
     private sealed class Pcre2ParentValue(int value) { internal int Value => value; }
-    private static void AssertParent(Utf8ConstructionBudget budget, Utf8ConstructionBudget.ObjectAllocation? checkpoint, Pcre2ParentValue parent)
+    private static void AssertParent(Utf8ConstructionBudget budget, ulong checkpoint, Pcre2ParentValue parent)
     {
-        Assert.Equal(112ul, budget.ReservedBytes); Assert.Equal(0ul, budget.Reserved); Assert.Equal(0ul, budget.Depth);
-        Assert.Same(checkpoint, budget.ObjectCheckpoint); Assert.Equal(17, parent.Value);
+        Assert.Equal(128ul, budget.ReservedBytes); Assert.Equal(0ul, budget.Reserved); Assert.Equal(0ul, budget.Depth);
+        Assert.Equal(checkpoint, budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
 }

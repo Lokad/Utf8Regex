@@ -474,15 +474,16 @@ scope across synchronous nested core/adaptor construction. The provisional
 maximums are 1,048,576 live instruction slots and 64 MiB of covered construction
 capacity. The byte model charges actual element strides, a conservative 32-byte
 array header and payload rounded to 16 bytes; shared empty arrays cost zero.
-Python parser AST nodes and class items use the same header/rounding model over
-field-state extents, including fields assigned by initializers. The node and its
-64-byte retaining descriptor are admitted before either object is acquired;
-referenced payloads have independent ownership. The shared immutable empty AST
-is borrowed. The owner keeps acquired nodes alive through nested construction,
-including discarded parser intermediates, and releases tracking roots when its
-outer scope closes. Failed children restore the parent's object checkpoint and
-byte/depth loans; admitted creation work stays spent. This is conservative live
-construction capacity, not a retained-cache policy or process RSS bound.
+Covered helper objects, including Python AST nodes and class items, reserve the
+larger of 128 bytes and their rounded typed state extent before the factory runs.
+Referenced arrays and text have independent length-based charges; shared immutable
+empties are borrowed. Construction stores no object-retaining registry or linked
+object checkpoints. Dead helpers can become collectible while their numeric charges
+remain reserved until scope completion or rollback. Failed factories release their
+attempted reservation; failed children restore numeric byte/depth capacity without
+refunding admitted work or invalidating caller-held objects. This coarser model can
+deny some valid large patterns earlier. It bounds covered capacity, not arbitrary
+GC allocation traffic, retained caller storage or process RSS.
 Core scalar classes use integer counts and full scalar range endpoints through
 the exclusive bound U+110000. Payloads larger than 65,535 entries do not decline
 owned matching or become syntax errors. Class data, merge/fold vectors, property
@@ -496,10 +497,10 @@ other lexical/IR objects and complete retained/cache policies remain uncovered.
 Core preparation compiles and retains the scalar program once from the owned
 tree. Public matching borrows that program; native NonBacktracking eligibility
 reads tree/catalog facts rather than compiling and discarding another program.
-Prepared and operation-cursor descriptors admit their complete field-state
-extents and retaining roots before acquisition, while referenced scalar/native
+Prepared and operation-cursor objects admit conservative field-state charges
+before acquisition, while referenced scalar/native
 payloads keep independent loans. Their shared immutable empty cursor state is
-borrowed. Failed preparation restores parent byte/depth/object loans without
+borrowed. Failed preparation restores parent numeric byte/depth loans without
 refunding work. These covered acquisitions do not establish complete retained
 cache policies. Shipped BCL matcher/result retirement is qualified separately.
 Owned candidate verification borrows the cached scalar program and executes on
@@ -559,8 +560,8 @@ objects remain uncovered; this is not a complete construction policy.
 Python parser group-name slices and literal-escape text, and translator rendered
 patterns, generated names, class/range tables, numeric projection arrays and
 ASCII selector output share construction admission. Character vectors admit
-growth overlap; materialized strings admit their terminator and a retaining
-descriptor before copying and remain rooted through outer construction closure.
+growth overlap; materialized strings admit their length, terminator and rounded
+header before copying. Numeric admission does not keep discarded strings alive.
 Hex/octal digits and integer/hex formatting use borrowed spans or fixed stack
 scratch. This preserves bounded string-pattern interoperability; scalar matching
 and byte coordinates are unchanged. Exception-message formatting, preparation
@@ -571,7 +572,7 @@ admitted array of explicit frames, including old/new growth overlap; it creates
 no compiler-generated iterator for those grammar walkers. Root depth is checked
 before acquiring the frame-stack descriptor, and every exit releases scratch
 arrays and live depth without spending cleanup work. Production parser objects
-and their retaining descriptors admit their complete field-state extent before
+admit conservative field-state charges before
 acquisition; a parser explicitly supplied by an internal caller remains borrowed.
 This does not cover the remaining core/conversion/emission iterators or diagnostic
 formatting, and does not establish a complete construction or retained policy.
@@ -591,7 +592,7 @@ continuations and heap parse context are removed. Root depth and frame storage
 admission precede parser-state acquisition; child growth admits overlapping arrays.
 Failure releases live depth/scratch and restores parent object loans without
 refunding work. Continuation-array scratch releases before capture numbering;
-the admitted buffer descriptor remains owned through construction closure. The
+the conservative buffer-helper charge remains reserved through construction closure. The
 frame's referenced nodes, text and collections retain separate ownership: their
 acquisition admission, other shared preparation/emission walkers and retained
 facade descriptors remain unfinished.
@@ -798,11 +799,11 @@ deep parent ownership and scalar operation/resource invariants instead of
 pinning unused BCL runtime facts.
 Required-literal family preparation also admits wrapper/collector value frames,
 temporary family/candidate/member vectors, ordinal membership maps and arena
-tracking. Single-character text admits its string and retaining descriptor;
+tracking. Single-character text admits its string extent;
 existing node text remains borrowed. Sorting, membership hashing/equality,
 selection and copying spend shared work. Only the selected reference array
 transfers its payload loan; candidate arrays/maps and live depth unwind on every
-exit. Acquired object/string descriptors stay admitted until their owner closes.
+exit. Numeric object/string charges stay reserved until their owner closes.
 Decline/failure restores parent loans without refunding work. These search facts
 are heuristics, not scalar matching widths or complete retained-cache policies.
 Native eligibility and simple-plan case/tail checks admit root/ancestor value
@@ -816,7 +817,7 @@ eligibility helper is removed rather than given a second implementation.
 These checks gate optimizations, not supported scalar grammar or general policies.
 Native literal-family preparation admits ancestor frames, its local heuristic
 budget, scratch branch/product/reference arrays, copied single-character and
-concatenated/folded text, builders and retaining descriptors. Final reference or
+concatenated/folded text and conservative builder-helper charges. Final reference or
 ASCII byte arrays transfer their loans; scratch and failed speculation recover
 under the shared owner, without refunding work. Folded set-to-literal conversion
 requires a positive whole class; negation/subtraction cannot use exclusion ranges
@@ -846,8 +847,7 @@ boundary, empty, unsupported or folded-Unicode decline restores all child loans
 without refunding work. Successful scratch arrays unwind and output arrays/text
 retain their loans.
 Search-fact initializers are value carriers; their immutable reference storage
-and retaining descriptors are admitted before acquisition using the complete
-field-state extent. Default/shared empty facts borrow one static carrier. Byte,
+is admitted before acquisition using conservative field-state charges. Default/shared empty facts borrow one static carrier. Byte,
 alternative, set and window payloads remain independently owned by their producers;
 this storage admission does not admit an unconverted payload retroactively.
 Simple literal expansion admits reference vectors, Cartesian byte copies and
@@ -882,7 +882,7 @@ caller bytes into an admitted independent array or reuses the class producer's
 owned output. The reusable search kernel has no front-end budget dependency.
 Covered run, head/tail and fixed-distance preparation now builds owned byte-set
 state: four membership masks, two fixed nibble lookup tables, range bounds and
-representation flags. Admit its complete field extent and retaining descriptor
+representation flags. Admit its conservative field-state charge
 before object acquisition, and charge bounded table-building work before scanning.
 Head/tail and fixed-distance preparation derive this state directly from masks,
 without temporary class arrays. Their former opaque SearchValues fields and the
@@ -902,7 +902,7 @@ are removed. Exact multi-literal trie construction now admits temporary node/edg
 value buffers (including growth overlap and descriptors), frozen node/key/child
 arrays, the root map and its byte-search state. Iterative insertion, bounded sibling
 visits, freezing and in-place sorting share construction work. Temporary arrays
-release before return; their descriptors stay funded until the enclosing owner
+release before return; numeric helper charges stay reserved until the enclosing owner
 closes. One fixed 256-entry stack row handles child ordering. Empty tries borrow
 all state. The superseded node objects, per-node dictionaries, list and sorting
 arrays are removed; runtime trie layout and literal priority are unchanged.
@@ -911,7 +911,7 @@ and value-state buffer with growth overlap, an exact temporary failure queue and
 the final matrix/output extents. Iterative insertion, failure completion and output
 projection share work. The final matrix transfers when its capacity is exact;
 otherwise its final copy admits old/new overlap. Temporary arrays release before
-return; descriptors stay funded until construction closes. Empty automata borrow
+return; numeric helper charges stay reserved until construction closes. Empty automata borrow
 all state. Mutable node objects, per-node transition/flag arrays, List/Queue
 storage, unused node APIs and redundant output initialization are removed.
 Runtime automaton layout and matching methods remain unchanged.
@@ -928,7 +928,7 @@ tables and shared byte-search state. Absent anchors borrow empty extents; famili
 larger than the byte alphabet reject before offset scanning. Leading UTF-8 segment
 preparation validates eligibility before acquiring an admitted segment-reference
 buffer. It copies each distinct segment once and transfers or admits its final
-reference array in first-encounter order. The descriptor stays funded until the
+reference array in first-encounter order. Its numeric helper charge stays reserved until the
 enclosing owner closes. Per-bucket literal references and their bucket type,
 assignment/count state, duplicate copies, List storage and repeated growth are
 removed; literal verification uses the wrapper's original literal list. The unchanged
@@ -956,7 +956,7 @@ miss final matches. This is construction capacity, not a complete
 public/retained policy or a performance qualification.
 ASCII-folded literal-set preparation admits normalized byte payloads, ordered
 bucket/reference arrays, the first-byte map and owned byte search, plus the
-complete retained descriptor field state and its retaining node. An empty family
+conservative helper state charge. An empty family
 borrows all state; a preflight finds empty alternatives before acquiring discarded
 normalizations. Fixed alphabet scratch replaces grouping lists and intermediate
 search-byte copies. Eligible correlated masks receive an admitted temporary
@@ -1065,7 +1065,7 @@ construction owner retains a second set of library program buffers.
 Serialized IL byte capacity conservatively counts against the provisional
 instruction-capacity gate, including the managed runtime code copy. Parameter,
 code and local-signature managed copies are admitted separately before CLR calls.
-Complete delegate field state and its retaining descriptor are admitted before
+Conservative delegate field-state charges are admitted before
 publication. Each builder publishes one delegate with an immutable receipt for
 its final CLR-managed parameter, code and local-signature copies. The receipt
 uses final array lengths and modeled headers, not transient construction peaks.
@@ -1110,10 +1110,10 @@ admission remains mandatory; the covered array loans are not a complete memory b
 Find preparation admits trailing-anchor/leading-literal ancestor frames and
 longest-literal postorder frames/maps, with cumulative visits and literal-run
 selection work. Literal builders and copied character/run strings share byte
-admission with their retaining descriptors. Existing pattern strings are
+admission. Existing pattern strings are
 borrowed. Returned text transfers its loans; pure anchor results and declined
-literal scans restore scratch/descriptors. Frame/map arrays and live depth
-unwind on every exit; acquired successful text/object descriptors remain owned
+literal scans restore scratch and numeric helper charges. Frame/map arrays and live depth
+unwind on every exit; successful text/object charges remain reserved
 until construction closes. The unused leading-anchor fact/producer and redundant
 cached tree root are removed. Search widths bound consumed scalar UTF-8 bytes:
 literal pairs decode once per scalar, plain ranges exclude surrogate code points,
@@ -1136,8 +1136,7 @@ Alternate/set results and the facts container still require complete admission;
 these facts do not prove complete construction/retained bounds or that other
 native width producers meet the scalar contract.
 Byte-safe execution-tree and program lowering also admit value frames, visits,
-temporary reference maps, copied child arrays, node/tree/program objects and
-their retaining descriptors. Program vectors charge aggregate instruction slots
+temporary reference maps, copied child arrays and conservative node/tree/program charges. Program vectors charge aggregate instruction slots
 as well as bytes, including growth/final-copy overlap. Fixed-capture layout
 preparation admits its eligibility scan, frames, temporary index map and compact
 capture array; the retained hash table is removed. Completed results transfer
@@ -1145,10 +1144,10 @@ payload loans, while decline or failure restores parent loans/depth without
 refunding work. Other preparation producers and retained-cache policies remain
 uncovered; these charges do not establish complete construction bounds.
 Python scalar conversion also uses admitted value frames, deleting its captured
-yield continuation. Its arena/map descriptors, direct structural IR nodes and
-retaining descriptors admit before acquisition; node charges include the base
-Kind and initializer fields. Numeric capture-name strings admit their buffers,
-copy and retaining descriptor; the immutable whole-match name is borrowed.
+yield continuation. Its arena/map helpers and direct structural IR nodes
+admit conservative state charges before acquisition, including base Kind and
+initializer fields where the extent exceeds the helper floor. Numeric capture-name
+strings admit their buffers and final copy; the immutable whole-match name is borrowed.
 Failed or declined conversion restores parent loans/depth without refunding
 work, and releases frame-array scratch before lowering. Core fragment-parser
 and leaf-conversion IR objects, other core producers and lazy retained preparation

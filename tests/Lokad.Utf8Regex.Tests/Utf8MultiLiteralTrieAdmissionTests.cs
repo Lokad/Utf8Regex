@@ -30,16 +30,14 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
             prefixes[prefix].Add(literal[offset]);
             prefixes.TryAdd(Convert.ToHexString(literal.AsSpan(0, offset + 1)), []);
         }
-        var descriptors = 2 * (Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, object[], int)>()
-            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>());
+        var descriptors = 2 * (Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, object[], int)>()));
         var rootCount = prefixes[""].Count;
         return descriptors + Utf8ConstructionBudget.ArrayBytes<PreparedMultiLiteralTrieNode>(prefixes.Count)
             + Utf8ConstructionBudget.ArrayBytes<int>(256)
             + prefixes.Values.Aggregate(0ul, (sum, children) => sum + Utf8ConstructionBudget.ArrayBytes<byte>(children.Count)
                 + Utf8ConstructionBudget.ArrayBytes<int>(children.Count))
             + Utf8ConstructionBudget.ArrayBytes<byte>(rootCount)
-            + (rootCount > 3 ? Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
-                + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>() : 0);
+            + (rootCount > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     }
 
     [Theory]
@@ -73,10 +71,10 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
         var successes = 0;
         for (var allowance = 0ul; allowance <= (byteLimit ? peak : work); allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, byteLimit ? 112 + allowance : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(0, byteLimit ? 128 + allowance : ulong.MaxValue,
                 byteLimit ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => {
                 var search = PreparedMultiLiteralTrieSearch.Create(literals);
                 Assert.Equal(2, search.IndexOf("xxacbb"u8));
@@ -85,19 +83,19 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
             if (error is null)
             {
                 successes++;
-                Assert.Equal(112 + RetainedBytes(literals), owner.Budget.ReservedBytes);
-                Assert.NotSame(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128 + RetainedBytes(literals), owner.Budget.ReservedBytes);
+                Assert.True(owner.Budget.ReservedBytes > checkpoint);
                 if (!byteLimit) Assert.Equal(work, allowance);
             }
             else
             {
                 var failure = Assert.IsType<Utf8ResourceLimitExceededException>(error);
                 Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, byteLimit ? ulong.MaxValue : 2 + allowance);
-            if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 112ul, 112 + allowance);
+            if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 128ul, 128 + allowance);
         }
         Assert.True(successes > 0);
     }
@@ -112,7 +110,7 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
         if (depth < 3)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint);
+            Assert.Equal(48ul, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0xa5, parent[0]);
@@ -128,7 +126,7 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
         Assert.Equal(-1, search.IndexOf("😀"u8)); Assert.Equal(-1, search.LastIndexOf("😀"u8));
         Assert.False(search.TryGetMatchedLiteralInfo("😀"u8, 0, out _, out _));
         Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
     }
 
     private static (bool Found, int Length, int Id) At(byte[][] literals, ReadOnlySpan<byte> subject, int index)

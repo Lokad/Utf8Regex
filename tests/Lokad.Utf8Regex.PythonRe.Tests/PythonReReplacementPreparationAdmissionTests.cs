@@ -35,11 +35,11 @@ public sealed class PythonReReplacementPreparationAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void ReturnedScalarFragmentsKeepExactDistinctArrayAndDescriptorLoans(string template)
+    public void ReturnedScalarFragmentsFitMajorStorageAndConservativeHelperAdmission(string template)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var plan = Parse(template);
-        Assert.Equal(GraphBytes(plan) + Loans(owner.Budget), owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.ReservedBytes >= GraphBytes(plan) + 128ul);
         Assert.True(owner.Budget.PeakBytes > owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.Reserved);
@@ -61,7 +61,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cap + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Parse(template));
@@ -90,9 +90,9 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         using (var measured = Utf8ConstructionScope.Enter()) { _ = Parse(""); recovery = measured.Budget.PeakBytes; }
         foreach (var cap in new[] { 0ul, 1ul, 256ul, 1024ul, peak / 2, peak - 1, peak, peak + 128 }.Distinct())
         {
-            using var owner = new Utf8ConstructionScope(0, 112 + cap, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(0, 128 + cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Parse(template));
@@ -100,9 +100,9 @@ public sealed class PythonReReplacementPreparationAdmissionTests
                 {
                     var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                     Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
-                    Assert.Equal(112 + cap, breach.Limit);
+                    Assert.Equal(128 + cap, breach.Limit);
                 }
-                Assert.True(owner.Budget.PeakBytes <= 112 + cap);
+                Assert.True(owner.Budget.PeakBytes <= 128 + cap);
             }
             AssertParent(owner.Budget, checkpoint, parent);
             if (cap >= recovery)
@@ -115,7 +115,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, cap);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Parse(template));
@@ -141,7 +141,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
             {
                 using var owner = Utf8ConstructionScope.Enter();
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 using var token = new CancellationTokenSource();
                 long clock = 30000;
                 using var clockScope = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clock);
@@ -177,7 +177,7 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<PythonRePatternException>(() => Parse(template));
         Assert.Equal(message, error.Message);
         Assert.Equal(position, error.Position);
@@ -251,19 +251,12 @@ public sealed class PythonReReplacementPreparationAdmissionTests
             + arrays.Aggregate(0ul, (bytes, array) => bytes + Utf8ConstructionBudget.ArrayBytes<byte>(array.Length));
     }
 
-    private static ulong Loans(Utf8ConstructionBudget budget)
+    private static void AssertParent(Utf8ConstructionBudget budget, ulong checkpoint, ParentValue parent)
     {
-        var total = 0ul;
-        for (var loan = budget.ObjectCheckpoint; loan is not null; loan = loan.Previous) total += loan.Bytes;
-        return total;
-    }
-
-    private static void AssertParent(Utf8ConstructionBudget budget, Utf8ConstructionBudget.ObjectAllocation? checkpoint, ParentValue parent)
-    {
-        Assert.Equal(112ul, budget.ReservedBytes);
+        Assert.Equal(128ul, budget.ReservedBytes);
         Assert.Equal(0ul, budget.Reserved);
         Assert.Equal(0ul, budget.Depth);
-        Assert.Same(checkpoint, budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 }

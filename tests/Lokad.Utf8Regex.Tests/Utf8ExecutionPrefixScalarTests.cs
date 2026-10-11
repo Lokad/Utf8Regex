@@ -150,13 +150,13 @@ public sealed class Utf8ExecutionPrefixScalarTests
                 for (ulong cutoff = 0; cutoff <= work; cutoff++)
                 {
                     using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
-                    var parent = owner.Budget.AllocateArray<byte>(1, false); var checkpoint = owner.Budget.ObjectCheckpoint;
+                    var parent = owner.Budget.AllocateArray<byte>(1, false); var checkpoint = owner.Budget.ReservedBytes;
                     Exception? failure;
                     using (var discarded = Utf8ConstructionScope.Enter()) failure = Record.Exception(Run);
                     if (cutoff == work) Assert.Null(failure);
                     else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                     Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-                    Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Single(parent);
+                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Single(parent);
                     Assert.InRange(owner.Budget.WorkSteps, 1ul, cutoff + 1);
                 }
                 void Run()
@@ -182,11 +182,11 @@ public sealed class Utf8ExecutionPrefixScalarTests
         }
         using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue))
         {
-            var parent = owner.Budget.AllocateArray<byte>(1, false); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateArray<byte>(1, false); var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8DeterministicAnchorSearch.TryGetAsciiBytes("abc", out _));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(48ul, owner.Budget.PeakBytes);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Single(parent);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Single(parent);
             Assert.False(Utf8DeterministicAnchorSearch.TryGetAsciiBytes("a😀", out _));
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
         }

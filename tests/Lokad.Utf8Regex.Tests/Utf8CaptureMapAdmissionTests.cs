@@ -32,37 +32,20 @@ public sealed class Utf8CaptureMapAdmissionTests
 
     [Theory]
     [MemberData(nameof(Shapes))]
-    public void CompleteRetainedProjectionIsTrackedByTheConstructionOwner(int producer, string pattern)
+    public void ReturnedProjectionMajorStorageFitsConservativeAdmission(int producer, string pattern)
     {
         var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
         var result = Create(producer, prepared);
         Assert.NotNull(result);
-        var tracked = false;
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-            tracked |= ReferenceEquals(loan.Value, result);
-        Assert.True(tracked, "A returned projection remains live and must keep its complete object-state loan.");
-        Assert.True(owner.Budget.ReservedBytes > 0);
+        Assert.True(owner.Budget.ReservedBytes >= 128ul);
         Assert.Equal(0ul, owner.Budget.Depth);
-        // All descriptor loans stay rooted until the owner closes. Every other
-        // remaining byte must belong to a returned array, including outer tables.
-        var descriptorBytes = 0ul;
-        for (var loan = owner.Budget.ObjectCheckpoint; loan is not null; loan = loan.Previous)
-        {
-            descriptorBytes += loan.Bytes;
-            if (loan.Value.GetType().FullName?.StartsWith("Lokad.Utf8Regex.Internal.", StringComparison.Ordinal) != true)
-                continue;
-            var stateBytes = 0ul;
-            foreach (var field in loan.Value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-                stateBytes += field.FieldType == typeof(int) ? 4ul : field.FieldType == typeof(bool) ? 1ul : 8ul;
-            Assert.True(loan.Bytes >= 32 + ((stateBytes + 15) & ~15ul) + 64,
-                $"Incomplete descriptor extent for {loan.Value.GetType().Name}.");
-        }
+        // Count the actual returned major arrays independently of the owner.
         var arrays = new HashSet<Array>(ReferenceEqualityComparer.Instance);
         var arrayBytes = 0ul;
         foreach (var field in result!.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             if (field.GetValue(result) is Array array) CountArrays(array);
-        Assert.Equal(descriptorBytes + arrayBytes, owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.ReservedBytes >= arrayBytes + 128ul);
         Assert.True(owner.Budget.PeakBytes > owner.Budget.ReservedBytes);
 
         void CountArrays(Array array)
@@ -94,7 +77,7 @@ public sealed class Utf8CaptureMapAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Assert.NotNull(Create(producer, prepared)));
@@ -131,11 +114,11 @@ public sealed class Utf8CaptureMapAdmissionTests
             Assert.NotNull(Create(producer, prepared));
             peak = measured.Budget.PeakBytes;
         }
-        foreach (var cap in new[] { 112ul, 256ul, 1024ul, peak - 16, peak - 1, peak }.Distinct())
+        foreach (var cap in new[] { 128ul, 256ul, 1024ul, peak - 16, peak - 1, peak }.Distinct())
         {
             using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var discarded = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Assert.NotNull(Create(producer, prepared)));
@@ -187,7 +170,7 @@ public sealed class Utf8CaptureMapAdmissionTests
         {
             using var owner = Utf8ConstructionScope.Enter();
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using var cancellation = new CancellationTokenSource();
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -215,12 +198,12 @@ public sealed class Utf8CaptureMapAdmissionTests
     }
 
     private static void AssertParent(Utf8ConstructionBudget budget,
-        Utf8ConstructionBudget.ObjectAllocation? checkpoint, ParentValue parent)
+        ulong checkpoint, ParentValue parent)
     {
-        Assert.Equal(112ul, budget.ReservedBytes);
+        Assert.Equal(128ul, budget.ReservedBytes);
         Assert.Equal(0ul, budget.Reserved);
         Assert.Equal(0ul, budget.Depth);
-        Assert.Same(checkpoint, budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -236,7 +219,7 @@ public sealed class Utf8CaptureMapAdmissionTests
         var recoveryInput = Utf8FrontEnd.Compile("(a)", RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         Assert.Null(Create(producer, prepared));
         Assert.True(owner.Budget.WorkSteps > 2);
         AssertParent(owner.Budget, checkpoint, parent);

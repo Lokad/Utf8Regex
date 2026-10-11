@@ -93,22 +93,22 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value)); _ = Build(plan, factory, verifier);
-            peak = funded.Budget.PeakBytes - 112; work = funded.Budget.WorkSteps - 2; loan = funded.Budget.ReservedBytes;
+            peak = funded.Budget.PeakBytes - 128; work = funded.Budget.WorkSteps - 2; loan = funded.Budget.ReservedBytes;
             slots = funded.Budget.Reserved;
         }
         var successes = 0;
         for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 112 + allowance : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 128 + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => _ = Build(plan, factory, verifier));
             if (error is null) { successes++; Assert.Equal(loan, owner.Budget.ReservedBytes); }
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Reserved);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
@@ -129,15 +129,15 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { _ = Create(plan, false); required = funded.Budget.PeakDepth; }
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => _ = Create(plan, false));
         if ((ulong)depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
-        if (depth == 0) { Assert.Equal(112ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
+        if (depth == 0) { Assert.Equal(128ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 
@@ -157,11 +157,11 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         // Only the selected nonliteral object's complete field state is acquired.
         // A discarded literal runtime would exceed both the work and depth gates.
         var state = runtime.GetType().GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
-        var bytes = (ulong)typeof(Utf8ConstructionBudget).GetMethod("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!
-            .MakeGenericMethod(state).Invoke(null, null)! + 64;
+        var bytes = Math.Max(128ul, (ulong)typeof(Utf8ConstructionBudget).GetMethod("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!
+            .MakeGenericMethod(state).Invoke(null, null)!);
         Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
         Assert.Equal(2ul, owner.Budget.PeakDepth); Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(runtime, owner.Budget.ObjectCheckpoint!.Value); Assert.Null(owner.Budget.ObjectCheckpoint.Previous);
+        Assert.NotNull(runtime);
     }
 
     [Theory]

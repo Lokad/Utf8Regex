@@ -179,21 +179,21 @@ public sealed class Utf8ClassFamilyQualificationTests
         {
             var tree = Tree(pattern); var finalBytes = pattern.Contains("3A", StringComparison.Ordinal) ? 48ul : 0ul; ulong peak, work;
             using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-            { Assert.True(Classify(method, tree).HasValue); Assert.Equal(finalBytes, funded.Budget.ReservedBytes); Assert.Null(funded.Budget.ObjectCheckpoint); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
+            { Assert.True(Classify(method, tree).HasValue); Assert.Equal(finalBytes, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
             Assert.InRange(peak, 1ul, 20000ul); Assert.InRange(work, 1ul, 10000ul);
             foreach (var bytes in new[] { true, false })
             {
                 var successes = 0; var limit = bytes ? peak : work;
                 for (var cutoff = 0ul; cutoff <= limit; cutoff++)
                 {
-                    using var owner = new Utf8ConstructionScope(0, bytes ? 112 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
-                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
+                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
                     var failure = Record.Exception(() => Classify(method, tree));
-                    if (failure is null) { successes++; Assert.Equal(112 + finalBytes, owner.Budget.ReservedBytes); }
+                    if (failure is null) { successes++; Assert.Equal(128 + finalBytes, owner.Budget.ReservedBytes); }
                     else
-                    { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); }
+                    { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
                     Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-                    Assert.True(bytes ? owner.Budget.PeakBytes <= 112 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
+                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
                 }
                 if (bytes) Assert.InRange(successes, 1, (int)limit + 1); else Assert.Equal(1, successes);
             }
@@ -209,10 +209,10 @@ public sealed class Utf8ClassFamilyQualificationTests
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
         var method = Classifier();
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Classify(method, deep)).ResourceKind);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Equal(0ul, owner.Budget.Depth);
-        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
+        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 }

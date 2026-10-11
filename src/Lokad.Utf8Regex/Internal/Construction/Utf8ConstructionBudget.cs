@@ -6,11 +6,11 @@ namespace Lokad.Utf8Regex.Internal;
 
 /// <summary>Aggregate admission for pattern decoding and scalar-lowering capacity. Charges
 /// actual array strides, decoded string text plus its terminator and acquired
-/// object field-state extents, with a conservative 32-byte header and 16-byte
-/// payload rounding. Object tracking descriptors use the same byte owner.
-/// Shared empties and
-/// borrowed payloads are excluded. This is
-/// defined live buffer capacity, not RSS or cumulative GC allocation traffic.</summary>
+/// conservative helper charges with a 128-byte floor or larger rounded field
+/// state. Arrays/text use a 32-byte header and 16-byte payload rounding.
+/// Shared empties and borrowed payloads are excluded. Dead helpers are not rooted
+/// merely for accounting; their charges persist until scope completion/rollback.
+/// This is covered capacity, not RSS or arbitrary GC allocation traffic.</summary>
 internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
 {
     internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
@@ -27,23 +27,12 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     internal ulong WorkSteps { get; private set; }
     internal ulong Depth { get; private set; }
     internal ulong PeakDepth { get; private set; }
-    internal ObjectAllocation? ObjectCheckpoint { get; private set; }
     // Optional authority belongs to this shared owner, so nested optimizers
     // inherit it. Existing constructor entries use no token/infinite timeout;
     // complete public construction/invocation policy remains a separate gate.
     internal Utf8ExecutionDeadline Deadline { get; set; } = Utf8ExecutionDeadline.Infinite;
     internal System.Threading.CancellationToken CancellationToken { get; set; }
     internal Action<ulong>? CheckpointHook { get; set; }
-
-    // The owner keeps acquired objects alive until its scope closes. This makes
-    // their conservative loans live construction capacity rather than a count
-    // of allocations whose objects may already have become unreachable.
-    internal sealed class ObjectAllocation(object value, ObjectAllocation? previous, ulong bytes)
-    {
-        internal readonly object Value = value;
-        internal readonly ObjectAllocation? Previous = previous;
-        internal readonly ulong Bytes = bytes;
-    }
 
     // Actual admitted work stays spent even when a speculative child declines.
     // Batch admission happens before the bounded scan/copy it represents.
@@ -93,32 +82,27 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
 
     internal T AllocateObject<TState, T>(TState state, Func<TState, T> factory) where T : class
     {
-        var bytes = ObjectBytes<TState>() + ObjectBytes<(object, ObjectAllocation?, ulong)>();
+        var bytes = Math.Max(128ul, ObjectBytes<TState>());
         CheckBytes(bytes);
-        ChargeWork(2); // Acquired object and its retaining descriptor.
+        ChargeWork(2); // Conservative admission and factory-acquisition work.
         ReserveBytes(bytes);
         try
         {
-            var result = factory(state);
-            ObjectCheckpoint = new ObjectAllocation(result, ObjectCheckpoint, bytes);
-            return result;
+            return factory(state);
         }
         catch { ReleaseBytes(bytes); throw; }
     }
 
-    internal void ClearObjectRoots() => ObjectCheckpoint = null;
-
     internal string CopyText(ReadOnlySpan<char> text)
     {
         if (text.IsEmpty) return string.Empty;
-        var bytes = StringBytes(text.Length) + ObjectBytes<(object, ObjectAllocation?, ulong)>();
+        var bytes = StringBytes(text.Length);
         CheckBytes(bytes);
         ChargeWork((ulong)text.Length + 1);
         ReserveBytes(bytes);
         try
         {
             var result = new string(text);
-            ObjectCheckpoint = new ObjectAllocation(result, ObjectCheckpoint, bytes);
             return result;
         }
         catch { ReleaseBytes(bytes); throw; }
@@ -132,13 +116,12 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         foreach (var value in input)
             if (value > 0x7f) throw new ArgumentException("Literal metadata must be ASCII.", nameof(input));
         if (input.Length == 0) return string.Empty;
-        var bytes = StringBytes(input.Length) + ObjectBytes<(object, ObjectAllocation?, ulong)>();
+        var bytes = StringBytes(input.Length);
         CheckBytes(bytes); ChargeWork((ulong)input.Length + 1); ReserveBytes(bytes);
         try
         {
             var result = string.Create(input.Length, input, static (target, source) =>
             { for (var index = 0; index < source.Length; index++) target[index] = (char)source[index]; });
-            ObjectCheckpoint = new ObjectAllocation(result, ObjectCheckpoint, bytes);
             return result;
         }
         catch { ReleaseBytes(bytes); throw; }
@@ -272,13 +255,12 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
             throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionInstructionCapacity, Maximum, requested);
     }
 
-    internal void Rollback(ulong checkpoint, ulong byteCheckpoint, ulong depthCheckpoint, ObjectAllocation? objectCheckpoint)
+    internal void Rollback(ulong checkpoint, ulong byteCheckpoint, ulong depthCheckpoint)
     {
         if (checkpoint > Reserved || byteCheckpoint > ReservedBytes || depthCheckpoint > Depth)
             throw new InvalidOperationException("Construction rollback exceeds admitted capacity.");
         Reserved = checkpoint;
         ReservedBytes = byteCheckpoint;
         Depth = depthCheckpoint;
-        ObjectCheckpoint = objectCheckpoint;
     }
 }

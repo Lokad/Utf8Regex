@@ -37,7 +37,7 @@ public sealed class Utf8PackedPreparationRetirementTests
             var expected = Utf8ConstructionBudget.ArrayBytes<int>(256);
             if (needle[0] == (byte)'A') expected += Utf8ConstructionBudget.ArrayBytes<byte>(16);
             Assert.Equal(expected, owner.Budget.ReservedBytes);
-            Assert.Equal(0ul, owner.Budget.Depth); Assert.Null(owner.Budget.ObjectCheckpoint);
+            Assert.Equal(0ul, owner.Budget.Depth);
         }
     }
 

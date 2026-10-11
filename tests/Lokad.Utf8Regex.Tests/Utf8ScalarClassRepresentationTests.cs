@@ -85,13 +85,13 @@ public sealed class Utf8ScalarClassRepresentationTests
             {
                 using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 if (cutoff < work)
                 {
                     var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, options));
                     Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-                    Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                    Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                    Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 }
                 else Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
                 Assert.Equal(17, parent.Value);
@@ -100,16 +100,16 @@ public sealed class Utf8ScalarClassRepresentationTests
             }
             foreach (var depth in new[] { false, true })
             {
-                using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : 112, ulong.MaxValue, depth ? 0ul : ulong.MaxValue);
+                using var owner = new Utf8ConstructionScope(ulong.MaxValue, depth ? ulong.MaxValue : 128, ulong.MaxValue, depth ? 0ul : ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, options));
                 Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Depth);
                 Assert.Equal(17, parent.Value);
-                if (depth) Assert.Equal(112ul, owner.Budget.PeakBytes);
+                if (depth) Assert.Equal(128ul, owner.Budget.PeakBytes);
             }
         }
     }
@@ -117,7 +117,7 @@ public sealed class Utf8ScalarClassRepresentationTests
     [Fact]
     public void AllRecognizedPropertyBlocksUseExplicitIntegerEndpointPairs()
     {
-        Assert.Equal(112, Utf8SliceCategories.BlockNames.Count);
+        Assert.Equal(128, Utf8SliceCategories.BlockNames.Count);
         foreach (var name in Utf8SliceCategories.BlockNames)
         {
             Assert.True(Utf8SliceCategories.TryResolve(name, out var mask, out var ranges, out var block));
@@ -262,13 +262,13 @@ public sealed class Utf8ScalarClassRepresentationTests
             workLimit ? 4096ul : Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth);
         var held = owner.Budget.AllocateArray<byte>(16, false);
         var before = owner.Budget.ReservedBytes;
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var breach = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None));
         Assert.Equal(workLimit ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
         Assert.True(breach.Requested > breach.Limit);
         Assert.Equal(before, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > 0);
         Assert.True(owner.Budget.PeakBytes <= owner.Budget.MaximumBytes);
         if (workLimit)

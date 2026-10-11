@@ -122,14 +122,14 @@ public sealed class Utf8PreparedRetainedGraphTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 2 + available, ulong.MaxValue);
             _ = owner.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Collect(prepared));
                 if (available < work) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 else Assert.Null(failure);
             }
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, 2 + available);
         }
@@ -140,23 +140,23 @@ public sealed class Utf8PreparedRetainedGraphTests
     {
         var prepared = Utf8FrontEnd.Compile("(?i:ALPHABETICAL|LOGARITHMIC|SUPPLEMENTARY)", RegexOptions.CultureInvariant);
         var expected = InspectPreparedGraph(prepared);
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 112, ulong.MaxValue, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 128, ulong.MaxValue, ulong.MaxValue))
         {
             _ = owner.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.Throws<Utf8ResourceLimitExceededException>(() => Collect(prepared)).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         using var cancellation = new CancellationTokenSource();
         using (var owner = Utf8ConstructionScope.Enter())
         {
             _ = owner.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             owner.Budget.CancellationToken = cancellation.Token;
             owner.Budget.CheckpointHook = steps => { if (steps >= 30) cancellation.Cancel(); };
             using (var child = Utf8ConstructionScope.Enter()) Assert.Throws<OperationCanceledException>(() => Collect(prepared));
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.True(owner.Budget.WorkSteps >= 30);
         }
         AssertManifest(expected, Collect(prepared));

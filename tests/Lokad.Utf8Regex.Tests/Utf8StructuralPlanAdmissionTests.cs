@@ -150,14 +150,14 @@ public sealed class Utf8StructuralPlanAdmissionTests
     public void RootDenialRecoversParentBeforeAcquisition(int route, int denial)
     {
         var input = Input(route);
-        using var owner = new Utf8ConstructionScope(0, denial == 0 ? 112ul : ulong.MaxValue,
+        using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
             _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, error.ResourceKind);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Equal(112ul, owner.Budget.PeakBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Equal(17, parent.Value);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(128ul, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
     [MemberData(nameof(Routes))]
@@ -170,14 +170,14 @@ public sealed class Utf8StructuralPlanAdmissionTests
         for (var cutoff = 0ul; cutoff <= work; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => Run(route, input));
             if (cutoff < work)
             {
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            else { Assert.Null(error); Assert.True(owner.Budget.ReservedBytes > 112); }
+            else { Assert.Null(error); Assert.True(owner.Budget.ReservedBytes > 128); }
             Assert.Equal(0ul, owner.Budget.Depth); Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2); Assert.Equal(17, parent.Value);
         }
     }
@@ -203,17 +203,17 @@ public sealed class Utf8StructuralPlanAdmissionTests
         Assert.InRange(peak, 1ul, 10000ul); var failures = 0; var successes = 0;
         for (var allowance = 0ul; allowance <= peak; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, 112 + allowance, ulong.MaxValue, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            using var owner = new Utf8ConstructionScope(0, 128 + allowance, ulong.MaxValue, ulong.MaxValue);
+            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => Run(route, input));
-            if (error is null) { successes++; Assert.True(owner.Budget.ReservedBytes > 112); }
+            if (error is null) { successes++; Assert.True(owner.Budget.ReservedBytes > 128); }
             else
             {
                 failures++; var limit = Assert.IsType<Utf8ResourceLimitExceededException>(error);
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, limit.ResourceKind); Assert.True(limit.Requested > 112 + allowance);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, limit.ResourceKind); Assert.True(limit.Requested > 128 + allowance);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            Assert.InRange(owner.Budget.PeakBytes, 112ul, 112 + allowance); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
+            Assert.InRange(owner.Budget.PeakBytes, 128ul, 128 + allowance); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
         }
         Assert.True(failures > 0); Assert.True(successes > 0);
     }
@@ -234,9 +234,9 @@ public sealed class Utf8StructuralPlanAdmissionTests
             8 => "TryExtractOrderedLiteralLookaheadWindow", _ => "TryExtractAsciiStructuralQuotedRelation" };
         var parents = Children(root).Select(node => (Node: node, Parent: node.Parent)).ToArray();
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.False(Assert.IsType<bool>(Call(name, root, null)));
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         foreach (var pair in parents) Assert.Same(pair.Parent, pair.Node.Parent);
         Assert.Equal(17, parent.Value);
     }
@@ -269,7 +269,7 @@ public sealed class Utf8StructuralPlanAdmissionTests
         var expected = Utf8ConstructionBudget.ArrayBytes<AsciiStructuralSuffixPart>(1)
             + Utf8ConstructionBudget.ArrayBytes<AsciiStructuralVerifierStep>(2)
             + Utf8ConstructionBudget.ArrayBytes<AsciiStructuralLinearVerifierInstruction>(2);
-        Assert.Equal(expected, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(expected, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]

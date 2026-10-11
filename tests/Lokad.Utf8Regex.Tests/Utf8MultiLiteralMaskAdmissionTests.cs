@@ -37,7 +37,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
         _ => new PreparedMultiLiteralRareBytePrefilter(values),
     };
 
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? 176ul : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong Loan(object value) => value switch
     {
         PreparedMultiLiteralPackedNibbleSimdPrefilter p => Utf8ConstructionBudget.ArrayBytes<int>(p.MaskLength)
@@ -159,17 +159,17 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
         var successes = 0;
         for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 112 + allowance : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(0, bytes ? 128 + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             object? result = null; var error = Record.Exception(() => result = Prepare(mode, literals));
             if (error is null)
-            { successes++; Assert.Equal(112 + Loan(result!), owner.Budget.ReservedBytes); Assert.Equal(bytes ? peak : work, allowance); }
+            { successes++; Assert.Equal(128 + Loan(result!), owner.Budget.ReservedBytes); Assert.Equal(bytes ? peak : work, allowance); }
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
@@ -183,16 +183,16 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
     {
         var required = mode <= 2 && !Simd ? 1 : mode == 1 ? 3 : 2;
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => Prepare(mode, Family(2)));
         if (depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else { Assert.Null(error); Assert.Equal((ulong)required, owner.Budget.PeakDepth); }
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
-        if (depth == 0) Assert.Equal(112ul, owner.Budget.PeakBytes);
+        if (depth == 0) Assert.Equal(128ul, owner.Budget.PeakBytes);
     }
 
     [Fact]

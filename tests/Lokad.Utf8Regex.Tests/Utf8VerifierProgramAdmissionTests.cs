@@ -32,13 +32,13 @@ public sealed class Utf8VerifierProgramAdmissionTests
         {
             _ = funded.Budget.AllocateObject(17, static value => new Box(value));
             _ = Build(kind, prepared);
-            peak = funded.Budget.PeakBytes - 112; work = funded.Budget.WorkSteps - 2;
+            peak = funded.Budget.PeakBytes - 128; work = funded.Budget.WorkSteps - 2;
             depth = funded.Budget.PeakDepth; loan = funded.Budget.ReservedBytes; slots = funded.Budget.Reserved;
         }
         Assert.True(peak > 0); Assert.True(work > 0); Assert.True(depth > 0);
         var maximum = kind == 8 ? limit switch
         {
-            "bytes" => Utf8ConstructionScope.DefaultBufferBytes - 112,
+            "bytes" => Utf8ConstructionScope.DefaultBufferBytes - 128,
             "work" => Utf8ConstructionScope.DefaultWorkSteps - 2,
             _ => Utf8ConstructionScope.DefaultDepth,
         } : limit == "bytes" ? peak : limit == "work" ? work : depth;
@@ -52,11 +52,11 @@ public sealed class Utf8VerifierProgramAdmissionTests
         foreach (var allowance in allowances)
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue,
-                limit == "bytes" ? 112 + allowance : ulong.MaxValue,
+                limit == "bytes" ? 128 + allowance : ulong.MaxValue,
                 limit == "work" ? 2 + allowance : ulong.MaxValue,
                 limit == "depth" ? allowance : ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => _ = Build(kind, prepared));
             if (kind == 8 && allowance <= 1) Assert.NotNull(error);
             if (error is null)
@@ -69,7 +69,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
                 var expected = limit == "bytes" ? Utf8ResourceLimitKind.ConstructionBytes :
                     limit == "work" ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionDepth;
                 Assert.Equal(expected, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Reserved);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
@@ -78,7 +78,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
             Assert.InRange(owner.Budget.WorkSteps, 2ul, limit == "work" ? 2 + allowance : ulong.MaxValue);
             if (limit == "depth" && allowance == 0)
             {
-                Assert.Equal(112ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
+                Assert.Equal(128ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
             }
         }
         Assert.Equal(1, successes);
@@ -142,18 +142,18 @@ public sealed class Utf8VerifierProgramAdmissionTests
         var successes = 0;
         for (var allowance = 0ul; allowance <= maximum; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 112 + allowance : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 128 + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => _ = BuildSource());
             if (error is null)
-            { successes++; Assert.Equal(112 + capacity, owner.Budget.ReservedBytes); }
+            { successes++; Assert.Equal(128 + capacity, owner.Budget.ReservedBytes); }
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? 2 + work : 2 + allowance);
@@ -172,7 +172,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             ArgumentException? first = null;
             for (var attempt = 0; attempt < 2; attempt++)
             {
@@ -182,7 +182,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
                 Assert.Null(unpublished);
                 if (first is not null) { Assert.Equal(first.Message, error.Message); Assert.Equal(first.ParamName, error.ParamName); }
                 first = error;
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > workBefore);
             }
             Assert.Equal(17, parent.Value);

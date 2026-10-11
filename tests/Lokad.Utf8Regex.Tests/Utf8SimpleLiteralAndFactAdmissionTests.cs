@@ -86,14 +86,14 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     public void RootDenialsRecoverParentBeforeAcquiringOutput(int route, int denial)
     {
         var input = Input(route);
-        using var owner = new Utf8ConstructionScope(0, denial == 0 ? 112ul : ulong.MaxValue,
+        using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
             _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, error.ResourceKind);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Equal(112ul, owner.Budget.PeakBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Equal(17, parent.Value);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(128ul, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
@@ -106,28 +106,27 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         for (var cutoff = 0ul; cutoff <= work; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => Run(route, input));
             if (cutoff < work)
             {
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            else { Assert.Null(error); Assert.Equal(route != 3, owner.Budget.ReservedBytes > 112); }
+            else { Assert.Null(error); Assert.Equal(route != 3, owner.Budget.ReservedBytes > 128); }
             Assert.Equal(0ul, owner.Budget.Depth); Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2); Assert.Equal(17, parent.Value);
         }
     }
     [Fact]
     public void SearchFactStorageAdmitsCompleteStateAndKeepsPayloadsBorrowed()
     {
-        var data = Data(); var bytes = Utf8ConstructionBudget.ObjectBytes<Utf8SearchFactData>()
-            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
+        var data = Data(); var bytes = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<Utf8SearchFactData>());
         using var owner = new Utf8ConstructionScope(0, bytes, 2, ulong.MaxValue);
         var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data);
         Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
         Assert.Same(data.LiteralUtf8, facts.LiteralUtf8); Assert.Same(data.RequiredWindowPrefilters, facts.RequiredWindowPrefilters);
-        Assert.NotNull(owner.Budget.ObjectCheckpoint); Assert.Null(owner.Budget.ObjectCheckpoint.Previous);
-        Assert.Equal(bytes, owner.Budget.ObjectCheckpoint.Bytes);
+        Assert.True(owner.Budget.ReservedBytes > 0);
+        Assert.Equal(bytes, owner.Budget.ReservedBytes);
     }
     [Fact]
     public void SharedEmptyFactsAndDefaultFactsAcquireNoPerOwnerStorage()
@@ -135,18 +134,18 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
         var facts = Utf8SearchFacts.Create(Utf8SearchKind.None);
         Assert.Empty(facts.LiteralUtf8); Assert.Empty(default(Utf8SearchFacts).AlternateLiteralsUtf8);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void LaterFailedFactStorageKeepsPreviouslyAcceptedFacts(bool work)
     {
-        var data = Data(); var bytes = Utf8ConstructionBudget.ObjectBytes<Utf8SearchFactData>() + 64;
+        var data = Data(); var bytes = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<Utf8SearchFactData>());
         using var owner = new Utf8ConstructionScope(0, work ? ulong.MaxValue : bytes, work ? 2ul : ulong.MaxValue, ulong.MaxValue);
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data); var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data));
         Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
-        Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Same(data.LiteralUtf8, facts.LiteralUtf8);
+        Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Same(data.LiteralUtf8, facts.LiteralUtf8);
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -158,10 +157,10 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             : new AsciiSimplePatternToken[] { new((byte)'a'), AsciiSimplePatternToken.Dot };
         var plan = Plan([first, branch], false); var original = first.ToArray();
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.False(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(plan, out var result)); Assert.Empty(result);
-        Assert.Equal(original, first); Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Equal(17, parent.Value);
+        Assert.Equal(original, first); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
     }
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -172,18 +171,18 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { measure.Budget.AllocateObject(17, static value => new ParentValue(value)); Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out _)); peak = measure.Budget.PeakBytes; }
         var success = false; var partialDenial = false;
-        for (var cap = 112ul; cap <= peak; cap += 16)
+        for (var cap = 128ul; cap <= peak; cap += 16)
         {
             using var owner = new Utf8ConstructionScope(0, cap, ulong.MaxValue, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(input, out _)));
-            if (error is null) { success = true; Assert.True(owner.Budget.ReservedBytes > 112); }
+            if (error is null) { success = true; Assert.True(owner.Budget.ReservedBytes > 128); }
             else
             {
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                partialDenial |= owner.Budget.PeakBytes > 112; Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                partialDenial |= owner.Budget.PeakBytes > 128; Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
-            Assert.InRange(owner.Budget.PeakBytes, 112ul, cap); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
+            Assert.InRange(owner.Budget.PeakBytes, 128ul, cap); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
         }
         Assert.True(success); Assert.True(partialDenial);
     }
@@ -202,7 +201,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     {
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Assert.Throws<ArgumentException>(() => owner.Budget.CopyAsciiText([0x80]));
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(string.Empty, owner.Budget.CopyAsciiText([]));
     }
     [Theory]

@@ -72,7 +72,7 @@ public sealed class Utf8CaptureSlotRetirementTests
         Assert.Equal(48ul, owner.Budget.PeakBytes);
         Assert.Equal(1ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         Assert.Equal((byte)0xa5, parent[0]);
         owner.Budget.ReleaseArray(parent, false);
     }

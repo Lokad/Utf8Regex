@@ -27,7 +27,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         using var construction = Utf8ConstructionScope.Enter();
-        var checkpoint = construction.Budget.ObjectCheckpoint;
+        var checkpoint = construction.Budget.ReservedBytes;
         var before = construction.Budget.ReservedBytes;
         var candidate = coverage == 2
             ? Utf8StructuralCandidate.Window(2, 10, 8, 0, 6, 4, 0)
@@ -49,7 +49,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
         Assert.False(splitStart.Success);
         Assert.Equal(before, construction.Budget.ReservedBytes);
         Assert.Equal(0ul, construction.Budget.WorkSteps);
-        Assert.Same(checkpoint, construction.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, construction.Budget.ReservedBytes);
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
     }

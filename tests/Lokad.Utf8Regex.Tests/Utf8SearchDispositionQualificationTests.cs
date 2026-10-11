@@ -50,7 +50,7 @@ public sealed class Utf8SearchDispositionQualificationTests
                 fallback.CandidateSource.Semantics);
         }
         Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.ReservedBytes);
-        Assert.Equal(0ul, zero.Budget.Depth); Assert.Null(zero.Budget.ObjectCheckpoint);
+        Assert.Equal(0ul, zero.Budget.Depth);
     }
 
     [Fact]

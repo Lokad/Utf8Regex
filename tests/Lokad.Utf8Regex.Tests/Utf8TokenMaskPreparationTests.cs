@@ -26,7 +26,7 @@ public sealed class Utf8TokenMaskPreparationTests
             }
             else if (kind == 1) { Assert.True(Delimited().HasValue); Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(2), owner.Budget.ReservedBytes); }
             else { Assert.True(Structured().HasValue); Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(1), owner.Budget.ReservedBytes); }
-            Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
+            Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved); Assert.True(owner.Budget.WorkSteps > 0);
         }
         foreach (var type in new[] { typeof(PreparedAsciiDelimitedTokenSearch), typeof(PreparedAsciiLiteralStructuredTokenSearch) })
@@ -48,18 +48,18 @@ public sealed class Utf8TokenMaskPreparationTests
                 var limit = bytes ? peak : work; var successes = 0;
                 for (var cutoff = 0ul; cutoff <= limit; cutoff++)
                 {
-                    using var owner = new Utf8ConstructionScope(0, bytes ? 112 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
-                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
+                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
                     var failure = Record.Exception(Build);
-                    if (failure is null) { successes++; Assert.Equal(112 + peak, owner.Budget.ReservedBytes); }
+                    if (failure is null) { successes++; Assert.Equal(128 + peak, owner.Budget.ReservedBytes); }
                     else
                     {
                         Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                             Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                     }
                     Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-                    Assert.True(bytes ? owner.Budget.PeakBytes <= 112 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
+                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
                 }
                 Assert.Equal(1, successes);
             }
@@ -70,19 +70,19 @@ public sealed class Utf8TokenMaskPreparationTests
     public void TokenRootsAdmitDepthAndRejectNonAsciiDefinitionsBeforeAcquiringLiteralStorage()
     {
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 2);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         owner.Budget.EnterDepth(); owner.Budget.EnterDepth();
         try
         {
             foreach (var build in new Action[] { () => Delimited(), () => Structured(), () => new Utf8AsciiLiteralFinder("a"u8) })
             {
                 var failure = Assert.Throws<Utf8ResourceLimitExceededException>(build); Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); Assert.Equal(2ul, owner.Budget.Depth);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.Depth);
             }
         }
         finally { owner.Budget.LeaveDepth(); owner.Budget.LeaveDepth(); }
         Assert.Throws<ArgumentOutOfRangeException>(() => new PreparedAsciiDelimitedTokenSearch(":"u8, "."u8, [0xff], "ab"u8, "xy"u8));
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.True(Delimited().HasValue); Assert.Equal(160ul, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 
@@ -149,7 +149,7 @@ public sealed class Utf8TokenMaskPreparationTests
                 Assert.Equal(2, count); Assert.Equal(0ul, owner.Budget.ReservedBytes);
             }
             Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(structured ? 1 : 2), owner.Budget.PeakBytes);
-            Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > 0);
+            Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > 0);
         }
     }
 }

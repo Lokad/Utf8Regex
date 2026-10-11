@@ -123,14 +123,14 @@ public sealed class Utf8FacadeRetainedGraphTests
         for (var available = 0ul; available <= work; available++)
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 2 + available, ulong.MaxValue);
-            _ = owner.Budget.AllocateObject(17, static _ => new object()); var checkpoint = owner.Budget.ObjectCheckpoint;
+            _ = owner.Budget.AllocateObject(17, static _ => new object()); var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Collect(regex));
                 if (available < work) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 else Assert.Null(failure);
             }
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps >= 2);
         }
     }
@@ -139,21 +139,21 @@ public sealed class Utf8FacadeRetainedGraphTests
     public void ByteDenialAndPartialCancellationPreserveBorrowedHelpers()
     {
         var (regex, _) = PopulateStoredLayouts(); var expected = InspectFacadeGraph(regex);
-        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 112, ulong.MaxValue, ulong.MaxValue))
+        using (var owner = new Utf8ConstructionScope(ulong.MaxValue, 128, ulong.MaxValue, ulong.MaxValue))
         {
-            _ = owner.Budget.AllocateObject(17, static _ => new object()); var checkpoint = owner.Budget.ObjectCheckpoint;
+            _ = owner.Budget.AllocateObject(17, static _ => new object()); var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.Throws<Utf8ResourceLimitExceededException>(() => Collect(regex)).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         using var cancellation = new CancellationTokenSource();
         using (var owner = Utf8ConstructionScope.Enter())
         {
-            _ = owner.Budget.AllocateObject(17, static _ => new object()); var checkpoint = owner.Budget.ObjectCheckpoint;
+            _ = owner.Budget.AllocateObject(17, static _ => new object()); var checkpoint = owner.Budget.ReservedBytes;
             owner.Budget.CancellationToken = cancellation.Token;
             owner.Budget.CheckpointHook = steps => { if (steps >= 30) cancellation.Cancel(); };
             using (var child = Utf8ConstructionScope.Enter()) Assert.Throws<OperationCanceledException>(() => Collect(regex));
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.True(owner.Budget.WorkSteps >= 30);
         }
         AssertManifest(expected, Collect(regex));
@@ -170,9 +170,7 @@ public sealed class Utf8FacadeRetainedGraphTests
         Assert.Equal(Sse2.IsSupported && Ssse3.IsSupported, created);
         if (!created) { Assert.Null(strategy); return; }
         Assert.NotNull(strategy);
-        var loan = owner.Budget.ObjectCheckpoint; Assert.NotNull(loan); Assert.Same(strategy, loan.Value);
-        Assert.Equal(Utf8ConstructionBudget.ObjectBytes<Lokad.Utf8Regex.Internal.Search.PreparedMultiLiteralCandidatePrefilter>() +
-            Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>(), loan.Bytes);
+        Assert.True(owner.Budget.ReservedBytes >= Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<Lokad.Utf8Regex.Internal.Search.PreparedMultiLiteralCandidatePrefilter>()));
     }
 
     private static readonly Type[] HelperTypes = [typeof(Utf8InvariantCyrillicLiteralCountStrategy),

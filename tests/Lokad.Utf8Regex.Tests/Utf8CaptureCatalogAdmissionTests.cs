@@ -53,7 +53,7 @@ public sealed class Utf8CaptureCatalogAdmissionTests
         {
             _ = funded.Budget.AllocateObject(17, static value => new Parent(value));
             _ = Utf8CaptureCatalog.Create(seed.Unnamed, seed.Definitions, seed.References);
-            bytes = funded.Budget.PeakBytes - 112;
+            bytes = funded.Budget.PeakBytes - 128;
             work = funded.Budget.WorkSteps - 2;
             Assert.Equal(0ul, funded.Budget.Depth);
         }
@@ -63,12 +63,12 @@ public sealed class Utf8CaptureCatalogAdmissionTests
         for (ulong cutoff = 0; cutoff <= maximum; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
-                kind == Utf8ResourceLimitKind.ConstructionBytes ? 112 + cutoff : Utf8ConstructionScope.DefaultBufferBytes,
+                kind == Utf8ResourceLimitKind.ConstructionBytes ? 128 + cutoff : Utf8ConstructionScope.DefaultBufferBytes,
                 kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 2 + cutoff : Utf8ConstructionScope.DefaultWorkSteps,
                 kind == Utf8ResourceLimitKind.ConstructionDepth ? cutoff : Utf8ConstructionScope.DefaultDepth);
             var budget = owner.Budget;
             var parent = budget.AllocateObject(17, static value => new Parent(value));
-            var checkpoint = budget.ObjectCheckpoint;
+            var checkpoint = budget.ReservedBytes;
             Utf8CaptureCatalog? result = null;
             var failure = Record.Exception(() => result = Utf8CaptureCatalog.Create(seed.Unnamed, seed.Definitions, seed.References));
             Assert.Equal(0ul, budget.Depth);
@@ -80,16 +80,16 @@ public sealed class Utf8CaptureCatalogAdmissionTests
                 Assert.NotNull(result);
                 Assert.Equal(seed.Numbers, result.GroupNumbers);
                 Assert.Equal(seed.Names, result.GroupNames);
-                Assert.True(budget.ReservedBytes > 112);
+                Assert.True(budget.ReservedBytes > 128);
             }
             else
             {
                 var limit = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                 Assert.Equal(kind, limit.ResourceKind);
                 Assert.True(limit.Requested > limit.Limit);
-                Assert.Equal(112ul, budget.ReservedBytes);
-                Assert.Same(checkpoint, budget.ObjectCheckpoint);
-                Assert.Same(parent, checkpoint!.Value);
+                Assert.Equal(128ul, budget.ReservedBytes);
+                Assert.Equal(checkpoint, budget.ReservedBytes);
+                Assert.NotNull(parent);
                 rejected++;
             }
             if (cutoff == maximum) Assert.Null(failure);
@@ -114,10 +114,9 @@ public sealed class Utf8CaptureCatalogAdmissionTests
         Assert.Equal(fields.Select(field => field.FieldType), stateFields.Select(field => field.FieldType));
         using var owner = Utf8ConstructionScope.Enter();
         var catalog = Utf8CaptureCatalog.Create(0, [], false);
-        var acquisition = owner.Budget.ObjectCheckpoint!;
-        Assert.Same(catalog, acquisition.Value);
-        Assert.Equal(144ul, acquisition.Bytes);
-        Assert.Equal(240ul, owner.Budget.ReservedBytes);
+        Assert.NotNull(catalog);
+        Assert.Equal(128ul + Utf8ConstructionBudget.ArrayBytes<int>(1)
+            + Utf8ConstructionBudget.ArrayBytes<string>(1), owner.Budget.ReservedBytes);
     }
 
     [Fact]

@@ -32,7 +32,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         from depth in Enumerable.Range(0, 5) select new object[] { family, depth };
     private static object? Field(object value, string name) => value.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value);
     private static object? Property(object value, string name) => value.GetType().GetProperty(name)!.GetValue(value);
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? 176ul : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong DataLoan(AsciiExactLiteralSearchData data)
     {
         if (data.Buckets is null) return 0;
@@ -55,7 +55,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
     private static ulong ExtraLoan(byte[][] values)
     {
         var offsets = Ranking(values); var anchorCount = values.Select(v => v[offsets[0]]).Distinct().Count();
-        var loan = Utf8ConstructionBudget.ArrayBytes<byte>(anchorCount) + (anchorCount > 3 ? 176ul : 0)
+        var loan = Utf8ConstructionBudget.ArrayBytes<byte>(anchorCount) + (anchorCount > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0)
             + (offsets.Length == 1 ? 0 : 32ul + ((16ul * (ulong)(offsets.Length - 1) + 15) & ~15ul));
         foreach (var offset in offsets.Skip(1)) loan += Utf8ConstructionBudget.ArrayBytes<byte>(values.Select(v => v[offset]).Distinct().Count());
         if (values.Length != 3 && Secondary(values, offsets[0]) >= 0) loan += 32 + ((16ul * (ulong)values.Length + 15) & ~15ul);
@@ -68,10 +68,10 @@ public sealed class Utf8SmallFamilyAdmissionTests
     {
         var literals = Family(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var accepted = PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search);
         Assert.Equal(Eligible(literals), accepted);
-        if (!accepted) { Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); }
+        if (!accepted) { Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
         else
         {
             var data = (AsciiExactLiteralSearchData)Field(search, "_searchData")!; var offsets = Ranking(literals);
@@ -98,7 +98,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
             }
             foreach (var bucket in data.Buckets)
                 foreach (var value in bucket.Literals) Assert.Contains(literals, v => ReferenceEquals(value, v));
-            Assert.Equal(112 + DataLoan(data) + ExtraLoan(literals), owner.Budget.ReservedBytes);
+            Assert.Equal(128 + DataLoan(data) + ExtraLoan(literals), owner.Budget.ReservedBytes);
         }
         Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
@@ -112,22 +112,22 @@ public sealed class Utf8SmallFamilyAdmissionTests
         {
             _ = full.Budget.AllocateObject(17, static value => new Box(value));
             Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(values, out _));
-            peak = full.Budget.PeakBytes - 112; work = full.Budget.WorkSteps - 2;
+            peak = full.Budget.PeakBytes - 128; work = full.Budget.WorkSteps - 2;
         }
         var successes = 0;
         for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 112 + allowance : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            using var owner = new Utf8ConstructionScope(0, bytes ? 128 + allowance : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             PreparedSmallAsciiLiteralFamilySearch search = default;
             var error = Record.Exception(() => Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(values, out search)));
             if (error is null)
-            { successes++; Assert.Equal(112 + DataLoan((AsciiExactLiteralSearchData)Field(search, "_searchData")!) + ExtraLoan(values), owner.Budget.ReservedBytes); }
+            { successes++; Assert.Equal(128 + DataLoan((AsciiExactLiteralSearchData)Field(search, "_searchData")!) + ExtraLoan(values), owner.Budget.ReservedBytes); }
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.True(owner.Budget.WorkSteps >= 2 + (bytes || allowance > 0 ? 1ul : 0));
             }
             Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
@@ -142,16 +142,16 @@ public sealed class Utf8SmallFamilyAdmissionTests
     {
         var values = Family(family); var required = family is 4 or 5 ? 1 : family == 6 ? 3 : 4;
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => PreparedSmallAsciiLiteralFamilySearch.TryCreate(values, out _));
         if (depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
-        if (depth == 0) { Assert.Equal(112ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
+        if (depth == 0) { Assert.Equal(128ul, owner.Budget.PeakBytes); Assert.Equal(2ul, owner.Budget.WorkSteps); }
     }
     [Fact]
     public void OutOfDomainFamiliesNeedNoOwnerWorkStorageOrDepth()

@@ -53,7 +53,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         if (UniqueOffset(groups, shortest) >= 0) return PreparedLiteralSetStrategy.UniqueAnchorByte;
         return shortest > 0 && groups.Sum(g => g.Length) >= 8 ? PreparedLiteralSetStrategy.MultiLiteralTrie : PreparedLiteralSetStrategy.Bucketed;
     }
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? 176ul : 0);
+    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 3 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
     private static ulong DataLoan(AsciiExactLiteralSearchData data) => SearchLoan(data.FirstByteSearch)
         + Utf8ConstructionBudget.ArrayBytes<int>(data.BucketIndexMap.Length) + Utf8ConstructionBudget.ArrayBytes<AsciiExactLiteralBucket>(data.Buckets.Length)
         + data.Buckets.Aggregate(0ul, (sum, b) => sum + Utf8ConstructionBudget.ArrayBytes<byte[]>(b.Literals.Length)
@@ -82,7 +82,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         Assert.Equal(literals.Length == 0 ? int.MaxValue : literals.Min(v => v.Length), data.ShortestLength);
         Assert.Equal(groups.Length, data.Buckets.Length);
         Assert.Equal(literals.Length == 0 ? Array.Empty<byte>() : data.ShortestLength == 0 ? Array.Empty<byte>() : groups.Select(g => g[0][0]).ToArray(), data.FirstByteSearch.Values.ToArray());
-        Assert.Equal(112 + DataLoan(data), owner.Budget.ReservedBytes);
+        Assert.Equal(128 + DataLoan(data), owner.Budget.ReservedBytes);
         for (var group = 0; group < groups.Length; group++)
         {
             var bucket = data.Buckets[group]; var expected = groups[group]; var prefix = Prefix(expected);
@@ -111,7 +111,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         var data = borrowed ? AsciiSearch.CreateExactLiteralSearchData(values) : default;
         var search = borrowed ? new PreparedLiteralSetSearch(data) : new PreparedLiteralSetSearch(values);
         Assert.Equal(Strategy(values), search.Strategy);
-        Assert.Equal(112 + DataLoan(search.SearchData) + ExtraLoan(search), owner.Budget.ReservedBytes);
+        Assert.Equal(128 + DataLoan(search.SearchData) + ExtraLoan(search), owner.Budget.ReservedBytes);
         if (search.Strategy != PreparedLiteralSetStrategy.UniqueAnchorByte) Assert.Null(Property(search, "UniqueAnchor"));
         if (search.Strategy != PreparedLiteralSetStrategy.MultiLiteralTrie)
         { var trie = Assert.IsType<PreparedMultiLiteralTrieSearch>(Property(search, "MultiLiteral")); Assert.Null(trie.RootMap); }
@@ -127,7 +127,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     [MemberData(nameof(Cutoffs))]
     public void EveryByteAndWorkCutoffRefundsChildrenAndPreservesFundedParentAndSpentWork(int kind, bool bytes)
     {
-        ulong peak, work, parentLoan = 112, parentWork = 2;
+        ulong peak, work, parentLoan = 128, parentWork = 2;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             var data = kind == 0 ? default : AsciiSearch.CreateExactLiteralSearchData(CutoffFamily(kind));
@@ -141,14 +141,14 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
             using var owner = new Utf8ConstructionScope(0, bytes ? parentLoan + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : parentWork + allowance, ulong.MaxValue);
             var data = kind == 0 ? default : AsciiSearch.CreateExactLiteralSearchData(CutoffFamily(kind));
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             var loan = 0ul; var error = Record.Exception(() => loan = Prepare(kind, data));
             if (error is null) { successes++; Assert.Equal(parentLoan + loan, owner.Budget.ReservedBytes); }
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(parentLoan, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(parentLoan, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
             Assert.InRange(owner.Budget.WorkSteps, parentWork, bytes ? ulong.MaxValue : parentWork + allowance);
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
@@ -163,16 +163,16 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         var values = kind == 0 ? Family(13) : kind == 1 ? Family(7) : Family(9);
         var required = kind == 2 ? 4 : 3;
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => { if (kind == 0) _ = AsciiSearch.CreateExactLiteralSearchData(values); else _ = new PreparedLiteralSetSearch(values); });
         if (depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
-        if (depth == 0) Assert.Equal(112ul, owner.Budget.PeakBytes);
+        if (depth == 0) Assert.Equal(128ul, owner.Budget.PeakBytes);
     }
 
     [Fact]

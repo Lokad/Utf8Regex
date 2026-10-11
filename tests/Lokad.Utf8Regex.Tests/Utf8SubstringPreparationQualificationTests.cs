@@ -44,7 +44,7 @@ public sealed class Utf8SubstringPreparationQualificationTests
             Assert.Equal(expected, owner.Budget.ReservedBytes);
             Assert.Equal(expected, owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
         }
     }
 
@@ -94,22 +94,22 @@ public sealed class Utf8SubstringPreparationQualificationTests
             var successes = 0;
             for (var cutoff = 0ul; cutoff <= (bytes ? peak : work); cutoff++)
             {
-                using var owner = new Utf8ConstructionScope(0, bytes ? 112 + cutoff : ulong.MaxValue,
+                using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue,
                     bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 var failure = Record.Exception(() => new PreparedSubstringSearch(needle, true));
-                if (failure is null) { successes++; Assert.Equal(112 + peak, owner.Budget.ReservedBytes); }
+                if (failure is null) { successes++; Assert.Equal(128 + peak, owner.Budget.ReservedBytes); }
                 else
                 {
                     Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                         Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                    Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                    Assert.Equal(128ul, owner.Budget.ReservedBytes);
                 }
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
                 Assert.Equal(0ul, owner.Budget.Reserved);
-                Assert.True(bytes ? owner.Budget.PeakBytes <= 112 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
+                Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
             }
             Assert.Equal(1, successes);
         }
@@ -119,9 +119,9 @@ public sealed class Utf8SubstringPreparationQualificationTests
     public void DepthAndLateShiftDenialsRecoverInTheSameOwnerWithoutRefundingWork()
     {
         var needle = "ABCDEFGHIJKL"u8.ToArray();
-        using var owner = new Utf8ConstructionScope(0, 112 + Utf8ConstructionBudget.ArrayBytes<byte>(needle.Length), 3000, 1);
+        using var owner = new Utf8ConstructionScope(0, 128 + Utf8ConstructionBudget.ArrayBytes<byte>(needle.Length), 3000, 1);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         owner.Budget.EnterDepth();
         try
         {
@@ -134,10 +134,10 @@ public sealed class Utf8SubstringPreparationQualificationTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new PreparedSubstringSearch(needle, true)).ResourceKind);
         var spent = owner.Budget.WorkSteps;
         Assert.True(spent > 2);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var recovered = new PreparedSubstringSearch("xy"u8.ToArray(), true);
         Assert.Equal(1, recovered.LastIndexOf("!XY"u8)); Assert.True(owner.Budget.WorkSteps > spent);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
     }
 
     [Fact]

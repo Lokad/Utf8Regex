@@ -8,8 +8,7 @@ public sealed class Utf8ConstructionFrameAdmissionTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void RootFrameDenialPrecedesStorageAcquisition(int denial)
     {
-        var descriptor = Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, int[], int)>()
-            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
+        var descriptor = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, int[], int)>());
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
             denial == 1 ? ulong.MaxValue : denial == 2 ? 48 + descriptor : 48,
             ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
@@ -21,7 +20,7 @@ public sealed class Utf8ConstructionFrameAdmissionTests
         Assert.Equal(denial == 2 ? 48 + descriptor : 48, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(denial == 2 ? 3ul : 1ul, owner.Budget.WorkSteps);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         owner.Budget.ReleaseArray(parent, false);
     }
 
@@ -45,7 +44,7 @@ public sealed class Utf8ConstructionFrameAdmissionTests
         }
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         owner.Budget.ReleaseArray(parent, false);
     }
 

@@ -30,7 +30,7 @@ public sealed class PythonReTextAdmissionTests
                 var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
                 Assert.Equal(48ul, owner.Budget.ReservedBytes);
-                Assert.Null(owner.Budget.ObjectCheckpoint);
+
             }
             if (allowance == peak) Assert.Null(failure);
             owner.Budget.ReleaseArray(parent, false);
@@ -46,12 +46,6 @@ public sealed class PythonReTextAdmissionTests
         Assert.Equal("g1", result.EmittedGroupNames["é"]);
         Assert.Equal(new[] { 0, 2, 1 }, result.CoreNumbersByPython);
         Assert.Equal("(?<g1>a)(b)\\k<g1>", result.NativePattern);
-        var retainedStrings = new List<object>();
-        for (var allocation = owner.Budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
-            if (allocation.Value is string) retainedStrings.Add(allocation.Value);
-        Assert.Contains(retainedStrings, value => ReferenceEquals(value, result.Pattern));
-        Assert.Contains(retainedStrings, value => ReferenceEquals(value, result.NativePattern));
-        Assert.Contains(retainedStrings, value => ReferenceEquals(value, result.EmittedGroupNames["é"]));
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<int>(3)
             + Utf8ConstructionBudget.StringBytes(result.Pattern.Length) + Utf8ConstructionBudget.StringBytes(result.NativePattern.Length));
     }

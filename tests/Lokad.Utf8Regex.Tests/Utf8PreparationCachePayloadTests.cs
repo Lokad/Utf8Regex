@@ -106,7 +106,7 @@ public sealed class Utf8PreparationCachePayloadTests
         Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("bad", failure,
             static (_, error) => throw error, default(Utf8ConstructionTextNoControl), default(ByteStorage))));
         Assert.Equal(0, cache.Count); Assert.Equal(0ul, cache.PayloadBytes);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > 0);
     }
 
@@ -122,7 +122,7 @@ public sealed class Utf8PreparationCachePayloadTests
             static (_, token) => { token.Cancel(); return new byte[100]; }, new TokenControl(cancellation.Token), default(ByteStorage)));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
         Assert.Equal(before, cache.PayloadBytes); Assert.Same(good, Add(cache, "good", []));
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
     }
 
     [Theory]
@@ -145,9 +145,9 @@ public sealed class Utf8PreparationCachePayloadTests
             var cache = Create(1, 4096); var good = Add(cache, "good", new byte[100]);
             var before = cache.PayloadBytes;
             using var parent = new Utf8ConstructionScope(ulong.MaxValue,
-                work ? ulong.MaxValue : 112 + capacity, work ? 2 + capacity : ulong.MaxValue, ulong.MaxValue);
+                work ? ulong.MaxValue : 128 + capacity, work ? 2 + capacity : ulong.MaxValue, ulong.MaxValue);
             _ = parent.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = parent.Budget.ObjectCheckpoint;
+            var checkpoint = parent.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Add(cache, "new", new byte[100]));
@@ -163,7 +163,7 @@ public sealed class Utf8PreparationCachePayloadTests
                 if (!work && capacity < maximum) Assert.NotNull(failure);
                 if (!work && capacity == maximum) Assert.Null(failure);
             }
-            Assert.Equal(112ul, parent.Budget.ReservedBytes); Assert.Same(checkpoint, parent.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, parent.Budget.ReservedBytes); Assert.Equal(checkpoint, parent.Budget.ReservedBytes);
             Assert.InRange(parent.Budget.WorkSteps, 2ul, work ? 2 + capacity : ulong.MaxValue);
         }
         Assert.True(failures > 0); Assert.True(successes > 0);

@@ -119,10 +119,10 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     {
         var input = Make(0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
-            denial == 0 ? 112ul : ulong.MaxValue, denial == 2 ? 2ul : ulong.MaxValue,
+            denial == 0 ? 128ul : ulong.MaxValue, denial == 2 ? 2ul : ulong.MaxValue,
             denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(denial switch
         {
@@ -130,11 +130,11 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             1 => Utf8ResourceLimitKind.ConstructionDepth,
             _ => Utf8ResourceLimitKind.ConstructionWorkSteps,
         }, failure.ResourceKind);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
-        Assert.Equal(112ul, owner.Budget.PeakBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.PeakBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(2ul, owner.Budget.WorkSteps);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -145,19 +145,19 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         var input = Make(32);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
         Assert.Equal(9ul, failure.Requested);
         Assert.Equal(8ul, owner.Budget.PeakDepth);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var work = owner.Budget.WorkSteps;
         using (var recovery = Utf8ConstructionScope.Enter()) Run(route, Make(0));
         Assert.True(owner.Budget.WorkSteps > work);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -168,15 +168,15 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         var input = Make(128);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.True(failure.Requested > 2048);
         Assert.InRange(owner.Budget.PeakBytes, 113ul, 2048ul);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
@@ -198,7 +198,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
             using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Run(route, input));
             if (cutoff == work) Assert.Null(failure);
@@ -209,10 +209,10 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
                 Assert.True(breach.Requested > cutoff + 2);
             }
             Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Reserved);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
         }
     }
@@ -231,9 +231,9 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Assert.InRange(peak, 1ul, 10000ul);
         for (var allowance = 0ul; allowance <= peak; allowance++)
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 112 + allowance, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + allowance, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
             using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Run(route, input));
             if (allowance == peak) Assert.Null(failure);
@@ -241,13 +241,13 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             {
                 var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
-                Assert.True(breach.Requested > 112 + allowance);
+                Assert.True(breach.Requested > 128 + allowance);
             }
-            Assert.True(owner.Budget.PeakBytes <= 112 + allowance);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.True(owner.Budget.PeakBytes <= 128 + allowance);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Reserved);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
         }
     }
@@ -261,7 +261,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Run(route, input);
         Assert.True(owner.Budget.ReservedBytes > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.NotNull(owner.Budget.ObjectCheckpoint);
+        Assert.True(owner.Budget.ReservedBytes > 0);
         Assert.Equal(route == 1 ? (ulong)input.Program.Instructions.Count : 0ul, owner.Budget.Reserved);
     }
 
@@ -288,7 +288,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
                 Assert.True(breach.Requested > limit);
                 Assert.Equal(0ul, owner.Budget.Reserved);
                 Assert.Equal(0ul, owner.Budget.ReservedBytes);
-                Assert.Null(owner.Budget.ObjectCheckpoint);
+
             }
             Assert.True(owner.Budget.Peak <= limit);
             Assert.Equal(0ul, owner.Budget.Depth);

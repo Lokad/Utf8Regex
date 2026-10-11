@@ -12,20 +12,19 @@ public sealed class PythonReScalarConversionAdmissionTests
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
     [InlineData(6)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(10)]
-    public void DirectIrObjectAndTrackerFitTheFullStoredFieldLoan(int kind)
+    public void DirectIrObjectFitsConservativeAcquisitionCharge(int kind)
     {
         using var owner = Utf8ConstructionScope.Enter();
         _ = Create(kind);
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var held = owner.Budget.ReservedBytes;
         var before = GC.GetAllocatedBytesForCurrentThread();
         var node = Create(kind);
         var allocated = (ulong)(GC.GetAllocatedBytesForCurrentThread() - before);
-        var acquired = Assert.IsType<Utf8ConstructionBudget.ObjectAllocation>(owner.Budget.ObjectCheckpoint);
-        Assert.Same(node, acquired.Value);
-        Assert.Same(checkpoint, acquired.Previous);
-        Assert.InRange(allocated, 1ul, acquired.Bytes);
-        Assert.Equal(held + acquired.Bytes, owner.Budget.ReservedBytes);
+        var charge = owner.Budget.ReservedBytes - held;
+        Assert.InRange(charge, 128ul, ulong.MaxValue);
+        Assert.InRange(allocated, 1ul, charge);
+        Assert.NotNull(node);
         if (node is Utf8SliceNode.BackrefNode reference)
         {
             Assert.True(reference.FoldCase);
@@ -49,7 +48,7 @@ public sealed class PythonReScalarConversionAdmissionTests
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(48ul, owner.Budget.PeakBytes);
             Assert.Equal(1ul, owner.Budget.WorkSteps);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
             owner.Budget.ReleaseArray(parent, false);
         }
     }
@@ -70,7 +69,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.Equal(48ul, owner.Budget.PeakBytes);
         Assert.Equal(1ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         owner.Budget.ReleaseArray(parent, false);
     }
 
@@ -90,24 +89,24 @@ public sealed class PythonReScalarConversionAdmissionTests
         }
         foreach (var allowance in new[] { 0ul, 128ul, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 112, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 128, ulong.MaxValue, ulong.MaxValue);
             var parent = PythonReAstFactory.Literal('p');
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Utf8SliceProgram? program = null;
             var failure = Record.Exception(() => program = PythonReScalarCompiler.Compile(parse, translation, full));
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.True(owner.Budget.PeakBytes <= allowance + 112);
+            Assert.True(owner.Budget.PeakBytes <= allowance + 128);
             if (failure is not null)
             {
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-                Assert.Same(parent, checkpoint?.Value);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                Assert.Equal((int)'p', parent.Value);
             }
             else
             {
                 Assert.NotNull(program);
-                Assert.True(owner.Budget.ReservedBytes > 112);
+                Assert.True(owner.Budget.ReservedBytes > 128);
             }
             if (allowance == peak) Assert.Null(failure);
         }
@@ -121,12 +120,12 @@ public sealed class PythonReScalarConversionAdmissionTests
         var translation = PythonReTranslator.Translate(parse);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = PythonReAstFactory.Literal('p');
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         Assert.Throws<InvalidOperationException>(() => PythonReScalarCompiler.Compile(parse, translation, false));
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(@"\C"));
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-        Assert.Same(parent, checkpoint?.Value);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+        Assert.Equal((int)'p', parent.Value);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.WorkSteps > 2);
         var recovery = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
@@ -134,7 +133,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     }
 
     [Fact]
-    public void NumericCaptureNamesAndDirectIrNodesRetainAdmittedRoots()
+    public void NumericCaptureNamesAndDirectIrNodesKeepTheirCompiledBehavior()
     {
         var parse = new PythonReParser("(a)(b)(?P<é>.)").Parse(PythonReCompileOptions.None);
         var translation = PythonReTranslator.Translate(parse);
@@ -142,12 +141,12 @@ public sealed class PythonReScalarConversionAdmissionTests
         var program = PythonReScalarCompiler.Compile(parse, translation, true);
         Assert.NotNull(program);
         Assert.Equal(new[] { "0", "1", "2", "g3" }, program.GroupNames);
-        var roots = new List<object>();
-        for (var allocation = owner.Budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous) roots.Add(allocation.Value);
-        Assert.Contains(roots, value => value is Utf8SliceNode.CaptureNode);
-        Assert.Contains(roots, value => value is Utf8SliceNode.AnchorNode);
-        Assert.Contains(roots, value => ReferenceEquals(value, program.GroupNames[1]));
-        Assert.Contains(roots, value => ReferenceEquals(value, program.GroupNames[2]));
+        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(program.GroupNames.Length)
+            + Utf8ConstructionBudget.StringBytes(program.GroupNames[1].Length)
+            + Utf8ConstructionBudget.StringBytes(program.GroupNames[2].Length));
+        // Exercise the actual compiled capture and full-match anchor behavior,
+        // instead of requiring temporary IR nodes in an accounting registry.
+        Assert.Equal("ab😀", new Utf8PythonRegex("(a)(b)(?P<é>.)").FullMatchToString("ab😀"u8));
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 

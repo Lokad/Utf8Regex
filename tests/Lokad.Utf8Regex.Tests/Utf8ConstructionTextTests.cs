@@ -7,19 +7,19 @@ public sealed class Utf8ConstructionTextTests
 {
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(7)] [InlineData(8)] [InlineData(9)] [InlineData(1024)]
-    public void CreatedTextAdmitsItsTerminatorAndRetainingDescriptor(int length)
+    public void CreatedTextAdmitsItsTerminatorAndLengthBasedCapacity(int length)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var source = new string('é', length);
         var value = owner.Budget.CopyText(source);
         Assert.Equal(source, value);
-        Assert.Equal(length == 0 ? 0ul : Utf8ConstructionBudget.StringBytes(length) + 64, owner.Budget.ReservedBytes);
-        if (length == 0) Assert.Null(owner.Budget.ObjectCheckpoint);
-        else Assert.Same(value, owner.Budget.ObjectCheckpoint?.Value);
+        Assert.Equal(length == 0 ? 0ul : Utf8ConstructionBudget.StringBytes(length), owner.Budget.ReservedBytes);
+        if (length == 0) Assert.Same(string.Empty, value);
+        else Assert.NotSame(source, value);
     }
 
     [Fact]
-    public void StringAndDescriptorLoanCoversActualWarmedAllocation()
+    public void StringCapacityCoversActualWarmedAllocation()
     {
         using var owner = Utf8ConstructionScope.Enter();
         var source = new string('a', 129);
@@ -29,24 +29,24 @@ public sealed class Utf8ConstructionTextTests
         var value = owner.Budget.CopyText(source);
         var acquired = (ulong)(GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.True(acquired > 0 && acquired <= owner.Budget.ReservedBytes - held);
-        Assert.Same(value, owner.Budget.ObjectCheckpoint?.Value);
+        Assert.Equal(source, value);
     }
 
     [Theory]
-    [InlineData(0ul)] [InlineData(111ul)] [InlineData(112ul)]
+    [InlineData(0ul)] [InlineData(47ul)] [InlineData(48ul)]
     public void TextByteDenialPreservesParentCapacityAndRoots(ulong allowance)
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 48, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         var failure = Record.Exception(() => owner.Budget.CopyText("a"));
-        if (allowance < 112)
+        if (allowance < 48)
         {
             var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, breach.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
         }
-        else { Assert.Null(failure); Assert.Equal(160ul, owner.Budget.ReservedBytes); }
+        else { Assert.Null(failure); Assert.Equal(96ul, owner.Budget.ReservedBytes); }
         owner.Budget.ReleaseArray(parent, false);
     }
 
@@ -76,7 +76,7 @@ public sealed class Utf8ConstructionTextTests
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         }
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         Assert.Equal(1ul, owner.Budget.WorkSteps);
         owner.Budget.ReleaseArray(parent, false);
     }
@@ -101,9 +101,10 @@ public sealed class Utf8ConstructionTextTests
         var held = owner.Budget.ReservedBytes;
         Assert.Same(source, Utf8ConstructionText.Replace(source, "x", "a"));
         Assert.Equal(held, owner.Budget.ReservedBytes);
-        Assert.Equal("a!a!b", Utf8ConstructionText.Replace(source, "😀", "!"));
+        var result = Utf8ConstructionText.Replace(source, "😀", "!");
+        Assert.Equal("a!a!b", result);
         Assert.True(owner.Budget.ReservedBytes > held);
-        Assert.Equal("a😀a😀b".Replace("😀", "!", StringComparison.Ordinal), (string)owner.Budget.ObjectCheckpoint!.Value);
+        Assert.Equal("a😀a😀b".Replace("😀", "!", StringComparison.Ordinal), result);
     }
 
     [Fact]

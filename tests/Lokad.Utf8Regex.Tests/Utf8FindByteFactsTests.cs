@@ -157,15 +157,15 @@ public sealed class Utf8FindByteFactsTests
                 {
                     using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
                     var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                    var checkpoint = owner.Budget.ObjectCheckpoint;
+                    var checkpoint = owner.Budget.ReservedBytes;
                     Exception? failure;
                     using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.Equal(expected, ProduceLiteral(tree.Root, route)));
                     if (cutoff == work) Assert.Null(failure);
                     else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                    Assert.Equal(112ul, owner.Budget.ReservedBytes);
+                    Assert.Equal(128ul, owner.Budget.ReservedBytes);
                     Assert.Equal(0ul, owner.Budget.Reserved);
                     Assert.Equal(0ul, owner.Budget.Depth);
-                    Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                     Assert.Equal(17, parent.Value);
                     Assert.InRange(owner.Budget.WorkSteps, 2ul, cutoff + 2);
                 }
@@ -296,13 +296,13 @@ public sealed class Utf8FindByteFactsTests
                 {
                     using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
                     var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                    var checkpoint = owner.Budget.ObjectCheckpoint;
+                    var checkpoint = owner.Budget.ReservedBytes;
                     if (cutoff < work)
                     {
                         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce(tree, facts));
                         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-                        Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                        Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                     }
                     else Assert.NotNull(Produce(tree, facts));
                     Assert.Equal(17, parent.Value);
@@ -311,18 +311,18 @@ public sealed class Utf8FindByteFactsTests
                 }
                 foreach (var depthDenial in new[] { false, true })
                 {
-                    using var owner = new Utf8ConstructionScope(0, depthDenial ? ulong.MaxValue : 112, ulong.MaxValue, depthDenial ? 0ul : ulong.MaxValue);
+                    using var owner = new Utf8ConstructionScope(0, depthDenial ? ulong.MaxValue : 128, ulong.MaxValue, depthDenial ? 0ul : ulong.MaxValue);
                     var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-                    var checkpoint = owner.Budget.ObjectCheckpoint;
+                    var checkpoint = owner.Budget.ReservedBytes;
                     var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce(tree, facts));
                     Assert.Equal(depthDenial ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-                    Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                    Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                    Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                    Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                     Assert.Equal(0ul, owner.Budget.Depth);
                     Assert.Equal(17, parent.Value);
                     if (depthDenial && !facts)
                     {
-                        Assert.Equal(112ul, owner.Budget.PeakBytes);
+                        Assert.Equal(128ul, owner.Budget.PeakBytes);
                         Assert.Equal(2ul, owner.Budget.WorkSteps);
                     }
                 }
@@ -332,10 +332,10 @@ public sealed class Utf8FindByteFactsTests
         Assert.NotNull(declined);
         using var recovery = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var held = recovery.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var heldCheckpoint = recovery.Budget.ObjectCheckpoint;
+        var heldCheckpoint = recovery.Budget.ReservedBytes;
         Assert.Null(Utf8OwnedFindOptimizations.FindAlternatePrefixes(declined.Root, declined.Options));
-        Assert.Equal(112ul, recovery.Budget.ReservedBytes);
-        Assert.Same(heldCheckpoint, recovery.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, recovery.Budget.ReservedBytes);
+        Assert.Equal(heldCheckpoint, recovery.Budget.ReservedBytes);
         Assert.Equal(0ul, recovery.Budget.Depth);
         Assert.True(recovery.Budget.WorkSteps > 2);
         Assert.Equal(17, held.Value);
@@ -432,28 +432,28 @@ public sealed class Utf8FindByteFactsTests
         Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(folded.Root));
         for (var denial = 0; denial < 3; denial++)
         {
-            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 112ul : ulong.MaxValue,
+            using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
                 denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root));
             Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
                 1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
         }
         for (var cutoff = 0ul; cutoff < work; cutoff++)
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 2, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root));
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(17, parent.Value);
         }
         var decline = Utf8OwnedTreeParser.TryParse("[ab](?=c)", RegexOptions.CultureInvariant);
@@ -461,11 +461,11 @@ public sealed class Utf8FindByteFactsTests
         using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(decline.Root));
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.True(owner.Budget.WorkSteps > 2);
             Assert.Equal(17, parent.Value);
         }
@@ -569,7 +569,7 @@ public sealed class Utf8FindByteFactsTests
         var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, text);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 1000, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (route == 0) Utf8OwnedFindOptimizations.ComputeByteWidth(node);
@@ -579,7 +579,7 @@ public sealed class Utf8FindByteFactsTests
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.Reserved);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(1000ul, owner.Budget.WorkSteps);
         Assert.Single(parent);
         var spent = owner.Budget.WorkSteps;
@@ -614,7 +614,7 @@ public sealed class Utf8FindByteFactsTests
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 48ul : ulong.MaxValue,
             denial == 2 ? 1ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(node));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
             1 => Utf8ResourceLimitKind.ConstructionDepth, _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
@@ -622,7 +622,7 @@ public sealed class Utf8FindByteFactsTests
         Assert.Equal(48ul, owner.Budget.PeakBytes);
         Assert.Equal(1ul, owner.Budget.WorkSteps);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Single(parent);
     }
 }

@@ -89,13 +89,6 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         _ = Walk(search, new(ReferenceEqualityComparer.Instance), set);
         return set;
     }
-    private static ulong ObjectLoans(Utf8ConstructionBudget.ObjectAllocation? latest, Utf8ConstructionBudget.ObjectAllocation? checkpoint)
-    {
-        ulong bytes = 0;
-        for (var node = latest; !ReferenceEquals(node, checkpoint); node = node!.Previous)
-        { Assert.NotNull(node); bytes += node.Bytes; }
-        return bytes;
-    }
 
     [Theory]
     [MemberData(nameof(Modes))]
@@ -106,7 +99,7 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var exact = mode == 1 ? new PreparedLiteralSetSearch(literals) : default;
         var folded = mode == 3 ? new PreparedAsciiIgnoreCaseLiteralSetSearch(literals) : default;
-        var loan = owner.Budget.ReservedBytes; var checkpoint = owner.Budget.ObjectCheckpoint;
+        var loan = owner.Budget.ReservedBytes; var checkpoint = owner.Budget.ReservedBytes;
         var borrowed = Borrowed(literals, mode == 1 ? exact : mode == 3 ? folded : null);
         var search = Prepare(literals, mode, exact, folded);
         Assert.Equal(ExpectedKind(literals, mode >= 2), search.Kind);
@@ -115,12 +108,12 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         Assert.Equal(expected.Length, search.Literals.Length);
         for (var i = 0; i < expected.Length; i++) Assert.Same(expected[i], search.Literals[i]);
         if (mode is 0 or 2) Assert.Same(literals, search.Literals);
-        Assert.Equal(loan + Walk(search, borrowed, new(ReferenceEqualityComparer.Instance))
-            + ObjectLoans(owner.Budget.ObjectCheckpoint, checkpoint), owner.Budget.ReservedBytes);
+        Assert.True(owner.Budget.ReservedBytes >= loan + Walk(search, borrowed, new(ReferenceEqualityComparer.Instance)));
         if (search.Kind != PreparedMultiLiteralKind.ExactDirect) Assert.Null(search.ExactSearch.SearchData.Buckets);
         if (search.Kind is not (PreparedMultiLiteralKind.ExactTrie or PreparedMultiLiteralKind.ExactAutomaton)) Assert.Null(search.TrieSearch.RootMap);
         if (search.Kind is not (PreparedMultiLiteralKind.ExactEarliest or PreparedMultiLiteralKind.ExactAutomaton)) Assert.Null(search.EarliestSearch.Literals);
-        if (search.Kind == PreparedMultiLiteralKind.ExactEarliest) Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        if (search.Kind == PreparedMultiLiteralKind.ExactEarliest)
+            Assert.Equal(loan + Walk(search, borrowed, new(ReferenceEqualityComparer.Instance)), owner.Budget.ReservedBytes);
         if (mode == 1 && search.Kind == PreparedMultiLiteralKind.ExactDirect) Assert.Same(exact.SearchData.Buckets, search.ExactSearch.SearchData.Buckets);
         if (mode == 3) Assert.Same(folded.Buckets, search.IgnoreCaseSearch.Buckets);
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
@@ -146,14 +139,14 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
                 bytes ? ulong.MaxValue : parentWork + allowance, ulong.MaxValue);
             var exact = mode == 1 ? new PreparedLiteralSetSearch(literals) : default;
             var folded = mode == 3 ? new PreparedAsciiIgnoreCaseLiteralSetSearch(literals) : default;
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
             var error = Record.Exception(() => _ = Prepare(literals, mode, exact, folded));
             if (error is null) successes++;
             else
             {
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
                     Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(parentLoan, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(parentLoan, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             }
             Assert.InRange(owner.Budget.WorkSteps, parentWork, bytes ? ulong.MaxValue : parentWork + allowance);
             Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
@@ -172,16 +165,16 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { _ = Prepare(literals, mode, exact, folded); required = funded.Budget.PeakDepth; }
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => _ = Prepare(literals, mode, exact, folded));
         if ((ulong)depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        if (depth == 0) Assert.Equal(112ul, owner.Budget.PeakBytes);
+        if (depth == 0) Assert.Equal(128ul, owner.Budget.PeakBytes);
     }
 
     [Fact]

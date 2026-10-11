@@ -90,20 +90,20 @@ public sealed class PythonReParserCollectionAdmissionTests
         }
         foreach (var limit in new[] { 0ul, 512ul, peak / 2, peak - 1, peak })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit + 112, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, limit + 128, ulong.MaxValue, ulong.MaxValue);
             var parent = PythonReAstFactory.Literal('p');
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Record.Exception(() => new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.True(owner.Budget.PeakBytes <= limit + 112);
+            Assert.True(owner.Budget.PeakBytes <= limit + 128);
             if (failure is not null)
             {
                 Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(112ul, owner.Budget.ReservedBytes);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-                Assert.Same(parent, checkpoint?.Value);
+                Assert.Equal(128ul, owner.Budget.ReservedBytes);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                Assert.NotNull(parent);
             }
-            else Assert.True(owner.Budget.ReservedBytes > 112);
+            else Assert.True(owner.Budget.ReservedBytes > 128);
             if (limit == peak) Assert.Null(failure);
         }
     }
@@ -125,7 +125,7 @@ public sealed class PythonReParserCollectionAdmissionTests
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, breach.ResourceKind);
         }
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         Assert.True(owner.Budget.WorkSteps <= extra + 1);
         owner.Budget.ReleaseArray(parent, false);
     }

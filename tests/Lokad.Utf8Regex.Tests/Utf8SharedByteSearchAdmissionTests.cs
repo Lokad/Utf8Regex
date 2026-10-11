@@ -4,8 +4,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8SharedByteSearchAdmissionTests
 {
-    private static ulong SetBytes => Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
-        + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
+    private static ulong SetBytes => Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>());
 
     public static IEnumerable<object[]> Shapes()
         => from length in new[] { 0, 1, 2, 3, 4, 5, 16, 128, 256 }
@@ -25,7 +24,7 @@ public sealed class Utf8SharedByteSearchAdmissionTests
         Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(length) + (length > 3 ? SetBytes : 0), owner.Budget.ReservedBytes);
         Assert.Equal(length > 3 ? (ulong)(3 * length + 258) : (ulong)(2 * length), owner.Budget.WorkSteps);
         Assert.Equal(length == 0 ? 0ul : length > 3 ? 2ul : 1ul, owner.Budget.PeakDepth);
-        Assert.Equal(length > 3, owner.Budget.ObjectCheckpoint is not null);
+        Assert.Equal(length > 0, owner.Budget.ReservedBytes > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
         byte[] subject = [11, 17, 96, 175, 254, 128, 255];
         Assert.Equal(Array.FindIndex(subject, value => expected.Contains(value)), search.IndexOf(subject));
@@ -47,26 +46,26 @@ public sealed class Utf8SharedByteSearchAdmissionTests
         foreach (var byteLimit in new[] { false, true })
             for (var allowance = 0ul; allowance <= (byteLimit ? bytes : work); allowance++)
             {
-                using var owner = new Utf8ConstructionScope(0, byteLimit ? 112 + allowance : ulong.MaxValue,
+                using var owner = new Utf8ConstructionScope(0, byteLimit ? 128 + allowance : ulong.MaxValue,
                     byteLimit ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 var error = Record.Exception(() => { _ = span ? PreparedByteSearch.Create(input.AsSpan()) : PreparedByteSearch.Create(input); });
                 if (allowance < (byteLimit ? bytes : work))
                 {
                     var limit = Assert.IsType<Utf8ResourceLimitExceededException>(error);
                     Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, limit.ResourceKind);
-                    Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-                    if (byteLimit) Assert.True(limit.Requested > 112 + allowance);
+                    Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                    if (byteLimit) Assert.True(limit.Requested > 128 + allowance);
                 }
                 else
                 {
-                    Assert.Null(error); Assert.Equal(112 + bytes, owner.Budget.ReservedBytes);
-                    Assert.Equal(length > 3, !ReferenceEquals(checkpoint, owner.Budget.ObjectCheckpoint));
+                    Assert.Null(error); Assert.Equal(128 + bytes, owner.Budget.ReservedBytes);
+                    Assert.Equal(length > 0, owner.Budget.ReservedBytes > checkpoint);
                 }
                 Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
                 Assert.InRange(owner.Budget.WorkSteps, 2ul, byteLimit ? 2 + work : 2 + allowance);
-                if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 112ul, 112 + allowance);
+                if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 128ul, 128 + allowance);
             }
     }
 
@@ -98,7 +97,7 @@ public sealed class Utf8SharedByteSearchAdmissionTests
             _ => Utf8ResourceLimitKind.ConstructionDepth
         }, error.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(48ul, owner.Budget.PeakBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0xa5, parent[0]);
     }
 
     [Fact]
@@ -155,7 +154,7 @@ public sealed class Utf8SharedByteSearchAdmissionTests
             Assert.True(owner.Budget.WorkSteps > 1);
         }
         else Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.Throws<Utf8ResourceLimitExceededException>(() => Produce()).ResourceKind);
-        Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0xa5, parent[0]);
+        Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0xa5, parent[0]);
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 

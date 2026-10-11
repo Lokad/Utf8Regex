@@ -13,8 +13,7 @@ public sealed class Utf8ConstructionWorkDepthTests
     {
         // Node, tree, frame and catalog descriptors survive in the enclosing owner;
         // continuation and declaration-array scratch release before returning.
-        var frameDescriptor = Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, Array, int)>()
-            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
+        var frameDescriptor = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, Array, int)>());
         ulong work, retained;
         using (var measured = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
@@ -23,7 +22,7 @@ public sealed class Utf8ConstructionWorkDepthTests
             work = measured.Budget.WorkSteps;
             retained = measured.Budget.ReservedBytes;
             Assert.True(retained > frameDescriptor);
-            Assert.Same(tree, measured.Budget.ObjectCheckpoint!.Value);
+            Assert.NotNull(tree);
             Assert.Equal(0ul, measured.Budget.Depth);
         }
         Assert.InRange(work, 1ul, 2_000_000ul);

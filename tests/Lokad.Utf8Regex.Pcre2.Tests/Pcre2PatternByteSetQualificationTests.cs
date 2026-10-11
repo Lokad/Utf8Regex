@@ -34,7 +34,7 @@ public sealed class Pcre2PatternByteSetQualificationTests
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Prepare(definition));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Null(owner.Budget.ObjectCheckpoint);
+
         }
         using var success = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         Prepare(definition);
@@ -87,7 +87,7 @@ public sealed class Pcre2PatternByteSetQualificationTests
                 Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes,
                     1 => Utf8ResourceLimitKind.ConstructionWorkSteps, _ => Utf8ResourceLimitKind.ConstructionDepth }, failure.ResourceKind);
                 Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.Null(owner.Budget.ObjectCheckpoint);
+
             }
         }
         var repeat = Set(create[0](), "FirstBytes");

@@ -195,7 +195,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
             {
                 using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
                 var parent = owner.Budget.AllocateArray<byte>(1, false);
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 Exception? failure;
                 using (var child = Utf8ConstructionScope.Enter())
                     failure = Record.Exception(() => Assert.Equal(expected, Extract(tree.Root).Select(set => set.Distance)));
@@ -203,7 +203,7 @@ public sealed class Utf8DeterministicPrefixScalarTests
                 else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 Assert.Equal(48ul, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Single(parent);
                 Assert.InRange(owner.Budget.WorkSteps, 1ul, cutoff + 1);
             }
@@ -214,13 +214,13 @@ public sealed class Utf8DeterministicPrefixScalarTests
         using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 4))
         {
             var parent = owner.Budget.AllocateArray<byte>(1, false);
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Extract(deep));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
             Assert.Equal(5ul, failure.Requested);
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Single(parent);
         }
         foreach (var denial in new[] { 0, 1, 2 })
@@ -228,14 +228,14 @@ public sealed class Utf8DeterministicPrefixScalarTests
             using var owner = new Utf8ConstructionScope(0, denial == 0 ? 48ul : ulong.MaxValue,
                 denial == 2 ? 1ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<byte>(1, false);
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Extract(deep));
             Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
                 _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
             Assert.Equal(48ul, owner.Budget.PeakBytes);
             Assert.Equal(48ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Single(parent);
         }
     }

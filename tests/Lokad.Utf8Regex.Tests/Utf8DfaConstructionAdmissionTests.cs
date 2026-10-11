@@ -140,7 +140,7 @@ public sealed class Utf8DfaConstructionAdmissionTests
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Depth);
-        Assert.Null(parent.Budget.ObjectCheckpoint);
+
         Assert.True(input.TryMatch("ab"u8, 0, out var width));
         Assert.Equal(2, width);
     }

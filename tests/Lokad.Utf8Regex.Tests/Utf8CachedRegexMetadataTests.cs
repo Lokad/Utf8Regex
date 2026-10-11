@@ -11,10 +11,9 @@ public sealed class Utf8CachedRegexMetadataTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var regex = Utf8RegexCache.GetOrAdd("cache-root-" + Guid.NewGuid().ToString("N"), System.Text.RegularExpressions.RegexOptions.CultureInvariant);
-        var found = false;
-        for (var allocation = owner.Budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
-            found |= ReferenceEquals(regex, allocation.Value);
-        Assert.True(found);
+        Assert.True(owner.Budget.ReservedBytes >= Math.Max(128ul, Utf8Regex.CachedObjectBytes));
+        Assert.NotNull(regex);
+
     }
 
     [Fact]
@@ -31,14 +30,13 @@ public sealed class Utf8CachedRegexMetadataTests
     [InlineData(false)] [InlineData(true)]
     public void AdmissionDenialPrecedesFacadeAllocationAndMalformedPatternParsing(bool work)
     {
-        var descriptor = Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
-        var loan = Utf8Regex.CachedObjectBytes + descriptor;
+        var loan = Math.Max(128ul, Utf8Regex.CachedObjectBytes);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, work ? ulong.MaxValue : loan - 1,
             work ? 1ul : ulong.MaxValue, ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Utf8Regex.CreateAdmittedForCache("[", System.Text.RegularExpressions.RegexOptions.CultureInvariant, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout));
         Assert.Equal(work ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Null(owner.Budget.ObjectCheckpoint); Assert.Equal(0ul, owner.Budget.WorkSteps);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.WorkSteps);
     }
 
     [Fact]
@@ -46,10 +44,10 @@ public sealed class Utf8CachedRegexMetadataTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         _ = owner.Budget.AllocateObject(17, static _ => new object());
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         Assert.ThrowsAny<ArgumentException>(() => Utf8Regex.CreateAdmittedForCache("[",
             System.Text.RegularExpressions.RegexOptions.CultureInvariant, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout));
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > 2);
     }
 }

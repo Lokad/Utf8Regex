@@ -91,10 +91,8 @@ public sealed class PreparedByteSetTests
         var set = PreparedByteSet.CreateOwned(values); Array.Fill(values, (byte)17);
         Assert.True(set.Contains(0)); Assert.True(set.Contains(255)); Assert.False(set.Contains(17));
         Assert.Equal(262ul, owner.Budget.WorkSteps);
-        Assert.Equal(Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
-            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>(), owner.Budget.ReservedBytes);
-        Assert.Same(set, owner.Budget.ObjectCheckpoint!.Value);
-        Assert.Null(owner.Budget.ObjectCheckpoint.Previous);
+        Assert.Equal(Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()), owner.Budget.ReservedBytes);
+        Assert.NotNull(set);
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 
@@ -111,13 +109,12 @@ public sealed class PreparedByteSetTests
     [Fact]
     public void NestedObjectDenialPreservesParentLoanAndCheckpoint()
     {
-        var setBytes = Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()
-            + Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
-        using var owner = new Utf8ConstructionScope(0, 112 + setBytes - 1, ulong.MaxValue, ulong.MaxValue);
+        var setBytes = Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>());
+        using var owner = new Utf8ConstructionScope(0, 128 + setBytes - 1, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         Assert.Throws<Utf8ResourceLimitExceededException>(() => PreparedByteSet.CreateOwned(new byte[] { 0, 128, 255 }));
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(261ul, owner.Budget.WorkSteps);
     }

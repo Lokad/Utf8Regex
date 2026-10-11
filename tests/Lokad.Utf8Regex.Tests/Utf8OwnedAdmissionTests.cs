@@ -99,12 +99,12 @@ public sealed class Utf8OwnedAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, 65536, ulong.MaxValue, 128);
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             var spent = owner.Budget.WorkSteps;
             Assert.True(spent > 2);
             using (var recovery = Utf8ConstructionScope.Enter())
@@ -114,9 +114,9 @@ public sealed class Utf8OwnedAdmissionTests
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                 Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             }
-            Assert.Equal(112ul, owner.Budget.ReservedBytes);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.True(owner.Budget.WorkSteps > spent);
             Assert.Equal(17, parent.Value);
         }

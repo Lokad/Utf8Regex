@@ -7,16 +7,16 @@ namespace Lokad.Utf8Regex.Internal;
 /// Covered scans, parser/conversion loops, vectors/maps/sorts and preparation
 /// resumes share cumulative work admission; core/Python parser, preparation and
 /// byte-safe DFA frames share live depth admission. DFA/NFA state vectors,
-/// edges, closures, bucket maps and graph descriptors share capacity admission.
+/// edges, closures, bucket maps and covered helper state share capacity admission.
 /// Owned dynamic emission also admits IL/fixup/local/token/stack buffers,
 /// runtime managed copies, dispatch/lowering tables and complete wrapper state.
 /// Serialized IL byte capacity conservatively counts as instruction capacity.
 /// Speculative failure never refunds admitted work.
-/// Core tree nodes/containers and Python parser AST objects, with their retaining
-/// descriptors, share byte admission. Other IR node objects, lexical strings/child
-/// storage, CLR/JIT metadata and lazy retained
-/// cache key/value retention remains outside this partial backstop. Preparation
-/// cache/component/entry metadata is admitted before acquisition.</summary>
+/// Covered tree/AST/helper objects use numeric conservative charges; no object
+/// registry keeps discarded helpers alive. Covered text and arrays have separate
+/// length-based admission. Failed scopes restore numeric capacity without
+/// invalidating caller-held objects. Unqualified acquisitions, CLR/JIT metadata
+/// and complete lazy cache retention remain outside this partial backstop.</summary>
 internal sealed class Utf8ConstructionScope : IDisposable
 {
     // Preserve a bounded backstop while replacing the former per-program silent
@@ -30,7 +30,6 @@ internal sealed class Utf8ConstructionScope : IDisposable
     private readonly ulong _checkpoint;
     private readonly ulong _byteCheckpoint;
     private readonly ulong _depthCheckpoint;
-    private readonly Utf8ConstructionBudget.ObjectAllocation? _objectCheckpoint;
     private bool _disposed;
     private bool _completed;
 
@@ -51,7 +50,6 @@ internal sealed class Utf8ConstructionScope : IDisposable
         _checkpoint = Budget.Reserved;
         _byteCheckpoint = Budget.ReservedBytes;
         _depthCheckpoint = Budget.Depth;
-        _objectCheckpoint = Budget.ObjectCheckpoint;
         s_current = this;
     }
 
@@ -73,8 +71,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
         if (_disposed) return;
         if (!ReferenceEquals(s_current, this))
             throw new InvalidOperationException("Construction scopes must close in lexical order.");
-        if (!_completed) Budget.Rollback(_checkpoint, _byteCheckpoint, _depthCheckpoint, _objectCheckpoint);
-        if (_previous is null) Budget.ClearObjectRoots();
+        if (!_completed) Budget.Rollback(_checkpoint, _byteCheckpoint, _depthCheckpoint);
         s_current = _previous;
         _disposed = true;
     }

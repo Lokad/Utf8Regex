@@ -43,10 +43,10 @@ public sealed class Utf8CaptureProducerAdmissionTests
             var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
             Assert.NotNull(tree);
             Assert.NotNull(tree.CaptureCatalog);
-            bytes = funded.Budget.PeakBytes - 112;
+            bytes = funded.Budget.PeakBytes - 128;
             work = funded.Budget.WorkSteps - 2;
             depth = funded.Budget.PeakDepth;
-            retained = funded.Budget.ReservedBytes - 112;
+            retained = funded.Budget.ReservedBytes - 128;
             expectedNumbers = tree.CaptureCatalog.GroupNumbers;
             expectedNames = tree.CaptureCatalog.GroupNames;
             Assert.Equal(0ul, funded.Budget.Depth);
@@ -61,12 +61,12 @@ public sealed class Utf8CaptureProducerAdmissionTests
         foreach (var cutoff in cutoffs)
         {
             using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity,
-                kind == Utf8ResourceLimitKind.ConstructionBytes ? 112 + cutoff : Utf8ConstructionScope.DefaultBufferBytes,
+                kind == Utf8ResourceLimitKind.ConstructionBytes ? 128 + cutoff : Utf8ConstructionScope.DefaultBufferBytes,
                 kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 2 + cutoff : Utf8ConstructionScope.DefaultWorkSteps,
                 kind == Utf8ResourceLimitKind.ConstructionDepth ? cutoff : Utf8ConstructionScope.DefaultDepth);
             var budget = owner.Budget;
             var parent = budget.AllocateObject(17, static value => new Parent(value));
-            var checkpoint = budget.ObjectCheckpoint;
+            var checkpoint = budget.ReservedBytes;
             Utf8OwnedRegexTree? tree = null;
             var failure = Record.Exception(() => tree = Utf8OwnedTreeParser.TryParse(pattern, options));
             Assert.Equal(0ul, budget.Depth);
@@ -78,16 +78,16 @@ public sealed class Utf8CaptureProducerAdmissionTests
                 Assert.NotNull(tree);
                 Assert.Equal(expectedNumbers, tree.CaptureCatalog!.GroupNumbers);
                 Assert.Equal(expectedNames, tree.CaptureCatalog.GroupNames);
-                Assert.Equal(112 + retained, budget.ReservedBytes);
+                Assert.Equal(128 + retained, budget.ReservedBytes);
             }
             else
             {
                 var limit = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
                 Assert.Equal(kind, limit.ResourceKind);
                 Assert.True(limit.Requested > limit.Limit);
-                Assert.Equal(112ul, budget.ReservedBytes);
-                Assert.Same(checkpoint, budget.ObjectCheckpoint);
-                Assert.Same(parent, checkpoint!.Value);
+                Assert.Equal(128ul, budget.ReservedBytes);
+                Assert.Equal(checkpoint, budget.ReservedBytes);
+                Assert.NotNull(parent);
                 rejected++;
             }
             if (cutoff >= maximum) Assert.Null(failure);
@@ -117,28 +117,17 @@ public sealed class Utf8CaptureProducerAdmissionTests
     }
 
     [Fact]
-    public void APatternWithoutCapturesOrReferencesAcquiresNoCaptureScratch()
+    public void EmptyPatternKeepsCanonicalCaptureCatalogAndAdmitsMajorStorage()
     {
         using var owner = Utf8ConstructionScope.Enter();
         var tree = Utf8OwnedTreeParser.TryParse("", RegexOptions.None);
         Assert.NotNull(tree);
-        Assert.Same(tree, owner.Budget.ObjectCheckpoint!.Value);
-        var roots = new List<object>();
-        ulong loans = 0;
-        for (var root = owner.Budget.ObjectCheckpoint; root is not null; root = root.Previous)
-        {
-            roots.Add(root.Value);
-            loans += root.Bytes;
-        }
-        Assert.Single(roots.OfType<Utf8OwnedRegexTree>());
-        Assert.Single(roots.OfType<Utf8CaptureCatalog>());
-        Assert.DoesNotContain(roots, static value => value.GetType().IsGenericType &&
-            value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>) &&
-            value.GetType().GetGenericArguments()[0].Name is "OwnedGroupDefinition" or "OwnedBackrefFixup" or "Int32");
-        Assert.All(roots, static value => Assert.True(value is Utf8TreeNode or Utf8OwnedRegexTree or Utf8CaptureCatalog or
-            Utf8ConstructionSession or Utf8ConstructionArena or Utf8ConstructionText ||
-            value.GetType().IsGenericType && value.GetType().GetGenericTypeDefinition() == typeof(Utf8ConstructionBuffer<>)));
-        Assert.Equal(loans + 96, owner.Budget.ReservedBytes); // The two one-element catalog arrays.
+        Assert.NotNull(tree.CaptureCatalog);
+        Assert.Single(tree.CaptureCatalog.GroupNames);
+        Assert.Single(tree.CaptureCatalog.GroupNumbers);
+        Assert.Equal(1, tree.CaptureCount);
+        Assert.True(owner.Budget.ReservedBytes >= 256ul +
+            Utf8ConstructionBudget.ArrayBytes<string>(1) + Utf8ConstructionBudget.ArrayBytes<int>(1));
     }
 
     [Theory]
@@ -148,12 +137,12 @@ public sealed class Utf8CaptureProducerAdmissionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new Parent(value));
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None));
-        Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-        Assert.Same(parent, checkpoint!.Value);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+        Assert.NotNull(parent);
         Assert.True(owner.Budget.WorkSteps > 2);
         Assert.NotNull(Utf8OwnedTreeParser.TryParse("(?<x>😀)\\k<x>", RegexOptions.None));
     }

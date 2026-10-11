@@ -171,14 +171,14 @@ public sealed class Utf8AsciiPreparationContinuationTests
         {
             using var owner = new Utf8ConstructionScope(0, limit.Bytes, limit.Work, limit.Depth);
             owner.Budget.ReserveBytes(7);
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Lower(Compiler(), tree, out _));
             Assert.Equal(limit.Kind, failure.ResourceKind);
             Assert.True(failure.Requested > failure.Limit);
             Assert.Equal(7ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Reserved);
             Assert.Equal(0ul, owner.Budget.Depth);
-            Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         using var recovery = Utf8ConstructionScope.Enter();
         recovery.Budget.ReserveBytes(7);
@@ -197,7 +197,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         var tree = Wrap(Text("a"), Utf8TreeNodeKind.Concatenate, 100);
         using var owner = Utf8ConstructionScope.Enter();
         owner.Budget.ReserveBytes(7);
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var deadline = Utf8ExecutionDeadline.Start(expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
         owner.Budget.Deadline = deadline;
         owner.Budget.CancellationToken = source.Token;
@@ -210,7 +210,7 @@ public sealed class Utf8AsciiPreparationContinuationTests
         Assert.Same(deadline, owner.Budget.Deadline);
         Assert.Equal(7ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
     }
     [Theory]
     [InlineData(65)]

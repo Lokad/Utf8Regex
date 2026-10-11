@@ -5,8 +5,8 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal;
 
 // Pattern and projection factories share the enclosing construction authority. Scratch
-// vectors/text release on every exit; completed arrays and retained descriptors keep
-// their loans. The scope, rather than this session, owns speculative rollback.
+// vectors/text release on every exit; completed arrays and numeric helper charges
+// keep their loans. The scope, rather than this session, owns speculative rollback.
 internal sealed class Utf8ConstructionSession(
     Utf8ConstructionBudget budget,
     Utf8ConstructionArena arrays,

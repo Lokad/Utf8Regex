@@ -228,7 +228,7 @@ public sealed class Utf8FinalFamilyQualificationTests
                     Utf8ConstructionBudget.ArrayBytes<byte>(plan.PrimaryPrefixUtf8.Length) + Utf8ConstructionBudget.ArrayBytes<byte>(plan.SecondaryPrefixUtf8.Length) +
                     Utf8ConstructionBudget.ArrayBytes<byte>(plan.RelativePrefixUtf8.Length) + Utf8ConstructionBudget.ArrayBytes<byte>(plan.RouteMarkerUtf8.Length) +
                     Utf8ConstructionBudget.ArrayBytes<byte>(plan.RequiredParameterUtf8.Length) + (plan.OptionalParameterUtf8.Length == 0 ? 0 : Utf8ConstructionBudget.ArrayBytes<byte>(plan.OptionalParameterUtf8.Length));
-                Assert.Equal(retained, funded.Budget.ReservedBytes); Assert.Null(funded.Budget.ObjectCheckpoint); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
+                Assert.Equal(retained, funded.Budget.ReservedBytes); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
             }
             Assert.InRange(peak, 1ul, 20000ul); Assert.InRange(work, 1ul, 20000ul);
             foreach (var bytes in new[] { true, false })
@@ -236,13 +236,13 @@ public sealed class Utf8FinalFamilyQualificationTests
                 var successes = 0; var limit = bytes ? peak : work;
                 for (var cutoff = 0ul; cutoff <= limit; cutoff++)
                 {
-                    using var owner = new Utf8ConstructionScope(0, bytes ? 112 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
-                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
+                    var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
                     var failure = Record.Exception(() => Classify(method, tree));
-                    if (failure is null) { successes++; Assert.Equal(112ul + retained, owner.Budget.ReservedBytes); }
-                    else { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint); }
+                    if (failure is null) { successes++; Assert.Equal(128ul + retained, owner.Budget.ReservedBytes); }
+                    else { Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind); Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); }
                     Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-                    Assert.True(bytes ? owner.Budget.PeakBytes <= 112 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
+                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
                 }
                 if (bytes) Assert.InRange(successes, 1, (int)limit + 1); else Assert.Equal(1, successes);
             }
@@ -257,10 +257,10 @@ public sealed class Utf8FinalFamilyQualificationTests
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
         var method = Classifier("Utf8FallbackFinalProfileClassifier", tree); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 16);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ObjectCheckpoint;
+        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.Throws<Utf8ResourceLimitExceededException>(() => Classify(method, deep)).ResourceKind);
-        Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
-        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(112ul, owner.Budget.ReservedBytes);
+        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+        var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
         foreach (var name in new[] { "ClassifyRemainingPattern", "IsAnchoredAsciiEmailWhole", "IsUtf8BalancedBeginEndCount", "TryParseAnchoredAsciiDigitsQueryWhole", "TryParseAnchoredAsciiHexQueryWhole",
             "TryReadEscapedAsciiChar", "TryReadEscapedAsciiLiteral", "TryReadAsciiPrefixAlternation", "TryConsumeNamedCapturedOrRaw", "TryConsumeNamedOptional", "TryConsume", "TryConsumeCapturedOrRaw", "RequireBytes" })

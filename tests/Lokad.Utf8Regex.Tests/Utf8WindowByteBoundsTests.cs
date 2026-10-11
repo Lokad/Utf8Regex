@@ -40,14 +40,14 @@ public sealed class Utf8WindowByteBoundsTests
             {
                 using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, cutoff + 1, ulong.MaxValue);
                 var parent = owner.Budget.AllocateArray<byte>(1, false);
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 Exception? failure;
                 using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Assert.Equal(expected, Invoke(tree.Root)));
                 if (cutoff == work) Assert.Null(failure);
                 else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 Assert.Equal(48ul, owner.Budget.ReservedBytes);
                 Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Single(parent);
                 Assert.InRange(owner.Budget.WorkSteps, 1ul, cutoff + 1);
             }
@@ -55,13 +55,13 @@ public sealed class Utf8WindowByteBoundsTests
             {
                 using var owner = new Utf8ConstructionScope(0, depth ? ulong.MaxValue : 48, ulong.MaxValue, depth ? 0ul : ulong.MaxValue);
                 var parent = owner.Budget.AllocateArray<byte>(1, false);
-                var checkpoint = owner.Budget.ObjectCheckpoint;
+                var checkpoint = owner.Budget.ReservedBytes;
                 var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Invoke(tree.Root));
                 Assert.Equal(depth ? Utf8ResourceLimitKind.ConstructionDepth : Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
                 Assert.Equal(48ul, owner.Budget.ReservedBytes);
                 Assert.Equal(48ul, owner.Budget.PeakBytes);
                 Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+                Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
                 Assert.Single(parent);
             }
         }
@@ -251,14 +251,14 @@ public sealed class Utf8WindowByteBoundsTests
         }
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 40000, ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
-        var checkpoint = owner.Budget.ObjectCheckpoint;
+        var checkpoint = owner.Budget.ReservedBytes;
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Width(node));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
         Assert.True(error.Requested > 40000);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.Reserved);
-        Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(0, parent[0]);
         Assert.Throws<Utf8ResourceLimitExceededException>(() => Width(node));
         owner.Budget.ReleaseArray(parent, false);

@@ -5,10 +5,9 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8PreparationCacheAdmissionTests
 {
-    private static ulong Descriptor => Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
 
     [Fact]
-    public void CompleteCacheAndEntryStateHasExactFundedMetadataLoans()
+    public void CacheAndEntryNumericChargesRemainReservedAfterDetachment()
     {
         using var owner = Utf8ConstructionScope.Enter();
         var cache = Utf8BoundedPreparationCache<string, string>.Create(2, StringComparer.Ordinal);
@@ -16,20 +15,14 @@ public sealed class Utf8PreparationCacheAdmissionTests
         _ = cache.GetOrAdd("b", static _ => "value");
         Assert.Equal(Utf8BoundedPreparationCache<string, string>.ObjectBytes
             + 2 * Utf8BoundedPreparationCache<string, string>.EntryBytes, cache.MetadataBytes);
-        Assert.Equal(cache.MetadataBytes + 3 * Descriptor, owner.Budget.ReservedBytes);
+        Assert.Equal(Math.Max(128ul, Utf8BoundedPreparationCache<string, string>.ObjectBytes) + 2 * Math.Max(128ul, Utf8BoundedPreparationCache<string, string>.EntryBytes), owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(0ul, owner.Budget.Reserved);
-        var types = new List<Type>();
-        for (var allocation = owner.Budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
-            types.Add(allocation.Value.GetType());
-        Assert.Equal(3, types.Count);
-        var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.DeclaredOnly;
-        Assert.All(types, type => Assert.Equal(type == cache.GetType() ? 11 : 8, type.GetFields(flags).Length));
+        var held = owner.Budget.ReservedBytes;
         cache.Clear();
         Assert.Equal(Utf8BoundedPreparationCache<string, string>.ObjectBytes, cache.MetadataBytes);
-        // The still-live construction owner retains its independent tracking
-        // roots until it closes; cache detachment removes only cache ownership.
-        Assert.Equal(3, types.Count);
+        // Detached entries may be collected; numeric helper charges remain until scope closure.
+        Assert.Equal(held, owner.Budget.ReservedBytes);
     }
 
     [Theory]
@@ -37,12 +30,12 @@ public sealed class Utf8PreparationCacheAdmissionTests
     public void MetadataByteDenialsAndFailedFactoriesRestoreTheParent(bool entry)
     {
         var cache = Utf8BoundedPreparationCache<string, string>.Create(2);
-        var loan = (entry ? Utf8BoundedPreparationCache<string, string>.EntryBytes : Utf8BoundedPreparationCache<string, string>.ObjectBytes) + Descriptor;
+        var loan = Math.Max(128ul, entry ? Utf8BoundedPreparationCache<string, string>.EntryBytes : Utf8BoundedPreparationCache<string, string>.ObjectBytes);
         foreach (var capacity in new[] { 0ul, loan - 1, loan })
         {
-            using var parent = new Utf8ConstructionScope(ulong.MaxValue, 112 + capacity, ulong.MaxValue, ulong.MaxValue);
+            using var parent = new Utf8ConstructionScope(ulong.MaxValue, 128 + capacity, ulong.MaxValue, ulong.MaxValue);
             _ = parent.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = parent.Budget.ObjectCheckpoint;
+            var checkpoint = parent.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() =>
@@ -53,15 +46,15 @@ public sealed class Utf8PreparationCacheAdmissionTests
                 if (capacity < loan) Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 else Assert.Null(failure);
             }
-            Assert.Equal(112ul, parent.Budget.ReservedBytes);
-            Assert.Same(checkpoint, parent.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, parent.Budget.ReservedBytes);
+            Assert.Equal(checkpoint, parent.Budget.ReservedBytes);
             cache.Clear();
         }
         using var owner = Utf8ConstructionScope.Enter();
         var error = new InvalidOperationException("identity");
         Assert.Same(error, Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("bad", _ => throw error)));
         Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Null(owner.Budget.ObjectCheckpoint);
+
         Assert.True(owner.Budget.WorkSteps > 0);
         Assert.Equal(0, cache.Count);
     }
@@ -75,7 +68,7 @@ public sealed class Utf8PreparationCacheAdmissionTests
         {
             using var parent = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 2 + capacity, ulong.MaxValue);
             _ = parent.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = parent.Budget.ObjectCheckpoint;
+            var checkpoint = parent.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() =>
@@ -86,8 +79,8 @@ public sealed class Utf8PreparationCacheAdmissionTests
                 if (capacity < 2) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 else Assert.Null(failure);
             }
-            Assert.Equal(112ul, parent.Budget.ReservedBytes);
-            Assert.Same(checkpoint, parent.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, parent.Budget.ReservedBytes);
+            Assert.Equal(checkpoint, parent.Budget.ReservedBytes);
             Assert.Equal(capacity == 2 ? 4ul : 2ul, parent.Budget.WorkSteps);
             cache.Clear();
         }

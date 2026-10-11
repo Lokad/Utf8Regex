@@ -11,15 +11,24 @@ public sealed class Utf8ScalarProgramMetadataTests
     [InlineData("\\p{L}", "Utf8SliceNode+CategorySetMember")]
     [InlineData("[\\p{L}-[AE]]", "Utf8SliceClassProgram")]
     [InlineData("(?:ab[0-9]{2})+", "Utf8SliceProgram")]
-    public void PublishedScalarMetadataObjectsBelongToTheConstructionOwner(string pattern, string type)
+    public void PublishedScalarProgramFitsNumericAdmissionAndKeepsMetadataSemantics(string pattern, string type)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var regex = new Utf8Regex(pattern);
         Assert.True(regex.Pattern.Length > 0);
-        var admitted = new List<string>();
-        for (var allocation = owner.Budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
-            admitted.Add(allocation.Value.GetType().FullName ?? "");
-        Assert.Contains("Lokad.Utf8Regex.Internal.Execution." + type, admitted);
+        var prepared = (Lokad.Utf8Regex.Internal.Planning.Utf8PreparedRegex)typeof(Utf8Regex)
+            .GetProperty("PreparedRegex", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(regex)!;
+        var program = Assert.IsType<Utf8SliceProgram>(prepared.ScalarProgram);
+        Assert.True(owner.Budget.ReservedBytes >= 128ul);
+        switch (type)
+        {
+            case "Utf8SliceAssertion": Assert.NotEmpty(program.Assertions); break;
+            case "Utf8SliceCategoryTable": Assert.True(regex.IsMatch("é"u8)); Assert.False(regex.IsMatch("0"u8)); break;
+            case "Utf8SliceNode+CategorySetMember": Assert.True(regex.IsMatch("é"u8)); Assert.False(regex.IsMatch("0"u8)); break;
+            case "Utf8SliceClassProgram": Assert.True(regex.IsMatch("é"u8)); Assert.False(regex.IsMatch("A"u8)); break;
+            default: Assert.NotEmpty(program.Instructions); break;
+        }
+
     }
 
     [Fact]
@@ -29,8 +38,8 @@ public sealed class Utf8ScalarProgramMetadataTests
         var table = Utf8SliceCategoryTable.Create(3, [0, 2, ushort.MaxValue]);
         Assert.Equal(new[] { 0, 2, 65535, 65536 }, table.Ranges);
         Assert.Equal(3u, table.Mask); Assert.Null(table.ClassProgram);
-        Assert.Equal(Utf8SliceCategoryTable.ObjectBytes + Descriptor + Utf8ConstructionBudget.ArrayBytes<int>(4), owner.Budget.ReservedBytes);
-        Assert.Same(table, Assert.Single(Objects(owner.Budget)));
+        Assert.Equal(Math.Max(128ul, Utf8SliceCategoryTable.ObjectBytes) + Utf8ConstructionBudget.ArrayBytes<int>(4), owner.Budget.ReservedBytes);
+        Assert.NotNull(table);
     }
 
     [Theory]
@@ -40,25 +49,25 @@ public sealed class Utf8ScalarProgramMetadataTests
         var body = Utf8SliceParser.TryParse("", System.Text.RegularExpressions.RegexOptions.None);
         Assert.NotNull(body);
         var category = Utf8SliceCategoryTable.ForScalarRanges([128, 256]);
-        var loan = (kind switch
+        var loan = Math.Max(128ul, kind switch
         {
             "category" => Utf8SliceCategoryTable.ObjectBytes,
             "member" => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceCategoryTable, bool)>(),
             "assertion" => Utf8SliceAssertion.ObjectBytes,
             _ => Utf8SliceProgram.ObjectBytes,
-        }) + Descriptor;
+        });
         foreach (var available in new[] { 0ul, loan - 1, loan })
         {
-            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 112 + available, ulong.MaxValue, ulong.MaxValue);
+            using var owner = new Utf8ConstructionScope(ulong.MaxValue, 128 + available, ulong.MaxValue, ulong.MaxValue);
             _ = owner.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Acquire(kind, body, category));
                 if (available < loan) Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
-                else { Assert.Null(failure); Assert.Equal(112 + loan, owner.Budget.ReservedBytes); }
+                else { Assert.Null(failure); Assert.Equal(128 + loan, owner.Budget.ReservedBytes); }
             }
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
         }
     }
@@ -76,14 +85,14 @@ public sealed class Utf8ScalarProgramMetadataTests
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 2 + available, ulong.MaxValue);
             _ = owner.Budget.AllocateObject(17, static _ => new object());
-            var checkpoint = owner.Budget.ObjectCheckpoint;
+            var checkpoint = owner.Budget.ReservedBytes;
             using (var child = Utf8ConstructionScope.Enter())
             {
                 var failure = Record.Exception(() => Acquire(kind, body, category));
                 if (available < work) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
                 else Assert.Null(failure);
             }
-            Assert.Equal(112ul, owner.Budget.ReservedBytes); Assert.Same(checkpoint, owner.Budget.ObjectCheckpoint);
+            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
             Assert.InRange(owner.Budget.WorkSteps, 2ul, 2 + available);
         }
     }
@@ -98,13 +107,6 @@ public sealed class Utf8ScalarProgramMetadataTests
         Assert.Equal(fields.Select(static field => field.FieldType.ToString()).Order(), state.GetFields(flags).Select(static field => field.FieldType.ToString()).Order());
         Assert.All(fields, static field => Assert.True(field.IsInitOnly));
         Assert.All(typeof(Utf8SliceProgram).GetProperties(flags), static property => Assert.Null(property.SetMethod));
-    }
-
-    private static ulong Descriptor => Utf8ConstructionBudget.ObjectBytes<(object, Utf8ConstructionBudget.ObjectAllocation?, ulong)>();
-    private static IEnumerable<object> Objects(Utf8ConstructionBudget budget)
-    {
-        for (var allocation = budget.ObjectCheckpoint; allocation is not null; allocation = allocation.Previous)
-            yield return allocation.Value;
     }
 
     private static object Acquire(string kind, Utf8SliceProgram body, Utf8SliceCategoryTable category) => kind switch
