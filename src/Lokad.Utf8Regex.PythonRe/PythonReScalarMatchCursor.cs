@@ -293,8 +293,7 @@ internal ref struct PythonReScalarMatchCursor
         {
             // Observe a callback's token/deadline before scanning its return.
             Checkpoint();
-            ArgumentNullException.ThrowIfNull(text);
-            if (!writer.AppendUtf16(text, ref _invocation))
+            if (!writer.AppendUtf16(text.AsSpan(0, text.Length), ref _invocation))
                 throw new InvalidOperationException("Python output exceeded the working storage budget.");
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(); }
