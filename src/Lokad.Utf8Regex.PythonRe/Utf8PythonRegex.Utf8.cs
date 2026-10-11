@@ -58,7 +58,7 @@ public sealed partial class Utf8PythonRegex
         {
             var count = _utf8Regex.CountForResult(input, startOffsetInBytes, ref invocation);
             var control = new Utf8InvocationBufferControl(ref invocation);
-            var values = ledger.AllocateArray<string, Utf8InvocationBufferControl>(count, control);
+            var values = ledger.AllocateArray<string>(count, ref invocation);
             for (var offset = 0; offset < values.Length;)
             {
                 Utf8InvocationOutput.Checkpoint(control);
@@ -74,7 +74,7 @@ public sealed partial class Utf8PythonRegex
         {
             throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
         }
-        finally { ledger.Release(new Utf8InvocationBufferControl(ref invocation)); }
+        finally { ledger.Release(ref invocation); }
     }
 
     private bool TryCollectUtf8MatchRanges(
@@ -151,7 +151,7 @@ public sealed partial class Utf8PythonRegex
             {
                 var validation = Utf8Validation.Validate(bytes, ref invocation);
                 text = results.DecodeUtf8(bytes, validation.Utf16Length, ref invocation);
-                results.ReleaseArray(bytes, new Utf8InvocationBufferControl(ref invocation));
+                results.ReleaseArray(bytes, ref invocation);
             }
             Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
             if (textOutput) resultText = text;
@@ -163,7 +163,7 @@ public sealed partial class Utf8PythonRegex
         {
             throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
         }
-        finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+        finally { results.Release(ref invocation); }
     }
 
     internal string? MaterializeNativeMatchText(ReadOnlySpan<byte> input, int startOffsetInBytes,

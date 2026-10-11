@@ -18,7 +18,7 @@ public sealed partial class Utf8PythonRegex
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
             Utf8InvocationResultLedger results = default;
             try { return MaterializeNativeMatchText(input, startOffsetInBytes, kind, ref invocation, ref results); }
-            finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+            finally { results.Release(ref invocation); }
         }
 
         var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);

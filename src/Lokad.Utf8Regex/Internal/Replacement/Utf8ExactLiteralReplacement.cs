@@ -40,7 +40,7 @@ internal static class Utf8ExactLiteralReplacement
         }
 
         var outputLength = checked(input.Length + replacementCount * (replacement.Length - literal.Length));
-        var output = results.AllocateArray<byte, Utf8InvocationBufferControl>(outputLength, control);
+        var output = results.AllocateArray<byte>(outputLength, ref invocation);
         var sourcePosition = 0;
         var destinationPosition = 0;
         var remainingReplacements = replacementCount;

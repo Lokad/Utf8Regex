@@ -3,18 +3,19 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // Result graphs remain working storage until the operation publishes them.
 // Borrowed canonical values are excluded; temporary roots release their own
 // extent at the last read. Publication transfers ownership to the caller, and
-// does not implement a retained-result policy.
+// does not implement a retained-result policy. Covered capacity traffic is
+// charged cumulatively before acquisition and is independent of working release.
 internal struct Utf8InvocationResultLedger
 {
     private ulong _reservedBytes;
 
     internal readonly ulong ReservedBytes => _reservedBytes;
 
-    internal T[] AllocateArray<T, TControl>(int count, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    internal T[] AllocateArray<T>(int count, ref Utf8SliceInvocation invocation)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<T>(count);
-        Reserve(bytes, control);
+        Reserve(bytes, ref invocation);
+        var control = new Utf8InvocationBufferControl(ref invocation);
         try
         {
             Utf8InvocationOutput.Checkpoint(control);
@@ -30,7 +31,7 @@ internal struct Utf8InvocationResultLedger
     {
         var control = new Utf8InvocationBufferControl(ref invocation);
         var extent = Utf8ConstructionBudget.StringBytes(charCount);
-        Reserve(extent, control);
+        Reserve(extent, ref invocation);
         try
         {
             var result = Utf8SliceBufferWork.DecodeUtf8(bytes, charCount, ref invocation);
@@ -40,10 +41,10 @@ internal struct Utf8InvocationResultLedger
         catch { control.ReleaseWorking(extent); throw; }
     }
 
-    internal static void Copy<T, TControl>(ReadOnlySpan<T> source, Span<T> destination, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    internal static void Copy<T>(ReadOnlySpan<T> source, Span<T> destination, ref Utf8SliceInvocation invocation)
     {
         if (source.Length > destination.Length) throw new ArgumentException("The result destination is too small.", nameof(destination));
+        var control = new Utf8InvocationBufferControl(ref invocation);
         Utf8InvocationOutput.Checkpoint(control);
         for (var offset = 0; offset < source.Length;)
         {
@@ -55,28 +56,25 @@ internal struct Utf8InvocationResultLedger
         Utf8InvocationOutput.Checkpoint(control);
     }
 
-    internal void ReleaseArray<T, TControl>(T[] array, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    internal void ReleaseArray<T>(T[] array, ref Utf8SliceInvocation invocation)
     {
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(array.Length);
-        ReleaseSince(_reservedBytes - extent, control);
+        ReleaseSince(_reservedBytes - extent, ref invocation);
     }
 
-    internal void ReleaseSince<TControl>(ulong marker, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    internal void ReleaseSince(ulong marker, ref Utf8SliceInvocation invocation)
     {
         if (marker > _reservedBytes) throw new InvalidOperationException("The result reservation marker is no longer live.");
-        control.ReleaseWorking(_reservedBytes - marker);
+        invocation.Ledger.Release(_reservedBytes - marker);
         _reservedBytes = marker;
     }
 
-    internal void Release<TControl>(scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct => ReleaseSince(0, control);
+    internal void Release(ref Utf8SliceInvocation invocation) => ReleaseSince(0, ref invocation);
 
-    private static void Reserve<TControl>(ulong bytes, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    private static void Reserve(ulong bytes, ref Utf8SliceInvocation invocation)
     {
-        var breach = control.TryReserveWorking(bytes);
+        Utf8SliceBufferWork.ChargeResultBytes(bytes, ref invocation);
+        var breach = new Utf8InvocationBufferControl(ref invocation).TryReserveWorking(bytes);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Owned result exceeded {breach}.");
     }
@@ -92,19 +90,20 @@ internal struct Utf8InvocationResultBuffer<T>
     internal readonly int Count => _items.Count;
     internal readonly T this[int index] => _items[index].Value;
 
-    internal void Add<TControl>(T value, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    internal void Add(T value, ref Utf8SliceInvocation invocation)
     {
+        var control = new Utf8InvocationBufferControl(ref invocation);
         Utf8InvocationOutput.Checkpoint(control);
+        Utf8SliceBufferWork.ChargeResultBytes(_items.PendingGrowthBytes, ref invocation);
         var breach = _items.TryPush(new StoredResult(value), control);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Owned result staging exceeded {breach}.");
     }
 
-    internal T[] ToArray<TControl>(ref Utf8InvocationResultLedger ledger, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
+    internal T[] ToArray(ref Utf8InvocationResultLedger ledger, ref Utf8SliceInvocation invocation)
     {
-        var result = ledger.AllocateArray<T, TControl>(Count, control);
+        var result = ledger.AllocateArray<T>(Count, ref invocation);
+        var control = new Utf8InvocationBufferControl(ref invocation);
         for (var offset = 0; offset < result.Length;)
         {
             Utf8InvocationOutput.Checkpoint(control);
@@ -115,6 +114,5 @@ internal struct Utf8InvocationResultBuffer<T>
         return result;
     }
 
-    internal void Release<TControl>(scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct => _items.Release(control);
+    internal void Release(ref Utf8SliceInvocation invocation) => _items.Release(ref invocation);
 }

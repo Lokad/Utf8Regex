@@ -97,7 +97,7 @@ public sealed class PythonReNativeOneShotInvocationTests
         if (text) Assert.Equal(expected, regex.MaterializeNativeMatchText(input, start, operationKind, ref measured, ref measurement));
         else Assert.True(regex.MaterializeNativeMatchValue(input, start, operationKind, ref measured).Success);
         var required = measured.Budget.Steps - seed;
-        measurement.Release(new Utf8InvocationBufferControl(ref measured));
+        measurement.Release(ref measured);
         Assert.InRange(required, 1UL, 100000UL);
         for (ulong cutoff = 0; cutoff <= required; cutoff++)
         {
@@ -122,7 +122,7 @@ public sealed class PythonReNativeOneShotInvocationTests
                 if (!text) Assert.Equal(0UL, results.ReservedBytes);
                 Assert.True(invocation.Budget.Steps >= seed + cutoff);
             }
-            finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+            finally { results.Release(ref invocation); }
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
         }
     }
@@ -217,7 +217,7 @@ public sealed class PythonReNativeOneShotInvocationTests
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(0UL, results.ReservedBytes); Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }
-        finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+        finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
     }
 }

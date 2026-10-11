@@ -134,7 +134,7 @@ public sealed class PythonReOneShotTextTests
                 Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
             }
         }
-        finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+        finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(13);
         if (allow) Assert.Equal(expected, result);
@@ -151,7 +151,7 @@ public sealed class PythonReOneShotTextTests
         Utf8InvocationResultLedger measurement = default;
         Assert.Equal("é😀", regex.MaterializeNativeMatchText(input, 0, 0, ref measured, ref measurement));
         var required = measured.Budget.Steps - seed;
-        measurement.Release(new Utf8InvocationBufferControl(ref measured));
+        measurement.Release(ref measured);
         for (ulong cutoff = 0; cutoff <= required; cutoff++)
         {
             var invocation = new Utf8SliceInvocation(new(seed + cutoff, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
@@ -169,7 +169,7 @@ public sealed class PythonReOneShotTextTests
                 Assert.Equal(13 + results.ReservedBytes, invocation.Ledger.ReservedBytes);
                 Assert.True(results.ReservedBytes is 0 or 48);
             }
-            finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+            finally { results.Release(ref invocation); }
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             invocation.Ledger.Release(13);
         }

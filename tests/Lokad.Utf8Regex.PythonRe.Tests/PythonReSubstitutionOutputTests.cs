@@ -232,11 +232,11 @@ public sealed class PythonReSubstitutionOutputTests
                 var text = results.DecodeUtf8(bytes, 6, ref invocation);
                 Assert.Equal("😀 😀é", text);
                 Assert.Equal(109UL, invocation.Ledger.ReservedBytes);
-                results.ReleaseArray(bytes, control);
+                results.ReleaseArray(bytes, ref invocation);
                 Assert.Equal(61UL, invocation.Ledger.ReservedBytes);
             }
         }
-        finally { results.Release(control); }
+        finally { results.Release(ref invocation); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
 

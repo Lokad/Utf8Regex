@@ -44,7 +44,7 @@ public sealed partial class Utf8PythonRegex
         }
 
         internal T[] AllocateResultArray<T>(int count)
-            => _results.AllocateArray<T, Utf8InvocationBufferControl>(count, new(ref _invocation));
+            => _results.AllocateArray<T>(count, ref _invocation);
 
         internal string GetText(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
             => _results.DecodeUtf8(input.Slice(range.IndexInBytes, range.LengthInBytes), range.LengthInUtf16, ref _invocation);
@@ -62,7 +62,7 @@ public sealed partial class Utf8PythonRegex
         internal void Dispose()
         {
             _ranges.Release(ref _invocation);
-            _results.Release(new Utf8InvocationBufferControl(ref _invocation));
+            _results.Release(ref _invocation);
         }
     }
 

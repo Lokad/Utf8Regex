@@ -17,6 +17,8 @@ internal struct Utf8SliceOutputWriter
     internal static bool Rent(int initialCapacity, ref Utf8SliceInvocation invocation, out Utf8SliceOutputWriter writer)
     {
         writer = default;
+        if (invocation.Budget.TryChargeResultBytes(Utf8ConstructionBudget.ArrayBytes<byte>(initialCapacity))
+            != Utf8ExecutionLimitKind.None) return false;
         if (Utf8InvocationOutput.TryAllocateBytes(initialCapacity, new Utf8InvocationBufferControl(ref invocation),
             out var buffer, out var reservation) != Utf8ExecutionLimitKind.None) return false;
         writer._buffer = buffer;
@@ -63,6 +65,8 @@ internal struct Utf8SliceOutputWriter
         if (needed <= buffer.Length) return true;
         var grown = Math.Max(needed, (long)buffer.Length * 2);
         if (grown > Array.MaxLength) return false;
+        if (invocation.Budget.TryChargeResultBytes(Utf8ConstructionBudget.ArrayBytes<byte>((int)grown))
+            != Utf8ExecutionLimitKind.None) return false;
         var control = new Utf8InvocationBufferControl(ref invocation);
         if (Utf8InvocationOutput.TryAllocateBytes((int)grown, control, out var next, out var reservation)
             != Utf8ExecutionLimitKind.None) return false;
@@ -83,6 +87,8 @@ internal struct Utf8SliceOutputWriter
     {
         var control = new Utf8InvocationBufferControl(ref invocation);
         result = [];
+        if (invocation.Budget.TryChargeResultBytes(Utf8ConstructionBudget.ArrayBytes<byte>(_length))
+            != Utf8ExecutionLimitKind.None) return false;
         if (Utf8InvocationOutput.TryAllocateBytes(_length, control, out var next, out var reservation)
             != Utf8ExecutionLimitKind.None) return false;
         try

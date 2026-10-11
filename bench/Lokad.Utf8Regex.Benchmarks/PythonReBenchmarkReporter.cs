@@ -3809,7 +3809,7 @@ internal sealed class PythonReBenchmarkContext
             var text = results.DecodeUtf8(bytes, validation.Utf16Length, ref invocation);
             return new PythonReBenchmarkReplacementResult(text, null, returnedCount);
         }
-        finally { results.Release(new Utf8InvocationBufferControl(ref invocation)); }
+        finally { results.Release(ref invocation); }
     }
 
     internal int ExecuteUtf8CoreReplacementCount()

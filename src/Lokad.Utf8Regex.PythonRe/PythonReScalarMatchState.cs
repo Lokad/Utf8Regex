@@ -74,21 +74,21 @@ internal struct PythonReScalarMatchState
 
     internal T[] AllocateResultArray<T>(ReadOnlySpan<byte> input, int count)
     {
-        try { return _results.AllocateArray<T, Utf8InvocationBufferControl>(count, new(ref _invocation)); }
+        try { return _results.AllocateArray<T>(count, ref _invocation); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
         { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
     internal void ReleaseResultArray<T>(T[] array)
-        => _results.ReleaseArray(array, new Utf8InvocationBufferControl(ref _invocation));
+        => _results.ReleaseArray(array, ref _invocation);
 
     internal void ReleaseResultsSince(ulong marker)
-        => _results.ReleaseSince(marker, new Utf8InvocationBufferControl(ref _invocation));
+        => _results.ReleaseSince(marker, ref _invocation);
 
     internal void AddResult<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer, T value)
     {
-        try { buffer.Add(value, new Utf8InvocationBufferControl(ref _invocation)); }
+        try { buffer.Add(value, ref _invocation); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
         { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
@@ -96,14 +96,14 @@ internal struct PythonReScalarMatchState
 
     internal T[] CompleteResults<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer)
     {
-        try { return buffer.ToArray(ref _results, new Utf8InvocationBufferControl(ref _invocation)); }
+        try { return buffer.ToArray(ref _results, ref _invocation); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
         { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
-        => buffer.Release(new Utf8InvocationBufferControl(ref _invocation));
+        => buffer.Release(ref _invocation);
 
     // Map neutral helper failures only after actual work denial, without using
     // exception text. Internal kernels and PCRE2 keep their failure vocabulary.
@@ -209,7 +209,7 @@ internal struct PythonReScalarMatchState
     {
         Checkpoint(input);
         var copied = AllocateResultArray<PythonReNameEntry>(input, names.Length);
-        try { Utf8InvocationResultLedger.Copy<PythonReNameEntry, Utf8InvocationBufferControl>(names, copied, new(ref _invocation)); }
+        try { Utf8InvocationResultLedger.Copy<PythonReNameEntry>(names, copied, ref _invocation); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
         { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
@@ -421,7 +421,7 @@ internal struct PythonReScalarMatchState
 
     internal void Dispose()
     {
-        _results.Release(new Utf8InvocationBufferControl(ref _invocation));
+        _results.Release(ref _invocation);
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
         _slots = new Utf8SliceSlots([], []);
         _invocation.Ledger.Release(_mapReservation);

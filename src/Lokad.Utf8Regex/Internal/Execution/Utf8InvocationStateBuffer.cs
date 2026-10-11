@@ -13,6 +13,15 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
 
     internal readonly int Count => _count;
 
+    // Result staging can fund the next acquisition without a second growth
+    // policy or a specialized VM control. Reading this never reserves storage.
+    internal readonly ulong PendingGrowthBytes =>
+        (_items is null || _count == _items.Length) && GrowthCapacity > _count
+            ? Utf8ConstructionBudget.ArrayBytes<T>(GrowthCapacity) : 0;
+
+    private readonly int GrowthCapacity => _items is null ? 16
+        : _items.Length <= Array.MaxLength / 2 ? _items.Length * 2 : Array.MaxLength;
+
     internal readonly ReadOnlySpan<T> WrittenItems => _items is null ? [] : _items.AsSpan(0, _count);
 
     internal readonly T this[int index]
@@ -33,7 +42,7 @@ internal struct Utf8InvocationStateBuffer<T> where T : struct
         if (_items is null || _count == _items.Length)
         {
             var old = _items;
-            var capacity = old is null ? 16 : old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength;
+            var capacity = GrowthCapacity;
             if (capacity <= _count) return Utf8ExecutionLimitKind.WorkingBytes;
             var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
             var reservationBreach = control.TryReserveWorking(bytes);

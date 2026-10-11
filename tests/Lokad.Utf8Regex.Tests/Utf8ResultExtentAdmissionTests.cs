@@ -35,8 +35,8 @@ public sealed class Utf8ResultExtentAdmissionTests
                 Assert.Equal(13 + StringBytes(chars), invocation.Ledger.ReservedBytes);
             }
             else { Assert.NotNull(failure); Assert.Null(result); Assert.Equal(0UL, results.ReservedBytes); }
-            results.Release(new Utf8InvocationBufferControl(ref invocation));
-            results.Release(new Utf8InvocationBufferControl(ref invocation));
+            results.Release(ref invocation);
+            results.Release(ref invocation);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             if (allow) Assert.Equal(text, result);
         }
@@ -54,12 +54,12 @@ public sealed class Utf8ResultExtentAdmissionTests
             Assert.True(invocation.Ledger.TryReserve(7));
             Utf8InvocationResultLedger results = default;
             string[]? root = null;
-            try { root = results.AllocateArray<string, Utf8InvocationBufferControl>(count, new(ref invocation)); }
+            try { root = results.AllocateArray<string>(count, ref invocation); }
             catch (InvalidOperationException) { Assert.False(allow); }
             if (allow) { Assert.NotNull(root); Assert.Equal(count, root.Length); }
             else Assert.Null(root);
             Assert.Equal(7 + (allow ? ArrayBytes<string>(count) : 0), invocation.Ledger.ReservedBytes);
-            results.Release(new Utf8InvocationBufferControl(ref invocation));
+            results.Release(ref invocation);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
     }
@@ -72,11 +72,10 @@ public sealed class Utf8ResultExtentAdmissionTests
             var invocation = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None);
             Utf8InvocationResultLedger ledger = default;
             Utf8InvocationResultBuffer<byte[]> staging = default;
-            var control = new Utf8InvocationBufferControl(ref invocation);
-            var child = ledger.AllocateArray<byte, Utf8InvocationBufferControl>(8193, control);
-            for (var i = 0; i < 513; i++) staging.Add(child, control);
+            var child = ledger.AllocateArray<byte>(8193, ref invocation);
+            for (var i = 0; i < 513; i++) staging.Add(child, ref invocation);
             seed = invocation.Budget.Steps;
-            staging.Release(control); ledger.Release(control);
+            staging.Release(ref invocation); ledger.Release(ref invocation);
         }
         for (ulong cutoff = 0; cutoff <= 6; cutoff++)
         {
@@ -84,13 +83,12 @@ public sealed class Utf8ResultExtentAdmissionTests
             Assert.True(invocation.Ledger.TryReserve(13));
             Utf8InvocationResultLedger ledger = default;
             Utf8InvocationResultBuffer<byte[]> staging = default;
-            var control = new Utf8InvocationBufferControl(ref invocation);
-            var child = ledger.AllocateArray<byte, Utf8InvocationBufferControl>(8193, control);
-            for (var i = 0; i < 513; i++) staging.Add(child, control);
+            var child = ledger.AllocateArray<byte>(8193, ref invocation);
+            for (var i = 0; i < 513; i++) staging.Add(child, ref invocation);
             Assert.Equal(seed, invocation.Budget.Steps);
             byte[][] result = [];
             Exception? failure = null;
-            try { result = staging.ToArray(ref ledger, control); }
+            try { result = staging.ToArray(ref ledger, ref invocation); }
             catch (InvalidOperationException error) { failure = error; }
             if (cutoff == 6)
             {
@@ -101,7 +99,7 @@ public sealed class Utf8ResultExtentAdmissionTests
             var held = 13 + ArrayBytes<byte>(8193) + ArrayBytes<byte[]>(1024) + (cutoff >= 2 ? ArrayBytes<byte[]>(513) : 0);
             Assert.Equal(held, invocation.Ledger.ReservedBytes);
             Assert.Equal(513, staging.Count);
-            staging.Release(control); ledger.Release(control);
+            staging.Release(ref invocation); ledger.Release(ref invocation);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }
     }
