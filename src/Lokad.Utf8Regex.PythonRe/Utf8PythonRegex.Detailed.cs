@@ -82,8 +82,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Returns the first matched value after a UTF-8 byte offset, or <see langword="null"/>.</summary>
     public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        var match = Search(input, startOffsetInBytes);
-        return match.Success ? match.GetValueString() : null;
+        return MatchToStringCore(input, startOffsetInBytes, 0, CancellationToken.None);
     }
 
     /// <summary>Returns the first matched value after a UTF-8 byte offset as a string, observing cancellation before matching begins.</summary>
@@ -94,8 +93,7 @@ public sealed partial class Utf8PythonRegex
     public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var match = Search(input, startOffsetInBytes, cancellationToken);
-        return match.Success ? match.GetValueString() : null;
+        return MatchToStringCore(input, startOffsetInBytes, 0, cancellationToken);
     }
 
     /// <summary>Returns the prefix match as a string, or <see langword="null"/>.</summary>
@@ -104,8 +102,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Returns the match at a UTF-8 byte offset as a string, or <see langword="null"/>.</summary>
     public string? MatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        var match = Match(input, startOffsetInBytes);
-        return match.Success ? match.GetValueString() : null;
+        return MatchToStringCore(input, startOffsetInBytes, 1, CancellationToken.None);
     }
 
     /// <summary>Returns the match at a UTF-8 byte offset as a string, observing cancellation before matching begins.</summary>
@@ -116,8 +113,7 @@ public sealed partial class Utf8PythonRegex
     public string? MatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var match = Match(input, startOffsetInBytes, cancellationToken);
-        return match.Success ? match.GetValueString() : null;
+        return MatchToStringCore(input, startOffsetInBytes, 1, cancellationToken);
     }
 
     /// <summary>Returns the complete-input match as a string, or <see langword="null"/>.</summary>
@@ -126,8 +122,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Returns the complete-suffix match as a string, or <see langword="null"/>.</summary>
     public string? FullMatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        var match = FullMatch(input, startOffsetInBytes);
-        return match.Success ? match.GetValueString() : null;
+        return MatchToStringCore(input, startOffsetInBytes, 2, CancellationToken.None);
     }
 
     /// <summary>Returns the complete-suffix match as a string, observing cancellation before matching begins.</summary>
@@ -138,8 +133,7 @@ public sealed partial class Utf8PythonRegex
     public string? FullMatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var match = FullMatch(input, startOffsetInBytes, cancellationToken);
-        return match.Success ? match.GetValueString() : null;
+        return MatchToStringCore(input, startOffsetInBytes, 2, cancellationToken);
     }
 
     /// <summary>Finds and materializes the first match and all capture data.</summary>

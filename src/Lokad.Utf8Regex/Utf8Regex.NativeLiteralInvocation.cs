@@ -8,6 +8,35 @@ namespace Lokad.Utf8Regex;
 /// <summary>Supplies shared invocation state to metered native literal operations.</summary>
 public sealed partial class Utf8Regex
 {
+    // A string-producing adapter borrows discovery's actual invocation. Keep
+    // complete-subject validation and the prepared literal route inside it;
+    // derived coordinates are unnecessary for the borrowed byte range.
+    internal bool FindLiteralForResult(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation,
+        out int start, out int end)
+    {
+        start = end = -1;
+        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
+            _preparedRegex.LiteralUtf8 is not { } literal || UsesRightToLeft())
+            throw new InvalidOperationException("Literal result discovery requires an exact LTR literal.");
+        _ = Utf8Validation.Validate(input, ref invocation);
+        var control = new Utf8InvocationBufferControl(ref invocation);
+        Utf8InvocationOutput.Checkpoint(control);
+        if (literal.Length == 0)
+        {
+            start = end = 0;
+            return true;
+        }
+        var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
+            input, 0, input.Length, false, ref invocation, out var match, out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal result discovery exceeded {breach}.");
+        Utf8InvocationOutput.Checkpoint(control);
+        if (!found) return false;
+        start = match.Index;
+        end = match.Index + match.Length;
+        return true;
+    }
+
     // The adapter's canonical-literal result root shares this invocation with
     // validation and counting, instead of starting a second budget at shaping.
     internal int CountForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,
