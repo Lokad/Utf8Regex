@@ -152,9 +152,10 @@ public sealed class Utf8SliceBoundsTests
     [Fact]
     public void AccountingUnitsStayPinned()
     {
-        Assert.Equal(64 * System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceFrame>(), Utf8SliceRunner.FrameReserveBytes);
-        Assert.Equal(128 * System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceTrailEntry>(), Utf8SliceRunner.TrailReserveBytes);
-        Assert.Equal(128 * System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceCountMutation>(), Utf8SliceRunner.JournalReserveBytes);
+        Assert.Equal(1824, Utf8SliceRunner.FrameReserveBytes);
+        Assert.Equal(2080, Utf8SliceRunner.TrailReserveBytes);
+        Assert.Equal(1568, Utf8SliceRunner.JournalReserveBytes);
+        Assert.Equal(2080, Utf8SliceRunner.BalanceReserveBytes);
         Assert.Equal(28, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceFrame>());
         Assert.Equal(16, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceTrailEntry>());
         Assert.Equal(12, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceCountMutation>());

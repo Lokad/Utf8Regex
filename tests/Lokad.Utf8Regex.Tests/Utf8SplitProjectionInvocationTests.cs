@@ -65,7 +65,8 @@ public sealed class Utf8SplitProjectionInvocationTests
     }
 
     private static ulong MapBytes(Utf8ValidationResult validation) => validation.IsAscii ? 0UL :
-        (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * sizeof(int);
+        64UL + ((ulong)(validation.Utf16Length + 1) * sizeof(int) + 15) / 16 * 16
+            + ((ulong)(validation.Utf16Length + 32) / 32 * sizeof(uint) + 15) / 16 * 16;
 
     [Fact]
     public void EveryProjectionWorkAndStorageCutoffReturnsNoPartialMapAndRestoresBorrowedStorage()
@@ -184,7 +185,7 @@ public sealed class Utf8SplitProjectionInvocationTests
         var prepared = Utf8OwnedSplitPreparation.Create(Program(regex), input, count, ref baseline);
         var steps = prepared.DebugInvocationSteps;
         var total = prepared.DebugInvocationReservedBytes;
-        var map = (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
+        var map = MapBytes(validation);
         Assert.Equal(total, prepared.DebugPeakWorkingBytes);
         Assert.Equal(map + 7, total);
         for (ulong cap = 1; cap < steps; cap++)
@@ -282,7 +283,7 @@ public sealed class Utf8SplitProjectionInvocationTests
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        var held = 7 + (ulong)((validation.Utf16Length + 1) + (validation.Utf16Length + 32) / 32) * 4;
+        var held = 7 + MapBytes(validation);
         Assert.Equal(held, cursor.DebugInvocationReservedBytes);
         Assert.Equal(value, view.GetValueString());
         source.Cancel();

@@ -8,6 +8,29 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NonBacktrackingBatchTests
 {
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void PersistentScalarTableFundsCompleteOffsetAndBitArrays(bool empty)
+    {
+        var program = Program("(.)?");
+        Assert.InRange(program.Instructions.Length, 1, 64);
+        var input = empty ? [] : "😀é"u8.ToArray();
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var table));
+        Assert.NotNull(table);
+        Assert.Equal(13UL + (empty ? 96UL : 112UL), invocation.Ledger.ReservedBytes);
+        Assert.Equal(0, table.ResolveByteOffset(0));
+        if (!empty)
+        {
+            Assert.Equal(1, table.ResolveByteOffset(4));
+            Assert.Equal(2, table.ResolveByteOffset(6));
+            Assert.Throws<ArgumentOutOfRangeException>(() => table.ResolveByteOffset(1));
+        }
+        table.Release(ref invocation);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
     private static Utf8SliceProgram Program(string pattern) =>
         new Utf8Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)
             .Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");

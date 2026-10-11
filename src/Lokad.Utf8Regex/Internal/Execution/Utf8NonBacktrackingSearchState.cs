@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// boundary. Ordered replay then skips dead choices without rescanning suffixes.
 /// Capture values never affect viability in this regular grammar. Preparation
 /// takes O(scalars * states) work; stored offsets and packed rows cost
-/// (scalars + 1) * (4 + 8 * ceiling(states / 64)) admitted payload bytes.</summary>
+/// (scalars + 1) * (4 + 8 * ceiling(states / 64)) payload bytes, plus complete modeled array headers/alignment.</summary>
 internal sealed class Utf8NonBacktrackingSearchState
 {
     private readonly int[] _boundaries;
@@ -95,15 +95,18 @@ internal sealed class Utf8NonBacktrackingSearchState
             if (edge < 0) throw new InvalidOperationException("The NonBacktracking batch requires validated scalar input.");
         }
         var count = (long)scalars + 1;
-        var stride = (program.Instructions.Length + 63) / 64;
+        var stride = (int)(((long)program.Instructions.Length + 63) / 64);
         var cells = count * stride;
         if (count > Array.MaxLength || cells > Array.MaxLength) return Utf8ExecutionLimitKind.WorkingBytes;
-        var reservation = (ulong)count * 4 + (ulong)cells * 8;
+        var reservation = checked(Utf8ConstructionBudget.ArrayBytes<int>((int)count)
+            + Utf8ConstructionBudget.ArrayBytes<ulong>((int)cells));
         if (!invocation.Ledger.TryReserve(reservation)) return Utf8ExecutionLimitKind.WorkingBytes;
         var published = false;
         try
         {
             var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var boundaries = new int[(int)count];
             var bits = new ulong[(int)cells];
@@ -216,7 +219,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if (CanMatch(boundary, 0)) break;
             }
             if (boundary == _boundaries.Length) return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
-            reservation = (ulong)program.NonBacktrackingCaptureOpeningCount * 4;
+            reservation = Utf8ConstructionBudget.ArrayBytes<int>(program.NonBacktrackingCaptureOpeningCount);
             if (!invocation.Ledger.TryReserve(reservation))
             {
                 reservation = 0;
@@ -224,7 +227,9 @@ internal sealed class Utf8NonBacktrackingSearchState
             }
             var admission = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
-            var openings = new int[program.NonBacktrackingCaptureOpeningCount];
+            admission = invocation.TryChargeInputStep();
+            if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+            var openings = program.NonBacktrackingCaptureOpeningCount == 0 ? [] : new int[program.NonBacktrackingCaptureOpeningCount];
             var start = boundary;
             var pc = 0;
             while (true)

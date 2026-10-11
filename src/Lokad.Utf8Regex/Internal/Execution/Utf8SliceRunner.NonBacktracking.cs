@@ -100,9 +100,9 @@ internal static partial class Utf8SliceRunner
     {
         internal NonBacktrackingThreads(int states, int registers)
         {
-            Pcs = new int[states];
-            Starts = new int[states];
-            Registers = new int[checked(states * registers)];
+            Pcs = states == 0 ? [] : new int[states];
+            Starts = states == 0 ? [] : new int[states];
+            Registers = checked(states * registers) == 0 ? [] : new int[checked(states * registers)];
         }
         internal readonly int[] Pcs;
         internal readonly int[] Starts;
@@ -129,17 +129,35 @@ internal static partial class Utf8SliceRunner
             if (registers > Array.MaxLength || registers * states > Array.MaxLength)
                 return Utf8ExecutionLimitKind.WorkingBytes;
             RegisterCount = (int)registers;
-            var bytes = (ulong)(5L * states + 3L * states * registers + 2L * registers) * 4 + (ulong)states;
+            var cells = checked(states * RegisterCount);
+            var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(states) * 5
+                + Utf8ConstructionBudget.ArrayBytes<int>(cells) * 3
+                + Utf8ConstructionBudget.ArrayBytes<int>(RegisterCount) * 2
+                + Utf8ConstructionBudget.ArrayBytes<bool>(states));
             if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
             Reserved = bytes;
             var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
             Current = new(states, RegisterCount);
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
             Next = new(states, RegisterCount);
-            Best = new int[RegisterCount];
-            Scratch = new int[RegisterCount];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            Best = RegisterCount == 0 ? [] : new int[RegisterCount];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            Scratch = RegisterCount == 0 ? [] : new int[RegisterCount];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
             PendingPcs = new int[states];
-            PendingRegisters = new int[checked(states * RegisterCount)];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            PendingRegisters = cells == 0 ? [] : new int[cells];
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
             Visited = new bool[states];
             return Utf8ExecutionLimitKind.None;
         }

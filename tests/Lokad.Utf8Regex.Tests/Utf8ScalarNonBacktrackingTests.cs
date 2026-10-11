@@ -6,6 +6,27 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ScalarNonBacktrackingTests
 {
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void WorkspacePeakIncludesEveryCompleteStateVector(bool captured)
+    {
+        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : ".+b", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
+        var states = program.Instructions.Length;
+        var registers = 2 * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
+        static ulong Extent(int length, int width) => length == 0 ? 0 : 32UL + ((ulong)length * (ulong)width + 15) / 16 * 16;
+        var expected = 5 * Extent(states, 4) + 3 * Extent(states * registers, 4)
+            + 2 * Extent(registers, 4) + Extent(states, 1);
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var outcome = Utf8SliceRunner.TryFindFirst(program, "😀😀b"u8, 0,
+            new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
+        Assert.True(outcome.Found);
+        Assert.Equal((0, 9), (outcome.StartByte, outcome.EndByte));
+        Assert.Equal(expected + 13, invocation.Budget.PeakWorkingBytes);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
     public static IEnumerable<object[]> OverlapCases()
     {
         (string Pattern, string Text)[] cases =

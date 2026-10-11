@@ -1188,9 +1188,17 @@ are never returned to a pool. Derived UTF-16 capture projection separately admit
 its summary vectors and complete history graph, including group zero, while
 source histories remain live. This conversion preserves scalar capture edges
 and ordering. Work cutoffs, cancellation and deadlines restore parent loans
-without refunding spent work. Other slice chunk tables, frame/journal payloads,
-NonBacktracking workspace and boundary-map arrays still require complete extent
-qualification. Public copied lifetimes, retained-result limits and MaxResultBytes
+without refunding spent work. Shared backtracking repeat/head vectors and nested
+assertion repeat pairs also admit complete aggregate array extents. Chunk growth
+reserves the new table and chunk together while the old table remains live, then
+copies in bounded blocks before publishing. Denied growth leaves its parent
+unchanged. Work, cancellation and deadline failures preserve their vocabulary.
+NonBacktracking thread/register/pending/visited vectors, persistent scalar
+boundary/viability tables and replay openings fund complete exact array extents;
+empty vectors use shared arrays. Invocation-derived boundary maps separately
+admit their offset and boundary-bit arrays while caller loans remain live.
+Workspace/ownership descriptors and unqualified producers remain separate
+accounting work. Public copied lifetimes, retained-result limits and MaxResultBytes
 remain separate gates; these producer loans do not bound process RSS.
 
 ## 6. Performance and benchmarking

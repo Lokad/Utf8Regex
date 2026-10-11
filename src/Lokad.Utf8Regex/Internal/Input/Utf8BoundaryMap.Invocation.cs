@@ -24,10 +24,10 @@ internal readonly partial struct Utf8BoundaryMap
         return map;
     }
 
-    // Admit array payload capacity alongside all caller-owned storage before
+    // Admit complete modeled array extents alongside all caller-owned storage before
     // allocation. A successful caller must transfer this reservation with the
-    // map; failure leaves its previous aggregate ledger intact. Object headers
-    // and abandoned/copied cursor ownership are separate resource-policy debt.
+    // map; failure leaves its previous aggregate ledger intact. Ownership metadata
+    // and public copied lifetimes remain separate resource-policy debt.
     internal static Utf8ExecutionLimitKind TryCreate(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
         ref Utf8SliceInvocation invocation, out Utf8BoundaryMap map, out ulong reservation)
     {
@@ -45,12 +45,16 @@ internal readonly partial struct Utf8BoundaryMap
         var bitCount = (offsetCount + 31) / 32;
         if (offsetCount > Array.MaxLength || bitCount > Array.MaxLength)
             return Utf8ExecutionLimitKind.WorkingBytes;
-        var bytes = (ulong)(offsetCount + bitCount) * sizeof(int);
+        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>((int)offsetCount)
+            + Utf8ConstructionBudget.ArrayBytes<uint>((int)bitCount));
         if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
         var transferred = false;
         try
         {
-            invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
             var offsets = GC.AllocateUninitializedArray<int>((int)offsetCount);
             var boundaries = GC.AllocateUninitializedArray<uint>((int)bitCount);
             for (var index = 0; index < boundaries.Length; index += 512)

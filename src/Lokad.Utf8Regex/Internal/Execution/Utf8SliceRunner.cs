@@ -135,10 +135,10 @@ internal static partial class Utf8SliceRunner
     internal const int BalanceChunkCapacity = 128;
     internal const int ChunkTableCapacity = 4;
 
-    internal static int FrameReserveBytes => Unsafe.SizeOf<Utf8SliceFrame>() * FrameChunkCapacity;
-    internal static int TrailReserveBytes => Unsafe.SizeOf<Utf8SliceTrailEntry>() * TrailChunkCapacity;
-    internal static int JournalReserveBytes => Unsafe.SizeOf<Utf8SliceCountMutation>() * JournalChunkCapacity;
-    internal static int BalanceReserveBytes => Unsafe.SizeOf<Utf8SliceBalanceEntry>() * BalanceChunkCapacity;
+    internal static int FrameReserveBytes => checked((int)Utf8ConstructionBudget.ArrayBytes<Utf8SliceFrame>(FrameChunkCapacity));
+    internal static int TrailReserveBytes => checked((int)Utf8ConstructionBudget.ArrayBytes<Utf8SliceTrailEntry>(TrailChunkCapacity));
+    internal static int JournalReserveBytes => checked((int)Utf8ConstructionBudget.ArrayBytes<Utf8SliceCountMutation>(JournalChunkCapacity));
+    internal static int BalanceReserveBytes => checked((int)Utf8ConstructionBudget.ArrayBytes<Utf8SliceBalanceEntry>(BalanceChunkCapacity));
 
     internal static Utf8SliceSlots RentSlots(int groups, ref Utf8SliceInvocation invocation)
     {
@@ -640,7 +640,7 @@ internal static partial class Utf8SliceRunner
                         },
                         ref invocation))
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                     }
 
                     if (invocation.Budget.TryNoteDepth((uint)stacks.FrameCount) != Utf8ExecutionLimitKind.None)
@@ -662,7 +662,7 @@ internal static partial class Utf8SliceRunner
                         {
                             if (!SetRepeat(counts, positions, repeatId, 0, -1, ref stacks, ref invocation))
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             }
 
                             count = 0;
@@ -677,7 +677,7 @@ internal static partial class Utf8SliceRunner
                         {
                             if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             }
 
                             programIndex++;
@@ -712,7 +712,7 @@ internal static partial class Utf8SliceRunner
 
                         if (!stacks.PushFrame(frame, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         }
 
                         if (invocation.Budget.TryNoteDepth((uint)stacks.FrameCount) != Utf8ExecutionLimitKind.None)
@@ -724,7 +724,7 @@ internal static partial class Utf8SliceRunner
                         {
                             if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
                             {
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             }
 
                             programIndex++;
@@ -743,7 +743,7 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatExit:
                     if (!SetRepeat(counts, positions, instruction.A, -1, -1, ref stacks, ref invocation))
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                     }
 
                     programIndex++;
@@ -752,13 +752,13 @@ internal static partial class Utf8SliceRunner
                     if (program.UsesCaptureOpeningJournal)
                     {
                         if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, NewValue = inputIndex, IsOpening = true }, ref invocation))
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         programIndex++;
                         break;
                     }
                     if (!stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
                     {
-                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                     }
 
                     captureStarts[instruction.A] = inputIndex;
@@ -773,7 +773,7 @@ internal static partial class Utf8SliceRunner
                             return new Utf8SliceMatchOutcome(false, -1, openingBreach, null, null);
                         if (!stacks.PushRestoreTrail(instruction.A, captureStarts[instruction.A], opening, captureEnds[instruction.A], inputIndex, ref invocation) ||
                             !stacks.PushTrailEntry(new Utf8SliceTrailEntry { Slot = instruction.A, OldValue = opening, NewValue = inputIndex, IsClosing = true }, ref invocation))
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         captureStarts[instruction.A] = opening;
                         captureEnds[instruction.A] = inputIndex;
                     }
@@ -781,7 +781,7 @@ internal static partial class Utf8SliceRunner
                     {
                         if (!stacks.PushTrail(instruction.A, captureEnds[instruction.A], inputIndex, false, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         }
                         captureEnds[instruction.A] = inputIndex;
                     }
@@ -793,7 +793,7 @@ internal static partial class Utf8SliceRunner
                         if (!stacks.PushBalance(instruction.A, captureStarts[instruction.A], inputIndex, balanceHeads[instruction.A], ref invocation) ||
                             !stacks.PushHeadTrail(instruction.A, balanceHeads[instruction.A], stacks.BalanceCount - 1, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         }
 
                         balanceHeads[instruction.A] = stacks.BalanceCount - 1;
@@ -1300,7 +1300,7 @@ internal static partial class Utf8SliceRunner
                     // the body can establish the capture popped at successful close.
                     if (!stacks.PushTrailEntry(new Utf8SliceTrailEntry {
                             Slot = instruction.B, NewValue = inputIndex, IsOpening = true }, ref invocation))
-                        return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                     programIndex++;
                     break;
 
@@ -1329,7 +1329,7 @@ internal static partial class Utf8SliceRunner
                         if (!stacks.PushRestoreTrail(popSlot, captureStarts[popSlot], previousStart,
                                 captureEnds[popSlot], previousEnd, ref invocation) ||
                             !stacks.PushHeadTrail(popSlot, balanceHeads[popSlot], top.Prev, ref invocation))
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         captureStarts[popSlot] = previousStart;
                         captureEnds[popSlot] = previousEnd;
                         balanceHeads[popSlot] = top.Prev;
@@ -1365,7 +1365,7 @@ internal static partial class Utf8SliceRunner
                                     Slot = captureSlot, OldValue = gapStart, NewValue = gapEnd, IsClosing = true }, ref invocation) ||
                                 !stacks.PushBalance(captureSlot, gapStart, gapEnd, balanceHeads[captureSlot], ref invocation) ||
                                 !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
-                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             captureStarts[captureSlot] = gapStart;
                             captureEnds[captureSlot] = gapEnd;
                             balanceHeads[captureSlot] = stacks.BalanceCount - 1;
@@ -1416,7 +1416,7 @@ internal static partial class Utf8SliceRunner
                     case Utf8SliceResumeKind.RepeatUnwind:
                         if (!SetRepeat(counts, positions, popped.Aux, popped.Count, popped.InputIndex, ref stacks, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         }
 
                         inputIndex = popped.InputIndex;
@@ -1425,7 +1425,7 @@ internal static partial class Utf8SliceRunner
                     default:
                         if (!SetRepeat(counts, positions, popped.Aux, popped.Count, popped.InputIndex, ref stacks, ref invocation))
                         {
-                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                         }
 
                         inputIndex = popped.InputIndex;
@@ -1455,45 +1455,6 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static int[] RentIntArray(int length, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
-    {
-        breach = Utf8ExecutionLimitKind.None;
-        if (length == 0)
-        {
-            return Array.Empty<int>();
-        }
-
-        if (!invocation.Ledger.TryReserve((ulong)length * 4))
-        {
-            breach = Utf8ExecutionLimitKind.WorkingBytes;
-            return Array.Empty<int>();
-        }
-
-        try
-        {
-            breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-            if (breach != Utf8ExecutionLimitKind.None)
-            {
-                invocation.Ledger.Release((ulong)length * 4);
-                return Array.Empty<int>();
-            }
-            return new int[length];
-        }
-        catch
-        {
-            invocation.Ledger.Release((ulong)length * 4);
-            throw;
-        }
-    }
-
-    private static void ReleaseIntArray(int[] array, ref Utf8SliceInvocation invocation)
-    {
-        if (array.Length != 0)
-        {
-            invocation.Ledger.Release((ulong)array.Length * 4);
-        }
-    }
-
     // One search/Count call retains its admitted scratch between candidates.
     // State is reset for each attempt; no workspace escapes or crosses invocations.
     private struct AttemptWorkspace
@@ -1503,6 +1464,7 @@ internal static partial class Utf8SliceRunner
         internal int[] Heads;
         internal ChunkedStacks Stacks;
         internal bool Initialized;
+        private ulong _reservation;
 
         public AttemptWorkspace()
         {
@@ -1511,25 +1473,41 @@ internal static partial class Utf8SliceRunner
             Heads = [];
             Stacks = default;
             Initialized = false;
+            _reservation = 0;
         }
 
         internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
         {
-            Counts = RentIntArray(program.RepeatCount, ref invocation, out var breach);
+            var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(program.RepeatCount) * 2
+                + Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
+            if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+            _reservation = bytes;
+            var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            Positions = RentIntArray(program.RepeatCount, ref invocation, out breach);
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            Heads = RentIntArray(program.GroupCount, ref invocation, out breach);
-            if (breach == Utf8ExecutionLimitKind.None) Initialized = true;
-            return breach;
+            if (program.RepeatCount != 0)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                Counts = new int[program.RepeatCount];
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                Positions = new int[program.RepeatCount];
+            }
+            if (program.GroupCount != 0)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                Heads = new int[program.GroupCount];
+            }
+            Initialized = true;
+            return Utf8ExecutionLimitKind.None;
         }
 
         internal void Release(ref Utf8SliceInvocation invocation)
         {
             Stacks.ReleaseAll(ref invocation);
-            ReleaseIntArray(Heads, ref invocation);
-            ReleaseIntArray(Positions, ref invocation);
-            ReleaseIntArray(Counts, ref invocation);
+            invocation.Ledger.Release(_reservation);
+            _reservation = 0;
             Heads = [];
             Positions = [];
             Counts = [];
@@ -1548,6 +1526,7 @@ internal static partial class Utf8SliceRunner
         private int _journalCount;
         private int _balanceCount;
         private ulong _reservedBytes;
+        internal Utf8ExecutionLimitKind Breach;
 
         internal int FrameCount => _frameCount;
         internal int TrailCount => _trailCount;
@@ -1556,19 +1535,19 @@ internal static partial class Utf8SliceRunner
 
         internal bool PushFrame(Utf8SliceFrame frame, ref Utf8SliceInvocation invocation)
         {
-            return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, FrameReserveBytes, frame, ref invocation, ref _reservedBytes);
+            return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, frame, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool PushTrail(int slot, int oldValue, int newValue, bool isStart, ref Utf8SliceInvocation invocation)
         {
-            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
-                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldValue, NewValue = newValue, IsStart = isStart }, ref invocation, ref _reservedBytes);
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldValue, NewValue = newValue, IsStart = isStart }, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool PushTrailEntry(Utf8SliceTrailEntry entry, ref Utf8SliceInvocation invocation)
         {
-            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
-                entry, ref invocation, ref _reservedBytes);
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity,
+                entry, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool TryFindCaptureOpening(int slot, ref Utf8SliceInvocation invocation, out int opening, out Utf8ExecutionLimitKind breach)
@@ -1602,28 +1581,28 @@ internal static partial class Utf8SliceRunner
             // truncation, but no capture record (the popped capture
             // drains through its head entry; the restored top stays
             // recorded from its own capture time).
-            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
-                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldStart, NewValue = newStart, IsStart = true, IsRestore = true }, ref invocation, ref _reservedBytes) &&
-                Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
-                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldEnd, NewValue = newEnd, IsStart = false, IsRestore = true }, ref invocation, ref _reservedBytes);
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldStart, NewValue = newStart, IsStart = true, IsRestore = true }, ref invocation, ref _reservedBytes, out Breach) &&
+                Push(ref _trailTables, ref _trailCount, TrailChunkCapacity,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldEnd, NewValue = newEnd, IsStart = false, IsRestore = true }, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool PushJournal(int repeatId, int oldCount, int oldPosition, ref Utf8SliceInvocation invocation)
         {
-            return Push(ref _journalTables, ref _journalCount, JournalChunkCapacity, JournalReserveBytes,
-                new Utf8SliceCountMutation { RepeatId = repeatId, OldCount = oldCount, OldPosition = oldPosition }, ref invocation, ref _reservedBytes);
+            return Push(ref _journalTables, ref _journalCount, JournalChunkCapacity,
+                new Utf8SliceCountMutation { RepeatId = repeatId, OldCount = oldCount, OldPosition = oldPosition }, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool PushBalance(int slot, int start, int end, int prev, ref Utf8SliceInvocation invocation)
         {
-            return Push(ref _balanceTables, ref _balanceCount, BalanceChunkCapacity, BalanceReserveBytes,
-                new Utf8SliceBalanceEntry { Slot = slot, Start = start, End = end, Prev = prev }, ref invocation, ref _reservedBytes);
+            return Push(ref _balanceTables, ref _balanceCount, BalanceChunkCapacity,
+                new Utf8SliceBalanceEntry { Slot = slot, Start = start, End = end, Prev = prev }, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool PushHeadTrail(int slot, int oldHead, int newHead, ref Utf8SliceInvocation invocation)
         {
-            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
-                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldHead, NewValue = newHead, IsStart = false, IsHead = true }, ref invocation, ref _reservedBytes);
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldHead, NewValue = newHead, IsStart = false, IsHead = true }, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal Utf8SliceBalanceEntry BalanceEntryAt(int index)
@@ -1842,76 +1821,57 @@ internal static partial class Utf8SliceRunner
             _balanceCount = 0;
         }
 
-        private static bool Push<T>(
-            ref T[][] tables,
-            ref int count,
-            int chunkCapacity,
-            int chunkBytes,
-            T value,
-            ref Utf8SliceInvocation invocation,
-            ref ulong reservedBytes)
+        private static bool Push<T>(ref T[][] tables, ref int count, int chunkCapacity,
+            T value, ref Utf8SliceInvocation invocation, ref ulong reservedBytes, out Utf8ExecutionLimitKind breach)
             where T : struct
         {
+            breach = Utf8ExecutionLimitKind.None;
+            if (count == int.MaxValue) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
             var chunk = count / chunkCapacity;
             var slot = count % chunkCapacity;
-            if (slot == 0)
+            if (slot == 0 && (tables is null || chunk >= tables.Length || tables[chunk] is null))
             {
-                if (tables is null || tables.Length == 0)
+                var replaceTable = tables is null || chunk >= tables.Length;
+                var oldCapacity = tables?.Length ?? 0;
+                var capacity = oldCapacity == 0 ? ChunkTableCapacity :
+                    oldCapacity <= Array.MaxLength / 2 ? oldCapacity * 2 : Array.MaxLength;
+                if (replaceTable && capacity <= chunk) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
+                var tableBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(capacity) : 0;
+                var bytes = checked(tableBytes + Utf8ConstructionBudget.ArrayBytes<T>(chunkCapacity));
+                if (!invocation.Ledger.TryReserve(bytes)) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
+                var adopted = false;
+                try
                 {
-                    if (!invocation.Ledger.TryReserve((ulong)ChunkTableCapacity * 8))
+                    breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                    if (breach != Utf8ExecutionLimitKind.None) return false;
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return false;
+                    var candidate = replaceTable ? new T[capacity][] : tables ?? throw new InvalidOperationException("Live slice stack table is missing.");
+                    if (replaceTable && tables is not null)
                     {
-                        return false;
-                    }
-
-                    reservedBytes += (ulong)ChunkTableCapacity * 8;
-                    if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
-                        return false;
-                    tables = new T[ChunkTableCapacity][];
-                }
-                else if (chunk >= tables.Length)
-                {
-                    var capacity = tables.Length <= Array.MaxLength / 2 ? tables.Length * 2 : Array.MaxLength;
-                    if (capacity <= chunk) return false;
-                    var bytes = (ulong)capacity * 8;
-                    if (!invocation.Ledger.TryReserve(bytes)) return false;
-                    reservedBytes += bytes;
-                    var adopted = false;
-                    try
-                    {
-                        if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
-                            return false;
-                        var grown = new T[capacity][];
-                        Array.Copy(tables, grown, tables.Length);
-                        var oldBytes = (ulong)tables.Length * 8;
-                        invocation.Ledger.Release(oldBytes);
-                        reservedBytes -= oldBytes;
-                        tables = grown;
-                        adopted = true;
-                    }
-                    finally
-                    {
-                        if (!adopted)
+                        for (var offset = 0; offset < oldCapacity;)
                         {
-                            invocation.Ledger.Release(bytes);
-                            reservedBytes -= bytes;
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return false;
+                            var length = Math.Min(256, oldCapacity - offset);
+                            tables.AsSpan(offset, length).CopyTo(candidate.AsSpan(offset, length));
+                            offset += length;
                         }
                     }
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return false;
+                    var leaf = new T[chunkCapacity];
+                    // Publish only after acquisition and copy complete. Failed growth
+                    // leaves the original table, count and parent reservation intact.
+                    var oldBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(oldCapacity) : 0;
+                    candidate[chunk] = leaf;
+                    tables = candidate;
+                    invocation.Ledger.Release(oldBytes);
+                    reservedBytes = checked(reservedBytes + bytes - oldBytes);
+                    adopted = true;
                 }
-
-                if (tables[chunk] is null)
-                {
-                    if (!invocation.Ledger.TryReserve((ulong)chunkBytes))
-                    {
-                        return false;
-                    }
-
-                    reservedBytes += (ulong)chunkBytes;
-                    if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
-                        return false;
-                    tables[chunk] = new T[chunkCapacity];
-                }
+                finally { if (!adopted) invocation.Ledger.Release(bytes); }
             }
-
             tables[chunk][slot] = value;
             count++;
             return true;

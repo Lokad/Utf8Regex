@@ -19,6 +19,7 @@ internal static partial class Utf8SliceRunner
             FrameBase = frameBase;
             ProgramIndex = 0;
             InputIndex = start;
+            RepeatReservation = 0;
         }
 
         internal Utf8SliceProgram Program;
@@ -31,6 +32,7 @@ internal static partial class Utf8SliceRunner
         internal int FrameBase;
         internal int ProgramIndex;
         internal int InputIndex;
+        internal ulong RepeatReservation;
     }
 
     private readonly record struct AssertionContinuation(
@@ -59,18 +61,29 @@ internal static partial class Utf8SliceRunner
                     var body = current.Program.Assertions[instruction.A].Body;
                     var nextCounts = Array.Empty<int>();
                     var nextPositions = Array.Empty<int>();
+                    ulong nextReservation = 0;
                     var adopted = false;
                     try
                     {
                         var breach = invocation.TryChargeInputStep();
                         if (breach != Utf8ExecutionLimitKind.None)
                             return new(false, -1, breach, null, null);
-                        nextCounts = RentIntArray(body.RepeatCount, ref invocation, out breach);
+                        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(body.RepeatCount) * 2);
+                        if (!invocation.Ledger.TryReserve(bytes))
+                            return new(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        nextReservation = bytes;
+                        breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
                         if (breach != Utf8ExecutionLimitKind.None)
                             return new(false, -1, breach, null, null);
-                        nextPositions = RentIntArray(body.RepeatCount, ref invocation, out breach);
-                        if (breach != Utf8ExecutionLimitKind.None)
-                            return new(false, -1, breach, null, null);
+                        if (body.RepeatCount != 0)
+                        {
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
+                            nextCounts = new int[body.RepeatCount];
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
+                            nextPositions = new int[body.RepeatCount];
+                        }
                         for (var offset = 0; offset < nextCounts.Length;)
                         {
                             breach = invocation.TryChargeInputStep();
@@ -91,11 +104,12 @@ internal static partial class Utf8SliceRunner
                             (input[current.InputIndex] & 0xC0) != 0x80;
                         current = new(body, current.InputIndex, nextCounts, nextPositions,
                             false, false, aligned, frameMark);
+                        current.RepeatReservation = nextReservation;
                         adopted = true;
                         // The marker remains outside the child's backtrack boundary,
                         // including when its body has no forks of its own.
                         if (!stacks.PushFrame(new Utf8SliceFrame { ResumeKind = Utf8SliceResumeKind.Assertion }, ref invocation))
-                            return new(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            return new(false, -1, stacks.Breach, null, null);
                         current.FrameBase = stacks.FrameCount;
                         breach = invocation.Budget.TryNoteDepth((uint)stacks.FrameCount);
                         if (breach != Utf8ExecutionLimitKind.None)
@@ -105,8 +119,7 @@ internal static partial class Utf8SliceRunner
                     {
                         if (!adopted)
                         {
-                            ReleaseIntArray(nextPositions, ref invocation);
-                            ReleaseIntArray(nextCounts, ref invocation);
+                            invocation.Ledger.Release(nextReservation);
                         }
                     }
                     continue;
@@ -154,8 +167,7 @@ internal static partial class Utf8SliceRunner
         }
         finally
         {
-            ReleaseIntArray(current.Positions, ref invocation);
-            ReleaseIntArray(current.Counts, ref invocation);
+            invocation.Ledger.Release(current.RepeatReservation);
             current = continuation.Parent;
         }
     }
