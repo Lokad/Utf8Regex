@@ -134,9 +134,12 @@ public sealed class Utf8ScalarIrAdmissionTests
                     int[] values => Utf8ConstructionBudget.ArrayBytes<int>(values.Length),
                     Utf8SliceShorthand[] values => Utf8ConstructionBudget.ArrayBytes<Utf8SliceShorthand>(values.Length),
                     _ when !array.GetType().GetElementType().IsValueType => Utf8ConstructionBudget.ArrayBytes<object>(array.Length),
-                    _ => throw new InvalidOperationException("Unexpected retained array element type."),
+                    _ => CountInlineArray(array),
                 };
-                if (!array.GetType().GetElementType().IsValueType)
+                var element = array.GetType().GetElementType();
+                // Inline scalar class segments also retain arrays and category
+                // holders. Inspect those fields without charging the test's boxes.
+                if (!element.IsValueType || !element.IsPrimitive && !element.IsEnum && element != typeof(Utf8SliceInstruction))
                     foreach (var value in array) if (value is not null) pending.Push(value);
             }
             else if (current.GetType().Namespace == typeof(Utf8SliceProgram).Namespace)
@@ -147,6 +150,14 @@ public sealed class Utf8ScalarIrAdmissionTests
             }
         }
         return bytes;
+    }
+
+    private static ulong CountInlineArray(Array array)
+    {
+        var method = typeof(Utf8ConstructionBudget).GetMethod(nameof(Utf8ConstructionBudget.ArrayBytes),
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        return Assert.IsType<ulong>(method.MakeGenericMethod(array.GetType().GetElementType()).Invoke(null, [array.Length]));
     }
 
 }

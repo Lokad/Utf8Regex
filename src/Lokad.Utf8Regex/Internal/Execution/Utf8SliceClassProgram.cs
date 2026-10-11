@@ -49,7 +49,7 @@ internal sealed class Utf8SliceClassProgram
         return matched;
     }
 
-    private static bool SegmentMatches(Rune scalar, Segment segment, Utf8ScalarCaseBehavior behavior)
+    private static bool SegmentMatches(Rune scalar, in Segment segment, Utf8ScalarCaseBehavior behavior)
     {
         var hit = Utf8SliceScalarClasses.MatchesMask(scalar, segment.Mask16, segment.FoldCase, behavior);
 
@@ -73,6 +73,8 @@ internal sealed class Utf8SliceClassProgram
         return hit != segment.Negated;
     }
 
-    private sealed record Segment(byte[] Mask16, Utf8SliceShorthand[] Members,
+    // The complete segment field state lives inline in the admitted array.
+    // A reference array would leave one unadmitted heap object per operand.
+    private readonly record struct Segment(byte[] Mask16, Utf8SliceShorthand[] Members,
         Utf8SliceNode.CategorySetMember[] Categories, bool Negated, bool FoldCase);
 }
