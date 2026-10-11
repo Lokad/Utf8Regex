@@ -290,7 +290,7 @@ public sealed class Utf8ScalarRetainedGraphTests
                 var (count, bytes) = value switch
                 {
                     Utf8SliceProgram => (33, 144ul),
-                    Utf8SliceAssertion => (4, 64ul),
+                    Utf8SliceAssertion => (5, 64ul), // Includes the numeric forward-lookbehind width.
                     Utf8SliceCategoryTable => (3, 64ul),
                     Utf8SliceNode.CategorySetMember => (2, 48ul),
                     Utf8SliceClassProgram => (1, 48ul),
