@@ -14,7 +14,7 @@ internal enum AsciiStructuralVerifierStepKind : byte
     Accept = 6,
 }
 
-internal readonly struct AsciiStructuralVerifierStep
+internal readonly partial struct AsciiStructuralVerifierStep
 {
     private AsciiStructuralVerifierStep(
         AsciiStructuralVerifierStepKind kind,
@@ -66,7 +66,7 @@ internal readonly struct AsciiStructuralVerifierStep
         new(AsciiStructuralVerifierStepKind.Accept, default, 0, int.MaxValue, [], Utf8BoundaryRequirement.None);
 }
 
-internal readonly struct AsciiStructuralVerifierProgram
+internal readonly partial struct AsciiStructuralVerifierProgram
 {
     public AsciiStructuralVerifierProgram(AsciiStructuralVerifierStep[]? steps)
     {
@@ -158,7 +158,7 @@ internal enum AsciiStructuralLinearVerifierInstructionKind : byte
     Accept = 6,
 }
 
-internal readonly struct AsciiStructuralLinearVerifierInstruction
+internal readonly partial struct AsciiStructuralLinearVerifierInstruction
 {
     private AsciiStructuralLinearVerifierInstruction(
         AsciiStructuralLinearVerifierInstructionKind kind,
@@ -210,7 +210,7 @@ internal readonly struct AsciiStructuralLinearVerifierInstruction
         new(AsciiStructuralLinearVerifierInstructionKind.Accept, default, 0, int.MaxValue, [], Utf8BoundaryRequirement.None);
 }
 
-internal readonly struct AsciiStructuralLinearVerifierProgram
+internal readonly partial struct AsciiStructuralLinearVerifierProgram
 {
     public AsciiStructuralLinearVerifierProgram(AsciiStructuralLinearVerifierInstruction[]? instructions)
     {

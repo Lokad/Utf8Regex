@@ -23,7 +23,7 @@ internal enum PreparedExactSearchTier : byte
 }
 
 
-internal readonly struct PreparedByteSearch
+internal readonly partial struct PreparedByteSearch
 {
     private readonly byte[] _values;
 
@@ -92,7 +92,7 @@ internal readonly struct PreparedByteSearch
         => ByteSet ?? throw new InvalidOperationException("A large byte search requires a prepared byte set.");
 }
 
-internal readonly struct PreparedSubstringSearch
+internal readonly partial struct PreparedSubstringSearch
 {
     private readonly byte[]? _foldedNeedle;
     private readonly int[]? _ignoreCaseShiftTable;

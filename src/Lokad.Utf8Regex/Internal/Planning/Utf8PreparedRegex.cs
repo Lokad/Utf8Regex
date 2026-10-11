@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 /// Immutable output of core regex preparation. Construction is deliberately inert:
 /// every executable artifact is supplied by <see cref="Utf8RegexPreparer"/>.
 /// </summary>
-internal sealed class Utf8PreparedRegex
+internal sealed partial class Utf8PreparedRegex
 {
     private readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily;
     private readonly Utf8OperationMatchCursorPlans _operationMatchCursorPlans;

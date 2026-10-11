@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly struct AsciiStructuralTokenWindowPlan
+internal readonly partial struct AsciiStructuralTokenWindowPlan
 {
     public AsciiStructuralTokenWindowPlan(
         AsciiCharClass leadingCharClass,

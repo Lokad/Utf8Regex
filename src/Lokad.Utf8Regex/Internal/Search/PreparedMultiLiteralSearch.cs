@@ -2056,7 +2056,7 @@ internal readonly partial struct PreparedMultiLiteralTrieSearch
 
 }
 
-internal readonly struct PreparedMultiLiteralTrieNode
+internal readonly partial struct PreparedMultiLiteralTrieNode
 {
     public PreparedMultiLiteralTrieNode(byte[] keys, int[] children, int terminalOrder, int terminalLength)
     {

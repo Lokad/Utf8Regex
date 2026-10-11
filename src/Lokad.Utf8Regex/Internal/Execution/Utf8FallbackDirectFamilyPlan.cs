@@ -53,7 +53,7 @@ internal enum Utf8FallbackFindModeKind : byte
     CountLines = 3,
 }
 
-internal readonly struct Utf8FallbackLiteralPayload
+internal readonly partial struct Utf8FallbackLiteralPayload
 {
     private readonly byte[]? _literalUtf8;
     private readonly byte[]? _secondaryLiteralUtf8;
@@ -101,7 +101,7 @@ internal readonly record struct Utf8FallbackUnicodePayload(
 
 internal readonly record struct Utf8FallbackUrlPrefixWildcards(UInt128 Primary, UInt128 Secondary, UInt128 Relative);
 
-internal readonly struct Utf8FallbackUrlPayload
+internal readonly partial struct Utf8FallbackUrlPayload
 {
     private readonly byte[]? _primaryPrefixUtf8;
     private readonly byte[]? _secondaryPrefixUtf8;
@@ -143,7 +143,7 @@ internal readonly struct Utf8FallbackUrlPayload
     internal Utf8FallbackUrlPrefixWildcards PrefixWildcards { get; }
 }
 
-internal readonly struct Utf8FallbackDirectFamilyPlan
+internal readonly partial struct Utf8FallbackDirectFamilyPlan
 {
     private Utf8FallbackDirectFamilyPlan(
         Utf8FallbackDirectFamilyKind kind,

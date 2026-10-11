@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly record struct Utf8ByteSafeLazyDfaCompileOutcome(
+internal readonly partial record struct Utf8ByteSafeLazyDfaCompileOutcome(
     Utf8ByteSafeLazyDfaVerifierProgram Program,
     Utf8ByteSafeLazyDfaCompileFailureKind FailureKind)
 {

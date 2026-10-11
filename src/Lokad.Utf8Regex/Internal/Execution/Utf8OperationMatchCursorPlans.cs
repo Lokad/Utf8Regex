@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Owns immutable compiled plans referenced by operation match cursors.</summary>
-internal sealed class Utf8OperationMatchCursorPlans
+internal sealed partial class Utf8OperationMatchCursorPlans
 {
     private readonly Utf8SearchPlan _searchPlan;
     private readonly Utf8StructuralLinearProgram _structuralLinearProgram;

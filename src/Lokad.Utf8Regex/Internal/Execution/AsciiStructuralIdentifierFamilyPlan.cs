@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly struct AsciiStructuralIdentifierFamilyPlan
+internal readonly partial struct AsciiStructuralIdentifierFamilyPlan
 {
     public AsciiStructuralIdentifierFamilyPlan(
         byte[][] prefixes,
@@ -131,7 +131,7 @@ internal enum AsciiStructuralSuffixPartKind : byte
     Separator = 2,
 }
 
-internal readonly struct AsciiStructuralSuffixPart
+internal readonly partial struct AsciiStructuralSuffixPart
 {
     private readonly PreparedSubstringSearch _literalSearch;
     private readonly AsciiCharClass _separatorCharClass;

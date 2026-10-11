@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 
 internal static class Utf8RegexCache
 {
-    // Retained keys, facade metadata, scalar/execution IR and bounded replacement descendants.
+    // Retained keys, facade metadata, scalar/prepared graphs and bounded replacement descendants.
     // This internal migration backstop is not a complete program/process cap
     // or a qualified public safe default.
     internal const ulong MaximumRootAndLazyBytes = 64 * 1024 * 1024;

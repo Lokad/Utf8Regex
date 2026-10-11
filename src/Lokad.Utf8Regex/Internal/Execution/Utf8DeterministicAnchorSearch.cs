@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher Searcher, int Offset)
+internal readonly partial record struct Utf8DeterministicAnchorSearch(PreparedSearcher Searcher, int Offset)
 {
     private const int MaxDeterministicAnchorBranches = 32;
 

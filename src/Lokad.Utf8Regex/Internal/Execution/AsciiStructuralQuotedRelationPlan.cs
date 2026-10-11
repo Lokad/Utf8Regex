@@ -39,7 +39,7 @@ internal readonly struct AsciiStructuralQuotedRelationBranchPlan
         MaxLineBreaks >= 0;
 }
 
-internal readonly struct AsciiStructuralQuotedRelationPlan
+internal readonly partial struct AsciiStructuralQuotedRelationPlan
 {
     public AsciiStructuralQuotedRelationPlan(
         byte[][] prefixesUtf8,

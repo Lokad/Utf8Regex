@@ -10,7 +10,7 @@ internal enum Utf8StructuralVerifierKind : byte
     ByteSafeLazyDfaProgram = 3,
 }
 
-internal readonly struct Utf8StructuralVerifierPlan
+internal readonly partial struct Utf8StructuralVerifierPlan
 {
     public Utf8StructuralVerifierPlan(
         Utf8StructuralVerifierKind kind,

@@ -522,7 +522,7 @@ internal readonly partial struct PreparedLiteralSetSearch
     }
 }
 
-internal readonly struct PreparedLiteralSetUniqueAnchor
+internal readonly partial struct PreparedLiteralSetUniqueAnchor
 {
     public PreparedLiteralSetUniqueAnchor(int offset, PreparedByteSearch anchorSearch, byte[][] literalByAnchorByte, int shortestLength)
     { Offset = offset; AnchorSearch = anchorSearch; LiteralByAnchorByte = literalByAnchorByte; ShortestLength = shortestLength; }

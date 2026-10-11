@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly struct AsciiSimplePatternPlan
+internal readonly partial struct AsciiSimplePatternPlan
 {
     public AsciiSimplePatternPlan(
         AsciiSimplePatternToken[][] branches,
@@ -214,7 +214,7 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
     }
 }
 
-internal readonly struct AsciiSimplePatternRunPlan
+internal readonly partial struct AsciiSimplePatternRunPlan
 {
     public AsciiSimplePatternRunPlan(AsciiCharClass charClass, int minLength, int maxLength)
     {
@@ -240,7 +240,7 @@ internal readonly struct AsciiSimplePatternRunPlan
     public bool HasValue => !CharClass.IsEmpty && MinLength > 0 && MaxLength >= MinLength;
 }
 
-internal readonly struct AsciiFixedLiteralCheck
+internal readonly partial struct AsciiFixedLiteralCheck
 {
     public AsciiFixedLiteralCheck(int offset, byte[] literal)
     {
@@ -253,7 +253,7 @@ internal readonly struct AsciiFixedLiteralCheck
     public byte[] Literal { get; }
 }
 
-internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
+internal readonly partial struct AsciiSimplePatternAnchoredHeadTailRunPlan
 {
     public AsciiSimplePatternAnchoredHeadTailRunPlan(
         AsciiCharClass headCharClass,
@@ -314,7 +314,7 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
     }
 }
 
-internal readonly struct AsciiSimplePatternAnchoredValidatorPlan
+internal readonly partial struct AsciiSimplePatternAnchoredValidatorPlan
 {
     public AsciiSimplePatternAnchoredValidatorPlan(AsciiSimplePatternAnchoredValidatorSegment[] segments)
         : this(segments, false)
@@ -334,7 +334,7 @@ internal readonly struct AsciiSimplePatternAnchoredValidatorPlan
     public bool HasValue => Segments is { Length: > 0 };
 }
 
-internal readonly struct AsciiSimplePatternAnchoredValidatorSegment
+internal readonly partial struct AsciiSimplePatternAnchoredValidatorSegment
 {
     private readonly byte[]? _literal;
     private readonly AsciiCharClass _charClass;
@@ -481,7 +481,7 @@ internal readonly struct AsciiSimplePatternAnchoredOptionalFieldPlan
         TailCount > 0;
 }
 
-internal readonly struct AsciiSimplePatternRepeatedDigitGroupPlan
+internal readonly partial struct AsciiSimplePatternRepeatedDigitGroupPlan
 {
     public AsciiSimplePatternRepeatedDigitGroupPlan(
         byte repeatedGroupCount,
@@ -514,7 +514,7 @@ internal readonly struct AsciiSimplePatternRepeatedDigitGroupPlan
     public bool HasValue => RepeatedGroupCount > 0 && GroupDigitCount > 0 && TrailingMinDigits > 0 && SeparatorBytes.Length > 0;
 }
 
-internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
+internal readonly partial struct AsciiSimplePatternBoundedSuffixLiteralPlan
 {
     private readonly AsciiCharClass _prefixCharClass;
     private readonly AsciiCharClass _repeatedCharClass;
@@ -578,7 +578,7 @@ internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
         !_suffixCharClass.IsEmpty;
 }
 
-internal readonly struct AsciiSimplePatternSymmetricLiteralWindowPlan
+internal readonly partial struct AsciiSimplePatternSymmetricLiteralWindowPlan
 {
     public AsciiSimplePatternSymmetricLiteralWindowPlan(
         byte[] firstLiteralUtf8,

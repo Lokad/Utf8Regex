@@ -218,7 +218,7 @@ internal readonly partial struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
 }
 
-internal sealed class PreparedAsciiIgnoreCaseLiteralSetSearchData
+internal sealed partial class PreparedAsciiIgnoreCaseLiteralSetSearchData
 {
     public PreparedAsciiIgnoreCaseLiteralSetSearchData(PreparedAsciiIgnoreCaseLiteralSetSearchDataState state)
     {
@@ -240,7 +240,7 @@ internal sealed class PreparedAsciiIgnoreCaseLiteralSetSearchData
     public PreparedMultiLiteralPackedNibbleSimdPrefilter CorrelatedPrefilter { get; }
 }
 
-internal readonly struct AsciiIgnoreCaseLiteralBucket
+internal readonly partial struct AsciiIgnoreCaseLiteralBucket
 {
     public AsciiIgnoreCaseLiteralBucket(byte foldedFirstByte, byte[][] literals)
     {

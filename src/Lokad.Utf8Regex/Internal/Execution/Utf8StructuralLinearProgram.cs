@@ -121,7 +121,7 @@ internal readonly struct Utf8AsciiDeterministicFixedWidthCheck
         new(Utf8AsciiDeterministicFixedWidthCheckKind.CharClass, 0, charClass);
 }
 
-internal readonly struct Utf8AsciiDeterministicProgram
+internal readonly partial struct Utf8AsciiDeterministicProgram
 {
     public Utf8AsciiDeterministicProgram(
         Utf8AsciiDeterministicStep[] steps,
@@ -379,7 +379,7 @@ internal readonly struct Utf8StructuralLinearInstruction
         new(kind, 0, default, 0, 0, default, 0, 0, default);
 }
 
-internal readonly struct Utf8StructuralLinearInstructionProgram
+internal readonly partial struct Utf8StructuralLinearInstructionProgram
 {
     public Utf8StructuralLinearInstructionProgram(
         Utf8StructuralLinearInstruction[] instructions,
@@ -592,7 +592,7 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     }
 }
 
-internal readonly struct Utf8StructuralLinearProgram
+internal readonly partial struct Utf8StructuralLinearProgram
 {
     private Utf8StructuralLinearProgram(
         Utf8StructuralLinearProgramKind kind,

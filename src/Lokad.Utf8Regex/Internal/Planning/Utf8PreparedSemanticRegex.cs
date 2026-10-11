@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 // Retained semantic metadata after lowering. The parse tree and its culture
 // are construction inputs; prepared operations borrow the shared capture catalog
 // directly and use their own lowered programs and case behavior.
-internal readonly struct Utf8PreparedSemanticRegex
+internal readonly partial struct Utf8PreparedSemanticRegex
 {
     internal Utf8PreparedSemanticRegex(string pattern, RegexOptions options,
         string executionPattern, RegexOptions executionOptions, Utf8CaptureCatalog? captureCatalog)
