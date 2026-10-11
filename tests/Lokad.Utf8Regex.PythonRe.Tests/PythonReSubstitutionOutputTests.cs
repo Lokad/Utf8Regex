@@ -10,8 +10,7 @@ public sealed class PythonReSubstitutionOutputTests
     private static ulong Bytes(int count) => count == 0 ? 0 : 32UL + (((ulong)count + 15) & ~15UL);
     private static ulong TextBytes(int count) => count == 0 ? 0 : 32UL + ((2UL * ((ulong)count + 1) + 15) & ~15UL);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hasMap")]
-    private static extern ref bool HasMap(ref PythonReScalarMatchCursor cursor);
+    private static bool HasMap(ref PythonReScalarMatchCursor cursor) => cursor.HasCoordinateMap;
 
     [Fact]
     public void TemplateExpansionBorrowsByteCapturesWithoutMappingOrProjectionArrays()

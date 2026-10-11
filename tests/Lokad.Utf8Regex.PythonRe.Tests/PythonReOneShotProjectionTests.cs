@@ -9,8 +9,7 @@ public sealed class PythonReOneShotProjectionTests
 {
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hasMap")]
-    private static extern ref bool HasMap(ref PythonReScalarMatchCursor cursor);
+    private static bool HasMap(ref PythonReScalarMatchCursor cursor) => cursor.HasCoordinateMap;
 
     [Theory]
     [InlineData(0, "(?P<x>.)", "é😀z", 2, 2, 6, 1, 3, "😀")]

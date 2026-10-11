@@ -128,7 +128,18 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 
 Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Admitted scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code. Remaining managed routes still require the full R06 migration.
 
-Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe defines no work, depth, or memory budgets; defaults are unlimited everywhere. The shared `Utf8ResourcePolicy` is accepted like the core library (unlimited only; finite budgets are rejected loudly).
+Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe rejects finite public work, depth, working-byte and result-byte policies; its internal construction admission and invocation accounting are partial guarantees, not complete public controls. The shared `Utf8ResourcePolicy` is accepted like the core library (unlimited invocation budgets only; finite budgets are rejected loudly).
+
+`CreateMatchCursor(ReadOnlyMemory<byte>)` is an incremental, explicitly owned
+alternative to the materialized `FindIterDetailed` array. Its offset/token overloads
+retain a single invocation across advances, including host waits in the original
+absolute deadline. The memory subject must stay unchanged and its manager alive
+until EOF or disposal. Early abandonment requires `Dispose`; EOF/failure clean up
+synchronously, without a finalizer. Reference aliases share position and lifetime;
+concurrent/reentrant access is rejected. `Current` is valid only after a successful
+advance, while independently owned snapshots remain valid after future advances
+or disposal. Existing span/value API lifetimes are unchanged. Complete finite and
+retained-result controls and last-capture completion metadata remain unfinished.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

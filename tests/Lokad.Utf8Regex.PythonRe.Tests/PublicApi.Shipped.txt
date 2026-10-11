@@ -52,6 +52,10 @@ struct PythonRe.Utf8PythonMatchContext
   method PythonRe.PythonReNameEntry[] GetNameEntries()
   method PythonRe.Utf8PythonGroupContext GetGroup(Int32 number)
   method String GetValueString()
+class PythonRe.Utf8PythonMatchCursor
+  property PythonRe.Utf8PythonDetailedMatchData Current { get; }
+  method Boolean MoveNext()
+  method Void Dispose()
 struct PythonRe.Utf8PythonMatchData
   property Boolean Success { get; set; }
   property Int32 EndOffsetInBytes { get; set; }
@@ -119,6 +123,9 @@ class PythonRe.Utf8PythonRegex
   method PythonRe.Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input)
+  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)

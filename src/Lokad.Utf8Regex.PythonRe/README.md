@@ -50,6 +50,35 @@ string?[] parts = regex.SplitToStrings("foo-foo xx foo-foo"u8);
 String-returning helpers such as `SearchToString(...)`, `ReplaceToString(...)`, and `FindAllToStrings(...)`
 are also available as host-friendly conveniences when a runtime needs scalar string results.
 
+`CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one detailed snapshot per
+`MoveNext` instead of materializing the complete `FindIterDetailed` array:
+
+```csharp
+ReadOnlyMemory<byte> subject = System.Text.Encoding.UTF8.GetBytes("é😀");
+using var cursor = new Utf8PythonRegex("(?P<scalar>.)").CreateMatchCursor(subject);
+while (cursor.MoveNext())
+{
+    Utf8PythonDetailedMatchData match = cursor.Current;
+    // The supplementary scalar occupies four bytes and is one match.
+    Console.WriteLine(match.Value.ValueText);
+}
+```
+
+Keep the subject unchanged and its memory manager alive until exhaustion or
+disposal. Dispose when stopping early. The cursor has one shared position and
+lifetime across reference aliases, rejects concurrent/reentrant access, and has
+no finalizer. EOF and failure release scratch and subject references immediately.
+Returned snapshots own their arrays and text and remain valid after advance or
+disposal. Sequential advances may cross host calls or asynchronous waits; those
+waits count against the original absolute match deadline. The offset/token
+overloads preserve scalar-aligned byte offsets and the original invocation token.
+Existing span APIs retain their existing contracts.
+
+Finite public work, depth, working-byte and result-byte policies remain unsupported
+in PythonRe. This cursor adds incremental discovery and explicit lifetime, not a
+complete memory cap or safe default. Last-capture completion metadata remains an
+open compatibility item in PLAN.md.
+
 ## Development Notes
 
 - Benchmarks: [BENCHMARKS.md](./BENCHMARKS.md)

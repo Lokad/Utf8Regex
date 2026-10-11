@@ -137,6 +137,17 @@ finalizers. Lazy getter/result bounds, other execution routes and fixed object
 overhead still require admission work; this does not enable the core's unsupported
 finite public policies or establish a complete memory cap.
 
+PythonRe's incremental `CreateMatchCursor(ReadOnlyMemory<byte>)` uses an explicit
+reference owner instead of those copied value-cursor leases. Aliases share its
+position and lifetime; early abandonment requires disposal. EOF, failure and
+disposal synchronously release scratch and subject references, with no finalizer
+or collection-release ledger. Keep the borrowed subject unchanged and its memory
+manager alive until closure. Detailed snapshots own their arrays/text and remain
+valid after advance or disposal. Sequential host waits are permitted and count
+against the original absolute deadline. Concurrent/reentrant access is rejected.
+This additive development API leaves existing value/span contracts intact and
+does not enable finite public budgets or bound externally retained results.
+
 The target requires common construction, invocation, working-storage, result and
 retained-storage policies across the core, PCRE2 and PythonRe profiles. Admit
 library-owned capacity before acquisition, charge overlapping live buffers together,
