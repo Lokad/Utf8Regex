@@ -10,8 +10,12 @@ internal readonly record struct Utf8ExecutionLimits(
     ulong MaxWorkSteps,
     uint MaxDepth,
     ulong MaxWorkingBytes,
-    ulong MaxResultBytes = 0)
+    ulong MaxResultBytes)
 {
+    internal Utf8ExecutionLimits(ulong maxWorkSteps, uint maxDepth, ulong maxWorkingBytes)
+        : this(maxWorkSteps, maxDepth, maxWorkingBytes, 0)
+    { }
+
     // R02b budgeted-invocation placeholder: profiles whose policy
     // constructors still reject finite budgets build every slice invocation
     // from this unbounded value. Profiles with real request limits build
