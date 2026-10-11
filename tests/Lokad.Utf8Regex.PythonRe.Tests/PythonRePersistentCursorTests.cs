@@ -122,7 +122,10 @@ public sealed class PythonRePersistentCursorTests
         Assert.True(invocation.Ledger.TryReserve(13));
         using var limited = InternalCursor(input, "(a)", invocation);
         Assert.True(limited.MoveNext()); var retained = limited.Current;
-        Assert.Throws<InvalidOperationException>(() => limited.MoveNext());
+        var denial = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MoveNext());
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denial.ResourceKind);
+        Assert.Equal(secondSteps - 1, denial.Limit);
+        Assert.Equal(secondSteps, denial.Requested);
         Assert.Throws<InvalidOperationException>(() => limited.Current);
         Assert.Throws<InvalidOperationException>(() => limited.MoveNext());
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);

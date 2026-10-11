@@ -98,7 +98,7 @@ public sealed partial class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var scalarPlan = GetReplacementPlan(replacement);
-        if (!cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
+        if (!ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, true, out _, out var literalText, out var literalCount))
             return new Utf8PythonSubnResult { ResultText = literalText, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan,
@@ -144,7 +144,7 @@ public sealed partial class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var scalarPlan = GetReplacementPlan(replacement);
-        if (!cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
+        if (!ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, false, out var literalBytes, out _, out var literalCount))
             return new Utf8PythonSubnUtf8Result { ResultBytes = literalBytes, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan,

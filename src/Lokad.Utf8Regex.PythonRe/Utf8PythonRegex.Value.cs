@@ -29,7 +29,7 @@ public sealed partial class Utf8PythonRegex
     private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
+            !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.IsMatch(input, cancellationToken);
         return IsMatchScalar(input, startOffsetInBytes, cancellationToken);
     }
@@ -46,7 +46,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
+            !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
             return MatchValueNative(input, startOffsetInBytes, 0, cancellationToken);
         }
@@ -76,12 +76,12 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
+            !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
         {
             return MatchValueNative(input, startOffsetInBytes, 1, cancellationToken);
         }
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
+            !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
             return MatchValueNative(input, startOffsetInBytes, 1, cancellationToken);
         }
@@ -112,7 +112,7 @@ public sealed partial class Utf8PythonRegex
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
         if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
-            !cancellationToken.CanBeCanceled)
+            !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled)
         {
             return MatchValueNative(input, startOffsetInBytes, 2, cancellationToken);
         }
@@ -152,7 +152,7 @@ public sealed partial class Utf8PythonRegex
         // The native rendering intentionally has exact references. Only the
         // proven exact-literal control can bypass lexical profile comparison.
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
+            !ResourcePolicy.MaxWorkSteps.HasValue && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.Count(input, cancellationToken);
         return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ScalarProgram, cancellationToken);
     }
@@ -161,7 +161,7 @@ public sealed partial class Utf8PythonRegex
         Utf8SliceProgram program, CancellationToken cancellationToken)
     {
         var cursor = new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
-            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
+            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken, InvocationLimits);
         try
         {
             var count = 0;

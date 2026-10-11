@@ -13,7 +13,7 @@ Version 0.4.0-scalar.1 is an experimental integration candidate with a distinct 
 - Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
 - Global operations: admitted scalar programs serve captured iteration, Python empty-match retry, substitution and split over the original UTF-8 bytes, with one operation deadline/token and owned capture snapshots.
 - Case folding: admitted Python ASTs lower to the shared UTF-8 scalar VM with owned CPython 3.13.2 / Unicode 15.1.0 data. Literal classes include extra fold partners; references use lexical simple lowercase, with ASCII scopes restricted to ASCII letters. The four formerly skipped case-folding regressions are active.
-- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Category-version reconciliation and finite resource/output bounds remain unfinished.
+- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps` covers validation, scalar execution and required result/output shaping in one invocation; exhaustion throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`. Compilation/preparation and caller callback execution have separate scope. Depth, working-byte and result-byte limits remain unsupported; category-version reconciliation remains unfinished.
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.
@@ -74,10 +74,23 @@ waits count against the original absolute match deadline. The offset/token
 overloads preserve scalar-aligned byte offsets and the original invocation token.
 Existing span APIs retain their existing contracts.
 
-Finite public work, depth, working-byte and result-byte policies remain unsupported
-in PythonRe. This cursor adds incremental discovery and explicit lifetime, not a
-complete memory cap or safe default. Last-capture completion metadata remains an
-open compatibility item in PLAN.md.
+A finite `MaxWorkSteps` policy applies cumulatively through cursor construction,
+validation, each move and required snapshot publication. Exhaustion throws
+`Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`; faulted cursors
+release scratch immediately. Separate calls get separate counters. Work units are
+bounded engine/checkpoint steps and may change between releases. Compilation and
+replacement-plan preparation use separate construction backstops. Arbitrary user
+callback execution and later standalone result getters are outside this cap;
+encoding/copying callback returns is charged. Cancellation and deadlines still apply.
+Finite depth, working-byte and result-byte policies remain unsupported. A work cap
+is not a memory cap or safe default.
+
+```csharp
+var bounded = new Utf8PythonRegex("(?P<word>\\w+)", PythonReCompileOptions.None,
+    TimeSpan.FromSeconds(1), new Utf8ResourcePolicy { MaxWorkSteps = 100_000 });
+```
+
+Last-capture completion metadata remains an open compatibility item in PLAN.md.
 
 ## Development Notes
 

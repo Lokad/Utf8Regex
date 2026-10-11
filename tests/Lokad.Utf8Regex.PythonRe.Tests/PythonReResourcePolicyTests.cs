@@ -8,6 +8,16 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReResourcePolicyTests
 {
     [Fact]
+    public void ZeroWorkPolicyIsInvalidBeforePatternValidation()
+    {
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 0 };
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid",
+            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex(new byte[] { 255 },
+            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy));
+    }
+
+    [Fact]
     public void UnlimitedPolicyConstructsBothFlavorsAndRoundTrips()
     {
         var fromText = new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited);
@@ -18,10 +28,16 @@ public sealed class PythonReResourcePolicyTests
         Assert.Equal(1, fromBytes.Count(Encoding.UTF8.GetBytes("cat")));
     }
 
-    [Fact]
-    public void FiniteBudgetsAreNotSupportedByPythonRe()
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    public void FiniteDepthAndMemoryBudgetsRemainUnsupportedByPythonRe(int kind)
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul };
+        var policy = kind switch
+        {
+            0 => new Utf8ResourcePolicy { MaxDepth = 100 },
+            1 => new Utf8ResourcePolicy { MaxWorkingBytes = 100 },
+            _ => new Utf8ResourcePolicy { MaxResultBytes = 100 },
+        };
         Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
         Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
     }
@@ -35,7 +51,7 @@ public sealed class PythonReResourcePolicyTests
     [Fact]
     public void FinitePolicyIsRejectedBeforePatternCompilation()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul };
+        var policy = new Utf8ResourcePolicy { MaxDepth = 100u };
         Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
     }
 

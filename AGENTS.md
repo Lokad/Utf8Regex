@@ -228,8 +228,8 @@ Current intended uses:
   - dispatches internally to the appropriate literal-family, structural-family, prefix-loop, or whole-document drilldown
 - --measure-slice-policy-lanes
   - run the R02a focused cost controls over the fixed slice catalog (IsMatch plus Count)
-  - reports unlimited/no-token, finite-limits/no-token (PCRE2 only; core and PythonRe
-    reject finite budgets), and live-token lanes with per-lane results, routes, timings,
+  - reports unlimited/no-token, finite-limits/no-token (PCRE2 only for this combined policy; core rejects finite budgets and
+    PythonRe supports work-only budgets), and live-token lanes with per-lane results, routes, timings,
     and allocations
   - validates lane agreement within each profile before timing; defaults to 20000
     iterations and five samples with alternating sample order

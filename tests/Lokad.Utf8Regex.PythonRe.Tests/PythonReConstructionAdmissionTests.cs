@@ -16,8 +16,14 @@ public sealed class PythonReConstructionAdmissionTests
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         Assert.Throws<NotSupportedException>(() =>
             new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkSteps = 1 }));
+                new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
         Assert.Equal(0ul, scope.Budget.WorkSteps);
+        var acceptedPolicy = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+                new Utf8ResourcePolicy { MaxWorkSteps = 1 }));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, acceptedPolicy.ResourceKind);
+        Assert.Equal(0ul, scope.Budget.WorkSteps);
+        Assert.Equal(0ul, scope.Budget.ReservedBytes);
     }
 
     [Fact]

@@ -51,6 +51,8 @@ internal struct PythonReScalarMatchState
             _validation = Utf8Validation.Validate(input, ref _invocation);
             _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { Dispose(); throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             Dispose();
@@ -73,6 +75,8 @@ internal struct PythonReScalarMatchState
     internal T[] AllocateResultArray<T>(ReadOnlySpan<byte> input, int count)
     {
         try { return _results.AllocateArray<T, Utf8InvocationBufferControl>(count, new(ref _invocation)); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -85,17 +89,26 @@ internal struct PythonReScalarMatchState
     internal void AddResult<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer, T value)
     {
         try { buffer.Add(value, new Utf8InvocationBufferControl(ref _invocation)); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
     internal T[] CompleteResults<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer)
     {
         try { return buffer.ToArray(ref _results, new Utf8InvocationBufferControl(ref _invocation)); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer)
         => buffer.Release(new Utf8InvocationBufferControl(ref _invocation));
+
+    // Map neutral helper failures only after actual work denial, without using
+    // exception text. Internal kernels and PCRE2 keep their failure vocabulary.
+    private readonly Utf8ResourceLimitExceededException WorkFailure()
+        => new(Utf8ResourceLimitKind.ExecutionWorkSteps, _invocation.Budget.Limits.MaxWorkSteps, _invocation.Budget.Steps);
 
     private readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
         => new(Encoding.UTF8.GetString(input), _pattern, _timeout);
@@ -108,6 +121,8 @@ internal struct PythonReScalarMatchState
                 throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
             _invocation.Budget.ThrowIfCancellationRequested();
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
@@ -133,6 +148,8 @@ internal struct PythonReScalarMatchState
                     outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
                         _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref workspace, ref _invocation);
                 }
+                catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+                { throw WorkFailure(); }
                 catch (Utf8ExecutionDeadlineExpiredException)
                 {
                     throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
@@ -160,6 +177,8 @@ internal struct PythonReScalarMatchState
             }
             return false;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         finally { workspace.Release(ref _invocation); }
     }
 
@@ -181,6 +200,8 @@ internal struct PythonReScalarMatchState
             Checkpoint(input);
             return value;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -189,6 +210,8 @@ internal struct PythonReScalarMatchState
         Checkpoint(input);
         var copied = AllocateResultArray<PythonReNameEntry>(input, names.Length);
         try { Utf8InvocationResultLedger.Copy<PythonReNameEntry, Utf8InvocationBufferControl>(names, copied, new(ref _invocation)); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
         Checkpoint(input);
         return copied;
@@ -239,6 +262,8 @@ internal struct PythonReScalarMatchState
                 _map = Utf8BoundaryMap.Create(input, _validation, ref _invocation, out _mapReservation);
                 _hasMap = true;
             }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+            { throw WorkFailure(); }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
                 throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
@@ -288,6 +313,8 @@ internal struct PythonReScalarMatchState
             Checkpoint(input);
             return text;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
@@ -310,6 +337,8 @@ internal struct PythonReScalarMatchState
                 throw new InvalidOperationException("Python output exceeded the working storage budget.");
             return writer;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -321,6 +350,8 @@ internal struct PythonReScalarMatchState
             if (!writer.Append(bytes, ref _invocation))
                 throw new InvalidOperationException("Python output exceeded the working storage budget.");
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -333,6 +364,8 @@ internal struct PythonReScalarMatchState
             if (!writer.AppendUtf16(text.AsSpan(0, text.Length), ref _invocation))
                 throw new InvalidOperationException("Python output exceeded the working storage budget.");
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -347,6 +380,8 @@ internal struct PythonReScalarMatchState
             writer.Release(ref _invocation);
             return result;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -361,6 +396,8 @@ internal struct PythonReScalarMatchState
             writer.Release(ref _invocation);
             return result;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
@@ -374,6 +411,8 @@ internal struct PythonReScalarMatchState
             Utf8SliceBufferWork.Copy(source, destination, ref _invocation);
             Checkpoint(input);
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.WorkLimitExceeded)
+        { throw WorkFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);

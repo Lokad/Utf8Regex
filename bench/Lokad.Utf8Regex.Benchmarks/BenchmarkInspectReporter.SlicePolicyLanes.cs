@@ -8,7 +8,7 @@ using Lokad.Utf8Regex.PythonRe;
 namespace Lokad.Utf8Regex.Benchmarks;
 
 // R02a focused cost controls: slice shapes measured under unlimited/no-token,
-// finite-limits/no-token (PCRE2 only; core and PythonRe reject finite budgets),
+// finite-limits/no-token (PCRE2 only for this combined policy; PythonRe supports work-only budgets),
 // and finite-limits/live-uncanceled-token lanes (unlimited/live-token where no
 // finite surface exists). Lanes alternate sample-by-sample with warmup; results
 // must agree within each profile before timing. Performance parity is not a

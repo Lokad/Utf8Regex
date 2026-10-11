@@ -16,7 +16,7 @@ public sealed partial class Utf8PythonRegex
         => CreateMatchCursor(input, startOffsetInBytes, CancellationToken.None);
 
     /// <summary>Creates an incremental cursor retaining one cumulative invocation token and deadline.</summary>
-    /// <remarks>Finite public resource policies remain unsupported. Sequential advances may cross asynchronous host waits.</remarks>
+    /// <remarks>MaxWorkSteps is cumulative through validation, moves and snapshots. Other finite budgets remain unsupported. Sequential advances may cross asynchronous host waits.</remarks>
     /// <exception cref="OperationCanceledException">The invocation token is canceled.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The byte offset is outside the subject or inside a scalar.</exception>
     /// <exception cref="ArgumentException">The subject is malformed UTF-8.</exception>
@@ -24,7 +24,7 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         ValidateScalarStartOffset(input.Span, startOffsetInBytes);
         return new Utf8PythonMatchCursor(input, ScalarProgram, _coreGroupNumbersByPythonGroup,
             _nameEntries, startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation);

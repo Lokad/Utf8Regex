@@ -246,9 +246,9 @@ public sealed partial class Utf8PythonRegex
     private static void ValidatePythonRePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
     {
         resourcePolicy.Validate(paramName);
-        if (resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
+        if (resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
         {
-            throw new NotSupportedException("This profile enforces only match timeouts; work, depth, and memory budgets require the PCRE2 profile.");
+            throw new NotSupportedException("This profile supports MaxWorkSteps, match timeouts and cancellation; finite depth, working-byte and result-byte limits are unsupported.");
         }
     }
 
@@ -271,7 +271,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }
 
-    /// <summary>Gets the invocation resource policy.</summary>
+    /// <summary>Gets the invocation resource policy. Finite MaxWorkSteps is supported; other finite budgets are rejected.</summary>
     public Utf8ResourcePolicy ResourcePolicy { get; }
 
     /// <summary>Returns the group names in group-number order, including group zero.</summary>
@@ -296,6 +296,8 @@ public sealed partial class Utf8PythonRegex
     // Exact profile classes and lexical reference lowerings come from the Python
     // AST, independently of residual native selectors or BCL case flags.
     private Utf8SliceProgram ScalarProgram => _scalarProgram;
+
+    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, 0, 0);
 
     internal bool DebugUsesOwnedSlice => _scalarProgram is not null;
 

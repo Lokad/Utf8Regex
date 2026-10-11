@@ -11,6 +11,8 @@ public enum Utf8ResourceLimitKind
     ConstructionWorkSteps,
     /// <summary>Combined live explicit traversal frames in covered construction walkers.</summary>
     ConstructionDepth,
+    /// <summary>Cumulative bounded execution/checkpoint steps in one invocation.</summary>
+    ExecutionWorkSteps,
 }
 
 /// <summary>Reports an owned resource-admission failure, distinct from invalid syntax, no match and timeout.</summary>
@@ -30,6 +32,7 @@ public sealed class Utf8ResourceLimitExceededException : InvalidOperationExcepti
     /// <summary>Gets the configured maximum in the units of <see cref="ResourceKind"/>.</summary>
     public ulong Limit { get; }
 
-    /// <summary>Gets the combined capacity, work or depth requested before the denied operation.</summary>
+    /// <summary>Gets the combined capacity, work or depth requested before the denied operation.
+    /// An execution work request beyond ulong.MaxValue is reported as ulong.MaxValue.</summary>
     public ulong Requested { get; }
 }

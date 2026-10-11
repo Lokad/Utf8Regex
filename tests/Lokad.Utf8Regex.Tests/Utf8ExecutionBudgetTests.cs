@@ -11,6 +11,27 @@ namespace Lokad.Utf8Regex.Tests;
 /// </summary>
 public sealed class Utf8ExecutionBudgetTests
 {
+    [Theory]
+    [InlineData(0UL)]
+    [InlineData(ulong.MaxValue - 1)]
+    [InlineData(ulong.MaxValue)]
+    public void StepCounterSaturatesAndFiniteDenialRemainsSticky(ulong limit)
+    {
+        object boxed = new Utf8ExecutionBudget(new(limit, 0, 0), Regex.InfiniteMatchTimeout, default);
+        typeof(Utf8ExecutionBudget).GetProperty(nameof(Utf8ExecutionBudget.Steps),
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(boxed, ulong.MaxValue - 1);
+        var budget = (Utf8ExecutionBudget)boxed;
+        Assert.Equal(limit == ulong.MaxValue - 1 ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None,
+            budget.TryChargeStep());
+        Assert.Equal(ulong.MaxValue, budget.Steps);
+        Assert.Equal(limit == 0 ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, budget.TryChargeStep());
+        Assert.Equal(ulong.MaxValue, budget.Steps);
+        Assert.Equal(limit != 0, budget.WorkLimitExceeded);
+        Assert.Equal(limit == 0 ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, budget.TryChargeStep());
+        Assert.Equal(ulong.MaxValue, budget.Steps);
+    }
+
     private static readonly Utf8ExecutionLimits s_unlimited = new(0, 0, 0);
 
     [Fact]

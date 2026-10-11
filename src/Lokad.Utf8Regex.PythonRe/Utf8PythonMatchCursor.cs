@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// Sequential advances may cross host calls and asynchronous waits; the original deadline includes those waits.
 /// Concurrent or reentrant access is rejected. Aliases reference the same position and lifetime.
 /// Returned detailed snapshots own their values and remain usable after later advances or disposal.
-/// This development surface does not enable finite public resource policies or retained-result limits.
+/// MaxWorkSteps remains cumulative through validation, moves and snapshot publication; retained-result limits remain unsupported.
 /// </remarks>
 public sealed class Utf8PythonMatchCursor : IDisposable
 {

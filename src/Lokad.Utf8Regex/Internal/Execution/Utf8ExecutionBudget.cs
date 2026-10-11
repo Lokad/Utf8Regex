@@ -31,6 +31,10 @@ internal struct Utf8ExecutionBudget
 
     internal ulong Steps { get; private set; }
 
+    // Sticky denial distinguishes an exhausted ulong.MaxValue cap from its
+    // last admitted step. Steps saturates; even an unlimited counter never wraps.
+    internal bool WorkLimitExceeded { get; private set; }
+
     internal uint PeakDepth { get; private set; }
 
     internal ulong PeakWorkingBytes { get; private set; }
@@ -56,11 +60,11 @@ internal struct Utf8ExecutionBudget
     internal Utf8ExecutionLimitKind TryChargeStep()
     {
         _token.ThrowIfCancellationRequested();
-        Steps++;
+        var overflow = Steps == ulong.MaxValue;
+        if (!overflow) Steps++;
         _deadline.Step();
-        return Limits.MaxWorkSteps != 0 && Steps > Limits.MaxWorkSteps
-            ? Utf8ExecutionLimitKind.WorkSteps
-            : Utf8ExecutionLimitKind.None;
+        WorkLimitExceeded |= Limits.MaxWorkSteps != 0 && (overflow || Steps > Limits.MaxWorkSteps);
+        return WorkLimitExceeded ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None;
     }
 
     internal Utf8ExecutionLimitKind TryNoteDepth(uint depth)

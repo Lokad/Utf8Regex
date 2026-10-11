@@ -17,7 +17,7 @@ public sealed partial class Utf8PythonRegex
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
-            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken);
+            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken, InvocationLimits);
     }
 
     private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)

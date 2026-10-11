@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex;
 /// <remarks>Every budget is nullable with <see langword="null"/> meaning unlimited. Zero is never a valid budget: use <see langword="null"/> (or <see cref="Unlimited"/>) for no cap. Profiles enforce only the budgets they implement and reject the rest loudly instead of silently relaxing them.</remarks>
 public readonly record struct Utf8ResourcePolicy
 {
-    /// <summary>Gets the maximum combined candidate and backtracking step count, or <see langword="null"/> for no cap.</summary>
+    /// <summary>Gets the maximum cumulative execution step count (units and scope depend on the profile), or <see langword="null"/> for no cap.</summary>
     public ulong? MaxWorkSteps { get; init; }
 
     /// <summary>Gets the maximum backtracking or recursive execution depth, or <see langword="null"/> for no cap.</summary>

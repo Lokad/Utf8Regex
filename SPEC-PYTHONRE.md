@@ -128,7 +128,30 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 
 Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Admitted scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code. Remaining managed routes still require the full R06 migration.
 
-Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe rejects finite public work, depth, working-byte and result-byte policies; its internal construction admission and invocation accounting are partial guarantees, not complete public controls. The shared `Utf8ResourcePolicy` is accepted like the core library (unlimited invocation budgets only; finite budgets are rejected loudly).
+Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe supports
+finite `Utf8ResourcePolicy.MaxWorkSteps`. One counter covers full-input validation,
+candidate/backtracking work, required coordinate mapping, bounded result copying,
+decoding, callback-return encoding and publication. The explicit match cursor
+keeps that counter across moves; each separate operation starts a new invocation.
+Exhaustion throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`,
+`Limit` and `Requested`. Counters saturate at `ulong.MaxValue`; a denied request
+beyond that value reports `Requested = ulong.MaxValue` without wrapping.
+
+A step is a bounded engine/checkpoint unit, not one byte or scalar. Work counts
+may change between releases; validation/copy loops operate in bounded blocks.
+Finite calls use the metered scalar route rather than uncontrolled native/core
+shortcuts. The limit does not bound wall time, retained output bytes or process
+memory. Pattern compilation, lazy full-match compilation and replacement-plan
+preparation retain separate construction backstops; they are outside execution
+work counts. Arbitrary evaluator execution and later standalone result getters
+are outside this cap; the library charges encoding/copying the evaluator's return.
+Cancellation and the absolute invocation deadline remain independently enforced.
+
+Finite depth, working-byte and result-byte policies still throw
+`NotSupportedException` before pattern compilation. Zero budgets remain invalid.
+The core still rejects every finite public invocation budget. PythonRe's work cap
+does not qualify the unfinished common memory, retained-result or default-policy
+gates.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` is an incremental, explicitly owned
 alternative to the materialized `FindIterDetailed` array. Its offset/token overloads
@@ -138,7 +161,7 @@ until EOF or disposal. Early abandonment requires `Dispose`; EOF/failure clean u
 synchronously, without a finalizer. Reference aliases share position and lifetime;
 concurrent/reentrant access is rejected. `Current` is valid only after a successful
 advance, while independently owned snapshots remain valid after future advances
-or disposal. Existing span/value API lifetimes are unchanged. Complete finite and
+or disposal. Existing span/value API lifetimes are unchanged. Depth, working-byte and
 retained-result controls and last-capture completion metadata remain unfinished.
 
 ```csharp
