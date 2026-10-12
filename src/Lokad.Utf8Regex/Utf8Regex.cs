@@ -1165,6 +1165,24 @@ public sealed partial class Utf8Regex
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, ref Utf8SliceInvocation invocation)
     {
+        // A pure literal Count needs no capture slots or continuation frames.
+        // Borrow the validated invocation instead of dropping finite callers
+        // into the VM solely because they selected an enforceable policy.
+        if (HasFiniteExecutionLimits && !program.RightToLeft && !program.IgnoreCase &&
+            !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
+            !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
+            !program.SawLookaround && !program.HasConditionalTest &&
+            !_requiresKelvinSignFallback &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
+            _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
+        {
+            var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
+                _preparedRegex.SearchPlan, input[startByte..], false, ref invocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Native literal count breached the invocation budget.");
+            return count;
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

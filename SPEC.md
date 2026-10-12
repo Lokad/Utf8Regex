@@ -178,11 +178,19 @@ safe defaults through the R01/R06 gates in PLAN.md; partial internal admission
 must not be advertised as complete public bounds or a process-RSS guarantee.
 
 Current public support is narrower: core and PythonRe accept finite
-`Utf8ResourcePolicy.MaxWorkSteps`. A finite policy selects owned scalar
+`Utf8ResourcePolicy.MaxWorkSteps`. A finite policy selects owned metered
 execution with one cumulative invocation through full strict UTF-8 validation,
 discovery, required coordinate/capture projection, output and publication. Lazy
 advances share that allowance, including copies of core value cursors; copies keep
 independent positions and retained aliases/results remain valid after work denial.
+Core Count may reuse the existing bounded native counter for a prepared nonempty
+exact LTR literal, including ordinary ASCII literal captures. It shares the
+validated invocation and requires no capture/continuation scratch, depth or result
+capacity. Route-dependent admission can therefore succeed below the former VM
+scratch requirement. Folded, boundary/trailing assertions, contiguous anchors,
+shared/explicit numbering and balancing retain their qualified routes; captured
+Unicode and NonBacktracking patterns without a native plan also retain the VM.
+Offset interoperability maps keep their separate working/result admission.
 Denial throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`, the
 configured limit and a saturating requested count. A cap is in bounded engine/
 checkpoint steps, whose granularity may change, not bytes, wall time or RSS.

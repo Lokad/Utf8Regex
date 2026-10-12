@@ -44,6 +44,14 @@
 
 ## Development history
 
+- Reuse the existing bounded native counter for finite-policy Count over
+  prepared nonempty exact LTR literals, including ordinary ASCII literal
+  captures. Validation/search/count share one original invocation. No VM
+  capture slots or continuation scratch are rented; depth/working admission is
+  route-dependent and offset maps remain separately charged. Folded/assertion,
+  shared/explicit numbering, balancing and unprepared shapes retain their
+  qualified route. Keep work/cancellation/deadlines and structured exhaustion.
+
 - Replace two unchecked vector reads from fixed sixteen-byte construction
   buffers with `MemoryMarshal.Read<Vector128<byte>>`. Windows/Linux Release
   code generation is identical; allocation and the byte-set algorithm are
