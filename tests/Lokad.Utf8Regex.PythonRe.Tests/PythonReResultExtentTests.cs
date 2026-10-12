@@ -55,18 +55,22 @@ public sealed class PythonReResultExtentTests
         {
             cursor.EnsureMap();
             var baseline = cursor.ReservedBytes;
+            Assert.True(cursor.MoveNext());
+            var positioned = cursor.ReservedBytes;
+            Assert.True(positioned > baseline);
             var count = 0;
-            while (cursor.MoveNext())
+            do
             {
                 var groups = cursor.SnapshotGroups();
-                Assert.Equal(baseline + ArrayBytes<PythonReGroupData>(2), cursor.ReservedBytes);
+                Assert.Equal(positioned + ArrayBytes<PythonReGroupData>(2), cursor.ReservedBytes);
                 Assert.Equal(2 * count, groups[1].StartOffsetInBytes);
                 cursor.ReleaseResultArray(groups);
-                Assert.Equal(baseline, cursor.ReservedBytes);
+                Assert.Equal(positioned, cursor.ReservedBytes);
                 Assert.Equal(0UL, cursor.ResultReservation);
                 count++;
-            }
+            } while (cursor.MoveNext());
             Assert.Equal(1025, count);
+            Assert.Equal(baseline, cursor.ReservedBytes); // EOF releases exclusive scratch.
         }
         finally { cursor.Dispose(); }
         Assert.Equal(0UL, cursor.ReservedBytes);

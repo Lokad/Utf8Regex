@@ -37,6 +37,13 @@ Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 - PythonRe delivery: Python-order captures/backreferences and nullable last-closed `LastIndex`/`LastGroup` are authoritative backend metadata. The persistent memory-based cursor has explicit disposal and owned snapshots that survive advance/disposal; aliases share its position and lifetime. See the [PythonRe contract](src/Lokad.Utf8Regex.PythonRe/README.md) for subject lifetime, supported syntax and exclusions.
 - Stability: 0.4.0-scalar.4 is a scoped core/PythonRe integration candidate. The candidate manifest proves its recorded package-consumer checks; downstream handoff acceptance, platform receipts and current performance must be assessed separately. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations.
 
+Scalar.5 development reuses PythonRe's private VM workspace across cursor moves.
+Scratch stays charged while positioned and overlaps projection; EOF/failure/Dispose
+releases it synchronously. Tight working caps can deny earlier. Returned snapshots
+remain independent. This development delta is separate from the qualified scalar.4
+input; bulk savings and fixed cursor-owner/first-result tradeoffs are recorded in
+PLAN.md.
+
 ## Public API
 
 ```csharp

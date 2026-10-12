@@ -76,6 +76,8 @@ public sealed class PythonReScalarCursorOwnershipTests
         try
         {
             Assert.True(mapped.MoveNext());
+            var positionedBytes = mapped.ReservedBytes;
+            Assert.True(positionedBytes > 96); // Slots plus cursor-owned VM scratch.
             source.Cancel();
             var observed = false;
             try { mapped.SnapshotGroups(); }
@@ -85,8 +87,9 @@ public sealed class PythonReScalarCursorOwnershipTests
                 Assert.Equal(source.Token, failure.CancellationToken);
             }
             Assert.True(observed);
-            // One retained start/end pair includes both complete array extents.
-            Assert.Equal(96UL, mapped.ReservedBytes);
+            // Cancellation before projection acquires nothing else. Scratch
+            // remains owned until the explicit close below.
+            Assert.Equal(positionedBytes, mapped.ReservedBytes);
         }
         finally { mapped.Dispose(); }
         Assert.Equal(0UL, mapped.ReservedBytes);

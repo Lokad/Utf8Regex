@@ -19,6 +19,7 @@ internal struct PythonReScalarMatchState
     private Utf8SliceInvocation _invocation;
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
+    private Utf8SliceRunner.AttemptWorkspace _workspace;
     private Utf8ValidationResult _validation;
     private Utf8BoundaryMap _map;
     private ulong _mapReservation;
@@ -45,6 +46,7 @@ internal struct PythonReScalarMatchState
         _timeout = timeout;
         _position = startOffsetInBytes;
         _slots = new Utf8SliceSlots([], []);
+        _workspace = new Utf8SliceRunner.AttemptWorkspace();
         _invocation = invocation;
         try
         {
@@ -136,7 +138,9 @@ internal struct PythonReScalarMatchState
 
     private bool MoveNextCore(ReadOnlySpan<byte> input, bool search)
     {
-        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        // A scalar cursor exclusively owns this admitted scratch. Published
+        // snapshots copy values; ResetAttempt never touches retained results.
+        var keepWorkspace = false;
         try
         {
             while (!_finished)
@@ -147,7 +151,7 @@ internal struct PythonReScalarMatchState
                 try
                 {
                     outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                        _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref workspace, ref _invocation);
+                        _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
                 }
                 catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
                 { throw ResourceFailure(); }
@@ -174,6 +178,7 @@ internal struct PythonReScalarMatchState
                     EndOffsetInBytes = outcome.EndIndex;
                     _retryNonEmpty = outcome.EndIndex == _position;
                     _position = outcome.EndIndex;
+                    keepWorkspace = true;
                     return true;
                 }
                 _retryNonEmpty = false;
@@ -191,7 +196,7 @@ internal struct PythonReScalarMatchState
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { throw ResourceFailure(); }
-        finally { workspace.Release(ref _invocation); }
+        finally { if (!keepWorkspace) _workspace.Release(ref _invocation); }
     }
 
     internal PythonReGroupData SnapshotValueData(ReadOnlySpan<byte> input)
@@ -441,6 +446,7 @@ internal struct PythonReScalarMatchState
 
     internal void Dispose()
     {
+        _workspace.Release(ref _invocation);
         _results.Release(ref _invocation);
         Utf8SliceRunner.ReleaseSlots(_slots, ref _invocation);
         _slots = new Utf8SliceSlots([], []);

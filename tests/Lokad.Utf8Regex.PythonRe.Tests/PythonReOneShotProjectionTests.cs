@@ -114,7 +114,9 @@ public sealed class PythonReOneShotProjectionTests
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 5000).ToArray();
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
         var groupExtent = ArrayBytes<PythonReGroupData>(2);
-        var total = 13 + 96 + 96 + groupExtent + extent;
+        var scratch = ArrayBytes<int>(program.GroupCount) + (ulong)Utf8SliceRunner.TrailReserveBytes +
+            ArrayBytes<Utf8SliceTrailEntry[]>(Utf8SliceRunner.ChunkTableCapacity);
+        var total = 13 + 96 + 96 + scratch + groupExtent + extent;
         var cursor = new PythonReScalarMatchCursor("😀é"u8, program, [0, 1], 0, Regex.InfiniteMatchTimeout,
             "(.)", CancellationToken.None, new(0, 0, total - (allow ? 0UL : 1UL)));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));

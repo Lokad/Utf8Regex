@@ -11,6 +11,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// Concurrent or reentrant access is rejected. Aliases reference the same position and lifetime.
 /// Returned detailed snapshots own their values and remain usable after later advances or disposal.
 /// Work and modeled result capacity remain cumulative through validation, moves and snapshot publication. Working release never refunds result traffic; caller-retained live memory has separate scope.
+/// Exclusive VM scratch is reused and stays charged while positioned, including during projection and host waits. EOF, failure and disposal release it synchronously. Scratch and publication overlap can require a higher working cap.
 /// </remarks>
 public sealed class Utf8PythonMatchCursor : IDisposable
 {
