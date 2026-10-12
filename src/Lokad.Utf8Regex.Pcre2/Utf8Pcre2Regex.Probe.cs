@@ -60,7 +60,7 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.AbPlus => ProbeViaAbPlus(input, partialMode, startOffsetInBytes),
                         Pcre2PartialProbeProgramKind.LiteralAlternation => ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
                         Pcre2PartialProbeProgramKind.OrderedLiteralAlternation => ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
-                        Pcre2PartialProbeProgramKind.WordBoundaryLiteral => ProbeViaWordBoundaryLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
+                        Pcre2PartialProbeProgramKind.WordBoundaryLiteral or Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaLiteralAssertions(input, partialMode, startOffsetInBytes, program.Operands[0], compiled),
                         Pcre2PartialProbeProgramKind.InspectedPrefixLiteral => ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Flag),
                         Pcre2PartialProbeProgramKind.InspectedContextLiteral => ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Operands[2]),
                         Pcre2PartialProbeProgramKind.EndAssertion => ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, program.Flag),
@@ -76,7 +76,6 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
                         Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes),
                         Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled),
-                        Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, program.Operands[0], program.TrailingAssertion),
                         Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
                         Pcre2PartialProbeProgramKind.AnchoredExactLiteral => ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], compiled),
                         _ => throw new InvalidOperationException("The compiled partial-probe program is not executable."),
@@ -274,54 +273,6 @@ public sealed partial class Utf8Pcre2Regex
         return firstPartial is Pcre2GroupData partialMatch
             ? Partial(partialMatch)
             : NoMatch();
-    }
-
-    private Utf8Pcre2ProbeResult ProbeViaWordBoundaryLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8)
-    {
-        var remaining = input[startOffsetInBytes..];
-        for (var start = 0; start < remaining.Length && (!_anchored || start == 0); start++)
-        {
-            _budget.ChargeWorkspaceStep();
-            if (!HasAsciiWordBoundary(input, startOffsetInBytes + start))
-            {
-                continue;
-            }
-
-            var candidate = remaining[start..];
-            if (candidate.StartsWith(literalUtf8))
-            {
-                var matchStart = startOffsetInBytes + start;
-                var matchEnd = matchStart + literalUtf8.Length;
-                if (matchEnd < input.Length)
-                {
-                    if (!HasAsciiWordBoundary(input, matchEnd))
-                    {
-                        continue;
-                    }
-
-                    return Full([Project(0, matchStart, matchEnd)]);
-                }
-
-                if (partialMode == Pcre2PartialMode.Hard)
-                {
-                    return Partial(Project(0, matchStart, matchEnd));
-                }
-
-                return Full([Project(0, matchStart, matchEnd)]);
-            }
-
-            if (partialMode == Pcre2PartialMode.None ||
-                candidate.Length == 0 ||
-                candidate.Length >= literalUtf8.Length ||
-                !literalUtf8.AsSpan(0, candidate.Length).SequenceEqual(candidate))
-            {
-                continue;
-            }
-
-            return Partial(Project(0, startOffsetInBytes + start, input.Length));
-        }
-
-        return NoMatch();
     }
 
     private Utf8Pcre2ProbeResult ProbeViaInspectedPrefixLiteral(
@@ -829,74 +780,58 @@ public sealed partial class Utf8Pcre2Regex
         return false;
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaTrailingLiteralAssertion(
-        ReadOnlySpan<byte> input,
-        Pcre2PartialMode partialMode,
-        int startOffsetInBytes,
-        byte[] literalUtf8,
-        Pcre2PartialProbeTrailingAssertion assertion)
+    private Utf8Pcre2ProbeResult ProbeViaLiteralAssertions(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, byte[] literal, Pcre2CompiledProgram compiled)
     {
-        var remaining = input[startOffsetInBytes..];
-        var index = IndexOf(remaining, literalUtf8);
-        if (index < 0)
+        var tokens = ((Pcre2CharacterDirectProgram)compiled.Operations.Match).Program.Tokens;
+        var intrinsic = tokens[0].Kind is Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject;
+        var first = intrinsic ? 1 : 0;
+        Pcre2CharacterToken? leading = tokens[first].Kind == Pcre2CharacterTokenKind.WordBoundary ? tokens[first] : null;
+        var search = startOffsetInBytes;
+        while (search <= input.Length)
         {
-            if (partialMode != Pcre2PartialMode.None &&
-                assertion == Pcre2PartialProbeTrailingAssertion.Dollar)
+            _budget.ChargeWorkspaceStep();
+            var remaining = input[search..];
+            var index = intrinsic ? remaining.StartsWith(literal) ? 0 : -1 : IndexOf(remaining, literal);
+            if (index < 0)
             {
-                var partialLength = _anchored ? LongestLeadingExactPrefixLength(remaining, literalUtf8)
-                    : LongestTrailingPrefixLength(remaining, literalUtf8);
-                if (partialLength > 0)
+                if (partialMode == Pcre2PartialMode.None) return NoMatch();
+                var length = _anchored || intrinsic ? LongestLeadingExactPrefixLength(remaining, literal)
+                    : LongestTrailingPrefixLength(remaining, literal);
+                if (length > 0)
                 {
-                    return Partial(Project(0, input.Length - partialLength, input.Length));
+                    var partialStart = input.Length - length;
+                    if (LeadingBoundaryAccepts(leading, compiled.Request, input, partialStart))
+                        return Partial(Project(0, partialStart, input.Length));
                 }
+                // PCRE2 records word-boundary context as lookbehind. Its
+                // unanchored EOF attempt can therefore publish an empty partial
+                // even when no literal prefix remains; explicit anchors retain
+                // their first-candidate optimization and cannot bump to EOF.
+                if (!_anchored && (!intrinsic || search == input.Length &&
+                    (tokens[0].Options & Pcre2CharacterOptions.Multiline) != 0) &&
+                    tokens[^1].Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
+                    return Partial(Project(0, input.Length, input.Length));
+                return NoMatch();
             }
-
-            return NoMatch();
-        }
-
-        var matchStart = startOffsetInBytes + index;
-        var matchEnd = matchStart + literalUtf8.Length;
-        var atEnd = matchEnd == input.Length;
-        var hasFinalNewline = matchEnd + 1 == input.Length && input[matchEnd] == (byte)'\n';
-        var rightIsWord = matchEnd < input.Length && IsAsciiWordByte(input[matchEnd]);
-
-        var full = assertion switch
-        {
-            Pcre2PartialProbeTrailingAssertion.Dollar => (_matchOptions & Pcre2MatchOptions.NotEol) == 0 && (atEnd || hasFinalNewline),
-            Pcre2PartialProbeTrailingAssertion.EndAbsolute => atEnd,
-            Pcre2PartialProbeTrailingAssertion.EndBeforeFinalNewline => atEnd || hasFinalNewline,
-            Pcre2PartialProbeTrailingAssertion.WordBoundary => !rightIsWord,
-            Pcre2PartialProbeTrailingAssertion.NonWordBoundary => rightIsWord,
-            _ => false,
-        };
-
-        if (full)
-        {
-            if (partialMode == Pcre2PartialMode.Hard &&
-                assertion is Pcre2PartialProbeTrailingAssertion.Dollar or Pcre2PartialProbeTrailingAssertion.EndAbsolute or Pcre2PartialProbeTrailingAssertion.EndBeforeFinalNewline or Pcre2PartialProbeTrailingAssertion.WordBoundary or Pcre2PartialProbeTrailingAssertion.NonWordBoundary &&
-                atEnd)
+            var start = search + index;
+            if (LeadingBoundaryAccepts(leading, compiled.Request, input, start))
             {
-                return Partial(Project(0, matchStart, matchEnd));
+                var result = ProbeTrailingAssertion(input, partialMode, start, start + literal.Length, tokens[^1], compiled.Request);
+                if (result.Kind != Utf8Pcre2ProbeKind.NoMatch) return result;
             }
-
-            return Full([Project(0, matchStart, matchEnd)]);
+            if (_anchored || intrinsic || !_input.TryAdvanceScalar(new Utf8BytePosition(start), out var next)) return NoMatch();
+            search = next.Value;
         }
-
-        if (partialMode != Pcre2PartialMode.None &&
-            assertion is Pcre2PartialProbeTrailingAssertion.WordBoundary or Pcre2PartialProbeTrailingAssertion.NonWordBoundary &&
-            atEnd)
-        {
-            return Partial(Project(0, matchStart, matchEnd));
-        }
-
         return NoMatch();
     }
 
-    private bool HasAsciiWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
+    private bool LeadingBoundaryAccepts(Pcre2CharacterToken? leading, Pcre2CompileRequest request,
+        ReadOnlySpan<byte> input, int start)
     {
-        var leftIsWord = byteOffset > 0 && IsAsciiWordByte(input[byteOffset - 1]);
-        var rightIsWord = byteOffset < input.Length && IsAsciiWordByte(input[byteOffset]);
-        return leftIsWord != rightIsWord;
+        if (leading is not { } assertion) return true;
+        _budget.ChargeWorkspaceStep();
+        return Pcre2CharacterRunner.TryMatchToken(assertion, request, input, start, _originalStart, _matchOptions, out _);
     }
 
     private bool IsAsciiWordByte(byte value)
@@ -915,29 +850,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             var end = startOffsetInBytes + literalUtf8.Length;
             var assertion = ((Pcre2CharacterDirectProgram)compiled.Operations.Match).Program.Tokens[^1];
-            _budget.ChargeWorkspaceStep();
-            var full = Pcre2CharacterRunner.TryMatchToken(assertion, compiled.Request, input,
-                end, _originalStart, _matchOptions, out _);
-            if (partialMode != Pcre2PartialMode.None)
-            {
-                var dollar = assertion.Kind == Pcre2CharacterTokenKind.EndOfLine;
-                var multiline = (assertion.Options & Pcre2CharacterOptions.Multiline) != 0;
-                // Dollar can inspect a final CR while waiting for the LF that
-                // would complete the configured CRLF newline.
-                if (dollar && (multiline || (_matchOptions & Pcre2MatchOptions.NotEol) == 0) &&
-                    compiled.Request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
-                    end + 1 == input.Length && input[end] == (byte)'\r')
-                    return Partial(Project(0, startOffsetInBytes, input.Length));
-                if (partialMode == Pcre2PartialMode.Hard &&
-                    (full && (end == input.Length ||
-                        assertion.Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline || dollar && !multiline) ||
-                     end == input.Length && assertion.Kind == Pcre2CharacterTokenKind.NonWordBoundary))
-                    return Partial(Project(0, startOffsetInBytes, input.Length));
-                if (!full && end == input.Length &&
-                    assertion.Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
-                    return Partial(Project(0, startOffsetInBytes, end));
-            }
-            return full ? Full([Project(0, startOffsetInBytes, end)]) : NoMatch();
+            return ProbeTrailingAssertion(input, partialMode, startOffsetInBytes, end, assertion, compiled.Request);
         }
 
         if (partialMode != Pcre2PartialMode.None)
@@ -950,6 +863,34 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         return NoMatch();
+    }
+
+    private Utf8Pcre2ProbeResult ProbeTrailingAssertion(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int start, int end, Pcre2CharacterToken assertion, Pcre2CompileRequest request)
+    {
+        _budget.ChargeWorkspaceStep();
+        var full = Pcre2CharacterRunner.TryMatchToken(assertion, request, input,
+            end, _originalStart, _matchOptions, out _);
+        if (partialMode != Pcre2PartialMode.None)
+        {
+            var dollar = assertion.Kind == Pcre2CharacterTokenKind.EndOfLine;
+            var multiline = (assertion.Options & Pcre2CharacterOptions.Multiline) != 0;
+            // Dollar can inspect a final CR while waiting for the LF that
+            // would complete the configured CRLF newline.
+            if (dollar && (multiline || (_matchOptions & Pcre2MatchOptions.NotEol) == 0) &&
+                request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
+                end + 1 == input.Length && input[end] == (byte)'\r')
+                return Partial(Project(0, start, input.Length));
+            if (partialMode == Pcre2PartialMode.Hard &&
+                (full && (end == input.Length ||
+                    assertion.Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline || dollar && !multiline) ||
+                 end == input.Length && assertion.Kind == Pcre2CharacterTokenKind.NonWordBoundary))
+                return Partial(Project(0, start, input.Length));
+            if (!full && end == input.Length &&
+                assertion.Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
+                return Partial(Project(0, start, end));
+        }
+        return full ? Full([Project(0, start, end)]) : NoMatch();
     }
 
     private Utf8Pcre2ProbeResult ProbeViaAnchoredPrefixLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8)

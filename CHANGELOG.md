@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 literal boundary probes (0.4.0-scalar.16-dev)
+
+- Retry later literal candidates after failed assertions and evaluate wrapped/
+  trailing boundaries with admitted scalar/UCP tokens. Share the anchored trailing
+  evaluator and remove duplicate assertion metadata, ASCII boundary comparisons
+  and final-LF assumptions. Preserve native context-bearing EOF partials, intrinsic/
+  operation anchors, owned results, finite limits and synchronous interruption.
+  Broader partial profiles/settings remain separate acceptance gates.
+
 ## Unreleased PCRE2 intrinsic-anchor probes (0.4.0-scalar.15-dev)
 
 - Honor original-subject intrinsic anchors at nonzero starts and retry admitted

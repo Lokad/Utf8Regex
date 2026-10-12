@@ -32,16 +32,6 @@ internal enum Pcre2PartialProbeProgramKind : byte
     AnchoredExactLiteral = 23,
 }
 
-internal enum Pcre2PartialProbeTrailingAssertion : byte
-{
-    None = 0,
-    Dollar = 1,
-    EndAbsolute = 2,
-    EndBeforeFinalNewline = 3,
-    WordBoundary = 4,
-    NonWordBoundary = 5,
-}
-
 internal sealed class Pcre2PartialProbeProgram
 {
     internal static Pcre2PartialProbeProgram None { get; } = new(
@@ -50,8 +40,7 @@ internal sealed class Pcre2PartialProbeProgram
         0,
         0,
         false,
-        '\0',
-        Pcre2PartialProbeTrailingAssertion.None);
+        '\0');
 
     internal Pcre2PartialProbeProgram(
         Pcre2PartialProbeProgramKind kind,
@@ -59,8 +48,7 @@ internal sealed class Pcre2PartialProbeProgram
         int first,
         int second,
         bool flag,
-        char terminal,
-        Pcre2PartialProbeTrailingAssertion trailingAssertion)
+        char terminal)
     {
         Kind = kind;
         Operands = operands;
@@ -68,7 +56,6 @@ internal sealed class Pcre2PartialProbeProgram
         Second = second;
         Flag = flag;
         Terminal = terminal;
-        TrailingAssertion = trailingAssertion;
     }
 
     internal Pcre2PartialProbeProgramKind Kind { get; }
@@ -83,7 +70,6 @@ internal sealed class Pcre2PartialProbeProgram
 
     internal char Terminal { get; }
 
-    internal Pcre2PartialProbeTrailingAssertion TrailingAssertion { get; }
 }
 
 internal static class Pcre2PartialProbeCompiler
@@ -193,37 +179,28 @@ internal static class Pcre2PartialProbeCompiler
         }
 
         var last = tokens.Length;
-        var trailing = Pcre2PartialProbeTrailingAssertion.None;
-        if (last > first)
+        Pcre2CharacterTokenKind? trailing = null;
+        if (last > first && tokens[last - 1].Kind is Pcre2CharacterTokenKind.EndOfLine or
+            Pcre2CharacterTokenKind.EndOfSubject or Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline or
+            Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
         {
-            trailing = tokens[last - 1].Kind switch
-            {
-                Pcre2CharacterTokenKind.EndOfLine => Pcre2PartialProbeTrailingAssertion.Dollar,
-                Pcre2CharacterTokenKind.EndOfSubject => Pcre2PartialProbeTrailingAssertion.EndAbsolute,
-                Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline => Pcre2PartialProbeTrailingAssertion.EndBeforeFinalNewline,
-                Pcre2CharacterTokenKind.WordBoundary => Pcre2PartialProbeTrailingAssertion.WordBoundary,
-                Pcre2CharacterTokenKind.NonWordBoundary => Pcre2PartialProbeTrailingAssertion.NonWordBoundary,
-                _ => Pcre2PartialProbeTrailingAssertion.None,
-            };
-            if (trailing != Pcre2PartialProbeTrailingAssertion.None)
-            {
-                last--;
-            }
+            trailing = tokens[last - 1].Kind;
+            last--;
         }
 
         if (first < last &&
             tokens[first].Kind == Pcre2CharacterTokenKind.WordBoundary &&
-            trailing == Pcre2PartialProbeTrailingAssertion.WordBoundary &&
-            TryGetBoundedLiteral(tokens, first + 1, last, out literal, Pcre2CharacterOptions.None))
+            trailing == Pcre2CharacterTokenKind.WordBoundary &&
+            TryGetBoundedLiteral(tokens, first + 1, last, out literal, Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll))
         {
             program = Create(Pcre2PartialProbeProgramKind.WordBoundaryLiteral, literal);
             return true;
         }
 
         if (TryGetBoundedLiteral(tokens, first, last, out literal,
-            anchored ? Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll : Pcre2CharacterOptions.None) && literal.Length > 0)
+            Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll) && literal.Length > 0)
         {
-            if (anchored && trailing != Pcre2PartialProbeTrailingAssertion.None)
+            if (anchored && trailing is not null)
             {
                 program = Create(Pcre2PartialProbeProgramKind.AnchoredExactLiteral, literal);
                 return true;
@@ -235,9 +212,9 @@ internal static class Pcre2PartialProbeCompiler
                 return true;
             }
 
-            if (trailing != Pcre2PartialProbeTrailingAssertion.None)
+            if (trailing is not null)
             {
-                program = Create(Pcre2PartialProbeProgramKind.TrailingLiteralAssertion, trailing, literal);
+                program = Create(Pcre2PartialProbeProgramKind.TrailingLiteralAssertion, literal);
                 return true;
             }
         }
@@ -270,28 +247,25 @@ internal static class Pcre2PartialProbeCompiler
     }
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, params string[] operands)
-        => new(kind, operands.Select(Encoding.UTF8.GetBytes).ToArray(), 0, 0, false, '\0', Pcre2PartialProbeTrailingAssertion.None);
+        => new(kind, operands.Select(Encoding.UTF8.GetBytes).ToArray(), 0, 0, false, '\0');
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind)
-        => new(kind, [], 0, 0, false, '\0', Pcre2PartialProbeTrailingAssertion.None);
+        => new(kind, [], 0, 0, false, '\0');
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, params byte[][] operands)
-        => new(kind, operands, 0, 0, false, '\0', Pcre2PartialProbeTrailingAssertion.None);
+        => new(kind, operands, 0, 0, false, '\0');
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, bool flag, params string[] operands)
-        => new(kind, operands.Select(Encoding.UTF8.GetBytes).ToArray(), 0, 0, flag, '\0', Pcre2PartialProbeTrailingAssertion.None);
+        => new(kind, operands.Select(Encoding.UTF8.GetBytes).ToArray(), 0, 0, flag, '\0');
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, int first, string operand)
-        => new(kind, [Encoding.UTF8.GetBytes(operand)], first, 0, false, '\0', Pcre2PartialProbeTrailingAssertion.None);
+        => new(kind, [Encoding.UTF8.GetBytes(operand)], first, 0, false, '\0');
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, int first, int second, bool flag)
-        => new(kind, [], first, second, flag, '\0', Pcre2PartialProbeTrailingAssertion.None);
+        => new(kind, [], first, second, flag, '\0');
 
     private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, char terminal, string operand)
-        => new(kind, [Encoding.UTF8.GetBytes(operand)], 0, 0, false, terminal, Pcre2PartialProbeTrailingAssertion.None);
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, Pcre2PartialProbeTrailingAssertion assertion, byte[] operand)
-        => new(kind, [operand], 0, 0, false, '\0', assertion);
+        => new(kind, [Encoding.UTF8.GetBytes(operand)], 0, 0, false, terminal);
 
     private static string Describe(IPcre2BacktrackingNode root)
     {

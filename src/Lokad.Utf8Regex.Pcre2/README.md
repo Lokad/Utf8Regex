@@ -50,6 +50,11 @@ suffixes use their actual assertion tokens, including final-newline/CR partial
 extents and configured scalar word boundaries; a requested offset is never a new
 subject beginning.
 
+Literal assertion probes retry later candidates after failed boundary/end tests.
+Wrapped and trailing word boundaries use configured scalar/UCP semantics. Their
+context-bearing unanchored EOF attempt can return an empty partial, including an
+empty subject; explicit anchors retain their native candidate restrictions.
+
 Capture names start with a Unicode letter or underscore; later characters may
 also be decimal digits. Names alias slots assigned in declaration order. Explicit
 .NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail
