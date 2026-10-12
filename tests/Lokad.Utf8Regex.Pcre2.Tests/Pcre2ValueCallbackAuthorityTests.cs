@@ -16,6 +16,25 @@ public sealed class Pcre2ValueCallbackAuthorityTests
         internal readonly List<(int, int, string)> Captures = [];
     }
 
+    [Fact]
+    public void ExpiredNativeProjectionReportsTheProfileTimeout()
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(20), CancellationToken.None);
+        var budget = new Pcre2ResourceBudget(default, invocation, false);
+        var input = Utf8ValidatedInput.Create("éx"u8);
+        var projection = input.CreateProjectionCursor();
+        ticks = 25;
+        Pcre2MatchException? failure = null;
+        try { Pcre2GlobalCursorProjection.Project(2, 3, ref input, ref projection, ref budget); }
+        catch (Pcre2MatchException error) { failure = error; }
+        Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        Assert.Equal(0, projection.BytesConsumed);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
+    }
+
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null)
         => new(pattern, Pcre2CompileOptions.None, default, limits, timeout ?? Timeout.InfiniteTimeSpan);
 

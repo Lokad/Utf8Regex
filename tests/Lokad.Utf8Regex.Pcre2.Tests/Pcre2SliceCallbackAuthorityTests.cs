@@ -208,7 +208,7 @@ public sealed class Pcre2SliceCallbackAuthorityTests
             if (cancel) source.Cancel(); else ticks = 25;
             try { cursor.MoveNext(); Assert.Fail("Original authority must fail before slot admission."); }
             catch (OperationCanceledException error) { Assert.True(cancel); Assert.Equal(source.Token, error.CancellationToken); }
-            catch (Utf8ExecutionDeadlineExpiredException) { Assert.False(cancel); }
+            catch (Pcre2MatchException error) { Assert.False(cancel); Assert.Equal(Pcre2ErrorKind.Timeout, error.ErrorKind); }
             Assert.Equal(Utf8ExecutionLimitKind.None, invocation.Budget.LimitBreach);
             Assert.Equal(512UL, invocation.Ledger.ReservedBytes);
         }

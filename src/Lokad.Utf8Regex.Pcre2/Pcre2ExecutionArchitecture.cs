@@ -4265,8 +4265,15 @@ internal struct Pcre2ResourceBudget
     internal void ChargeWorkspaceStep()
     {
         if (_invocation.Budget.IsUnmetered) return;
-        _invocation.Budget.CheckDeadline();
-        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
+        try
+        {
+            _invocation.Budget.CheckDeadline();
+            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
     internal void RecordResultProjection()
