@@ -681,7 +681,10 @@ internal readonly struct Pcre2MaterializedMatchEnumeratorState
 }
 
 /// <summary>Advances through non-overlapping PCRE2 matches without allocating a public match collection.</summary>
-/// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.</remarks>
+/// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.
+/// Copies retain independent positions. Controlled native and owned-slice copies share their original cumulative
+/// enforcement allowance and absolute deadline; copying a cursor does not create another finite budget.
+/// Previously returned values remain valid within the input's lifetime after an advance or limit failure.</remarks>
 public ref struct Utf8Pcre2ValueMatchEnumerator
 {
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();

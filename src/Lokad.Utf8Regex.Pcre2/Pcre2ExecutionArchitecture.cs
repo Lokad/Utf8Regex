@@ -4045,8 +4045,9 @@ internal struct Pcre2ResourceBudget
 
     internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
 
-    private Utf8ExecutionBudget _core;
-    private Utf8StorageLedger _workingStorage;
+    // Controlled cursor copies share enforcement while their positions and
+    // profile diagnostic counts stay local. Default unlimited runs stay inline.
+    private Utf8SliceInvocation _invocation;
     private readonly Pcre2ExecutionDiagnosticsCollector? _diagnostics;
 
     internal Pcre2ResourceBudget(
@@ -4055,11 +4056,13 @@ internal struct Pcre2ResourceBudget
         bool collectDiagnostics)
     {
         Limits = limits;
-        _core = new Utf8ExecutionBudget(
+        _invocation = new Utf8SliceInvocation(
             new Utf8ExecutionLimits(limits.MatchLimit, limits.DepthLimit, limits.HeapLimitInBytes),
             timeout,
             CancellationToken.None);
-        _workingStorage = new Utf8StorageLedger(limits.HeapLimitInBytes);
+        // This profile's native steps retain their original cadence and do not
+        // invoke the diagnostic hook belonging to the shared scalar-slice VM.
+        _invocation.CheckpointHook = null;
         _diagnostics = collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null;
         CandidateSteps = 0;
         BacktrackingSteps = 0;
@@ -4071,9 +4074,9 @@ internal struct Pcre2ResourceBudget
 
     internal ulong BacktrackingSteps { get; private set; }
 
-    internal uint Depth => _core.PeakDepth;
+    internal uint Depth => _invocation.Budget.PeakDepth;
 
-    internal ulong HeapBytes => _core.PeakWorkingBytes;
+    internal ulong HeapBytes => _invocation.Budget.PeakWorkingBytes;
 
     internal bool CollectsDiagnostics => _diagnostics is not null;
 
@@ -4084,17 +4087,14 @@ internal struct Pcre2ResourceBudget
             BacktrackingSteps = BacktrackingSteps,
         };
 
-    internal bool RequiresCandidateMetering => !_core.IsInfiniteDeadline || Limits.MatchLimit != 0;
+    internal bool RequiresCandidateMetering => !_invocation.Budget.IsInfiniteDeadline || Limits.MatchLimit != 0;
 
-    internal bool IsUnmetered => _core.IsUnmetered;
+    internal bool IsUnmetered => _invocation.Budget.IsUnmetered;
 
     internal void ChargeCandidate()
     {
         CandidateSteps++;
-        if (_core.TryChargeStep() != Utf8ExecutionLimitKind.None)
-        {
-            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
-        }
+        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 
     internal void ChargeBacktracking(
@@ -4176,10 +4176,7 @@ internal struct Pcre2ResourceBudget
             }
         }
 
-        if (_core.TryChargeStep() != Utf8ExecutionLimitKind.None)
-        {
-            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
-        }
+        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 
     internal void RecordPossessiveTokenScanCharacters(ulong characters)
@@ -4192,42 +4189,33 @@ internal struct Pcre2ResourceBudget
 
     internal void ChargeFrame(uint depth)
     {
-        if (_core.TryNoteDepth(depth) != Utf8ExecutionLimitKind.None)
-        {
-            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
-        }
-
+        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryNoteDepth(depth));
     }
 
-    internal void ChargeHeap(ulong heapBytes)
-    {
-        if (_core.TryNoteWorkingBytes(heapBytes) != Utf8ExecutionLimitKind.None)
-        {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
-        }
-    }
+    internal ulong ReservedWorkingBytes => _invocation.Ledger.ReservedBytes;
 
-    internal ulong ReservedWorkingBytes => _workingStorage.ReservedBytes;
-
-    internal bool CanRetainWorkspace => _workingStorage.IsUnlimited;
+    internal bool CanRetainWorkspace => _invocation.Ledger.IsUnlimited;
 
     internal void ReserveWorking(ulong bytes)
     {
-        if (!_workingStorage.TryReserve(bytes)) ThrowWorkingLimit();
-        ChargeHeap(_workingStorage.ReservedBytes);
+        try { Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.TryReserveWorking(bytes)); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
-    internal void ReleaseWorking(ulong bytes) => _workingStorage.Release(bytes);
+    internal void ReleaseWorking(ulong bytes) => _invocation.Ledger.Release(bytes);
 
     internal void ThrowWorkingLimit()
-        => throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
+        => Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None
+            ? _invocation.Budget.LimitBreach : Utf8ExecutionLimitKind.WorkingBytes);
 
     internal void ChargeWorkspaceStep()
     {
-        if (_core.IsUnmetered) return;
-        _core.CheckDeadline();
-        if (_core.TryChargeStep() != Utf8ExecutionLimitKind.None)
-            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
+        if (_invocation.Budget.IsUnmetered) return;
+        _invocation.Budget.CheckDeadline();
+        Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 
     internal void RecordResultProjection()

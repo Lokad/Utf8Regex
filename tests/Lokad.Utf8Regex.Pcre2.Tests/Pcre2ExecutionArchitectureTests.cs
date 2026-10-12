@@ -40,12 +40,14 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void Pcre2CursorsReferenceRegexOwnedCandidateSearchPlan()
     {
-        Assert.True(
-            Pcre2DirectGlobalMatchCursor.DebugSizeInBytes <
-            Pcre2CandidateSearchProgram.DebugSizeInBytes);
-        Assert.True(
-            Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes <
-            Pcre2CandidateSearchProgram.DebugSizeInBytes);
+        foreach (var cursor in new[] { typeof(Pcre2DirectGlobalMatchCursor), typeof(Pcre2BacktrackingDetailedGlobalMatchCursor) })
+        {
+            var fields = cursor.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var candidate = Assert.Single(fields, static field => field.Name == "_candidateSearch");
+            Assert.Equal(typeof(Pcre2CandidateSearchPlan), candidate.FieldType);
+            Assert.True(candidate.IsInitOnly);
+            Assert.DoesNotContain(fields, static field => field.FieldType == typeof(Pcre2CandidateSearchProgram));
+        }
     }
 
     [Fact]

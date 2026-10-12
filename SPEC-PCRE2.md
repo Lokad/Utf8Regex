@@ -549,6 +549,19 @@ are unlimited. Timeout breach on owned routes reports `Timeout`. The shared
 profile still rejects result-capacity budgets; core and PythonRe support their
 documented policy in `SPEC.md` Section 3.7.
 
+Controlled copies of native/global and owned-slice value cursors keep independent
+positions but share the original work/depth/working enforcement authority and
+absolute deadline. Copying no longer forks a finite allowance; same-invocation
+consumption can fail earlier. Independent public calls create independent budgets.
+Working admission checks the deadline before acquiring major capacity, records
+maximum requested peaks including refusals, and leaves outstanding reservations
+unchanged on denial. The first resource denial remains sticky with its PCRE2 kind.
+Exclusive scratch releases synchronously and can reuse capacity without refunding
+work. Retained ranges/capture views and permitted aliases stay valid. Native work
+units, step polling cadence, diagnostic meaning and bounded stacks remain; native
+steps do not invoke scalar-slice diagnostic hooks. Fixed enforcement metadata is
+outside modeled working payload and this is not an exact CLR heap or RSS bound.
+
 Owned slice template replacement and callback replacement with `None` match options
 share one discovery invocation with capture replay and output building. Growth/final
 overlap and the unchanged-subject result after no match are admitted before allocation

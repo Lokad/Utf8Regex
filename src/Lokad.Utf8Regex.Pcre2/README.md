@@ -82,6 +82,18 @@ explicit compile and execution settings.
 
 ## Resource-control scope
 
+Controlled cursor copies keep independent positions while sharing the original
+cumulative work/depth/working allowance and absolute deadline. Copying a native
+or owned-slice cursor no longer creates another finite budget; earlier separately
+funded alias advances can now fail. Separate public calls remain independent, and
+retained ranges/captures/aliases remain valid within the subject's lifetime.
+Working admission checks the deadline before acquisition, records requested peaks
+including denial, and preserves outstanding reservations on refusal. The first
+resource denial stays sticky with its PCRE2 kind. Exclusive scratch releases and
+can reuse capacity; spent work is not refunded. Native step units, polling cadence,
+diagnostics and bounded state stacks remain, with scalar-slice diagnostic hooks
+excluded from native steps. Fixed enforcement metadata has separate scope.
+
 Work units and enforcement depend on the selected managed route. Owned slice
 template replacement and callback replacement with `None` match options use one
 cumulative invocation from discovery through capture replay, output growth and
