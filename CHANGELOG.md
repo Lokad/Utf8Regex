@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.4.0-scalar.4-dev)
+## 0.4.0-scalar.4 core/PythonRe candidate
 
 - Filter LTR scalar-VM searches with an initial mandatory beginning anchor to
   absolute origin or LF line starts. Scans use checked spans in chunks of at
@@ -10,8 +10,8 @@
   retain their existing search. Fewer futile attempts can lower finite work
   requirements; work-step units remain route/version dependent.
 - Preserve the immutable scalar.3 core/PythonRe integration candidate. This
-  development identity does not designate another qualified package or update
-  downstream pins.
+  candidate identity requires its own package/platform/handoff qualification;
+  it does not update downstream pins.
 
 ## 0.4.0-scalar.3 core/PythonRe candidate
 
