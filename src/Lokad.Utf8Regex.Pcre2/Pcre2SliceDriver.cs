@@ -348,8 +348,15 @@ internal static class Pcre2SliceDriver
         Utf8SliceProgram program,
         ref Utf8SliceInvocation invocation)
     {
-        ThrowIfSliceBreached(Utf8SliceRunner.TryRentSlots(program.GroupCount, ref invocation, out var slots));
-        return slots;
+        try
+        {
+            ThrowIfSliceBreached(Utf8SliceRunner.TryRentSlots(program.GroupCount, ref invocation, out var slots));
+            return slots;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
     // Request limits apply to slice per-instruction-visit steps, frame depth, and
