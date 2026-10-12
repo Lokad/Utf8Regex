@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased PCRE2 full-probe captures (0.4.0-scalar.8-dev)
+
+- Restore missing optional, lazy and possessive captures in specialized full
+  probes, including named and unset slots. Reuse the admitted native matcher at
+  the selected full start under the original invocation allowance. Required
+  capture work and owned storage can deny tighter budgets earlier; partial
+  selection remains unchanged and retained snapshots stay valid.
+
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
 - Accept finite PCRE2 result-byte policies through `ResultLimitInBytes` and report

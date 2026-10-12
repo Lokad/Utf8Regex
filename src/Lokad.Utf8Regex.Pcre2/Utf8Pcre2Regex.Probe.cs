@@ -12,14 +12,24 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8ValidatedInput _input;
     private Pcre2ResourceBudget _budget;
     private readonly Pcre2NameEntry[] _names;
+    private readonly Pcre2BacktrackingProgram? _captureProgram;
+    private int _originalStart;
 
-    internal Pcre2PartialProbeRunner(Utf8ValidatedInput input, Pcre2CompileRequest request,
+    internal Pcre2PartialProbeRunner(Utf8ValidatedInput input, Pcre2CompiledProgram program,
         Pcre2NameEntry[] names, CancellationToken token)
     {
         _input = input;
-        _budget = new Pcre2ResourceBudget(request.DefaultLimits,
-            Pcre2SliceDriver.CreateInvocation(request, token), collectDiagnostics: false);
+        _budget = new Pcre2ResourceBudget(program.Request.DefaultLimits,
+            Pcre2SliceDriver.CreateInvocation(program.Request, token), collectDiagnostics: false);
         _names = names;
+        _captureProgram = program.Operations.Match switch
+        {
+            Pcre2BacktrackingDirectProgram native when native.Program.CaptureSlotCount > 1 => native.Program,
+            Pcre2SliceDirectProgram slice when slice.Fallback.CaptureSlotCount > 1 => slice.Fallback,
+            Pcre2SingleTokenRepeatDirectProgram repeat when repeat.Program.Fallback.CaptureSlotCount > 1 => repeat.Program.Fallback,
+            _ => null,
+        };
+        _originalStart = 0;
     }
 
     internal Utf8Pcre2ProbeResult Probe(
@@ -28,6 +38,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2PartialProbeProgram program)
     {
         var input = _input.Bytes;
+        _originalStart = startOffsetInBytes;
         try
         {
             _budget.CheckDeadline();
@@ -928,6 +939,26 @@ public sealed partial class Utf8Pcre2Regex
 
     private Utf8Pcre2ProbeResult Full(scoped ReadOnlySpan<Pcre2GroupData> groups)
     {
+        if (_captureProgram is { } captureProgram && groups.Length < captureProgram.CaptureSlotCount)
+        {
+            // Partial selection has already chosen this full range. Reuse the
+            // admitted native program at that start to obtain final captures,
+            // preserving the original \G position and invocation allowance.
+            var value = groups[0];
+            var detailed = Pcre2BacktrackingRunner.MatchDetailed(captureProgram, default, ref _input,
+                new Utf8BytePosition(value.StartOffsetInBytes), new Utf8BytePosition(_originalStart),
+                Pcre2MatchOptions.Anchored, ref _budget);
+            try
+            {
+                if (!detailed.Success || detailed.StartOffsetInBytes != value.StartOffsetInBytes ||
+                    detailed.EndOffsetInBytes != value.EndOffsetInBytes)
+                    throw new InvalidOperationException("The full probe range disagrees with its admitted capture program.");
+                _budget.CheckDeadline();
+                return Utf8Pcre2ProbeResult.CreateFullMatch(_input.Bytes,
+                    detailed.CaptureResult.ProjectedGroups, _names, detailed.Mark);
+            }
+            finally { detailed.CaptureResult.DetachProjectedWorking(ref _budget); }
+        }
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length);
         Pcre2SliceDriver.ThrowIfSliceBreached(_budget.WorkingInvocation.Budget.TryChargeResultBytes(bytes));
         _budget.ReserveWorking(bytes);

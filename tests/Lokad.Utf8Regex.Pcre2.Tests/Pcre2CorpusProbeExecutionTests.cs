@@ -40,6 +40,17 @@ public sealed class Pcre2CorpusProbeExecutionTests
         if (probe.Kind == Utf8Pcre2ProbeKind.FullMatch)
         {
             Assert.Equal(corpusCase.Expected.ValueText, probe.GetMatch().GetValueString());
+            var detailed = regex.MatchDetailed(input, corpusCase.StartOffsetInBytes);
+            var full = probe.GetMatch();
+            Assert.Equal(detailed.CaptureSlotCount, full.CaptureSlotCount);
+            for (var slot = 0; slot < detailed.CaptureSlotCount; slot++)
+            {
+                var expected = detailed.GetGroup(slot); var actual = full.GetGroup(slot);
+                Assert.Equal(expected.Success, actual.Success);
+                if (!expected.Success) continue;
+                Assert.Equal((expected.StartOffsetInBytes, expected.EndOffsetInBytes),
+                    (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
+            }
         }
         else
         {

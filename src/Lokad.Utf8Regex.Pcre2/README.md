@@ -112,6 +112,12 @@ deny earlier. Full `(a)b+` probes now retain the missing capture, adding one gro
 element to their owned snapshot, and full probes borrow compiled name metadata.
 Partial ranges remain inline. Full-array publication also uses cumulative result
 admission when a finite result policy is supplied.
+Optional, lazy and possessive full probes retain every declared capture slot,
+including unset slots and names. When a specialized helper supplies only group
+zero, the existing native matcher obtains final captures at the selected start
+under the same invocation limits and original search position. This adds native
+capture work and storage to those full outcomes; partial decisions and inline
+partial results retain their existing paths.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native
