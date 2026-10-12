@@ -32,6 +32,29 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
 
     public bool CanRetainWorkspace => _isSlice ? _slice.Ledger.IsUnlimited : _vm.CanRetainWorkspace;
 
+    // The byte output and range staging are still live at this call. Their
+    // owner admits the final string and retains spent discovery/shaping work.
+    internal string DecodeReplacementText(ReadOnlySpan<byte> bytes)
+    {
+        ref var invocation = ref (_isSlice ? ref _slice : ref _vm.WorkingInvocation);
+        try
+        {
+            Pcre2ReplacementPreparationControl.Check();
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            Utf8SliceBufferWork.ValidateUtf8(bytes, ref invocation);
+            return Utf8SliceBufferWork.DecodeUtf8(bytes, ref invocation);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach);
+            throw;
+        }
+    }
+
     internal void ReserveWorking(ulong bytes)
     {
         if (!_isSlice) { _vm.ReserveWorking(bytes); return; }

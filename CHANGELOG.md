@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
+
+- Literal-driver ReplaceToString validates and decodes output using the original
+  discovery budget, deadline and cancellation token. Admit the string while the
+  existing byte output and range staging remain live; tight work/heap limits can
+  now reject text publication that formerly escaped those limits. Byte replacement
+  search, emission and allocations remain unchanged.
+- Keep finite public PCRE2 result-byte policies explicitly unsupported until the
+  remaining native/foundation template and specialized probe publications are
+  covered. Preserve both the accepted scalar.5 core/PythonRe feed and the private
+  scalar.6-dev PCRE2/core pair under their immutable identities.
+
 ## Unreleased PCRE2 correction (0.4.0-scalar.6-dev)
 
 - Native literal matching checks the original deadline at entry, existing

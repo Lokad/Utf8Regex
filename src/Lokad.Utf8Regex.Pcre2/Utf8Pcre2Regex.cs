@@ -1422,7 +1422,9 @@ public sealed partial class Utf8Pcre2Regex
         int startOffsetInBytes,
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions,
-        out byte[] result)
+        CancellationToken cancellationToken,
+        bool text,
+        out Pcre2ReplacementResult result)
     {
         if (!TryGetLiteralDriverReplacementPlan(
                 replacement,
@@ -1430,7 +1432,7 @@ public sealed partial class Utf8Pcre2Regex
                 out var plan,
                 out var replacementOnly))
         {
-            result = [];
+            result = default;
             return false;
         }
 
@@ -1440,9 +1442,11 @@ public sealed partial class Utf8Pcre2Regex
                 subject,
                 start,
                 matchOptions,
-                out var cursor))
+                out var cursor,
+                new Pcre2ResourceBudget(_program.Request.DefaultLimits,
+                    Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken), collectDiagnostics: false)))
         {
-            result = [];
+            result = default;
             return false;
         }
 
@@ -1458,13 +1462,15 @@ public sealed partial class Utf8Pcre2Regex
                 ref ledger);
             if (ledger.Count == 0)
             {
-                result = Utf8InvocationOutput.AllocateBytes(replacementOnly ? 0 : input.Length, cursor.WorkingBufferControl, out outputReservation);
-                if (!replacementOnly) Utf8InvocationOutput.Copy(input, result, cursor.WorkingBufferControl);
+                var bytes = Utf8InvocationOutput.AllocateBytes(replacementOnly ? 0 : input.Length, cursor.WorkingBufferControl, out outputReservation);
+                if (!replacementOnly) Utf8InvocationOutput.Copy(input, bytes, cursor.WorkingBufferControl);
+                result = text ? new(cursor.WorkingBufferControl.DecodeReplacementText(bytes), []) : new(string.Empty, bytes);
                 return true;
             }
 
-            result = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
-            EmitLiteralDriverReplacement(input, plan, replacementOnly, result, ledger.WrittenRanges, cursor.WorkingBufferControl);
+            var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
+            EmitLiteralDriverReplacement(input, plan, replacementOnly, output, ledger.WrittenRanges, cursor.WorkingBufferControl);
+            result = text ? new(cursor.WorkingBufferControl.DecodeReplacementText(output), []) : new(string.Empty, output);
             return true;
         }
         finally
@@ -1706,9 +1712,11 @@ public sealed partial class Utf8Pcre2Regex
                 startOffsetInBytes,
                 substitutionOptions,
                 matchOptions,
+                cancellationToken,
+                text,
                 out var genericResult))
         {
-            return FinishLegacyReplacement(genericResult, text);
+            return genericResult;
         }
 
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)

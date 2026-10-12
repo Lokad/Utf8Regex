@@ -4127,6 +4127,11 @@ internal struct Pcre2ResourceBudget
 
     internal Utf8Pcre2ExecutionLimits Limits { get; }
 
+    // Required shaping borrows the execution owner, including its inline
+    // unlimited path. Never copy this value into a new decoding invocation.
+    [UnscopedRef]
+    internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
+
     internal ulong CandidateSteps { get; private set; }
 
     internal ulong BacktrackingSteps { get; private set; }

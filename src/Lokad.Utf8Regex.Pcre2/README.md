@@ -104,6 +104,16 @@ Work units remain route dependent. Cold execution and scheduling may consume a
 real 1-ms deadline; small input never exempts an operation from Timeout.
 The accepted scalar.5 core/PythonRe input remains an independent immutable feed.
 
+Scalar.7 development joins literal-driver `ReplaceToString` publication to the
+same discovery/output budget, deadline and token. Strict output validation and
+bounded decoding admit the returned string while the existing encoded output and
+range staging remain live. This can require a larger heap/work allowance than
+the byte-returning replacement, whose algorithm and allocation behavior remain
+unchanged. Other native/foundation template producers and specialized probes
+still need qualification before public finite result-byte policies are accepted;
+they remain explicitly rejected. Initial subject validation and replacement
+preparation are separate from this newly joined publication scope.
+
 Work units and enforcement depend on the selected managed route. Owned slice
 template replacement with `None` match options and owned slice callbacks with any
 match options use one cumulative invocation from discovery through capture
