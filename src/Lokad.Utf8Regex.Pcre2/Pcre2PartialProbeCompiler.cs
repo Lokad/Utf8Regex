@@ -145,7 +145,7 @@ internal static class Pcre2PartialProbeCompiler
             "S(T(5,0);A(S(T(0,0,61);T(0,0,61););S(R(1,2147483647,2:T(0,0,61));T(1,0,0:3,0,0,0,.);););)" => Create(Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord),
             "S(T(5,0);R(0,2147483647,2:T(0,0,61));T(1,0,0:3,0,0,0,.);)" or
             "S(T(5,0);R(1,2147483647,2:C(1:A(T(0,0,61);E;)));T(1,0,0:3,0,0,0,.);)" => Create(Pcre2PartialProbeProgramKind.AnchoredAPlusWord, true),
-            "S(T(5,0);C(1:A(S(T(0,0,61);T(6,0););S(T(0,0,61);T(0,0,D););));)" when request.Settings.Newline == Pcre2NewlineConvention.Crlf => Create(Pcre2PartialProbeProgramKind.AnchoredACrlfEnd, true),
+            "S(T(5,0);C(1:A(S(T(0,0,61);T(6,0););S(T(0,0,61);T(0,0,D););));)" when request.Settings.Newline == Pcre2NewlineConvention.Crlf => Create(Pcre2PartialProbeProgramKind.AnchoredACrlfEnd),
             _ => Pcre2PartialProbeProgram.None,
         };
     }
@@ -177,7 +177,7 @@ internal static class Pcre2PartialProbeCompiler
             return true;
         }
 
-        if (TryGetBoundedLiteral(tokens, 0, tokens.Length, out var literal) &&
+        if (TryGetBoundedLiteral(tokens, 0, tokens.Length, out var literal, Pcre2CharacterOptions.None) &&
             literal.Length > 0)
         {
             program = Create(Pcre2PartialProbeProgramKind.LiteralAlternation, literal);
@@ -214,23 +214,15 @@ internal static class Pcre2PartialProbeCompiler
         if (first < last &&
             tokens[first].Kind == Pcre2CharacterTokenKind.WordBoundary &&
             trailing == Pcre2PartialProbeTrailingAssertion.WordBoundary &&
-            TryGetBoundedLiteral(tokens, first + 1, last, out literal))
+            TryGetBoundedLiteral(tokens, first + 1, last, out literal, Pcre2CharacterOptions.None))
         {
             program = Create(Pcre2PartialProbeProgramKind.WordBoundaryLiteral, literal);
             return true;
         }
 
-        if (TryGetBoundedLiteral(tokens, first, last, out literal) && literal.Length > 0)
+        if (TryGetBoundedLiteral(tokens, first, last, out literal,
+            anchored ? Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll : Pcre2CharacterOptions.None) && literal.Length > 0)
         {
-            if (request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
-                anchored &&
-                trailing == Pcre2PartialProbeTrailingAssertion.Dollar &&
-                literal.AsSpan().SequenceEqual("a"u8))
-            {
-                program = Create(Pcre2PartialProbeProgramKind.AnchoredACrlfEnd, false);
-                return true;
-            }
-
             if (anchored && trailing != Pcre2PartialProbeTrailingAssertion.None)
             {
                 program = Create(Pcre2PartialProbeProgramKind.AnchoredExactLiteral, literal);
@@ -254,14 +246,15 @@ internal static class Pcre2PartialProbeCompiler
         return false;
     }
 
-    private static bool TryGetBoundedLiteral(Pcre2CharacterToken[] tokens, int first, int last, out byte[] literal)
+    private static bool TryGetBoundedLiteral(Pcre2CharacterToken[] tokens, int first, int last, out byte[] literal,
+        Pcre2CharacterOptions inertOptions)
     {
         var builder = new ArrayBufferWriter<byte>();
         for (var index = first; index < last; index++)
         {
             var token = tokens[index];
             if (token.Kind != Pcre2CharacterTokenKind.Literal ||
-                token.Options != Pcre2CharacterOptions.None)
+                (token.Options & ~inertOptions) != Pcre2CharacterOptions.None)
             {
                 literal = [];
                 return false;

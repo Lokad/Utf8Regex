@@ -49,43 +49,49 @@ public sealed partial class Utf8Pcre2Regex
         {
             _budget.CheckDeadline();
             _budget.ChargeWorkspaceStep();
-            if (_anchored || (matchOptions & Pcre2MatchOptions.NotBol) != 0)
+            while (true)
             {
-                while (!LeadingAssertionAccepts(compiled, input, startOffsetInBytes, matchOptions, out var canRetry))
+                var accepts = LeadingAssertionAccepts(compiled, input, startOffsetInBytes, matchOptions, out var canRetry);
+                if (accepts)
                 {
-                    if (_anchored || !canRetry || !_input.TryAdvanceScalar(new Utf8BytePosition(startOffsetInBytes), out var next))
-                        return NoMatch();
-                    _budget.ChargeWorkspaceStep();
-                    startOffsetInBytes = next.Value;
+                    var result = program.Kind switch
+                    {
+                        Pcre2PartialProbeProgramKind.LiteralDotStar => ProbeViaLiteralDotStar(input, partialMode, startOffsetInBytes, program.Operands[0], program.Flag, compiled.Request),
+                        Pcre2PartialProbeProgramKind.AbPlus => ProbeViaAbPlus(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.LiteralAlternation => ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
+                        Pcre2PartialProbeProgramKind.OrderedLiteralAlternation => ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
+                        Pcre2PartialProbeProgramKind.WordBoundaryLiteral => ProbeViaWordBoundaryLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
+                        Pcre2PartialProbeProgramKind.InspectedPrefixLiteral => ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Flag),
+                        Pcre2PartialProbeProgramKind.InspectedContextLiteral => ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Operands[2]),
+                        Pcre2PartialProbeProgramKind.EndAssertion => ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, program.Flag),
+                        Pcre2PartialProbeProgramKind.TrailingCWithLookbehind => ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, program.Flag),
+                        Pcre2PartialProbeProgramKind.NegativeStartClassDotStar => ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes, compiled.Request),
+                        Pcre2PartialProbeProgramKind.AnchoredNewlineSequence => ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag),
+                        Pcre2PartialProbeProgramKind.AnchoredOptionalNewlineThenX => ProbeViaAnchoredOptionalNewlineThenX(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.AnchoredAtomicAPlusB => ProbeViaAnchoredAtomicAPlusB(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.AnchoredRepeatedLiteral => ProbeViaAnchoredRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
+                        Pcre2PartialProbeProgramKind.AnchoredConditionalAbcDotStarOrZ => ProbeViaAnchoredConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.AnchoredLiteralPlusTerminal => ProbeViaAnchoredLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
+                        Pcre2PartialProbeProgramKind.AnchoredAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, program.Flag, false),
+                        Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled),
+                        Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, program.Operands[0], program.TrailingAssertion),
+                        Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
+                        Pcre2PartialProbeProgramKind.AnchoredExactLiteral => ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], compiled),
+                        _ => throw new InvalidOperationException("The compiled partial-probe program is not executable."),
+                    };
+                    if (result.Kind != Utf8Pcre2ProbeKind.NoMatch || _anchored || !canRetry) return result;
                 }
+                // An intrinsic multiline anchor can admit later candidates even
+                // when an earlier line's body failed. Keep the original subject
+                // and first-position authority for every attempt.
+                if (_anchored || !canRetry || !Pcre2CharacterRunner.TryAdvanceCandidate(compiled.Request,
+                    null, ref _input, startOffsetInBytes, allowAcceleration: false, out var next))
+                    return NoMatch();
+                _budget.ChargeWorkspaceStep();
+                startOffsetInBytes = next;
             }
-            return program.Kind switch
-            {
-                Pcre2PartialProbeProgramKind.LiteralDotStar => ProbeViaLiteralDotStar(input, partialMode, startOffsetInBytes, program.Operands[0], program.Flag, compiled.Request),
-                Pcre2PartialProbeProgramKind.AbPlus => ProbeViaAbPlus(input, partialMode, startOffsetInBytes),
-                Pcre2PartialProbeProgramKind.LiteralAlternation => ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
-                Pcre2PartialProbeProgramKind.OrderedLiteralAlternation => ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
-                Pcre2PartialProbeProgramKind.WordBoundaryLiteral => ProbeViaWordBoundaryLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
-                Pcre2PartialProbeProgramKind.InspectedPrefixLiteral => ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Flag),
-                Pcre2PartialProbeProgramKind.InspectedContextLiteral => ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Operands[2]),
-                Pcre2PartialProbeProgramKind.EndAssertion => ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, program.Flag),
-                Pcre2PartialProbeProgramKind.TrailingCWithLookbehind => ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, program.Flag),
-                Pcre2PartialProbeProgramKind.NegativeStartClassDotStar => ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes, compiled.Request),
-                Pcre2PartialProbeProgramKind.AnchoredNewlineSequence => ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag),
-                Pcre2PartialProbeProgramKind.AnchoredOptionalNewlineThenX => ProbeViaAnchoredOptionalNewlineThenX(input, partialMode, startOffsetInBytes),
-                Pcre2PartialProbeProgramKind.AnchoredAtomicAPlusB => ProbeViaAnchoredAtomicAPlusB(input, partialMode, startOffsetInBytes),
-                Pcre2PartialProbeProgramKind.AnchoredRepeatedLiteral => ProbeViaAnchoredRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
-                Pcre2PartialProbeProgramKind.AnchoredConditionalAbcDotStarOrZ => ProbeViaAnchoredConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes),
-                Pcre2PartialProbeProgramKind.AnchoredLiteralPlusTerminal => ProbeViaAnchoredLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
-                Pcre2PartialProbeProgramKind.AnchoredAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, program.Flag, false),
-                Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
-                Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes, program.Flag),
-                Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled),
-                Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, program.Operands[0], program.TrailingAssertion),
-                Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
-                Pcre2PartialProbeProgramKind.AnchoredExactLiteral => ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
-                _ => throw new InvalidOperationException("The compiled partial-probe program is not executable."),
-            };
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -731,7 +737,7 @@ public sealed partial class Utf8Pcre2Regex
         return ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, allowEmptyA: false, requireAtLeastTwoLeadingA: false);
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredACrlfEnd(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool preferExplicitCrAlternative)
+    private Utf8Pcre2ProbeResult ProbeViaAnchoredACrlfEnd(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
     {
         var remaining = input[startOffsetInBytes..];
         if (remaining.SequenceEqual("a"u8))
@@ -741,7 +747,7 @@ public sealed partial class Utf8Pcre2Regex
 
         if (remaining.SequenceEqual("a\r"u8))
         {
-            if (preferExplicitCrAlternative && partialMode != Pcre2PartialMode.Hard)
+            if (partialMode != Pcre2PartialMode.Hard)
             {
                 return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 2)]);
             }
@@ -901,18 +907,37 @@ public sealed partial class Utf8Pcre2Regex
             (byte)'_';
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredExactLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8)
+    private Utf8Pcre2ProbeResult ProbeViaAnchoredExactLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, byte[] literalUtf8, Pcre2CompiledProgram compiled)
     {
         var remaining = input[startOffsetInBytes..];
-        if (remaining.SequenceEqual(literalUtf8))
+        if (remaining.StartsWith(literalUtf8))
         {
-            if ((_matchOptions & Pcre2MatchOptions.NotEol) != 0) return NoMatch();
-            if (partialMode == Pcre2PartialMode.Hard)
+            var end = startOffsetInBytes + literalUtf8.Length;
+            var assertion = ((Pcre2CharacterDirectProgram)compiled.Operations.Match).Program.Tokens[^1];
+            _budget.ChargeWorkspaceStep();
+            var full = Pcre2CharacterRunner.TryMatchToken(assertion, compiled.Request, input,
+                end, _originalStart, _matchOptions, out _);
+            if (partialMode != Pcre2PartialMode.None)
             {
-                return Partial(Project(0, startOffsetInBytes, startOffsetInBytes + literalUtf8.Length));
+                var dollar = assertion.Kind == Pcre2CharacterTokenKind.EndOfLine;
+                var multiline = (assertion.Options & Pcre2CharacterOptions.Multiline) != 0;
+                // Dollar can inspect a final CR while waiting for the LF that
+                // would complete the configured CRLF newline.
+                if (dollar && (multiline || (_matchOptions & Pcre2MatchOptions.NotEol) == 0) &&
+                    compiled.Request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
+                    end + 1 == input.Length && input[end] == (byte)'\r')
+                    return Partial(Project(0, startOffsetInBytes, input.Length));
+                if (partialMode == Pcre2PartialMode.Hard &&
+                    (full && (end == input.Length ||
+                        assertion.Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline || dollar && !multiline) ||
+                     end == input.Length && assertion.Kind == Pcre2CharacterTokenKind.NonWordBoundary))
+                    return Partial(Project(0, startOffsetInBytes, input.Length));
+                if (!full && end == input.Length &&
+                    assertion.Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
+                    return Partial(Project(0, startOffsetInBytes, end));
             }
-
-            return Full([Project(0, startOffsetInBytes, startOffsetInBytes + literalUtf8.Length)]);
+            return full ? Full([Project(0, startOffsetInBytes, end)]) : NoMatch();
         }
 
         if (partialMode != Pcre2PartialMode.None)

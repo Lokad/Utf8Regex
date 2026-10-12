@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 intrinsic-anchor probes (0.4.0-scalar.15-dev)
+
+- Honor original-subject intrinsic anchors at nonzero starts and retry admitted
+  multiline line candidates after a failed body. Use existing trailing assertion
+  tokens instead of whole-tail literal equality; preserve native inspected partial
+  extents, scalar coordinates, finite controls, interruption and owned captures.
+  Retire the special plain `^a$` CRLF route in favor of qualified literal/assertion
+  semantics. Broader partial/profile settings remain separate acceptance gates.
+
 ## Unreleased PCRE2 CRLF dot probes (0.4.0-scalar.14-dev)
 
 - Replace byte-count endpoints in the admitted CRLF dot/`\N` and bounded dot

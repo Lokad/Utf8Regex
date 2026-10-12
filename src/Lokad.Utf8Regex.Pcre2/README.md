@@ -44,6 +44,12 @@ is full at ordinary EOF; hard partial preserves the ambiguity of a lone final CR
 that could become a CRLF newline. DotAll removes that ambiguity for dot; `\N`
 continues to exclude newlines. Unanchored search skips complete CRLF candidates.
 
+Intrinsic anchor probes keep the original subject and byte start. Multiline caret
+probes can retry later admitted line starts after a failed body. Anchored literal
+suffixes use their actual assertion tokens, including final-newline/CR partial
+extents and configured scalar word boundaries; a requested offset is never a new
+subject beginning.
+
 Capture names start with a Unicode letter or underscore; later characters may
 also be decimal digits. Names alias slots assigned in declaration order. Explicit
 .NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail
