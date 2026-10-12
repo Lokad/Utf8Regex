@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased PCRE2 correction (0.4.0-scalar.6-dev)
+
+- Native literal matching checks the original deadline at entry, existing
+  search chunks and return, including short anchored/empty/miss results.
+  Single-result endpoint projection borrows the same native budget through
+  publication. Literal IsMatch candidate counts remain; Match/MatchDetailed
+  now charge required endpoint work and can exhaust a tighter MatchLimit.
+- Replace the real-clock 1-ms fast-path success assumption with controlled-clock
+  success/expiry evidence across the same operations. Keep Timeout identity,
+  original counters, bounded search, SIMD and retained alias/callback contracts.
+- Preserve the qualified scalar.5 core/PythonRe feed. This private PCRE2/core
+  development pair has an independent acceptance boundary; no new core/PythonRe
+  candidate designation or public dependency update is implied.
+
 ## 0.4.0-scalar.5 core/PythonRe candidate
 
 - Reuse the existing exclusive VM workspace across PythonRe scalar cursor moves

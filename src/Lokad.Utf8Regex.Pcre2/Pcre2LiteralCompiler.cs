@@ -240,6 +240,21 @@ internal static class Pcre2LiteralRunner
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget)
     {
+        if (budget.IsUnmetered)
+            return MatchCore(program, ref input, requestedStart, matchOptions, ref budget);
+        budget.CheckDeadline();
+        var result = MatchCore(program, ref input, requestedStart, matchOptions, ref budget);
+        budget.CheckDeadline();
+        return result;
+    }
+
+    private static Pcre2LiteralMatch MatchCore(
+        Pcre2LiteralProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition requestedStart,
+        Pcre2MatchOptions matchOptions,
+        ref Pcre2ResourceBudget budget)
+    {
         var literal = program.LiteralUtf8;
         var startAnchor = GetEffectiveStartAnchor(program.StartAnchor, matchOptions);
         var endAnchored = program.EndAnchored || (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
@@ -312,6 +327,7 @@ internal static class Pcre2LiteralRunner
         var offset = 0;
         while (offset <= input.Length - literalLength)
         {
+            budget.CheckDeadline();
             budget.ChargeCandidate();
             var searchLength = Math.Min(
                 input.Length - offset,

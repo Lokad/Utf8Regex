@@ -25,10 +25,12 @@ public sealed class Pcre2DetailedLimitTests
     }
 
     [Fact]
-    public void LiteralDetailedSucceedsUnderTinyLimit()
+    public void LiteralDetailedFundsDiscoveryAndBothProjectedEndpoints()
     {
         var input = Encoding.UTF8.GetBytes("foo foo foo");
-        var regex = Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 1 });
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 2 }).MatchDetailed(input)).ErrorKind);
+        var regex = Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 3 });
         var actual = regex.MatchDetailed(input);
         Assert.True(actual.Success);
         var expected = Create("foo", default).MatchDetailed(input);

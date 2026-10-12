@@ -94,6 +94,16 @@ can reuse capacity; spent work is not refunded. Native step units, polling caden
 diagnostics and bounded state stacks remain, with scalar-slice diagnostic hooks
 excluded from native steps. Fixed enforcement metadata has separate scope.
 
+Scalar.6 development corrects native literal deadline polling at entry, the
+existing bounded search chunks and return, including short hits/misses and empty
+or anchored outcomes. Single-result coordinate projection shares the discovery
+budget and checks before publication. Required endpoint work can exhaust a
+MatchLimit that formerly admitted only discovery: a small ASCII literal first hit
+needs one candidate step for IsMatch and three units for Match/MatchDetailed.
+Work units remain route dependent. Cold execution and scheduling may consume a
+real 1-ms deadline; small input never exempts an operation from Timeout.
+The accepted scalar.5 core/PythonRe input remains an independent immutable feed.
+
 Work units and enforcement depend on the selected managed route. Owned slice
 template replacement with `None` match options and owned slice callbacks with any
 match options use one cumulative invocation from discovery through capture

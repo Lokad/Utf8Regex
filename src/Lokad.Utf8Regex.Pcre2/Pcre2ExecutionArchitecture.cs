@@ -2405,7 +2405,7 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                compiledProgram.Request, out _).Success;
             return true;
         }
 
@@ -2516,10 +2516,15 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request);
-            directMatch = literalMatch.Success
-                ? Pcre2CharacterMatch.Create(literalMatch.StartOffsetInBytes, literalMatch.EndOffsetInBytes)
-                : Pcre2CharacterMatch.NoMatch;
+                compiledProgram.Request, out var literalBudget);
+            if (!literalMatch.Success) { result = default; return true; }
+            // Discovery and required coordinate projection share the original
+            // native authority; a short successful kernel is not publication.
+            var projection = input.CreateProjectionCursor();
+            result = Pcre2GlobalCursorProjection.Project(literalMatch.StartOffsetInBytes,
+                literalMatch.EndOffsetInBytes, ref input, ref projection, ref literalBudget);
+            literalBudget.CheckDeadline();
+            return true;
         }
         else if (compiledProgram.Operations.Match is Pcre2CharacterDirectProgram characterProgram)
         {
@@ -2637,11 +2642,12 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
+        Pcre2CompileRequest request,
+        out Pcre2ResourceBudget budget)
     {
         try
         {
-            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
+            budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
             return Pcre2LiteralRunner.Match(program, ref input, start, matchOptions, ref budget);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
@@ -4141,6 +4147,17 @@ internal struct Pcre2ResourceBudget
     internal bool RequiresCandidateMetering => !_invocation.Budget.IsInfiniteDeadline || Limits.MatchLimit != 0;
 
     internal bool IsUnmetered => _invocation.Budget.IsUnmetered;
+
+    // Short native work may never reach the periodic instruction poll. Check
+    // the same absolute authority without changing candidate/work accounting.
+    internal void CheckDeadline()
+    {
+        try { _invocation.Budget.CheckDeadline(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+    }
 
     internal void ChargeCandidate()
     {
