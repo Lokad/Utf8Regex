@@ -2,13 +2,20 @@
 
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
+- Native detailed template replacement and explicit-option slice fallbacks now
+  share discovery's work, heap, token and absolute deadline through output.
+  No-match byte/string output is admitted before acquisition. String completion
+  decodes the existing staging buffer directly, removing its extra final encoded
+  byte root. Tight work/heap caps can reject earlier; published captures remain
+  valid. Unlimited hits promote the existing invocation owner once; controlled
+  calls reuse it instead of creating a second writing owner.
 - Literal-driver ReplaceToString validates and decodes output using the original
   discovery budget, deadline and cancellation token. Admit the string while the
   existing byte output and range staging remain live; tight work/heap limits can
   now reject text publication that formerly escaped those limits. Byte replacement
   search, emission and allocations remain unchanged.
 - Keep finite public PCRE2 result-byte policies explicitly unsupported until the
-  remaining native/foundation template and specialized probe publications are
+  remaining foundation template and capture/specialized probe publications are
   covered. Preserve both the accepted scalar.5 core/PythonRe feed and the private
   scalar.6-dev PCRE2/core pair under their immutable identities.
 

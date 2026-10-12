@@ -83,12 +83,12 @@ public readonly struct Utf8Pcre2CompileSettings
 /// <summary>Specifies optional managed PCRE2 execution budgets; zero disables each corresponding limit.</summary>
 public readonly struct Utf8Pcre2ExecutionLimits
 {
-    /// <summary>Gets the maximum combined candidate and backtracking step count, or zero for no limit.</summary>
+    /// <summary>Gets the maximum combined execution and required projection/output work steps, or zero for no limit. Units depend on the selected route.</summary>
     public uint MatchLimit { get; init; }
 
     /// <summary>Gets the maximum backtracking or recursive execution depth, or zero for no limit.</summary>
     public uint DepthLimit { get; init; }
 
-    /// <summary>Gets the maximum metered workspace size in bytes, or zero for no limit.</summary>
+    /// <summary>Gets the maximum modeled active workspace and output capacity in bytes, or zero for no limit. Published captures and caller retention have separate scope.</summary>
     public ulong HeapLimitInBytes { get; init; }
 }

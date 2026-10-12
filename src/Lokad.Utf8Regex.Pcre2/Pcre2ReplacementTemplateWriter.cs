@@ -7,8 +7,8 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex.Pcre2;
 
 // Prepared templates expand directly into bytes. Continuations share the shaping
-// ledger with output. Slice templates borrow their discovery invocation; other
-// routes still create a shaping invocation until their shared authority qualifies.
+// ledger with output. Slice/native detailed templates borrow their discovery
+// invocation; foundation iteration still owns a separate shaping invocation.
 internal ref struct Pcre2ReplacementTemplateWriter
 {
     private readonly ReadOnlySpan<byte> _input;

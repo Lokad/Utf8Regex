@@ -1721,26 +1721,26 @@ public sealed partial class Utf8Pcre2Regex
 
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
-            return FinishLegacyReplacement(ReplaceBacktrackingDetailed(
+            return ReplaceBacktrackingDetailed(
                 input,
                 backtrackingProgram.Program,
                 replacement,
                 substitutionOptions,
                 startOffsetInBytes,
-                matchOptions, cancellationToken), text);
+                matchOptions, cancellationToken, text);
         }
 
         if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram)
         {
             if (matchOptions != Pcre2MatchOptions.None)
             {
-                return FinishLegacyReplacement(ReplaceBacktrackingDetailed(
+                return ReplaceBacktrackingDetailed(
                     input,
                     sliceProgram.Fallback,
                     replacement,
                     substitutionOptions,
                     startOffsetInBytes,
-                    matchOptions, cancellationToken), text);
+                    matchOptions, cancellationToken, text);
             }
 
             return ReplaceSliceDetailed(
@@ -1812,19 +1812,29 @@ public sealed partial class Utf8Pcre2Regex
         finally { writer.Release(); }
     }
 
-    private byte[] ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Pcre2BacktrackingProgram program,
-        string replacement, Pcre2SubstitutionOptions options, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token)
+    private Pcre2ReplacementResult ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Pcre2BacktrackingProgram program,
+        string replacement, Pcre2SubstitutionOptions options, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token, bool text)
     {
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, _program.CandidateSearchPlan,
-            validated, start, matchOptions, _program.Request);
-        if (!cursor.MoveNext()) return (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0 ? [] : input.ToArray();
+            validated, start, matchOptions, _program.Request,
+            new Pcre2ResourceBudget(_program.Request.DefaultLimits,
+                Pcre2SliceDriver.CreateInvocation(_program.Request, token), collectDiagnostics: false));
+        if (!cursor.MoveNext())
+        {
+            if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
+            return text ? new(Pcre2ReplacementTemplateWriter.DecodeUnchanged(input, ref cursor.WorkingInvocation), [])
+                : new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref cursor.WorkingInvocation));
+        }
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
             ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
             : GetReplacementPreparation(replacement, templateOptions);
-        var writer = CreateTemplateWriter(input, token);
+        // Controlled calls already share this owner. Promote unlimited hits
+        // before the writer copies it; no-match helpers borrow the inline owner.
+        cursor.WorkingInvocation.ShareStorageForCursor();
+        var writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
         try
         {
             var position = 0;
@@ -1838,7 +1848,7 @@ public sealed partial class Utf8Pcre2Regex
                 position = value.EndOffsetInBytes;
             } while (cursor.MoveNext());
             if (!replacementOnly) writer.AppendGap(position, input.Length - position);
-            return writer.Complete();
+            return text ? new(writer.CompleteToString(), []) : new(string.Empty, writer.Complete());
         }
         finally { writer.Release(); }
     }

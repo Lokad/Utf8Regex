@@ -3861,6 +3861,9 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 
     internal Pcre2BacktrackingMatch Current { get; private set; }
 
+    [UnscopedRef]
+    internal ref Utf8SliceInvocation WorkingInvocation => ref _budget.WorkingInvocation;
+
     internal Pcre2GroupData[] ProjectCurrentCaptures() => Current.CaptureResult.ProjectedGroups;
 
     internal bool MoveNext()

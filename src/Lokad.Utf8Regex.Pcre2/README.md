@@ -109,10 +109,21 @@ same discovery/output budget, deadline and token. Strict output validation and
 bounded decoding admit the returned string while the existing encoded output and
 range staging remain live. This can require a larger heap/work allowance than
 the byte-returning replacement, whose algorithm and allocation behavior remain
-unchanged. Other native/foundation template producers and specialized probes
+unchanged. Foundation template producers, capture publication and specialized probes
 still need qualification before public finite result-byte policies are accepted;
 they remain explicitly rejected. Initial subject validation and replacement
 preparation are separate from this newly joined publication scope.
+
+Native detailed templates and explicit-option slice template fallbacks also join
+their original discovery work/heap/token/deadline through byte or string completion.
+The existing detailed cursor supplies captures and MARK, preserving its empty
+retry rules. No-match output is admitted before acquisition. Text completion uses
+the existing staging buffer directly and avoids its extra final encoded byte
+array. Unlimited hits promote the existing shared invocation owner once before
+the writer copies it; controlled calls reuse their owner and retire the separate
+writing allowance. Working overlap can deny earlier. Published capture arrays
+retain their existing result-versus-working scope and stay valid after advancement;
+cumulative result-capacity policy and arbitrary caller retention remain unfinished.
 
 Work units and enforcement depend on the selected managed route. Owned slice
 template replacement with `None` match options and owned slice callbacks with any
