@@ -37,11 +37,23 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
+        : this(program, Pcre2SliceDriver.CreateInvocation(request, cancellationToken), input, start, request)
+    {
+    }
+
+    // Callback output and discovery borrow one existing authority. The caller
+    // promotes its ledger before copying it so even unlimited scope loans share.
+    internal Pcre2SliceGlobalMatchCursor(
+        Utf8SliceProgram program,
+        Utf8SliceInvocation invocation,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request)
     {
         _program = program;
         _input = input;
         _request = request;
-        _invocation = Pcre2SliceDriver.CreateInvocation(request, cancellationToken);
+        _invocation = invocation;
         _position = start.Value;
         _retryPending = false;
         _retryPosition = start.Value;
@@ -330,24 +342,14 @@ internal static class Pcre2SliceDriver
     internal static void DetachProjectedGroups(Pcre2GroupData[] groups, ref Utf8SliceInvocation invocation)
         => invocation.Ledger.Release(Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length));
 
-    // Slot admission fail-closes inside the shared runner with
-    // InvalidOperationException; surface it with the PCRE2 heap
-    // vocabulary at the adapter boundary instead.
+    // Preserve the original sticky denial when a shared output/cursor authority
+    // has already failed; array representability still reports heap capacity.
     internal static Utf8SliceSlots RentProgramSlots(
         Utf8SliceProgram program,
         ref Utf8SliceInvocation invocation)
     {
-        try
-        {
-            return Utf8SliceRunner.RentSlots(
-                program.GroupCount, ref invocation);
-        }
-        catch (InvalidOperationException)
-        {
-            throw new Pcre2MatchException(
-                "The PCRE2 heap limit was exceeded.",
-                Pcre2ErrorKind.HeapLimit);
-        }
+        ThrowIfSliceBreached(Utf8SliceRunner.TryRentSlots(program.GroupCount, ref invocation, out var slots));
+        return slots;
     }
 
     // Request limits apply to slice per-instruction-visit steps, frame depth, and

@@ -549,15 +549,18 @@ are unlimited. Timeout breach on owned routes reports `Timeout`. The shared
 profile still rejects result-capacity budgets; core and PythonRe support their
 documented policy in `SPEC.md` Section 3.7.
 
-The slice template-replacement route shares its discovery invocation with capture
-replay and output building, including growth/final overlap and the owned unchanged
-subject copy after no match. That copy is funded before acquisition and copied in
-bounded blocks with the original token/deadline. `MatchLimit` and working heap are
-cumulative over these stages; cases that fitted former separate matching/writing
-allowances can fail earlier. Publication releases temporary working charges while
-returned arrays remain valid. These charges do not bound caller retention or RSS.
-Initial validation/preparation and non-slice replacement routes retain separate
-scopes; this slice does not qualify common operation-wide or result-byte control.
+Owned slice template replacement and callback replacement with `None` match options
+share one discovery invocation with capture replay and output building. Growth/final
+overlap and the unchanged-subject result after no match are admitted before allocation
+and copied in bounded blocks with the original token/absolute deadline. Callback
+buffer controls, writer resets and final byte/text shaping use that same allowance;
+nested operations restore the outer scope. `MatchLimit` and working heap cover these
+stages cumulatively, so cases that fitted former separate matching/writing allowances
+can fail earlier. The first resource denial retains its PCRE2 kind. Publication releases
+temporary working charges while returned arrays, capture views and aliases remain
+valid. These modeled charges do not bound caller retention or RSS. Initial subject
+validation/preparation, non-slice replacement and explicit callback match options
+retain separate scopes; this does not qualify common operation-wide or result-byte control.
 
 ```csharp
 var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };

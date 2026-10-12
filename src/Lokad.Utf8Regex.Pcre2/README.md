@@ -82,13 +82,17 @@ explicit compile and execution settings.
 
 ## Resource-control scope
 
-Work units and enforcement depend on the selected managed route. The owned slice
-template-replacement route uses one cumulative invocation from discovery through
-capture replay, output growth and final copying. Its unchanged-subject result on
-no match is admitted before allocation and copied with the same token/deadline.
-`MatchLimit` covers that work; `HeapLimitInBytes` covers overlapping live working
-capacities. Cases formerly funded by separate matching/writing allowances can
-fail earlier. Output publication releases working charges; it does not bound
+Work units and enforcement depend on the selected managed route. Owned slice
+template replacement and callback replacement with `None` match options use one
+cumulative invocation from discovery through capture replay, output growth and
+final copying. The unchanged-subject result on no match is admitted before
+allocation and copied with the same token/absolute deadline. Callback buffer
+controls, writer resets and final byte/text output share that allowance; nested
+operations restore the outer scope. `MatchLimit` covers the combined work and
+`HeapLimitInBytes` covers overlapping modeled working capacities. Cases formerly
+funded by separate matching/writing allowances can fail earlier. The first resource
+denial retains its PCRE2 error kind. Output publication releases working charges,
+while returned arrays, capture views and aliases stay valid; it does not bound
 results retained by the caller or process memory. Shared copied-cursor coordinate
 maps and linear tables conservatively remain reserved for their invocation after
 EOF or physical collection. Those credits never depend on finalizer timing; a
@@ -96,7 +100,8 @@ later consumer of the same finite allowance can deny earlier. Borrowed aliases a
 retained views remain valid, and unpublished setup/exclusive scratch still release
 synchronously.
 
-Initial validation/preparation and other replacement routes still have separate
+Initial validation/preparation, other replacement routes and explicit callback
+match options still have separate
 enforcement scopes. This slice does not establish a common operation-wide policy.
 The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
 PythonRe accept their documented cumulative result-capacity policy. Cancellation,
