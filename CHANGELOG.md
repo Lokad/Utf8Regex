@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased PCRE2 anchored partial probes (0.4.0-scalar.10-dev)
+
+- Restrict specialized soft/hard candidates to the requested consumed start when
+  operation or compile options specify Anchored. Preserve original-subject anchors,
+  contextual word boundaries, lookbehind before the start and `\K` reported ranges.
+  Keep original resource limits, token/deadline and retained captures. Other partial
+  flags and combinations remain an open gate.
+- Keep the first successful lazy/ordered alternative as a full match; remove the
+  incorrect longer-partial-continuation check. Correct partial substring-zero offsets
+  that included lookbehind display text, using native PCRE2 API evidence. Retarget
+  three incorrect corpus expectations; keep their provenance and evidence.
+
 ## Unreleased PCRE2 non-partial probe options (0.4.0-scalar.9-dev)
 
 - Forward explicit per-operation flags on non-partial probes even when a curated

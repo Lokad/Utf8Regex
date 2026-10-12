@@ -134,10 +134,10 @@
     "Operation": "Probe",
     "Expected": {
       "Outcome": "PartialMatch",
-      "StartOffsetInBytes": 3,
+      "StartOffsetInBytes": 6,
       "EndOffsetInBytes": 11,
       "HasContiguousByteRange": true,
-      "ValueText": "pqrabcxy",
+      "ValueText": "abcxy",
       "Groups": [],
       "NameEntries": []
     },
@@ -163,10 +163,10 @@
     "Operation": "Probe",
     "Expected": {
       "Outcome": "PartialMatch",
-      "StartOffsetInBytes": 3,
+      "StartOffsetInBytes": 6,
       "EndOffsetInBytes": 11,
       "HasContiguousByteRange": true,
-      "ValueText": "pqrabcxy",
+      "ValueText": "abcxy",
       "Groups": [],
       "NameEntries": []
     },

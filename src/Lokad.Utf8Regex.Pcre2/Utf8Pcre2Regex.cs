@@ -579,8 +579,8 @@ public sealed partial class Utf8Pcre2Regex
         if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None &&
             (partialMode != Pcre2PartialMode.None || matchOptions == Pcre2MatchOptions.None))
         {
-            var runner = new Pcre2PartialProbeRunner(subject, _program, NameEntries, cancellationToken);
-            return runner.Probe(partialMode, startOffsetInBytes, _program.PartialProbe);
+            var runner = new Pcre2PartialProbeRunner(subject, _program, NameEntries, matchOptions, cancellationToken);
+            return runner.Probe(partialMode, startOffsetInBytes, _program, matchOptions);
         }
 
         if (partialMode == Pcre2PartialMode.None)

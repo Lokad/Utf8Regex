@@ -123,8 +123,13 @@ detailed matching. This fixes ignored anchoring
 and line-boundary flags while reusing owned captures/names/MARK and the original
 resource policy, token and deadline. Native flag-aware matching can require more
 work/scratch than the former option-blind helper. Default helper paths retain their
-existing algorithms. Specialized soft/hard helpers still ignore per-operation
-flags; fixing those combinations remains a separate release gate.
+existing algorithms. Specialized soft/hard helpers now restrict `Anchored` attempts
+to the requested consumed start, including compiled anchoring. `\K` can report a
+later start and lookbehind can read earlier subject bytes. Leading assertions use
+the original subject; an offset creates no new beginning of line. Full/partial
+precedence is preserved, with lazy successful alternatives no longer displaced by
+a later partial. Lookbehind display text is excluded from partial substring zero.
+Other per-operation flags and their combinations retain a separate release gate.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native

@@ -278,11 +278,11 @@
     "PartialMode": "Hard",
     "Operation": "Probe",
     "Expected": {
-      "Outcome": "PartialMatch",
+      "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,
-      "EndOffsetInBytes": 4,
+      "EndOffsetInBytes": 3,
       "HasContiguousByteRange": true,
-      "ValueText": "dogs",
+      "ValueText": "dog",
       "Groups": [],
       "NameEntries": []
     },
