@@ -101,6 +101,18 @@ internal static class Pcre2PartialProbeCompiler
 
     internal static Pcre2PartialProbeProgram Compile(Pcre2BacktrackingSyntaxTree syntaxTree, Pcre2CompileRequest request)
     {
+        if (request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
+            syntaxTree.Root is Pcre2RepeatBacktrackingNode
+            {
+                Minimum: 2, Maximum: 3,
+                Body: Pcre2TokenBacktrackingNode { Token.Kind: Pcre2CharacterTokenKind.Any },
+                Preference: Pcre2RepeatPreference.Greedy or Pcre2RepeatPreference.Lazy,
+            } dotRepeat)
+        {
+            return Create(Pcre2PartialProbeProgramKind.CrlfDotQuantifier, 2, 3,
+                dotRepeat.Preference == Pcre2RepeatPreference.Lazy);
+        }
+
         var shape = Describe(syntaxTree.Root);
         return shape switch
         {
@@ -134,7 +146,6 @@ internal static class Pcre2PartialProbeCompiler
             "S(T(5,0);R(0,2147483647,2:T(0,0,61));T(1,0,0:3,0,0,0,.);)" or
             "S(T(5,0);R(1,2147483647,2:C(1:A(T(0,0,61);E;)));T(1,0,0:3,0,0,0,.);)" => Create(Pcre2PartialProbeProgramKind.AnchoredAPlusWord, true),
             "S(T(5,0);C(1:A(S(T(0,0,61);T(6,0););S(T(0,0,61);T(0,0,D););));)" when request.Settings.Newline == Pcre2NewlineConvention.Crlf => Create(Pcre2PartialProbeProgramKind.AnchoredACrlfEnd, true),
-            "R(2,3,0:T(2,0))" or "R(2,3,1:T(2,0))" when request.Settings.Newline == Pcre2NewlineConvention.Crlf => Create(Pcre2PartialProbeProgramKind.CrlfDotQuantifier, 2, 3, false),
             _ => Pcre2PartialProbeProgram.None,
         };
     }

@@ -80,7 +80,7 @@ public sealed partial class Utf8Pcre2Regex
                 Pcre2PartialProbeProgramKind.AnchoredAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, program.Flag, false),
                 Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
                 Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes, program.Flag),
-                Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second),
+                Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled),
                 Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, program.Operands[0], program.TrailingAssertion),
                 Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
                 Pcre2PartialProbeProgramKind.AnchoredExactLiteral => ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
@@ -755,26 +755,54 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaCrlfDotQuantifier(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, int minCount, int maxCount)
+    private Utf8Pcre2ProbeResult ProbeViaCrlfDotQuantifier(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, int minCount, int maxCount, bool lazy, Pcre2CompiledProgram compiled)
     {
-        var remaining = input[startOffsetInBytes..];
-        var count = Math.Min(remaining.Length, maxCount);
-        if (count < minCount)
+        var dot = compiled.Operations.Match is Pcre2CharacterDirectProgram character
+            ? character.Program.Tokens[0]
+            : ((Pcre2TokenBacktrackingNode)((Pcre2RepeatBacktrackingNode)
+                ((Pcre2BacktrackingSyntaxTree)compiled.SyntaxTree).Root).Body).Token;
+        var excludesNewline = dot.Kind == Pcre2CharacterTokenKind.AnyNotNewline ||
+            (dot.Options & Pcre2CharacterOptions.DotAll) == 0;
+        var candidate = startOffsetInBytes;
+        while (candidate < input.Length)
         {
-            if (partialMode != Pcre2PartialMode.None && count > 0)
+            _budget.ChargeWorkspaceStep();
+            var end = candidate;
+            var count = 0;
+            while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(dot, compiled.Request,
+                input, end, _originalStart, _matchOptions, out var next))
             {
-                return Partial(Project(0, startOffsetInBytes, input.Length));
+                _budget.ChargeWorkspaceStep();
+                end = next;
+                count++;
+                // A lone final CR can become a CRLF newline. Hard partial must
+                // preserve that uncertainty even for a fixed/maxed repeat.
+                if (partialMode == Pcre2PartialMode.Hard && excludesNewline &&
+                    end == input.Length && input[end - 1] == (byte)'\r')
+                    return Partial(Project(0, candidate, end));
+                if (lazy && count >= minCount) return Full([Project(0, candidate, end)]);
             }
-
-            return NoMatch();
+            if (count >= minCount)
+            {
+                if (partialMode == Pcre2PartialMode.Hard && count < maxCount && end == input.Length)
+                    return Partial(Project(0, candidate, end));
+                return Full([Project(0, candidate, end)]);
+            }
+            if (partialMode != Pcre2PartialMode.None && count > 0 && end == input.Length)
+                return Partial(Project(0, candidate, end));
+            if (_anchored) return NoMatch();
+            // Native bump-along skips the complete CRLF, while an explicitly
+            // requested start at its LF still uses the normal token semantics.
+            if (Pcre2CharacterSemantics.TryGetNewlineWidth(input, candidate, compiled.Request.Settings.Newline, out var width))
+            {
+                if ((compiled.Request.Options & Pcre2CompileOptions.FirstLine) != 0) return NoMatch();
+                candidate += width;
+            }
+            else if (_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var nextCandidate)) candidate = nextCandidate.Value;
+            else break;
         }
-
-        if (partialMode == Pcre2PartialMode.Hard && count == remaining.Length)
-        {
-            return Partial(Project(0, startOffsetInBytes, input.Length));
-        }
-
-        return Full([Project(0, startOffsetInBytes, startOffsetInBytes + count)]);
+        return NoMatch();
     }
 
     private bool TryConsumePcre2Newline(ReadOnlySpan<byte> input, out int consumed)

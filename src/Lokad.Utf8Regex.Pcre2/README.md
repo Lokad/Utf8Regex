@@ -38,6 +38,12 @@ complete scalars using the configured DotAll/newline semantics. Soft partial
 accepts its complete greedy match; hard partial reports an extensible match at
 EOF. A newline that stops the repeat permits a full match in either mode.
 
+CRLF dot/`\N` and the admitted `.{2,3}` / `.{2,3}?` probes consume complete
+scalars and keep greedy/lazy preference. A fixed or maximum-length complete match
+is full at ordinary EOF; hard partial preserves the ambiguity of a lone final CR
+that could become a CRLF newline. DotAll removes that ambiguity for dot; `\N`
+continues to exclude newlines. Unanchored search skips complete CRLF candidates.
+
 Capture names start with a Unicode letter or underscore; later characters may
 also be decimal digits. Names alias slots assigned in declaration order. Explicit
 .NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail

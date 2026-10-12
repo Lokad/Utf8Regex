@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 CRLF dot probes (0.4.0-scalar.14-dev)
+
+- Replace byte-count endpoints in the admitted CRLF dot/`\N` and bounded dot
+  probes with complete scalar token consumption. Preserve greedy/lazy preference,
+  configured/inline DotAll, original candidate/anchor semantics and finite meters.
+  Fixed/maxed/lazy full matches remain full at ordinary EOF; hard partial preserves
+  uncertainty for a lone final CR. Reuse admitted tokens and result ownership.
+  Broader partial profiles/settings remain separate acceptance gates.
+
 ## Unreleased PCRE2 literal-dot-star probes (0.4.0-scalar.13-dev)
 
 - Replace the admitted `f.*` probe's hard-coded subject approximation with
