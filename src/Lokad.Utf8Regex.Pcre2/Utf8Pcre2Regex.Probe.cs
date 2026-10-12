@@ -75,7 +75,7 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ => ProbeViaConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes, compiled.Request),
                         Pcre2PartialProbeProgramKind.LiteralPlusTerminal => ProbeViaLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
                         Pcre2PartialProbeProgramKind.AnchoredAPlusWord or Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, compiled),
-                        Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.CapturedEndAlternative => ProbeViaCapturedEndAlternative(input, partialMode, startOffsetInBytes, compiled),
                         Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled),
                         Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
                         Pcre2PartialProbeProgramKind.AnchoredExactLiteral => ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], compiled),
@@ -670,28 +670,37 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredACrlfEnd(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
+    private Utf8Pcre2ProbeResult ProbeViaCapturedEndAlternative(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, Pcre2CompiledProgram compiled)
     {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.SequenceEqual("a"u8))
-        {
-            return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 1)]);
-        }
+        var sequence = (Pcre2SequenceBacktrackingNode)((Pcre2BacktrackingSyntaxTree)compiled.SyntaxTree).Root;
+        var branches = ((Pcre2AlternationBacktrackingNode)((Pcre2CaptureBacktrackingNode)sequence.Children[1]).Body).Alternatives;
+        var first = ((Pcre2SequenceBacktrackingNode)branches[0]).Children;
+        var prefix = ((Pcre2TokenBacktrackingNode)first[0]).Token;
+        var assertion = ((Pcre2TokenBacktrackingNode)first[1]).Token;
 
-        if (remaining.SequenceEqual("a\r"u8))
-        {
-            if (partialMode != Pcre2PartialMode.Hard)
-            {
-                return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 2)]);
-            }
+        // Both admitted branches share one leading scalar. Keep the whole
+        // subject for their suffixes; later text is not part of the match.
+        _budget.ChargeWorkspaceStep();
+        if (!Pcre2CharacterRunner.TryMatchToken(prefix, compiled.Request, input,
+            startOffsetInBytes, _originalStart, _matchOptions, out var cursor))
+            return NoMatch();
 
-            if (partialMode != Pcre2PartialMode.None)
-            {
-                return Partial(Project(0, startOffsetInBytes, input.Length));
-            }
-        }
+        var result = ProbeTrailingAssertion(input, partialMode, startOffsetInBytes, cursor, assertion, compiled.Request);
+        if (result.Kind == Utf8Pcre2ProbeKind.FullMatch ||
+            partialMode == Pcre2PartialMode.Hard && result.Kind == Utf8Pcre2ProbeKind.PartialMatch)
+            return result;
 
-        return NoMatch();
+        // Soft partial may retry a later complete alternative. Hard partial
+        // keeps the first branch's inspected EOF extent before trying it.
+        var terminal = ((Pcre2TokenBacktrackingNode)((Pcre2SequenceBacktrackingNode)branches[1]).Children[1]).Token;
+        _budget.ChargeWorkspaceStep();
+        if (Pcre2CharacterRunner.TryMatchToken(terminal, compiled.Request, input,
+            cursor, _originalStart, _matchOptions, out var end))
+            return Full([Project(0, startOffsetInBytes, end)]);
+        if (partialMode != Pcre2PartialMode.None && cursor == input.Length)
+            return Partial(Project(0, startOffsetInBytes, cursor));
+        return result;
     }
 
     private Utf8Pcre2ProbeResult ProbeViaCrlfDotQuantifier(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,

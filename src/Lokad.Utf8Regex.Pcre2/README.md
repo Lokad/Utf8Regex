@@ -5,9 +5,10 @@
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.
 The core `Utf8Regex` matches Unicode scalars over strict UTF-8 with byte coordinates.
 
-Version 0.4.0-scalar.1 is an experimental integration candidate with a distinct
-identity from published 0.3.0. Whole producer acceptance, common resource/result
-policies and complete adapter qualification remain unfinished. Use the qualified
+Scalar development candidates have distinct identities from published 0.3.0.
+Core/PythonRe delivery is qualified independently. PCRE2 has scoped private
+package acceptance; broader profile coverage and public preparation/construction,
+safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
 The package does not bind to native PCRE2. Its only non-BCL implementation
@@ -49,6 +50,12 @@ probes can retry later admitted line starts after a failed body. Anchored litera
 suffixes use their actual assertion tokens, including final-newline/CR partial
 extents and configured scalar word boundaries; a requested offset is never a new
 subject beginning.
+
+The captured `^(a$|a\r)` probe with CRLF keeps its ordered suffixes. Soft partial
+can accept a later complete branch; hard partial preserves an earlier EOF partial,
+including inspected CRLF bytes. Literal-prefix matches before later text remain
+valid. Full results retain participating/named captures under the original flags,
+offsets, resource controls and interruption authority.
 
 The admitted possessive-a/word probes consume one complete word-class scalar,
 including Unicode letters and combining marks with UCP enabled. The ordered

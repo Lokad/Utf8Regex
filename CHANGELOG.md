@@ -1,13 +1,17 @@
 # Changelog
 
-## Unreleased PCRE2 word-probe follow-up
+## Unreleased PCRE2 word and captured-alternative probes (0.4.0-scalar.19-dev)
 
 - Consume the admitted word-class scalar in possessive-a partial probes, honoring
   UCP membership and complete UTF-8 widths. Share the aa-first alternative helper
   and remove its ASCII predicate and unused minimum switch. Preserve ordered
   alternatives, possessive EOF, original anchors, owned captures, finite controls
-  and synchronous interruption. This source follow-up is not part of the already
-  qualified immutable scalar.18-dev package pair.
+  and synchronous interruption.
+- Evaluate the captured CRLF end/literal alternative with admitted scalar tokens
+  and the shared trailing assertion evaluator. Soft partial retries a later
+  complete branch; hard partial preserves the earlier inspected EOF extent.
+  Remove whole-tail equality assumptions and honor original flags, offsets,
+  named captures, finite limits and synchronous interruption.
 
 ## Unreleased PCRE2 BSR newline probes (0.4.0-scalar.18-dev)
 
