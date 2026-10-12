@@ -93,10 +93,21 @@ internal struct Utf8ExecutionBudget
             PeakDepth = depth;
         }
 
-        return Limits.MaxDepth != 0 && depth > Limits.MaxDepth
-            ? Utf8ExecutionLimitKind.Depth
-            : Utf8ExecutionLimitKind.None;
+        if (LimitBreach == Utf8ExecutionLimitKind.None && Limits.MaxDepth != 0 && depth > Limits.MaxDepth)
+            LimitBreach = Utf8ExecutionLimitKind.Depth;
+        return LimitBreach;
     }
+
+    // Core/Python public failures share one typed conversion. Other profiles
+    // keep their own mappings from the neutral admission result.
+    internal readonly Utf8ResourceLimitExceededException CreateResourceFailure()
+        => LimitBreach switch
+        {
+            Utf8ExecutionLimitKind.WorkSteps => new(Utf8ResourceLimitKind.ExecutionWorkSteps, Limits.MaxWorkSteps, Steps),
+            Utf8ExecutionLimitKind.ResultBytes => new(Utf8ResourceLimitKind.ExecutionResultBytes, Limits.MaxResultBytes, ResultBytes),
+            Utf8ExecutionLimitKind.Depth => new(Utf8ResourceLimitKind.ExecutionDepth, Limits.MaxDepth, PeakDepth),
+            _ => throw new InvalidOperationException("No public execution resource denial is recorded."),
+        };
 
     internal Utf8ExecutionLimitKind TryNoteWorkingBytes(ulong bytes)
     {

@@ -124,20 +124,20 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options, timeout, and invocation resource policy.</summary>
-    /// <remarks>Finite work/result limits select owned scalar execution. Major array/text, capture/name, coordinate-map and staging capacity is charged cumulatively before acquisition.
+    /// <remarks>Finite work/depth/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; result capacity covers major array/text, capture/name, coordinate-map and staging capacity cumulatively before acquisition.
     /// Charges can conservatively count shared storage again and never refund. Construction/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    /// <exception cref="NotSupportedException">A depth or working-byte budget is set.</exception>
+    /// <exception cref="NotSupportedException">A working-byte budget is set.</exception>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
     }
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
-    /// <remarks>Finite work/result limits select owned scalar execution. Major array/text, capture/name, coordinate-map and staging capacity is charged cumulatively before acquisition.
+    /// <remarks>Finite work/depth/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; result capacity covers major array/text, capture/name, coordinate-map and staging capacity cumulatively before acquisition.
     /// Charges can conservatively count shared storage again and never refund. Construction/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    /// <exception cref="NotSupportedException">A depth or working-byte budget is set.</exception>
+    /// <exception cref="NotSupportedException">A working-byte budget is set.</exception>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
@@ -250,9 +250,9 @@ public sealed partial class Utf8PythonRegex
     private static void ValidatePythonRePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
     {
         resourcePolicy.Validate(paramName);
-        if (resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue)
+        if (resourcePolicy.MaxWorkingBytes.HasValue)
         {
-            throw new NotSupportedException("This profile supports execution work, result capacity, match timeouts and cancellation; finite depth and working-byte limits are unsupported.");
+            throw new NotSupportedException("This profile supports execution work, depth, result capacity, match timeouts and cancellation; working-byte limits are unsupported.");
         }
     }
 
@@ -275,7 +275,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }
 
-    /// <summary>Gets the invocation resource policy. Finite work and result-capacity limits are supported; depth and working-byte limits are rejected.</summary>
+    /// <summary>Gets the invocation resource policy. Finite work, depth and result-capacity limits are supported; working-byte limits are rejected.</summary>
     public Utf8ResourcePolicy ResourcePolicy { get; }
 
     /// <summary>Returns the group names in group-number order, including group zero.</summary>
@@ -301,9 +301,9 @@ public sealed partial class Utf8PythonRegex
     // AST, independently of residual native selectors or BCL case flags.
     private Utf8SliceProgram ScalarProgram => _scalarProgram;
 
-    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
+    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxDepth.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
 
-    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, 0, 0, ResourcePolicy.MaxResultBytes ?? 0);
+    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, 0, ResourcePolicy.MaxResultBytes ?? 0);
 
     internal bool DebugUsesOwnedSlice => _scalarProgram is not null;
 

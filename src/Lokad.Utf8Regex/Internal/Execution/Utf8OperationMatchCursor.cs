@@ -26,9 +26,7 @@ internal ref partial struct Utf8OperationMatchCursor
     internal bool HasResourceLimitBreach => _sliceInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None;
 
     internal Utf8ResourceLimitExceededException CreateExecutionResourceFailure()
-        => _sliceInvocation.Budget.LimitBreach == Utf8ExecutionLimitKind.ResultBytes
-            ? new(Utf8ResourceLimitKind.ExecutionResultBytes, _sliceInvocation.Budget.Limits.MaxResultBytes, _sliceInvocation.Budget.ResultBytes)
-            : new(Utf8ResourceLimitKind.ExecutionWorkSteps, _sliceInvocation.Budget.Limits.MaxWorkSteps, _sliceInvocation.Budget.Steps);
+        => _sliceInvocation.Budget.CreateResourceFailure();
 
 
     internal ulong DebugInvocationReservedBytes => _sliceInvocation.Ledger.ReservedBytes;

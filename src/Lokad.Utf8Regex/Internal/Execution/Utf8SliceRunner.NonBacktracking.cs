@@ -221,12 +221,12 @@ internal static partial class Utf8SliceRunner
                     switch (instruction.Kind)
                     {
                         case Utf8SliceInstructionKind.Fork:
+                            breach = invocation.Budget.TryNoteDepth((uint)pending + 1);
+                            if (breach != Utf8ExecutionLimitKind.None) return breach;
                             PendingPcs[pending] = instruction.B == 0 ? instruction.A : pc + 1;
                             breach = Copy(Scratch, PendingRegisters.AsSpan(pending * RegisterCount, RegisterCount), ref invocation);
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
                             pending++;
-                            breach = invocation.Budget.TryNoteDepth((uint)pending);
-                            if (breach != Utf8ExecutionLimitKind.None) return breach;
                             pc = instruction.B == 0 ? pc + 1 : instruction.A;
                             continue;
                         case Utf8SliceInstructionKind.Jump:

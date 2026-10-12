@@ -65,12 +65,12 @@ public sealed partial class Utf8Regex
 
     /// <summary>Compiles an expression with the specified options, match timeout, and invocation resource policy.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
-    /// <remarks>A finite work or result limit selects owned scalar execution. Work covers validation, matching and required result shaping cumulatively.
+    /// <remarks>A finite work, depth or result limit selects owned scalar execution. Work covers validation, matching and required result shaping cumulatively; depth bounds live backtracking/continuation frames or pending linear alternatives.
     /// Result bytes cover cumulative modeled major result/staging capacity, including arrays, text, coordinate maps, growth and output controls.
     /// Capacity charges precede acquisition, may conservatively count shared storage and are never refunded; fixed values and borrowed input are excluded.
     /// Construction and replacement preparation have separate admission bounds. Caller callback execution and later standalone result getters are outside this work cap.
     /// Copied value enumerators share their work allowance while keeping independent positions; concurrent advancement is unsupported.</remarks>
-    /// <exception cref="NotSupportedException">A depth or working-byte budget is set.</exception>
+    /// <exception cref="NotSupportedException">A working-byte budget is set.</exception>
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
@@ -241,21 +241,19 @@ public sealed partial class Utf8Regex
         construction.Complete();
     }
 
-    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
+    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxDepth.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
 
-    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, 0, 0, ResourcePolicy.MaxResultBytes ?? 0);
+    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, 0, ResourcePolicy.MaxResultBytes ?? 0);
 
     private static Utf8ResourceLimitExceededException CreateExecutionResourceFailure(ref Utf8SliceInvocation invocation)
-        => invocation.Budget.LimitBreach == Utf8ExecutionLimitKind.ResultBytes
-            ? new(Utf8ResourceLimitKind.ExecutionResultBytes, invocation.Budget.Limits.MaxResultBytes, invocation.Budget.ResultBytes)
-            : new(Utf8ResourceLimitKind.ExecutionWorkSteps, invocation.Budget.Limits.MaxWorkSteps, invocation.Budget.Steps);
+        => invocation.Budget.CreateResourceFailure();
 
     private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
     {
         resourcePolicy.Validate(paramName);
-        if (resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue)
+        if (resourcePolicy.MaxWorkingBytes.HasValue)
         {
-            throw new NotSupportedException("This profile supports execution work, result capacity and match timeout limits; depth and working-byte limits are not supported.");
+            throw new NotSupportedException("This profile supports execution work, depth, result capacity and match timeout limits; working-byte limits are not supported.");
         }
     }
 

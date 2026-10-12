@@ -109,9 +109,7 @@ internal struct PythonReScalarMatchState
     // Map neutral helper failures only after actual resource denial, without using
     // exception text. Internal kernels and PCRE2 keep their failure vocabulary.
     private readonly Utf8ResourceLimitExceededException ResourceFailure()
-        => _invocation.Budget.LimitBreach == Utf8ExecutionLimitKind.ResultBytes
-            ? new(Utf8ResourceLimitKind.ExecutionResultBytes, _invocation.Budget.Limits.MaxResultBytes, _invocation.Budget.ResultBytes)
-            : new(Utf8ResourceLimitKind.ExecutionWorkSteps, _invocation.Budget.Limits.MaxWorkSteps, _invocation.Budget.Steps);
+        => _invocation.Budget.CreateResourceFailure();
 
     private readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
         => new(Encoding.UTF8.GetString(input), _pattern, _timeout);

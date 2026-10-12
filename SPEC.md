@@ -208,12 +208,26 @@ callback context/output shaping is included. Incidental object overhead is outsi
 this model except the existing fixed output-control charges. It is neither exact GC
 allocation traffic nor a bound on matched text length, live caller retention or RSS.
 Denial reports `ExecutionResultBytes`; requested totals saturate and the first
-work/result denial remains sticky across invocation/cursor copies. Previously
+work/result/depth denial remains sticky across invocation/cursor copies. Previously
 returned results and permitted aliases stay valid. Cancellation/deadline checks
 precede covered result admission. Destination shortage remains its documented
 status; a later interruption during copying can leave a partial destination.
 
-Core and PythonRe depth/working fields still throw
+Core and PythonRe also accept `MaxDepth`, alone or with work/result caps. It bounds
+live backtracking/continuation frames, including assertion state, or pending
+alternatives in the linear closure runner. Admission precedes acquiring a new frame
+or copying/publishing a pending alternative. Denial reports `ExecutionDepth`, the
+configured cap and requested peak. Depth measures actual nesting on the selected
+route: a linear viability-table replay has no pending stack and uses no depth
+allowance. Different operations/routes may therefore need different caps. This is
+not pattern/construction depth, cumulative work, workspace/table width or a memory
+bound. Separate cursor advances keep the original invocation authority and first
+denial, while completed frame depth may fall between matches. Retained results and
+permitted aliases stay valid. Finite depth selects owned execution and still
+requires full-input strict UTF-8 validation; cancellation and the original deadline
+remain authoritative at existing checkpoints.
+
+Core and PythonRe working-byte fields still throw
 `NotSupportedException` before compilation. `MatchTimeout` defaults to
 `Regex.InfiniteMatchTimeout`. PCRE2 supports finite work/depth/working budgets under
 its existing profile contract and still rejects result-byte caps. These are staged

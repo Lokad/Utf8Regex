@@ -40,12 +40,18 @@ public sealed class Utf8ResourcePolicyTests
     public void FiniteBudgetsAreNotSupportedByCore(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
-        Assert.Throws<System.NotSupportedException>(() => new Utf8Regex("cat", System.Text.RegularExpressions.RegexOptions.None, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, policy));
+        if (workingBytes.HasValue)
+            Assert.Throws<System.NotSupportedException>(() => new Utf8Regex("cat", RegexOptions.None, Regex.InfiniteMatchTimeout, policy));
+        else
+        {
+            var regex = new Utf8Regex("cat", RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
+            Assert.Equal(policy, regex.ResourcePolicy); Assert.True(regex.IsMatch("cat"u8));
+        }
     }
     [Fact]
     public void FinitePolicyIsRejectedBeforePatternCompilation()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul, MaxDepth = 10u };
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul, MaxWorkingBytes = 1024ul };
         Assert.Throws<System.NotSupportedException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
     }
 

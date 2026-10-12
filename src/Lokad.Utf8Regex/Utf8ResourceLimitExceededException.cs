@@ -15,6 +15,8 @@ public enum Utf8ResourceLimitKind
     ExecutionWorkSteps,
     /// <summary>Cumulative modeled major result and staging capacity in one invocation.</summary>
     ExecutionResultBytes,
+    /// <summary>Live backtracking/continuation frames or pending linear alternatives in one invocation.</summary>
+    ExecutionDepth,
 }
 
 /// <summary>Reports an owned resource-admission failure, distinct from invalid syntax, no match and timeout.</summary>

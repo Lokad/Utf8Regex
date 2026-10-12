@@ -7,7 +7,10 @@ public readonly record struct Utf8ResourcePolicy
     /// <summary>Gets the maximum cumulative execution step count (units and scope depend on the profile), or <see langword="null"/> for no cap.</summary>
     public ulong? MaxWorkSteps { get; init; }
 
-    /// <summary>Gets the maximum backtracking or recursive execution depth, or <see langword="null"/> for no cap.</summary>
+    /// <summary>Gets the maximum live backtracking/continuation frames or pending linear alternatives, or <see langword="null"/> for no cap.</summary>
+    /// <remarks>Depth is measured by the selected execution route. A linear replay without a pending stack uses no depth allowance.
+    /// This bounds execution state nesting, not pattern nesting, total work, workspace/table width or process memory.
+    /// The core and Python-compatible adapter report <see cref="Utf8ResourceLimitKind.ExecutionDepth"/> on denial; PCRE2 keeps its profile failure vocabulary.</remarks>
     public uint? MaxDepth { get; init; }
 
     /// <summary>Gets the maximum metered workspace size in bytes, or <see langword="null"/> for no cap.</summary>
