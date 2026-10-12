@@ -59,4 +59,6 @@ public enum Pcre2ErrorKind
     HeapLimit,
     /// <summary>The managed profile's cumulative result-capacity limit was exceeded.</summary>
     ResultLimit,
+    /// <summary>The matching options form an invalid PCRE2 combination.</summary>
+    BadOption,
 }

@@ -474,6 +474,13 @@ By-name metadata is **name-table-first**. `CopyNameEntries(...)` and `CopyNumber
 
 Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMatches`, `Replace`, `MatchMany`) do **not** expose partial-match behavior. Partial matching is available only through `Probe(...)`. A partial probe result exposes only substring 0 plus `Mark`; it does not expose numbered or named capture groups. This matches PCRE2’s documented partial-match contract, where partial is a distinct outcome and the rest of the ovector is undefined. ([PCRE][4])
 
+PCRE2 10.47 rejects soft/hard partial matching combined with compile-time or
+match-time `EndAnchored`. `Probe` reports this invalid combination as
+`Pcre2MatchException` with `Pcre2ErrorKind.BadOption`, before driver selection;
+the token overload still observes pre-cancellation first. Non-partial end anchoring
+remains supported, including backtracking to another alternative or later candidate.
+([PCRE2 10.47 match source](https://github.com/PCRE2Project/pcre2/blob/pcre2-10.47/src/pcre2_match.c#L7098))
+
 `Utf8Pcre2ValueMatch` and `Utf8Pcre2GroupContext` use raw **reported start and end offsets** in bytes, with an exclusive end. `HasContiguousByteRange` is `true` only when `start <= end`. This is required because of `\K` semantics in positive lookahead. When `AllowLookaroundBackslashK` is `false`, the engine rejects such patterns or pattern features at compile time. When it is `true`, `Match` and `MatchDetailed` may return non-monotone offsets; `GetValueBytes()` then throws because there is no contiguous byte slice. `Utf8Pcre2ValueMatch` is therefore a `ref struct` carrier that remains tied to the input span for byte and string extraction. ([PCRE][3])
 
 `HasUtf16Projection` is `true` only when the reported match/group can be projected exactly to UTF-16 coordinates and to a `string`. This is usually true in the default profile. It can become `false` only when the caller explicitly allows `\C` and the match/group splits a UTF-8 scalar. PCRE2 documents that `\C` matches a single code unit in UTF mode and can break up multi-unit characters. ([PCRE][5])

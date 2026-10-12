@@ -561,6 +561,12 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeCore(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
         int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
+        // PCRE2 10.47 rejects partial matching with compile- or match-time
+        // ENDANCHORED before engine selection. Keep the same closed failure.
+        if (partialMode is Pcre2PartialMode.Soft or Pcre2PartialMode.Hard &&
+            ((matchOptions & Pcre2MatchOptions.EndAnchored) != 0 ||
+             (_program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0))
+            throw new Pcre2MatchException("Partial matching cannot be combined with EndAnchored.", Pcre2ErrorKind.BadOption);
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
         {
@@ -574,10 +580,11 @@ public sealed partial class Utf8Pcre2Regex
                 _program.Request, cancellationToken);
         }
 
-        // Curated partial helpers do not interpret per-operation flags. A
-        // non-partial explicit-option probe uses normal owned detailed matching.
+        // Normal detailed matching handles explicit non-partial flags and
+        // compiled end anchoring, including later candidates/alternatives.
         if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None &&
-            (partialMode != Pcre2PartialMode.None || matchOptions == Pcre2MatchOptions.None))
+            (partialMode != Pcre2PartialMode.None || matchOptions == Pcre2MatchOptions.None &&
+             (_program.Request.Options & Pcre2CompileOptions.EndAnchored) == 0))
         {
             var runner = new Pcre2PartialProbeRunner(subject, _program, NameEntries, matchOptions, cancellationToken);
             return runner.Probe(partialMode, startOffsetInBytes, _program, matchOptions);

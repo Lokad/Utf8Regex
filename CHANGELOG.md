@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 partial EndAnchored admission (0.4.0-scalar.12-dev)
+
+- Reject partial soft/hard modes combined with compile- or match-time EndAnchored
+  as `Pcre2MatchException` / `BadOption`, following PCRE2 10.47. Append the error
+  kind without changing existing ordinals; one common check covers all drivers.
+  Preserve pre-cancellation precedence and distinct resource errors. Correct valid
+  non-partial compiled end anchoring by using existing owned detailed matching for
+  later candidates and alternatives, with original limits and retained captures.
+
 ## Unreleased PCRE2 partial line/empty flags (0.4.0-scalar.11-dev)
 
 - Observe qualified NotBol/NotEol/NotEmpty/NotEmptyAtStart partial outcomes using

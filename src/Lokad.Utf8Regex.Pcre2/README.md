@@ -134,8 +134,12 @@ NotEmptyAtStart under the same authority. Empty full rejection may preserve a
 partial or permit a later full candidate. Dollar end rejection is distinct from
 absolute/end-before-final-newline assertions. Candidate growth remains scalar;
 negative-class/dot and trailing-repeat helpers now respect newline and EOF cases.
-EndAnchored, wider setting/flag combinations and broader partial coverage retain
-a separate release gate.
+Partial modes with operation or compile EndAnchored throw `Pcre2MatchException`
+with `BadOption`, matching PCRE2 10.47's admission rule. The check applies before
+driver selection; a pre-cancelled token still takes precedence. Non-partial compiled
+end anchoring uses normal owned detailed matching for later candidates and
+alternatives under the original policy. Wider setting/flag combinations and
+broader partial coverage retain a separate release gate.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native
