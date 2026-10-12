@@ -110,7 +110,6 @@ internal static class Utf8PreparedScalarExecutor
         }
         breach = Utf8SliceRunner.TryRentSlots(program.GroupCount, ref invocation, out slots);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
         return Utf8ExecutionLimitKind.None;
     }
 

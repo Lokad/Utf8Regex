@@ -163,9 +163,10 @@ internal static partial class Utf8SliceRunner
         }
 
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
-        if (!invocation.Ledger.TryReserve(bytes))
+        var breach = invocation.TryReserveWorking(bytes);
+        if (breach != Utf8ExecutionLimitKind.None)
         {
-            return Utf8ExecutionLimitKind.WorkingBytes;
+            return breach;
         }
 
         try
@@ -1473,10 +1474,9 @@ internal static partial class Utf8SliceRunner
         {
             var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(program.RepeatCount) * 2
                 + Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
-            if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-            _reservation = bytes;
-            var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            var breach = invocation.TryReserveWorking(bytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
+            _reservation = bytes;
             if (program.RepeatCount != 0)
             {
                 breach = invocation.TryChargeInputStep();
@@ -1687,15 +1687,14 @@ internal static partial class Utf8SliceRunner
             var temporaryBytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
             var resultAdmission = invocation.Budget.TryChargeResultBytes(checked(ownedBytes + temporaryBytes));
             if (resultAdmission != Utf8ExecutionLimitKind.None) return resultAdmission;
-            if (!invocation.Ledger.TryReserve(checked(ownedBytes + temporaryBytes))) return Utf8ExecutionLimitKind.WorkingBytes;
+            var breach = invocation.TryReserveWorking(checked(ownedBytes + temporaryBytes));
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
             int[]? rentedCounts = null;
             int[]? rentedOpen = null;
             var retain = invocation.Ledger.IsUnlimited;
             var published = false;
             try
             {
-                var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 captureStarts = new int[groups][];
@@ -1734,10 +1733,9 @@ internal static partial class Utf8SliceRunner
                 }
                 breach = invocation.Budget.TryChargeResultBytes(captureBytes);
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (!invocation.Ledger.TryReserve(captureBytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-                ownedBytes = checked(ownedBytes + captureBytes);
-                breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                breach = invocation.TryReserveWorking(captureBytes);
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
+                ownedBytes = checked(ownedBytes + captureBytes);
                 for (var group = 0; group < groups; group++)
                 {
                     if ((group & 255) == 0 && (breach = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return breach;
@@ -1779,10 +1777,9 @@ internal static partial class Utf8SliceRunner
                         // held. Copy in bounded blocks, then transfer ownership.
                         breach = invocation.Budget.TryChargeResultBytes(bytes);
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
-                        if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-                        ownedBytes += bytes;
-                        breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                        breach = invocation.TryReserveWorking(bytes);
                         if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        ownedBytes += bytes;
                         var starts = counts[group] == 0 ? [] : new int[counts[group]];
                         var lengths = counts[group] == 0 ? [] : new int[counts[group]];
                         for (var offset = 0; offset < counts[group];)
@@ -1860,12 +1857,11 @@ internal static partial class Utf8SliceRunner
                 if (replaceTable && capacity <= chunk) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
                 var tableBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(capacity) : 0;
                 var bytes = checked(tableBytes + Utf8ConstructionBudget.ArrayBytes<T>(chunkCapacity));
-                if (!invocation.Ledger.TryReserve(bytes)) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
+                breach = invocation.TryReserveWorking(bytes);
+                if (breach != Utf8ExecutionLimitKind.None) return false;
                 var adopted = false;
                 try
                 {
-                    breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-                    if (breach != Utf8ExecutionLimitKind.None) return false;
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return false;
                     var candidate = replaceTable ? new T[capacity][] : tables ?? throw new InvalidOperationException("Live slice stack table is missing.");

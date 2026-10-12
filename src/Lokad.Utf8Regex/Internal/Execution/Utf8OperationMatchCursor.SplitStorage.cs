@@ -16,7 +16,6 @@ internal ref partial struct Utf8OperationMatchCursor
             ? new Utf8OperationMatchCursor(input, map, invocation)
             : new Utf8OperationMatchCursor(program, input, map, invocation);
         cursor._retainBoundaryMap = true;
-        cursor._sliceInvocation.Budget.TryNoteWorkingBytes(cursor._sliceInvocation.Ledger.ReservedBytes);
         return cursor;
     }
 

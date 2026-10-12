@@ -201,6 +201,6 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, zero));
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex(new byte[] { 255 }, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, zero));
         var unsupported = new Utf8ResourcePolicy { MaxResultBytes = 1000000, MaxWorkingBytes = 1 };
-        Assert.Throws<NotSupportedException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, unsupported));
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, unsupported));
     }
 }

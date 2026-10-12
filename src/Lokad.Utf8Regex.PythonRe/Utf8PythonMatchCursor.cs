@@ -58,7 +58,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     /// <returns>True for a new match; false after exhaustion.</returns>
     /// <exception cref="OperationCanceledException">The original invocation token was canceled.</exception>
     /// <exception cref="System.Text.RegularExpressions.RegexMatchTimeoutException">The original invocation deadline expired.</exception>
-    /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth or result-capacity budget was exceeded.</exception>
+    /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth, working or result-capacity budget was exceeded.</exception>
     /// <exception cref="InvalidOperationException">The cursor previously failed or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor has been disposed.</exception>
     public bool MoveNext()

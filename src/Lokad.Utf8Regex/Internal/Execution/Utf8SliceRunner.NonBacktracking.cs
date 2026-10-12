@@ -134,10 +134,9 @@ internal static partial class Utf8SliceRunner
                 + Utf8ConstructionBudget.ArrayBytes<int>(cells) * 3
                 + Utf8ConstructionBudget.ArrayBytes<int>(RegisterCount) * 2
                 + Utf8ConstructionBudget.ArrayBytes<bool>(states));
-            if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-            Reserved = bytes;
-            var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            var breach = invocation.TryReserveWorking(bytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
+            Reserved = bytes;
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             Current = new(states, RegisterCount);
@@ -304,12 +303,11 @@ internal static partial class Utf8SliceRunner
             + (ulong)participants * Utf8ConstructionBudget.ArrayBytes<int>(1) * 2);
         var resultAdmission = invocation.Budget.TryChargeResultBytes(bytes);
         if (resultAdmission != Utf8ExecutionLimitKind.None) return resultAdmission;
-        if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+        var admission = invocation.TryReserveWorking(bytes);
+        if (admission != Utf8ExecutionLimitKind.None) return admission;
         var published = false;
         try
         {
-            var admission = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-            if (admission != Utf8ExecutionLimitKind.None) return admission;
             if (bytes != 0 && (admission = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return admission;
             var resultStarts = captureStarts.Length == 0 ? [] : new int[captureStarts.Length][];
             var resultLengths = captureStarts.Length == 0 ? [] : new int[captureStarts.Length][];

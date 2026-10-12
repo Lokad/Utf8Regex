@@ -16,7 +16,7 @@ public sealed partial class Utf8PythonRegex
         => CreateMatchCursor(input, startOffsetInBytes, CancellationToken.None);
 
     /// <summary>Creates an incremental cursor retaining one cumulative invocation token and deadline.</summary>
-    /// <remarks>Work and result capacity are cumulative through validation, moves and snapshots. Depth bounds live backtracking/continuation frames; working-byte limits remain unsupported. Result traffic is never refunded. Sequential advances may cross asynchronous host waits.</remarks>
+    /// <remarks>Work and result capacity are cumulative through validation, moves and snapshots. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity and growth overlap. Exclusive scratch releases synchronously; result traffic is never refunded. Sequential advances may cross asynchronous host waits.</remarks>
     /// <exception cref="OperationCanceledException">The invocation token is canceled.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The byte offset is outside the subject or inside a scalar.</exception>
     /// <exception cref="ArgumentException">The subject is malformed UTF-8.</exception>

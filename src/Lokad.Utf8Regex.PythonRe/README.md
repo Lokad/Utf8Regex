@@ -13,7 +13,7 @@ Version 0.4.0-scalar.1 is an experimental integration candidate with a distinct 
 - Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
 - Global operations: admitted scalar programs serve captured iteration, Python empty-match retry, substitution and split over the original UTF-8 bytes, with one operation deadline/token and owned capture snapshots.
 - Case folding: admitted Python ASTs lower to the shared UTF-8 scalar VM with owned CPython 3.13.2 / Unicode 15.1.0 data. Literal classes include extra fold partners; references use lexical simple lowercase, with ASCII scopes restricted to ASCII letters. The four formerly skipped case-folding regressions are active.
-- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth` and `MaxResultBytes` select owned scalar execution. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Working-byte limits remain unsupported; category-version reconciliation remains unfinished.
+- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes` select owned scalar execution. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Working bytes admit modeled major active arrays/output controls and growth overlap; exclusive scratch releases synchronously. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Incidental owner metadata and caller-retained results have separate working scope; category-version reconciliation remains unfinished.
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.
@@ -80,19 +80,19 @@ validation, each move and required snapshot publication. Result capacity covers
 modeled major arrays/text, coordinate maps and staging/output growth, with no refunds.
 Depth caps live backtracking/continuation frames and can be combined with these
 cumulative limits. Exhaustion throws `Utf8ResourceLimitExceededException` with
-`ExecutionWorkSteps`, `ExecutionDepth` or `ExecutionResultBytes`; faulted cursors
+`ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; faulted cursors
 release scratch immediately. Separate calls get separate counters. Work units are
 bounded engine/checkpoint steps and may change between releases. Compilation and
 replacement-plan preparation use separate construction backstops. Arbitrary user
 callback execution and later standalone result getters are outside this cap;
 encoding/copying callback returns is charged. Cancellation and deadlines still apply.
-Finite working-byte policies remain unsupported. Depth does not bound pattern
+Working bytes bound modeled major active capacity and old/new overlap, with reusable exclusive scratch and invocation-long published cursor credits. Working publication does not bound caller retention; incidental owner/deadline metadata is outside this model. Depth does not bound pattern
 nesting, workspace, result size or cumulative work. Result capacity traffic
 has separate scope from live caller retention; these controls do not complete safe defaults.
 
 ```csharp
 var bounded = new Utf8PythonRegex("(?P<word>\\w+)", PythonReCompileOptions.None,
-    TimeSpan.FromSeconds(1), new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1_024, MaxResultBytes = 1_048_576 });
+    TimeSpan.FromSeconds(1), new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1_024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
 ```
 
 Last-capture completion metadata remains an open compatibility item in PLAN.md.

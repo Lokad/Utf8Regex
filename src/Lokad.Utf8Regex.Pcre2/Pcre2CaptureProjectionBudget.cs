@@ -35,14 +35,7 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
     internal void ReserveWorking(ulong bytes)
     {
         if (!_isSlice) { _vm.ReserveWorking(bytes); return; }
-        if (!_slice.Ledger.TryReserve(bytes))
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
-        var breach = _slice.Budget.TryNoteWorkingBytes(_slice.Ledger.ReservedBytes);
-        if (breach != Utf8ExecutionLimitKind.None)
-        {
-            _slice.Ledger.Release(bytes);
-            Pcre2SliceDriver.ThrowIfSliceBreached(breach);
-        }
+        Pcre2SliceDriver.ThrowIfSliceBreached(_slice.TryReserveWorking(bytes));
     }
 
     public void ReleaseWorking(ulong bytes)

@@ -13,7 +13,11 @@ public readonly record struct Utf8ResourcePolicy
     /// The core and Python-compatible adapter report <see cref="Utf8ResourceLimitKind.ExecutionDepth"/> on denial; other profiles keep their failure vocabulary.</remarks>
     public uint? MaxDepth { get; init; }
 
-    /// <summary>Gets the maximum metered workspace size in bytes, or <see langword="null"/> for no cap.</summary>
+    /// <summary>Gets the maximum modeled active working capacity in bytes, or <see langword="null"/> for no cap.</summary>
+    /// <remarks>The core and Python-compatible adapter admit major arrays and output controls before acquisition, including old/new growth overlap.
+    /// Exclusive scratch releases synchronously; published copied-cursor maps/tables remain charged for the invocation even after collection.
+    /// Borrowed subjects/programs, incidental owner/object metadata, preparation and caller-retained results have separate scope.
+    /// This is a conservative covered-capacity bound, not exact GC traffic, live caller retention or process memory. Other profiles retain their own working scope.</remarks>
     public ulong? MaxWorkingBytes { get; init; }
 
     /// <summary>Gets the maximum cumulative modeled result/staging capacity in bytes, or <see langword="null"/> for no cap.</summary>

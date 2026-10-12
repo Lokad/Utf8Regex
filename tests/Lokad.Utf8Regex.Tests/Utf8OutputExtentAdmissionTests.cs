@@ -158,8 +158,18 @@ public sealed class Utf8OutputExtentAdmissionTests
             if (allow) { writer.MarkPiece(); Assert.Equal(32, Pieces(writer)!.Length); }
             else { Assert.Throws<InvalidOperationException>(() => writer.MarkPiece()); Assert.Same(original, Pieces(writer)); }
             Assert.Equal(controls + 13 + 48 + (allow ? 160UL : 96UL), scope.Invocation.Ledger.ReservedBytes);
-            writer.ReversePieces();
-            Assert.Equal("x"u8.ToArray(), writer.ToArray());
+            if (allow)
+            {
+                writer.ReversePieces();
+                Assert.Equal("x"u8.ToArray(), writer.ToArray());
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => writer.ReversePieces());
+                Assert.Throws<InvalidOperationException>(() => writer.ToArray());
+                Assert.Same(original, Pieces(writer));
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, scope.Invocation.Budget.LimitBreach);
+            }
         }
         finally { scope.Release(); }
         Assert.Equal(13UL, scope.Invocation.Ledger.ReservedBytes);

@@ -99,13 +99,12 @@ internal sealed class Utf8NonBacktrackingSearchState
         if (count > Array.MaxLength || cells > Array.MaxLength) return Utf8ExecutionLimitKind.WorkingBytes;
         var reservation = checked(Utf8ConstructionBudget.ArrayBytes<int>((int)count)
             + Utf8ConstructionBudget.ArrayBytes<ulong>((int)cells));
-        if (!invocation.Ledger.TryReserve(reservation)) return Utf8ExecutionLimitKind.WorkingBytes;
+        var admission = invocation.TryReserveWorking(reservation);
+        if (admission != Utf8ExecutionLimitKind.None) return admission;
         var published = false;
         try
         {
-            var breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            breach = invocation.TryChargeInputStep();
+            var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var boundaries = new int[(int)count];
             var bits = new ulong[(int)cells];
@@ -208,14 +207,10 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if (CanMatch(boundary, 0)) break;
             }
             if (boundary == _boundaries.Length) return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
-            reservation = Utf8ConstructionBudget.ArrayBytes<int>(program.NonBacktrackingCaptureOpeningCount);
-            if (!invocation.Ledger.TryReserve(reservation))
-            {
-                reservation = 0;
-                return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.WorkingBytes);
-            }
-            var admission = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+            var bytes = Utf8ConstructionBudget.ArrayBytes<int>(program.NonBacktrackingCaptureOpeningCount);
+            var admission = invocation.TryReserveWorking(bytes);
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+            reservation = bytes;
             admission = invocation.TryChargeInputStep();
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
             var openings = program.NonBacktrackingCaptureOpeningCount == 0 ? [] : new int[program.NonBacktrackingCaptureOpeningCount];

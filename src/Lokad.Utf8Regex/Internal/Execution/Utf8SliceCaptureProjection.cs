@@ -28,12 +28,10 @@ internal struct Utf8SliceCaptureProjection
             reservation = checked(reservation + Utf8ConstructionBudget.ArrayBytes<int>(byteStarts[group].Length) * 2);
         }
         Utf8SliceBufferWork.ChargeResultBytes(reservation, ref invocation);
-        if (!invocation.Ledger.TryReserve(reservation))
+        if (invocation.TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned capture projection exceeded the invocation storage budget.");
         try
         {
-            if (invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes) != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Owned capture projection exceeded the invocation storage budget.");
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             var projection = new Utf8SliceCaptureProjection
             {

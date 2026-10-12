@@ -49,12 +49,11 @@ internal readonly partial struct Utf8BoundaryMap
             + Utf8ConstructionBudget.ArrayBytes<uint>((int)bitCount));
         breach = invocation.Budget.TryChargeResultBytes(bytes);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+        breach = invocation.TryReserveWorking(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
         var transferred = false;
         try
         {
-            breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var offsets = GC.AllocateUninitializedArray<int>((int)offsetCount);

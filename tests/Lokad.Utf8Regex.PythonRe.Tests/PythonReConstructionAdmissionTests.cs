@@ -14,9 +14,11 @@ public sealed class PythonReConstructionAdmissionTests
         Assert.Equal(1ul, failure.Requested);
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
-        Assert.Throws<NotSupportedException>(() =>
+        var working = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
                 new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, working.ResourceKind);
+        Assert.Equal(3UL, working.Requested);
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         var acceptedPolicy = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
@@ -121,9 +123,11 @@ public sealed class PythonReConstructionAdmissionTests
             49152 + Utf8Regex.ProgramFixedMetadataBytes);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
-        Assert.Throws<NotSupportedException>(() =>
+        var workingUtf8 = Assert.Throws<ArgumentException>(() =>
             new Utf8PythonRegex(invalid, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
                 new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
+        Assert.Equal("patternUtf8", workingUtf8.ParamName);
+        Assert.IsType<System.Text.DecoderFallbackException>(workingUtf8.InnerException);
         var utf8 = Assert.Throws<ArgumentException>(() => new Utf8PythonRegex(invalid));
         Assert.Equal("patternUtf8", utf8.ParamName);
         Assert.IsType<System.Text.DecoderFallbackException>(utf8.InnerException);

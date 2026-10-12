@@ -152,8 +152,8 @@ borrowed span/value APIs require no new disposal contract. These payloads are ex
 managed arrays; no pooled/native cleanup is deferred or removed. Split string
 getters decode only their selected UTF-8 slice and retain no prepared decoded
 subject or loan attachment. Lazy getters and fixed accounting metadata retain
-their documented separate scope. Public core/Python working-byte admission remains
-unfinished and is not established by this internal lifetime simplification.
+their documented separate scope. Public working-byte admission is qualified
+separately from this lifetime simplification; its covered contract is below.
 
 PythonRe's incremental `CreateMatchCursor(ReadOnlyMemory<byte>)` uses an explicit
 reference owner alongside the copied value-cursor contract. Aliases share its
@@ -231,8 +231,30 @@ permitted aliases stay valid. Finite depth selects owned execution and still
 requires full-input strict UTF-8 validation; cancellation and the original deadline
 remain authoritative at existing checkpoints.
 
-Core and PythonRe working-byte fields still throw
-`NotSupportedException` before compilation. `MatchTimeout` defaults to
+Core and PythonRe accept `MaxWorkingBytes`, alone or with other supported caps.
+It bounds conservative modeled active major array/text and output-control capacity:
+slot/repeat/frame state, captures/projection, coordinate maps, linear tables,
+temporary discovery/result buffers and output staging. Covered acquisitions admit
+headers/rounding and old/new growth overlap before allocation. Exclusive scratch
+releases synchronously; published copied-cursor maps/tables remain charged for the
+shared invocation. Logical reservations can exceed physically live payloads and
+deny earlier. Required result publication can release working capacity; cumulative
+result-capacity traffic is never refunded. Owned Python cursors release their
+exclusive discovery/shaping state on EOF, failure or Dispose.
+
+Denial reports `ExecutionWorkingBytes`, the configured maximum and saturating
+requested aggregate capacity. Denied reservations acquire nothing and leave
+existing bytes unchanged. First work/depth/working/result denial is sticky. Work
+and the original token/deadline remain shared across phases and cursor copies.
+Successful matching still validates the complete strict UTF-8 subject. Array/CLR
+representability failures are separate capacity failures, not manufactured
+configured-limit breaches. Borrowed subjects/programs, construction/replacement
+preparation, incidental owner/deadline/object overhead, arbitrary callback
+allocations, returned caller retention and later standalone getters have separate
+scope. Covered output controls retain their fixed charges. This is neither exact
+GC traffic/heap usage nor a caller live-retention or process-RSS limit.
+
+`MatchTimeout` defaults to
 `Regex.InfiniteMatchTimeout`. PCRE2 supports finite work/depth/working budgets under
 its existing profile contract and still rejects result-byte caps. These are staged
 controls, not completion of common policies, legacy ownership or safe-default gates.

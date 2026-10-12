@@ -61,10 +61,10 @@ internal ref struct Utf8CandidatePortfolioCursor
                 var bytes = checked(Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchState>(capacity) +
                     Utf8ConstructionBudget.ArrayBytes<Utf8StructuralCandidate>(capacity) +
                     Utf8ConstructionBudget.ArrayBytes<bool>(capacity));
-                if (!invocation.Ledger.TryReserve(bytes))
-                    throw new InvalidOperationException("Scalar candidate portfolio exceeded WorkingBytes.");
+                var admission = invocation.TryReserveWorking(bytes);
+                if (admission != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException($"Scalar candidate portfolio exceeded {admission}.");
                 _reservedBytes = bytes;
-                invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
                 var retain = invocation.Ledger.IsUnlimited;
                 Check();
                 _states = Utf8ExactStatePool<Utf8StructuralSearchState>.Rent(capacity, retain);

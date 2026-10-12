@@ -216,7 +216,9 @@ public sealed class Utf8SliceByteEvaluatorTests
     public void OutputAdmissionCoversControlsGrowthOverlapAndFinalResults()
     {
         const ulong control = Utf8SliceByteOutputScope.ControlBytes;
-        Assert.Throws<InvalidOperationException>(() => Utf8SliceByteOutputScope.Enter(new(0, 0, control - 1), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var deniedControl = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceByteOutputScope.Enter(new(0, 0, control - 1), Regex.InfiniteMatchTimeout, CancellationToken.None));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, deniedControl.ResourceKind);
+        Assert.Equal(control - 1, deniedControl.Limit); Assert.Equal(control, deniedControl.Requested);
         Assert.Null(Utf8SliceByteOutputScope.Current);
         var scope = Utf8SliceByteOutputScope.Enter(new(0, 0, control), Regex.InfiniteMatchTimeout, CancellationToken.None);
         try
@@ -234,7 +236,11 @@ public sealed class Utf8SliceByteEvaluatorTests
             buffer.Append("abcdefghijklmnop"u8);
             Assert.Throws<InvalidOperationException>(() => buffer.Append("q"u8));
             Assert.Equal(control * 2 + 48, scope.Invocation.Ledger.ReservedBytes);
-            Assert.Equal("abcdefghijklmnop"u8.ToArray(), buffer.ToArray());
+            Assert.Throws<InvalidOperationException>(() => buffer.ToArray());
+            var retainedBytes = (byte[])typeof(Utf8SliceByteOutputBuffer)
+                .GetField("_buffer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(buffer)!;
+            Assert.Equal("abcdefghijklmnop"u8.ToArray(), retainedBytes);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, scope.Invocation.Budget.LimitBreach);
         }
         finally { scope.Release(); }
         Assert.Equal(0UL, scope.Invocation.Ledger.ReservedBytes);

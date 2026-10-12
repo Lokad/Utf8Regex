@@ -106,6 +106,7 @@ internal struct Utf8ExecutionBudget
             Utf8ExecutionLimitKind.WorkSteps => new(Utf8ResourceLimitKind.ExecutionWorkSteps, Limits.MaxWorkSteps, Steps),
             Utf8ExecutionLimitKind.ResultBytes => new(Utf8ResourceLimitKind.ExecutionResultBytes, Limits.MaxResultBytes, ResultBytes),
             Utf8ExecutionLimitKind.Depth => new(Utf8ResourceLimitKind.ExecutionDepth, Limits.MaxDepth, PeakDepth),
+            Utf8ExecutionLimitKind.WorkingBytes => new(Utf8ResourceLimitKind.ExecutionWorkingBytes, Limits.MaxWorkingBytes, PeakWorkingBytes),
             _ => throw new InvalidOperationException("No public execution resource denial is recorded."),
         };
 
@@ -116,8 +117,17 @@ internal struct Utf8ExecutionBudget
             PeakWorkingBytes = bytes;
         }
 
-        return Limits.MaxWorkingBytes != 0 && bytes > Limits.MaxWorkingBytes
-            ? Utf8ExecutionLimitKind.WorkingBytes
-            : Utf8ExecutionLimitKind.None;
+        if (LimitBreach == Utf8ExecutionLimitKind.None && Limits.MaxWorkingBytes != 0 && bytes > Limits.MaxWorkingBytes)
+            LimitBreach = Utf8ExecutionLimitKind.WorkingBytes;
+        return LimitBreach;
+    }
+
+    // Aggregate arithmetic/ledger admission failed before acquisition. Array
+    // representability guards keep their separate capacity-failure path.
+    internal Utf8ExecutionLimitKind DenyWorkingBytes(ulong requested)
+    {
+        if (requested > PeakWorkingBytes) PeakWorkingBytes = requested;
+        if (LimitBreach == Utf8ExecutionLimitKind.None) LimitBreach = Utf8ExecutionLimitKind.WorkingBytes;
+        return LimitBreach;
     }
 }

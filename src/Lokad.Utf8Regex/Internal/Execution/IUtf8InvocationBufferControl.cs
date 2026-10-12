@@ -16,12 +16,7 @@ internal readonly ref struct Utf8InvocationBufferControl(ref Utf8SliceInvocation
     public bool CanRetainWorkspace => _invocation.Ledger.IsUnlimited;
 
     public Utf8ExecutionLimitKind TryReserveWorking(ulong bytes)
-    {
-        if (!_invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
-        var breach = _invocation.Budget.TryNoteWorkingBytes(_invocation.Ledger.ReservedBytes);
-        if (breach != Utf8ExecutionLimitKind.None) _invocation.Ledger.Release(bytes);
-        return breach;
-    }
+        => _invocation.TryReserveWorking(bytes);
 
     public void ReleaseWorking(ulong bytes) => _invocation.Ledger.Release(bytes);
     public Utf8ExecutionLimitKind TryChargeWorkspaceStep()

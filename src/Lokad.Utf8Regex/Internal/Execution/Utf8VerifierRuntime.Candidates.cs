@@ -23,12 +23,12 @@ internal sealed partial class Utf8VerifierRuntime
             return Utf8ExecutionLimitKind.None;
 
         var bytes = checked(2 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
-        if (!invocation.Ledger.TryReserve(bytes)) return Utf8ExecutionLimitKind.WorkingBytes;
+        breach = invocation.TryReserveWorking(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
         int[]? starts = null;
         int[]? ends = null;
         try
         {
-            invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             starts = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.Ledger.IsUnlimited);

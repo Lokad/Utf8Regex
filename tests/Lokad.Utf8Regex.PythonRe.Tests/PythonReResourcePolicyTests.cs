@@ -38,17 +38,10 @@ public sealed class PythonReResourcePolicyTests
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 100 },
             _ => new Utf8ResourcePolicy { MaxDepth = 100, MaxResultBytes = 100 },
         };
-        if (policy.MaxWorkingBytes.HasValue)
-        {
-            Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
-            Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
-        }
-        else
-        {
-            var text = new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy);
-            var bytes = new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy);
-            Assert.Equal(policy, text.ResourcePolicy); Assert.True(text.IsMatch("cat"u8)); Assert.True(bytes.IsMatch("cat"u8));
-        }
+        var text = new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy);
+        var bytes = new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy);
+        Assert.Equal(policy, text.ResourcePolicy);
+        Assert.True(text.IsMatch("cat"u8)); Assert.True(bytes.IsMatch("cat"u8));
     }
 
     [Fact]
@@ -61,7 +54,7 @@ public sealed class PythonReResourcePolicyTests
     public void FinitePolicyIsRejectedBeforePatternCompilation()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 1024ul };
-        Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
     }
 
     [Fact]

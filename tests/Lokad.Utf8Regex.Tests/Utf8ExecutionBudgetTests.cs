@@ -87,6 +87,11 @@ public sealed class Utf8ExecutionBudgetTests
         Assert.Equal(Utf8ExecutionLimitKind.None, budget.TryNoteWorkingBytes(1024));
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, budget.TryNoteWorkingBytes(1025));
         Assert.Equal(1025UL, budget.PeakWorkingBytes);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, budget.TryNoteWorkingBytes(1));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, budget.TryChargeStep());
+        var failure = budget.CreateResourceFailure();
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+        Assert.Equal(1024UL, failure.Limit); Assert.Equal(1025UL, failure.Requested);
     }
 
     [Fact]

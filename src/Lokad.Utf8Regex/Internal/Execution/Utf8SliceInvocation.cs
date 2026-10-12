@@ -69,6 +69,21 @@ internal struct Utf8SliceInvocation
 
     internal bool IsUnmetered => Budget.IsUnmetered && Ledger.IsUnlimited;
 
+    // One checked admission for major capacity, including old/new overlap.
+    // A denied request updates the existing peak/first-failure authority but
+    // never changes outstanding bytes or acquires the requested payload.
+    internal Utf8ExecutionLimitKind TryReserveWorking(ulong bytes)
+    {
+        Budget.ThrowIfCancellationRequested();
+        Budget.CheckDeadline();
+        if (Budget.LimitBreach != Utf8ExecutionLimitKind.None) return Budget.LimitBreach;
+        var held = Ledger.ReservedBytes;
+        var requested = bytes > ulong.MaxValue - held ? ulong.MaxValue : held + bytes;
+        var breach = Budget.TryNoteWorkingBytes(requested);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        return Ledger.TryReserve(bytes) ? Utf8ExecutionLimitKind.None : Budget.DenyWorkingBytes(requested);
+    }
+
     internal Utf8ExecutionLimitKind TryChargeStep()
     {
         var breach = Budget.TryChargeStep();

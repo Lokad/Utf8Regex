@@ -169,7 +169,7 @@ class Utf8ResourceLimitExceededException
   property UInt64 Limit { get; }
   property UInt64 Requested { get; }
   property Utf8ResourceLimitKind ResourceKind { get; }
-enum Utf8ResourceLimitKind { ConstructionInstructionCapacity, ConstructionBytes, ConstructionWorkSteps, ConstructionDepth, ExecutionWorkSteps, ExecutionResultBytes, ExecutionDepth }
+enum Utf8ResourceLimitKind { ConstructionInstructionCapacity, ConstructionBytes, ConstructionWorkSteps, ConstructionDepth, ExecutionWorkSteps, ExecutionResultBytes, ExecutionDepth, ExecutionWorkingBytes }
 struct Utf8ResourcePolicy
   property Nullable<UInt32> MaxDepth { get; set; }
   property Nullable<UInt64> MaxResultBytes { get; set; }

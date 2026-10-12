@@ -104,12 +104,10 @@ internal static partial class Utf8SliceRunner
                         if (depthBreach != Utf8ExecutionLimitKind.None)
                             return new(false, -1, depthBreach, null, null);
                         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(body.RepeatCount) * 2);
-                        if (!invocation.Ledger.TryReserve(bytes))
-                            return new(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
-                        nextReservation = bytes;
-                        breach = invocation.Budget.TryNoteWorkingBytes(invocation.Ledger.ReservedBytes);
+                        breach = invocation.TryReserveWorking(bytes);
                         if (breach != Utf8ExecutionLimitKind.None)
                             return new(false, -1, breach, null, null);
+                        nextReservation = bytes;
                         if (body.RepeatCount != 0)
                         {
                             breach = invocation.TryChargeInputStep();
