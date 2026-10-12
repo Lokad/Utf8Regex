@@ -77,7 +77,7 @@ public sealed partial class Utf8Pcre2Regex
         Utf8SliceByteOutputScope? scope = null;
         try
         {
-            if (_program.Operations.Replace is Pcre2SliceDirectProgram slice && matchOptions == Pcre2MatchOptions.None)
+            if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
                 return ReplaceCallbackWithInvocation(input, slice, startOffsetInBytes, matchOptions, token, state, expansion, text);
 
             if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram captured &&
@@ -113,9 +113,6 @@ public sealed partial class Utf8Pcre2Regex
         int startOffsetInBytes, Pcre2MatchOptions matchOptions, ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
-        if (_program.Operations.Replace is Pcre2SliceDirectProgram slice && slice.SliceProgram.GroupCount > 0)
-            return false;
-
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var cursor))
             return false;
@@ -162,10 +159,15 @@ public sealed partial class Utf8Pcre2Regex
         {
             scope = Utf8SliceByteOutputScope.Enter(invocation);
             var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);
-            if (program is Pcre2BacktrackingDirectProgram backtracking)
+            // Explicit options use the slice shell's existing native program.
+            // Its detailed cursor owns the actual global yield: querying again
+            // would lose the empty-retry and original-start dispositions.
+            var backtracking = program is Pcre2BacktrackingDirectProgram native ? native.Program
+                : matchOptions != Pcre2MatchOptions.None ? ((Pcre2SliceDirectProgram)program).Fallback : null;
+            if (backtracking is not null)
             {
                 var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, scope.Invocation, collectDiagnostics: false);
-                ReplaceBacktrackingCallback(input, backtracking.Program, startOffsetInBytes, matchOptions, budget, ref output);
+                ReplaceBacktrackingCallback(input, backtracking, startOffsetInBytes, matchOptions, budget, ref output);
                 return output.Complete(text);
             }
 

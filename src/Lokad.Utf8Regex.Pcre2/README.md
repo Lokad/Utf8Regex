@@ -95,9 +95,12 @@ diagnostics and bounded state stacks remain, with scalar-slice diagnostic hooks
 excluded from native steps. Fixed enforcement metadata has separate scope.
 
 Work units and enforcement depend on the selected managed route. Owned slice
-template replacement and callback replacement with `None` match options use one
-cumulative invocation from discovery through capture replay, output growth and
-final copying. Legacy backtracking callbacks with captures or suppressed unreset
+template replacement with `None` match options and owned slice callbacks with any
+match options use one cumulative invocation from discovery through capture
+projection, output growth and final copying. Explicit-option slice callbacks use
+the retained native program's detailed cursor, preserving each yielded capture and
+the original empty/nonempty retry disposition without a second match query. Legacy
+backtracking callbacks with captures or suppressed unreset
 empty matches also share that invocation, including explicit match options. Their
 existing detailed cursor supplies captures and MARK without a separate match query;
 native VM steps retain their cadence and diagnostic meaning. The unchanged-subject
@@ -125,7 +128,7 @@ overlap. Capacity charges can differ from the former copied-byte result followed
 by detached decoding; final text work and capacity are now covered.
 
 Initial validation/preparation, capture-free optimized replacement routes, legacy
-fixed-template output and explicit-option slice callbacks still have separate
+fixed-template output and core-foundation callbacks still have separate
 enforcement scopes. These qualified producers do not establish a common
 operation-wide policy.
 The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and

@@ -562,8 +562,12 @@ units, step polling cadence, diagnostic meaning and bounded stacks remain; nativ
 steps do not invoke scalar-slice diagnostic hooks. Fixed enforcement metadata is
 outside modeled working payload and this is not an exact CLR heap or RSS bound.
 
-Owned slice template replacement and callback replacement with `None` match options
-share one discovery invocation with capture replay and output building. Legacy
+Owned slice template replacement with `None` match options and owned slice callbacks
+with any match options share one discovery invocation with capture projection and
+output building. Explicit-option slice callbacks use the retained native program's
+detailed cursor. Their captures describe the actual global yield, including a
+nonempty retry at the same position and the original not-empty-at-start disposition;
+they do not perform a fresh first-match query at the reported start. Legacy
 backtracking callbacks with captures or suppressed unreset empty matches also share
 that invocation, including explicit match options. Their existing
 detailed cursor supplies captures and MARK without a second match query, preserving
@@ -582,7 +586,7 @@ subject is borrowed while its returned string is admitted. Charges can differ fr
 the former byte-copy-plus-detached-decode path; final text work and capacity are now
 covered. These modeled charges do not bound caller retention or RSS. Initial subject
 validation/preparation, capture-free optimized replacement, legacy fixed-template
-output and explicit-option slice callbacks retain separate scopes; this does not
+output and core-foundation callbacks retain separate scopes; this does not
 qualify common operation-wide or result-byte control.
 
 ```csharp
