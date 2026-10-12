@@ -4,7 +4,7 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-Version 0.4.0-scalar.2 is a core/PythonRe integration candidate with finite invocation work, depth, working-capacity and result-capacity policies, authoritative capture completion and an explicitly owned persistent cursor. Use its qualified immutable feed and provenance manifest. Public construction/live-retention controls, safe defaults, complete category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently.
+Version 0.4.0-scalar.3 is a core/PythonRe integration candidate with finite invocation work, depth, working-capacity and result-capacity policies, authoritative capture completion and an explicitly owned persistent cursor. Use its qualified immutable feed and provenance manifest. Public construction/live-retention controls, safe defaults, complete category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently.
 
 ## Support Scope
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0-scalar.3 core/PythonRe candidate
+
+- Preserve the scalar.2 matching, capture-completion, cursor, cancellation and
+  finite invocation contracts under a new immutable package identity.
+- Reuse the metered native counter for qualified exact-literal Count instead
+  of renting unused VM capture slots. Work/validation/search share the original
+  invocation; offset maps remain admitted. Route-dependent depth/working needs
+  can be lower; other semantic shapes retain their qualified route.
+- Replace two fixed-buffer unchecked construction reads with checked span
+  reads that generate identical Release instructions. Hot vector-search and
+  short-literal conversions remain deferred on measured cost/code-generation
+  evidence; preserve SIMD, allocations and Unsafe.SizeOf<T>().
+- Qualify exact core/PythonRe package bytes independently of PCRE2. Existing
+  candidates remain unchanged; local designation does not publish packages or
+  promote downstream dependencies. Common construction/live-retention policies,
+  safe defaults and broader profile acceptance remain unfinished.
+
 ## 0.4.0-scalar.2 core/PythonRe candidate
 
 - Accept positive finite invocation work, execution depth, modeled working
