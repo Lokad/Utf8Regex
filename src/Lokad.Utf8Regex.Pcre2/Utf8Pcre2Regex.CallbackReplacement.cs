@@ -22,8 +22,6 @@ public sealed partial class Utf8Pcre2Regex
             => writer.Append(evaluator(in match, ref state).AsSpan());
     }
 
-    private readonly record struct Pcre2CallbackReplacementResult(string Text, byte[] Bytes);
-
     // Every route borrows the same output scope. Default writers and writer
     // copies created in a callback join it; discarded identities are released
     // after the callback and nested replacements restore their caller's scope.
@@ -61,7 +59,7 @@ public sealed partial class Utf8Pcre2Regex
             _position = match.EndOffsetInBytes;
         }
 
-        internal Pcre2CallbackReplacementResult Complete(bool text)
+        internal Pcre2ReplacementResult Complete(bool text)
         {
             _writer.Append(_input[_position..]);
             var output = _writer.GetOwnedOutput(_scope);
@@ -69,7 +67,7 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private Pcre2CallbackReplacementResult ReplaceCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
+    private Pcre2ReplacementResult ReplaceCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
         TState state, TExpansion expansion, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
         CancellationToken token, bool text)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
@@ -144,7 +142,7 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private Pcre2CallbackReplacementResult ReplaceSliceCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
+    private Pcre2ReplacementResult ReplaceSliceCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
         Pcre2SliceDirectProgram program, int startOffsetInBytes, CancellationToken token,
         TState state, TExpansion expansion, bool text)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>

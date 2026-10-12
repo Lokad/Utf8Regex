@@ -144,7 +144,45 @@ internal ref struct Pcre2ReplacementTemplateWriter
         catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
         catch (InvalidOperationException) when (_invocation.Budget.WorkLimitExceeded) { throw WorkFailure(); }
     }
+
+    internal string CompleteToString()
+    {
+        try
+        {
+            CheckWork();
+            ReleaseFrames();
+            var bytes = _writer.WrittenBytes;
+            Utf8SliceBufferWork.ValidateUtf8(bytes, ref _invocation);
+            var result = Utf8SliceBufferWork.DecodeUtf8(bytes, ref _invocation);
+            _writer.Release(ref _invocation);
+            return result;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach);
+            throw;
+        }
+    }
     internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
+
+    // The subject was strictly validated before discovery. EOF does not reset
+    // its authority; publish the string without a second encoded byte root.
+    internal static string DecodeUnchanged(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        Pcre2ReplacementPreparationControl.Check();
+        try
+        {
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            return Utf8SliceBufferWork.DecodeUtf8(input, ref invocation);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach);
+            throw;
+        }
+    }
 
     // EOF releases discovery scratch, not its authority. Fund the returned root
     // before acquiring it, and keep the original budget/token/deadline for copying.
@@ -204,8 +242,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         Pcre2ReplacementPreparationControl.Check();
         try
         {
-            if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
-                throw WorkFailure();
+            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.TryChargeInputStep());
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw DeadlineFailure(); }
@@ -218,8 +255,8 @@ internal ref struct Pcre2ReplacementTemplateWriter
         => new("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
 
     private void ThrowOutputLimitExceeded()
-        => Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.WorkLimitExceeded
-            ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.WorkingBytes);
+        => Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None
+            ? _invocation.Budget.LimitBreach : Utf8ExecutionLimitKind.WorkingBytes);
     private static void ThrowSubstitution(Pcre2ErrorKind kind)
         => throw new Pcre2SubstitutionException("Invalid PCRE2 replacement template.", kind);
 

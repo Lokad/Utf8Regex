@@ -269,23 +269,7 @@ internal sealed class Utf8SliceByteOutputBuffer(Utf8SliceByteOutputScope scope)
     }
 
     internal string ToValidatedString()
-    {
-        var bytes = GetValidatedBytes();
-        var chars = 0;
-        for (var offset = 0; offset < bytes.Length;)
-        {
-            Utf8SliceBufferWork.Checkpoint(ref scope.Invocation);
-            var count = Utf8SliceBufferWork.Utf8BlockLength(bytes[offset..]);
-            chars += Encoding.UTF8.GetCharCount(bytes.Slice(offset, count));
-            offset += count;
-        }
-        var reservation = Utf8ConstructionBudget.StringBytes(chars);
-        Utf8SliceBufferWork.ChargeResultBytes(reservation, ref scope.Invocation);
-        if (new Utf8InvocationBufferControl(ref scope.Invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException("Owned string result exceeded the invocation storage budget.");
-        try { return Utf8SliceBufferWork.DecodeUtf8(bytes, chars, ref scope.Invocation); }
-        finally { scope.Invocation.Ledger.Release(reservation); }
-    }
+        => Utf8SliceBufferWork.DecodeUtf8(GetValidatedBytes(), ref scope.Invocation);
 
     internal void Release()
     {

@@ -62,6 +62,26 @@ internal static class Utf8SliceBufferWork
         return (remaining[cut] & 0xc0) == 0x80 ? count : cut;
     }
 
+    // The caller has validated these bytes. Count and admit the returned string
+    // while its existing staging/subject authority remains live.
+    internal static string DecodeUtf8(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
+    {
+        var chars = 0;
+        for (var offset = 0; offset < bytes.Length;)
+        {
+            Checkpoint(ref invocation);
+            var count = Utf8BlockLength(bytes[offset..]);
+            chars += Encoding.UTF8.GetCharCount(bytes.Slice(offset, count));
+            offset += count;
+        }
+        var reservation = Utf8ConstructionBudget.StringBytes(chars);
+        ChargeResultBytes(reservation, ref invocation);
+        if (new Utf8InvocationBufferControl(ref invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Owned string result exceeded the invocation storage budget.");
+        try { return DecodeUtf8(bytes, chars, ref invocation); }
+        finally { invocation.Ledger.Release(reservation); }
+    }
+
     // The caller has validated the bytes and admitted the resulting char payload.
     internal static string DecodeUtf8(ReadOnlySpan<byte> bytes, int charCount, ref Utf8SliceInvocation invocation)
     {

@@ -100,9 +100,17 @@ later consumer of the same finite allowance can deny earlier. Borrowed aliases a
 retained views remain valid, and unpublished setup/exclusive scratch still release
 synchronously.
 
+Fixed slice `ReplaceToString` validates and decodes the staged UTF-8 bytes under the
+same invocation. The returned string is admitted while staging remains live, and
+there is no extra final encoded byte array. No-match text borrows the unchanged
+subject while admitting its returned string. `MatchLimit` includes bounded final
+validation/count/decode and `HeapLimitInBytes` includes modeled staging/string
+overlap. Capacity charges can differ from the former copied-byte result followed
+by detached decoding; final text work and capacity are now covered.
+
 Initial validation/preparation, other replacement routes and explicit callback
-match options still have separate
-enforcement scopes. This slice does not establish a common operation-wide policy.
+match options still have separate enforcement scopes. This slice does not establish
+a common operation-wide policy.
 The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
 PythonRe accept their documented cumulative result-capacity policy. Cancellation,
 timeouts, depth/backtracking limits and basic state-growth metering remain active.

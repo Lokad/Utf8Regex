@@ -558,7 +558,12 @@ nested operations restore the outer scope. `MatchLimit` and working heap cover t
 stages cumulatively, so cases that fitted former separate matching/writing allowances
 can fail earlier. The first resource denial retains its PCRE2 kind. Publication releases
 temporary working charges while returned arrays, capture views and aliases remain
-valid. These modeled charges do not bound caller retention or RSS. Initial subject
+valid. Fixed slice `ReplaceToString` validates, counts and decodes directly from its
+staged UTF-8 bytes under that invocation, admitting the returned string while staging
+remains live. It acquires no extra final encoded byte array. An unchanged no-match
+subject is borrowed while its returned string is admitted. Charges can differ from
+the former byte-copy-plus-detached-decode path; final text work and capacity are now
+covered. These modeled charges do not bound caller retention or RSS. Initial subject
 validation/preparation, non-slice replacement and explicit callback match options
 retain separate scopes; this does not qualify common operation-wide or result-byte control.
 
