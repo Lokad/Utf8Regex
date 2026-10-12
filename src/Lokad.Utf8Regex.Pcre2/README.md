@@ -33,6 +33,11 @@ selected profile are not included. The executable corpus and backlog ledgers
 are the authoritative capability boundary; support is never inferred from
 similarity to .NET behavior.
 
+The admitted `f.*` probe searches from the original byte start and consumes
+complete scalars using the configured DotAll/newline semantics. Soft partial
+accepts its complete greedy match; hard partial reports an extensible match at
+EOF. A newline that stops the repeat permits a full match in either mode.
+
 Capture names start with a Unicode letter or underscore; later characters may
 also be decimal digits. Names alias slots assigned in declaration order. Explicit
 .NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail

@@ -19,7 +19,7 @@
     "PartialMode": "Soft",
     "Operation": "Probe",
     "Expected": {
-      "Outcome": "PartialMatch",
+      "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,
       "EndOffsetInBytes": 3,
       "HasContiguousByteRange": true,
@@ -28,7 +28,7 @@
       "NameEntries": []
     },
     "Status": "Active",
-    "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star"
+    "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star; corrected by native PCRE2 10.47 / PCRE.NET 1.5.0: soft accepts full for, hard remains partial"
   },
   {
     "Id": "pcre2.testinput2.substitute-extended.conditional-name-missing",

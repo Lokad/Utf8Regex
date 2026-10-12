@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased PCRE2 literal-dot-star probes (0.4.0-scalar.13-dev)
+
+- Replace the admitted `f.*` probe's hard-coded subject approximation with
+  original-subject candidate search and the existing scalar dot semantics.
+  Respect DotAll, newline settings and compile/operation anchoring. Soft accepts
+  a complete greedy match; hard reports a partial only when it can extend at EOF.
+  Preserve owned full results, inline partials, finite limits and interruption.
+  Correct one old soft corpus expectation with pinned native evidence; wider
+  partial-pattern/settings coverage remains a separate gate.
+
 ## Unreleased PCRE2 partial EndAnchored admission (0.4.0-scalar.12-dev)
 
 - Reject partial soft/hard modes combined with compile- or match-time EndAnchored

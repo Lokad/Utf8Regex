@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal enum Pcre2PartialProbeProgramKind : byte
 {
     None = 0,
-    PartialSoftDotAllLiteral = 1,
+    LiteralDotStar = 1,
     AbPlus = 2,
     LiteralAlternation = 3,
     OrderedLiteralAlternation = 4,
@@ -104,8 +104,8 @@ internal static class Pcre2PartialProbeCompiler
         var shape = Describe(syntaxTree.Root);
         return shape switch
         {
-            "S(T(0,0,66);R(0,2147483647,0:T(2,0));)" or
-            "S(T(0,4,66);R(0,2147483647,0:T(2,4));)" => Create(Pcre2PartialProbeProgramKind.PartialSoftDotAllLiteral, "f"),
+            "S(T(0,0,66);R(0,2147483647,0:T(2,0));)" => Create(Pcre2PartialProbeProgramKind.LiteralDotStar, false, "f"),
+            "S(T(0,4,66);R(0,2147483647,0:T(2,4));)" => Create(Pcre2PartialProbeProgramKind.LiteralDotStar, true, "f"),
             "S(C(1:T(0,0,61));R(1,2147483647,0:T(0,0,62));)" => Create(Pcre2PartialProbeProgramKind.AbPlus),
             "A(S(T(0,0,63);T(0,0,61);T(0,0,74););S(T(0,0,68);T(0,0,6F);T(0,0,72);T(0,0,73);T(0,0,65););)" => Create(Pcre2PartialProbeProgramKind.LiteralAlternation, "cat", "horse"),
             "S(T(0,0,64);T(0,0,6F);T(0,0,67);R(0,1,0:C(1:S(T(0,0,73);T(0,0,62);T(0,0,6F);T(0,0,64);T(0,0,79);)));)" or

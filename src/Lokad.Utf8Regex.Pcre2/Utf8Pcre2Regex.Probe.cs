@@ -61,7 +61,7 @@ public sealed partial class Utf8Pcre2Regex
             }
             return program.Kind switch
             {
-                Pcre2PartialProbeProgramKind.PartialSoftDotAllLiteral => ProbeViaPartialSoftDotAllLiteral(input, partialMode, startOffsetInBytes),
+                Pcre2PartialProbeProgramKind.LiteralDotStar => ProbeViaLiteralDotStar(input, partialMode, startOffsetInBytes, program.Operands[0], program.Flag, compiled.Request),
                 Pcre2PartialProbeProgramKind.AbPlus => ProbeViaAbPlus(input, partialMode, startOffsetInBytes),
                 Pcre2PartialProbeProgramKind.LiteralAlternation => ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
                 Pcre2PartialProbeProgramKind.OrderedLiteralAlternation => ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
@@ -111,22 +111,28 @@ public sealed partial class Utf8Pcre2Regex
         return Pcre2CharacterRunner.TryMatchToken(assertion, compiled.Request, input, start, _originalStart, matchOptions, out _);
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaPartialSoftDotAllLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
+    private Utf8Pcre2ProbeResult ProbeViaLiteralDotStar(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, byte[] literal, bool dotAll, Pcre2CompileRequest request)
     {
-        var remaining = input[startOffsetInBytes..];
-        if (partialMode == Pcre2PartialMode.None)
-        {
-            return remaining.Length > 0 && remaining[0] == (byte)'f'
-                ? Full([Project(0, startOffsetInBytes, input.Length)])
-                : NoMatch();
-        }
+        var index = IndexOf(input[startOffsetInBytes..], literal);
+        if (index < 0) return NoMatch();
 
-        if (remaining.StartsWith("for"u8))
+        var start = startOffsetInBytes + index;
+        var end = start + literal.Length;
+        var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any,
+            dotAll ? Pcre2CharacterOptions.DotAll : Pcre2CharacterOptions.None, 0, 0);
+        // Reuse the admitted whole-subject dot semantics. Scalar widths and the
+        // selected newline convention determine the endpoint, not byte count.
+        while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, out var next))
         {
-            return Partial(Project(0, startOffsetInBytes, startOffsetInBytes + 3));
+            _budget.ChargeWorkspaceStep();
+            end = next;
         }
-
-        return NoMatch();
+        // Hard partial asks whether another scalar could extend the greedy
+        // repeat. Soft partial accepts the complete match already available.
+        return partialMode == Pcre2PartialMode.Hard && end == input.Length
+            ? Partial(Project(0, start, end))
+            : Full([Project(0, start, end)]);
     }
 
     private Utf8Pcre2ProbeResult ProbeViaAbPlus(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)

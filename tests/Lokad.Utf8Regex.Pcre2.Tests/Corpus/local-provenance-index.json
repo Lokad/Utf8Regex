@@ -2948,7 +2948,7 @@
   },
   {
     "Id": "pcre2.testinput5.partial-soft.f-dot-star",
-    "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star",
+    "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star; corrected by native PCRE2 10.47 / PCRE.NET 1.5.0: soft accepts full for, hard remains partial",
     "SourceFile": "testdata/testinput5",
     "Operation": "Probe",
     "Status": "Active"
