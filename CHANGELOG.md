@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.4.0-scalar.5-dev)
+## 0.4.0-scalar.5 core/PythonRe candidate
 
 - Reuse the existing exclusive VM workspace across PythonRe scalar cursor moves
   instead of reacquiring heads/repeat/stack arrays per match. The runner resets
@@ -12,7 +12,7 @@
   authoritative. The persistent cursor owner grows by 104 B in measured x64
   runs; first-result timings are platform dependent. Bulk captured output traffic
   drops substantially; no zero-overhead or all-path speedup claim is made.
-- Preserve the qualified immutable scalar.4 input; this development delta requires
+- Preserve the qualified immutable scalar.4 input; this candidate requires
   its own package/handoff boundary before downstream designation.
 
 ## 0.4.0-scalar.4 core/PythonRe candidate

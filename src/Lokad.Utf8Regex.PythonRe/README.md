@@ -4,7 +4,7 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-Version 0.4.0-scalar.4 is a core/PythonRe integration candidate with finite invocation work, depth, working-capacity and result-capacity policies, authoritative capture completion and an explicitly owned persistent cursor. Use its qualified immutable feed and provenance manifest. Public construction/live-retention controls, safe defaults, complete category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently.
+Version 0.4.0-scalar.5 is a core/PythonRe integration candidate with finite invocation work, depth, working-capacity and result-capacity policies, authoritative capture completion and an explicitly owned persistent cursor. Use its qualified immutable feed and provenance manifest. Public construction/live-retention controls, safe defaults, complete category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently.
 
 ## Support Scope
 
@@ -75,7 +75,7 @@ waits count against the original absolute match deadline. The offset/token
 overloads preserve scalar-aligned byte offsets and the original invocation token.
 Existing span APIs retain their existing contracts.
 
-Scalar.5 development reuses the cursor's existing private VM workspace across
+Scalar.5 reuses the cursor's existing private VM workspace across
 moves. Scratch remains charged while positioned, including during projection and
 host waits; EOF, failure and disposal release it synchronously. It never backs
 published snapshots. Scratch/publication overlap can raise the required finite

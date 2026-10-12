@@ -210,7 +210,7 @@ application-wide meter. Core static cached operations have no policy parameter a
 retain unlimited defaults. Finite policy routes can have different performance
 from qualified unlimited native shortcuts.
 
-PythonRe scalar.5 development reuses one existing exclusive VM workspace for each
+PythonRe scalar.5 reuses one existing exclusive VM workspace for each
 scalar cursor. It stays charged while positioned, including host waits and result
 projection; EOF, failure and disposal release it synchronously. Private repeat,
 heads and stack storage is reset between attempts and never exposed by owned
@@ -219,7 +219,7 @@ former per-move release; denial remains structured and cumulative result traffic
 is never refunded. Working capacity is an upper bound, not a stable cross-version
 minimum. No GC-based credit or new pool is involved. The larger persistent owner
 adds fixed allocation overhead; measured bulk savings do not prove every path is
-faster. The immutable scalar.4 package predates this development change.
+faster. The immutable scalar.4 package predates this change.
 
 Core and PythonRe also accept `MaxResultBytes`, alone or with work. It caps cumulative
 modeled major result/staging capacity requested during the operation: rounded array/
