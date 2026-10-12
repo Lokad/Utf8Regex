@@ -118,6 +118,13 @@ zero, the existing native matcher obtains final captures at the selected start
 under the same invocation limits and original search position. This adds native
 capture work and storage to those full outcomes; partial decisions and inline
 partial results retain their existing paths.
+Non-partial specialized-pattern probes with explicit per-operation flags use normal
+detailed matching. This fixes ignored anchoring
+and line-boundary flags while reusing owned captures/names/MARK and the original
+resource policy, token and deadline. Native flag-aware matching can require more
+work/scratch than the former option-blind helper. Default helper paths retain their
+existing algorithms. Specialized soft/hard helpers still ignore per-operation
+flags; fixing those combinations remains a separate release gate.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native

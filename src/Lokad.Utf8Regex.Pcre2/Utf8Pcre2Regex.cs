@@ -574,7 +574,10 @@ public sealed partial class Utf8Pcre2Regex
                 _program.Request, cancellationToken);
         }
 
-        if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None)
+        // Curated partial helpers do not interpret per-operation flags. A
+        // non-partial explicit-option probe uses normal owned detailed matching.
+        if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None &&
+            (partialMode != Pcre2PartialMode.None || matchOptions == Pcre2MatchOptions.None))
         {
             var runner = new Pcre2PartialProbeRunner(subject, _program, NameEntries, cancellationToken);
             return runner.Probe(partialMode, startOffsetInBytes, _program.PartialProbe);

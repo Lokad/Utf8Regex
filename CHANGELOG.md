@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 non-partial probe options (0.4.0-scalar.9-dev)
+
+- Forward explicit per-operation flags on non-partial probes even when a curated
+  partial helper exists. Fix false successes for Anchored, EndAnchored and NotBol
+  by reusing normal owned detailed matching under the original limits/token/deadline.
+  Preserve captures, names, aliases and default helper algorithms. Specialized
+  soft/hard helpers still ignore flags and remain a separate release gate;
+  required native work can deny tight limits.
+
 ## Unreleased PCRE2 full-probe captures (0.4.0-scalar.8-dev)
 
 - Restore missing optional, lazy and possessive captures in specialized full
