@@ -418,11 +418,21 @@ internal static partial class Utf8SliceRunner
         if (program.IsNonBacktracking)
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, false, false, ref invocation);
+        var first = program.Instructions[0];
+        var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
+            first.A == (int)Utf8SliceAnchorKind.Beginning;
         var workspace = new AttemptWorkspace();
         try
         {
             for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
             {
+                if (seekBeginning)
+                {
+                    var seekBreach = TrySeekBeginning(input, ref position, first.B != 0, ref invocation);
+                    if (seekBreach != Utf8ExecutionLimitKind.None)
+                        return new(false, -1, -1, null, null, seekBreach);
+                    if (position < 0) break;
+                }
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, breach);
@@ -443,6 +453,32 @@ internal static partial class Utf8SliceRunner
     internal static int AdvancePastScalar(ReadOnlySpan<byte> input, int position, bool reverse)
         => TryReadScalar(input, position, reverse, out _, out var width)
             ? position + (reverse ? -width : width) : -1;
+
+    // Only an initial mandatory anchor proves that other starts cannot match.
+    // LF is one byte and cannot occur inside a scalar. Full validation belongs
+    // to the caller; this filter neither restricts a match's end nor its body.
+    private static Utf8ExecutionLimitKind TrySeekBeginning(ReadOnlySpan<byte> input,
+        ref int position, bool multiline, ref Utf8SliceInvocation invocation)
+    {
+        if (position == 0) return Utf8ExecutionLimitKind.None;
+        if (!multiline) { position = -1; return Utf8ExecutionLimitKind.None; }
+        if (input[position - 1] == (byte)'\n') return Utf8ExecutionLimitKind.None;
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var length = Math.Min(2048, input.Length - position);
+            var newline = input.Slice(position, length).IndexOf((byte)'\n');
+            if (newline >= 0)
+            {
+                position += newline + 1;
+                return Utf8ExecutionLimitKind.None;
+            }
+            position += length;
+        }
+        position = -1;
+        return Utf8ExecutionLimitKind.None;
+    }
 
     internal static Utf8SliceMatchOutcome IsMatch(
         Utf8SliceProgram program, ReadOnlySpan<byte> input,
@@ -492,11 +528,20 @@ internal static partial class Utf8SliceRunner
             }
             finally { batch.Release(ref invocation); }
         }
+        var first = program.Instructions[0];
+        var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
+            first.A == (int)Utf8SliceAnchorKind.Beginning;
         var workspace = new AttemptWorkspace();
         try
         {
             while (true)
             {
+                if (seekBeginning)
+                {
+                    var seekBreach = TrySeekBeginning(input, ref position, first.B != 0, ref invocation);
+                    if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                    if (position < 0) break;
+                }
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);

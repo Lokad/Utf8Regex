@@ -10,6 +10,8 @@ Run `./qualify-scalar-candidate.ps1` from a clean committed checkout. Successful
 
 The scalar.3 candidate adds metered native `Count` for prepared exact literals. The immutable scalar.2 candidate predates this route; its finite `Count` uses the scalar VM. Use the candidate manifest and platform/downstream receipts for acceptance; development measurements alone do not replace package qualification.
 
+Current scalar.4 development also filters scalar-VM searches with an initial mandatory beginning anchor to origin/LF line starts. It keeps full validation and VM match verification, with checked scans of at most 2048 bytes under the same work/cancellation/deadline authority. This development change is separate from the immutable scalar.3 package candidate.
+
 It is intended for workloads where the input already exists as UTF-8 bytes and you want to avoid decoding to UTF-16 before every regex operation.
 
 ```powershell

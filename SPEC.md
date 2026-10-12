@@ -191,6 +191,12 @@ scratch requirement. Folded, boundary/trailing assertions, contiguous anchors,
 shared/explicit numbering and balancing retain their qualified routes; captured
 Unicode and NonBacktracking patterns without a native plan also retain the VM.
 Offset interoperability maps keep their separate working/result admission.
+Scalar.4 development filters LTR scalar-VM searches only when their initial
+instruction is a mandatory beginning anchor. Absolute origin or LF line starts
+are candidates; checked scans cover at most 2048 bytes per invocation checkpoint.
+Match verification and full validation remain unchanged. Fewer impossible attempts
+may lower the selected route's work requirement; this is not a fixed scalar/byte
+charge or a change to finite-limit failure semantics.
 Denial throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`, the
 configured limit and a saturating requested count. A cap is in bounded engine/
 checkpoint steps, whose granularity may change, not bytes, wall time or RSS.

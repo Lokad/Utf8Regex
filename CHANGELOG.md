@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased (0.4.0-scalar.4-dev)
+
+- Filter LTR scalar-VM searches with an initial mandatory beginning anchor to
+  absolute origin or LF line starts. Scans use checked spans in chunks of at
+  most 2048 bytes and the original invocation's work, cancellation and deadline
+  authority. Match bodies, captures, empty progress and full-subject validation
+  retain their scalar semantics. Other entry shapes, RTL and NonBacktracking
+  retain their existing search. Fewer futile attempts can lower finite work
+  requirements; work-step units remain route/version dependent.
+- Preserve the immutable scalar.3 core/PythonRe integration candidate. This
+  development identity does not designate another qualified package or update
+  downstream pins.
+
 ## 0.4.0-scalar.3 core/PythonRe candidate
 
 - Preserve the scalar.2 matching, capture-completion, cursor, cancellation and
