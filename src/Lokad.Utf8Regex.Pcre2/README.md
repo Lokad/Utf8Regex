@@ -103,7 +103,11 @@ the original empty/nonempty retry disposition without a second match query. Lega
 backtracking callbacks with captures or suppressed unreset
 empty matches also share that invocation, including explicit match options. Their
 existing detailed cursor supplies captures and MARK without a separate match query;
-native VM steps retain their cadence and diagnostic meaning. The unchanged-subject
+native VM steps retain their cadence and diagnostic meaning. Capture-free native
+callbacks also share the original invocation with their selected value cursor,
+reusable group-zero array and byte/text output. The optimized literal, character,
+repeat and family selectors remain. All callback output enters one scope; there is
+no separate Unlimited output allowance. The unchanged-subject
 result on no match is admitted before
 allocation and copied with the same token/absolute deadline. Callback buffer
 controls, writer resets and final byte/text output share that allowance; nested
@@ -119,6 +123,15 @@ later consumer of the same finite allowance can deny earlier. Borrowed aliases a
 retained views remain valid, and unpublished setup/exclusive scratch still release
 synchronously.
 
+Controlled global value-cursor coordinate projection now uses the existing bounded
+scalar endpoint helper. `MatchLimit` includes those projection steps in addition to
+matching; ASCII endpoint projection adds two steps per successful yield. Long
+non-ASCII prefixes advance in at most 2,048-byte scalar-aligned windows under the
+original work/deadline/token authority. Denied projection preserves the previous
+published value and sticky failure. Native candidate/backtracking diagnostic counts
+retain their meaning. These derived UTF-16 coordinates remain interoperability data;
+matching and restart positions use UTF-8 bytes and Unicode scalars.
+
 Fixed slice `ReplaceToString` validates and decodes the staged UTF-8 bytes under the
 same invocation. The returned string is admitted while staging remains live, and
 there is no extra final encoded byte array. No-match text borrows the unchanged
@@ -127,9 +140,10 @@ validation/count/decode and `HeapLimitInBytes` includes modeled staging/string
 overlap. Capacity charges can differ from the former copied-byte result followed
 by detached decoding; final text work and capacity are now covered.
 
-Initial validation/preparation, capture-free optimized replacement routes, legacy
-fixed-template output and core-foundation callbacks still have separate
-enforcement scopes. These qualified producers do not establish a common
+Initial validation/preparation, legacy fixed-template output and core-foundation
+callback discovery still have separate enforcement scopes. Foundation callback
+output shares the request policy, while discovery remains migration debt.
+These qualified producers do not establish a common
 operation-wide policy.
 The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
 PythonRe accept their documented cumulative result-capacity policy. Cancellation,

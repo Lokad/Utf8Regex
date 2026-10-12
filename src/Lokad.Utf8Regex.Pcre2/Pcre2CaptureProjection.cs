@@ -130,7 +130,7 @@ internal static partial class Pcre2Runner
         return end >= start;
     }
 
-    private static int ProjectCaptureEndpoint(ref Utf8ValidatedInput input,
+    internal static int ProjectCaptureEndpoint(ref Utf8ValidatedInput input,
         ref Utf8ProjectionCursor projection, int endpoint, scoped Pcre2CaptureProjectionBudget budget)
     {
         if (budget.IsUnmetered || input.IsAscii)

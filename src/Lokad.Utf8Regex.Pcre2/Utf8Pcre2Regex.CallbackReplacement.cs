@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2;
@@ -74,30 +75,27 @@ public sealed partial class Utf8Pcre2Regex
     {
         token.ThrowIfCancellationRequested();
         ValidateStartOffset(input, startOffsetInBytes);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
+        invocation.ShareStorageForCursor();
         Utf8SliceByteOutputScope? scope = null;
         try
         {
-            if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
-                return ReplaceCallbackWithInvocation(input, slice, startOffsetInBytes, matchOptions, token, state, expansion, text);
-
-            if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram captured &&
-                (captured.Program.CaptureSlotCount > 1 || captured.Program.SuppressesUnresetEmptyMatches))
-                return ReplaceCallbackWithInvocation(input, captured, startOffsetInBytes, matchOptions,
-                    token, state, expansion, text);
-
-            // Matching still owns its own work/heap policy. This scope provides
-            // one shaping deadline/token and admitted buffer identities, growth
-            // overlap and terminal copies. A common finite operation-wide heap
-            // authority remains a separate migration gate.
-            scope = Utf8SliceByteOutputScope.Enter(Utf8ExecutionLimits.Unlimited, _program.Request.MatchTimeout, token);
+            scope = Utf8SliceByteOutputScope.Enter(invocation);
             var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);
-            if (!TryReplaceCallbackViaLiteralDriver(input, startOffsetInBytes, matchOptions, ref output))
+            if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
+                ReplaceCapturedCallback(input, slice, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
+            else if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram captured &&
+                (captured.Program.CaptureSlotCount > 1 || captured.Program.SuppressesUnresetEmptyMatches))
+                ReplaceCapturedCallback(input, captured, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
+            else if (!TryReplaceCallbackViaLiteralDriver(input, startOffsetInBytes, matchOptions, scope.Invocation, ref output))
             {
                 if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtracking)
                     ReplaceBacktrackingCallback(input, backtracking.Program, startOffsetInBytes, matchOptions,
-                        new Pcre2ResourceBudget(_program.Request.DefaultLimits, _program.Request.MatchTimeout,
+                        new Pcre2ResourceBudget(_program.Request.DefaultLimits, scope.Invocation,
                             collectDiagnostics: false), ref output);
                 else
+                    // Foundation discovery still owns its own authority; its
+                    // callback output uses this invocation. Keep that debt explicit.
                     ReplaceIterationCallback(input, startOffsetInBytes, matchOptions, token, ref output);
             }
             return output.Complete(text);
@@ -106,26 +104,39 @@ public sealed partial class Utf8Pcre2Regex
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
+        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach);
+            throw;
+        }
         finally { scope?.Release(); }
     }
 
     private bool TryReplaceCallbackViaLiteralDriver<TState, TExpansion>(ReadOnlySpan<byte> input,
-        int startOffsetInBytes, Pcre2MatchOptions matchOptions, ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
+        int startOffsetInBytes, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation,
+        ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var cursor))
+        var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, collectDiagnostics: false);
+        if (!Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var cursor, budget))
             return false;
 
-        var groups = new Pcre2GroupData[1];
-        while (true)
+        var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
+        budget.ReserveWorking(bytes);
+        try
         {
-            output.Checkpoint();
-            if (!cursor.MoveNext()) break;
-            groups[0] = cursor.Current;
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries);
-            output.Append(in context);
+            var groups = new Pcre2GroupData[1];
+            while (true)
+            {
+                output.Checkpoint();
+                if (!cursor.MoveNext()) break;
+                groups[0] = cursor.Current;
+                var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries);
+                output.Append(in context);
+            }
         }
+        finally { budget.ReleaseWorking(bytes); }
         return true;
     }
 
@@ -144,56 +155,36 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private Pcre2ReplacementResult ReplaceCallbackWithInvocation<TState, TExpansion>(ReadOnlySpan<byte> input,
-        IPcre2DirectProgram program, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token,
-        TState state, TExpansion expansion, bool text)
+    private void ReplaceCapturedCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
+        IPcre2DirectProgram program, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
+        Utf8SliceInvocation invocation, ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
-        // Enter once before subject validation. Discovery, capture replay,
-        // callback buffers and final copying share this original deadline,
-        // token, cumulative work and overlapping capacity allowance.
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
-        invocation.ShareStorageForCursor();
-        Utf8SliceByteOutputScope? scope = null;
-        try
+        // Explicit options use the slice shell's existing native program.
+        // Its detailed cursor owns the actual global yield: querying again
+        // would lose the empty-retry and original-start dispositions.
+        var backtracking = program is Pcre2BacktrackingDirectProgram native ? native.Program
+            : matchOptions != Pcre2MatchOptions.None ? ((Pcre2SliceDirectProgram)program).Fallback : null;
+        if (backtracking is not null)
         {
-            scope = Utf8SliceByteOutputScope.Enter(invocation);
-            var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);
-            // Explicit options use the slice shell's existing native program.
-            // Its detailed cursor owns the actual global yield: querying again
-            // would lose the empty-retry and original-start dispositions.
-            var backtracking = program is Pcre2BacktrackingDirectProgram native ? native.Program
-                : matchOptions != Pcre2MatchOptions.None ? ((Pcre2SliceDirectProgram)program).Fallback : null;
-            if (backtracking is not null)
-            {
-                var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, scope.Invocation, collectDiagnostics: false);
-                ReplaceBacktrackingCallback(input, backtracking, startOffsetInBytes, matchOptions, budget, ref output);
-                return output.Complete(text);
-            }
+            var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, collectDiagnostics: false);
+            ReplaceBacktrackingCallback(input, backtracking, startOffsetInBytes, matchOptions, budget, ref output);
+            return;
+        }
 
-            var slice = (Pcre2SliceDirectProgram)program;
-            var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-            var cursor = new Pcre2SliceGlobalMatchCursor(slice.SliceProgram, scope.Invocation, subject, start, _program.Request);
-            while (true)
-            {
-                output.Checkpoint();
-                if (!cursor.MoveNext()) break;
-                var range = cursor.Current;
-                // Reproduce the precise global yield, including the non-empty
-                // retry after an empty match at the same start. A plain query
-                // would project the preceding empty match's captures instead.
-                var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
-                var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, null);
-                output.Append(in context);
-            }
-            return output.Complete(text);
-        }
-        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        var slice = (Pcre2SliceDirectProgram)program;
+        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2SliceGlobalMatchCursor(slice.SliceProgram, invocation, subject, start, _program.Request);
+        while (true)
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach);
-            throw;
+            output.Checkpoint();
+            if (!cursor.MoveNext()) break;
+            var range = cursor.Current;
+            // Preserve the precise yield, including the nonempty same-start retry.
+            var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
+            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, null);
+            output.Append(in context);
         }
-        finally { scope?.Release(); }
     }
 
     private void ReplaceBacktrackingCallback<TState, TExpansion>(ReadOnlySpan<byte> input, Pcre2BacktrackingProgram program,

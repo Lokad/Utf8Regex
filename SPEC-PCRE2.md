@@ -571,7 +571,11 @@ they do not perform a fresh first-match query at the reported start. Legacy
 backtracking callbacks with captures or suppressed unreset empty matches also share
 that invocation, including explicit match options. Their existing
 detailed cursor supplies captures and MARK without a second match query, preserving
-native step cadence and diagnostic meaning. Growth/final
+native step cadence and diagnostic meaning. Capture-free native callbacks borrow
+that invocation into their selected value cursor, reusable group-zero array and
+byte/text output, retaining optimized literal/character/repeat/family selectors.
+Callback output uses one scope with the request policy; its separate Unlimited
+allowance is removed. Growth/final
 overlap and the unchanged-subject result after no match are admitted before allocation
 and copied in bounded blocks with the original token/absolute deadline. Callback
 buffer controls, writer resets and final byte/text shaping use that same allowance;
@@ -584,9 +588,17 @@ staged UTF-8 bytes under that invocation, admitting the returned string while st
 remains live. It acquires no extra final encoded byte array. An unchanged no-match
 subject is borrowed while its returned string is admitted. Charges can differ from
 the former byte-copy-plus-detached-decode path; final text work and capacity are now
-covered. These modeled charges do not bound caller retention or RSS. Initial subject
-validation/preparation, capture-free optimized replacement, legacy fixed-template
-output and core-foundation callbacks retain separate scopes; this does not
+covered. Controlled global value-cursor coordinate projection also uses the existing
+bounded scalar endpoint helper under the original authority. MatchLimit includes
+projection work; ASCII endpoints add two steps per successful yield. Non-ASCII
+projection advances in at most 2,048-byte scalar-aligned windows. A refused projection
+preserves the previous published value and first resource denial; native candidate/
+backtracking diagnostics retain their meaning. UTF-16 coordinates remain derived
+interoperability data, with byte/scalar matching and restart positions unchanged.
+These modeled charges do not bound caller retention or RSS. Initial subject
+validation/preparation, legacy fixed-template output and core-foundation callback
+discovery retain separate scopes. Foundation callback output follows the request
+policy, while discovery remains migration debt. This does not
 qualify common operation-wide or result-byte control.
 
 ```csharp

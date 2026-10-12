@@ -530,6 +530,7 @@ internal static partial class BenchmarkInspectReporter
         var searcher = GetPcre2DirectLiteralFamilySearcher(context);
         var input = Utf8ValidatedInput.Create(context.InputBytes);
         var projection = input.CreateProjectionCursor();
+        var budget = new Pcre2ResourceBudget(default, Timeout.InfiniteTimeSpan, false);
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
         while (searcher.TryFindNextNonOverlappingLength(
@@ -542,7 +543,7 @@ internal static partial class BenchmarkInspectReporter
                 matchStart,
                 matchStart + matchLength,
                 ref input,
-                ref projection);
+                ref projection, ref budget);
             sum = unchecked(sum + match.StartOffsetInBytes + match.StartOffsetInUtf16);
         }
 
