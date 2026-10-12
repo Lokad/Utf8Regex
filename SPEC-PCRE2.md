@@ -563,7 +563,11 @@ steps do not invoke scalar-slice diagnostic hooks. Fixed enforcement metadata is
 outside modeled working payload and this is not an exact CLR heap or RSS bound.
 
 Owned slice template replacement and callback replacement with `None` match options
-share one discovery invocation with capture replay and output building. Growth/final
+share one discovery invocation with capture replay and output building. Legacy
+backtracking callbacks with captures or suppressed unreset empty matches also share
+that invocation, including explicit match options. Their existing
+detailed cursor supplies captures and MARK without a second match query, preserving
+native step cadence and diagnostic meaning. Growth/final
 overlap and the unchanged-subject result after no match are admitted before allocation
 and copied in bounded blocks with the original token/absolute deadline. Callback
 buffer controls, writer resets and final byte/text shaping use that same allowance;
@@ -577,8 +581,9 @@ remains live. It acquires no extra final encoded byte array. An unchanged no-mat
 subject is borrowed while its returned string is admitted. Charges can differ from
 the former byte-copy-plus-detached-decode path; final text work and capacity are now
 covered. These modeled charges do not bound caller retention or RSS. Initial subject
-validation/preparation, non-slice replacement and explicit callback match options
-retain separate scopes; this does not qualify common operation-wide or result-byte control.
+validation/preparation, capture-free optimized replacement, legacy fixed-template
+output and explicit-option slice callbacks retain separate scopes; this does not
+qualify common operation-wide or result-byte control.
 
 ```csharp
 var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };

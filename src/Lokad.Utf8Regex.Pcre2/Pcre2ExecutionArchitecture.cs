@@ -3798,13 +3798,26 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request)
+        : this(program, candidateSearch, input, start, matchOptions, request,
+            new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false))
+    {
+    }
+
+    internal Pcre2BacktrackingDetailedGlobalMatchCursor(
+        Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchPlan candidateSearch,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request,
+        Pcre2ResourceBudget budget)
     {
         _program = program;
         _candidateSearch = candidateSearch;
         _input = input;
         _request = request;
         _matchOptions = matchOptions;
-        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
+        _budget = budget;
         _restartPosition = start;
         _firstMatchingPosition = start;
         _retryState = Pcre2GlobalRetryState.Search;
@@ -4054,12 +4067,19 @@ internal struct Pcre2ResourceBudget
         Utf8Pcre2ExecutionLimits limits,
         TimeSpan timeout,
         bool collectDiagnostics)
+        : this(limits, new Utf8SliceInvocation(
+            new Utf8ExecutionLimits(limits.MatchLimit, limits.DepthLimit, limits.HeapLimitInBytes),
+            timeout, CancellationToken.None), collectDiagnostics)
+    {
+    }
+
+    internal Pcre2ResourceBudget(
+        Utf8Pcre2ExecutionLimits limits,
+        Utf8SliceInvocation invocation,
+        bool collectDiagnostics)
     {
         Limits = limits;
-        _invocation = new Utf8SliceInvocation(
-            new Utf8ExecutionLimits(limits.MatchLimit, limits.DepthLimit, limits.HeapLimitInBytes),
-            timeout,
-            CancellationToken.None);
+        _invocation = invocation;
         // This profile's native steps retain their original cadence and do not
         // invoke the diagnostic hook belonging to the shared scalar-slice VM.
         _invocation.CheckpointHook = null;

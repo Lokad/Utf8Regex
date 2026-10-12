@@ -97,7 +97,11 @@ excluded from native steps. Fixed enforcement metadata has separate scope.
 Work units and enforcement depend on the selected managed route. Owned slice
 template replacement and callback replacement with `None` match options use one
 cumulative invocation from discovery through capture replay, output growth and
-final copying. The unchanged-subject result on no match is admitted before
+final copying. Legacy backtracking callbacks with captures or suppressed unreset
+empty matches also share that invocation, including explicit match options. Their
+existing detailed cursor supplies captures and MARK without a separate match query;
+native VM steps retain their cadence and diagnostic meaning. The unchanged-subject
+result on no match is admitted before
 allocation and copied with the same token/absolute deadline. Callback buffer
 controls, writer resets and final byte/text output share that allowance; nested
 operations restore the outer scope. `MatchLimit` covers the combined work and
@@ -120,9 +124,10 @@ validation/count/decode and `HeapLimitInBytes` includes modeled staging/string
 overlap. Capacity charges can differ from the former copied-byte result followed
 by detached decoding; final text work and capacity are now covered.
 
-Initial validation/preparation, other replacement routes and explicit callback
-match options still have separate enforcement scopes. This slice does not establish
-a common operation-wide policy.
+Initial validation/preparation, capture-free optimized replacement routes, legacy
+fixed-template output and explicit-option slice callbacks still have separate
+enforcement scopes. These qualified producers do not establish a common
+operation-wide policy.
 The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
 PythonRe accept their documented cumulative result-capacity policy. Cancellation,
 timeouts, depth/backtracking limits and basic state-growth metering remain active.
