@@ -213,7 +213,7 @@ public sealed class Utf8ScalarRetainedGraphTests
     {
         var map = new Utf8ConstructionReadOnlyMap<string, int>([], new OwnedComparer(), 0);
         using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(1024, default);
+        using var storage = Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(1024, default);
         Assert.Throws<InvalidOperationException>(() => map.CollectStorage(storage));
     }
 
@@ -226,7 +226,7 @@ public sealed class Utf8ScalarRetainedGraphTests
     private static Utf8RetainedPayloadExtent[] Collect(Utf8SliceProgram program)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(64 * 1024 * 1024, default);
+        using var storage = Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(64 * 1024 * 1024, default);
         Utf8ScalarProgramRetainedStorage.Collect(program, storage);
         Assert.False(storage.Exceeded);
         return storage.Finish();
@@ -252,7 +252,7 @@ public sealed class Utf8ScalarRetainedGraphTests
         public bool TryGetValueCharge<TControl>(Utf8SliceProgram value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
             Utf8ScalarProgramRetainedStorage.Collect(value, storage);
             charge = storage.FinishCharge();
             return !storage.Exceeded;

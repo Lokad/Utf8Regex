@@ -15,7 +15,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // lookarounds, backreferences, boundaries, and empty nodes decline this optimization;
 // the dispatcher selects another route. Construction is eager and pure over the owned tree: no fallback
 // engine is built here.
-internal sealed partial class Utf8GroupedLiteralSpanTable
+internal sealed class Utf8GroupedLiteralSpanTable
 {
     private Utf8GroupedLiteralSpanTable(
         int totalLengthInUtf16,

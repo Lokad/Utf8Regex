@@ -22,7 +22,7 @@ public sealed class Utf8CachedRegexMetadataTests
         var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly;
         var fields = typeof(Utf8Regex).GetFields(flags);
         var state = typeof(Utf8Regex).GetNestedType("CachedConstructionState", System.Reflection.BindingFlags.NonPublic);
-        Assert.NotNull(state); Assert.Equal(21, fields.Length); Assert.Equal(21, state.GetFields(flags).Length);
+        Assert.NotNull(state); Assert.Equal(22, fields.Length); Assert.Equal(22, state.GetFields(flags).Length);
         Assert.Equal(fields.Select(static field => field.FieldType.ToString()).Order(), state.GetFields(flags).Select(static field => field.FieldType.ToString()).Order());
     }
 

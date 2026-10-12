@@ -142,7 +142,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
         Action bound=new CallbackReceiver().Invoke;
         var multicast=single+single;
         using var owner=Utf8ConstructionScope.Enter();
-        using var storage=Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(1024,default);
+        using var storage=Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(1024,default);
         Utf8RuntimeRetainedStorage.CollectDelegate(single,storage);
         Assert.Throws<InvalidOperationException>(()=>Utf8RuntimeRetainedStorage.CollectDelegate(bound,storage));
         Assert.Throws<InvalidOperationException>(()=>Utf8RuntimeRetainedStorage.CollectDelegate(multicast,storage));
@@ -234,10 +234,10 @@ public sealed class Utf8RuntimeRetainedGraphTests
     private static Utf8RetainedPayloadExtent[] Collect(object[] roots)
     {
         using var owner=Utf8ConstructionScope.Enter();
-        using var storage=Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(64*1024*1024,default);
+        using var storage=Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(64*1024*1024,default);
         CollectRoots(roots,storage);Assert.False(storage.Exceeded);return storage.Finish();
     }
-    private static void CollectRoots<TControl>(object[] roots,Utf8RetainedPayloadBuilder<TControl> storage)
+    private static void CollectRoots<TControl>(object[] roots,Utf8GraphInspection<TControl> storage)
         where TControl:struct,IUtf8ConstructionTextControl
     {
         foreach(var root in roots)
@@ -277,7 +277,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
         public bool TryGetValueCharge<TControl>(object[] value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
             CollectRoots(value,storage);
             charge = storage.FinishCharge();
             return !storage.Exceeded;

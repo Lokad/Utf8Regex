@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly partial struct PreparedAsciiLiteralStructuredTokenSearch
+internal readonly struct PreparedAsciiLiteralStructuredTokenSearch
 {
     private readonly Utf8AsciiLiteralFinder _literalFinder;
     private readonly AsciiCharClass _headMask;

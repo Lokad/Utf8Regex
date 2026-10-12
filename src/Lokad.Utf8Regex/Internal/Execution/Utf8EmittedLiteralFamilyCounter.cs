@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed partial class Utf8EmittedLiteralFamilyCounter
+internal sealed class Utf8EmittedLiteralFamilyCounter
 {
     internal delegate int CountDelegate(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input);
     internal delegate bool IsMatchDelegate(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input);

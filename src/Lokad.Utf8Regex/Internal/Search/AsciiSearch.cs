@@ -526,7 +526,7 @@ internal static partial class AsciiSearch
 
 }
 
-internal readonly partial struct AsciiExactLiteralSearchData
+internal readonly struct AsciiExactLiteralSearchData
 {
     public AsciiExactLiteralSearchData(PreparedByteSearch firstByteSearch, AsciiExactLiteralBucket[] buckets, int[] bucketIndexMap, int shortestLength)
     { FirstByteSearch = firstByteSearch; Buckets = buckets; BucketIndexMap = bucketIndexMap; ShortestLength = shortestLength; }
@@ -536,7 +536,7 @@ internal readonly partial struct AsciiExactLiteralSearchData
     public int ShortestLength { get; }
 }
 
-internal readonly partial struct AsciiExactLiteralBucket
+internal readonly struct AsciiExactLiteralBucket
 {
     public AsciiExactLiteralBucket(byte firstByte, byte[][] literals, byte[] commonPrefix,
         byte[]? secondByteCandidates, AsciiExactLiteralPrefixDiscriminator prefixDiscriminator)
@@ -548,7 +548,7 @@ internal readonly partial struct AsciiExactLiteralBucket
     public AsciiExactLiteralPrefixDiscriminator PrefixDiscriminator { get; }
 }
 
-internal readonly partial struct AsciiExactLiteralPrefixDiscriminator
+internal readonly struct AsciiExactLiteralPrefixDiscriminator
 {
     private readonly byte[][]? _literalsByByte;
 

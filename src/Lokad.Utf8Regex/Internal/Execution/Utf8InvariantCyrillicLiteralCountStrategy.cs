@@ -16,7 +16,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// Counts invariant-ignore-case literals whose only case-bearing scalars are
 /// the one-to-one paired letters in the basic Cyrillic alphabet.
 /// </summary>
-internal sealed partial class Utf8InvariantCyrillicLiteralCountStrategy
+internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 {
     private const int MaximumAlternatives = 8;
     private readonly Literal[] _literals;

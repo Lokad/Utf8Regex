@@ -20,7 +20,7 @@ internal readonly struct AsciiOrderedWindowSeparatorPlan
     internal AsciiCharClass CharClass { get; }
 }
 
-internal readonly partial struct AsciiOrderedLiteralWindowPlan
+internal readonly struct AsciiOrderedLiteralWindowPlan
 {
     private readonly byte[][]? _leadingLiteralsUtf8;
     private readonly byte[][]? _trailingLiteralsUtf8;

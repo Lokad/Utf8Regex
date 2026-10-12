@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal abstract partial class Utf8StructuralVerifierRuntime
+internal abstract class Utf8StructuralVerifierRuntime
 {
     internal readonly record struct ConstructionState(Utf8PreparedRegex RegexPlan);
 

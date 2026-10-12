@@ -5,7 +5,7 @@ using System.Reflection.Emit;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed partial class Utf8EmittedDeterministicMatcher
+internal sealed class Utf8EmittedDeterministicMatcher
 {
     internal delegate int FindNextDelegate(Utf8EmittedDeterministicMatcher matcher, ReadOnlySpan<byte> input, int startIndex, out int matchedLength);
 

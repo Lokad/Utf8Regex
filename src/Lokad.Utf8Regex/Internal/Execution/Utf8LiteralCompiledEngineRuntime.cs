@@ -2036,12 +2036,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         public int MatchLengthInUtf16 { get; }
         public int FindFirst(ReadOnlySpan<byte> input) => _search.IndexOf(input);
 
-        internal void CollectRetainedStorage<TControl>(Lokad.Utf8Regex.Internal.Caching.Utf8RetainedPayloadBuilder<TControl> storage)
-            where TControl : struct, IUtf8ConstructionTextControl
-        {
-            if (!storage.TryAdd(this, Utf8ConstructionBudget.ObjectBytes<(PreparedSubstringSearch, int, int)>())) return;
-            _search.CollectRetainedStorage(storage);
-        }
     }
 
     private InvalidOperationException UnexpectedExecutionKind()

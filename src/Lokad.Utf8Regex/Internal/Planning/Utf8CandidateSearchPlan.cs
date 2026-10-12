@@ -10,7 +10,7 @@ internal enum Utf8CandidateSearchKind : byte
     StructuralSearchSet = 3,
 }
 
-internal readonly partial struct Utf8CandidateSearchPlan
+internal readonly struct Utf8CandidateSearchPlan
 {
     private Utf8CandidateSearchPlan(
         Utf8CandidateSearchKind kind,

@@ -9,7 +9,7 @@ internal enum Utf8AsciiLiteralFinderKind : byte
     SpanIndexOf = 4,
 }
 
-internal readonly partial struct Utf8AsciiLiteralFinder
+internal readonly struct Utf8AsciiLiteralFinder
 {
     private readonly byte[] _literal;
     private readonly Utf8AsciiLiteralFinderKind _kind;

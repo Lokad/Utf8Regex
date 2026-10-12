@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 
-internal readonly partial struct Utf8SearchPlan
+internal readonly struct Utf8SearchPlan
 {
     private readonly Utf8StructuralSearchPlan[]? _fallbackCandidatePlans;
 
@@ -564,7 +564,7 @@ internal enum Utf8AlternateLiteralOverlapKind : byte
     ProperStart = 2,
 }
 
-internal readonly partial struct Utf8FixedDistanceSet
+internal readonly struct Utf8FixedDistanceSet
 {
     private Utf8FixedDistanceSet(
         int distance,

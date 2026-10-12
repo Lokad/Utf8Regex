@@ -38,7 +38,7 @@ public sealed class Utf8EmittedManagedStorageTests
         var maximum=loan;
         foreach(var cap in new[]{maximum-1,maximum})
         {
-            using var storage=Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(cap,default);
+            using var storage=Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(cap,default);
             emitted.CollectRetainedStorage(storage); emitted.CollectRetainedStorage(storage);
             var manifest=storage.Finish();
             Assert.Equal(cap!=maximum,storage.Exceeded);
@@ -54,7 +54,7 @@ public sealed class Utf8EmittedManagedStorageTests
     {
         using var owner=Utf8ConstructionScope.Enter();
         var emitted=Create();
-        using var storage=Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(1024*1024,default);
+        using var storage=Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(1024*1024,default);
         Assert.Throws<InvalidOperationException>(()=>new Utf8EmittedDelegate<Func<int,int>>(emitted.Callback,0).CollectRetainedStorage(storage));
         emitted.CollectRetainedStorage(storage);
         Assert.Throws<InvalidOperationException>(()=>new Utf8EmittedDelegate<Func<int,int>>(emitted.Callback,emitted.ManagedArrayBytes+1).CollectRetainedStorage(storage));

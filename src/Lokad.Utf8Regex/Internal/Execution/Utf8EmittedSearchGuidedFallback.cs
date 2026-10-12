@@ -6,7 +6,7 @@ using System.Reflection.Emit;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed partial class Utf8EmittedSearchGuidedFallback
+internal sealed class Utf8EmittedSearchGuidedFallback
 {
     internal delegate bool IsMatchDelegate(Utf8EmittedSearchGuidedFallback backend, ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation);
     internal delegate int CountDelegate(Utf8EmittedSearchGuidedFallback backend, ReadOnlySpan<byte> input, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation);

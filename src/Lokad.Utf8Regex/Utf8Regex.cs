@@ -90,12 +90,16 @@ public sealed partial class Utf8Regex
             ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
         }
         using var construction = Utf8ConstructionScope.Enter();
+        var beforeProgram = construction.Budget.ReservedBytes;
 
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
         Pattern = pattern;
         Options = options;
         MatchTimeout = matchTimeout;
+        construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
+        construction.Budget.ChargeWork(1);
+        construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
 
         _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
         var preparedRegex = _program.PreparedRegex;
@@ -228,6 +232,12 @@ public sealed partial class Utf8Regex
 
         ResourcePolicy = resourcePolicy;
         _replacementCache = Utf8ReplacementPlanCache.Create();
+        // Scratch has closed; covered retained capacity and conservative helper
+        // charges survive successful children. Explicitly cover the facade and
+        // borrowed pattern, and reserve the already-enforced lazy child maximum.
+        _cacheProgramBytes = checked(construction.Budget.ReservedBytes - beforeProgram
+            + CachedObjectBytes + Utf8ConstructionBudget.StringBytes(Pattern.Length)
+            + _replacementCache.MaximumRetainedBytes);
         construction.Complete();
     }
 

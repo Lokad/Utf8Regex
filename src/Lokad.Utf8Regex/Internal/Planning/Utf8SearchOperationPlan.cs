@@ -23,7 +23,7 @@ internal enum Utf8SearchObservabilityKind : byte
 /// from canonical prepared sources. Runtime owners can retain this view when
 /// they execute it repeatedly; the search plan need not store duplicate copies.
 /// </summary>
-internal readonly partial struct Utf8SearchOperationPlan
+internal readonly struct Utf8SearchOperationPlan
 {
     private Utf8SearchOperationPlan(
         Utf8SearchOperationKind kind,

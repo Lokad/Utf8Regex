@@ -211,7 +211,7 @@ public sealed class Utf8ExecutionRetainedGraphTests
     private static Utf8RetainedPayloadExtent[] Collect(Utf8ExecutionTree? tree, Utf8ExecutionProgram? program)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8RetainedPayloadBuilder<Utf8ConstructionTextNoControl>.Create(64 * 1024 * 1024, default);
+        using var storage = Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(64 * 1024 * 1024, default);
         Utf8ExecutionRetainedStorage.Collect(tree, program, storage);
         Assert.False(storage.Exceeded);
         return storage.Finish();
@@ -238,7 +238,7 @@ public sealed class Utf8ExecutionRetainedGraphTests
         public bool TryGetValueCharge<TControl>(ExecutionPair value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
+            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
             Utf8ExecutionRetainedStorage.Collect(value.Tree, value.Program, storage);
             charge = storage.FinishCharge();
             return !storage.Exceeded;

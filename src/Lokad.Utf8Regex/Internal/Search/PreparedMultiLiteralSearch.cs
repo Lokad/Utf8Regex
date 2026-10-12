@@ -649,7 +649,7 @@ internal readonly partial struct PreparedMultiLiteralPackedSearch
     }
 }
 
-internal readonly partial struct PreparedMultiLiteralRootByteFamilySearch
+internal readonly struct PreparedMultiLiteralRootByteFamilySearch
 {
     public PreparedMultiLiteralRootByteFamilySearch(byte[][] literals)
     {
@@ -713,7 +713,7 @@ internal enum PreparedMultiLiteralCandidatePrefilterKind : byte
     LeadingUtf8Segment = 7,
 }
 
-internal readonly partial struct PreparedMultiLiteralCandidatePrefilter
+internal readonly struct PreparedMultiLiteralCandidatePrefilter
 {
     private PreparedMultiLiteralCandidatePrefilter(
         PreparedMultiLiteralCandidatePrefilterKind kind,
@@ -2056,7 +2056,7 @@ internal readonly partial struct PreparedMultiLiteralTrieSearch
 
 }
 
-internal readonly partial struct PreparedMultiLiteralTrieNode
+internal readonly struct PreparedMultiLiteralTrieNode
 {
     public PreparedMultiLiteralTrieNode(byte[] keys, int[] children, int terminalOrder, int terminalLength)
     {

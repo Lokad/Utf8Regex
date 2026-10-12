@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Planning;
 
-internal readonly partial struct Utf8PrefilterPlan
+internal readonly struct Utf8PrefilterPlan
 {
     public Utf8PrefilterPlan(
         PreparedSearcher primarySearcher,

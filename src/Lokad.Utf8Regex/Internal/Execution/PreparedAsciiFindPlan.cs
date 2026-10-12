@@ -12,7 +12,7 @@ internal enum PreparedAsciiFindMode : byte
     FixedDistanceSet = 4,
 }
 
-internal readonly partial struct PreparedAsciiFindPlan
+internal readonly struct PreparedAsciiFindPlan
 {
     private readonly Utf8FixedDistanceSet[]? _fixedDistanceSets;
 

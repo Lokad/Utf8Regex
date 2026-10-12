@@ -7,7 +7,7 @@ internal enum Utf8EmittedTokenFamilyKind : byte
     Uri = 2,
 }
 
-internal sealed partial class Utf8EmittedTokenFamilyMatcher
+internal sealed class Utf8EmittedTokenFamilyMatcher
 {
     private readonly Utf8FallbackDirectFamilyPlan _plan;
 

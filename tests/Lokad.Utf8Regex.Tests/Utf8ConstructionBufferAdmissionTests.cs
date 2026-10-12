@@ -26,7 +26,9 @@ public sealed class Utf8ConstructionBufferAdmissionTests
             peak = measured.Budget.PeakBytes;
             Assert.True(measured.Budget.ReservedBytes > 0);
         }
-        Assert.InRange(peak, 48ul, 32768ul);
+        // Keep the former variable-storage bound alongside the one fixed
+        // constructor envelope; every total-byte transition is still checked.
+        Assert.InRange(peak - Utf8Regex.ProgramFixedMetadataBytes, 48ul, 32768ul);
         // Every charged extent is a multiple of 16; test both sides of each
         // transition, including the exact peak and the byte immediately below.
         for (ulong limit = 0; limit <= peak; limit += 16)

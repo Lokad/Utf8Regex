@@ -51,14 +51,6 @@ internal interface IUtf8UnvalidatedMatchRuntime
 
 internal abstract class Utf8CompiledEngineRuntime
 {
-    /// <summary>Collect every stored owned reference and complete runtime metadata,
-    /// including inactive plans. Expand shared identities once through the supplied
-    /// builder and preserve its work/cancellation authority. Delegate method/resolver/JIT
-    /// descendants remain an explicit CLR boundary, not a complete payload claim.</summary>
-    internal abstract void CollectRetainedStorage<TControl>(
-        Lokad.Utf8Regex.Internal.Caching.Utf8RetainedPayloadBuilder<TControl> storage)
-        where TControl : struct, Lokad.Utf8Regex.Internal.IUtf8ConstructionTextControl;
-
     protected static Utf8ValidationResult GetProbeValidation(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
         return validation.ByteLength == input.Length
@@ -188,7 +180,7 @@ internal abstract class Utf8CompiledEngineRuntime
 
 }
 
-internal sealed partial class Utf8ExactLiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
+internal sealed class Utf8ExactLiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
     IUtf8AsciiWellFormedMatchRuntime,
     IUtf8WellFormedMatchRuntime,
     IUtf8UnvalidatedMatchRuntime
@@ -208,7 +200,7 @@ internal sealed partial class Utf8ExactLiteralCompiledEngineRuntime : Utf8Compil
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
 }
 
-internal sealed partial class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime,
+internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime,
     IUtf8AsciiWellFormedMatchRuntime,
     IUtf8WellFormedMatchRuntime,
     IUtf8UnvalidatedMatchRuntime

@@ -31,7 +31,7 @@ internal enum Utf8StructuralSearchStageKind : byte
     YieldWindow = 15,
 }
 
-internal readonly partial struct Utf8StructuralSearchStage
+internal readonly struct Utf8StructuralSearchStage
 {
     private readonly record struct Data
     {
@@ -152,7 +152,7 @@ internal readonly partial struct Utf8StructuralSearchStage
         new(Utf8StructuralSearchStageKind.YieldWindow, default);
 }
 
-internal readonly partial struct Utf8StructuralSearchPlan
+internal readonly struct Utf8StructuralSearchPlan
 {
     private readonly Utf8StructuralSearchStage[]? _stages;
 

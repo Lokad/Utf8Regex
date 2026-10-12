@@ -2,6 +2,20 @@
 
 `Lokad.Utf8Regex` is a `net10.0` library whose primary I/O surface is **UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`**. Its matching unit is **one Unicode scalar**, and byte offsets and lengths are the primary result coordinates. The framework target and .NET-shaped API do not impose UTF-16 code-unit matching.
 
+Library cache admission uses conservative per-program charges. The complete
+constructor records its successful covered capacity after scratch release,
+complete facade metadata, independently charged pattern text and the replacement
+child's enforced maximum. One 16 KiB constructor charge covers borrowed immutable
+empty metadata, group-zero text and four fixed-size frontend arrays; dynamic major
+storage keeps its existing admission. Dead helper charges and shared storage can
+be counted again, causing earlier eviction. Production publication does not walk
+object graphs, deduplicate identities or retain manifests/reference counts.
+Generation/pending coordination, failed preparation rollback and externally held
+program/result validity remain required. Covered delegate managed copies are
+included; opaque CLR method/resolver/JIT storage, caller retention and process RSS
+remain outside this declared cache bound. Public/default/common resource policy
+qualification remains separate from this internal accounting contract.
+
 This target contract was revised by explicit user direction on 2026-10-06. Former unit-subject and production BCL execution paths are superseded. Production BCL matcher/result removal is qualified through shipped dependency audits; remaining scalar coverage, former parity cleanup and resource gates are recorded separately in PLAN.md. The specification does not by itself qualify current implementation behavior.
 
 ## 1. Charter
@@ -1136,7 +1150,7 @@ publication. Each builder publishes one delegate with an immutable receipt for
 its final CLR-managed parameter, code and local-signature copies. The receipt
 uses final array lengths and modeled headers, not transient construction peaks.
 Emitted wrapper descriptors include the inline receipt state. Retained collection
-reserves delegate metadata plus these copies under that delegate's identity;
+reserves delegate metadata plus these final managed copies conservatively;
 aliases share one allowance. Independent runtime inspection qualifies the actual
 copy extents. Production does not inspect private CLR fields or retain emission
 scratch. Owned code, fixup and stack walks spend shared work; pending stack

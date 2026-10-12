@@ -148,7 +148,7 @@ internal readonly struct PreparedByteSetState(
 
 // PCRE2-INTEGRATION-POINT: the removable adapter borrows this flavor-neutral
 // immutable mask kernel and its shared construction admission.
-internal sealed partial class PreparedByteSet(PreparedByteSetState state)
+internal sealed class PreparedByteSet(PreparedByteSetState state)
 {
     private readonly PreparedByteSetState _state = state;
     internal static readonly PreparedByteSet Empty = new(default);

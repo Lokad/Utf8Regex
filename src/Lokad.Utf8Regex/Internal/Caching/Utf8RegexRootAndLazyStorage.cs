@@ -2,8 +2,9 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Caching;
 
-// This provider certifies the facade and its complete owned scalar, prepared,
-// runtime and helper subgraphs. Delegate managed copies are covered; opaque CLR
+// The completed immutable program charge covers facade/scalar/prepared/runtime
+// and helper storage, with one coarse allowance for fixed/borrowed metadata.
+// Delegate managed copies are covered; opaque CLR
 // method/resolver/JIT descendants remain outside this declared cache scope.
 // Reserve bounded replacement descendants before parent publication;
 // their already-enforced maxima cover lazy growth without mutable manifests.
@@ -16,9 +17,10 @@ internal readonly struct Utf8RegexRootAndLazyStorage : IUtf8RetainedStorage<Utf8
     public bool TryGetValueCharge<TControl>(Utf8Regex value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl
     {
-        using var storage = Utf8RetainedPayloadBuilder<TControl>.Create(maximum, control);
-        value.CollectCacheRoots(storage);
-        charge = storage.FinishCharge();
-        return !storage.Exceeded;
+        control.Check();
+        Utf8ConstructionScope.CurrentBudget.ChargeWork(1);
+        charge = value.CacheProgramBytes;
+        if (charge == 0) throw new InvalidOperationException("A cache program requires a completed construction charge.");
+        return charge <= maximum;
     }
 }

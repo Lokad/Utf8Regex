@@ -35,7 +35,7 @@ internal enum Utf8ByteSafeLinearCompileFailureKind : byte
     NestedSubProgram = 9,
 }
 
-internal readonly partial struct Utf8ByteSafeLinearVerifierStep
+internal readonly struct Utf8ByteSafeLinearVerifierStep
 {
     private readonly byte[]? _text;
     private readonly byte[][]? _alternatives;

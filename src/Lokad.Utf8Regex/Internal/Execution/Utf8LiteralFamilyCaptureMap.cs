@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // Branch-to-group projection for literal alternatives wrapped in groups. Owned
 // discovery supplies the winning branch; unsupported shapes use scalar capture
 // execution. Every collected capture spans its complete branch match.
-internal sealed partial class Utf8LiteralFamilyCaptureMap
+internal sealed class Utf8LiteralFamilyCaptureMap
 {
     private Utf8LiteralFamilyCaptureMap(int[] wholeMatchGroups, int[][] branchGroups)
     {

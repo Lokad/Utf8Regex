@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly partial struct Utf8DeterministicVerifierGuards
+internal readonly struct Utf8DeterministicVerifierGuards
 {
     private const int MaxPrefixGuards = 32;
 

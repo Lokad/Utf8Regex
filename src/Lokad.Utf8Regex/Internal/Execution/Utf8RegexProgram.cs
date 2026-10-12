@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed partial class Utf8RegexProgram
+internal sealed class Utf8RegexProgram
 {
     private readonly record struct ConstructionState(
         Utf8PreparedRegex PreparedRegex,
