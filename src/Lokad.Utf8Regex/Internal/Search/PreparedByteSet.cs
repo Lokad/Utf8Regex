@@ -53,8 +53,8 @@ internal readonly struct PreparedByteSetState(
             if (value < 128) lower[value & 15] |= (byte)(1 << (value >> 4));
             else upper[value & 15] |= (byte)(1 << ((value >> 4) - 8));
         }
-        return new(a, b, c, d, Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(lower)),
-            Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(upper)), (byte)minimum, (byte)maximum,
+        return new(a, b, c, d, MemoryMarshal.Read<Vector128<byte>>(lower),
+            MemoryMarshal.Read<Vector128<byte>>(upper), (byte)minimum, (byte)maximum,
             count > 0 && maximum - minimum + 1 == count, (c | d) == 0);
     }
 
@@ -94,6 +94,9 @@ internal readonly struct PreparedByteSetState(
                 var mask = width == 32 ? Misses256(input, position) : Misses128(input, position);
                 if (!except) mask ^= all;
                 if (mask != 0) return position + (reverse ? BitOperations.Log2(mask) : BitOperations.TrailingZeroCount(mask));
+                // Misses128/256 keep unchecked loads under this loop's
+                // [0, input.Length - width] invariant. The .NET 10 checked-slice
+                // pilot retained per-vector branches and regressed throughput.
                 // The final overlapping vector stays inside the span. Its
                 // overlap was already proved empty, so it cannot reorder a hit.
                 if (reverse ? position == 0 : position == last) return -1;

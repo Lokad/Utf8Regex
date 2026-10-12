@@ -57,6 +57,10 @@ internal static class Utf8LiteralEquality
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool EqualsFastShort(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> literal)
     {
+        // EqualsAt admits both complete spans to the same literal length.
+        // Checked loads/slices were investigated on .NET 10: added tail checks
+        // and inconclusive/regressing head timings prevent claiming equal cost.
+        // Keep this dispatch until a bounded repeat supports a whole-path change.
         ref var candidateRef = ref MemoryMarshal.GetReference(candidate);
         ref var literalRef = ref MemoryMarshal.GetReference(literal);
         switch (literal.Length)

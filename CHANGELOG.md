@@ -44,6 +44,13 @@
 
 ## Development history
 
+- Replace two unchecked vector reads from fixed sixteen-byte construction
+  buffers with `MemoryMarshal.Read<Vector128<byte>>`. Windows/Linux Release
+  code generation is identical; allocation and the byte-set algorithm are
+  unchanged. Keep the hot vector-search and short-literal reads after bounded
+  checked-load pilots failed to establish equal cost; comments state their
+  admitted bounds and the deferral. Expand unaligned literal-view/tail coverage.
+
 - Admit all three owned capture projection producers under the shared
   construction budget: map descriptors, retained arrays, scratch span vectors,
   literal text and expansion entries. Work remains spent when a shape declines;
