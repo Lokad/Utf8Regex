@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased PCRE2 partial line/empty flags (0.4.0-scalar.11-dev)
+
+- Observe qualified NotBol/NotEol/NotEmpty/NotEmptyAtStart partial outcomes using
+  existing assertions and one invocation. Rejected empty full matches can preserve
+  partials or permit later full candidates. Fix dollar rejection before final newline
+  in normal matching too. Keep captures, aliases, finite admission and interruption.
+- Replace duplicate trailing-repeat scanning with one scalar candidate loop, and
+  use existing dot-token semantics for negative-lookahead/star candidates. Remove
+  the incorrect literal-suffix partial comparator; partials require a literal prefix.
+  Retarget four incorrect corpus outcomes with native API evidence. EndAnchored
+  and wider partial setting/flag combinations remain required gates.
+
 ## Unreleased PCRE2 anchored partial probes (0.4.0-scalar.10-dev)
 
 - Restrict specialized soft/hard candidates to the requested consumed start when

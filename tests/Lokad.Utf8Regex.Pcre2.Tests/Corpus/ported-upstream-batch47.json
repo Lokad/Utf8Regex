@@ -278,7 +278,11 @@
     "PartialMode": "Soft",
     "Operation": "Probe",
     "Expected": {
-      "Outcome": "NoMatch",
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "",
       "Groups": [],
       "NameEntries": []
     },
@@ -333,8 +337,8 @@
     "Operation": "Probe",
     "Expected": {
       "Outcome": "PartialMatch",
-      "StartOffsetInBytes": 0,
-      "EndOffsetInBytes": 0,
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 2,
       "HasContiguousByteRange": true,
       "ValueText": "",
       "Groups": [],

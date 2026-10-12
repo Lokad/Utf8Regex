@@ -129,7 +129,13 @@ later start and lookbehind can read earlier subject bytes. Leading assertions us
 the original subject; an offset creates no new beginning of line. Full/partial
 precedence is preserved, with lazy successful alternatives no longer displaced by
 a later partial. Lookbehind display text is excluded from partial substring zero.
-Other per-operation flags and their combinations retain a separate release gate.
+The qualified line/empty increment observes NotBol, NotEol, NotEmpty and
+NotEmptyAtStart under the same authority. Empty full rejection may preserve a
+partial or permit a later full candidate. Dollar end rejection is distinct from
+absolute/end-before-final-newline assertions. Candidate growth remains scalar;
+negative-class/dot and trailing-repeat helpers now respect newline and EOF cases.
+EndAnchored, wider setting/flag combinations and broader partial coverage retain
+a separate release gate.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native

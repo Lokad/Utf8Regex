@@ -2049,7 +2049,8 @@ internal static class Pcre2CharacterSemantics
             return true;
         }
 
-        return (compileOptions & Pcre2CompileOptions.DollarEndOnly) == 0 &&
+        return (matchOptions & Pcre2MatchOptions.NotEol) == 0 &&
+            (compileOptions & Pcre2CompileOptions.DollarEndOnly) == 0 &&
             IsEndOrBeforeFinalNewline(input, offset, newline);
     }
 

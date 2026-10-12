@@ -71,11 +71,11 @@
     "PartialMode": "Soft",
     "Operation": "Probe",
     "Expected": {
-      "Outcome": "PartialMatch",
-      "StartOffsetInBytes": 2,
-      "EndOffsetInBytes": 4,
-      "HasContiguousByteRange": true,
-      "ValueText": "bc",
+      "Outcome": "NoMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 0,
+      "HasContiguousByteRange": false,
+      "ValueText": "",
       "Groups": [],
       "NameEntries": []
     },
@@ -100,11 +100,11 @@
     "PartialMode": "Hard",
     "Operation": "Probe",
     "Expected": {
-      "Outcome": "PartialMatch",
-      "StartOffsetInBytes": 2,
-      "EndOffsetInBytes": 3,
-      "HasContiguousByteRange": true,
-      "ValueText": "c",
+      "Outcome": "NoMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 0,
+      "HasContiguousByteRange": false,
+      "ValueText": "",
       "Groups": [],
       "NameEntries": []
     },
