@@ -105,8 +105,13 @@ their original work/heap, cancellation token and deadline. Full-array capacity i
 admitted before allocation; partial results keep their inline range. Tight limits
 can deny earlier. Non-partial probes reuse owned detailed captures, preserving
 names and MARK, and forward native match options without an extra capture copy.
-Specialized partial-probe routes still require shared-policy qualification; this
-does not enable public result-byte budgets.
+Specialized partial probes also share their original work/heap/token/deadline
+through loops, bounded searches, endpoint projection and full-array admission.
+Full, soft and hard decisions and scalar advancement remain; tighter limits can
+deny earlier. Full `(a)b+` probes now retain the missing capture, adding one group
+element to their owned snapshot, and full probes borrow compiled name metadata.
+Partial ranges remain inline. Cumulative publication admission is still required
+before public result-byte budgets can be enabled.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native

@@ -588,7 +588,8 @@ public sealed partial class Utf8Pcre2Regex
 
         if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None)
         {
-            return Pcre2PartialProbeRunner.Probe(input, partialMode, startOffsetInBytes, _program.PartialProbe);
+            var runner = new Pcre2PartialProbeRunner(subject, _program.Request, NameEntries, cancellationToken);
+            return runner.Probe(partialMode, startOffsetInBytes, _program.PartialProbe);
         }
 
         if (partialMode == Pcre2PartialMode.None)
@@ -621,7 +622,7 @@ public sealed partial class Utf8Pcre2Regex
         throw CreateUnsupportedProbeException();
     }
 
-    /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options. Literal and detailed matching observe live cancellation; specialized partial routes currently check only before entry.</summary>
+    /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options, observing live cancellation during execution and required result shaping.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="partialMode">The permitted subject-end partial-match mode.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>

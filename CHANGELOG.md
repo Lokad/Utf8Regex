@@ -2,6 +2,11 @@
 
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
+- Meter specialized partial probes with their original work/heap/token/deadline,
+  including bounded searches, coordinate projection and full result allocation.
+  Preserve full/soft/hard scalar outcomes. Restore the missing full `(a)b+`
+  capture and retain compiled names; this adds one group-data element to that
+  snapshot. Cumulative result admission remains a separate gate.
 - Keep literal-probe coordinate projection/full-result admission under the original
   work/heap/token/deadline. Non-partial probes reuse detailed capture storage and
   preserve names, MARK and native match options. Remove their unmetered projection
