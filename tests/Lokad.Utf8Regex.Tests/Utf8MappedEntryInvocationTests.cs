@@ -178,7 +178,7 @@ public sealed class Utf8MappedEntryInvocationTests
         GC.WaitForPendingFinalizers();
         GC.Collect();
         var mapBytes = MapBytes(validation.Utf16Length);
-        Assert.Equal(retain ? mapBytes + 7 : 7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(mapBytes + 7, invocation.Ledger.ReservedBytes);
         if (retain) Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
     }
 
@@ -304,7 +304,7 @@ public sealed class Utf8MappedEntryInvocationTests
         GC.WaitForPendingFinalizers();
         GC.Collect();
         var mapBytes = MapBytes(validation.Utf16Length);
-        Assert.Equal(retain ? mapBytes + 7 : 7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(mapBytes + 7, invocation.Ledger.ReservedBytes);
         if (retain) Assert.Equal(validation.EndBoundary, map.Resolve(map.Utf16Length));
     }
 

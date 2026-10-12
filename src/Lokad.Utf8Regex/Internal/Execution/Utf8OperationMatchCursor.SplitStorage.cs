@@ -7,16 +7,15 @@ internal ref partial struct Utf8OperationMatchCursor
     internal ulong DebugPeakWorkingBytes => _sliceInvocation.Budget.PeakWorkingBytes;
 
     // The split's coordinate map outlives match EOF: Current and copied
-    // views still refer to it. Keep it charged for the holder lifetime.
+    // views still refer to it. Keep it charged for the shared invocation.
     // Count one needs only this invocation holder, without match discovery.
     internal static Utf8OperationMatchCursor CreateSplitCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map, Utf8SliceInvocation invocation, ulong mapBytes, bool tailOnly)
+        Utf8BoundaryMap map, Utf8SliceInvocation invocation, bool tailOnly)
     {
         var cursor = tailOnly
             ? new Utf8OperationMatchCursor(input, map, invocation)
             : new Utf8OperationMatchCursor(program, input, map, invocation);
-        cursor._boundaryMapReservedBytes = mapBytes;
-        cursor._retainBoundaryMapReservation = true;
+        cursor._retainBoundaryMap = true;
         cursor._sliceInvocation.Budget.TryNoteWorkingBytes(cursor._sliceInvocation.Ledger.ReservedBytes);
         return cursor;
     }
@@ -34,13 +33,13 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceProgram = null;
     }
 
-    internal void AbortOwnedSplitSetup()
+    internal void AbortOwnedSplitSetup(ref ulong mapBytes)
     {
-        _nonBacktrackingState?.AbortCursorSetup();
+        _nonBacktrackingState?.Release(ref _sliceInvocation);
         _nonBacktrackingState = null;
-        _boundaryMap?.StorageLease?.AbortBeforePublication();
+        _sliceInvocation.Ledger.Release(mapBytes);
+        mapBytes = 0;
         _boundaryMap = null;
-        _boundaryMapReservedBytes = 0;
         _sliceProgram = null;
     }
 }

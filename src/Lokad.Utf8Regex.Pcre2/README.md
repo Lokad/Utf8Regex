@@ -89,7 +89,12 @@ no match is admitted before allocation and copied with the same token/deadline.
 `MatchLimit` covers that work; `HeapLimitInBytes` covers overlapping live working
 capacities. Cases formerly funded by separate matching/writing allowances can
 fail earlier. Output publication releases working charges; it does not bound
-results retained by the caller or process memory.
+results retained by the caller or process memory. Shared copied-cursor coordinate
+maps and linear tables conservatively remain reserved for their invocation after
+EOF or physical collection. Those credits never depend on finalizer timing; a
+later consumer of the same finite allowance can deny earlier. Borrowed aliases and
+retained views remain valid, and unpublished setup/exclusive scratch still release
+synchronously.
 
 Initial validation/preparation and other replacement routes still have separate
 enforcement scopes. This slice does not establish a common operation-wide policy.

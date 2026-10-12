@@ -63,8 +63,7 @@ internal ref partial struct Utf8OperationMatchCursor
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
     private Utf8BoundaryMap? _boundaryMap;
-    private ulong _boundaryMapReservedBytes;
-    private bool _retainBoundaryMapReservation;
+    private bool _retainBoundaryMap;
     private readonly Utf8ExecutionDeadline _budget;
     private readonly int _literalUtf16Length;
     private readonly int _totalUtf16Length;
@@ -303,7 +302,6 @@ internal ref partial struct Utf8OperationMatchCursor
             try
             {
                 _nonBacktrackingBoundary = state.ResolveByteOffset(startByte);
-                state.PublishForCursor(ref _sliceInvocation);
             }
             catch { state.Release(ref _sliceInvocation); throw; }
             _nonBacktrackingState = state;
@@ -323,16 +321,13 @@ internal ref partial struct Utf8OperationMatchCursor
         map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var reservation);
         try
         {
-            map = map.WithStorageLease(invocation.Ledger.CreateLease(reservation));
             var cursor = new Utf8OperationMatchCursor(program, input, map, invocation);
-            cursor._boundaryMapReservedBytes = reservation;
-            cursor._retainBoundaryMapReservation = retainMap;
+            cursor._retainBoundaryMap = retainMap;
             return cursor;
         }
         catch
         {
-            if (map.StorageLease is { } lease) lease.AbortBeforePublication();
-            else invocation.Ledger.Release(reservation);
+            invocation.Ledger.Release(reservation);
             map = default;
             throw;
         }
@@ -345,15 +340,12 @@ internal ref partial struct Utf8OperationMatchCursor
         try
         {
             var startByte = map.Resolve(startUnit).ByteOffset;
-            map = map.WithStorageLease(invocation.Ledger.CreateLease(reservation));
             var cursor = new Utf8OperationMatchCursor(program, input, map, invocation, startByte);
-            cursor._boundaryMapReservedBytes = reservation;
             return cursor;
         }
         catch
         {
-            if (map.StorageLease is { } lease) lease.AbortBeforePublication();
-            else invocation.Ledger.Release(reservation);
+            invocation.Ledger.Release(reservation);
             map = default;
             throw;
         }
@@ -362,11 +354,10 @@ internal ref partial struct Utf8OperationMatchCursor
     internal void ReleaseOwnedBoundaryMap()
     {
         _nonBacktrackingState = null;
-        if (_retainBoundaryMapReservation) return;
-        if (_boundaryMap?.StorageLease is null)
-            _sliceInvocation.Ledger.Release(_boundaryMapReservedBytes);
+        if (_retainBoundaryMap) return;
+        // Published payloads stay numerically charged for the shared invocation.
+        // The map/table references are ordinary managed roots, with no lease.
         _boundaryMap = null;
-        _boundaryMapReservedBytes = 0;
     }
 
     // Explicit UTF-16 interoperability starts resolve once to the original byte

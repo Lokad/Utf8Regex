@@ -9,6 +9,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8SplitStringGetterTests
 {
+    // Returned strings retain no prepared payload. Its conservative numeric
+    // reservation remains on the invocation, independent of physical collection.
     private const ulong Capacity = 65536;
 
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
@@ -43,7 +45,7 @@ public sealed class Utf8SplitStringGetterTests
         var alias = VerifyEscapedValue(regex, Encoding.UTF8.GetBytes(text), text, count, ref invocation);
         CollectLoans();
         Assert.False(alias.IsAlive);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(HeldBytes(text), invocation.Ledger.ReservedBytes);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -53,10 +55,11 @@ public sealed class Utf8SplitStringGetterTests
         var alias = EscapeValue(regex, input, count, ref invocation, out var coordinates);
         CollectLoans();
         if (coordinates is not null) Assert.False(coordinates.IsAlive);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        Assert.True(invocation.Ledger.TryReserve(Capacity - 7));
+        var held = HeldBytes(text);
+        Assert.Equal(held, invocation.Ledger.ReservedBytes);
+        Assert.True(invocation.Ledger.TryReserve(Capacity - held));
         Assert.False(invocation.Ledger.TryReserve(1));
-        invocation.Ledger.Release(Capacity - 7);
+        invocation.Ledger.Release(Capacity - held);
         Assert.Equal(text, alias);
         return new WeakReference(alias);
     }
@@ -81,7 +84,7 @@ public sealed class Utf8SplitStringGetterTests
         var alias = VerifyEscapedValue(regex, Encoding.UTF8.GetBytes(text), text, 1, ref invocation);
         CollectLoans();
         if (text.Length > 1) Assert.False(alias.IsAlive);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(HeldBytes(text), invocation.Ledger.ReservedBytes);
         // Encoding may cache a one-character string; its identity does not
         // carry a coordinate or subject loan.
     }
@@ -102,7 +105,7 @@ public sealed class Utf8SplitStringGetterTests
         CollectLoans();
         Assert.NotNull(coordinates);
         Assert.False(coordinates.IsAlive);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(HeldBytes(text), invocation.Ledger.ReservedBytes);
         Assert.Equal(rtl ? " tail" : "é😀 ", value);
     }
 
@@ -120,5 +123,12 @@ public sealed class Utf8SplitStringGetterTests
         Assert.Equal(value, view.GetValueString());
         while (cursor.MoveNext()) { }
         return value;
+    }
+
+    private static ulong HeldBytes(string text)
+    {
+        var validation = Utf8Validation.Validate(Encoding.UTF8.GetBytes(text));
+        return validation.IsAscii ? 7 : 7 + Utf8ConstructionBudget.ArrayBytes<int>(validation.Utf16Length + 1)
+            + Utf8ConstructionBudget.ArrayBytes<uint>((validation.Utf16Length + 32) / 32);
     }
 }

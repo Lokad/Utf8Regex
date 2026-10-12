@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// Metered work counters have one shared owner, including after transfer into
 /// a copied value cursor. Positions and anchor origins stay cursor-local.
 /// Controlled scopes also share one storage ledger. Forkable cursors promote
-/// even unlimited scopes before transferring payload leases.</summary>
+/// even unlimited scopes before publishing invocation-long payload reservations.</summary>
 internal struct Utf8SliceInvocation
 {
     private Utf8ExecutionBudget _inlineBudget;

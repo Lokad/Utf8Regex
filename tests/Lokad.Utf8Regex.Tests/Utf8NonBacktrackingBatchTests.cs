@@ -273,13 +273,13 @@ public sealed class Utf8NonBacktrackingBatchTests
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        ExerciseCopiesAndAbandon(program, "a😀b"u8.ToArray(), ref invocation);
+        var held = ExerciseCopiesAndAbandon(program, "a😀b"u8.ToArray(), ref invocation);
         CollectLeases();
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(held, invocation.Ledger.ReservedBytes);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ExerciseCopiesAndAbandon(Utf8SliceProgram program, byte[] input, ref Utf8SliceInvocation invocation)
+    private static ulong ExerciseCopiesAndAbandon(Utf8SliceProgram program, byte[] input, ref Utf8SliceInvocation invocation)
     {
         var validation = Utf8Validation.Validate(input, ref invocation);
         var original = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
@@ -296,7 +296,8 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
         Assert.True(original.MoveNext());
         Assert.Equal(1, original.CurrentValueMatch.IndexInBytes);
-        // Abandon the remaining original without reaching EOF.
+        // Abandon the original; only the numeric invocation charge persists.
+        return held;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

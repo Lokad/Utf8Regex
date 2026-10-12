@@ -133,26 +133,30 @@ separate counter owners. This synchronous internal owner is not a public shared
 meter and does not support concurrent advancement of copies. Infinite None-token
 calls without diagnostics retain inline counters unless a forkable cursor needs
 a shared storage owner. Controlled invocation copies share their aggregate ledger.
-Owned mapped cursors and split views retain shared leases for coordinate and decoded
-payloads. EOF or failure drops one holder; payload remains charged
-while another copy or view holds it. After the last holder is collected, cleanup
-queues a release which the synchronous ledger drains before its next read or
-admission. Abandoned cursors require no explicit disposal. Setup failure before
-publication releases its payload loans immediately, preserving borrowed storage.
-Split coordinate maps and prepared decoded text have independent payload loans.
-When a whole-segment getter returns that prepared string, a weak attachment keeps
-its decoded loan alive after the cursor/view disappears; the unused map can still
-be collected. The attachment does not root the text. Empty shared strings carry
-no payload loan. Independent substring results do not retain the prepared subject;
-their result-materialization admission is separate. Alias-registry entry/table
-overhead also remains a retained-metadata admission gate.
-These leases cover exact managed payloads, with no pooled/native cleanup in their
-finalizers. Lazy getter/result bounds, other execution routes and fixed object
-overhead still require admission work. These leases do not establish a public
-working/result-byte cap or timely reclamation of early-abandoned legacy cursors.
+Owned mapped value cursors and split views keep published coordinate maps and
+linear viability tables charged for their shared invocation. EOF, failure or
+physical collection of a payload does not refund its published reservation.
+Permitted copies retain independent positions and ordinary managed references;
+retained results/views remain valid after another copy ends. The ledger contains
+numbers and does not root abandoned payloads. There are no finalizer leases,
+atomic collection-release queues, alias registries or GC-dependent credit refunds.
+Setup failure before publication releases its own loans immediately, preserving
+borrowed storage; exclusive temporary VM scratch also releases synchronously.
+
+Logical reserved capacity can exceed physically live payload capacity. This
+intentional conservative rule can cause earlier denial when another consumer uses
+the same internal finite working allowance after abandonment/EOF; a separate
+operation has an independent allowance. It preserves the covered live-capacity
+upper bound without promising prompt GC, caller-retention bounds or RSS. Existing
+borrowed span/value APIs require no new disposal contract. These payloads are exact
+managed arrays; no pooled/native cleanup is deferred or removed. Split string
+getters decode only their selected UTF-8 slice and retain no prepared decoded
+subject or loan attachment. Lazy getters and fixed accounting metadata retain
+their documented separate scope. Public core/Python working-byte admission remains
+unfinished and is not established by this internal lifetime simplification.
 
 PythonRe's incremental `CreateMatchCursor(ReadOnlyMemory<byte>)` uses an explicit
-reference owner instead of those copied value-cursor leases. Aliases share its
+reference owner alongside the copied value-cursor contract. Aliases share its
 position and lifetime; early abandonment requires disposal. EOF, failure and
 disposal synchronously release scratch and subject references, with no finalizer
 or collection-release ledger. Keep the borrowed subject unchanged and its memory
@@ -510,20 +514,21 @@ per entry for their declared immutable program graph or root/bounded-descendant
 scope. Keys use direct length-based charges without a graph builder or identity
 map. Replacement programs in all three profiles use direct bounded length/fixed
 wrapper charges, with each storage-bearing slot counted independently; no builder
-or identity map is needed for those flat schemas. The main regex provider still
-walks its declared graph against the remaining allowance. Key/value text, shared
+or identity map is needed for those flat schemas. The main provider reads the
+completed program's immutable conservative charge without graph traversal.
+Key/value text, shared
 slots within replacement plans and storage across entries can be charged again
 and cause earlier eviction. Entries retain a
 numeric charge, with no global identity registry,
-reference counts or payload manifests. Graph traversal still uses temporary
-identities to cover shared/cyclic references within a program; retiring those
-collectors requires a qualified coarser certificate. Independent graph/major-array
+reference counts or payload manifests. Production graph collectors and temporary
+identity builders are retired under the qualified per-program certificate.
+Independent test-owned graph/major-array
 and lazy-descendant coverage remains required. Cache admission/eviction preserve
 pending preparation coordination, cancellation, construction work and reentrant
 clear/shrink. Eviction does not invalidate caller-held programs or results. These
 internal bounds cover cache retention, not caller retention, process RSS, or a
-complete public policy. Construction helper-object precision and existing copied
-cursor leases remain under the simplification review recorded in PLAN.md.
+complete public policy. Further construction-helper simplification and complete
+public working/ownership policies remain under the review recorded in PLAN.md.
 
 The architecture must keep these invariants:
 
@@ -607,7 +612,7 @@ scalar program for mixed UTF-8 and reverse matching. Their general IsMatch/Count
 paths retain byte coordinates; requested Match projection shares the invocation.
 Absolute caller deadlines and direct controlled work/token/storage owners survive
 the transfer. General compiled match/split cursor factories use owned scalar
-execution, admitted coordinate maps and copy-safe leases, without decoded subjects
+execution, admitted coordinate maps and invocation-long published reservations, without decoded subjects
 or BCL enumerators. Scalar byte floors preserve full assertion context and NFA
 starts. Maps and NFA tables stay admitted while cursor copies can still retain
 them; EOF releases temporary VM scratch rather than invalidating those copies.

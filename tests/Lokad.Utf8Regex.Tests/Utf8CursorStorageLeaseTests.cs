@@ -9,6 +9,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CursorStorageLeaseTests
 {
+    // Historical fixture names remain. Published payload reservations are now
+    // invocation-long; weak references still prove that accounting roots nothing.
     private static Utf8SliceProgram Program(Utf8Regex regex) =>
         (Utf8SliceProgram)typeof(Utf8Regex).GetField("_ownedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
 
@@ -24,9 +26,10 @@ public sealed class Utf8CursorStorageLeaseTests
     {
         var ledger = new Utf8StorageLedger(ulong.MaxValue);
         Assert.True(ledger.TryReserve(ulong.MaxValue));
-        var leases = AbandonUnsignedLoans(ref ledger);
         CollectLeases();
-        Assert.All(leases, lease => Assert.False(lease.IsAlive));
+        Assert.Equal(ulong.MaxValue, ledger.ReservedBytes);
+        Assert.False(ledger.TryReserve(1));
+        ledger.Release(ulong.MaxValue - 7);
         Assert.Equal(7UL, ledger.ReservedBytes);
         Assert.True(ledger.TryReserve(ulong.MaxValue - 7));
         Assert.False(ledger.TryReserve(1));
@@ -34,29 +37,33 @@ public sealed class Utf8CursorStorageLeaseTests
         Assert.Equal(0UL, ledger.ReservedBytes);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference[] AbandonUnsignedLoans(ref Utf8StorageLedger ledger) =>
-        [new(ledger.CreateLease(ulong.MaxValue - 13)!), new(ledger.CreateLease(6)!)];
-
     [Fact]
     public void SetupAbortReturnsItsLoanImmediatelyAndDoesNotReleaseAgainOnCollection()
     {
-        var ledger = new Utf8StorageLedger(31);
-        Assert.True(ledger.TryReserve(31));
-        var lease = AbortLoan(ref ledger);
-        Assert.Equal(7UL, ledger.ReservedBytes);
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 256), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        var payload = AbortLoan(ref invocation);
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         CollectLeases();
-        Assert.False(lease.IsAlive);
-        Assert.Equal(7UL, ledger.ReservedBytes);
-        Assert.Null(ledger.CreateLease(0));
+        Assert.False(payload.IsAlive);
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.True(invocation.Ledger.TryReserve(0));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference AbortLoan(ref Utf8StorageLedger ledger)
+    private static WeakReference AbortLoan(ref Utf8SliceInvocation invocation)
     {
-        var lease = ledger.CreateLease(24)!;
-        var reference = new WeakReference(lease);
-        lease.AbortBeforePublication();
+        var regex = new Utf8Regex("(.)", RegexOptions.CultureInvariant);
+        var input = "😀"u8.ToArray();
+        var validation = Utf8Validation.Validate(input, ref invocation);
+        var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out var bytes);
+        var reference = new WeakReference(typeof(Utf8BoundaryMap).GetField("_byteOffsets", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(map)!);
+        try
+        {
+            _ = Utf8OperationMatchCursor.CreateMappedFromUnit(Program(regex), input, ref map, ref invocation, bytes, 3);
+            Assert.Fail("The invalid offset must abort unpublished setup.");
+        }
+        catch (ArgumentOutOfRangeException) { Assert.Equal(0, map.ByteLength); }
         return reference;
     }
 
@@ -89,13 +96,13 @@ public sealed class Utf8CursorStorageLeaseTests
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        ExerciseCopies(regex, input, text, ref invocation);
+        var held = ExerciseCopies(regex, input, text, ref invocation);
         CollectLeases();
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(held, invocation.Ledger.ReservedBytes);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ExerciseCopies(Utf8Regex regex, byte[] input, string text, ref Utf8SliceInvocation invocation)
+    private static ulong ExerciseCopies(Utf8Regex regex, byte[] input, string text, ref Utf8SliceInvocation invocation)
     {
         var validation = Utf8Validation.Validate(input, ref invocation);
         var original = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out _);
@@ -114,6 +121,7 @@ public sealed class Utf8CursorStorageLeaseTests
                 (original.CurrentValueMatch.IndexInUtf16, original.CurrentValueMatch.LengthInUtf16));
         }
         Assert.False(original.MoveNext());
+        return held;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -129,18 +137,19 @@ public sealed class Utf8CursorStorageLeaseTests
         var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var buffer = Abandon(regex, Encoding.UTF8.GetBytes("é😀 abab"), ref invocation);
+        var buffer = Abandon(regex, Encoding.UTF8.GetBytes("é😀 abab"), ref invocation, out var held);
         CollectLeases();
         Assert.False(buffer.IsAlive);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(held, invocation.Ledger.ReservedBytes);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference Abandon(Utf8Regex regex, byte[] input, ref Utf8SliceInvocation invocation)
+    private static WeakReference Abandon(Utf8Regex regex, byte[] input, ref Utf8SliceInvocation invocation, out ulong held)
     {
         var validation = Utf8Validation.Validate(input, ref invocation);
         var cursor = Utf8OperationMatchCursor.CreateMapped(Program(regex), input, validation, ref invocation, false, out var map);
         Assert.True(cursor.MoveNext());
+        held = invocation.Ledger.ReservedBytes;
         var offsets = typeof(Utf8BoundaryMap).GetField("_byteOffsets", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(map)!;
         return new WeakReference(offsets);
     }
@@ -161,7 +170,7 @@ public sealed class Utf8CursorStorageLeaseTests
             + ((ulong)(validation.Utf16Length + 32) / 32 * 4 + 15) / 16 * 16;
         ReadViewAfterCollection(regex, input, count, held, source, ref invocation);
         CollectLeases();
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(held, invocation.Ledger.ReservedBytes);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

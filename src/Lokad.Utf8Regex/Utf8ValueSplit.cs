@@ -82,14 +82,7 @@ public readonly ref struct Utf8ValueSplit
     /// <summary>Gets the segment value decoded as a UTF-16 string.</summary>
     public string GetValueString()
     {
-        try
-        {
-            return Encoding.UTF8.GetString(GetValueBytes());
-        }
-        finally
-        {
-            _boundaryMap?.KeepStorageAlive();
-        }
+        return Encoding.UTF8.GetString(GetValueBytes());
     }
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)

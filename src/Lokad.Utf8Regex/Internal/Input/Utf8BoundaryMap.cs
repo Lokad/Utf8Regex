@@ -38,7 +38,7 @@ internal readonly partial struct Utf8BoundaryMap
         return map;
     }
 
-    private Utf16Boundary ResolveCore(int utf16Offset)
+    public Utf16Boundary Resolve(int utf16Offset)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(utf16Offset);
         if (utf16Offset > Utf16Length)
@@ -59,7 +59,7 @@ internal readonly partial struct Utf8BoundaryMap
             : Utf16Boundary.SurrogateSplitBoundary(_byteOffsets[utf16Offset], utf16Offset);
     }
 
-    private int GetUtf16OffsetForByteOffsetCore(int byteOffset)
+    public int GetUtf16OffsetForByteOffset(int byteOffset)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(byteOffset);
         if (byteOffset > ByteLength)
@@ -104,7 +104,7 @@ internal readonly partial struct Utf8BoundaryMap
             "The requested byte offset is not aligned to a scalar boundary.");
     }
 
-    private bool TryGetUtf16OffsetForByteOffsetCore(int byteOffset, out int utf16Offset)
+    public bool TryGetUtf16OffsetForByteOffset(int byteOffset, out int utf16Offset)
     {
         utf16Offset = 0;
         if (byteOffset < 0 || byteOffset > ByteLength)

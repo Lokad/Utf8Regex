@@ -14,7 +14,6 @@ internal sealed class Utf8NonBacktrackingSearchState
     private readonly ulong[] _viability;
     private readonly int _stride;
     private ulong _reservation;
-    private Utf8StorageLease? _lease;
 
     private Utf8NonBacktrackingSearchState(int[] boundaries, ulong[] viability, int stride, ulong reservation)
     {
@@ -184,23 +183,13 @@ internal sealed class Utf8NonBacktrackingSearchState
         return index;
     }
 
-    internal void PublishForCursor(ref Utf8SliceInvocation invocation)
-    {
-        _lease = invocation.Ledger.CreateLease(_reservation);
-        _reservation = 0;
-    }
-
+    // Exclusive batch owners and failed setup release synchronously. Published
+    // value cursors leave this reservation charged for the shared invocation;
+    // dropping one view cannot invalidate another copy's table or accounting.
     internal void Release(ref Utf8SliceInvocation invocation)
     {
-        if (_lease is not null) throw new InvalidOperationException("A shared cursor table releases through its storage lease.");
         invocation.Ledger.Release(_reservation);
         _reservation = 0;
-    }
-
-    internal void AbortCursorSetup()
-    {
-        _lease?.AbortBeforePublication();
-        _lease = null;
     }
 
     internal Utf8SliceSearchOutcome FindFirst(Utf8SliceProgram program, ref int boundary,

@@ -19,11 +19,9 @@ internal static class Utf8OwnedSplitPreparation
             invocation.ShareStorageForCursor();
             var validation = Utf8Validation.Validate(input, ref invocation);
             map = Utf8BoundaryMap.Create(input, validation, ref invocation, out mapBytes);
-            // Current and copied split views retain this coordinate loan;
-            // string getters independently decode only their UTF-8 slice.
-            map = map.WithStorageLease(invocation.Ledger.CreateLease(mapBytes));
-            cursor = Utf8OperationMatchCursor.CreateSplitCursor(program, input, map, invocation,
-                mapBytes, effectiveCount == 1);
+            // Published maps stay charged for this shared invocation. Views own
+            // ordinary managed references; getters decode only their UTF-8 slice.
+            cursor = Utf8OperationMatchCursor.CreateSplitCursor(program, input, map, invocation, effectiveCount == 1);
             cursorCreated = true;
             cursor.CheckOwnedSliceCursorBoundary();
             var enumerator = new Utf8ValueSplitEnumerator(input, cursor, map,
@@ -35,8 +33,7 @@ internal static class Utf8OwnedSplitPreparation
         {
             if (!transferred)
             {
-                if (cursorCreated) cursor.AbortOwnedSplitSetup();
-                else if (map.StorageLease is { } lease) lease.AbortBeforePublication();
+                if (cursorCreated) cursor.AbortOwnedSplitSetup(ref mapBytes);
                 else invocation.Ledger.Release(mapBytes);
             }
         }
