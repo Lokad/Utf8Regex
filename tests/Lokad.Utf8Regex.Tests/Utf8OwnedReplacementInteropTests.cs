@@ -134,7 +134,11 @@ public sealed class Utf8OwnedReplacementInteropTests
             Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             Assert.Throws<InvalidOperationException>(() => writer.Append("q"u8));
             Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
-            Assert.Equal("abcdefghijklmnop"u8.ToArray(), writer.ToArray());
+            var retained = (byte[])typeof(Utf8SliceByteOutputBuffer)
+                .GetField("_buffer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(writer)!;
+            Assert.Equal("abcdefghijklmnop"u8.ToArray(), retained);
+            Assert.Throws<InvalidOperationException>(() => writer.ToArray());
+            Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, scope.Invocation.Budget.LimitBreach);
             Assert.Equal(controls + 48, scope.Invocation.Ledger.ReservedBytes);
             writer.Release();
             writer.Release();

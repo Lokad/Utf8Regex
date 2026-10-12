@@ -86,7 +86,9 @@ public sealed class PythonReOneShotTextTests
                 Assert.NotNull(failure); Assert.Null(result);
                 Assert.Equal(0UL, cursor.ResultReservation);
                 Assert.Equal(109UL, cursor.ReservedBytes);
-                Assert.Equal(priorPeak, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
+                Assert.True(cursor.WorkingInvocation.Budget.PeakWorkingBytes >= priorPeak);
+                Assert.Equal(13 + 96 + extent, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, cursor.WorkingInvocation.Budget.LimitBreach);
             }
         }
         finally { cursor.Dispose(); }
@@ -131,7 +133,8 @@ public sealed class PythonReOneShotTextTests
                 Assert.NotNull(failure); Assert.Null(result);
                 Assert.Equal(0UL, results.ReservedBytes);
                 Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-                Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
+                Assert.Equal(13 + extent, invocation.Budget.PeakWorkingBytes);
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, invocation.Budget.LimitBreach);
             }
         }
         finally { results.Release(ref invocation); }

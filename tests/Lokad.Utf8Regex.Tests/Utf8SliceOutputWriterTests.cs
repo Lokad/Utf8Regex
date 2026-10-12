@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -10,6 +11,8 @@ namespace Lokad.Utf8Regex.Tests;
 // buffer, and balances to zero on every path.
 public sealed class Utf8SliceOutputWriterTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_buffer")]
+    private static extern ref byte[]? Buffer(ref Utf8SliceOutputWriter writer);
     private static Utf8SliceInvocation Invoke(ulong work, uint depth, ulong bytes)
     {
         return new Utf8SliceInvocation(
@@ -53,10 +56,15 @@ public sealed class Utf8SliceOutputWriterTests
         var invocation = Invoke(0, 0, 96);
         Assert.True(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.True(writer.Append("abcd"u8, ref invocation));
+        var original = Buffer(ref writer);
         Assert.False(writer.Append("0123456789abcdef"u8, ref invocation));
         Assert.Equal(4, writer.Length);
-        var result = writer.ToArrayAndRelease(ref invocation);
-        Assert.Equal("abcd", Encoding.UTF8.GetString(result));
+        Assert.Same(original, Buffer(ref writer));
+        Assert.Equal("abcd", Encoding.UTF8.GetString(original!.AsSpan(0, writer.Length)));
+        Assert.False(writer.TryToArrayAndRelease(ref invocation, out var result));
+        Assert.Empty(result);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, invocation.Budget.LimitBreach);
+        writer.Release(ref invocation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 

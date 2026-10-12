@@ -146,7 +146,9 @@ public sealed class PythonReOneShotProjectionTests
             {
                 Assert.NotNull(failure); Assert.Null(copied); Assert.False(result.Success);
                 Assert.Equal(groupExtent, cursor.ResultReservation); Assert.Equal(baseline, cursor.ReservedBytes);
-                Assert.Equal(priorPeak, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
+                Assert.True(cursor.WorkingInvocation.Budget.PeakWorkingBytes >= priorPeak);
+                Assert.Equal(baseline + extent, cursor.WorkingInvocation.Budget.PeakWorkingBytes);
+                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, cursor.WorkingInvocation.Budget.LimitBreach);
             }
         }
         finally { cursor.Dispose(); }
