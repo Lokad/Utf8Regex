@@ -57,4 +57,6 @@ public enum Pcre2ErrorKind
     DepthLimit,
     /// <summary>The configured match-workspace heap limit was exceeded.</summary>
     HeapLimit,
+    /// <summary>The managed profile's cumulative result-capacity limit was exceeded.</summary>
+    ResultLimit,
 }

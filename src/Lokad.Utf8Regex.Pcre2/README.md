@@ -110,8 +110,8 @@ through loops, bounded searches, endpoint projection and full-array admission.
 Full, soft and hard decisions and scalar advancement remain; tighter limits can
 deny earlier. Full `(a)b+` probes now retain the missing capture, adding one group
 element to their owned snapshot, and full probes borrow compiled name metadata.
-Partial ranges remain inline. Cumulative publication admission is still required
-before public result-byte budgets can be enabled.
+Partial ranges remain inline. Full-array publication also uses cumulative result
+admission when a finite result policy is supplied.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native
@@ -140,9 +140,8 @@ same discovery/output budget, deadline and token. Strict output validation and
 bounded decoding admit the returned string while the existing encoded output and
 range staging remain live. This can require a larger heap/work allowance than
 the byte-returning replacement, whose algorithm and allocation behavior remain
-unchanged. Capture publication and specialized probes
-still need qualification before public finite result-byte policies are accepted;
-they remain explicitly rejected. Initial subject validation and replacement
+unchanged. Capture/probe publication and native generic output now enforce public
+finite result capacity. Initial subject validation and replacement
 preparation are separate from this newly joined publication scope.
 
 Native detailed templates and explicit-option slice template fallbacks also join
@@ -154,7 +153,8 @@ array. Unlimited hits promote the existing shared invocation owner once before
 the writer copies it; controlled calls reuse their owner and retire the separate
 writing allowance. Working overlap can deny earlier. Published capture arrays
 retain their existing result-versus-working scope and stay valid after advancement;
-cumulative result-capacity policy and arbitrary caller retention remain unfinished.
+cumulative result-capacity policy is enforced; arbitrary caller retention remains
+outside its scope.
 
 Work units and enforcement depend on the selected managed route. Owned slice
 template replacement with `None` match options and owned slice callbacks with any
@@ -202,14 +202,23 @@ validation/count/decode and `HeapLimitInBytes` includes modeled staging/string
 overlap. Capacity charges can differ from the former copied-byte result followed
 by detached decoding; final text work and capacity are now covered.
 
-Initial validation/preparation, legacy fixed-template output and core-foundation
-callback discovery still have separate enforcement scopes. Foundation callback
-output shares the request policy, while discovery remains migration debt.
-These qualified producers do not establish a common
-operation-wide policy.
-The PCRE2 profile still rejects `Utf8ResourcePolicy.MaxResultBytes`; core and
-PythonRe accept their documented cumulative result-capacity policy. Cancellation,
-timeouts, depth/backtracking limits and basic state-growth metering remain active.
+The managed PCRE2 profile accepts positive `Utf8ResourcePolicy.MaxResultBytes`,
+mapped to `Utf8Pcre2ExecutionLimits.ResultLimitInBytes` (legacy zero is unlimited).
+The original invocation cumulatively admits modeled major capture/probe arrays,
+replacement range/output staging and returned byte/string roots before allocation,
+without refunds. `Pcre2ErrorKind.ResultLimit` reports denial; no truncated success
+is returned. Conservative earlier denial is allowed. Scalar range/boolean/count
+results and inline partial probes need no owned result capacity. Caller-provided
+subjects/destinations, compiled metadata, VM scratch, standalone getters, caller
+callback allocations and arbitrary retained memory have separate scope. This is
+a capacity model, not process RSS. Published snapshots remain valid after denial;
+independent calls reset the allowance, controlled copies share it.
+
+Discovery and required capture/output shaping borrow the original authority.
+Initial subject validation and replacement preparation retain separate safeguards;
+public construction/default/live-retention policies remain unfinished. Cancellation,
+deadlines, depth/backtracking limits and basic bounded state metering remain active.
+Broader profile grammar/options/capture completion has separate qualification gates.
 
 Owned slice depth admission checks the prospective live frame count before growth,
 including assertion markers. An exhausted depth limit prevents acquisition of the

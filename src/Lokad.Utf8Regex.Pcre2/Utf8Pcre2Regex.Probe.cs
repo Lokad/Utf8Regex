@@ -929,6 +929,7 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult Full(scoped ReadOnlySpan<Pcre2GroupData> groups)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(groups.Length);
+        Pcre2SliceDriver.ThrowIfSliceBreached(_budget.WorkingInvocation.Budget.TryChargeResultBytes(bytes));
         _budget.ReserveWorking(bytes);
         try
         {

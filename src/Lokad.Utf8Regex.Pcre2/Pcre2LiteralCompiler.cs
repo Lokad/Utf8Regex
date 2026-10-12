@@ -410,6 +410,7 @@ internal static class Pcre2LiteralProbeRunner
                 }
 
                 var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
+                Pcre2SliceDriver.ThrowIfSliceBreached(budget.WorkingInvocation.Budget.TryChargeResultBytes(bytes));
                 budget.ReserveWorking(bytes);
                 try
                 {

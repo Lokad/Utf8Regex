@@ -2,6 +2,13 @@
 
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
+- Accept finite PCRE2 result-byte policies through `ResultLimitInBytes` and report
+  `ResultLimit`. Original invocation admission covers major capture/probe arrays,
+  replacement staging and returned byte/string capacity cumulatively before
+  allocation, without refunds. Preserve retained snapshots and independent calls;
+  caller storage, compiled metadata, VM scratch and arbitrary retention are excluded.
+  Shared buffer helpers borrow result charging; core's existing charges stay at
+  their call sites. Remove the orphan unmetered single-slot detailed array.
 - Meter specialized partial probes with their original work/heap/token/deadline,
   including bounded searches, coordinate projection and full result allocation.
   Preserve full/soft/hard scalar outcomes. Restore the missing full `(a)b+`
@@ -39,9 +46,8 @@
   existing byte output and range staging remain live; tight work/heap limits can
   now reject text publication that formerly escaped those limits. Byte replacement
   search, emission and allocations remain unchanged.
-- Keep finite public PCRE2 result-byte policies explicitly unsupported until the
-  remaining capture/specialized probe publications are
-  covered. Preserve both the accepted scalar.5 core/PythonRe feed and the private
+- Qualify finite result admission across capture/probe and output producers.
+  Preserve both the accepted scalar.5 core/PythonRe feed and the private
   scalar.6-dev PCRE2/core pair under their immutable identities.
 
 ## Unreleased PCRE2 correction (0.4.0-scalar.6-dev)

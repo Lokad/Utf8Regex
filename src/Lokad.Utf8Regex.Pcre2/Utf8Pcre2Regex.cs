@@ -102,15 +102,9 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Maps a shared resource policy onto PCRE2 execution limits.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
-    /// <exception cref="NotSupportedException">A result-bytes budget is set. The PCRE2 profile does not yet enforce result-capacity limits.</exception>
     private static Utf8Pcre2ExecutionLimits ToExecutionLimits(Utf8ResourcePolicy resourcePolicy)
     {
         resourcePolicy.Validate(nameof(resourcePolicy));
-        if (resourcePolicy.MaxResultBytes.HasValue)
-        {
-            throw new NotSupportedException("The PCRE2 profile does not yet enforce result-capacity limits.");
-        }
-
         uint workSteps = 0;
         if (resourcePolicy.MaxWorkSteps.HasValue && resourcePolicy.MaxWorkSteps.Value > uint.MaxValue)
         {
@@ -127,6 +121,7 @@ public sealed partial class Utf8Pcre2Regex
             MatchLimit = workSteps,
             DepthLimit = resourcePolicy.MaxDepth ?? 0u,
             HeapLimitInBytes = resourcePolicy.MaxWorkingBytes ?? 0ul,
+            ResultLimitInBytes = resourcePolicy.MaxResultBytes ?? 0ul,
         };
     }
 
@@ -433,13 +428,6 @@ public sealed partial class Utf8Pcre2Regex
             return directGroups.Length != 0 || directMark is not null
                 ? Utf8Pcre2MatchContext.Create(input, directGroups,
                     _program.Operations.Match is Pcre2Utf8DirectProgram coreProgram ? coreProgram.ContextNameEntries : NameEntries, directMark)
-                : default;
-        }
-
-        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, CancellationToken.None, out var directMatch))
-        {
-            return directMatch.Success
-                ? Utf8Pcre2MatchContext.Create(input, [directMatch], NameEntries)
                 : default;
         }
 
@@ -1583,6 +1571,7 @@ public sealed partial class Utf8Pcre2Regex
             : GetReplacementPreparation(replacement, templateOptions);
         control.WorkingInvocation.ShareStorageForCursor();
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
+        control.TryChargeResultBytes(groupBytes);
         control.ReserveWorking(groupBytes);
         var writer = default(Pcre2ReplacementTemplateWriter);
         try

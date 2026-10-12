@@ -546,8 +546,15 @@ Breaches report `DepthLimit` or `HeapLimit`. Zero disables each limit and defaul
 are unlimited. Timeout breach on owned routes reports `Timeout`. The shared
 `Utf8ResourcePolicy` maps onto these limits through explicit constructor overloads
 (null becomes legacy zero; overflow and zero budgets are rejected). This PCRE2
-profile still rejects result-capacity budgets; core and PythonRe support their
-documented policy in `SPEC.md` Section 3.7.
+profile also maps positive `MaxResultBytes` to the managed extension
+`ResultLimitInBytes`; legacy zero is unlimited. `ResultLimit` reports cumulative
+modeled major publication/staging denial before allocation, without refunds or
+truncated success. Capture/probe arrays, range/output staging and returned byte/
+string roots share the invocation. Caller-owned storage, compiled metadata, VM
+scratch, standalone getters/callback allocations and arbitrary retention are
+excluded. Scalar value/count/boolean results and inline partials need no owned
+result capacity. The core/PythonRe policy remains described in `SPEC.md` Section
+3.7; these models do not bound process RSS.
 
 Controlled copies of native/global and owned-slice value cursors keep independent
 positions but share the original work/depth/working enforcement authority and
@@ -595,11 +602,13 @@ projection advances in at most 2,048-byte scalar-aligned windows. A refused proj
 preserves the previous published value and first resource denial; native candidate/
 backtracking diagnostics retain their meaning. UTF-16 coordinates remain derived
 interoperability data, with byte/scalar matching and restart positions unchanged.
-These modeled charges do not bound caller retention or RSS. Initial subject
-validation/preparation, legacy fixed-template output and core-foundation callback
-discovery retain separate scopes. Foundation callback output follows the request
-policy, while discovery remains migration debt. This does not
-qualify common operation-wide or result-byte control.
+These modeled charges do not bound caller retention or RSS. Native/core-grammar
+discovery and required capture/output shaping share their original invocation,
+including cumulative result capacity. Specialized partial probes use the same
+authority for loops, bounded searches, projection and full arrays. Initial subject
+validation and replacement preparation retain separate safeguards; public
+construction/default/live-retention policies and broader profile coverage remain
+separate completion gates.
 
 ```csharp
 var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };

@@ -23,6 +23,8 @@ internal ref struct Utf8ReplacementRangeLedger
         where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
         var breach = control.TryChargeWorkspaceStep();
+        if (breach == Utf8ExecutionLimitKind.None)
+            breach = control.TryChargeResultBytes(_ranges.PendingGrowthBytes);
         return breach == Utf8ExecutionLimitKind.None ? _ranges.TryPush(range, control) : breach;
     }
 

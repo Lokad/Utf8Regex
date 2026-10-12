@@ -371,7 +371,8 @@ internal static class Pcre2SliceDriver
             new Utf8ExecutionLimits(
                 request.DefaultLimits.MatchLimit,
                 request.DefaultLimits.DepthLimit,
-                request.DefaultLimits.HeapLimitInBytes),
+                request.DefaultLimits.HeapLimitInBytes,
+                request.DefaultLimits.ResultLimitInBytes),
             request.MatchTimeout,
             cancellationToken);
     }
@@ -394,6 +395,10 @@ internal static class Pcre2SliceDriver
                 throw new Pcre2MatchException(
                     "The PCRE2 heap limit was exceeded.",
                     Pcre2ErrorKind.HeapLimit);
+            case Utf8ExecutionLimitKind.ResultBytes:
+                throw new Pcre2MatchException(
+                    "The PCRE2 result-capacity limit was exceeded.",
+                    Pcre2ErrorKind.ResultLimit);
             default:
                 throw new InvalidOperationException(
                     "Unknown slice limit kind.");

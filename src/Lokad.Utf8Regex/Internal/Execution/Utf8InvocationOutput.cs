@@ -20,7 +20,9 @@ internal static class Utf8InvocationOutput
         result = [];
         reservation = 0;
         var bytes = Utf8ConstructionBudget.ArrayBytes<byte>(count);
-        var breach = control.TryReserveWorking(bytes);
+        var breach = control.TryChargeResultBytes(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        breach = control.TryReserveWorking(bytes);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         reservation = bytes;
         try

@@ -194,6 +194,8 @@ internal ref struct Pcre2ReplacementTemplateWriter
         try
         {
             Utf8InvocationOutput.Checkpoint(control);
+            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.TryChargeResultBytes(
+                Utf8ConstructionBudget.ArrayBytes<byte>(input.Length)));
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8InvocationOutput.TryAllocateBytes(input.Length, control, out var result, out reservation));
             Utf8InvocationOutput.Copy(input, result, control);
             return result;

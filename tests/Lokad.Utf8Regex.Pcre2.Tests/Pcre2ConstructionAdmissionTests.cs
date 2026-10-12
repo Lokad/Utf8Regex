@@ -31,9 +31,9 @@ public sealed class Pcre2ConstructionAdmissionTests
         Assert.Equal(1ul, failure.Requested);
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
-        Assert.Throws<NotSupportedException>(() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
             Utf8Pcre2Regex.Create("cat"u8, Pcre2CompileOptions.None, default,
-                new Utf8ResourcePolicy { MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan));
+                new Utf8ResourcePolicy { MaxResultBytes = 0 }, Timeout.InfiniteTimeSpan));
         Assert.Equal(0ul, scope.Budget.WorkSteps);
     }
 
@@ -129,9 +129,9 @@ public sealed class Pcre2ConstructionAdmissionTests
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 32768);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
-        Assert.Throws<NotSupportedException>(() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
             Utf8Pcre2Regex.Create(invalid, Pcre2CompileOptions.None, default,
-                new Utf8ResourcePolicy { MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan));
+                new Utf8ResourcePolicy { MaxResultBytes = 0 }, Timeout.InfiniteTimeSpan));
         var utf8 = Assert.Throws<ArgumentException>(() => new Utf8Pcre2Regex(invalid));
         Assert.Equal("byteOffset", utf8.ParamName);
         Assert.Contains("byte offset 0", utf8.Message);

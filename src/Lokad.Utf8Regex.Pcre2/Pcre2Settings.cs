@@ -91,4 +91,7 @@ public readonly struct Utf8Pcre2ExecutionLimits
 
     /// <summary>Gets the maximum modeled active workspace and output capacity in bytes, or zero for no limit. Published captures and caller retention have separate scope.</summary>
     public ulong HeapLimitInBytes { get; init; }
+
+    /// <summary>Gets the maximum cumulative modeled major result and publication-staging capacity in bytes, or zero for no limit. This is a managed-profile extension; caller-owned storage and arbitrary retention have separate scope.</summary>
+    public ulong ResultLimitInBytes { get; init; }
 }

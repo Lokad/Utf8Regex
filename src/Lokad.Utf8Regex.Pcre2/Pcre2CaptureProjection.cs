@@ -79,6 +79,7 @@ internal static partial class Pcre2Runner
                 utf16Endpoints[index] = ProjectCaptureEndpoint(ref input, ref projection, sortedEndpoints[index], budget);
 
             budget.ChargeWorkspaceStep();
+            budget.TryChargeResultBytes(groupBytes);
             var groups = captureSlotCount == 0 ? [] : new Pcre2GroupData[captureSlotCount];
             for (var slot = 0; slot < captureSlotCount; slot++)
             {

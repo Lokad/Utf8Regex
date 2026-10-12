@@ -63,6 +63,12 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
         Pcre2SliceDriver.ThrowIfSliceBreached(_slice.TryReserveWorking(bytes));
     }
 
+    public Utf8ExecutionLimitKind TryChargeResultBytes(ulong bytes)
+    {
+        Pcre2SliceDriver.ThrowIfSliceBreached(WorkingInvocation.Budget.TryChargeResultBytes(bytes));
+        return Utf8ExecutionLimitKind.None;
+    }
+
     public void ReleaseWorking(ulong bytes)
     {
         if (_isSlice) _slice.Ledger.Release(bytes);

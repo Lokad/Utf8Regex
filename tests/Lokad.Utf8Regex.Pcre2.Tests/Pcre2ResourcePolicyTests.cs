@@ -35,10 +35,11 @@ public sealed class Pcre2ResourcePolicyTests
     }
 
     [Fact]
-    public void ResultBytesBudgetIsReserved()
+    public void ResultBytesBudgetIsEnforceable()
     {
         var policy = new Utf8ResourcePolicy { MaxResultBytes = 1024ul };
-        Assert.Throws<System.NotSupportedException>(() => Utf8Pcre2Regex.Create("foo", Pcre2CompileOptions.None, default, policy, Utf8Pcre2Regex.DefaultMatchTimeout));
+        var regex = Utf8Pcre2Regex.Create("foo", Pcre2CompileOptions.None, default, policy, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal("foo", regex.MatchDetailed("foo"u8).GetValueString());
     }
 
     [Fact]
