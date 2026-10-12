@@ -100,6 +100,14 @@ on `A😀`, the ranges are `[0,0)`, `[0,1)`, `[1,1)`, `[5,5)`.
 Broader per-operation option and partial-probe coverage remain separate profile
 qualification work.
 
+Literal probes now fund coordinate projection and the full-match group array with
+their original work/heap, cancellation token and deadline. Full-array capacity is
+admitted before allocation; partial results keep their inline range. Tight limits
+can deny earlier. Non-partial probes reuse owned detailed captures, preserving
+names and MARK, and forward native match options without an extra capture copy.
+Specialized partial-probe routes still require shared-policy qualification; this
+does not enable public result-byte budgets.
+
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native
 or owned-slice cursor no longer creates another finite budget; earlier separately

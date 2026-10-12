@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
@@ -390,74 +391,66 @@ internal static class Pcre2LiteralProbeRunner
         Utf8BytePosition requestedStart,
         Pcre2PartialMode partialMode,
         Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
+        Pcre2CompileRequest request,
+        CancellationToken token)
     {
-        var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-        Pcre2LiteralMatch fullMatch;
+        var budget = new Pcre2ResourceBudget(request.DefaultLimits,
+            Pcre2SliceDriver.CreateInvocation(request, token), collectDiagnostics: false);
         try
         {
-            fullMatch = Pcre2LiteralRunner.Match(
-                program,
-                ref input,
-                requestedStart,
-                matchOptions,
-                ref budget);
+            var fullMatch = Pcre2LiteralRunner.Match(program, ref input, requestedStart, matchOptions, ref budget);
+            if (fullMatch.Success)
+            {
+                var projected = Project(ref input, fullMatch.StartOffsetInBytes, fullMatch.EndOffsetInBytes, ref budget);
+                if (partialMode == Pcre2PartialMode.Hard && program.HasExplicitEndAssertion &&
+                    fullMatch.EndOffsetInBytes == input.ByteLength)
+                {
+                    budget.CheckDeadline();
+                    return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+                }
+
+                var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
+                budget.ReserveWorking(bytes);
+                try
+                {
+                    var groups = new[] { projected };
+                    budget.CheckDeadline();
+                    return Utf8Pcre2ProbeResult.CreateFullMatch(subject, groups);
+                }
+                finally { budget.ReleaseWorking(bytes); }
+            }
+
+            if (partialMode == Pcre2PartialMode.None || program.LiteralUtf8.IsEmpty)
+            {
+                budget.CheckDeadline();
+                return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
+            }
+
+            var literal = program.LiteralUtf8;
+            var candidate = GetFirstPartialCandidate(program, input.Bytes, requestedStart, matchOptions);
+            while (candidate >= 0 && candidate < input.ByteLength)
+            {
+                budget.ChargeCandidate();
+                var suffix = input.Bytes[candidate..];
+                if (suffix.Length < literal.Length && literal.StartsWith(suffix))
+                {
+                    var projected = Project(ref input, candidate, input.ByteLength, ref budget);
+                    budget.CheckDeadline();
+                    return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+                }
+
+                if (IsEffectivelyAnchored(program, matchOptions) ||
+                    !input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next)) break;
+                candidate = next.Value;
+            }
+
+            budget.CheckDeadline();
+            return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
-
-        if (fullMatch.Success)
-        {
-            var projected = Project(ref input, fullMatch.StartOffsetInBytes, fullMatch.EndOffsetInBytes);
-            if (partialMode == Pcre2PartialMode.Hard &&
-                program.HasExplicitEndAssertion &&
-                fullMatch.EndOffsetInBytes == input.ByteLength)
-            {
-                return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
-            }
-
-            return Utf8Pcre2ProbeResult.CreateFullMatch(
-                subject,
-                [projected]);
-        }
-
-        if (partialMode == Pcre2PartialMode.None || program.LiteralUtf8.IsEmpty)
-        {
-            return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
-        }
-
-        var literal = program.LiteralUtf8;
-        var candidate = GetFirstPartialCandidate(program, input.Bytes, requestedStart, matchOptions);
-        while (candidate >= 0 && candidate < input.ByteLength)
-        {
-            try
-            {
-                budget.ChargeCandidate();
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-            }
-            var suffix = input.Bytes[candidate..];
-            if (suffix.Length < literal.Length && literal.StartsWith(suffix))
-            {
-                return Utf8Pcre2ProbeResult.CreatePartial(
-                    subject,
-                    Project(ref input, candidate, input.ByteLength));
-            }
-
-            if (IsEffectivelyAnchored(program, matchOptions) ||
-                !input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next))
-            {
-                break;
-            }
-
-            candidate = next.Value;
-        }
-
-        return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
     }
 
     private static int GetFirstPartialCandidate(
@@ -490,21 +483,11 @@ internal static class Pcre2LiteralProbeRunner
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;
 
     private static Pcre2GroupData Project(
-        ref Utf8ValidatedInput input,
-        int startOffsetInBytes,
-        int endOffsetInBytes)
+        ref Utf8ValidatedInput input, int startOffsetInBytes, int endOffsetInBytes,
+        ref Pcre2ResourceBudget budget)
     {
         var projection = input.CreateProjectionCursor();
-        var startInUtf16 = projection.Project(new Utf8BytePosition(startOffsetInBytes));
-        var endInUtf16 = projection.Project(new Utf8BytePosition(endOffsetInBytes));
-        return new Pcre2GroupData
-        {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = startOffsetInBytes,
-            EndOffsetInBytes = endOffsetInBytes,
-            StartOffsetInUtf16 = startInUtf16.Value,
-            EndOffsetInUtf16 = endInUtf16.Value,
-        };
+        return Pcre2GlobalCursorProjection.Project(startOffsetInBytes, endOffsetInBytes,
+            ref input, ref projection, ref budget);
     }
 }

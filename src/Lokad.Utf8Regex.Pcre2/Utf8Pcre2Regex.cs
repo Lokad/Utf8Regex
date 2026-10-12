@@ -568,6 +568,10 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
+        => ProbeCore(input, partialMode, startOffsetInBytes, matchOptions, default);
+
+    private Utf8Pcre2ProbeResult ProbeCore(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
@@ -579,7 +583,7 @@ public sealed partial class Utf8Pcre2Regex
                 start,
                 partialMode,
                 matchOptions,
-                _program.Request);
+                _program.Request, cancellationToken);
         }
 
         if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None)
@@ -589,7 +593,7 @@ public sealed partial class Utf8Pcre2Regex
 
         if (partialMode == Pcre2PartialMode.None)
         {
-            return ProbeViaNonPartialMatch(input, startOffsetInBytes);
+            return ProbeViaNonPartialMatch(input, startOffsetInBytes, matchOptions, cancellationToken);
         }
 
         if (_program.Operations.Match 
@@ -599,7 +603,7 @@ public sealed partial class Utf8Pcre2Regex
                 ref subject,
                 start,
                 matchOptions,
-                CancellationToken.None,
+                cancellationToken,
                 out var directGroups,
                 out var directMark))
         {
@@ -617,17 +621,17 @@ public sealed partial class Utf8Pcre2Regex
         throw CreateUnsupportedProbeException();
     }
 
-    /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options. Literal and detailed matching observe live cancellation; specialized partial routes currently check only before entry.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="partialMode">The permitted subject-end partial-match mode.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe before entry and during supported metered matching.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Probe(input, partialMode, startOffsetInBytes, matchOptions);
+        return ProbeCore(input, partialMode, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Replaces matches using a PCRE2 replacement template and returns owned UTF-8 bytes.</summary>
@@ -1191,12 +1195,11 @@ public sealed partial class Utf8Pcre2Regex
             .ToArray();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaNonPartialMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    private Utf8Pcre2ProbeResult ProbeViaNonPartialMatch(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions, CancellationToken token)
     {
-        var match = MatchDetailed(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        return match.Success
-            ? Utf8Pcre2ProbeResult.CreateFullMatch(input, CaptureGroups(match))
-            : Utf8Pcre2ProbeResult.CreateNoMatch(input);
+        var match = MatchDetailedCore(input, startOffsetInBytes, matchOptions, token);
+        return match.AsProbeResult();
     }
 
     private static Pcre2GroupData[] CaptureGroups(Utf8Pcre2MatchContext match)

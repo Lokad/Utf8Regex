@@ -404,6 +404,13 @@ public readonly ref struct Utf8Pcre2MatchContext
 
     internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries)
         => Create(input, groups, nameEntries, null);
+
+    // The probe borrows this already-owned immutable snapshot. Copying it
+    // again would allocate outside discovery's publication authority and lose
+    // the original name table/MARK.
+    internal Utf8Pcre2ProbeResult AsProbeResult() => _groups is { Length: > 0 } groups && groups[0].Success
+        ? Utf8Pcre2ProbeResult.CreateFullMatch(_input, groups, _nameEntries, _mark)
+        : Utf8Pcre2ProbeResult.CreateNoMatch(_input, _mark);
 }
 
 /// <summary>Provides a stack-only view of one PCRE2 capture slot over the original UTF-8 input.</summary>

@@ -2,6 +2,11 @@
 
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
+- Keep literal-probe coordinate projection/full-result admission under the original
+  work/heap/token/deadline. Non-partial probes reuse detailed capture storage and
+  preserve names, MARK and native match options. Remove their unmetered projection
+  and extra capture copy; partial ranges stay inline. Public result budgets and
+  specialized partial-probe policy coverage remain unfinished.
 - Execute admitted core-grammar scalar programs with the existing PCRE2 slice
   driver instead of independent core calls. Work/depth/heap controls, tokens and
   absolute deadlines now cover discovery, final captures, cursor advances and
