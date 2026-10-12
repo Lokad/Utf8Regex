@@ -168,7 +168,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var declaration = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(declaration.Inspection.StructuralIdentifierFamilyPlan));
+        Assert.True(Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(
+            declaration.Inspection.StructuralIdentifierFamilyPlan, Utf8ExecutionDeadline.Infinite));
     }
 
     [Fact]

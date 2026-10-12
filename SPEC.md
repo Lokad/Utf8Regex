@@ -927,7 +927,16 @@ capacity without refunding work. Scalar lowering admits generated decimal group
 name strings and formats/classifies them with bounded stack scratch. These
 additional acquisitions can reach the provisional construction backstop earlier;
 they preserve matching and capture-name semantics and do not qualify a complete
-retained-cache certificate or public construction policy. Other simple-plan
+retained-cache certificate or public construction policy.
+Upper-word identifier anchor selection returns the existing ASCII value-mask
+carrier without heap scratch or provisional byte arrays. Eligibility shares that
+selector; native Count/FindNext use at most 128 bytes of stack scratch, and emitted
+lowering admits one final selected-byte array through the class-copy producer.
+Distinct-byte priority, repeated-prefix rarity weighting and later-offset ties
+are preserved. Prefix/offset scans charge the active construction owner's work
+and interruption authority; runtime selection polls the caller's original absolute
+deadline without creating a construction owner. Fixed mask classification and
+stack copies are bounded independently of prefix length. Other simple-plan
 branch/token/search extraction, complete token-run/search-set acquisition, remaining
 structural predicate/scalar-width work and complete retained/shared policies
 remain open. This is buffer/work/depth admission for covered preparation, not

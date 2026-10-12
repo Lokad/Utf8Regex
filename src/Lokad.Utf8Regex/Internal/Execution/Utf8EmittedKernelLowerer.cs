@@ -29,8 +29,9 @@ internal static class Utf8EmittedKernelLowerer
         try
         {
             budget.ChargeWork(1);
-            if (Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(familyPlan, out var anchorOffset, out var anchorBytes))
+            if (Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(familyPlan, budget.Deadline, out var anchorOffset, out var anchorClass))
             {
+                var anchorBytes = anchorClass.GetPositiveMatchBytes();
                 var anchorPrefixesByByte = budget.AllocateArray<byte[]>(256, false);
                 foreach (var prefix in familyPlan.Prefixes)
                 {

@@ -51,7 +51,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
             return -1;
         }
 
-        if (CanUseUpperWordIdentifierKernel(familyPlan))
+        if (CanUseUpperWordIdentifierKernel(familyPlan, budget))
         {
             return FindNextUpperWordIdentifier(
                 input,
@@ -177,7 +177,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
             structuralSearchPlan.HasValue &&
             structuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start)
         {
-            if (CanUseUpperWordIdentifierKernel(familyPlan))
+            if (CanUseUpperWordIdentifierKernel(familyPlan, budget))
             {
                 return CountUpperWordIdentifier(input, familyPlan, searchPlan, budget);
             }
@@ -255,7 +255,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8SearchPlan searchPlan,
         Utf8ExecutionDeadline budget)
     {
-        if (CanUseUpperWordIdentifierKernel(familyPlan))
+        if (CanUseUpperWordIdentifierKernel(familyPlan, budget))
         {
             return CountUpperWordIdentifier(input, familyPlan, searchPlan, budget);
         }
@@ -568,13 +568,15 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8SearchPlan searchPlan,
         Utf8ExecutionDeadline budget)
     {
-        if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, out var anchorOffset, out var anchorBytes))
+        if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, budget, out var anchorOffset, out var anchorClass))
         {
             return 0;
         }
 
         var count = 0;
         var anchorSearchFrom = anchorOffset;
+        Span<byte> anchorScratch = stackalloc byte[128];
+        var anchorBytes = anchorScratch[..anchorClass.CopyMatchBytes(anchorScratch)];
 
         while (anchorSearchFrom < input.Length)
         {
@@ -614,7 +616,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
-        if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, out var anchorOffset, out var anchorBytes))
+        if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, budget, out var anchorOffset, out var anchorClass))
         {
             matchedLength = 0;
             return -1;
@@ -622,6 +624,8 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
         matchedLength = 0;
         var anchorSearchFrom = Math.Max(startIndex + anchorOffset, anchorOffset);
+        Span<byte> anchorScratch = stackalloc byte[128];
+        var anchorBytes = anchorScratch[..anchorClass.CopyMatchBytes(anchorScratch)];
 
         while (anchorSearchFrom < input.Length)
         {
@@ -1316,20 +1320,8 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
             familyPlan.SuffixParts.Length == 0;
     }
 
-    internal static bool CanUseUpperWordIdentifierKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
-    {
-        if (!familyPlan.HasAsciiUpperWordTailKernel ||
-            familyPlan.SeparatorCharClass.IsEmpty ||
-            familyPlan.SeparatorMinCount != 1 ||
-            familyPlan.LeadingBoundary != Utf8BoundaryRequirement.Boundary ||
-            familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None ||
-            familyPlan.Prefixes.Length == 0)
-        {
-            return false;
-        }
-
-        return TryGetUpperWordIdentifierKernelSpec(familyPlan, out _, out _);
-    }
+    internal static bool CanUseUpperWordIdentifierKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8ExecutionDeadline deadline)
+        => TryGetUpperWordIdentifierKernelSpec(familyPlan, deadline, out _, out _);
 
     internal static bool CanUseSharedPrefixSuffixKernel(
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
@@ -1340,11 +1332,13 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
     internal static bool TryGetUpperWordIdentifierKernelSpec(
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
+        Utf8ExecutionDeadline deadline,
         out int anchorOffset,
-        out byte[] anchorBytes)
+        out AsciiCharClass anchorClass)
     {
         anchorOffset = 0;
-        anchorBytes = [];
+        anchorClass = default;
+        deadline.CheckNow();
 
         if (!familyPlan.HasAsciiUpperWordTailKernel ||
             familyPlan.SeparatorCharClass.IsEmpty ||
@@ -1359,6 +1353,8 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         var minPrefixLength = int.MaxValue;
         foreach (var prefix in familyPlan.Prefixes)
         {
+            Utf8ConstructionScope.ChargeWork(1);
+            deadline.Step();
             if (prefix.Length == 0)
             {
                 return false;
@@ -1374,60 +1370,54 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
         var bestDistinctCount = 0;
         var bestRarityScore = int.MinValue;
-        byte[]? bestAnchorBytes = null;
+        ulong bestLow = 0, bestHigh = 0;
         for (var offset = 0; offset < minPrefixLength; offset++)
         {
-            var seen = new bool[256];
-            var distinctCount = 0;
+            Utf8ConstructionScope.ChargeWork(1);
+            deadline.Step();
+            ulong low = 0, high = 0;
+            var valid = true;
             var rarityScore = 0;
             foreach (var prefix in familyPlan.Prefixes)
             {
+                Utf8ConstructionScope.ChargeWork(1);
+                deadline.Step();
                 var value = prefix[offset];
                 if (!AsciiStructuralIdentifierFamilyMatcher.IsAsciiWordByte(value))
                 {
-                    distinctCount = 0;
+                    valid = false;
                     break;
                 }
 
-                if (!seen[value])
-                {
-                    seen[value] = true;
-                    distinctCount++;
-                }
+                if (value < 64) low |= 1UL << value;
+                else high |= 1UL << (value - 64);
 
                 rarityScore += Utf8AsciiSearchHeuristics.GetAnchorRarityScore(value);
             }
 
+            var distinctCount = valid ? System.Numerics.BitOperations.PopCount(low) + System.Numerics.BitOperations.PopCount(high) : 0;
             if (distinctCount < 2 ||
                 distinctCount < bestDistinctCount ||
-                (distinctCount == bestDistinctCount && rarityScore < bestRarityScore) ||
-                (distinctCount == bestDistinctCount && rarityScore == bestRarityScore && bestAnchorBytes is not null && offset < anchorOffset))
+                (distinctCount == bestDistinctCount && rarityScore < bestRarityScore))
             {
                 continue;
             }
 
-            var anchors = new byte[distinctCount];
-            var anchorIndex = 0;
-            for (var value = 0; value < seen.Length; value++)
-            {
-                if (seen[value])
-                {
-                    anchors[anchorIndex++] = (byte)value;
-                }
-            }
-
+            // Offsets are visited in ascending order; equal ranks keep the later
+            // offset, matching the former selector without provisional arrays.
             bestDistinctCount = distinctCount;
             bestRarityScore = rarityScore;
-            bestAnchorBytes = anchors;
+            bestLow = low;
+            bestHigh = high;
             anchorOffset = offset;
         }
 
-        if (bestAnchorBytes is null)
+        if (bestDistinctCount == 0)
         {
             return false;
         }
 
-        anchorBytes = bestAnchorBytes;
+        anchorClass = new AsciiCharClass(bestLow, bestHigh);
         return true;
     }
 
