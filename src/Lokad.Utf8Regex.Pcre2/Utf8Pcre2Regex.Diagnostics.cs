@@ -285,7 +285,9 @@ public sealed partial class Utf8Pcre2Regex
 
         var value = match.Value;
         var groups = CaptureGroups(match);
-        var writer = CreateTemplateWriter(input, CancellationToken.None);
+        // This isolated attribution replay measures expansion after discovery.
+        var writer = new Pcre2ReplacementTemplateWriter(input, NameEntries,
+            _program.Request.DefaultLimits.HeapLimitInBytes, MatchTimeout, CancellationToken.None);
         try
         {
             // Attribution now measures the actual UTF-8 expansion and returns byte length.

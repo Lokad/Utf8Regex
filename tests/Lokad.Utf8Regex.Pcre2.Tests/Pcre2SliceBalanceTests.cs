@@ -4,10 +4,10 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // R03 balancing captures for the PCRE2 profile: native PCRE2 has no
-// balancing, so balancing shapes delegate to the core library (never the
-// PCRE2 slice runner) and inherit BCL-exact behavior from the owned core
-// slice, including drained pops, interval captures, and construction
-// failures for undefined or forward pop targets.
+// balancing, so balancing shapes compile with the core grammar. Its owned
+// scalar program executes under the profile's original invocation, including
+// drained pops, restored/interval captures and construction failures for
+// undefined or forward pop targets. BCL comparisons below overlap on ASCII.
 public sealed class Pcre2SliceBalanceTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);

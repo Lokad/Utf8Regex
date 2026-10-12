@@ -89,7 +89,16 @@ Literal bodies retain the literal search/count kernel and fund required endpoint
 projection. Comments end at the next closing parenthesis outside quoted/class
 contexts; quantifiers and modifiers retain their association. See the
 [PCRE2 pattern rules](https://www.pcre.org/current/doc/html/pcre2pattern.html#SEC27).
-Separate documented core-grammar extensions still need shared-policy qualification.
+Documented core-grammar extensions (Unicode escapes/blocks and balancing captures)
+compile with the core grammar and execute its admitted scalar program through the
+existing PCRE2 slice driver. Discovery, capture projection, enumeration and
+template/callback output share the original work/depth/heap, token and absolute
+deadline. Formerly bypassed limits can deny earlier. Final captures, numeric/name
+aliases and retained values remain valid. Global empty matches now try a nonempty
+alternative at the same position before advancing by one scalar; for `\u0041*?`
+on `A😀`, the ranges are `[0,0)`, `[0,1)`, `[1,1)`, `[5,5)`.
+Broader per-operation option and partial-probe coverage remain separate profile
+qualification work.
 
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native
@@ -118,7 +127,7 @@ same discovery/output budget, deadline and token. Strict output validation and
 bounded decoding admit the returned string while the existing encoded output and
 range staging remain live. This can require a larger heap/work allowance than
 the byte-returning replacement, whose algorithm and allocation behavior remain
-unchanged. Foundation template producers, capture publication and specialized probes
+unchanged. Capture publication and specialized probes
 still need qualification before public finite result-byte policies are accepted;
 they remain explicitly rejected. Initial subject validation and replacement
 preparation are separate from this newly joined publication scope.

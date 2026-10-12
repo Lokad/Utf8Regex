@@ -32,6 +32,8 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
 
     public bool CanRetainWorkspace => _isSlice ? _slice.Ledger.IsUnlimited : _vm.CanRetainWorkspace;
 
+    internal ref Utf8SliceInvocation WorkingInvocation => ref (_isSlice ? ref _slice : ref _vm.WorkingInvocation);
+
     // The byte output and range staging are still live at this call. Their
     // owner admits the final string and retains spent discovery/shaping work.
     internal string DecodeReplacementText(ReadOnlySpan<byte> bytes)

@@ -82,7 +82,9 @@ public sealed partial class Utf8Pcre2Regex
         {
             scope = Utf8SliceByteOutputScope.Enter(invocation);
             var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);
-            if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
+            if (_program.Operations.Replace is Pcre2Utf8DirectProgram coreProgram)
+                ReplaceCapturedCallback(input, coreProgram, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
+            else if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
                 ReplaceCapturedCallback(input, slice, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
             else if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram captured &&
                 (captured.Program.CaptureSlotCount > 1 || captured.Program.SuppressesUnresetEmptyMatches))
@@ -93,10 +95,7 @@ public sealed partial class Utf8Pcre2Regex
                     ReplaceBacktrackingCallback(input, backtracking.Program, startOffsetInBytes, matchOptions,
                         new Pcre2ResourceBudget(_program.Request.DefaultLimits, scope.Invocation,
                             collectDiagnostics: false), ref output);
-                else
-                    // Foundation discovery still owns its own authority; its
-                    // callback output uses this invocation. Keep that debt explicit.
-                    ReplaceIterationCallback(input, startOffsetInBytes, matchOptions, token, ref output);
+                else throw CreateUnsupportedPatternException();
             }
             return output.Complete(text);
         }
@@ -140,21 +139,6 @@ public sealed partial class Utf8Pcre2Regex
         return true;
     }
 
-    private void ReplaceIterationCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
-        int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token,
-        ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
-        where TExpansion : struct, IPcre2CallbackExpansion<TState>
-    {
-        var cursor = EnumerateMatches(input, startOffsetInBytes, matchOptions, token);
-        while (true)
-        {
-            output.Checkpoint();
-            if (!cursor.MoveNext()) break;
-            var context = MatchDetailed(input, cursor.Current.StartOffsetInBytes, matchOptions, token);
-            output.Append(in context);
-        }
-    }
-
     private void ReplaceCapturedCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
         IPcre2DirectProgram program, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation, ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
@@ -164,7 +148,7 @@ public sealed partial class Utf8Pcre2Regex
         // Its detailed cursor owns the actual global yield: querying again
         // would lose the empty-retry and original-start dispositions.
         var backtracking = program is Pcre2BacktrackingDirectProgram native ? native.Program
-            : matchOptions != Pcre2MatchOptions.None ? ((Pcre2SliceDirectProgram)program).Fallback : null;
+            : matchOptions != Pcre2MatchOptions.None && program is Pcre2SliceDirectProgram sliceFallback ? sliceFallback.Fallback : null;
         if (backtracking is not null)
         {
             var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, collectDiagnostics: false);
@@ -172,9 +156,10 @@ public sealed partial class Utf8Pcre2Regex
             return;
         }
 
-        var slice = (Pcre2SliceDirectProgram)program;
+        var scalarProgram = program is Pcre2Utf8DirectProgram coreProgram ? coreProgram.ScalarProgram
+            : ((Pcre2SliceDirectProgram)program).SliceProgram;
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var cursor = new Pcre2SliceGlobalMatchCursor(slice.SliceProgram, invocation, subject, start, _program.Request);
+        var cursor = new Pcre2SliceGlobalMatchCursor(scalarProgram, invocation, subject, start, _program.Request);
         while (true)
         {
             output.Checkpoint();
@@ -182,7 +167,8 @@ public sealed partial class Utf8Pcre2Regex
             var range = cursor.Current;
             // Preserve the precise yield, including the nonempty same-start retry.
             var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
-            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, null);
+            var context = Utf8Pcre2MatchContext.Create(input, groups,
+                program is Pcre2Utf8DirectProgram coreNames ? coreNames.ContextNameEntries : NameEntries, null);
             output.Append(in context);
         }
     }

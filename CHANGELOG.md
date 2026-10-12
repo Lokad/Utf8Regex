@@ -2,6 +2,13 @@
 
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
+- Execute admitted core-grammar scalar programs with the existing PCRE2 slice
+  driver instead of independent core calls. Work/depth/heap controls, tokens and
+  absolute deadlines now cover discovery, final captures, cursor advances and
+  template/callback output together. Tight limits can reject earlier. Preserve
+  capture aliases, balancing restoration and retained results; fix global empty
+  retry to consider a nonempty match at the same position before scalar advance.
+  Remove obsolete delegated cursor modes, rematching and writing helpers.
 - Parse parenthesized comments as ignored trivia in existing literal, character
   and generic PCRE2 compilation. A comment no longer changes default ASCII
   shorthand through core delegation. Preserve declaration-order capture and
@@ -9,7 +16,7 @@
   Keep original pattern coordinates, native algorithms and meters, quoted/class
   contexts, quantifier association and scalar empty advancement. Commented literals
   now fund the same endpoint projection as ordinary literals; tight limits can
-  deny earlier. Core grammar extensions still have a separate qualification gate.
+  deny earlier. Broader profile options and probes retain separate qualification gates.
 - Native detailed template replacement and explicit-option slice fallbacks now
   share discovery's work, heap, token and absolute deadline through output.
   No-match byte/string output is admitted before acquisition. String completion
@@ -23,7 +30,7 @@
   now reject text publication that formerly escaped those limits. Byte replacement
   search, emission and allocations remain unchanged.
 - Keep finite public PCRE2 result-byte policies explicitly unsupported until the
-  remaining foundation template and capture/specialized probe publications are
+  remaining capture/specialized probe publications are
   covered. Preserve both the accepted scalar.5 core/PythonRe feed and the private
   scalar.6-dev PCRE2/core pair under their immutable identities.
 

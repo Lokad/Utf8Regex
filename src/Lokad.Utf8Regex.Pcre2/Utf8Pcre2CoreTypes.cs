@@ -692,10 +692,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
     internal static int DebugSliceCursorSizeInBytes => Unsafe.SizeOf<Pcre2SliceGlobalMatchCursor>();
 
-    internal static int DebugUtf8PreparedEnumeratorSizeInBytes => Unsafe.SizeOf<Utf8PreparedValueMatchEnumerator>();
-
-    internal static int DebugUtf8EnumeratorSizeInBytes => Unsafe.SizeOf<Utf8ValueMatchEnumerator>();
-
     internal static int DebugMaterializedStateSizeInBytes => Unsafe.SizeOf<Pcre2MaterializedMatchEnumeratorState>();
 
     internal static int DebugValueDataSizeInBytes => Unsafe.SizeOf<Pcre2ValueData>();
@@ -708,10 +704,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     private readonly Pcre2NativeValueEnumeratorKind _generatorExecutionKind;
     private Pcre2GlobalMatchCursor _directMatches;
     private Pcre2SliceGlobalMatchCursor _sliceMatches;
-    private Utf8PreparedValueMatchEnumerator _utf8PreparedMatches;
-    private Utf8ValueMatchEnumerator _utf8Matches;
-    private readonly int _utf8RegexByteOffsetBase;
-    private readonly int _utf8RegexUtf16OffsetBase;
     private int _pendingNextCursor;
     private Pcre2ValueData _currentData;
     private Pcre2ValueData _pendingData;
@@ -726,37 +718,12 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _materializedMatches = new Pcre2MaterializedMatchEnumeratorState(matches);
         _generatorExecutionKind = default;
         _directMatches = default;
-        _utf8PreparedMatches = default;
-        _utf8Matches = default;
-        _utf8RegexByteOffsetBase = 0;
-        _utf8RegexUtf16OffsetBase = 0;
         _pendingNextCursor = 0;
         _currentData = default;
         _pendingData = default;
         _hasPendingData = false;
         _cursor = 0;
         _index = -1;
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches, int byteOffsetBase, int utf16OffsetBase)
-    {
-        this = default;
-        _mode = Pcre2ValueMatchEnumeratorMode.Utf8RegexEnumerator;
-        _input = input;
-        _utf8Matches = utf8Matches;
-        _utf8RegexByteOffsetBase = byteOffsetBase;
-        _utf8RegexUtf16OffsetBase = utf16OffsetBase;
-        _index = -1;
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches)
-        : this(input, utf8Matches, 0, 0)
-    {
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches, int byteOffsetBase)
-        : this(input, utf8Matches, byteOffsetBase, 0)
-    {
     }
 
     internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Pcre2GroupData[]? matches, Exception pendingException, int exceptionIndex)
@@ -769,10 +736,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
             exceptionIndex);
         _generatorExecutionKind = default;
         _directMatches = default;
-        _utf8PreparedMatches = default;
-        _utf8Matches = default;
-        _utf8RegexByteOffsetBase = 0;
-        _utf8RegexUtf16OffsetBase = 0;
         _pendingNextCursor = 0;
         _currentData = default;
         _pendingData = default;
@@ -788,10 +751,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _materializedMatches = default;
         _generatorExecutionKind = generatorExecutionKind;
         _directMatches = default;
-        _utf8PreparedMatches = default;
-        _utf8Matches = default;
-        _utf8RegexByteOffsetBase = 0;
-        _utf8RegexUtf16OffsetBase = 0;
         _pendingNextCursor = 0;
         _currentData = default;
         _pendingData = default;
@@ -819,15 +778,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2Slice;
         _input = input;
         _sliceMatches = sliceMatches;
-        _index = -1;
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8PreparedValueMatchEnumerator utf8PreparedMatches, int startOffsetInBytes)
-    {
-        this = default;
-        _mode = Pcre2ValueMatchEnumeratorMode.Utf8PreparedAsciiEnumerator;
-        _input = input;
-        _utf8PreparedMatches = utf8PreparedMatches;
         _index = -1;
     }
 
@@ -948,39 +898,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 CoordinateFlagsSpecified = true,
                 Utf8SliceIsWellFormed = projected.IsUtf8SliceWellFormed,
                 Utf16ProjectionIsExact = projected.HasUtf16Projection,
-            };
-            return true;
-        }
-
-        if (_mode == Pcre2ValueMatchEnumeratorMode.Utf8RegexEnumerator)
-        {
-            if (!_utf8Matches.MoveNext())
-            {
-                _currentData = default;
-                return false;
-            }
-
-            _currentData = CreateManagedProfileGroupData(_utf8Matches.Current, _utf8RegexByteOffsetBase, _utf8RegexUtf16OffsetBase);
-            return true;
-        }
-
-        if (_mode == Pcre2ValueMatchEnumeratorMode.Utf8PreparedAsciiEnumerator)
-        {
-            if (!_utf8PreparedMatches.MoveNext())
-            {
-                _currentData = default;
-                return false;
-            }
-
-            var start = _utf8PreparedMatches.StartOffsetInBytes;
-            var end = _utf8PreparedMatches.EndOffsetInBytes;
-            _currentData = new Pcre2ValueData
-            {
-                Success = true,
-                StartOffsetInBytes = start,
-                EndOffsetInBytes = end,
-                StartOffsetInUtf16 = start,
-                EndOffsetInUtf16 = end,
             };
             return true;
         }
@@ -1168,29 +1085,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         return true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Pcre2ValueData CreateManagedProfileGroupData(Utf8ValueMatch utf8Match, int byteOffsetBase, int utf16OffsetBase)
-    {
-        if (!utf8Match.Success)
-        {
-            return default;
-        }
-
-        if (!utf8Match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
-        {
-            throw new InvalidOperationException("Managed Utf8Regex fallback returned a match that is not aligned to byte boundaries.");
-        }
-
-        return new Pcre2ValueData
-        {
-            Success = true,
-            StartOffsetInBytes = byteOffsetBase + indexInBytes,
-            EndOffsetInBytes = byteOffsetBase + indexInBytes + lengthInBytes,
-            StartOffsetInUtf16 = utf16OffsetBase + utf8Match.IndexInUtf16,
-            EndOffsetInUtf16 = utf16OffsetBase + utf8Match.IndexInUtf16 + utf8Match.LengthInUtf16,
-        };
-    }
-
     private readonly struct Pcre2ValueData
     {
         public bool Success { get; init; }
@@ -1228,8 +1122,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     {
         Pcre2GroupDataArray = 0,
         Pcre2GroupDataArrayWithDeferredException = 1,
-        Utf8RegexEnumerator = 2,
-        Utf8PreparedAsciiEnumerator = 3,
         NativeValueGenerator = 6,
         Pcre2DirectGlobal = 7,
         Pcre2Slice = 8,

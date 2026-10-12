@@ -13,7 +13,8 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 // slice routing through the Unicode-shorthand marker (like hybrids) and
 // keep their native programs; a negated category before a dash throws at
 // native construction (pre-existing divergence, verified at HEAD). The
-// shared slice never serves PCRE2 categories.
+// Core block extensions execute their scalar program under the profile
+// invocation; ordinary PCRE2 categories retain native compilation.
 public sealed class Pcre2SliceCategoryTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
