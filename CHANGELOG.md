@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 compound probe candidates (0.4.0-scalar.17-dev)
+
+- Reuse the common scalar candidate loop for admitted unanchored atomic,
+  repeated/subroutine, possessive-terminal and conditional probes. Distinguish
+  interior mismatches from EOF partials and bound prefix comparisons. Share the
+  existing dot-token scan for conditional newline/greedy-EOF semantics. Preserve
+  explicit anchoring, native empty conditional partials, full/named captures,
+  finite limits and interruption. Remove misleading anchored helper names.
+
 ## Unreleased PCRE2 literal boundary probes (0.4.0-scalar.16-dev)
 
 - Retry later literal candidates after failed assertions and evaluate wrapped/

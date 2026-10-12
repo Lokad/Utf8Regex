@@ -52,6 +52,9 @@ public sealed partial class Utf8Pcre2Regex
             while (true)
             {
                 var accepts = LeadingAssertionAccepts(compiled, input, startOffsetInBytes, matchOptions, out var canRetry);
+                canRetry |= program.Kind is Pcre2PartialProbeProgramKind.AtomicAPlusB or
+                    Pcre2PartialProbeProgramKind.RepeatedLiteral or Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ or
+                    Pcre2PartialProbeProgramKind.LiteralPlusTerminal;
                 if (accepts)
                 {
                     var result = program.Kind switch
@@ -68,10 +71,10 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.NegativeStartClassDotStar => ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes, compiled.Request),
                         Pcre2PartialProbeProgramKind.AnchoredNewlineSequence => ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag),
                         Pcre2PartialProbeProgramKind.AnchoredOptionalNewlineThenX => ProbeViaAnchoredOptionalNewlineThenX(input, partialMode, startOffsetInBytes),
-                        Pcre2PartialProbeProgramKind.AnchoredAtomicAPlusB => ProbeViaAnchoredAtomicAPlusB(input, partialMode, startOffsetInBytes),
-                        Pcre2PartialProbeProgramKind.AnchoredRepeatedLiteral => ProbeViaAnchoredRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
-                        Pcre2PartialProbeProgramKind.AnchoredConditionalAbcDotStarOrZ => ProbeViaAnchoredConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes),
-                        Pcre2PartialProbeProgramKind.AnchoredLiteralPlusTerminal => ProbeViaAnchoredLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
+                        Pcre2PartialProbeProgramKind.AtomicAPlusB => ProbeViaAtomicAPlusB(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.RepeatedLiteral => ProbeViaRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
+                        Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ => ProbeViaConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes, compiled.Request),
+                        Pcre2PartialProbeProgramKind.LiteralPlusTerminal => ProbeViaLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
                         Pcre2PartialProbeProgramKind.AnchoredAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, program.Flag, false),
                         Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
                         Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes),
@@ -126,6 +129,12 @@ public sealed partial class Utf8Pcre2Regex
         var end = start + literal.Length;
         var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any,
             dotAll ? Pcre2CharacterOptions.DotAll : Pcre2CharacterOptions.None, 0, 0);
+        return ProbeDotStar(input, partialMode, start, end, dot, request);
+    }
+
+    private Utf8Pcre2ProbeResult ProbeDotStar(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int start, int end, Pcre2CharacterToken dot, Pcre2CompileRequest request)
+    {
         // Reuse the admitted whole-subject dot semantics. Scalar widths and the
         // selected newline convention determine the endpoint, not byte count.
         while (Pcre2CharacterRunner.TryMatchToken(dot, request, input, end, _originalStart, _matchOptions, out var next))
@@ -454,7 +463,7 @@ public sealed partial class Utf8Pcre2Regex
         (_matchOptions & Pcre2MatchOptions.NotEmpty) == 0 &&
         ((_matchOptions & Pcre2MatchOptions.NotEmptyAtStart) == 0 || candidate != _originalStart);
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredAtomicAPlusB(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
+    private Utf8Pcre2ProbeResult ProbeViaAtomicAPlusB(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
     {
         var remaining = input[startOffsetInBytes..];
         if (remaining.Length == 0 || remaining[0] != (byte)'a')
@@ -474,7 +483,7 @@ public sealed partial class Utf8Pcre2Regex
             return Full([Project(0, startOffsetInBytes, startOffsetInBytes + cursor + 1)]);
         }
 
-        if (partialMode != Pcre2PartialMode.None)
+        if (partialMode != Pcre2PartialMode.None && cursor == remaining.Length)
         {
             return Partial(Project(0, startOffsetInBytes, input.Length));
         }
@@ -546,7 +555,7 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredRepeatedLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8, int repeatCount)
+    private Utf8Pcre2ProbeResult ProbeViaRepeatedLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8, int repeatCount)
     {
         var remaining = input[startOffsetInBytes..];
         var requiredLength = literalUtf8.Length * repeatCount;
@@ -570,14 +579,18 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredConditionalAbcDotStarOrZ(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
+    private Utf8Pcre2ProbeResult ProbeViaConditionalAbcDotStarOrZ(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, Pcre2CompileRequest request)
     {
         var remaining = input[startOffsetInBytes..];
         if (remaining.StartsWith("abc"u8))
         {
-            return Full([Project(0, startOffsetInBytes, input.Length)]);
+            var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, Pcre2CharacterOptions.None, 0, 0);
+            return ProbeDotStar(input, partialMode, startOffsetInBytes, startOffsetInBytes, dot, request);
         }
 
+        // The conditional's dot-star branch can be empty; native partial
+        // admission therefore includes an empty lookahead prefix at EOF.
         if (partialMode != Pcre2PartialMode.None && "abc"u8.StartsWith(remaining))
         {
             return Partial(Project(0, startOffsetInBytes, input.Length));
@@ -591,7 +604,7 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredLiteralPlusTerminal(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8, byte terminal)
+    private Utf8Pcre2ProbeResult ProbeViaLiteralPlusTerminal(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8, byte terminal)
     {
         var remaining = input[startOffsetInBytes..];
         var cursor = 0;
@@ -603,7 +616,8 @@ public sealed partial class Utf8Pcre2Regex
 
         if (cursor == 0)
         {
-            if (partialMode != Pcre2PartialMode.None && remaining.Length > 0 && literalUtf8.AsSpan(0, remaining.Length).SequenceEqual(remaining))
+            if (partialMode != Pcre2PartialMode.None && remaining.Length > 0 &&
+                literalUtf8.AsSpan().StartsWith(remaining))
             {
                 return Partial(Project(0, startOffsetInBytes, input.Length));
             }
@@ -624,7 +638,7 @@ public sealed partial class Utf8Pcre2Regex
             }
 
             var tail = remaining[cursor..];
-            if (tail.Length > 0 && literalUtf8.AsSpan(0, tail.Length).SequenceEqual(tail))
+            if (tail.Length > 0 && literalUtf8.AsSpan().StartsWith(tail))
             {
                 return Partial(Project(0, startOffsetInBytes, input.Length));
             }

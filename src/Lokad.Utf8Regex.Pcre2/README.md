@@ -55,6 +55,12 @@ Wrapped and trailing word boundaries use configured scalar/UCP semantics. Their
 context-bearing unanchored EOF attempt can return an empty partial, including an
 empty subject; explicit anchors retain their native candidate restrictions.
 
+The admitted atomic, repeated/subroutine, possessive-terminal and conditional
+probe families search later scalar candidates when unanchored. Interior mismatches
+are distinct from EOF partials. Conditional dot-star matches follow configured
+newline semantics and greedy EOF precedence; their native empty partial remains
+available. Explicit compile/operation anchoring keeps the original candidate.
+
 Capture names start with a Unicode letter or underscore; later characters may
 also be decimal digits. Names alias slots assigned in declaration order. Explicit
 .NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail
