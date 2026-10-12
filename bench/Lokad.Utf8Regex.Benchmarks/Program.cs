@@ -107,6 +107,13 @@ if (args.Length >= 1 && args[0].Equals("--measure-slice-policy-lanes", StringCom
         args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 1 && args[0].Equals("--measure-pythonre-handoff-bulk", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasurePythonReHandoffBulk(
+        args.Length >= 2 ? args[1] : null,
+        args.Length >= 3 ? args[2] : null);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-count-attribution-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureCountAttributionCase(

@@ -228,11 +228,19 @@ Current intended uses:
   - dispatches internally to the appropriate literal-family, structural-family, prefix-loop, or whole-document drilldown
 - --measure-slice-policy-lanes
   - run the R02a focused cost controls over the fixed slice catalog (IsMatch plus Count)
-  - reports unlimited/no-token, finite-limits/no-token (PCRE2 only for this combined policy; core rejects finite budgets and
-    PythonRe supports work-only budgets), and live-token lanes with per-lane results, routes, timings,
+  - reports unlimited/no-token, finite-limits/no-token, and live-token lanes with per-lane results, routes, timings,
     and allocations
   - validates lane agreement within each profile before timing; defaults to 20000
     iterations and five samples with alternating sample order
+  - core/PythonRe finite lanes now exercise all four invocation controls; raw
+    samples and decode/predecoded .NET controls accompany end-to-end costs
+- --measure-pythonre-handoff-bulk [iterations] [samples]
+  - measures the Lython handoff's `(a)(b)` over 1K/5K/10K `ab ` repetitions:
+    core Count, PythonRe FindIterDetailed/FindAllToUtf8 and cursor first/ten-result
+    early disposal, unlimited versus all four finite invocation controls
+  - verifies ranges/capture values first, retains outputs, reports raw warm
+    alternating samples and allocations, and includes decode/predecoded controls
+    for Count and UTF-8 tuple shaping; diagnostic only, does not set Status
 - --measure-count-attribution-case
   - run a bounded, alternating production-route Count breakdown for one case
   - reports the selected ordinary/compiled kernels, required UTF-8 validation,
