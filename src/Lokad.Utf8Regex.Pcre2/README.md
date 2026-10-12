@@ -61,6 +61,11 @@ are distinct from EOF partials. Conditional dot-star matches follow configured
 newline semantics and greedy EOF precedence; their native empty partial remains
 available. Explicit compile/operation anchoring keeps the original candidate.
 
+Anchored newline probes consume the configured BSR scalar atom: Unicode line
+endings by default, or only CR/LF/CRLF under AnyCrlf. CRLF is one atomic newline;
+a lone final CR remains uncertain under hard partial. Optional and admitted
+bounded/unbounded newline repeats use the same token path and preserve endpoints.
+
 Capture names start with a Unicode letter or underscore; later characters may
 also be decimal digits. Names alias slots assigned in declaration order. Explicit
 .NET numeric definitions such as `(?<100>a)` are invalid PCRE2 syntax and fail

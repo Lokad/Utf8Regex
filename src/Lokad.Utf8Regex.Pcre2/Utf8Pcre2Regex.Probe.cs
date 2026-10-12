@@ -69,8 +69,7 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.EndAssertion => ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, program.Flag),
                         Pcre2PartialProbeProgramKind.TrailingCWithLookbehind => ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, program.Flag),
                         Pcre2PartialProbeProgramKind.NegativeStartClassDotStar => ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes, compiled.Request),
-                        Pcre2PartialProbeProgramKind.AnchoredNewlineSequence => ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag),
-                        Pcre2PartialProbeProgramKind.AnchoredOptionalNewlineThenX => ProbeViaAnchoredOptionalNewlineThenX(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.AnchoredNewlineSequence => ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled.Request),
                         Pcre2PartialProbeProgramKind.AtomicAPlusB => ProbeViaAtomicAPlusB(input, partialMode, startOffsetInBytes),
                         Pcre2PartialProbeProgramKind.RepeatedLiteral => ProbeViaRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
                         Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ => ProbeViaConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes, compiled.Request),
@@ -491,26 +490,33 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredNewlineSequence(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, int minCount, int maxCount, bool requireTerminalX)
+    private Utf8Pcre2ProbeResult ProbeViaAnchoredNewlineSequence(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, int minCount, int maxCount, bool requireTerminalX, Pcre2CompileRequest request)
     {
-        var remaining = input[startOffsetInBytes..];
-        var cursor = 0;
+        var cursor = startOffsetInBytes;
         var count = 0;
-        while (cursor < remaining.Length && count < maxCount && TryConsumePcre2Newline(remaining[cursor..], out var consumed))
+        var newline = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, Pcre2CharacterOptions.None, 0, 0);
+        while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(newline, request, input,
+            cursor, _originalStart, _matchOptions, out var next))
         {
             _budget.ChargeWorkspaceStep();
-            cursor += consumed;
+            var loneFinalCr = next == input.Length && next == cursor + 1 && input[cursor] == (byte)'\r';
+            cursor = next;
             count++;
+            // CRLF is one atomic newline; a lone final CR can still grow into
+            // that atom, so hard partial keeps this uncertainty explicitly.
+            if (partialMode == Pcre2PartialMode.Hard && loneFinalCr)
+                return Partial(Project(0, startOffsetInBytes, cursor));
         }
 
         if (requireTerminalX)
         {
-            if (count >= minCount && cursor < remaining.Length && remaining[cursor] == (byte)'x')
+            if (count >= minCount && cursor < input.Length && input[cursor] == (byte)'x')
             {
-                return Full([Project(0, startOffsetInBytes, startOffsetInBytes + cursor + 1)]);
+                return Full([Project(0, startOffsetInBytes, cursor + 1)]);
             }
 
-            if (partialMode != Pcre2PartialMode.None && cursor == remaining.Length && count > 0 && count <= maxCount)
+            if (partialMode != Pcre2PartialMode.None && cursor == input.Length && count > 0)
             {
                 return Partial(Project(0, startOffsetInBytes, input.Length));
             }
@@ -520,36 +526,7 @@ public sealed partial class Utf8Pcre2Regex
 
         if (count >= minCount)
         {
-            if (partialMode == Pcre2PartialMode.Hard && remaining.Length == cursor && remaining.Length > 0 && remaining[0] == (byte)'\r')
-            {
-                return Partial(Project(0, startOffsetInBytes, input.Length));
-            }
-
-            return Full([Project(0, startOffsetInBytes, startOffsetInBytes + cursor)]);
-        }
-
-        return NoMatch();
-    }
-
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredOptionalNewlineThenX(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length > 0 && remaining[0] == (byte)'x')
-        {
-            return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 1)]);
-        }
-
-        if (TryConsumePcre2Newline(remaining, out var consumed))
-        {
-            if (remaining.Length == consumed && partialMode != Pcre2PartialMode.None)
-            {
-                return Partial(Project(0, startOffsetInBytes, input.Length));
-            }
-
-            if (remaining.Length > consumed && remaining[consumed] == (byte)'x')
-            {
-                return Full([Project(0, startOffsetInBytes, startOffsetInBytes + consumed + 1)]);
-            }
+            return Full([Project(0, startOffsetInBytes, cursor)]);
         }
 
         return NoMatch();
@@ -774,24 +751,6 @@ public sealed partial class Utf8Pcre2Regex
             else break;
         }
         return NoMatch();
-    }
-
-    private bool TryConsumePcre2Newline(ReadOnlySpan<byte> input, out int consumed)
-    {
-        if (input.Length >= 2 && input[0] == (byte)'\r' && input[1] == (byte)'\n')
-        {
-            consumed = 2;
-            return true;
-        }
-
-        if (input.Length >= 1 && input[0] is (byte)'\r' or (byte)'\n')
-        {
-            consumed = 1;
-            return true;
-        }
-
-        consumed = 0;
-        return false;
     }
 
     private Utf8Pcre2ProbeResult ProbeViaLiteralAssertions(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,

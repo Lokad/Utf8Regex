@@ -18,7 +18,6 @@ internal enum Pcre2PartialProbeProgramKind : byte
     TrailingCWithLookbehind = 9,
     NegativeStartClassDotStar = 10,
     AnchoredNewlineSequence = 11,
-    AnchoredOptionalNewlineThenX = 12,
     AtomicAPlusB = 13,
     RepeatedLiteral = 14,
     ConditionalAbcDotStarOrZ = 15,
@@ -87,6 +86,23 @@ internal static class Pcre2PartialProbeCompiler
 
     internal static Pcre2PartialProbeProgram Compile(Pcre2BacktrackingSyntaxTree syntaxTree, Pcre2CompileRequest request)
     {
+        if (syntaxTree.Root is Pcre2SequenceBacktrackingNode { Children.Length: 3 } newlineSequence &&
+            newlineSequence.Children[0] is Pcre2TokenBacktrackingNode
+            { Token.Kind: Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject } &&
+            newlineSequence.Children[1] is Pcre2RepeatBacktrackingNode
+            {
+                Body: Pcre2TokenBacktrackingNode { Token.Kind: Pcre2CharacterTokenKind.NewlineSequence },
+                Preference: Pcre2RepeatPreference.Greedy or Pcre2RepeatPreference.Lazy,
+            } newlineRepeat &&
+            (newlineRepeat.Minimum, newlineRepeat.Maximum) is (0, 1) or (2, 3) or (1, int.MaxValue) &&
+            newlineSequence.Children[2] is Pcre2TokenBacktrackingNode
+            { Token.Kind: Pcre2CharacterTokenKind.Literal, Token.Literal.Value: 'x' } terminal &&
+            (terminal.Token.Options & Pcre2CharacterOptions.Caseless) == 0)
+        {
+            return Create(Pcre2PartialProbeProgramKind.AnchoredNewlineSequence,
+                newlineRepeat.Minimum, newlineRepeat.Maximum, true);
+        }
+
         if (request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
             syntaxTree.Root is Pcre2RepeatBacktrackingNode
             {
@@ -118,10 +134,6 @@ internal static class Pcre2PartialProbeCompiler
             "S(R(0,2147483647,2:T(0,0,63));Q(2:T(1,0,0:0,98,98,0,.0,99,99,0,.));)" => Create(Pcre2PartialProbeProgramKind.TrailingCWithLookbehind, false),
             "S(R(1,2147483647,2:T(0,0,63));Q(2:T(1,0,0:0,98,98,0,.0,99,99,0,.));)" => Create(Pcre2PartialProbeProgramKind.TrailingCWithLookbehind, true),
             "S(Q(1:T(1,0,0:0,97,97,0,.0,98,98,0,.));R(0,2147483647,0:T(2,0));)" => Create(Pcre2PartialProbeProgramKind.NegativeStartClassDotStar),
-            "S(T(5,0);R(2,3,0:T(4,0));T(0,0,78);)" or
-            "S(T(5,0);R(2,3,1:T(4,0));T(0,0,78);)" => Create(Pcre2PartialProbeProgramKind.AnchoredNewlineSequence, 2, 3, true),
-            "S(T(5,0);R(0,1,0:T(4,0));T(0,0,78);)" => Create(Pcre2PartialProbeProgramKind.AnchoredOptionalNewlineThenX),
-            "S(T(5,0);R(1,2147483647,0:T(4,0));T(0,0,78);)" => Create(Pcre2PartialProbeProgramKind.AnchoredNewlineSequence, 1, int.MaxValue, true),
             "O(S(R(1,2147483647,0:T(0,0,61));T(0,0,62);))" => Create(Pcre2PartialProbeProgramKind.AtomicAPlusB),
             "S(C(1:S(T(0,0,61);T(0,0,62);T(0,0,63);));U(0,1,);)" => Create(Pcre2PartialProbeProgramKind.RepeatedLiteral, 2, "abc"),
             "D(1:Q(0:S(T(0,0,61);T(0,0,62);T(0,0,63);)):R(0,2147483647,0:T(2,0)):T(0,0,5A))" => Create(Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ),

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased PCRE2 BSR newline probes (0.4.0-scalar.18-dev)
+
+- Use the admitted BSR scalar newline token for the existing anchored newline
+  probe family, including Unicode versus AnyCrlf settings. Merge optional and
+  repeated forms; remove the CR/LF-only consumer and duplicate serialized selectors.
+  Preserve atomic CRLF, final-CR hard uncertainty, scalar endpoints, admitted
+  repetition bounds, original anchors/offsets, finite limits and interruption.
+
 ## Unreleased PCRE2 compound probe candidates (0.4.0-scalar.17-dev)
 
 - Reuse the common scalar candidate loop for admitted unanchored atomic,
