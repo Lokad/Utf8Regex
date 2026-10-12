@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 word-probe follow-up
+
+- Consume the admitted word-class scalar in possessive-a partial probes, honoring
+  UCP membership and complete UTF-8 widths. Share the aa-first alternative helper
+  and remove its ASCII predicate and unused minimum switch. Preserve ordered
+  alternatives, possessive EOF, original anchors, owned captures, finite controls
+  and synchronous interruption. This source follow-up is not part of the already
+  qualified immutable scalar.18-dev package pair.
+
 ## Unreleased PCRE2 BSR newline probes (0.4.0-scalar.18-dev)
 
 - Use the admitted BSR scalar newline token for the existing anchored newline

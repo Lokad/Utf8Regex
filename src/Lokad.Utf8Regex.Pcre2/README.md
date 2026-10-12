@@ -50,6 +50,13 @@ suffixes use their actual assertion tokens, including final-newline/CR partial
 extents and configured scalar word boundaries; a requested offset is never a new
 subject beginning.
 
+The admitted possessive-a/word probes consume one complete word-class scalar,
+including Unicode letters and combining marks with UCP enabled. The ordered
+`aa` alternative retains priority; possessive repeats do not give back an `a`
+to the following word class. Empty subjects remain no-match, while a nonempty
+possessive prefix reaching EOF can be partial. Full results retain their declared
+captures under the original resource and interruption authority.
+
 Literal assertion probes retry later candidates after failed boundary/end tests.
 Wrapped and trailing word boundaries use configured scalar/UCP semantics. Their
 context-bearing unanchored EOF attempt can return an empty partial, including an

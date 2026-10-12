@@ -74,8 +74,7 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.RepeatedLiteral => ProbeViaRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
                         Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ => ProbeViaConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes, compiled.Request),
                         Pcre2PartialProbeProgramKind.LiteralPlusTerminal => ProbeViaLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
-                        Pcre2PartialProbeProgramKind.AnchoredAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, program.Flag, false),
-                        Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
+                        Pcre2PartialProbeProgramKind.AnchoredAPlusWord or Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, compiled),
                         Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes),
                         Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag, compiled),
                         Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
@@ -624,13 +623,25 @@ public sealed partial class Utf8Pcre2Regex
         return NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredAPlusWord(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool allowEmptyA, bool requireAtLeastTwoLeadingA)
+    private Utf8Pcre2ProbeResult ProbeViaAnchoredAPlusWord(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
+        int startOffsetInBytes, Pcre2CompiledProgram compiled)
     {
         var remaining = input[startOffsetInBytes..];
         if (remaining.Length == 0)
         {
             return NoMatch();
         }
+
+        var sequence = ((Pcre2SequenceBacktrackingNode)((Pcre2BacktrackingSyntaxTree)compiled.SyntaxTree).Root).Children;
+        if (compiled.PartialProbe.Kind == Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord)
+        {
+            // The first alternative is complete without inspecting a word
+            // scalar or EOF. Preserve its priority in both partial modes.
+            if (remaining.StartsWith("aa"u8))
+                return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 2)]);
+            sequence = ((Pcre2SequenceBacktrackingNode)((Pcre2AlternationBacktrackingNode)sequence[1]).Alternatives[1]).Children;
+        }
+        var word = ((Pcre2TokenBacktrackingNode)sequence[^1]).Token;
 
         var aCount = 0;
         while (aCount < remaining.Length && remaining[aCount] == (byte)'a')
@@ -639,25 +650,16 @@ public sealed partial class Utf8Pcre2Regex
             aCount++;
         }
 
-        var minA = allowEmptyA ? 0 : 1;
-        if (requireAtLeastTwoLeadingA)
-        {
-            minA = Math.Max(minA, 2);
-        }
-
-        if (aCount < minA)
-        {
-            if (allowEmptyA && IsAsciiWordByte(remaining[0]))
-            {
-                return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 1)]);
-            }
-
+        if (aCount == 0 && !compiled.PartialProbe.Flag)
             return NoMatch();
-        }
 
-        if (aCount < remaining.Length && IsAsciiWordByte(remaining[aCount]))
+        // The admitted class owns UCP membership and complete scalar width.
+        // ASCII byte classification would falsely reject Unicode word scalars.
+        _budget.ChargeWorkspaceStep();
+        if (Pcre2CharacterRunner.TryMatchToken(word, compiled.Request, input,
+            startOffsetInBytes + aCount, _originalStart, _matchOptions, out var end))
         {
-            return Full([Project(0, startOffsetInBytes, startOffsetInBytes + aCount + 1)]);
+            return Full([Project(0, startOffsetInBytes, end)]);
         }
 
         if (partialMode != Pcre2PartialMode.None && aCount == remaining.Length)
@@ -666,17 +668,6 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         return NoMatch();
-    }
-
-    private Utf8Pcre2ProbeResult ProbeViaAnchoredAaOrAPlusWord(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length >= 2 && remaining[0] == (byte)'a' && remaining[1] == (byte)'a')
-        {
-            return Full([Project(0, startOffsetInBytes, startOffsetInBytes + 2)]);
-        }
-
-        return ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, allowEmptyA: false, requireAtLeastTwoLeadingA: false);
     }
 
     private Utf8Pcre2ProbeResult ProbeViaAnchoredACrlfEnd(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
@@ -805,14 +796,6 @@ public sealed partial class Utf8Pcre2Regex
         if (leading is not { } assertion) return true;
         _budget.ChargeWorkspaceStep();
         return Pcre2CharacterRunner.TryMatchToken(assertion, request, input, start, _originalStart, _matchOptions, out _);
-    }
-
-    private bool IsAsciiWordByte(byte value)
-    {
-        return value is >= (byte)'A' and <= (byte)'Z' or
-            >= (byte)'a' and <= (byte)'z' or
-            >= (byte)'0' and <= (byte)'9' or
-            (byte)'_';
     }
 
     private Utf8Pcre2ProbeResult ProbeViaAnchoredExactLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
