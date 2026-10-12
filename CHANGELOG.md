@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.0-scalar.2 core/PythonRe candidate
+
+- Accept positive finite invocation work, execution depth, modeled working
+  capacity and cumulative result-capacity controls in core/PythonRe, individually
+  or together. Validation, matching and required output shaping share one
+  allowance; cursor advances do not reset work or the absolute deadline.
+  Exhaustion reports a structured resource failure. Defaults remain unlimited.
+- Provide a persistent PythonRe cursor with explicit disposal, deterministic
+  EOF/failure cleanup and owned retained snapshots. Preserve Python capture
+  numbering/backreferences and authoritative last-closed LastIndex/LastGroup,
+  including nested captures, lookbehind and backtracking rollback.
+- Simplify cache charges, construction accounting and cursor reservations:
+  conservative per-program charges replace retained-object graph/refcount
+  machinery; coarse helper charges replace retaining rollback descriptors;
+  numeric cursor reservations replace finalizer leases. Major allocations,
+  expansion/work/depth bounds, synchronous cancellation and scalar behavior remain.
+- Qualify core/PythonRe as one immutable local feed independently of PCRE2.
+  Candidate manifests identify exact package/DLL/source/SourceLink/PDB identities
+  and detached consumers. Publication and downstream promotion are separate.
+- Invocation byte policies cover modeled major capacity, not arbitrary caller
+  retention, callback allocations or process RSS. Compilation/replacement
+  preparation retain separate construction safeguards; public construction and
+  live-retention controls and safe defaults remain unfinished. Historical
+  benchmark snapshots do not qualify this candidate's current performance.
+
 ## 0.4.0-scalar.1 candidate
 
 - Give scalar development a distinct prerelease package identity. Published 0.3.0

@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param()
 
+# Core/PythonRe delivery has its own candidate. PCRE2 qualifies separately through
+# test-packaged-pcre2.ps1 and must not block this downstream input.
 # A successful candidate is designated once. Failed attempts retain their evidence.
 # This flow never publishes packages or changes a consumer's global NuGet cache.
 $ErrorActionPreference = "Stop"
@@ -26,7 +28,7 @@ $attemptRoot = Join-Path $artifactsRoot "scalar-candidate-attempts/$attemptName"
 [void] (New-Item -ItemType Directory -Path $attemptRoot)
 $feed = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "feed")).FullName
 $steps = [Collections.Generic.List[object]]::new()
-$packages = @("Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe")
+$packages = @("Lokad.Utf8Regex", "Lokad.Utf8Regex.PythonRe")
 $startedAt = [DateTime]::UtcNow
 
 function Invoke-CandidateStep([string] $Name, [scriptblock] $Action) {
@@ -97,28 +99,27 @@ try {
             SymbolSha256 = $record.SymbolPackageSha256; PdbSha256 = $record.PdbSha256
         }
     })
-    if (@(Get-ChildItem -LiteralPath $feed -File).Count -ne 6) {
-        throw "The candidate feed must contain exactly three packages and three symbol packages."
+    if (@(Get-ChildItem -LiteralPath $feed -File).Count -ne 4) {
+        throw "The candidate feed must contain exactly core/PythonRe packages and their symbols."
     }
 
     $consumerRecords = [Collections.Generic.List[object]]::new()
     foreach ($testProjectName in @(
         "Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests",
-        "Lokad.Utf8Regex.Pcre2.Tests", "Lokad.Utf8Regex.PythonRe.Tests"
+        "Lokad.Utf8Regex.PythonRe.Tests"
     )) {
         # Short storage names keep dependency paths below legacy Windows limits.
         $consumerName = switch ($testProjectName) {
             "Lokad.Utf8Regex.Tests" { "core" }
             "Lokad.Utf8Regex.DiffTests" { "diff" }
-            "Lokad.Utf8Regex.Pcre2.Tests" { "pcre2" }
             "Lokad.Utf8Regex.PythonRe.Tests" { "pythonre" }
         }
         $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$consumerName")).FullName
         $testDirectory = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "tests")).FullName
         $cache = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "cache")).FullName
         $packageIds = @("Lokad.Utf8Regex")
-        if ($testProjectName -match '^Lokad\.Utf8Regex\.(Pcre2|PythonRe)\.Tests$') {
-            $packageIds += "Lokad.Utf8Regex.$($Matches[1])"
+        if ($testProjectName -eq "Lokad.Utf8Regex.PythonRe.Tests") {
+            $packageIds += "Lokad.Utf8Regex.PythonRe"
         }
         $resultsDirectory = Join-Path $consumerRoot "results"
         Invoke-CandidateStep "consumer/$testProjectName" {
@@ -203,7 +204,7 @@ $patterns
         SchemaVersion = 1; PackageVersion = $version; SourceRevision = $sourceRevision; CleanSource = $true
         Configuration = "Release"; TargetFramework = "net10.0"
         StartedAtUtc = $startedAt.ToString("O"); CompletedAtUtc = [DateTime]::UtcNow.ToString("O")
-        QualificationScope = "Experimental scalar integration candidate; complete detached fixture suites, exact provenance and restore identities. Whole producer resource/cancellation/adapter/performance acceptance remains open."
+        QualificationScope = "Core/PythonRe scalar integration candidate; complete detached fixture suites, exact provenance and restore identities. PCRE2, downstream promotion, current performance measurements and publication are separate acceptance steps."
         Published = $false; BuildCount = 1; PackCountPerPackage = 1
         Packages = $packageRecords; Consumers = $consumerRecords.ToArray(); Steps = $steps.ToArray()
         ProvenanceRelativePath = "package-provenance.json"
