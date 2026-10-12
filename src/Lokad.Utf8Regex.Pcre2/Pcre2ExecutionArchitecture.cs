@@ -2941,8 +2941,17 @@ internal static class Pcre2GlobalOperationDriver
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
+        out Pcre2GlobalMatchCursor cursor) =>
+        TryCreateCursor(compiledProgram, input, start, matchOptions, out cursor,
+            new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, compiledProgram.Request.MatchTimeout, false));
+
+    internal static bool TryCreateCursor(
+        Pcre2CompiledProgram compiledProgram,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
         out Pcre2GlobalMatchCursor cursor,
-        Pcre2ResourceBudget? budget = null)
+        Pcre2ResourceBudget budget)
     {
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram)
         {
@@ -2959,7 +2968,7 @@ internal static class Pcre2GlobalOperationDriver
                     start,
                     matchOptions,
                     compiledProgram.Request,
-                    collectDiagnostics: false, budget);
+                    budget);
             return true;
         }
 
@@ -2978,7 +2987,7 @@ internal static class Pcre2GlobalOperationDriver
                     start,
                     matchOptions,
                     compiledProgram.Request,
-                    collectDiagnostics: false, budget);
+                    budget);
             return true;
         }
 
@@ -2997,7 +3006,7 @@ internal static class Pcre2GlobalOperationDriver
                     start,
                     matchOptions,
                     compiledProgram.Request,
-                    collectDiagnostics: false, budget);
+                    budget);
             return true;
         }
 
@@ -3012,7 +3021,7 @@ internal static class Pcre2GlobalOperationDriver
                     start,
                     matchOptions,
                     compiledProgram.Request,
-                    collectDiagnostics: false, budget);
+                    budget);
             return true;
         }
 
@@ -3039,7 +3048,7 @@ internal static class Pcre2GlobalOperationDriver
                 start,
                 matchOptions,
                 compiledProgram.Request,
-                collectDiagnostics: false, budget);
+                budget);
             return true;
         }
 
@@ -3059,12 +3068,12 @@ internal static class Pcre2GlobalOperationDriver
                     start,
                     matchOptions,
                     compiledProgram.Request,
-                    collectDiagnostics: false, budget);
+                    budget);
             return true;
         }
 
         if (compiledProgram.Operations.Enumerate is Pcre2Utf8DirectProgram utf8Program &&
-            budget is null && matchOptions == Pcre2MatchOptions.None &&
+            matchOptions == Pcre2MatchOptions.None &&
             !HasUnmeteredExecution(compiledProgram.Request))
         {
             cursor = Pcre2GlobalMatchCursor.CreateUtf8Metered(utf8Program, input, start, compiledProgram.Request, budget);
@@ -3119,7 +3128,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateLiteral(program, input, start, matchOptions, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
@@ -3127,7 +3136,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateCharacter(
@@ -3136,7 +3145,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateCharacter(program, input, start, matchOptions, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateSingleTokenRepeat(
@@ -3145,7 +3154,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(program, input, start, matchOptions, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateMultilinePrefix(
@@ -3153,7 +3162,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateMultilinePrefix(program, input, start, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateSameStartLiteral(
@@ -3161,7 +3170,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateSameStartLiteral(program, input, start, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateLiteralPrefixRepeat(
@@ -3169,7 +3178,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateLiteralPrefixRepeat(program, input, start, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateUtf8Metered(
@@ -3177,7 +3186,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateUtf8Metered(program, input, start, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
@@ -3187,8 +3196,18 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        bool collectDiagnostics,
-        Pcre2ResourceBudget? budget = null) =>
+        bool collectDiagnostics) =>
+        CreateBacktracking(program, candidateSearch, input, start, matchOptions, request,
+            new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics));
+
+    internal static Pcre2GlobalMatchCursor CreateBacktracking(
+        Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchPlan candidateSearch,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request,
+        Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateBacktracking(
             program,
             candidateSearch,
@@ -3196,7 +3215,7 @@ internal ref struct Pcre2GlobalMatchCursor
             start,
             matchOptions,
             request,
-            collectDiagnostics, budget));
+            budget));
 
     internal bool MoveNext() => _kind switch
     {
@@ -3261,9 +3280,8 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        bool collectDiagnostics,
         Pcre2Utf8DirectProgram? utf8Program,
-        Pcre2ResourceBudget? budget = null)
+        Pcre2ResourceBudget budget)
     {
         _kind = kind;
         _literalProgram = literalProgram;
@@ -3277,7 +3295,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         _input = input;
         _request = request;
         _matchOptions = matchOptions;
-        _budget = budget ?? new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics);
+        _budget = budget;
         _projection = input.CreateProjectionCursor();
         _restartPosition = start;
         _firstMatchingPosition = start;
@@ -3296,7 +3314,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.Literal,
             program,
@@ -3311,7 +3329,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             matchOptions,
             request,
-            collectDiagnostics: false,
             utf8Program: null, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateCharacter(
@@ -3320,7 +3337,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.Character,
             literalProgram: null,
@@ -3335,7 +3352,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             matchOptions,
             request,
-            collectDiagnostics: false,
             utf8Program: null, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateSingleTokenRepeat(
@@ -3344,7 +3360,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.SingleTokenRepeat,
             literalProgram: null,
@@ -3359,7 +3375,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             matchOptions,
             request,
-            collectDiagnostics: false,
             utf8Program: null, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateMultilinePrefix(
@@ -3367,7 +3382,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.MultilinePrefix,
             literalProgram: null,
@@ -3382,7 +3397,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             Pcre2MatchOptions.None,
             request,
-            collectDiagnostics: false,
             utf8Program: null, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateSameStartLiteral(
@@ -3390,7 +3404,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.SameStartLiteral,
             literalProgram: null,
@@ -3405,7 +3419,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             Pcre2MatchOptions.None,
             request,
-            collectDiagnostics: false,
             utf8Program: null, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateLiteralPrefixRepeat(
@@ -3413,7 +3426,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.LiteralPrefixRepeat,
             literalProgram: null,
@@ -3428,7 +3441,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             Pcre2MatchOptions.None,
             request,
-            collectDiagnostics: false,
             utf8Program: null, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateUtf8Metered(
@@ -3436,7 +3448,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.Utf8Metered,
             literalProgram: null,
@@ -3451,7 +3463,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             Pcre2MatchOptions.None,
             request,
-            collectDiagnostics: false,
             utf8Program: program, budget);
 
     internal static Pcre2DirectGlobalMatchCursor CreateBacktracking(
@@ -3461,8 +3472,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        bool collectDiagnostics,
-        Pcre2ResourceBudget? budget = null) =>
+        Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.Backtracking,
             literalProgram: null,
@@ -3477,7 +3487,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             start,
             matchOptions,
             request,
-            collectDiagnostics,
             utf8Program: null, budget);
 
     internal bool MoveNext()
@@ -3760,7 +3769,7 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget? budget = null)
+        Pcre2ResourceBudget budget)
     {
         _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
@@ -3768,7 +3777,7 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         _boundaryProjection = (program as Pcre2FiniteLiteralLanguageDirectProgram)?.BoundaryProjection;
         // The selector admits this route only for unmetered matching. Shaping
         // still owns an aggregate working ledger on this same operation cursor.
-        _budget = budget ?? new(request.DefaultLimits, request.MatchTimeout, false);
+        _budget = budget;
         Current = default;
     }
 

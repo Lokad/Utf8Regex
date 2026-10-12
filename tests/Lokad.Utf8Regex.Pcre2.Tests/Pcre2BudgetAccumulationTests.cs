@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // R06/R07 work-budget accumulation: on the Utf8-metered path exactly one
-// candidate is charged per yielded match, the budget spans the whole public
+// candidate plus two projected endpoints are charged per yielded match; the budget spans the whole public
 // call (never resets per candidate, per match, or per MoveNext), and the
 // terminal miss probe charges nothing.
 public sealed class Pcre2BudgetAccumulationTests
@@ -21,15 +21,15 @@ public sealed class Pcre2BudgetAccumulationTests
     }
 
     [Fact]
-    public void CountSucceedsWhenLimitEqualsMatchCount()
+    public void CountSucceedsWhenLimitEqualsProjectedMatchWork()
     {
-        Assert.Equal(3, Create(3).Count(Encoding.UTF8.GetBytes(InputText)));
+        Assert.Equal(3, Create(9).Count(Encoding.UTF8.GetBytes(InputText)));
     }
 
     [Fact]
     public void CountBreachesWhenLimitIsOneShort()
     {
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create(2).Count(Encoding.UTF8.GetBytes(InputText)));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create(8).Count(Encoding.UTF8.GetBytes(InputText)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
@@ -39,7 +39,7 @@ public sealed class Pcre2BudgetAccumulationTests
         // The stack-only enumerator cannot be captured by a lambda, so the
         // breach is collected with the same try/while idiom as the limit
         // enforcement battery.
-        var enumerator = Create(2).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
+        var enumerator = Create(6).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
         var yielded = 0;
         Pcre2MatchException? caught = null;
         try
@@ -60,9 +60,9 @@ public sealed class Pcre2BudgetAccumulationTests
     }
 
     [Fact]
-    public void EnumerationExhaustsCleanlyWhenLimitEqualsMatchCount()
+    public void EnumerationExhaustsCleanlyWhenLimitEqualsProjectedMatchWork()
     {
-        var enumerator = Create(3).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
+        var enumerator = Create(9).EnumerateMatches(Encoding.UTF8.GetBytes(InputText));
         var yielded = 0;
         while (enumerator.MoveNext())
         {
