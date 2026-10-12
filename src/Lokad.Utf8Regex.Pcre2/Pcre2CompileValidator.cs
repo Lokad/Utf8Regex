@@ -2,6 +2,17 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 internal static class Pcre2CompileValidator
 {
+    // Call only between pattern items, outside classes, quoted text and escapes.
+    // A comment ends at the first ')'; it contributes no atom or capture slot.
+    internal static bool TrySkipParenthesizedComment(string pattern, ref int offset)
+    {
+        if (!pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal)) return false;
+        var end = pattern.IndexOf(')', offset + 3);
+        if (end < 0) throw new Pcre2CompileException("Missing ) after comment.", Pcre2ErrorKind.MissingCommentClosing);
+        offset = end + 1;
+        return true;
+    }
+
     private const Pcre2CompileOptions SupportedOptions =
         Pcre2CompileOptions.Caseless |
         Pcre2CompileOptions.Multiline |
@@ -111,7 +122,7 @@ internal static class Pcre2CompileValidator
         var previousClassScalar = -1;
         var rangeLow = -1;
         var quoted = false;
-        var previousWasZeroWidth = false;
+        var previousWasZeroWidth = true; // No repeatable item at pattern entry.
         for (var offset = 0; offset < pattern.Length; offset++)
         {
             var character = pattern[offset];
@@ -187,16 +198,9 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
-            if (character == '(' && pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
+            if (character == '(' && TrySkipParenthesizedComment(pattern, ref offset))
             {
-                var commentEnd = pattern.IndexOf(')', offset + 3);
-                if (commentEnd < 0)
-                {
-                    throw new Pcre2CompileException("Missing ) after comment.", Pcre2ErrorKind.MissingCommentClosing);
-                }
-
-                offset = commentEnd;
-                previousWasZeroWidth = false;
+                offset--; // The for loop advances from the closing parenthesis.
                 continue;
             }
 

@@ -1282,14 +1282,16 @@ internal sealed class Pcre2CharacterParser
 
     private bool TrySkipExtendedTrivia()
     {
-        if ((_options & (Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore)) == 0)
-        {
-            return false;
-        }
-
         var moved = false;
         while (_offset < _pattern.Length)
         {
+            if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
+            {
+                _requiresCharacterProgram = true;
+                moved = true;
+                continue;
+            }
+            if ((_options & (Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore)) == 0) break;
             if (IsExtendedPatternWhitespace(_pattern[_offset]))
             {
                 _offset++;

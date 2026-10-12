@@ -699,6 +699,7 @@ internal sealed class Pcre2BacktrackingParser
     private bool TryParseQuantifier(IPcre2BacktrackingNode body, out IPcre2BacktrackingNode node)
     {
         node = body;
+        SkipExtendedTrivia();
         if (_offset >= _pattern.Length)
         {
             return true;
@@ -740,6 +741,7 @@ internal sealed class Pcre2BacktrackingParser
 
         _sawControlFlow = true;
         var preference = _ungreedy ? Pcre2RepeatPreference.Lazy : Pcre2RepeatPreference.Greedy;
+        SkipExtendedTrivia();
         if (_offset < _pattern.Length && _pattern[_offset] == '?')
         {
             preference = preference == Pcre2RepeatPreference.Greedy
@@ -1441,13 +1443,14 @@ internal sealed class Pcre2BacktrackingParser
 
     private void SkipExtendedTrivia()
     {
-        if ((_options & (Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore)) == 0)
-        {
-            return;
-        }
-
         while (_offset < _pattern.Length)
         {
+            if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
+            {
+                _sawControlFlow = true;
+                continue;
+            }
+            if ((_options & (Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore)) == 0) return;
             if (_pattern[_offset] is ' ' or '\t' or '\n' or '\v' or '\f' or '\r')
             {
                 _offset++;

@@ -169,28 +169,33 @@ internal static class Pcre2LiteralCompiler
         startAnchor = Pcre2LiteralAnchor.None;
         endAnchored = false;
 
-        if (pattern.StartsWith(@"\A", StringComparison.Ordinal))
+        while (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) { }
+        if (pattern.AsSpan(position).StartsWith(@"\A", StringComparison.Ordinal))
         {
             startAnchor = Pcre2LiteralAnchor.AbsoluteStart;
-            position = 2;
+            position += 2;
         }
-        else if (pattern.StartsWith(@"\G", StringComparison.Ordinal))
+        else if (pattern.AsSpan(position).StartsWith(@"\G", StringComparison.Ordinal))
         {
             startAnchor = Pcre2LiteralAnchor.RequestedStart;
-            position = 2;
+            position += 2;
         }
 
-        var contentEnd = pattern.EndsWith(@"\z", StringComparison.Ordinal) && pattern.Length - position >= 2
-            ? pattern.Length - 2
-            : pattern.Length;
-        endAnchored = contentEnd != pattern.Length;
-
-        while (position < contentEnd)
+        while (position < pattern.Length)
         {
+            if (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) continue;
+            if (pattern.AsSpan(position).StartsWith(@"\z", StringComparison.Ordinal))
+            {
+                position += 2;
+                while (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) { }
+                if (position != pattern.Length) { atoms = []; return false; }
+                endAnchored = true;
+                break;
+            }
             var atomOffset = position;
             if (pattern[position] == '\\')
             {
-                if (position + 1 >= contentEnd || !IsEscapedLiteralMetacharacter(pattern[position + 1]))
+                if (position + 1 >= pattern.Length || !IsEscapedLiteralMetacharacter(pattern[position + 1]))
                 {
                     atoms = [];
                     return false;
@@ -207,7 +212,7 @@ internal static class Pcre2LiteralCompiler
                 return false;
             }
 
-            var status = Rune.DecodeFromUtf16(pattern.AsSpan(position, contentEnd - position), out var scalar, out var consumed);
+            var status = Rune.DecodeFromUtf16(pattern.AsSpan(position), out var scalar, out var consumed);
             if (status != OperationStatus.Done)
             {
                 atoms = [];

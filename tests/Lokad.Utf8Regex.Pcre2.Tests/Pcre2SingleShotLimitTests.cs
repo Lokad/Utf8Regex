@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 // R06 single-shot limit contract: stepwise kinds meter every candidate probe,
 // so a tiny MatchLimit breaches single-shot IsMatch/Match on multi-candidate
 // inputs. Native literal value results also fund their required endpoint
-// projection. Utf8-kind core delegation retains its existing admission route.
+// projection, including literal bodies with ignored comments.
 // Routes verified via
 // DebugDescribeExecutionPlan during authoring.
 public sealed class Pcre2SingleShotLimitTests
@@ -33,11 +33,11 @@ public sealed class Pcre2SingleShotLimitTests
 
     [Theory]
     [InlineData("foo", "xxfoo", 3u)]
-    [InlineData("(?#comment)ab", "xxab", 1u)]
+    [InlineData("(?#comment)ab", "xxab", 3u)]
     public void DirectSingleShotsUseTheirDiscoveryAndProjectionAllowance(string pattern, string inputText, uint valueSteps)
     {
         // A native literal first-hit uses one candidate plus two projected
-        // endpoints. Delegated core routes keep their separate admission.
+        // endpoints. A comment does not change that authority.
         var input = Encoding.UTF8.GetBytes(inputText);
         var limited = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 });
         var unlimited = Create(pattern, default);

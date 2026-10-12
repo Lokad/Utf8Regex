@@ -2,6 +2,14 @@
 
 ## Unreleased PCRE2 shaping correction (0.4.0-scalar.7-dev)
 
+- Parse parenthesized comments as ignored trivia in existing literal, character
+  and generic PCRE2 compilation. A comment no longer changes default ASCII
+  shorthand through core delegation. Preserve declaration-order capture and
+  template-admission controls that already worked.
+  Keep original pattern coordinates, native algorithms and meters, quoted/class
+  contexts, quantifier association and scalar empty advancement. Commented literals
+  now fund the same endpoint projection as ordinary literals; tight limits can
+  deny earlier. Core grammar extensions still have a separate qualification gate.
 - Native detailed template replacement and explicit-option slice fallbacks now
   share discovery's work, heap, token and absolute deadline through output.
   No-match byte/string output is admitted before acquisition. String completion

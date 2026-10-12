@@ -82,6 +82,15 @@ explicit compile and execution settings.
 
 ## Resource-control scope
 
+Parenthesized comments are ignored by the existing PCRE2 parsers and keep the
+same native grammar and resource authority as their bodies. They do not change
+default ASCII shorthand, declaration-order capture slots or scalar advancement.
+Literal bodies retain the literal search/count kernel and fund required endpoint
+projection. Comments end at the next closing parenthesis outside quoted/class
+contexts; quantifiers and modifiers retain their association. See the
+[PCRE2 pattern rules](https://www.pcre.org/current/doc/html/pcre2pattern.html#SEC27).
+Separate documented core-grammar extensions still need shared-policy qualification.
+
 Controlled cursor copies keep independent positions while sharing the original
 cumulative work/depth/working allowance and absolute deadline. Copying a native
 or owned-slice cursor no longer creates another finite budget; earlier separately

@@ -4,13 +4,13 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R06/R07 work-budget accumulation: on the Utf8-metered path exactly one
+// R06/R07 work-budget accumulation: on the native literal path exactly one
 // candidate plus two projected endpoints are charged per yielded match; the budget spans the whole public
 // call (never resets per candidate, per match, or per MoveNext), and the
 // terminal miss probe charges nothing.
 public sealed class Pcre2BudgetAccumulationTests
 {
-    // Routes every operation through the Utf8-metered cursor (verified via
+    // Routes every operation through the native literal cursor (verified via
     // DebugDescribeExecutionPlan during authoring).
     private const string Pattern = "(?#comment)ab";
     private const string InputText = "xxab xxab xxab";
