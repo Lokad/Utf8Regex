@@ -1,5 +1,6 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -128,17 +129,42 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void InvocationStateIsNeverRetainedByCompiledProgram()
     {
+        foreach (var name in new[] { "Pcre2InvocationState", "Pcre2BacktrackingState", "Pcre2GlobalIterationState" })
+            Assert.Null(typeof(Utf8Pcre2Regex).Assembly.GetType("Lokad.Utf8Regex.Pcre2." + name));
         Assert.DoesNotContain(
             typeof(Pcre2CompiledProgram).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic),
-            static field => field.FieldType == typeof(Pcre2InvocationState));
+            static field => field.FieldType == typeof(Pcre2ResourceBudget) || field.FieldType == typeof(Utf8SliceInvocation));
 
-        var first = new Pcre2InvocationState(3, default, Timeout.InfiniteTimeSpan);
-        var second = new Pcre2InvocationState(3, default, Timeout.InfiniteTimeSpan);
-        Assert.NotSame(first.Captures, second.Captures);
-        Assert.NotSame(first.Backtracking, second.Backtracking);
-        Assert.NotSame(first.GlobalIteration, second.GlobalIteration);
-        Assert.Equal(0UL, first.Budget.CandidateSteps);
-        Assert.Equal(0UL, second.Budget.CandidateSteps);
+        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1, HeapLimitInBytes = 128 };
+        var first = new Pcre2ResourceBudget(limits, Timeout.InfiniteTimeSpan, false);
+        var second = new Pcre2ResourceBudget(limits, Timeout.InfiniteTimeSpan, false);
+        first.ChargeCandidate(); first.ReserveWorking(64);
+        Assert.Equal(1UL, first.CandidateSteps); Assert.Equal(64UL, first.ReservedWorkingBytes);
+        Assert.Equal(0UL, second.CandidateSteps); Assert.Equal(0UL, second.ReservedWorkingBytes);
+        Assert.Equal(0UL, second.HeapBytes);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => first.ChargeCandidate()).ErrorKind);
+        second.ChargeCandidate();
+        Assert.Equal(1UL, second.CandidateSteps);
+        first.ReleaseWorking(64);
+        Assert.Equal(0UL, first.ReservedWorkingBytes);
+
+        var regex = new Utf8Pcre2Regex("(é)(😀)", Pcre2CompileOptions.None, default,
+            new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, Timeout.InfiniteTimeSpan);
+        var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        var input = Utf8ValidatedInput.Create("é😀é😀"u8);
+        var left = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
+        var right = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
+        Assert.True(left.MoveNext());
+        var leftGroups = left.CaptureGroupsAt(0, true);
+        Assert.True(left.WorkingInvocation.Budget.Steps > 0);
+        Assert.Equal(0UL, right.WorkingInvocation.Budget.Steps);
+        Assert.True(left.MoveNext()); Assert.Equal(6, left.Current.StartOffsetInBytes);
+        Assert.True(right.MoveNext()); Assert.Equal(0, right.Current.StartOffsetInBytes);
+        var rightGroups = right.CaptureGroupsAt(0, true);
+        Assert.NotSame(leftGroups, rightGroups);
+        Assert.Equal((2, 6), (leftGroups[2].StartOffsetInBytes, leftGroups[2].EndOffsetInBytes));
+        Assert.Equal(0UL, left.WorkingInvocation.Ledger.ReservedBytes);
+        Assert.Equal(0UL, right.WorkingInvocation.Ledger.ReservedBytes);
     }
 
     [Fact]

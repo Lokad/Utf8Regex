@@ -3957,36 +3957,6 @@ internal enum Pcre2GlobalRetryState : byte
     Finished = 2,
 }
 
-internal sealed class Pcre2InvocationState
-{
-    internal Pcre2InvocationState(int captureSlotCount, Utf8Pcre2ExecutionLimits limits, TimeSpan timeout)
-    {
-        Captures = new Pcre2GroupData[captureSlotCount];
-        Backtracking = [];
-        GlobalIteration = new Pcre2GlobalIterationState();
-        Budget = new Pcre2ResourceBudget(limits, timeout, collectDiagnostics: false);
-    }
-
-    internal Pcre2GroupData[] Captures { get; }
-
-    internal List<Pcre2BacktrackingState> Backtracking { get; }
-
-    internal Pcre2GlobalIterationState GlobalIteration { get; }
-
-    internal Pcre2ResourceBudget Budget { get; }
-}
-
-internal readonly record struct Pcre2BacktrackingState(int Instruction, int InputOffsetInBytes, int CaptureCheckpoint);
-
-internal sealed class Pcre2GlobalIterationState
-{
-    internal int SearchOffsetInBytes { get; set; }
-
-    internal int PreviousStartOffsetInBytes { get; set; } = -1;
-
-    internal int PreviousEndOffsetInBytes { get; set; } = -1;
-}
-
 internal sealed class Pcre2ExecutionDiagnosticsCollector
 {
     internal ulong VmTokenSteps { get; set; }
