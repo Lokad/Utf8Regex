@@ -15,9 +15,12 @@ public sealed partial class Utf8PythonRegex
         int kind, CancellationToken cancellationToken)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
+        // Capture the invocation before cold full-match preparation. Preparation
+        // keeps its fixed backstop, but its elapsed time cannot reset the deadline.
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
-            startOffsetInBytes, MatchTimeout, _translation.Pattern, cancellationToken, InvocationLimits);
+            startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation);
     }
 
     private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)

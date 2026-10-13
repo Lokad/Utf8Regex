@@ -153,6 +153,14 @@ unbounded diagnostic decode. Construction authority ends before publication;
 the expression's invocation policy/token/timeout remain independent. Lazy
 full-match and replacement preparation, CLR/JIT metadata, incidental acquisitions
 and caller retention retain separate scope. Static caches are not consulted.
+For scalar FullMatch value/context/data calls, invocation authority is created
+before accessing the lazy full-match program. Elapsed cold preparation therefore
+counts toward the original absolute match deadline; the cursor does not restart
+it. Preparation still has fixed separate construction backstops and cache
+publication behavior, and is not newly charged to execution work/bytes. In-flight
+preparation polling remains a separate gate; cancellation/expiration is observed
+before subsequent validation/execution. A fresh invocation can reuse successfully
+prepared immutable code after an interrupted call.
 
 Capture-name metadata shares the existing construction owner. The public-name
 array and named-entry array are admitted before acquisition; numeric group labels

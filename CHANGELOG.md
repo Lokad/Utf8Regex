@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PythonRe cold FullMatch deadline (0.4.0-scalar.44-dev)
+
+- Start scalar invocation authority before lazy full-match program preparation
+  and pass it into the existing cursor. Cold FullMatch value, context and data
+  calls no longer restart their match deadline after preparation. Fixed separate
+  construction backstops/cache behavior remain; preparation does not gain a new
+  work/byte policy or polling contract. Original cancellation is checked before
+  later validation/execution, and fresh calls may reuse successful preparation.
+
 ## Unreleased bounded finite literal Count (0.4.0-scalar.43-dev)
 
 - Simplify controlled Count for one exact forward literal without boundary or

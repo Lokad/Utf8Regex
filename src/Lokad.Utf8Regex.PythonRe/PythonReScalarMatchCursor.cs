@@ -18,9 +18,16 @@ internal ref struct PythonReScalarMatchCursor
     internal PythonReScalarMatchCursor(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout, string pattern, CancellationToken cancellationToken,
         Utf8ExecutionLimits limits)
+        : this(input, program, numbersByPython, startOffsetInBytes, timeout, pattern,
+            new Utf8SliceInvocation(limits, timeout, cancellationToken))
+    { }
+
+    internal PythonReScalarMatchCursor(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout, string pattern,
+        Utf8SliceInvocation invocation)
     {
         _input = input;
-        _state = new PythonReScalarMatchState(input, program, numbersByPython, startOffsetInBytes, timeout, pattern, cancellationToken, limits);
+        _state = new PythonReScalarMatchState(input, program, numbersByPython, startOffsetInBytes, timeout, pattern, invocation);
     }
 
     internal int StartOffsetInBytes => _state.StartOffsetInBytes;
