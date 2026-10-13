@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased scalar migration cleanup (0.4.0-scalar.33-dev)
+
+- Remove seven unreferenced private search/emission helpers, an unused forwarding
+  executor and an unused PCRE2 capability enum after reference/emitter review.
+  Selected algorithms, scalar semantics, interoperability, resource controls and
+  public API remain unchanged.
+- Add SCALAR-CLEANUP.md documenting retired BCL/UTF-16 engine machinery, required
+  coordinate/string interoperability, active extension containers and isolated
+  opted-in PCRE2 byte behavior. Preserve historical evidence and remaining gates.
+
 ## Unreleased PCRE2 cold preparation memory admission (0.4.0-scalar.32-dev)
 
 - Cold replacement preparation borrows a temporary additional-byte ceiling from

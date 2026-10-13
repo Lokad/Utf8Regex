@@ -1045,19 +1045,6 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
     }
 }
 
-internal static class Utf8AsciiFixedTokenLinearExecutor
-{
-    public static bool SupportsInput(in Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
-    {
-        return validation.IsAscii || program.AllowsUtf8ByteSafe;
-    }
-
-    public static int FindNext(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        return Utf8AsciiInstructionLinearExecutor.FindNext(program, input, startIndex, budget, out matchedLength);
-    }
-}
-
 internal static partial class Utf8AsciiInstructionLinearExecutor
 {
     public static bool SupportsInput(in Utf8StructuralLinearProgram program, Utf8ValidationResult validation)

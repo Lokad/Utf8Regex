@@ -1,0 +1,63 @@
+# Scalar migration cleanup
+
+Reviewed 2026-10-13 against `32f8d1b8` and the following scalar.33 cleanup.
+The matching contract is complete Unicode scalars over strictly validated UTF-8;
+byte coordinates are primary. This report describes current source and executable
+checks, rather than treating the absence of a name as proof of semantic coverage.
+
+## Retired mechanisms
+
+| Mechanism | Current evidence |
+| --- | --- |
+| Production BCL matching/results | `EngineDependencyInventoryTests` checks shipped source for Regex construction/member execution and consumed core types for Regex/Match/Group/Capture owners. PythonRe's managed descriptor and BCL value enumerators are absent. RegexOptions, timeout exceptions/constants and Regex.Escape are compatibility utilities; tests/benchmarks retain overlapping comparators. |
+| Whole-subject decoded fallback owner | `Utf8DecodedInput`, decoded storage fields/getters and string-alias leases are absent from consumed core; dependency/compilation architecture tests pin their retirement. General fallback, native verification and compiled consumers execute the admitted owned scalar program. |
+| UTF-16 matching units/VM selectors | The current scalar VM instruction set and runner consume Rune values and UTF-8 byte positions. Former surrogate-half routing tests were replaced with independent byte/scalar witnesses in `Utf8AstralSemanticsTests` and related scalar suites. Impossible surrogate atoms compile as failing atoms; no dormant code-unit engine is selected. |
+| Compatibility capture/result engine | Match/group/capture views borrow owned capture histories and original subject storage. BCL engine/result roots are forbidden by dependency checks. Source/package receipts preserve captures, retained aliases and scalar restart behavior. |
+| GC-timed accounting leases | Prior simplification receipts preserve numeric cursor reservations and deterministic reference-cursor cleanup. No finalizer/identity graph was introduced by this cleanup. Resource denial, cancellation and deadlines remain part of the owned paths. |
+
+## Removed in scalar.33
+
+The following symbols had definitions but no references in production, tests or
+benchmark C# source. Their bodies and reflective/emitted entry lists were reviewed
+before removal; none is an extension-method container or a public API. Removing
+them preserves selected algorithms, SIMD, allocation behavior and resource controls.
+
+| File | Removed symbols |
+| --- | --- |
+| `Internal/Execution/Utf8EmittedDeclarationIdentifierMatcher.cs` | `TryGetPrefixMatchAtAnchor` |
+| `Internal/Execution/Utf8LiteralCompiledEngineRuntime.cs` | `HasLeadingUtf8ScalarLength`, `FindLastUtf8LiteralAlternationViaSearch`, `FindLastAsciiIgnoreCaseLiteralAlternationViaSearch` |
+| `Internal/FrontEnd/Utf8FrontEndSearchAnalyzer.cs` | `TryExtractWindowAnchor`, `IsAsciiWhitespaceByte`, `ContainsAsciiWordChar` |
+| `Internal/Execution/Utf8StructuralLinearProgram.cs` | Unused `Utf8AsciiFixedTokenLinearExecutor` forwarding type; the active instruction executor stays. |
+| `Lokad.Utf8Regex.Pcre2/Pcre2ExecutionArchitecture.cs` | Unused `Pcre2BackendCapability` enum; active backend/program selection stays. |
+
+The first four paths are relative to `src/Lokad.Utf8Regex/`; the final path is
+relative to `src/`. These are proved orphaned helpers, not a claim that every one
+originated in UTF-16 parity work. The reference inventory and review notes are in
+`artifacts/scalar-cleanup-20261013/`.
+
+## Required survivors
+
+| Area | Why it remains |
+| --- | --- |
+| `Utf8BoundaryMap`, `Utf16Boundary`, projection cursors | Public UTF-16 coordinates and string APIs are derived interoperability. Maps resolve scalar boundaries and reject a caller's surrogate-split offset. They do not choose matching units or decode a whole subject for a second engine. `Utf8MappedEntryInvocationTests` checks scalar/split mappings and finite admission; boundary/astral tests check public results. |
+| Match/group/capture UTF-16 fields and string extraction | These implement the existing derived-coordinate surface and retained capture history. Production constructors consume owned scalar outcomes. Changing their storage is a separate operating-cost decision, not dead-code deletion. |
+| Pattern/replacement string processing | C# string patterns, Unicode escape parsing and replacement-fragment repair remain useful grammar/interoperability. Scalar parsing and byte emission determine execution. A `char` loop alone does not prove code-unit matching. |
+| `Fallback*` names and public inspection labels | They name scalar/general verification or native specialization declines. `Utf8Regex.Fallback.cs` calls owned scalar matching; `NativeExecutionKind.FallbackRegex` is a public diagnostic label. Renaming it without consumer need would add churn and can break stored reports. |
+| Extension-method containers | `PreparedFallbackCandidateExecutor`, `Utf8FallbackStartTransformExecutor` and `Utf8ExecutionRouteText` are called through extension syntax. Their type names appear only in their declarations; a name-count audit is insufficient to remove them. |
+| PCRE2 `CodeUnit` | This is the explicitly opted-in UTF-8 byte escape `\C`, forbidden by the default profile. `SPEC-PCRE2.md` and `Pcre2BackslashCCompilerTests` define split-byte results and projection rejection. It is isolated PCRE2 behavior, not a .NET UTF-16 parity engine or a change to core/PythonRe scalar semantics. |
+| Historical benchmark/parity snapshots | Preserve provenance and previous evidence. Their numbers do not qualify the current engine. Current cost/publication claims require the independent delivery receipts. |
+
+## Validation and remaining work
+
+Focused compiled/emitted, RTL, boundary, dependency and architecture checks validate
+the removed paths. Full source and package checks at the cleanup milestone verify
+the current artifact; exact results and source identities belong to its receipt.
+No performance campaign is needed to time unreachable methods, and no performance
+equivalence claim follows from this report.
+
+This closes the current migration-cleanup inventory and removes the proved orphans.
+It is not a formal proof that all possible dead code is absent. Broader Unicode/
+culture/options/profile coverage, common public construction/default/retention
+policies, current-catalog/.NET11 comparisons and final R01-R10 acceptance remain
+separate plan gates. Preserve accepted core/PythonRe downstream delivery while
+addressing a concrete remaining defect or consumer cost.

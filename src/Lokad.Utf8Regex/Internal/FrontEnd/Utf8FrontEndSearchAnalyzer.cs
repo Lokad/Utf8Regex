@@ -303,29 +303,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
     }
 
-    private static bool TryExtractWindowAnchor(Utf8TreeNode node, out Utf8PreparedSearcherInfo searcherInfo)
-    {
-        node = UnwrapStructuralNode(node) ?? node;
-        searcherInfo = default;
-
-        if (TryFindQuotedAsciiRun(node, out var asciiSet, out var runLength))
-        {
-            searcherInfo = Utf8PreparedSearcherInfo.QuotedAsciiRun(CreateAsciiByteSet(asciiSet), runLength);
-            return true;
-        }
-
-        var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(node);
-        if (family is { Length: > 0 } &&
-            family.All(IsAscii) &&
-            TryEncodeAlternates(family, out var alternateLiteralsUtf8))
-        {
-            searcherInfo = Utf8PreparedSearcherInfo.LiteralFamily(alternateLiteralsUtf8);
-            return true;
-        }
-
-        return false;
-    }
-
     private struct ScanFrame(Utf8TreeNode node)
     {
         internal Utf8TreeNode Node = node;
@@ -1670,11 +1647,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return Utf8AsciiBytePredicates.IsWord(value);
     }
 
-    private static bool IsAsciiWhitespaceByte(byte value)
-    {
-        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
-    }
-
     private static bool TryEncodeAlternates(string[] alternatePrefixes, out byte[][] alternateLiterals)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -1719,16 +1691,4 @@ internal static class Utf8FrontEndSearchAnalyzer
         return true;
     }
 
-    private static bool ContainsAsciiWordChar(string value)
-    {
-        foreach (var ch in value)
-        {
-            if (ch is >= '0' and <= '9' or >= 'A' and <= 'Z' or >= 'a' and <= 'z' or '_')
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

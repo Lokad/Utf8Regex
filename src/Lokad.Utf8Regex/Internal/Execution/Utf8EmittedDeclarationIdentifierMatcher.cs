@@ -174,36 +174,6 @@ internal sealed class Utf8EmittedKernelMatcher
         return true;
     }
 
-    private bool TryGetPrefixMatchAtAnchor(ReadOnlySpan<byte> input, int anchorIndex, out int matchIndex, out int prefixLength)
-    {
-        matchIndex = -1;
-        prefixLength = 0;
-        var anchorOffset = _plan.FindOptimization.AnchorOffset;
-        if (_plan.FindOptimization.AnchorPrefixesByByte is not { } anchorPrefixesByByte)
-        {
-            return false;
-        }
-
-        var prefix = anchorPrefixesByByte[input[anchorIndex]];
-        if (prefix is null || anchorOffset >= prefix.Length || prefix[anchorOffset] != input[anchorIndex])
-        {
-            return false;
-        }
-
-        var candidateStart = anchorIndex - anchorOffset;
-        if (candidateStart < 0 ||
-            input.Length - candidateStart < prefix.Length ||
-            !input.Slice(candidateStart, prefix.Length).SequenceEqual(prefix) ||
-            (candidateStart > 0 && AsciiStructuralIdentifierFamilyMatcher.IsAsciiWordByte(input[candidateStart - 1])))
-        {
-            return false;
-        }
-
-        matchIndex = candidateStart;
-        prefixLength = prefix.Length;
-        return true;
-    }
-
     private static Utf8EmittedDelegate<FindNextDelegate> CompileFindNext(Utf8EmittedKernelPlan plan)
     {
         var name = plan.Kind switch

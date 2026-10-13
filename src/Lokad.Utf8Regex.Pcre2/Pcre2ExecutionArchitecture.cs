@@ -4294,11 +4294,3 @@ internal sealed class Pcre2LegacySyntaxTree : IPcre2SyntaxTree
 internal readonly record struct Pcre2SyntaxNode(Pcre2SyntaxNodeKind Kind, int StartOffset, int Length);
 
 internal readonly record struct Pcre2CompileDiagnostic(Pcre2ErrorKind ErrorKind, int PatternOffset, string Message);
-
-internal enum Pcre2BackendCapability : byte
-{
-    CandidateSearch = 0,
-    FullVerification = 1,
-    GlobalIteration = 2,
-    Replacement = 3,
-}

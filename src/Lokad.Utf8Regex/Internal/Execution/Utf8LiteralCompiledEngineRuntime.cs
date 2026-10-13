@@ -1278,23 +1278,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return true;
     }
 
-    private static bool HasLeadingUtf8ScalarLength(ReadOnlySpan<byte> literal, int scalarLength)
-    {
-        if (literal.Length <= scalarLength)
-        {
-            return false;
-        }
-
-        var starter = literal[0];
-        return scalarLength switch
-        {
-            2 => starter is >= 0xC2 and < 0xE0,
-            3 => starter is >= 0xE0 and < 0xF0,
-            4 => starter is >= 0xF0 and < 0xF5,
-            _ => false,
-        };
-    }
-
     private int CountAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
@@ -1910,37 +1893,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return match.Index;
     }
 
-    private int FindLastUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out int matchedByteLength)
-    {
-        matchedByteLength = 0;
-        budget.Step();
-        if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match))
-        {
-            return -1;
-        }
-
-        matchedByteLength = match.Length;
-        return match.Index;
-    }
-
     private int FindNextAsciiIgnoreCaseLiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
         budget.Step();
         if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, startIndex, out var match))
-        {
-            return -1;
-        }
-
-        matchedByteLength = match.Length;
-        return match.Index;
-    }
-
-    private int FindLastAsciiIgnoreCaseLiteralAlternationViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out int matchedByteLength)
-    {
-        matchedByteLength = 0;
-        budget.Step();
-        if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match))
         {
             return -1;
         }
