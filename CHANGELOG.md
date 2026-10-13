@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased PythonRe detailed publication checks (0.4.0-scalar.45-dev)
+
+- Cover supplementary, empty, optional and lookbehind capture coordinates,
+  retained snapshots, cumulative work cutoffs and interruption during text
+  publication. The coordinate-reuse optimization is deferred after a persistent
+  finite ASCII regression; production algorithms and contracts are unchanged.
+
 ## Unreleased scalar Count prefix search (0.4.0-scalar.45-dev)
 
 - Reuse bounded, metered exact-prefix searches to skip impossible scalar VM
