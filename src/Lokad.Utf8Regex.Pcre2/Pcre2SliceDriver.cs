@@ -269,12 +269,10 @@ internal static class Pcre2SliceDriver
         Utf8SliceProgram program,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2CompileRequest request,
-        CancellationToken cancellationToken,
+        scoped ref Utf8SliceInvocation invocation,
         out Pcre2GroupData[] groups,
         out string? mark)
     {
-        var invocation = CreateInvocation(request, cancellationToken);
         var slots = Pcre2SliceDriver.RentProgramSlots(program, ref invocation);
         Pcre2GroupData[]? projected = null;
         try

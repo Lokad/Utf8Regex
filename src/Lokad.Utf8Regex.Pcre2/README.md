@@ -235,7 +235,8 @@ existing bounded search chunks and return, including short hits/misses and empty
 or anchored outcomes. Single-result coordinate projection shares the discovery
 budget and checks before publication. Required endpoint work can exhaust a
 MatchLimit that formerly admitted only discovery: a small ASCII literal first hit
-needs one candidate step for IsMatch and three units for Match/MatchDetailed.
+needs one candidate step for IsMatch and three units for Match. MatchDetailed also
+funds initial validation: the current short ASCII case needs six combined units.
 Work units remain route dependent. Cold execution and scheduling may consume a
 real 1-ms deadline; small input never exempts an operation from Timeout.
 The accepted scalar.5 core/PythonRe input remains an independent immutable feed.
@@ -320,7 +321,7 @@ a capacity model, not process RSS. Published snapshots remain valid after denial
 independent calls reset the allowance, controlled copies share it.
 
 Discovery and required capture/output shaping borrow the original authority.
-Literal and curated `Probe` routes also include initial full-subject validation in
+`MatchDetailed` and every `Probe` route also include initial full-subject validation in
 that allowance and absolute deadline, polling the original token between bounded
 blocks of at most 2048 bytes at scalar boundaries. The unlimited/no-token/infinite
 route retains its existing validator and allocations. Validation work stays spent
@@ -328,8 +329,10 @@ during discovery and publication; a tight work cap or interruption can consequen
 precede a later malformed byte or invalid start offset. With sufficient allowance,
 malformed input keeps its precise original byte offset and no early match skips
 the remaining subject. Pre-cancellation still wins at entry; partial EndAnchored
-still rejects before validation. Other PCRE2 operations and Probe fallback initial
-validation, plus replacement preparation, retain separate qualification gates;
+still rejects before validation. Normal native, owned-slice and admitted core-extension
+detailed matching borrow the same invocation; Probe's normal detailed fallback
+validates once. Other PCRE2 operations and replacement preparation retain separate
+qualification gates;
 public construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.
 Broader profile grammar/options/capture completion has separate qualification gates.

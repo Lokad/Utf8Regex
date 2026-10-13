@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased PCRE2 detailed validation authority (0.4.0-scalar.25-dev)
+
+- Extend full-subject work/token/deadline enforcement to normal `MatchDetailed`
+  and every `Probe` route. Native, owned-slice and admitted core-extension detailed
+  matching borrow the original invocation instead of resetting their budgets.
+- Remove Probe's duplicate validation before normal detailed matching. Preserve
+  owned capture snapshots, names, flags, scalar coordinates and result admission.
+  Tight denial or interruption can precede later invalid bytes/start offsets;
+  sufficient allowance retains precise whole-subject validation. Other PCRE2
+  operations and replacement preparation remain separate qualification gates.
+
 ## Unreleased PCRE2 Probe validation authority (0.4.0-scalar.24-dev)
 
 - Literal and curated partial Probe routes now validate the full subject under

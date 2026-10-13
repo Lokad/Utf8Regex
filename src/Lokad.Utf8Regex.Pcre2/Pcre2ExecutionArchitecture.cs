@@ -2605,13 +2605,13 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken,
+        scoped ref Utf8SliceInvocation invocation,
         out Pcre2GroupData[] result,
         out string? mark)
     {
         if (compiledProgram.Operations.Match is Pcre2Utf8DirectProgram coreProgram)
             return Pcre2SliceDriver.TryMatchDetailed(coreProgram.ScalarProgram, ref input, start,
-                compiledProgram.Request, cancellationToken, out result, out mark);
+                ref invocation, out result, out mark);
         if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
         {
             if (matchOptions != Pcre2MatchOptions.None)
@@ -2622,7 +2622,7 @@ internal static partial class Pcre2Runner
                     ref input,
                     start,
                     matchOptions,
-                    compiledProgram.Request, cancellationToken);
+                    compiledProgram.Request, ref invocation);
                 result = fallbackMatch.Success ?
                     fallbackMatch.CaptureResult.ProjectedGroups : [];
                 mark = fallbackMatch.Mark;
@@ -2633,8 +2633,7 @@ internal static partial class Pcre2Runner
                 sliceProgram.SliceProgram,
                 ref input,
                 start,
-                compiledProgram.Request,
-                cancellationToken,
+                ref invocation,
                 out result,
                 out mark);
         }
@@ -2642,7 +2641,7 @@ internal static partial class Pcre2Runner
         if (compiledProgram.Operations.Match is not Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
             var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits,
-                Pcre2SliceDriver.CreateInvocation(compiledProgram.Request, cancellationToken), false);
+                invocation, false);
             if (Pcre2GlobalOperationDriver.TryCreateCursor(compiledProgram, input, start, matchOptions,
                 out var cursor, budget))
             {
@@ -2666,7 +2665,7 @@ internal static partial class Pcre2Runner
             ref input,
             start,
             matchOptions,
-            compiledProgram.Request, cancellationToken);
+            compiledProgram.Request, ref invocation);
         if (!match.Success)
         {
             result = [];
@@ -2770,12 +2769,12 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request, CancellationToken cancellationToken)
+        Pcre2CompileRequest request, scoped ref Utf8SliceInvocation invocation)
     {
         try
         {
             var budget = new Pcre2ResourceBudget(request.DefaultLimits,
-                Pcre2SliceDriver.CreateInvocation(request, cancellationToken), collectDiagnostics: false);
+                invocation, collectDiagnostics: false);
             var result = Pcre2BacktrackingRunner.MatchDetailed(program, candidateSearch, ref input, start, matchOptions, ref budget);
             result.CaptureResult.DetachProjectedWorking(ref budget);
             return result;

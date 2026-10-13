@@ -4,10 +4,8 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// Detailed single-shots follow the same per-kind limit contract as value
-// Match: stepwise backtracking routes breach under tiny budgets (including
-// from an explicit start offset), while direct literal routes return the
-// first match within budget.
+// Detailed single-shots include bounded validation, discovery and captured
+// results in one allowance; sufficient literal budgets still return the first hit.
 public sealed class Pcre2DetailedLimitTests
 {
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits limits)
@@ -25,12 +23,12 @@ public sealed class Pcre2DetailedLimitTests
     }
 
     [Fact]
-    public void LiteralDetailedFundsDiscoveryAndBothProjectedEndpoints()
+    public void LiteralDetailedFundsValidationDiscoveryAndBothProjectedEndpoints()
     {
         var input = Encoding.UTF8.GetBytes("foo foo foo");
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
-            Assert.Throws<Pcre2MatchException>(() => Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 2 }).MatchDetailed(input)).ErrorKind);
-        var regex = Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 3 });
+            Assert.Throws<Pcre2MatchException>(() => Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 5 }).MatchDetailed(input)).ErrorKind);
+        var regex = Create("foo", new Utf8Pcre2ExecutionLimits { MatchLimit = 6 });
         var actual = regex.MatchDetailed(input);
         Assert.True(actual.Success);
         var expected = Create("foo", default).MatchDetailed(input);

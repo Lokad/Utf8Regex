@@ -39,15 +39,27 @@ public sealed class Pcre2NativeTemplateAuthorityTests
     public void UnchangedCopyCannotResetSpentDiscoveryWork(bool text)
     {
         var input = Encoding.UTF8.GetBytes(new string('z', 8192));
+        // Calibrate the replacement's actual discovery cursor. Public detailed
+        // matching now includes validation, which would overfund this writer test.
+        bool DiscoverySucceeds(uint cap)
+        {
+            var compiled = Create(new() { MatchLimit = cap }).DebugCompiledProgram;
+            var native = (Pcre2BacktrackingDirectProgram)compiled.Operations.Replace;
+            var budget = new Pcre2ResourceBudget(compiled.Request.DefaultLimits,
+                Pcre2SliceDriver.CreateInvocation(compiled.Request, default), false);
+            var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(native.Program, compiled.CandidateSearchPlan,
+                Utf8ValidatedInput.Create(input), new(0), Pcre2MatchOptions.None, compiled.Request, budget);
+            return !cursor.MoveNext();
+        }
         uint first = 1, last = 65536;
         while (first < last)
         {
             var cap = first + (last - first) / 2;
-            try { Assert.False(Create(new() { MatchLimit = cap }).MatchDetailed(input).Success); last = cap; }
+            try { Assert.True(DiscoverySucceeds(cap)); last = cap; }
             catch (Pcre2MatchException error) { Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind); first = cap + 1; }
         }
         var regex = Create(new() { MatchLimit = first });
-        Assert.False(regex.MatchDetailed(input).Success);
+        Assert.True(DiscoverySucceeds(first));
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
             if (text) _ = regex.ReplaceToString(input, "$2$1");

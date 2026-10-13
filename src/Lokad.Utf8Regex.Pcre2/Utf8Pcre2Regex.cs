@@ -415,13 +415,30 @@ public sealed partial class Utf8Pcre2Regex
 
     private Utf8Pcre2MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        try
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+    }
+
+    // Probe's normal fallback reuses this already validated subject/authority.
+    private Utf8Pcre2MatchContext MatchDetailedValidated(ReadOnlySpan<byte> input,
+        scoped ref Utf8ValidatedInput subject, Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions, scoped ref Utf8SliceInvocation invocation)
+    {
         if (Pcre2Runner.TryMatchDetailed(
                 _program,
                 ref subject,
                 start,
                 matchOptions,
-                cancellationToken,
+                ref invocation,
                 out var directGroups,
                 out var directMark))
         {
@@ -434,12 +451,12 @@ public sealed partial class Utf8Pcre2Regex
         throw CreateUnsupportedPatternException();
     }
 
-    /// <summary>Finds the first detailed match using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <summary>Finds the first detailed match using an explicit start byte offset and per-operation options, observing cancellation during validation, matching and required capture projection.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe before entry and during bounded validation and matching.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -567,62 +584,48 @@ public sealed partial class Utf8Pcre2Regex
             ((matchOptions & Pcre2MatchOptions.EndAnchored) != 0 ||
              (_program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0))
             throw new Pcre2MatchException("Partial matching cannot be combined with EndAnchored.", Pcre2ErrorKind.BadOption);
-        // Normal detailed matching handles explicit non-partial flags and
-        // compiled end anchoring, including later candidates/alternatives.
-        var curated = _program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None &&
-            (partialMode != Pcre2PartialMode.None || matchOptions == Pcre2MatchOptions.None &&
-             (_program.Request.Options & Pcre2CompileOptions.EndAnchored) == 0);
-        if (_program.Operations.Match is Pcre2LiteralDirectProgram || curated)
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        try
         {
-            var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits,
-                Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken), collectDiagnostics: false);
-            try
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
             {
-                Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(
-                    input, ref budget.WorkingInvocation, out var validated));
-                var validatedStart = validated.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-                if (_program.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
-                    return Pcre2LiteralProbeRunner.Probe(input, literalProgram.Program, validated,
-                        validatedStart, partialMode, matchOptions, ref budget);
+                var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+                return Pcre2LiteralProbeRunner.Probe(input, literalProgram.Program, subject,
+                    start, partialMode, matchOptions, ref budget);
+            }
 
-                var runner = new Pcre2PartialProbeRunner(validated, _program, NameEntries, matchOptions, budget);
+            // Normal detailed matching handles explicit non-partial flags and
+            // compiled end anchoring, including later candidates/alternatives.
+            if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None &&
+                (partialMode != Pcre2PartialMode.None || matchOptions == Pcre2MatchOptions.None &&
+                 (_program.Request.Options & Pcre2CompileOptions.EndAnchored) == 0))
+            {
+                var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+                var runner = new Pcre2PartialProbeRunner(subject, _program, NameEntries, matchOptions, budget);
                 return runner.Probe(partialMode, startOffsetInBytes, _program, matchOptions);
             }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-            }
-        }
 
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (partialMode == Pcre2PartialMode.None)
+            if (partialMode == Pcre2PartialMode.None)
+                return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation).AsProbeResult();
+
+            if (_program.Operations.Match is Pcre2BacktrackingDirectProgram or Pcre2SliceDirectProgram &&
+                Pcre2Runner.TryMatchDetailed(_program, ref subject, start, matchOptions,
+                    ref invocation, out var directGroups, out var directMark))
+            {
+                if (directGroups.Length != 0)
+                    return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries, directMark);
+                if (directMark is not null)
+                    return Utf8Pcre2ProbeResult.CreateNoMatch(input, directMark);
+            }
+
+            throw CreateUnsupportedProbeException();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
         {
-            return ProbeViaNonPartialMatch(input, startOffsetInBytes, matchOptions, cancellationToken);
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
-
-        if (_program.Operations.Match 
-            is Pcre2BacktrackingDirectProgram or Pcre2SliceDirectProgram &&
-            Pcre2Runner.TryMatchDetailed(
-                _program,
-                ref subject,
-                start,
-                matchOptions,
-                cancellationToken,
-                out var directGroups,
-                out var directMark))
-        {
-            if (directGroups.Length != 0)
-            {
-                return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries, directMark);
-            }
-
-            if (directMark is not null)
-            {
-                return Utf8Pcre2ProbeResult.CreateNoMatch(input, directMark);
-            }
-        }
-
-        throw CreateUnsupportedProbeException();
     }
 
     /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options, observing live cancellation during execution and required result shaping.</summary>
@@ -1197,13 +1200,6 @@ public sealed partial class Utf8Pcre2Regex
                 Number = pair.index,
             })
             .ToArray();
-    }
-
-    private Utf8Pcre2ProbeResult ProbeViaNonPartialMatch(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions, CancellationToken token)
-    {
-        var match = MatchDetailedCore(input, startOffsetInBytes, matchOptions, token);
-        return match.AsProbeResult();
     }
 
     private static Pcre2GroupData[] CaptureGroups(Utf8Pcre2MatchContext match)
