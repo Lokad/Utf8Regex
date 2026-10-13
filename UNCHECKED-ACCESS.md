@@ -152,3 +152,27 @@ evidence. Raw observations/code/identities: artifacts/octal-fixed-arity-20261013
 The whole-pair artifact gate remains open because core hot paths retain unchecked
 references, including the user-approved SizeOf. Further work needs a concrete
 source/JIT reason; do not rerun the deferred loads or expand this benchmark pilot.
+
+## URI vector-load pilot — deferred
+
+The URI kernel already creates a checked tail span before its LoadUnsafe call.
+A direct MemoryMarshal.Read conversion retains an extra width guard (Windows
+511→539 code bytes). Advancing a remaining byte span still retains the guard
+(542 bytes). A counted vector span removes per-vector checks but grows inspected
+code to 549 bytes on Windows and 524 on Linux, versus 511/499 baseline bytes.
+Vectors, masks, order, stop-byte handling and scalar tails stay the same.
+
+One bounded warm VM run plus a reversed-first repeat measures nine vector-boundary
+lengths and selective public Count/finite-control rows. Heap allocations are zero
+for the kernel and unchanged for public calls. The 34-byte kernel regresses about
+1.6% initially and 2.9% in the repeat; the short repeat also regresses about 3.3%.
+Long scans improve, which does not qualify the slower boundaries. Restore the
+exact production source and defer this path; no conversion or equivalence claim.
+
+Retain the new offset/tail/stop-byte/scalar-fallback fixtures. Original and candidate
+focused checks pass, including ordinary/compiled and finite-policy controls.
+The restored Release DLL is rebuilt and audited to contain the original URI
+LoadUnsafe call. The 55-site/16-file inventory and whole-pair gate are unchanged.
+Evidence and all three source/code-generation variants:
+artifacts/uri-checked-load-20261013/. Do not extend this closed pilot into another
+benchmark campaign without a concrete new reason.
