@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased numeric construction arena (0.4.0-scalar.47-dev)
+
+- Replace array-retaining descriptors and identity retention scans with two
+  numeric byte totals. Keep major allocation admission, growth overlap and
+  deterministic cleanup. Explicit retention charges shared extents again, so
+  construction may be denied earlier; work/depth/instruction limits remain.
+- Focused construction controls remove504–2,768 allocated bytes per call.
+  Scalar/capture, resource and profile checks pass; scalar.46 remains immutable.
+
 ## Unreleased PythonRe prefix semantic audit (0.4.0-scalar.47-dev)
 
 - Extend the existing CPython capture corpus with scoped Unicode/ASCII folding,

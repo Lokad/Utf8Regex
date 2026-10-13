@@ -47,7 +47,7 @@ internal sealed class Utf8ConstructionSession(
     internal T[] Allocate<T>(int count) => Allocate<T>(count, true);
     internal T[] Allocate<T>(int count, bool retained) => arrays.Allocate<T>(count, retained);
 
-    internal void Retain(Array array) => arrays.Retain(array);
+    internal void Retain<T>(T[] array) => arrays.Retain(array);
 
     internal T[] Copy<T>(Utf8ConstructionBuffer<T> values, bool retained)
     {

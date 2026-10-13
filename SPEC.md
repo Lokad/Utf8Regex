@@ -676,10 +676,15 @@ complete scalars; zero-minimum shapes decline to the scalar VM. These consumer
 replacements do not qualify remaining result/metadata holders,
 shared pool/cache policies or the final dependency and R07 gates.
 Python parser branch/sequence/class-item arrays, capture/open-group metadata,
-their collection/arena descriptors, and old/new growth and final-copy overlap
+their collection owners, and old/new growth and final-copy overlap
 share admission. Completed AST arrays and immutable metadata tables retain their
 loans through the enclosing construction owner; parser scratch releases on every
-exit. Immutable metadata lookup/enumeration spends the current construction
+exit. The array arena keeps only temporary/retained byte totals, without an
+array-reference registry or identity transfer scans. Explicit retained publication
+charges the typed major extent again, including shared/repeated storage; earlier
+construction denial is intentional. Failure releases both totals, success keeps
+retained charges, and cleanup never refunds work or depends on GC timing.
+Immutable metadata lookup/enumeration spends the current construction
 owner's work, rather than a closed original owner. Its generic enumerable views
 and boxed enumerators admit descriptor capacity before acquisition.
 Scalar class folding uses sparse 256-code-point bit pages with admitted directory,
