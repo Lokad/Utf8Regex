@@ -389,33 +389,39 @@ public sealed partial class Utf8Pcre2Regex
 
     private Utf8Pcre2ProbeResult ProbeViaEndAssertion(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool allowFinalNewline)
     {
-        var matchIndex = input.Length;
-        var partialStart = input.Length;
-        if (allowFinalNewline && input.Length > startOffsetInBytes && input[^1] == (byte)'\n')
-        {
-            matchIndex = input.Length - 1;
+        _budget.ChargeWorkspaceStep();
+        var newline = _compiled.Request.Settings.Newline;
+        var matchIndex = allowFinalNewline
+            ? Pcre2CharacterSemantics.GetFirstFinalNewlineOrEnd(input, startOffsetInBytes, newline)
+            : input.Length;
+        var partialStart = matchIndex;
+        // A final CR is not yet a CRLF newline. Hard partial can stop there;
+        // soft matching may still accept the complete EOF alternative.
+        if (allowFinalNewline && newline == Pcre2NewlineConvention.Crlf &&
+            input.Length > startOffsetInBytes && input[^1] == (byte)'\r')
             partialStart = input.Length - 1;
-        }
         if (_anchored)
         {
-            if (startOffsetInBytes != input.Length && startOffsetInBytes != matchIndex) return NoMatch();
-            matchIndex = partialStart = startOffsetInBytes;
+            matchIndex = startOffsetInBytes == input.Length || startOffsetInBytes == matchIndex
+                ? startOffsetInBytes : -1;
+            partialStart = startOffsetInBytes == input.Length || startOffsetInBytes == partialStart
+                ? startOffsetInBytes : -1;
         }
-        if (!CanStartCandidate(matchIndex)) return NoMatch();
 
-        if (partialMode == Pcre2PartialMode.Hard)
+        if (partialMode == Pcre2PartialMode.Hard && partialStart >= 0 && CanStartCandidate(partialStart))
         {
             return Partial(Project(0, partialStart, input.Length));
         }
-        if (!AllowsEmptyFull(matchIndex))
-        {
-            // Soft matching may remember this partial then accept a later empty
-            // full match. An anchored attempt cannot change its candidate.
-            if (!_anchored && matchIndex < input.Length && AllowsEmptyFull(input.Length) && CanStartCandidate(input.Length))
-                return Full([Project(0, input.Length, input.Length)]);
+        if (matchIndex >= 0 && AllowsEmptyFull(matchIndex) && CanStartCandidate(matchIndex))
+            return Full([Project(0, matchIndex, matchIndex)]);
+        // Soft matching may remember a partial then accept a later empty full.
+        // Explicit anchoring and FirstLine retain their candidate restrictions.
+        if (!_anchored && matchIndex >= 0 && matchIndex < input.Length &&
+            AllowsEmptyFull(input.Length) && CanStartCandidate(input.Length))
+            return Full([Project(0, input.Length, input.Length)]);
+        if (partialMode != Pcre2PartialMode.None && partialStart >= 0 && CanStartCandidate(partialStart))
             return Partial(Project(0, partialStart, input.Length));
-        }
-        return Full([Project(0, matchIndex, matchIndex)]);
+        return NoMatch();
     }
 
     private Utf8Pcre2ProbeResult ProbeViaTrailingCWithLookbehind(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool requireAtLeastOneC)
@@ -856,9 +862,11 @@ public sealed partial class Utf8Pcre2Regex
         {
             var dollar = assertion.Kind == Pcre2CharacterTokenKind.EndOfLine;
             var multiline = (assertion.Options & Pcre2CharacterOptions.Multiline) != 0;
-            // Dollar can inspect a final CR while waiting for the LF that
-            // would complete the configured CRLF newline.
-            if (dollar && (multiline || (_matchOptions & Pcre2MatchOptions.NotEol) == 0) &&
+            // Final-newline assertions can inspect a CR while waiting for the
+            // LF that would complete the configured CRLF newline. NotEol
+            // affects dollar, while \Z keeps its independent semantics.
+            if ((assertion.Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline ||
+                 dollar && (multiline || (_matchOptions & Pcre2MatchOptions.NotEol) == 0)) &&
                 request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
                 end + 1 == input.Length && input[end] == (byte)'\r')
                 return Partial(Project(0, start, input.Length));

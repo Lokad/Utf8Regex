@@ -59,6 +59,14 @@ Numeric candidate progress is metered under the original invocation and is check
 only as needed, so an early successful candidate does not require a whole-line
 pre-scan. The end-assertion helper also covers `\z` with FirstLine.
 
+Bare `\Z` probes select the first configured final newline at or after the
+requested scalar-aligned offset, or EOF. CRLF and Unicode separator widths remain
+whole; an explicitly requested LF within CRLF follows the selected newline
+convention. Hard partial keeps the inspected subject-end extent, while soft can
+accept a later EOF result when the original flags allow it. Bare and literal-suffix
+`\Z` preserve pending-final-CR uncertainty with CRLF; NotEol affects dollar and
+does not alter `\Z`. Both paths retain the original result/interruption authority.
+
 The captured `^(a$|a\r)` probe with CRLF keeps its ordered suffixes. Soft partial
 can accept a later complete branch; hard partial preserves an earlier EOF partial,
 including inspected CRLF bytes. Literal-prefix matches before later text remain

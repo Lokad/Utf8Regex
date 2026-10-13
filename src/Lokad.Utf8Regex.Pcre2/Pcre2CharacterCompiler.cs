@@ -2064,6 +2064,21 @@ internal static class Pcre2CharacterSemantics
         return TryGetNewlineWidth(input, offset, newline, out var width) && offset + width == input.Length;
     }
 
+    internal static int GetFirstFinalNewlineOrEnd(ReadOnlySpan<byte> input, int minimumStart,
+        Pcre2NewlineConvention newline)
+    {
+        // One UTF-8 scalar uses at most four bytes; CRLF uses two. Check the
+        // longest permitted suffix first so its CR is preferred to its LF,
+        // without moving before the caller's original scalar-aligned start.
+        for (var width = Math.Min(4, input.Length - minimumStart); width > 0; width--)
+        {
+            var start = input.Length - width;
+            if (TryGetNewlineWidth(input, start, newline, out var actualWidth) && actualWidth == width)
+                return start;
+        }
+        return input.Length;
+    }
+
     internal static bool TryGetNewlineWidth(
         ReadOnlySpan<byte> input,
         int offset,

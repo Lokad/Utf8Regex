@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased PCRE2 final-newline probes (0.4.0-scalar.21-dev)
+
+- Select the earliest permitted final newline through the existing scalar/newline
+  semantics instead of assuming a final LF. Preserve configured CRLF/Unicode/NUL
+  widths, original starts and FirstLine/anchor restrictions. Hard partial retains
+  the inspected extent; soft matching can accept a later permitted EOF result.
+- Handle a pending final CR for bare and literal-suffix `\Z`, including its
+  independent NotEol behavior. Keep result admission, aliases, original meters
+  and synchronous interruption. No literal-backend or grammar expansion.
+
 ## Unreleased PCRE2 FirstLine probes (0.4.0-scalar.20-dev)
 
 - Apply the existing scalar/newline candidate rules to curated probe searches,
