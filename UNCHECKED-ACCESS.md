@@ -53,6 +53,15 @@ performance equivalence or helper-removal claim lands. Arity, null rejection,
 delegate execution after disposal and original-owner cleanup remain covered.
 Evidence: `artifacts/il-parameter-staging-20261013/`.
 
+The parser's seven-int case-fold set staging is also deferred. A fixed stack span
+removed eight generated inline-array helper calls with unchanged wire values,
+work/capacity admission and heap allocations. The reversed-order repeat retained
+about 0.8–1.3% parser penalties against roughly 0.5% movement in the unchanged
+plain control. Inspected stack frames grew16 bytes and gained a stack guard.
+Whole-constructor comparisons had large control drift and do not qualify cost
+equivalence. Restore the original collection expression; no helper-removal or
+speedup claim lands. Evidence: `artifacts/folded-set-staging-20261013/`.
+
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block
 order and the overlapping terminal vector. Four bounded code-generation variants
