@@ -191,6 +191,13 @@ scratch requirement. Folded, boundary/trailing assertions, contiguous anchors,
 shared/explicit numbering and balancing retain their qualified routes; captured
 Unicode and NonBacktracking patterns without a native plan also retain the VM.
 Offset interoperability maps keep their separate working/result admission.
+Controlled Count for one exact forward literal without boundary/trailing
+conditions invokes the same bounded candidate/comparison kernels directly. It
+omits generic match construction and unconditional boundary confirmation,
+reducing charged work while retaining per-block/comparison metering, diagnostic
+candidates and a terminal interruption check before publication. Other shapes
+keep the existing counter. This is a route-specific work change, not a CPU-time
+equivalence guarantee.
 Scalar.4 filters LTR scalar-VM searches only when their initial
 instruction is a mandatory beginning anchor. Absolute origin or LF line starts
 are candidates; checked scans cover at most 2048 bytes per invocation checkpoint.

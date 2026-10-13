@@ -141,6 +141,34 @@ internal static class Utf8BackendInstructionExecutor
     internal static Utf8ExecutionLimitKind TryCountNativeLiteralMatches(in Utf8SearchPlan plan,
         ReadOnlySpan<byte> input, bool reverse, ref Utf8SliceInvocation invocation, out int count)
     {
+        if (!reverse && !invocation.IsUnmetered &&
+            plan.AlternateLiteralsUtf8 is not { Length: > 0 } &&
+            plan.LiteralSearch is { Length: > 0, IgnoreCase: false } search &&
+            !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
+        {
+            // Pure Count publishes no match/capture object. Keep the same
+            // bounded, metered candidate/comparison kernel, without rebuilding
+            // a generic match and confirming absent boundary requirements.
+            count = 0;
+            var foundCount = 0;
+            var start = 0;
+            var last = input.Length - search.Length;
+            while (start <= last)
+            {
+                var breach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, start, last,
+                    false, ref invocation, out var candidate);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (candidate < 0) break;
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                foundCount++;
+                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+                start = candidate + search.Length;
+            }
+            var terminal = invocation.TryChargeInputStep();
+            if (terminal == Utf8ExecutionLimitKind.None) count = foundCount;
+            return terminal;
+        }
         count = 0;
         var total = 0;
         var low = 0;

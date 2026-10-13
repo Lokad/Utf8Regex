@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased bounded finite literal Count (0.4.0-scalar.43-dev)
+
+- Simplify controlled Count for one exact forward literal without boundary or
+  trailing conditions. Reuse the existing bounded candidate/comparison kernels
+  and skip generic match construction and absent-boundary confirmation. Keep
+  validation, per-block/comparison work, original interruption, terminal checks
+  and diagnostic candidates. Removed steps lower charged work; all other shapes
+  retain their existing counter. No new resource owner or engine mode.
+
 ## Private core/PythonRe candidate (0.4.0-scalar.42)
 
 - Freeze the current scalar core/PythonRe contract, including explicit eager
