@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased scalar Count prefix search (0.4.0-scalar.45-dev)
+
+- Reuse bounded, metered exact-prefix searches to skip impossible scalar VM
+  attempts in eligible Count calls. Keep the VM verifier, strict UTF-8 validation,
+  capture semantics and the original finite/cancellation/deadline authority.
+  RTL, empty, contiguous-anchor, nonbacktracking and casefold routes retain their
+  existing behavior. Work-step totals can decrease; allocations are unchanged.
+- A focused current-engine comparison halves the representative unanchored
+  Count cost. This is source evidence; scalar.44 packages remain immutable.
+
 ## Private core/PythonRe candidate (0.4.0-scalar.44)
 
 - Consolidate the accepted finite exact-literal Count simplification, original

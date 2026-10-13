@@ -1187,7 +1187,8 @@ public sealed partial class Utf8Regex
         try
         {
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-            var outcome = Utf8SliceRunner.CountFromBytes(program, input, startByte, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.CountFromBytes(program, input, startByte, slots.Starts, slots.Ends,
+                ref invocation, _preparedRegex.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");

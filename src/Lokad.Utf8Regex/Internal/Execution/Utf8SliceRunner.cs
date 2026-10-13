@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -499,6 +500,16 @@ internal static partial class Utf8SliceRunner
         int[] captureStarts,
         int[] captureEnds,
         ref Utf8SliceInvocation invocation)
+        => CountFromBytes(program, input, fromByte, captureStarts, captureEnds, ref invocation, default);
+
+    internal static Utf8SliceCountOutcome CountFromBytes(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        int fromByte,
+        int[] captureStarts,
+        int[] captureEnds,
+        ref Utf8SliceInvocation invocation,
+        in Utf8SearchPlan candidatePlan)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -531,11 +542,35 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        // A distance-zero exact prefix is necessary, never sufficient. The scalar
+        // VM still verifies every candidate; stateful/empty/casefold starts decline.
+        var seekLiteral = !program.RightToLeft && !program.CanMatchEmpty &&
+            !program.HasContiguousAnchor && !program.IgnoreCase && candidatePlan.CanGuideFallbackStarts &&
+            candidatePlan.Distance == 0 && candidatePlan.Kind is
+                Utf8SearchKind.ExactAsciiLiteral or
+                Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
         var workspace = new AttemptWorkspace();
         try
         {
             while (true)
             {
+                if (seekLiteral)
+                {
+                    Utf8ExecutionLimitKind seekBreach;
+                    if (candidatePlan.LiteralSearch is { Length: > 0 } literal)
+                        seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, position,
+                            input.Length - literal.Length, false, ref invocation, out position);
+                    else
+                    {
+                        seekBreach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                            candidatePlan.AlternateLiteralsUtf8 ?? [], false, input, position, input.Length,
+                            false, ref invocation, out var candidate, out var found);
+                        position = found ? candidate.Index : -1;
+                    }
+                    if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                    // Exhausting the prefix search still checks publication authority.
+                    if (position < 0) return new(count, invocation.TryChargeInputStep());
+                }
                 if (seekBeginning)
                 {
                     var seekBreach = TrySeekBeginning(input, ref position, first.B != 0, ref invocation);
