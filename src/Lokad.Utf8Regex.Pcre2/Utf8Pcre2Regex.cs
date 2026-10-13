@@ -844,7 +844,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions, CancellationToken token)
     {
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
-        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation.Budget.Deadline, token);
+        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
         ulong templateReservation = 0;
         try
         {
@@ -1561,7 +1561,7 @@ public sealed partial class Utf8Pcre2Regex
         CancellationToken cancellationToken, bool text)
     {
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
-        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation.Budget.Deadline, cancellationToken);
+        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, cancellationToken);
         try
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
@@ -1578,7 +1578,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2SubstitutionOptions options, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token)
     {
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
-        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation.Budget.Deadline, token);
+        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
         ulong reservation = 0;
         try
         {
@@ -1864,6 +1864,7 @@ public sealed partial class Utf8Pcre2Regex
     private Pcre2ReplacementPreparation GetReplacementPreparation(string replacement, Pcre2SubstitutionOptions options)
     {
         using var control = Pcre2ReplacementPreparationControl.JoinOrEnter(_program.Request.MatchTimeout);
+        Pcre2ReplacementPreparationControl.CheckText(replacement.Length);
         var result = _replacementComponent.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), static key =>
             TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var simple)
                 ? new(simple, null) : new(null, Pcre2PreparedReplacementParser.Parse(key.Replacement, key.Options)));

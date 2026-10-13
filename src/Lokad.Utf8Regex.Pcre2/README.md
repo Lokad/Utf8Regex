@@ -360,11 +360,17 @@ copy observes the original token and deadline. DestinationTooSmall leaves caller
 storage unchanged; interruption during a copy can leave modified bytes, and the
 method throws rather than returning truncated success. Template decoding is
 preparation scratch, separate from published-result byte admission. Parsing keeps
-fixed construction backstops and borrows the original absolute deadline; its
-internal construction allocations/work are not all charged to public execution
-limits. Validation work remains spent through output shaping; finite work may
+fixed construction backstops and borrows the original absolute deadline. Existing
+preparation/cache/text checkpoints also spend the original invocation's work
+allowance, including a coarse length-dependent charge before cache lookup. Cold
+work denial removes pending preparation; warm reuse observes the caller's budget
+and preserves previously cached values. No token or invocation is stored in cache
+entries. This meters checkpoints rather than every construction helper or machine
+instruction; full preparation-memory admission remains separate from decoded
+template scratch and execution working/result limits. Validation/preparation work
+remains spent through output shaping; finite work may
 deny before reaching a malformed tail or invalid start. Template preparation
-public work/major-capacity admission retains a separate qualification gate;
+major-capacity admission retains a separate qualification gate;
 public construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.
 Broader profile grammar/options/capture completion has separate qualification gates.

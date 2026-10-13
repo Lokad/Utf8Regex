@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased PCRE2 preparation work admission (0.4.0-scalar.31-dev)
+
+- Existing replacement preparation/cache/text checkpoints spend the original
+  invocation's work allowance. Fund length-dependent cache access before lookup;
+  cold work denial rolls back pending preparation, warm reuse keeps the caller's
+  allowance and valid cached values. No new execution owner or accounting graph.
+- Preserve fixed construction work/depth/instruction/major-capacity backstops,
+  scalar/template semantics and original cancellation/deadline. Work units can
+  deny earlier. Full preparation-memory admission remains separate from decoded
+  template scratch and execution working/result limits.
+
 ## Unreleased PCRE2 replacement entry authority (0.4.0-scalar.30-dev)
 
 - String, UTF-8-template and callback replacements now validate their entire
