@@ -223,19 +223,21 @@ internal struct PythonReScalarMatchState
         try
         {
             Utf8ExecutionLimitKind breach;
-            var plan = _candidateRegex!.Inspection.SearchPlan;
+            if (_candidateRegex is not { } candidateRegex) return true;
+            var plan = candidateRegex.Inspection.SearchPlan;
             if (plan.LiteralSearch is { } literal)
             {
                 if (_position < input.Length && input[_position] == literal.Needle[0]) return true;
                 breach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, _position,
                     input.Length - literal.Length, false, ref _invocation, out _position);
             }
-            else
+            else if (plan.AlternateLiteralsUtf8 is { } literals)
             {
-                breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(plan.AlternateLiteralsUtf8!, false,
+                breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(literals, false,
                     input, _position, input.Length, false, ref _invocation, out var candidate, out var found);
                 _position = found ? candidate.Index : -1;
             }
+            else return true;
             if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
             if (_position >= 0) return true;
             Checkpoint(input);

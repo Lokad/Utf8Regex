@@ -1,5 +1,14 @@
 # Changelog
 
+## Private core/PythonRe candidate (0.4.0-scalar.46)
+
+- Preserve scalar.45's accepted prefix-guided source improvements while replacing
+  two null-forgiving expressions with nullable proofs and documenting the reviewed
+  plan-borrowing routes in the dependency inventory. The scalar.45 attempt failed
+  these delivery guards and remains preserved; its bytes are not reused.
+- Use the same scoped contract, provenance, detached-consumer and platform gates.
+  Remaining downstream unchecked access and adoption constraints still apply.
+
 ## Private core/PythonRe candidate (0.4.0-scalar.45)
 
 - Include accepted metered prefix guidance for Core Count and PythonRe scalar
