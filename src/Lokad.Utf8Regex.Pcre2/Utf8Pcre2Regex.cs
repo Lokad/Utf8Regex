@@ -526,20 +526,27 @@ public sealed partial class Utf8Pcre2Regex
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            if (_program.Operations.Enumerate is Pcre2Utf8DirectProgram coreProgram)
-                return new Utf8Pcre2ValueMatchEnumerator(input,
-                    new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, invocation, subject, start, _program.Request));
-            var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
-            if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var directCursor, budget))
-                return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
-            if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
-                return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, invocation);
-            throw CreateUnsupportedPatternException();
+            return EnumerateMatchesValidated(input, subject, start, matchOptions, invocation);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
+    }
+
+    private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesValidated(ReadOnlySpan<byte> input,
+        Utf8ValidatedInput subject, Utf8BytePosition start, Pcre2MatchOptions matchOptions,
+        Utf8SliceInvocation invocation)
+    {
+        if (_program.Operations.Enumerate is Pcre2Utf8DirectProgram coreProgram)
+            return new Utf8Pcre2ValueMatchEnumerator(input,
+                new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, invocation, subject, start, _program.Request));
+        var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var directCursor, budget))
+            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
+        if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
+            return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, invocation);
+        throw CreateUnsupportedPatternException();
     }
 
     private static NotSupportedException CreateUnsupportedPatternException() =>
@@ -932,18 +939,21 @@ public sealed partial class Utf8Pcre2Regex
         return context.TryGetFirstSetGroup(name, out group);
     }
 
-    /// <summary>Attempts to find the first participating named slot using explicit start and per-match options, observing cancellation before matching begins.</summary>
+    /// <summary>Attempts to find the first participating named slot using explicit start and per-match options, observing cancellation during validation, matching and capture publication.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="name">The capture group name.</param>
     /// <param name="group">When this method returns, the first participating capture slot.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The original token retained through detailed matching and group publication.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return TryGetFirstSetGroup(input, name, out group, startOffsetInBytes, matchOptions);
+        var context = MatchDetailedCore(input, startOffsetInBytes, matchOptions, cancellationToken);
+        var found = context.TryGetFirstSetGroup(name, out group);
+        cancellationToken.ThrowIfCancellationRequested();
+        return found;
     }
 
     /// <summary>Copies successive non-overlapping match snapshots into a caller-provided destination.</summary>
@@ -954,43 +964,63 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Copies successive match snapshots using explicit start and per-match options.</summary>
     /// <returns>The number of matches copied; <paramref name="isMore"/> reports whether another match is available.</returns>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
+        => MatchManyCore(input, destination, out isMore, startOffsetInBytes, matchOptions, default);
+
+    private int MatchManyCore(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore,
+        int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2GlobalOperationDriver.TryCreateCursor(
-                _program,
-                subject,
-                start,
-                matchOptions,
-                out var directCursor))
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
+        try
         {
-            var written = 0;
-            while (written < destination.Length && directCursor.MoveNext())
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            if (Pcre2GlobalOperationDriver.TryCreateCursor(
+                    _program,
+                    subject,
+                    start,
+                    matchOptions,
+                    out var directCursor,
+                    new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false)))
             {
-                destination[written] = Utf8Pcre2MatchData.Create(directCursor.Current);
-                written++;
-            }
-
-            if (written == destination.Length && written != 0 &&
-                _program.Operations.Enumerate is Pcre2BacktrackingDirectProgram
+                var written = 0;
+                while (written < destination.Length && directCursor.MoveNext())
                 {
-                    Program.MayThrowDeferredLookaroundReset: true,
-                })
-            {
-                isMore = true;
+                    Pcre2SliceDriver.CheckInvocation(ref invocation);
+                    destination[written] = Utf8Pcre2MatchData.Create(directCursor.Current);
+                    written++;
+                }
+
+                if (written == destination.Length && written != 0 &&
+                    _program.Operations.Enumerate is Pcre2BacktrackingDirectProgram
+                    {
+                        Program.MayThrowDeferredLookaroundReset: true,
+                    })
+                {
+                    isMore = true;
+                    Pcre2SliceDriver.CheckInvocation(ref invocation);
+                    return written;
+                }
+
+                isMore = directCursor.MoveNext();
+                Pcre2SliceDriver.CheckInvocation(ref invocation);
                 return written;
             }
 
-            isMore = directCursor.MoveNext();
-            return written;
-        }
 
-        return MatchManyViaEnumerateMatches(input, destination, out isMore, startOffsetInBytes, matchOptions, default);
+            var enumerator = EnumerateMatchesValidated(input, subject, start, matchOptions, invocation);
+            var fallbackWritten = MatchManyViaEnumerateMatches(enumerator, destination, out isMore, ref invocation);
+            Pcre2SliceDriver.CheckInvocation(ref invocation);
+            return fallbackWritten;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
-    private int MatchManyViaEnumerateMatches(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    private static int MatchManyViaEnumerateMatches(Utf8Pcre2ValueMatchEnumerator enumerator, Span<Utf8Pcre2MatchData> destination, out bool isMore, scoped ref Utf8SliceInvocation invocation)
     {
-        var enumerator = EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, cancellationToken);
         if (destination.IsEmpty)
         {
             isMore = enumerator.MoveNext();
@@ -1001,6 +1031,7 @@ public sealed partial class Utf8Pcre2Regex
         while (written < destination.Length && enumerator.MoveNext())
         {
             var current = enumerator.Current;
+            Pcre2SliceDriver.CheckInvocation(ref invocation);
             destination[written] = new Utf8Pcre2MatchData
             {
                 Success = current.Success,
@@ -1028,20 +1059,18 @@ public sealed partial class Utf8Pcre2Regex
         return written;
     }
 
-    /// <summary>Copies successive match snapshots using explicit start and per-match options, observing cancellation before matching begins.</summary>
+    /// <summary>Copies successive match snapshots using explicit start and per-match options, observing cancellation during validation, discovery and copying.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="destination">The destination for match snapshots.</param>
     /// <param name="isMore">When this method returns, whether additional matches remain.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The original token retained through validation, discovery and destination writes.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested; an already-written destination prefix remains valid.</exception>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_program.Operations.Enumerate is Pcre2Utf8DirectProgram)
-            return MatchManyViaEnumerateMatches(input, destination, out isMore, startOffsetInBytes, matchOptions, cancellationToken);
-        return MatchMany(input, destination, out isMore, startOffsetInBytes, matchOptions);
+        return MatchManyCore(input, destination, out isMore, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>

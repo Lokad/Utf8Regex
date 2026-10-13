@@ -322,7 +322,7 @@ a capacity model, not process RSS. Published snapshots remain valid after denial
 independent calls reset the allowance, controlled copies share it.
 
 Discovery and required capture/output shaping borrow the original authority.
-`IsMatch`, `Count`, value `Match`/enumeration, `MatchDetailed` and every `Probe` route include initial full-subject validation in
+`IsMatch`, `Count`, value `Match`/enumeration, `MatchMany`, `MatchDetailed`, capture helpers and every `Probe` route include initial full-subject validation in
 that allowance and absolute deadline, polling the original token between bounded
 blocks of at most 2048 bytes at scalar boundaries. The unlimited/no-token/infinite
 route retains its existing validator and allocations. Validation work stays spent
@@ -343,7 +343,15 @@ allowance while keeping their positions independent. Both successful and termina
 advances check interruption, including time between calls. Empty-match retry and
 scalar advancement retain their original subject/anchor semantics. Controlled
 slice enumeration also funds required coordinate projection before publication.
-Output validation and replacement preparation retain separate
+MatchMany borrows the same discovery/projection authority before copying each
+snapshot. The caller's capacity and isMore semantics, including the short-buffer
+deferred-lookaround-error rule, are preserved. Its slice/core fallback reuses the
+already-validated dispatcher. Interruption or resource failure may leave a prefix
+already copied into caller storage; it throws rather than returning truncated
+success. Caller-provided destination capacity has separate scope from owned
+result-byte admission. TryGetFirstSetGroup passes the original token into detailed
+matching and checks it before returning its retained group view. Replacement
+validation and preparation retain separate
 qualification gates;
 public construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.

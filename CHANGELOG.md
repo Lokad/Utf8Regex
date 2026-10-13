@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased PCRE2 MatchMany and capture-helper authority (0.4.0-scalar.28-dev)
+
+- MatchMany and TryGetFirstSetGroup retain the original live token through
+  discovery and publication. MatchMany validates once under its original
+  invocation and passes the same owner into native/slice/core enumeration.
+- Share the already-validated enumerator dispatcher with public enumeration;
+  remove fallback revalidation and token-free delegation. Preserve caller
+  capacity/isMore, empty/scalar progression and short-destination deferred-error
+  behavior. Cancellation/resource failure can leave an already-published prefix
+  in caller storage; no successful truncated result is returned. Replacement
+  validation/preparation remains a separate qualification gate.
 ## Unreleased PCRE2 global invocation authority (0.4.0-scalar.27-dev)
 
 - Count and value enumeration now validate and execute under the original
