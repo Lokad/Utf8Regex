@@ -4,6 +4,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
+/// <inheritdoc />
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Compiles pattern text under explicit eager construction and execution policies.</summary>

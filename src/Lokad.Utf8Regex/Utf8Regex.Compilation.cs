@@ -3,6 +3,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex;
 
+/// <inheritdoc />
 public sealed partial class Utf8Regex
 {
     /// <summary>Compiles a pattern under explicit eager construction and execution policies.</summary>
