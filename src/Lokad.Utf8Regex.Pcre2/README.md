@@ -354,8 +354,8 @@ matching and checks it before returning its retained group view. Every string,
 UTF-8-template and callback replacement validates its full subject under the
 original invocation, reusing that validated subject through native/slice/core
 discovery. UTF-8-template replacement and TryReplace validate their template,
-admits the decoded template as working scratch while discovery/output overlap,
-and shares already-validated native/slice/core replacement dispatch. Its bounded
+admit the decoded template as working scratch while discovery/output overlap,
+and share already-validated native/slice/core replacement dispatch. Its bounded
 copy observes the original token and deadline. DestinationTooSmall leaves caller
 storage unchanged; interruption during a copy can leave modified bytes, and the
 method throws rather than returning truncated success. Template decoding is
@@ -366,12 +366,18 @@ allowance, including a coarse length-dependent charge before cache lookup. Cold
 work denial removes pending preparation; warm reuse observes the caller's budget
 and preserves previously cached values. No token or invocation is stored in cache
 entries. This meters checkpoints rather than every construction helper or machine
-instruction; full preparation-memory admission remains separate from decoded
-template scratch and execution working/result limits. Validation/preparation work
+instruction. With a finite heap limit, cold preparation temporarily restricts
+the existing numeric construction budget to the invocation's remaining working
+allowance, preserving parent loans and tighter fixed construction limits. A
+conservative reservation for its additional peak stays live through replacement;
+discarded construction helpers are not retained, and no GC refund is involved.
+This can deny earlier than output-only admission. Warm calls borrow immutable
+cached plans under the separate bounded cache policy and need no cold preparation
+reservation. Cold and warm heap requirements can differ. Construction metadata
+remains outside exact process/RSS guarantees. Validation/preparation work
 remains spent through output shaping; finite work may
-deny before reaching a malformed tail or invalid start. Template preparation
-major-capacity admission retains a separate qualification gate;
-public construction/default/live-retention policies remain unfinished. Cancellation,
+deny before reaching a malformed tail or invalid start. Common public
+construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.
 Broader profile grammar/options/capture completion has separate qualification gates.
 

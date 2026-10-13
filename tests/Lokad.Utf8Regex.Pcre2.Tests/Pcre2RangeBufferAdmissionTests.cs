@@ -42,6 +42,7 @@ public sealed class Pcre2RangeBufferAdmissionTests
         var count = heap < 300 ? 1 : 17;
         var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
             new() { HeapLimitInBytes = heap }, Regex.InfiniteMatchTimeout);
+        Pcre2PreparationMemoryPolicyTests.Warm(regex, "b");
         var input = Enumerable.Repeat((byte)'a', count).ToArray();
         var destination = Enumerable.Repeat((byte)0xcc, count).ToArray();
         if (!allow)

@@ -15,12 +15,16 @@ public sealed class Pcre2LiteralTemplateTextAuthorityTests
         var expected = count == 0 ? "z" : new string('b', count * replacement.Length);
         var textPeak = bytePeak + Utf8ConstructionBudget.StringBytes(expected.Length);
         var admitted = Create(new() { HeapLimitInBytes = textPeak });
+        Pcre2PreparationMemoryPolicyTests.Warm(admitted, replacement);
         Assert.Equal(expected, admitted.ReplaceToString(input, replacement));
         var denied = Create(new() { HeapLimitInBytes = textPeak - 1 });
+        Pcre2PreparationMemoryPolicyTests.Warm(denied, replacement);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(
             () => denied.ReplaceToString(input, replacement)).ErrorKind);
         // The byte producer still needs only its existing byte/range extent.
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), Create(new() { HeapLimitInBytes = bytePeak }).Replace(input, replacement));
+        var bytesOnly = Create(new() { HeapLimitInBytes = bytePeak });
+        Pcre2PreparationMemoryPolicyTests.Warm(bytesOnly, replacement);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytesOnly.Replace(input, replacement));
         Assert.Equal(expected, admitted.ReplaceToString(input, replacement));
     }
 

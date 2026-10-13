@@ -17,7 +17,7 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         : this(maximum, maximumBytes, Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth) { }
 
     internal ulong Maximum { get; } = maximum;
-    internal ulong MaximumBytes { get; } = maximumBytes;
+    internal ulong MaximumBytes { get; private set; } = maximumBytes;
     internal ulong Reserved { get; private set; }
     internal ulong Peak { get; private set; }
     internal ulong ReservedBytes { get; private set; }
@@ -210,6 +210,21 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         CheckBytes(bytes);
         ReservedBytes += bytes;
         PeakBytes = Math.Max(PeakBytes, ReservedBytes);
+    }
+
+    // PCRE2-INTEGRATION-POINT: a synchronous preparation can borrow an
+    // additional-capacity ceiling without resetting its parent's reservations.
+    internal void RestrictAdditionalBytes(ulong additional)
+    {
+        var ceiling = additional > ulong.MaxValue - ReservedBytes ? ulong.MaxValue : ReservedBytes + additional;
+        MaximumBytes = Math.Min(MaximumBytes, ceiling);
+        PeakBytes = ReservedBytes;
+    }
+
+    internal void RestoreByteLimit(ulong maximum, ulong peak)
+    {
+        MaximumBytes = maximum;
+        PeakBytes = Math.Max(PeakBytes, peak);
     }
 
     internal T[] AllocateArray<T>(int count, bool instructions)

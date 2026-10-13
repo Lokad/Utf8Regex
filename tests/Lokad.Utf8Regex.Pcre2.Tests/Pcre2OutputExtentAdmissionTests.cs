@@ -49,6 +49,7 @@ public sealed class Pcre2OutputExtentAdmissionTests
         {
             var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
                 new() { HeapLimitInBytes = peak - (allow ? 0UL : 1UL) }, Regex.InfiniteMatchTimeout);
+            Pcre2PreparationMemoryPolicyTests.Warm(regex, replacement);
             if (allow)
             {
                 var result = regex.Replace(input, replacement);

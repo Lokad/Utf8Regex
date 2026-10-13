@@ -10,9 +10,10 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
 {
     [ThreadStatic] private static Pcre2ReplacementPreparationControlState s_current;
     private readonly Pcre2ReplacementPreparationControlState _previous;
+    private readonly bool _restore;
 
     private Pcre2ReplacementPreparationControl(Pcre2ReplacementPreparationControlState current)
-    { _previous = s_current; s_current = current; }
+    { _previous = s_current; _restore = true; s_current = current; }
 
     internal static Pcre2ReplacementPreparationControl EnterOperation(TimeSpan timeout, CancellationToken token)
     {
@@ -27,7 +28,43 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
     }
 
     internal static Pcre2ReplacementPreparationControl JoinOrEnter(TimeSpan timeout)
-        => s_current.Active ? new(s_current) : EnterOperation(timeout, default);
+        => s_current.Active ? default : EnterOperation(timeout, default);
+
+    internal static Pcre2ReplacementPreparation Prepare(string replacement, Pcre2SubstitutionOptions options, bool literal)
+    {
+        if (!s_current.HasInvocation || s_current.Invocation.Ledger.IsUnlimited)
+            return Compile(replacement, options, literal);
+        Check();
+        var available = s_current.Invocation.Ledger.MaxLiveBytes - s_current.Invocation.Ledger.ReservedBytes;
+        using var scope = Utf8ConstructionScope.RestrictAdditionalBytes(available);
+        var baseline = scope.Budget.ReservedBytes;
+        var ceiling = scope.Budget.MaximumBytes;
+        // Map only this public ceiling; an independently tighter construction
+        // backstop keeps its existing construction failure vocabulary.
+        var publicCeiling = available <= ulong.MaxValue - baseline && ceiling == baseline + available;
+        try
+        {
+            var result = Compile(replacement, options, literal);
+            var peak = scope.Budget.PeakBytes - baseline;
+            Pcre2SliceDriver.ThrowIfSliceBreached(s_current.Invocation.TryReserveWorking(peak));
+            s_current.PreparationReservation += peak;
+            scope.Complete();
+            return result;
+        }
+        catch (Utf8ResourceLimitExceededException failure) when (publicCeiling &&
+            failure.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes && failure.Limit == ceiling)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(s_current.Invocation.TryReserveWorking(failure.Requested - baseline));
+            throw;
+        }
+    }
+
+    private static Pcre2ReplacementPreparation Compile(string replacement, Pcre2SubstitutionOptions options, bool literal)
+    {
+        if (literal) return new(Pcre2SimpleReplacementParser.Literal(replacement), null);
+        return Pcre2SimpleReplacementParser.TryParse(replacement, options, out var simple)
+            ? new(simple, null) : new(null, Pcre2PreparedReplacementParser.Parse(replacement, options));
+    }
 
     internal static void Check()
     {
@@ -58,7 +95,13 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
     }
 
     internal static bool IsActive => s_current.Active;
-    public void Dispose() => s_current = _previous;
+    public void Dispose()
+    {
+        if (!_restore) return;
+        if (s_current.PreparationReservation != 0)
+            s_current.Invocation.Ledger.Release(s_current.PreparationReservation);
+        s_current = _previous;
+    }
 
     private struct Pcre2ReplacementPreparationControlState
     {
@@ -67,12 +110,14 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         internal bool Active;
         internal bool HasInvocation;
         internal Utf8SliceInvocation Invocation;
+        internal ulong PreparationReservation;
 
         internal Pcre2ReplacementPreparationControlState(CancellationToken token,
             Utf8ExecutionDeadline deadline, bool active, Utf8SliceInvocation invocation, bool hasInvocation)
         {
             Token = token; Deadline = deadline; Active = active;
             Invocation = invocation; HasInvocation = hasInvocation;
+            PreparationReservation = 0;
         }
     }
 }

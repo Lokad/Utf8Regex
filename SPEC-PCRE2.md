@@ -613,7 +613,14 @@ These modeled charges do not bound caller retention or RSS. Native/core-grammar
 discovery and required capture/output shaping share their original invocation,
 including cumulative result capacity. Specialized partial probes use the same
 authority for loops, bounded searches, projection and full arrays. Initial subject
-validation and replacement preparation retain separate safeguards; public
+validation shares original invocation work/interruption. Replacement preparation
+checkpoints share that work; cold preparation with finite heap borrows an additional
+byte ceiling from the existing construction budget and holds a conservative
+additional-peak reservation through replacement. Existing parent loans, historical
+peaks and tighter construction backstops are preserved. Warm reuse borrows immutable
+cached plans under their separate bounded cache policy, so cold and warm working
+requirements can differ. These capacity charges are conservative, not process RSS
+or arbitrary caller retention. Public
 construction/default/live-retention policies and broader profile coverage remain
 separate completion gates.
 

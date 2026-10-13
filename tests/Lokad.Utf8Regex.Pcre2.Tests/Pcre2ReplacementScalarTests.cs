@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 
@@ -10,9 +9,7 @@ public sealed class Pcre2ReplacementScalarTests
     public void PublishedSimpleTemplateStorageRequiresConstructionCapacity()
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var parse = typeof(Utf8Pcre2Regex).GetMethod("TryParseSimpleReplacementPlan", BindingFlags.Static | BindingFlags.NonPublic)!;
-        object?[] arguments = ["café😀$0z", Pcre2SubstitutionOptions.None, null];
-        Assert.True((bool)parse.Invoke(null, arguments)!);
+        Assert.True(Pcre2SimpleReplacementParser.TryParse("café😀$0z", Pcre2SubstitutionOptions.None, out _));
         Assert.True(owner.Budget.ReservedBytes > 0, "Published replacement arrays require live construction capacity.");
     }
 

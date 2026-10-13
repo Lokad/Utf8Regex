@@ -34,6 +34,9 @@ internal sealed class Utf8ConstructionScope : IDisposable
     private readonly ulong _depthCheckpoint;
     private bool _disposed;
     private bool _completed;
+    private bool _restrictedBytes;
+    private ulong _previousByteMaximum;
+    private ulong _previousBytePeak;
 
     internal Utf8ConstructionScope(ulong maximum)
         : this(maximum, DefaultBufferBytes)
@@ -65,6 +68,18 @@ internal sealed class Utf8ConstructionScope : IDisposable
     // construction inherits the owner instead of resetting its capacity counter.
     internal static Utf8ConstructionScope Enter() => new(DefaultInstructionCapacity);
 
+    // PCRE2-INTEGRATION-POINT: reuse this numeric owner and its allocation
+    // admissions, restoring both the parent limit and historical peak on exit.
+    internal static Utf8ConstructionScope RestrictAdditionalBytes(ulong additional)
+    {
+        var scope = Enter();
+        scope._restrictedBytes = true;
+        scope._previousByteMaximum = scope.Budget.MaximumBytes;
+        scope._previousBytePeak = scope.Budget.PeakBytes;
+        scope.Budget.RestrictAdditionalBytes(additional);
+        return scope;
+    }
+
     internal void Complete() => _completed = true;
 
     /// <summary>Restores the enclosing construction owner; scopes must close in lexical order.</summary>
@@ -74,6 +89,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
         if (!ReferenceEquals(s_current, this))
             throw new InvalidOperationException("Construction scopes must close in lexical order.");
         if (!_completed) Budget.Rollback(_checkpoint, _byteCheckpoint, _depthCheckpoint);
+        if (_restrictedBytes) Budget.RestoreByteLimit(_previousByteMaximum, _previousBytePeak);
         s_current = _previous;
         _disposed = true;
     }

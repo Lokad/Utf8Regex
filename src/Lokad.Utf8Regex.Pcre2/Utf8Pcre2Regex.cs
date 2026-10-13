@@ -1463,7 +1463,8 @@ public sealed partial class Utf8Pcre2Regex
                 return false;
             }
 
-            plan = Pcre2SimpleReplacementParser.Literal(replacement);
+            plan = Pcre2ReplacementPreparationControl.Prepare(replacement, substitutionOptions, true).Simple
+                ?? throw new InvalidOperationException("Literal preparation did not produce a simple plan.");
             return true;
         }
 
@@ -1691,7 +1692,7 @@ public sealed partial class Utf8Pcre2Regex
                 : new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(replacementOnly ? [] : input, ref control.WorkingInvocation));
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+            ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
             : GetReplacementPreparation(replacement, templateOptions);
         control.WorkingInvocation.ShareStorageForCursor();
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
@@ -1743,7 +1744,7 @@ public sealed partial class Utf8Pcre2Regex
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+            ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
             : GetReplacementPreparation(replacement, templateOptions);
         // Controlled calls already share this owner. Promote unlimited hits
         // before the writer copies it; no-match helpers borrow the inline owner.
@@ -1780,7 +1781,7 @@ public sealed partial class Utf8Pcre2Regex
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = (options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new Pcre2ReplacementPreparation(Pcre2SimpleReplacementParser.Literal(replacement), null)
+            ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
             : GetReplacementPreparation(replacement, templateOptions);
         cursor.WorkingInvocation.ShareStorageForCursor();
         var writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
@@ -1866,14 +1867,10 @@ public sealed partial class Utf8Pcre2Regex
         using var control = Pcre2ReplacementPreparationControl.JoinOrEnter(_program.Request.MatchTimeout);
         Pcre2ReplacementPreparationControl.CheckText(replacement.Length);
         var result = _replacementComponent.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), static key =>
-            TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var simple)
-                ? new(simple, null) : new(null, Pcre2PreparedReplacementParser.Parse(key.Replacement, key.Options)));
+            Pcre2ReplacementPreparationControl.Prepare(key.Replacement, key.Options, false));
         Pcre2ReplacementPreparationControl.Check();
         return result;
     }
-
-    private static bool TryParseSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions, out Pcre2SimpleReplacementPlan plan)
-        => Pcre2SimpleReplacementParser.TryParse(replacement, substitutionOptions, out plan);
 
     private readonly record struct Pcre2ReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
 

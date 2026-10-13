@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased PCRE2 cold preparation memory admission (0.4.0-scalar.32-dev)
+
+- Cold replacement preparation borrows a temporary additional-byte ceiling from
+  the existing numeric construction budget. Preserve parent reservations, fixed
+  backstops and peak history; deny major acquisition before it exceeds remaining
+  invocation working allowance. Retain a conservative preparation-peak reservation
+  through replacement, so output overlap can deny earlier.
+- Warm calls borrow immutable cached plans under their existing cache bounds;
+  cold and warm heap requirements can differ. Joined preparation controls reuse
+  the current state, removing copied-state restoration. Retained plans/results
+  and original work/token/deadline controls remain valid; no object graph or
+  allocation-observer accounting is added.
+
 ## Unreleased PCRE2 preparation work admission (0.4.0-scalar.31-dev)
 
 - Existing replacement preparation/cache/text checkpoints spend the original
