@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased documentation
+
+- Correct the shared result-policy documentation: managed PCRE2 accepts finite
+  result bytes with its own failure vocabulary. Remove an obsolete internal
+  finite-budget placeholder comment.
+- Record bounded current immutable-core detailed-capture cost and timeout controls
+  in CAPTURE-COST.md, including finite overhead and the explicit POSIX selection gap.
+
 ## Unreleased scalar migration cleanup (0.4.0-scalar.33-dev)
 
 - Remove seven unreferenced private search/emission helpers, an unused forwarding

@@ -23,7 +23,8 @@ public readonly record struct Utf8ResourcePolicy
     /// <summary>Gets the maximum cumulative modeled result/staging capacity in bytes, or <see langword="null"/> for no cap.</summary>
     /// <remarks>The core and Python-compatible adapter charge major array/text and staging extents before acquisition, including growth and repeated materialization. Core output controls are included.
     /// Charges are conservative and are not refunded. Borrowed subjects, fixed value results and later standalone getters are outside this scope.
-    /// This is not a live-retention or process-memory cap. The remaining optional profile currently rejects this field.</remarks>
+    /// The managed PCRE2 profile also accepts this budget, admitting major capture/probe arrays and replacement output/staging before allocation with its own failure vocabulary.
+    /// This is not a live-retention or process-memory cap.</remarks>
     public ulong? MaxResultBytes { get; init; }
 
     /// <summary>Gets the policy with every budget unlimited.</summary>

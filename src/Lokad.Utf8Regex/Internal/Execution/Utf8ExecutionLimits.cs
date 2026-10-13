@@ -16,10 +16,7 @@ internal readonly record struct Utf8ExecutionLimits(
         : this(maxWorkSteps, maxDepth, maxWorkingBytes, 0)
     { }
 
-    // R02b budgeted-invocation placeholder: profiles whose policy
-    // constructors still reject finite budgets build every slice invocation
-    // from this unbounded value. Profiles with real request limits build
-    // their own values instead; no caller may assume this member means
-    // anything other than no-cap.
+    // Explicit no-cap value. Public finite policies supply their own limits;
+    // using this member does not inherit limits from an enclosing invocation.
     internal static readonly Utf8ExecutionLimits Unlimited = new(0, 0, 0);
 }
