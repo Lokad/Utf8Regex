@@ -1,5 +1,17 @@
 # Changelog
 
+## Private core/PythonRe candidate (0.4.0-scalar.45)
+
+- Include accepted metered prefix guidance for Core Count and PythonRe scalar
+  discovery, preserving strict UTF-8/scalar matching, captures, original
+  interruption, finite controls and explicit cursor lifetime. New publication
+  and vector-boundary checks retain deferred optimization evidence.
+- Qualify this candidate with the existing detached-consumer, provenance and
+  platform checks before designation. Representative exact-package costs belong
+  to its receipt; development gains do not imply universal parity or consumer
+  adoption. Preserve all scalar.44 bytes. Remaining Core unchecked accesses,
+  complete default/retention controls, broader profiles and publication are separate.
+
 ## Unreleased PythonRe prefix-guided discovery (0.4.0-scalar.45-dev)
 
 - Borrow existing exact mandatory-prefix searches to skip impossible scalar VM

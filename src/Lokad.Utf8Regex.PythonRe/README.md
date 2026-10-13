@@ -4,7 +4,7 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-Version 0.4.0-scalar.44 is a private core/PythonRe integration candidate, with finite invocation work/depth/working/result policies, authoritative capture completion, an explicitly owned persistent cursor and controls for covered eager construction. Use artifacts/scalar-candidates/0.4.0-scalar.44/ only after its immutable manifest is designated; scalar.42 remains the preceding qualified input. Complete construction/live-retention controls, safe defaults, category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently. Prior candidate bytes remain unchanged.
+Version 0.4.0-scalar.45 is a private core/PythonRe integration candidate, with finite invocation work/depth/working/result policies, authoritative capture completion, an explicitly owned persistent cursor and controls for covered eager construction. Use artifacts/scalar-candidates/0.4.0-scalar.45/ only after its immutable manifest is designated; scalar.44 remains the preceding qualified input. This candidate includes metered prefix-guided discovery; dense controls and cursor storage tradeoffs remain explicit in its evidence. Complete construction/live-retention controls, safe defaults, category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently. Prior candidate bytes remain unchanged.
 
 ## Support Scope
 
