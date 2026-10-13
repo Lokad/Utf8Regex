@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased linear construction normalization (0.4.0-scalar.41-dev)
+
+- Charge ordinal construction replacement once per candidate position, with a
+  conservative needle-width factor, instead of repeatedly charging overlapping
+  remaining suffixes. Ordinary dense PythonRe space literals no longer exhaust
+  the fixed construction-work backstop through quadratic accounting. Keep the
+  existing search algorithm, admitted output/growth storage and interruption
+  checkpoints. Invocation limits and the incomplete public construction policy
+  are unchanged.
+
 ## Unreleased PythonRe capture metadata admission (0.4.0-scalar.40-dev)
 
 - Admit public group-name/name-entry arrays and numeric name text through the

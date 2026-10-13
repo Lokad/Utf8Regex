@@ -1332,6 +1332,12 @@ lookbehind validation shares its memo across the translation. Literal extraction
 flattens once into its consumer's text rather than building recursive intermediate
 strings. Translator loops and prefix comparisons admit work; group-name ordering
 and range merging use the admitted heap sort.
+Ordinal text normalization admits one conservative source-length times needle-
+length search pass. Nonoverlapping searches resume beyond each match; fixed
+production needles therefore incur linear search admission, with interruption
+checkpoints between searches. Output copying and growth keep their independent
+work/storage admission, including expansion. Remaining suffixes are not charged
+again as whole passes.
 The core facade's capture census uses the same explicit admitted traversal,
 including capture-free nested trees; it no longer recurses on the CLR stack.
 Python scalar widths use UInt128 intermediates and the CPython 3.13.2 2^64

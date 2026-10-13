@@ -97,8 +97,13 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
     }
     internal static string Replace(string source, string value, string replacement)
     {
+        ArgumentException.ThrowIfNullOrEmpty(value);
         var owner = Utf8ConstructionScope.CurrentBudget;
-        owner.ChargeWork((ulong)source.Length);
+        // Searches resume beyond each match: each candidate start is visited
+        // at most once. Charge the pass, conservatively allowing a full needle
+        // comparison per candidate, rather than charging overlapping suffixes.
+        // Production needles are fixed, so dense normalization remains linear.
+        owner.ChargeWork((ulong)source.Length * (ulong)value.Length);
         var index = source.IndexOf(value, StringComparison.Ordinal);
         if (index < 0) return source;
         using var text = Create();
@@ -107,7 +112,7 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         {
             text.Append(source.AsSpan(start, index - start)).Append(replacement);
             start = index + value.Length;
-            owner.ChargeWork((ulong)(source.Length - start));
+            owner.ChargeWork(0); // Keep interruption checkpoints between searches.
             index = source.IndexOf(value, start, StringComparison.Ordinal);
         } while (index >= 0);
         text.Append(source.AsSpan(start));

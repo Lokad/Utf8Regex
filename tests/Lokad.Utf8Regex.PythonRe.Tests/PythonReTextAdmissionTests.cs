@@ -4,6 +4,31 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReTextAdmissionTests
 {
+    [Fact]
+    public void OrdinarySpaceLiteralDoesNotExhaustDefaultConstructionWork()
+    {
+        var subject = new string(' ', 8192);
+        var regex = new Utf8PythonRegex(subject);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
+        var match = regex.FullMatch(bytes);
+        Assert.True(match.Success);
+        Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.False(regex.FullMatch(bytes.AsSpan(1)).Success);
+    }
+
+    [Theory]
+    [InlineData(1024)] [InlineData(4096)]
+    public void DenseSpaceTranslationFitsLinearConstructionWork(int count)
+    {
+        var parse = new PythonReParser(new string(' ', count)).Parse(PythonReCompileOptions.None);
+        var allowance = 128ul * (ulong)count;
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
+        var result = PythonReTranslator.Translate(parse);
+        Assert.Equal(new string(' ', count), result.Pattern);
+        Assert.Equal(result.Pattern, result.NativePattern);
+        Assert.InRange(owner.Budget.WorkSteps, (ulong)count, allowance);
+    }
+
     [Theory]
     [InlineData("(?P<é>a)(?P=é)")]
     [InlineData("(?i:[a-z😀-🙏])")]

@@ -107,6 +107,93 @@ public sealed class Utf8ConstructionTextTests
         Assert.Equal("a😀a😀b".Replace("😀", "!", StringComparison.Ordinal), result);
     }
 
+    [Theory]
+    [InlineData(256)] [InlineData(1024)] [InlineData(4096)]
+    public void DenseOrdinalReplacementFitsLinearConstructionWork(int count)
+    {
+        var source = string.Concat(Enumerable.Repeat(@"\ ", count));
+        var allowance = 16ul * (ulong)source.Length;
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
+        Assert.Equal(new string(' ', count), Utf8ConstructionText.Replace(source, @"\ ", " "));
+        Assert.InRange(owner.Budget.WorkSteps, (ulong)source.Length, allowance);
+    }
+
+    [Theory]
+    [InlineData("", "x", "!")]
+    [InlineData("aa", "aaa", "!")]
+    [InlineData("aaaaa", "aa", "!")]
+    [InlineData("ababa", "aba", "!")]
+    [InlineData("x\\ \\ y\\ ", @"\ ", " ")]
+    [InlineData("😀é😀", "😀", "")]
+    [InlineData("aAaA", "a", "expanded😀")]
+    public void ReplacementPreservesOrdinalNonoverlappingOffsetsAndTails(string source, string value, string replacement)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var result = Utf8ConstructionText.Replace(source, value, replacement);
+        Assert.Equal(source.Replace(value, replacement, StringComparison.Ordinal), result);
+        if (!source.Contains(value, StringComparison.Ordinal)) Assert.Same(source, result);
+    }
+
+    [Fact]
+    public void EmptyNeedleIsRejectedWithoutConstructionWork()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        Assert.Throws<ArgumentException>(() => Utf8ConstructionText.Replace("abc", "", "!"));
+        Assert.Equal(0ul, owner.Budget.WorkSteps);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ReplacementDenialRestoresParentStorageWithoutRefundingWork(bool bytes)
+    {
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 48ul : ulong.MaxValue,
+            bytes ? ulong.MaxValue : 16ul, ulong.MaxValue);
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 37;
+        using (var child = Utf8ConstructionScope.Enter())
+        {
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ConstructionText.Replace("abababab", "ab", "larger"));
+            Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        }
+        Assert.Equal(48ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(37, parent[0]);
+        Assert.Equal(bytes ? 17ul : 1ul, owner.Budget.WorkSteps);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ReplacementChecksOriginalInterruptionBetweenSearches(bool timeout)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var deadline = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(30));
+        owner.Budget.Deadline = deadline;
+        owner.Budget.CancellationToken = cancellation.Token;
+        // Four search units + four helper units + one allocation unit + one
+        // copied replacement unit. The next checkpoint resumes the search.
+        owner.Budget.CheckpointHook = spent =>
+        {
+            if (spent != 10) return;
+            if (timeout) ticks = 30000;
+            else cancellation.Cancel();
+        };
+        using (var child = Utf8ConstructionScope.Enter())
+        {
+            var failure = Record.Exception(() => Utf8ConstructionText.Replace("aaaa", "a", "!"));
+            if (timeout) Assert.IsType<Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadlineExpiredException>(failure);
+            else Assert.IsType<OperationCanceledException>(failure);
+        }
+        Assert.Same(deadline, owner.Budget.Deadline);
+        Assert.Equal(10ul, owner.Budget.WorkSteps);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.True(owner.Budget.WorkSteps > 0);
+    }
+
     [Fact]
     public void LiteralEscapingMatchesTheDeclaredGrammarForEveryUtf16Character()
     {
