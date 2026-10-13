@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PythonRe fixed-arity octal preparation (0.4.0-scalar.44-dev)
+
+- Replace variadic octal span arguments with fixed character arguments, removing
+  compiler-generated inline arrays and all Unsafe references from the PythonRe
+  DLL. Preserve scalar values, numeric-reference distinctions, error text/positions,
+  work/capacity charges and allocations. Focused Release code/cost evidence accepts
+  the change within the pilot's resolution; the core dependency still contains
+  deferred unchecked accesses and no compliant package is designated by this fix.
+
 ## Unreleased PythonRe template preparation interruption (0.4.0-scalar.44-dev)
 
 - Create the original invocation before replacement-plan lookup and retain it

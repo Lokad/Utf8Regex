@@ -111,9 +111,44 @@ broader borrowed-span trial, octal repeat and final selected source are retained
 An attempted blanket metadata guard is kept as experiment evidence, not shipped:
 the final adapter still references Unsafe through octal preparation.
 
-The downstream whole-pair unchecked-API gate remains open. Core's hot paths and
-the adapter's octal helper retain references; the consumer's blanket prohibition
-also includes `SizeOf`, which is stricter than the user's accepted sizing rule.
-No compliant core/PythonRe package or consumer promotion is claimed. Further work
-needs a concrete JIT/loop-structure reason and another bounded proposal, rather
-than repeating the same checked loads or expanding the benchmark campaign.
+At scalar.34-dev the downstream whole-pair unchecked-API gate remained open:
+core hot paths and the adapter's octal helper retained references. The consumer's
+blanket prohibition also includes `SizeOf`, which is stricter than the user's
+accepted sizing rule. That earlier borrowed-span octal experiment stays deferred.
+
+## Fixed-arity octal preparation
+
+A separate bounded follow-up replaces variadic span arguments with one- and
+three-character arguments. It removes three-digit inline-array staging and the
+single-digit CopyTo, preserving base-eight arithmetic, digit consumption, range
+errors and construction charges. The three-digit error borrows the already
+consumed pattern slice; the one-digit continuation keeps its checked stack span.
+No manual sizes, helper framework, execution mode or SIMD algorithm changes.
+
+The actual candidate PythonRe DLL has no Unsafe or LoadUnsafe references and no
+inline-array helper calls, compared with eight such calls and three Unsafe member
+references in its baseline. This does not close the core dependency's gate or
+designate a new compliant package. The 55-site core inventory remains separate.
+
+All 000–777 octals are checked as raw atoms and class members, with empty and
+supplementary prefixes, valid byte values, range-error messages/positions and
+tails. Numeric-reference ambiguity, finite matching and affected interruption/
+construction checks pass. Nine actual-DLL parser probes preserve exact work,
+reserved/peak bytes, depth and instruction totals, including malformed escapes.
+
+Release FullOpts code on Windows and Linux removes span staging from the numeric
+caller (354→284 / 322→287 bytes). The one-character callee is smaller than the old
+shared callee (628→582 / 655→557); the separate three-character callee is 351/341
+bytes. Aggregate code grows because the arities are separate; inspected hot
+paths are smaller. Heap allocations remain identical in all measured lanes.
+
+The first warm quiet-VM parser medians improve about 2–4%; the reversed repeat is
+near baseline for three-digit parsing. Constructor drift is about +1.5% in both
+runs while the unchanged plain control moves +2.0%/+2.5%. No persistent penalty
+beyond control movement is observed within this pilot's resolution; no speedup
+or exact equivalence is claimed. The conversion is accepted on that bounded
+evidence. Raw observations/code/identities: artifacts/octal-fixed-arity-20261013/.
+
+The whole-pair artifact gate remains open because core hot paths retain unchecked
+references, including the user-approved SizeOf. Further work needs a concrete
+source/JIT reason; do not rerun the deferred loads or expand this benchmark pilot.

@@ -661,14 +661,13 @@ internal sealed partial class PythonReParser
         return hex;
     }
 
-    private int ParseOctalEscapeIntValue(int escapeStart, params ReadOnlySpan<char> digits)
+    private int ParseOctalEscapeIntValue(int escapeStart, char firstDigit)
     {
         Span<char> octal = stackalloc char[3];
-        digits.CopyTo(octal);
-        Utf8ConstructionScope.ChargeWork((ulong)digits.Length);
-        var count = digits.Length;
-        var value = 0;
-        foreach (var digit in digits) value = value * 8 + digit - '0';
+        octal[0] = firstDigit;
+        Utf8ConstructionScope.ChargeWork(1);
+        var count = 1;
+        var value = firstDigit - '0';
         while (count < 3 && !IsAtEnd && IsOctalDigit(Current))
         {
             Utf8ConstructionScope.ChargeWork(1);
@@ -678,6 +677,15 @@ internal sealed partial class PythonReParser
         }
         if (value > 0xFF)
             throw new PythonRePatternException($@"octal escape value \{Storage.Arena.Budget.CopyText(octal[..count])} outside of range 0-0o377", escapeStart);
+        return value;
+    }
+
+    private int ParseOctalEscapeIntValue(int escapeStart, char firstDigit, char secondDigit, char thirdDigit)
+    {
+        Utf8ConstructionScope.ChargeWork(3);
+        var value = ((firstDigit - '0') * 8 + secondDigit - '0') * 8 + thirdDigit - '0';
+        if (value > 0xFF)
+            throw new PythonRePatternException($@"octal escape value \{Storage.Arena.Budget.CopyText(_pattern.AsSpan(_position - 3, 3))} outside of range 0-0o377", escapeStart);
         return value;
     }
 
