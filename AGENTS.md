@@ -37,6 +37,10 @@ the existing producer-revision/provenance checks still reject stale assemblies.
 They otherwise build the affected library dependency closure incrementally.
 Do not repeat source/package qualification for unchanged code or immutable bytes.
 
+The complete Core suite includes a shipped-assembly inventory check. In a fresh
+checkout, build the PythonRe and PCRE2 library projects in the tested configuration
+before that check. This needs their DLLs, not their test suites or the solution.
+
 ## Run Benchmarks In Release
 
 Benchmark work must be run in `Release`, not `Debug`, otherwise the performance numbers are misleading. Use commands such as:
