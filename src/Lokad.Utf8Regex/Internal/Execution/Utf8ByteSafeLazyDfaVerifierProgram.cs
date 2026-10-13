@@ -150,7 +150,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                 switch (step.Kind)
                 {
                     case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                        if (IsSupportedDeterministicLoopProgram(step))
+                        if (IsSupportedLoopProgram(step))
                         {
                             continue;
                         }
@@ -163,9 +163,11 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             return false;
         }
 
-        private bool IsSupportedDeterministicLoopProgram(Utf8ByteSafeLinearVerifierStep step)
+        // Admission covers both the direct kernel and the metered graph path.
+        // A supported optional body need not be safe to append deterministically.
+        private bool IsSupportedLoopProgram(Utf8ByteSafeLinearVerifierStep step)
         {
-            if (IsSupportedDeterministicOptionalProgram(step))
+            if (IsSupportedOptionalProgram(step))
             {
                 return true;
             }
@@ -726,58 +728,6 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                             transitionTargets);
                         break;
 
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass:
-                        if (!AsciiCharClass.TryUseNonEmpty(step.CharClass, out var projectedLoopSet))
-                        {
-                            _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
-                            return false;
-                        }
-
-                        if (step.Min == 0 && step.Max == 1)
-                        {
-                            AddDeterministicTransition(
-                                stateIndex,
-                                projectedLoopSet,
-                                stateIndex,
-                                transitionOffsets,
-                                transitionCounts,
-                                transitionSets,
-                                transitionTargets);
-                            break;
-                        }
-
-                        if (!TryAppendRepeatedDisjointLoopSequence(
-                                System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref step, 1),
-                                ref stateIndex,
-                                accepting,
-                                transitionOffsets,
-                                transitionCounts,
-                                transitionSets,
-                                transitionTargets))
-                        {
-                            return false;
-                        }
-
-                        break;
-
-                    case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
-                        step.Min == 1 &&
-                        IsOpenEndedLoop(step.Max) &&
-                        step.Program is { Length: > 0 } repeatedProgram:
-                        if (!TryAppendRepeatedDisjointLoopSequence(
-                                repeatedProgram,
-                                ref stateIndex,
-                                accepting,
-                                transitionOffsets,
-                                transitionCounts,
-                                transitionSets,
-                                transitionTargets))
-                        {
-                            return false;
-                        }
-
-                        break;
-
                     default:
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedDeterministicStep;
                         return false;
@@ -787,7 +737,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             return true;
         }
 
-        private bool IsSupportedDeterministicOptionalProgram(Utf8ByteSafeLinearVerifierStep step)
+        private bool IsSupportedOptionalProgram(Utf8ByteSafeLinearVerifierStep step)
         {
             if (step.Program is not { Length: > 0 } program ||
                 step.Min != 0 ||
@@ -799,7 +749,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             for (var i = 0; i < program.Length; i++)
             {
                 ChargeCompilationStep();
-                if (!IsSupportedDeterministicSubProgramStep(program[i]))
+                if (!IsSupportedOptionalBodyStep(program[i]))
                 {
                     return false;
                 }
@@ -808,7 +758,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             return true;
         }
 
-        private bool IsSupportedDeterministicSubProgramStep(Utf8ByteSafeLinearVerifierStep step)
+        private bool IsSupportedOptionalBodyStep(Utf8ByteSafeLinearVerifierStep step)
         {
             switch (step.Kind)
             {
@@ -824,133 +774,11 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                         ((step.Min == 0 && step.Max == 1) || IsOpenEndedLoop(step.Max));
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                    return step.Program is { Length: > 0 } nestedProgram &&
-                        step.Min == 1 &&
-                        IsOpenEndedLoop(step.Max) &&
-                        AreDisjointLoopSteps(nestedProgram);
+                    return step.Min == 1 && IsOpenEndedLoop(step.Max) && IsSupportedLoopProgram(step);
 
                 default:
                     return false;
             }
-        }
-
-        private bool AreDisjointLoopSteps(Utf8ByteSafeLinearVerifierStep[] steps)
-        {
-            var previousSet = AsciiCharClass.Empty;
-            var hasPrevious = false;
-            for (var i = 0; i < steps.Length; i++)
-            {
-                ChargeCompilationStep();
-                if (!TryGetDisjointLoopSet(steps[i], out var currentSet))
-                {
-                    return false;
-                }
-
-                if (!IsOpenEndedLoop(steps[i].Max))
-                {
-                    return false;
-                }
-
-                if (steps[i].Min != 1 && !(i == steps.Length - 1 && steps[i].Min == 0))
-                {
-                    return false;
-                }
-
-                if (hasPrevious && !previousSet.IsDisjoint(currentSet))
-                {
-                    return false;
-                }
-
-                previousSet = currentSet;
-                hasPrevious = true;
-            }
-
-            return hasPrevious;
-        }
-
-        private bool TryAppendRepeatedDisjointLoopSequence(
-            ReadOnlySpan<Utf8ByteSafeLinearVerifierStep> steps,
-            ref int stateIndex,
-            Utf8ConstructionBuffer<bool> accepting,
-            Utf8ConstructionBuffer<int> transitionOffsets,
-            Utf8ConstructionBuffer<int> transitionCounts,
-            Utf8ConstructionBuffer<AsciiCharClass> transitionSets,
-            Utf8ConstructionBuffer<int> transitionTargets)
-        {
-            if (steps.Length == 0)
-            {
-                return false;
-            }
-
-            if (steps.Length >= MaxDfaStates) return false;
-            var loopSets = _budget.AllocateArray<AsciiCharClass>(steps.Length, false);
-            try
-            {
-                for (var i = 0; i < steps.Length; i++)
-                {
-                    ChargeCompilationStep();
-                    if (!TryGetDisjointLoopSet(steps[i], out loopSets[i]))
-                    {
-                        return false;
-                    }
-
-                    if (!IsOpenEndedLoop(steps[i].Max))
-                    {
-                        return false;
-                    }
-
-                    if (steps[i].Min != 1 && !(i == steps.Length - 1 && steps[i].Min == 0))
-                    {
-                        return false;
-                    }
-
-                    if (i > 0 && !loopSets[i - 1].IsDisjoint(loopSets[i]))
-                    {
-                        return false;
-                    }
-                }
-
-                var firstStageState = -1;
-                var previousStageState = stateIndex;
-                for (var i = 0; i < loopSets.Length; i++)
-                {
-                    var stageState = AddDfaState(accepting);
-                    transitionOffsets.Add(0);
-                    transitionCounts.Add(0);
-
-                    AddDeterministicTransition(previousStageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-                    AddDeterministicTransition(stageState, loopSets[i], stageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-
-                    if (i == 0)
-                    {
-                        firstStageState = stageState;
-                    }
-
-                    if (i == loopSets.Length - 1)
-                    {
-                        accepting[stageState] = true;
-                        if (steps[i].Min == 0)
-                        {
-                            accepting[previousStageState] = true;
-                        }
-                    }
-
-                    previousStageState = stageState;
-                }
-
-                for (var i = 0; i < accepting.Count; i++)
-                {
-                    ChargeCompilationStep();
-                    if (accepting[i])
-                    {
-                        AddDeterministicTransition(i, loopSets[0], firstStageState, transitionOffsets, transitionCounts, transitionSets, transitionTargets);
-                    }
-                }
-
-                stateIndex = previousStageState;
-                return true;
-            }
-            finally { _budget.ReleaseArray(loopSets, false); }
         }
 
         private bool IsOpenEndedLoop(int max) => max < 0 || max == int.MaxValue;
@@ -1147,7 +975,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             }
 
             var exitState = AddState(states);
-            if (max < 0)
+            if (IsOpenEndedLoop(max))
             {
                 states[current].EpsilonTransitions.Add(exitState);
                 var loopStart = current;
@@ -1212,7 +1040,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             }
 
             var exitState = AddState(states);
-            if (max < 0)
+            if (IsOpenEndedLoop(max))
             {
                 states[current].EpsilonTransitions.Add(exitState);
                 var loopStart = current;

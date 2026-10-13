@@ -1240,6 +1240,16 @@ deadlines propagate instead of selecting an unmetered route. Failed children
 restore the parent's capacity and depth; successful graphs transfer their final
 arrays. Internal construction interruption authority belongs to the shared
 owner; complete public construction/invocation policy remains unqualified.
+Optional byte-safe bodies containing loop atoms use the admitted NFA-to-DFA
+construction path. The former deterministic append shortcut could add duplicate
+transitions, accept an incomplete body or exceed an inner repeat bound; it is
+removed, including its repeated-loop helper and redundant shape proof. Fixed-atom
+optional bodies and the top-level disjoint-loop kernel retain their existing
+paths. Supported shape admission remains separate from direct-kernel eligibility.
+Graph growth may reach the existing optimizer/resource backstops earlier; a
+declined DFA still leaves the supported owned linear/scalar route available.
+Graph emission recognizes the same negative/int.MaxValue open-ended sentinel
+representations as shape admission and the direct kernel.
 Eight fixed executor byte sets now use bounded immutable value fields and share
 the existing owned byte-mask/SIMD kernel with admitted pattern-dependent sets.
 No shipped SearchValues reference or runtime ASCII category-map array remains.

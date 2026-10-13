@@ -84,7 +84,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                             continue;
                         }
                         var exit = action.Exit >= 0 ? action.Exit : AddState(states);
-                        if (action.Max < 0)
+                        if (IsOpenEndedLoop(action.Max))
                         {
                             states[current].EpsilonTransitions.Add(exit);
                             PushNfaAction(action with { Kind = NfaActionKind.FinishOpenLoop, Exit = exit, LoopStart = current }, actions);

@@ -19,6 +19,20 @@ loads rely on admitted widths and clamped offsets; the short comparator relies o
 same-length admitted spans and length dispatch. Other sites require further review.
 This inventory is not a complete compiled-code or memory-safety proof.
 
+A 2026-10-13 cold construction preflight considered three manually sized
+`MemoryMarshal.CreateReadOnlySpan(ref value, 1)` calls for replacement by the
+one-element `ReadOnlySpan` constructor. Before any conversion, it exposed a
+core DFA optional-loop compiler defect: duplicate transitions and violated
+inner-repeat bounds. The correctness repair removes that unqualified shortcut,
+its duplicate proof/helper and one of these span sites; the other two remain.
+No checked conversion or no-regression claim follows from this removal. Public
+constructor/first-Count probes passed before the repair; this is a demonstrated
+compiler boundary defect, not evidence of a public crash. The current syntactic
+inventory has 57 sites in the same 18 core/adapter files. Raw failures, focused
+construction costs and code generation are in
+`artifacts/singleton-span-pilot-20261013/`. Further singleton conversion remains
+separate from the correctness repair.
+
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block
 order and the overlapping terminal vector. Four bounded code-generation variants

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased core optional-loop DFA repair (0.4.0-scalar.38-dev)
+
+- Remove the incorrect deterministic shortcut for loop atoms inside optional
+  byte-safe bodies. Those admitted bodies use existing metered graph construction,
+  preserving inner repeat bounds and withholding incomplete-body matches instead
+  of throwing for duplicate transitions. Keep fixed-atom optional shortcuts and
+  the top-level disjoint-loop kernel. Remove the obsolete helper/proof walk and
+  one manually sized singleton span. Graph construction can reach existing
+  optimizer/resource backstops earlier; no new public API or resource owner.
+  Recognize both existing open-ended sentinels in graph emission, avoiding
+  state-cap declines for the producer's int.MaxValue representation.
+
 ## Unreleased PCRE2 validation work (0.4.0-scalar.37-dev)
 
 - Admit pattern-validation scans into the existing shared construction-work
