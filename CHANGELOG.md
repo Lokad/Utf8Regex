@@ -1,5 +1,13 @@
 # Changelog
 
+## Private core/PythonRe candidate (0.4.0-scalar.42)
+
+- Freeze the current scalar core/PythonRe contract, including explicit eager
+  construction limits and interruption, under a distinct immutable candidate
+  identity. Package qualification, downstream acceptance and publication retain
+  separate gates; deferred unchecked accesses and documented resource exclusions
+  remain explicit.
+
 ## Unreleased explicit eager compilation (0.4.0-scalar.42-dev)
 
 - Add core/PythonRe `Compile` factories with a separate four-limit
