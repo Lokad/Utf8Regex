@@ -51,6 +51,30 @@ CASES = [
     ("(?>(a|ab))(b)", "ab"), ("(?:(?>(a))b|(a))", "a"),
     ("(?P<x>a)++", "aaa"), ("(?P<empty>)(?P<maybe>a)?", "a"),
     ("(a*?)", "aa"), ("((a)?)*", "a"),
+    # Sparse prefix guidance must preserve lexical profile matching rather than
+    # treating the translated native plan as the complete matcher.
+    (r"mark(?P<x>k)(?i:(?P=x))", "xxmarkkK yy markkK"),
+    (r"mark(?P<x>Σ)(?i:(?P=x))", "markΣς markΣσ"),
+    (r"mark(?P<x>İ)(?i:(?P=x))", "markİi markİİ"),
+    (r"mark(?P<x>K)(?ai:(?P=x))", "markKK markKK"),
+    (r"(?i:k)mark(?P<x>a)", "Kmarka Kmarka kmarka"),
+    (r"(?ai:k)mark(?P<x>a)", "Kmarka Kmarka kmarka"),
+    (r"mark(?i:[A-Z])(?P<x>.)", "markİ😀 markıé markſx markKx"),
+    (r"(?P<x>😀)?(?(x)mark|other)", "other xx 😀mark mark"),
+    (r"(?P<x>😀){0}(?(x)mark|other)", "mark other"),
+    (r"(?P<x>)(?(x)mark|other)", "other mark"),
+    (r"(?<=(?P<x>😀))mark(?P=x)", "😀mark😀 x mark😀"),
+    (r"(?<=(?i:k))mark(?P<x>.)", "Kmark😀 Kmarké"),
+    (r"mark(?=(?P<x>😀))(?P=x)", "mark😀 marké"),
+    (r"mark(?:(?P<x>a)b|(?P<y>a))", "marka markab"),
+    (r"mark(?P<x>a)?(?(x)b|c)", "markc markab markb"),
+    (r"mark|", "mark x"),
+    (r"(?:mark)?(?P<x>)", "mark x"),
+    (r"mark(?P<x>)|mark(?P<y>ab)", "markab mark"),
+    (r"(?P<x>éé)|(?P<y>é)", "ééé xé"),
+    (r"(?P<x>😀é)|(?P<y>😀)", "😀é😀 x😀"),
+    (r"mark(?P<x>𐐀)(?i:(?P=x))", "mark𐐀𐐨 mark𐐀𐐀"),
+    (r"mark(?P<x>𐐀)(?ai:(?P=x))", "mark𐐀𐐨 mark𐐀𐐀"),
 ]
 
 def snapshot(match, text):

@@ -54,6 +54,48 @@ public sealed class PythonRePrefixDiscoveryTests
     }
 
     [Fact]
+    public void PrefixGuidancePreservesEveryScalarStartAcrossAdversarialSubjects()
+    {
+        string[] patterns = ["(ab|a)+b", "(ab|a)+?b", "(?P<x>a)?(?(x)b|c)",
+            "(?P<x>){0}(?(x)ab|c)", "(?<=é)(ab|a)", "(?=ab)(ab|a)",
+            "ab(?P<x>a)(?i:(?P=x))", "ab(?ai:k)", "(😀é|😀)+", "|ab"];
+        string[] pieces = ["a", "b", "c", "é", "😀", "K", "K"];
+        foreach (var pattern in patterns)
+        {
+            var regex = new Utf8PythonRegex(pattern);
+            var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
+            var numbers = Field<int[]>(regex, "_coreGroupNumbersByPythonGroup");
+            var names = Field<PythonReNameEntry[]>(regex, "_nameEntries");
+            foreach (var first in pieces)
+            foreach (var second in pieces)
+            {
+                var subject = "x" + first + second + "ab😀éabc";
+                var input = Encoding.UTF8.GetBytes(subject);
+                var start = 0;
+                while (true)
+                {
+                    var plain = new PythonReScalarMatchCursor(input, program, numbers, start,
+                        Regex.InfiniteMatchTimeout, pattern, default, Utf8ExecutionLimits.Unlimited);
+                    var expected = new List<Utf8PythonDetailedMatchData>();
+                    try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(names)); }
+                    finally { plain.Dispose(); }
+                    var actual = regex.FindIterDetailed(input, start);
+                    Assert.Equal(expected.Count, actual.Length);
+                    for (var index = 0; index < actual.Length; index++)
+                    {
+                        Assert.Equal(expected[index].Groups, actual[index].Groups);
+                        Assert.Equal(expected[index].LastIndex, actual[index].LastIndex);
+                        Assert.Equal(expected[index].LastGroup, actual[index].LastGroup);
+                    }
+                    if (start == input.Length) break;
+                    start++;
+                    while (start < input.Length && (input[start] & 0xc0) == 0x80) start++;
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void MandatoryPrefixKeepsAnchoredOperationsAndByteStart()
     {
         var regex = new Utf8PythonRegex("(ab|cd)+");

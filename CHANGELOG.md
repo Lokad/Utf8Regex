@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased PythonRe prefix semantic audit (0.4.0-scalar.47-dev)
+
+- Extend the existing CPython capture corpus with scoped Unicode/ASCII folding,
+  references, lookbehind, conditional/empty branches and overlapping scalar
+  prefixes. Guided and unguided discovery agree at every scalar start in the
+  bounded adversarial catalog. No production defect was found; scalar.46 stays
+  unchanged and this audit does not claim complete profile coverage.
+
 ## Unreleased literal census boundary checks (0.4.0-scalar.47-dev)
 
 - Cover correlated-literal diagnostic census offsets, vector tails, overlap and
