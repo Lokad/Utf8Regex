@@ -262,7 +262,7 @@ public sealed class Pcre2OptionCallbackAuthorityTests
     [Fact]
     public void EntryValidationPrecedesMatchingAndRejectsMalformedTails()
     {
-        var regex = Create(new() { MatchLimit = 1 });
+        var regex = Create(new() { MatchLimit = 100000 });
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => Run(regex, [0xff], new(), false,
@@ -271,6 +271,9 @@ public sealed class Pcre2OptionCallbackAuthorityTests
         Assert.Throws<ArgumentException>(() => Run(regex, [.. "é😀"u8, 0xff], new(), true, Pcre2MatchOptions.NotBol));
         Assert.Throws<ArgumentOutOfRangeException>(() => Run(regex, "é😀"u8.ToArray(), new(), false,
             Pcre2MatchOptions.NotBol, start: 3));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
+            Run(Create(new() { MatchLimit = 1 }), [.. "é😀"u8, 0xff], new(), true,
+                Pcre2MatchOptions.NotBol)).ErrorKind);
     }
 
     [Fact]

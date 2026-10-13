@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -74,30 +75,33 @@ public sealed partial class Utf8Pcre2Regex
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
         token.ThrowIfCancellationRequested();
-        ValidateStartOffset(input, startOffsetInBytes);
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
         invocation.ShareStorageForCursor();
         Utf8SliceByteOutputScope? scope = null;
         try
         {
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             scope = Utf8SliceByteOutputScope.Enter(invocation);
             var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);
             if (_program.Operations.Replace is Pcre2Utf8DirectProgram coreProgram)
-                ReplaceCapturedCallback(input, coreProgram, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
+                ReplaceCapturedCallback(input, subject, start, coreProgram, matchOptions, scope.Invocation, ref output);
             else if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
-                ReplaceCapturedCallback(input, slice, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
+                ReplaceCapturedCallback(input, subject, start, slice, matchOptions, scope.Invocation, ref output);
             else if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram captured &&
                 (captured.Program.CaptureSlotCount > 1 || captured.Program.SuppressesUnresetEmptyMatches))
-                ReplaceCapturedCallback(input, captured, startOffsetInBytes, matchOptions, scope.Invocation, ref output);
-            else if (!TryReplaceCallbackViaLiteralDriver(input, startOffsetInBytes, matchOptions, scope.Invocation, ref output))
+                ReplaceCapturedCallback(input, subject, start, captured, matchOptions, scope.Invocation, ref output);
+            else if (!TryReplaceCallbackViaLiteralDriver(input, subject, start, matchOptions, scope.Invocation, ref output))
             {
                 if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtracking)
-                    ReplaceBacktrackingCallback(input, backtracking.Program, startOffsetInBytes, matchOptions,
+                    ReplaceBacktrackingCallback(input, subject, start, backtracking.Program, matchOptions,
                         new Pcre2ResourceBudget(_program.Request.DefaultLimits, scope.Invocation,
                             collectDiagnostics: false), ref output);
                 else throw CreateUnsupportedPatternException();
             }
-            return output.Complete(text);
+            var result = output.Complete(text);
+            Pcre2SliceDriver.CheckInvocation(ref scope.Invocation);
+            return result;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -112,11 +116,10 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private bool TryReplaceCallbackViaLiteralDriver<TState, TExpansion>(ReadOnlySpan<byte> input,
-        int startOffsetInBytes, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation,
+        Utf8ValidatedInput subject, Utf8BytePosition start, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation,
         ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, collectDiagnostics: false);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var cursor, budget))
             return false;
@@ -141,7 +144,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private void ReplaceCapturedCallback<TState, TExpansion>(ReadOnlySpan<byte> input,
-        IPcre2DirectProgram program, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
+        Utf8ValidatedInput subject, Utf8BytePosition start, IPcre2DirectProgram program, Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation, ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
@@ -153,13 +156,12 @@ public sealed partial class Utf8Pcre2Regex
         if (backtracking is not null)
         {
             var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, collectDiagnostics: false);
-            ReplaceBacktrackingCallback(input, backtracking, startOffsetInBytes, matchOptions, budget, ref output);
+            ReplaceBacktrackingCallback(input, subject, start, backtracking, matchOptions, budget, ref output);
             return;
         }
 
         var scalarProgram = program is Pcre2Utf8DirectProgram coreProgram ? coreProgram.ScalarProgram
             : ((Pcre2SliceDirectProgram)program).SliceProgram;
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2SliceGlobalMatchCursor(scalarProgram, invocation, subject, start, _program.Request);
         while (true)
         {
@@ -174,12 +176,11 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private void ReplaceBacktrackingCallback<TState, TExpansion>(ReadOnlySpan<byte> input, Pcre2BacktrackingProgram program,
-        int startOffsetInBytes, Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget,
+    private void ReplaceBacktrackingCallback<TState, TExpansion>(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, Pcre2BacktrackingProgram program,
+        Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget,
         ref Pcre2CallbackReplacementOutput<TState, TExpansion> output)
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, _program.CandidateSearchPlan,
             subject, start, matchOptions, _program.Request, budget);
         while (true)

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased PCRE2 replacement entry authority (0.4.0-scalar.30-dev)
+
+- String, UTF-8-template and callback replacements now validate their entire
+  subject under the original invocation. UTF-8 template validation and decoding
+  join the same cumulative work, storage, token and absolute deadline controls.
+- Retire public prevalidation and callback route revalidation; pass the validated
+  subject to existing native/slice/core cursors and writers. Reuse decoded-template
+  scratch admission with TryReplace; check original interruption before return.
+  Finite work can deny before a malformed tail or invalid start is reached.
+  Template parsing retains separate fixed construction backstops; public parser
+  work/capacity, construction/default/retention policies remain unfinished.
+
 ## Unreleased PCRE2 TryReplace authority (0.4.0-scalar.29-dev)
 
 - TryReplace retains the original token, absolute deadline and cumulative limits
