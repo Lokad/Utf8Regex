@@ -22,11 +22,12 @@ public sealed partial class Utf8Pcre2Regex
     private int _candidateLimit;
 
     internal Pcre2PartialProbeRunner(Utf8ValidatedInput input, Pcre2CompiledProgram program,
-        Pcre2NameEntry[] names, Pcre2MatchOptions matchOptions, CancellationToken token)
+        Pcre2NameEntry[] names, Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget)
     {
         _input = input;
-        _budget = new Pcre2ResourceBudget(program.Request.DefaultLimits,
-            Pcre2SliceDriver.CreateInvocation(program.Request, token), collectDiagnostics: false);
+        // Transfer the validation authority into this one-shot runner. Controlled
+        // counters share the original owner; unlimited state stays inline.
+        _budget = budget;
         _names = names;
         _matchOptions = matchOptions;
         _compiled = program;

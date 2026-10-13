@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
@@ -38,6 +39,21 @@ internal ref struct Utf8ValidatedInput
 
     public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input)
         => new(input, Utf8InputAnalyzer.ValidateOnly(input));
+
+    // PCRE2-INTEGRATION-POINT: validate under the caller's existing invocation
+    // without exposing an unchecked construction from caller-supplied metadata.
+    internal static Utf8ExecutionLimitKind TryCreate(ReadOnlySpan<byte> input,
+        scoped ref Utf8SliceInvocation invocation, out Utf8ValidatedInput validated)
+    {
+        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+        {
+            validated = Create(input);
+            return Utf8ExecutionLimitKind.None;
+        }
+        var breach = Utf8Validation.TryValidate(input, ref invocation, out var validation);
+        validated = breach == Utf8ExecutionLimitKind.None ? new(input, validation) : default;
+        return breach;
+    }
 
     public Utf8BytePosition GetBytePosition(int value, string parameterName)
     {

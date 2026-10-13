@@ -392,11 +392,8 @@ internal static class Pcre2LiteralProbeRunner
         Utf8BytePosition requestedStart,
         Pcre2PartialMode partialMode,
         Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request,
-        CancellationToken token)
+        scoped ref Pcre2ResourceBudget budget)
     {
-        var budget = new Pcre2ResourceBudget(request.DefaultLimits,
-            Pcre2SliceDriver.CreateInvocation(request, token), collectDiagnostics: false);
         try
         {
             var fullMatch = Pcre2LiteralRunner.Match(program, ref input, requestedStart, matchOptions, ref budget);

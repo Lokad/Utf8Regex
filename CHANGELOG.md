@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased PCRE2 Probe validation authority (0.4.0-scalar.24-dev)
+
+- Literal and curated partial Probe routes now validate the full subject under
+  the same work allowance, cancellation token and absolute deadline as discovery
+  and result shaping. Reuse the core bounded scalar validator and transfer the
+  existing authority into the runner. Unlimited validation keeps its fast path.
+- Tight work limits or interruption can now reject before a later malformed
+  subject byte or invalid start offset is examined. Other PCRE2 public routes and
+  Probe fallback validation retain their separate qualification gates.
+
 ## Unreleased PCRE2 literal empty-end probes (0.4.0-scalar.23-dev)
 
 - Preserve native EOF partials for an empty literal with an explicit end assertion
