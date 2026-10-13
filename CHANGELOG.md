@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased PythonRe capture metadata admission (0.4.0-scalar.40-dev)
+
+- Admit public group-name/name-entry arrays and numeric name text through the
+  existing construction owner. Fill one group-name array and one entry array;
+  remove a scratch array, temporary List and duplicate Dictionary by reusing the
+  parser's immutable admitted name map. Preserve slot order, copied public arrays,
+  authoritative completion metadata and replacement name lookup. Conservative
+  construction work/bytes can deny earlier; public construction policies remain
+  incomplete and invocation limits are unchanged.
+
 ## Unreleased bounded singleton spans (0.4.0-scalar.39-dev)
 
 - Replace the two remaining manually sized one-element spans in byte-safe graph

@@ -225,7 +225,9 @@ public sealed partial class Utf8PythonRegex
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
         _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
-        _namedGroups = _nameEntries.ToDictionary(x => x.Name, x => x.Number, StringComparer.Ordinal);
+        // The parser transfers an admitted immutable map; the lazy full program
+        // already retains the parse result. Borrow it for replacement lookup.
+        _namedGroups = parseResult.NamedGroups;
 
         try
         {
@@ -381,36 +383,52 @@ public sealed partial class Utf8PythonRegex
     // Public names follow Python slot order; the optional core route has its own slot permutation.
     private static string[] GetPublicGroupNames(int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
     {
-        var namesByPythonGroup = new string?[captureGroupCount + 1];
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        var names = budget.AllocateArray<string>(checked(captureGroupCount + 1), false);
         foreach (var pair in namedGroups)
         {
-            namesByPythonGroup[pair.Value] = pair.Key;
+            budget.ChargeWork(1);
+            names[pair.Value] = pair.Key;
         }
 
-        var names = new string[captureGroupCount + 1];
         names[0] = "0";
+        Span<char> digits = stackalloc char[11];
         for (var pythonGroup = 1; pythonGroup <= captureGroupCount; pythonGroup++)
         {
-            names[pythonGroup] = namesByPythonGroup[pythonGroup] ?? pythonGroup.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            budget.ChargeWork(1);
+            if (names[pythonGroup] is not null) continue;
+            budget.ChargeWork((ulong)digits.Length);
+            pythonGroup.TryFormat(digits, out var written, provider: System.Globalization.CultureInfo.InvariantCulture);
+            // Admit the actual decimal text extent before ToString, retaining
+            // its existing small-number sharing instead of forcing a new copy.
+            budget.ChargeWork((ulong)written + 1);
+            budget.ReserveBytes(Utf8ConstructionBudget.StringBytes(written));
+            names[pythonGroup] = pythonGroup.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        construction.Complete();
         return names;
     }
 
     // PLAN.md C07: name entries carry Python slot numbers; the managed numbers they replaced were only valid when no named group preceded an unnamed one.
     private static PythonReNameEntry[] GetPythonNameEntries(IReadOnlyDictionary<string, int> namedGroups)
     {
-        var entries = new List<PythonReNameEntry>(namedGroups.Count);
+        using var construction = Utf8ConstructionScope.Enter();
+        var entries = construction.Budget.AllocateArray<PythonReNameEntry>(namedGroups.Count, false);
+        var index = 0;
         foreach (var pair in namedGroups)
         {
-            entries.Add(new PythonReNameEntry
+            construction.Budget.ChargeWork(1);
+            entries[index++] = new PythonReNameEntry
             {
                 Name = pair.Key,
                 Number = pair.Value,
-            });
+            };
         }
 
-        return entries.ToArray();
+        construction.Complete();
+        return entries;
     }
 
 }

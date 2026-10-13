@@ -1341,11 +1341,12 @@ Provisional limits are 67,108,864 work units and 65,536 covered live frames.
 Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.
-These are partial counters: other parsing/rendering/optimization/preparation
-work, other descriptors and object/string capacity remain uncovered. Translator
-StringBuilder/string/list/dictionary storage and iterator objects are not yet
-admitted. These counters do not establish complete
-work/depth controls or safe defaults.
+These remain partial counters: other producers, descriptors and work/storage
+paths require separate qualification. The current Python translator uses admitted
+text, arrays, buffers and maps instead of the former raw builders/collections.
+PythonRe facade capture-name arrays/text now share that owner, and replacement
+name lookup borrows the parser's immutable admitted map. These covered extents
+do not establish complete construction controls, retained policies or safe defaults.
 It covers core/PythonRe tree-to-scalar conversion maps/frames, child/literal
 arrays, decoded class/subtraction payloads, instruction vectors, analysis/capture
 maps, lowering/preparation frames, auxiliary vectors, nullable-graph discovery,

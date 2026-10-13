@@ -141,6 +141,18 @@ over malformed pattern bytes and construction admission. Valid arguments retain
 strict pattern decoding and the existing shared construction backstops. These
 checks do not provide a public construction budget or construction cancellation.
 
+Capture-name metadata shares the existing construction owner. The public-name
+array and named-entry array are admitted before acquisition; numeric group labels
+admit their formatted text capacity before materialization. Named strings and the
+parser's immutable name map are borrowed. One filled array replaces the former
+scratch/output pair, and direct entry filling replaces a temporary list/copy.
+Replacement lookup reuses the same immutable parser map rather than duplicating
+it. Helper failure restores its parent's numeric storage/depth while spent work
+remains charged. Conservative text charges can double-count shared small-number
+strings. Public getters still return caller-owned array copies with their existing
+standalone-getter scope. These are covered major metadata extents, not complete
+construction/live-retention/default policies or a process-memory guarantee.
+
 Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code.
 
 Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe supports
