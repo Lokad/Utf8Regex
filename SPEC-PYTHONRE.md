@@ -165,6 +165,19 @@ each compile under their own bounded construction scope; one immutable program
 is published and reused. Successfully published code survives later call
 interruption. Warm calls retain their existing execution checkpoints.
 
+Template Replace/Subn byte and string operations also create their invocation
+before replacement-cache access. Existing cache checkpoints observe the call's
+token/deadline during lookup, pending-entry waits and publication; cold parsing
+borrows that authority through the construction checkpoints. Failure rolls back
+preparation and removes its pending entry, allowing a fresh call. A cancelled
+waiter does not invalidate another caller's preparation or a retained cached plan.
+If the preparing caller is interrupted, a healthy waiter checks its own authority
+and prepares once without caching, rather than inheriting the other caller's
+interruption or entering an unbounded retry loop. A later fresh call may cache it.
+The same invocation continues through subject validation, discovery and output
+shaping. Numeric preparation budgets remain separate from execution work/bytes;
+warm cache hits allocate no preparation scope or checkpoint closure.
+
 Capture-name metadata shares the existing construction owner. The public-name
 array and named-entry array are admitted before acquisition; numeric group labels
 admit their formatted text capacity before materialization. Named strings and the

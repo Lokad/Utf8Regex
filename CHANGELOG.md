@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased PythonRe template preparation interruption (0.4.0-scalar.44-dev)
+
+- Create the original invocation before replacement-plan lookup and retain it
+  through template Replace/Subn discovery and byte/string output. Existing
+  cache/parser checkpoints observe its token/deadline, including pending-entry
+  waits, while preserving parent construction authority and separate numeric
+  backstops. Failed cold preparation remains retryable; waiter cancellation
+  preserves another caller's plan. A healthy waiter prepares once without caching
+  after the preparing caller is interrupted. Warm hits allocate no preparation scope.
+
 ## Unreleased PythonRe cold FullMatch deadline (0.4.0-scalar.44-dev)
 
 - Start scalar invocation authority before lazy full-match program preparation

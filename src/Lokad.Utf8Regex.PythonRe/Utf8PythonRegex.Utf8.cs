@@ -131,7 +131,7 @@ public sealed partial class Utf8PythonRegex
 
     private bool TryReplaceViaUtf8Literal(
         ReadOnlySpan<byte> input, PythonReReplacementPlan plan, int count, int startOffsetInBytes,
-        bool textOutput, out byte[] resultBytes, out string resultText, out int replacementCount)
+        bool textOutput, ref Utf8SliceInvocation invocation, out byte[] resultBytes, out string resultText, out int replacementCount)
     {
         resultBytes = [];
         resultText = string.Empty;
@@ -140,7 +140,6 @@ public sealed partial class Utf8PythonRegex
             !_canUseZeroOffsetUtf8ValueFastPath || _utf8Regex is null ||
             !plan.TryGetLiteralUtf8(out var literalBytes)) return false;
 
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
         Utf8InvocationResultLedger results = default;
         try
         {

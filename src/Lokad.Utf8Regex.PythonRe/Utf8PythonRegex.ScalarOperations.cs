@@ -313,12 +313,14 @@ public sealed partial class Utf8PythonRegex
 
     private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
         PythonReScalarReplacementAppender<TState> appendReplacement, int count, int startOffsetInBytes,
-        CancellationToken cancellationToken, bool textOutput, bool validateOutput,
+        Utf8SliceInvocation invocation, bool textOutput, bool validateOutput,
         out Utf8PythonSubnUtf8Result bytesResult, out Utf8PythonSubnResult textResult)
     {
         bytesResult = default;
         textResult = default;
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        ValidateScalarStartOffset(input, startOffsetInBytes);
+        var cursor = new PythonReScalarMatchCursor(input, ScalarProgram, _coreGroupNumbersByPythonGroup,
+            startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation);
         Utf8SliceOutputWriter writer = default;
         try
         {
