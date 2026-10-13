@@ -963,7 +963,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
 
         private int AppendLoop(Utf8ConstructionBuffer<NfaState> states, int current, AsciiCharClass set, int min, int max)
         {
-            return AppendLoop(states, current, System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref set, 1), min, max);
+            return AppendLoop(states, current, new ReadOnlySpan<AsciiCharClass>(in set), min, max);
         }
 
         private int AppendLoop(Utf8ConstructionBuffer<NfaState> states, int current, ReadOnlySpan<AsciiCharClass> units, int min, int max)

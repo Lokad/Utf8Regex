@@ -24,14 +24,24 @@ A 2026-10-13 cold construction preflight considered three manually sized
 one-element `ReadOnlySpan` constructor. Before any conversion, it exposed a
 core DFA optional-loop compiler defect: duplicate transitions and violated
 inner-repeat bounds. The correctness repair removes that unqualified shortcut,
-its duplicate proof/helper and one of these span sites; the other two remain.
+its duplicate proof/helper and one of these span sites; two remained at that boundary.
 No checked conversion or no-regression claim follows from this removal. Public
 constructor/first-Count probes passed before the repair; this is a demonstrated
-compiler boundary defect, not evidence of a public crash. The current syntactic
-inventory has 57 sites in the same 18 core/adapter files. Raw failures, focused
+compiler boundary defect, not evidence of a public crash. At that boundary the
+syntactic inventory had 57 sites in the same 18 core/adapter files. Raw failures, focused
 construction costs and code generation are in
-`artifacts/singleton-span-pilot-20261013/`. Further singleton conversion remains
-separate from the correctness repair.
+`artifacts/singleton-span-pilot-20261013/`.
+
+The follow-up singleton conversion is accepted separately at scalar.39-dev.
+The NFA class unit and initial closure state use the one-element `ReadOnlySpan`
+constructor, removing both caller-supplied lengths. All four inspected compiler
+method instruction listings are identical before/after on Windows and Linux;
+JIT inline-count comments differ. Four quiet-VM construction controls retain
+identical allocations and show no measured regression. The apparent improvements
+also occur in the unchanged literal control, so no speedup is claimed.
+Evidence: `artifacts/singleton-span-conversion-20261013/`. The frozen syntactic
+inventory now has 55 remaining sites in 16 files. Other unchecked/implicit
+accesses and the downstream whole-pair artifact gate remain open.
 
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased bounded singleton spans (0.4.0-scalar.39-dev)
+
+- Replace the two remaining manually sized one-element spans in byte-safe graph
+  construction with the one-element ReadOnlySpan constructor. Preserve borrowed
+  values, algorithms, allocations and resource admission. Inspected Release
+  instructions are identical on Windows/Linux; focused construction measurements
+  show unchanged allocations and no regression. Broader unchecked access remains.
+
 ## Unreleased core optional-loop DFA repair (0.4.0-scalar.38-dev)
 
 - Remove the incorrect deterministic shortcut for loop atoms inside optional

@@ -23,7 +23,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             try
             {
                 var zero = 0;
-                var start = ComputeClosure(System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref zero, 1), nfa);
+                var start = ComputeClosure(new ReadOnlySpan<int>(in zero), nfa);
                 var adoptedStart = false;
                 try
                 {
