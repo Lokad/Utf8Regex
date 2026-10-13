@@ -134,6 +134,13 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 
 ## Cancellation and resource contract
 
+Constructors validate an explicit resource policy first, then compile flags and
+the timeout, before decoding UTF-8 pattern bytes or acquiring preparation storage.
+Unsupported/incompatible flags and an invalid timeout therefore take precedence
+over malformed pattern bytes and construction admission. Valid arguments retain
+strict pattern decoding and the existing shared construction backstops. These
+checks do not provide a public construction budget or construction cancellation.
+
 Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code.
 
 Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe supports

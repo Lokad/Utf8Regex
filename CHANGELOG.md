@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased PythonRe constructor preflight (0.4.0-scalar.35-dev)
+
+- Reject unsupported/incompatible compile flags and invalid timeouts before
+  decoding byte patterns or spending construction allowance. Preserve policy-zero
+  precedence, error vocabulary and accepted-pattern accounting. Remove the compile
+  validator's unused pattern parameter.
+
 ## Unreleased checked PythonRe escape text (0.4.0-scalar.34-dev)
 
 - Borrow bounds-checked slices of the immutable pattern for escape text, removing

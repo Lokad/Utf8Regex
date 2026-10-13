@@ -154,6 +154,11 @@ public sealed partial class Utf8PythonRegex
         {
             ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
         }
+        // These argument checks need no pattern conversion or construction
+        // allowance. Keep policy errors first, then flags and timeout, for both
+        // text and byte entries before acquiring decoded pattern storage.
+        PythonReCompileValidator.Validate(options);
+        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         using var construction = Utf8ConstructionScope.Enter();
         var pattern = patternSource.Text;
         if (patternSource.IsUtf8)
@@ -165,10 +170,8 @@ public sealed partial class Utf8PythonRegex
             }
         }
 
-        PythonReCompileValidator.Validate(pattern, options);
         Pattern = pattern;
         Options = options;
-        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
 
         var parser = PythonReParser.Create(pattern);
         var parseResult = parser.Parse(options);

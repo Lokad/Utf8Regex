@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal static class PythonReCompileValidator
 {
-    public static void Validate(string pattern, PythonReCompileOptions options)
+    public static void Validate(PythonReCompileOptions options)
     {
         if ((options & PythonReCompileOptions.Locale) != 0)
         {

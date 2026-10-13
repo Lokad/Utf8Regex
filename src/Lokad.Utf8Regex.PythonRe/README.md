@@ -32,6 +32,12 @@ Version 0.4.0-scalar.5 is a core/PythonRe integration candidate with finite invo
 
 ## Public API
 
+Constructor errors are checked before UTF-8 pattern decoding: explicit resource
+policy first, then compile flags and timeout. Unsupported/incompatible flags and
+invalid timeouts spend no construction allowance. With valid arguments, malformed
+UTF-8 and pattern syntax retain their existing failures. Construction itself still
+uses separate fixed backstops, rather than the finite invocation policy.
+
 ```csharp
 using Lokad.Utf8Regex.PythonRe;
 

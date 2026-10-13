@@ -5,6 +5,60 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReConstructionAdmissionTests
 {
+    [Theory]
+    [InlineData(PythonReCompileOptions.Locale, false)]
+    [InlineData(PythonReCompileOptions.Locale, true)]
+    [InlineData(PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode, false)]
+    [InlineData(PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode, true)]
+    public void InvalidFlagsPrecedeByteDecodingAndSpendNoConstructionAllowance(PythonReCompileOptions options, bool policy)
+    {
+        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
+        {
+            Assert.Throws<PythonRePatternException>(() =>
+            {
+                if (policy) _ = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited);
+                else _ = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan);
+            });
+            Assert.Equal(0UL, scope.Budget.WorkSteps);
+            Assert.Equal(0UL, scope.Budget.ReservedBytes);
+            Assert.Equal(0UL, scope.Budget.PeakBytes);
+            Assert.Equal(0UL, scope.Budget.Depth);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void InvalidTimeoutPrecedesByteDecodingAndSpendsNoConstructionAllowance(bool policy)
+    {
+        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
+        {
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                if (policy) _ = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.Zero, Utf8ResourcePolicy.Unlimited);
+                else _ = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.Zero);
+            });
+            Assert.Equal("matchTimeout", error.ParamName);
+            Assert.Equal(0UL, scope.Budget.WorkSteps);
+            Assert.Equal(0UL, scope.Budget.ReservedBytes);
+            Assert.Equal(0UL, scope.Budget.PeakBytes);
+            Assert.Equal(0UL, scope.Budget.Depth);
+        }
+    }
+
+    [Fact]
+    public void ZeroPolicyStillPrecedesInvalidFlagsTimeoutAndBytes()
+    {
+        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Utf8PythonRegex(new byte[] { 0xff }, PythonReCompileOptions.Locale, TimeSpan.Zero,
+                new Utf8ResourcePolicy { MaxWorkSteps = 0 }));
+        Assert.Equal("resourcePolicy", error.ParamName);
+        Assert.Equal(0UL, scope.Budget.WorkSteps);
+        Assert.Equal(0UL, scope.Budget.ReservedBytes);
+    }
+
     [Fact]
     public void BytePatternWorkAdmissionPrecedesValidationAndDecode()
     {
