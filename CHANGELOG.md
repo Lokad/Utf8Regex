@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased construction map insertion (0.4.0-scalar.47-dev)
+
+- Share one insertion path for Add and replacement, removing duplicate hashing
+  and probing. Keep bounded collision work and admitted old/new table overlap.
+  A failed final growth probe now releases the unpublished replacement table
+  and preserves the original capacity and entries. Work totals may decrease.
+- Baseline cancellation/comparer witnesses retain extra capacity; the repaired
+  path passes cutoff, cleanup and profile checks with unchanged allocations in
+  focused construction controls. Scalar.46 packages remain unchanged.
+
 ## Unreleased numeric construction arena (0.4.0-scalar.47-dev)
 
 - Replace array-retaining descriptors and identity retention scans with two

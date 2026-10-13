@@ -687,6 +687,10 @@ retained charges, and cleanup never refunds work or depends on GC timing.
 Immutable metadata lookup/enumeration spends the current construction
 owner's work, rather than a closed original owner. Its generic enumerable views
 and boxed enumerators admit descriptor capacity before acquisition.
+Mutable construction maps hash/probe once for insertion. Growth keeps the old
+table until rehash and the final metered probe succeed; failure releases the new
+capacity without publishing a partial insertion. Collision chains still spend
+bounded work and observe the enclosing token/deadline.
 Scalar class folding uses sparse 256-code-point bit pages with admitted directory,
 page/key vectors and sorting, replacing unadmitted SortedSet trees. It preserves
 the profile's ASCII/Unicode closures and BMP/astral run ordering. Page scans,
