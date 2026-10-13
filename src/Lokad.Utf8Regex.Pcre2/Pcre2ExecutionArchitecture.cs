@@ -2203,14 +2203,15 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken,
+        scoped ref Utf8SliceInvocation invocation,
         out bool result)
     {
+        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         var program = compiledProgram.Operations.IsMatch;
         if (program is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2MultilinePrefixRunner.TryFind(
                     multilinePrefixProgram,
@@ -2221,20 +2222,20 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 multilinePrefixProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2LiteralPrefixRepeatRunner.IsMatch(
                     literalPrefixRepeatProgram,
@@ -2243,13 +2244,13 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 literalPrefixRepeatProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
@@ -2257,26 +2258,26 @@ internal static partial class Pcre2Runner
         {
             if (start.Value == 0 &&
                 matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2PalindromeIsMatchRunner.IsMatch(palindromeProgram, input.Bytes);
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 palindromeProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteralProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
                     leadingDotStarLiteralProgram,
@@ -2285,20 +2286,20 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 leadingDotStarLiteralProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2SeparatedRunsIsMatchRunner.IsMatch(
                     separatedRunsProgram,
@@ -2307,20 +2308,20 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 separatedRunsProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2AsciiBoundedIsMatchRunner.IsMatch(
                     asciiBoundedProgram,
@@ -2329,20 +2330,20 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 asciiBoundedProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfaProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 result = Pcre2AsciiAnchoredDfaIsMatchRunner.IsMatch(
                     asciiAnchoredDfaProgram,
@@ -2351,13 +2352,13 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 asciiAnchoredDfaProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
@@ -2365,7 +2366,7 @@ internal static partial class Pcre2Runner
         {
             if (asciiRegularProgram.SupportsPreparedOffsets &&
                 matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request) &&
+                (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
                 asciiRegularProgram.Regex.ByteOffsetExecution.TryIsMatchPrepared(
                     input,
                     start,
@@ -2374,19 +2375,19 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 asciiRegularProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = finiteLiteralProgram.BooleanSearch.IsMatch(input.Bytes, start.Value);
             return true;
@@ -2395,54 +2396,54 @@ internal static partial class Pcre2Runner
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
-                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+                (invocation.IsUnmetered && invocation.CheckpointHook is null))
             {
                 var enumerator = literalFamilyProgram.Regex.ByteOffsetExecution.EnumerateMatches(input, start);
                 result = enumerator.MoveNext();
                 return true;
             }
 
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 literalFamilyProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2LiteralDirectProgram literalProgram)
         {
-            result = ExecuteLiteral(
+            result = Pcre2LiteralRunner.Match(
                 literalProgram.Program,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request, out _).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2CharacterDirectProgram characterProgram)
         {
-            result = ExecuteCharacter(
+            result = Pcre2CharacterRunner.Match(
                 characterProgram.Program,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
         if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
-            result = ExecuteBacktracking(
+            result = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
@@ -2454,7 +2455,7 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request).Success;
+                ref budget).Success;
             return true;
         }
 
@@ -2462,13 +2463,13 @@ internal static partial class Pcre2Runner
         {
             if (matchOptions != Pcre2MatchOptions.None)
             {
-                result = ExecuteBacktracking(
+                result = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
                     ref input,
                     start,
                     matchOptions,
-                    compiledProgram.Request).Success;
+                    ref budget).Success;
                 return true;
             }
 
@@ -2477,14 +2478,14 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 compiledProgram.Request,
-                cancellationToken);
+                ref invocation);
             return true;
         }
 
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = Pcre2SliceDriver.IsMatch(utf8Program.ScalarProgram, ref input, start,
-                compiledProgram.Request, cancellationToken);
+                compiledProgram.Request, ref invocation);
             return true;
         }
 
@@ -2497,31 +2498,32 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken,
+        scoped ref Utf8SliceInvocation invocation,
         out Pcre2GroupData result)
     {
         if (compiledProgram.Operations.Match is Pcre2Utf8DirectProgram coreProgram)
         {
-            var cursor = new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, input, start,
-                compiledProgram.Request, cancellationToken);
+            var cursor = new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, invocation, input, start,
+                compiledProgram.Request);
             if (!cursor.MoveNext()) { result = default; return true; }
             var projection = input.CreateProjectionCursor();
             result = Pcre2GlobalCursorProjection.Project(cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes,
                 ref input, ref projection, new Pcre2CaptureProjectionBudget(ref cursor.WorkingInvocation));
             return true;
         }
+        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         Pcre2CharacterMatch directMatch;
         if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
         {
             if (matchOptions != Pcre2MatchOptions.None)
             {
-                directMatch = ExecuteBacktracking(
+                directMatch = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
                     ref input,
                     start,
                     matchOptions,
-                    compiledProgram.Request);
+                    ref budget);
             }
             else
             {
@@ -2530,45 +2532,45 @@ internal static partial class Pcre2Runner
                     ref input,
                     start,
                     compiledProgram.Request,
-                    cancellationToken);
+                    ref invocation);
             }
         }
 
         else if (compiledProgram.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
         {
-            var literalMatch = ExecuteLiteral(
+            var literalMatch = Pcre2LiteralRunner.Match(
                 literalProgram.Program,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request, out var literalBudget);
+                ref budget);
             if (!literalMatch.Success) { result = default; return true; }
             // Discovery and required coordinate projection share the original
             // native authority; a short successful kernel is not publication.
             var projection = input.CreateProjectionCursor();
             result = Pcre2GlobalCursorProjection.Project(literalMatch.StartOffsetInBytes,
-                literalMatch.EndOffsetInBytes, ref input, ref projection, ref literalBudget);
-            literalBudget.CheckDeadline();
+                literalMatch.EndOffsetInBytes, ref input, ref projection, ref budget);
+            budget.CheckDeadline();
             return true;
         }
         else if (compiledProgram.Operations.Match is Pcre2CharacterDirectProgram characterProgram)
         {
-            directMatch = ExecuteCharacter(
+            directMatch = Pcre2CharacterRunner.Match(
                 characterProgram.Program,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request);
+                ref budget);
         }
         else if (compiledProgram.Operations.Match is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
-            directMatch = ExecuteBacktracking(
+            directMatch = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request);
+                ref budget);
         }
         else if (compiledProgram.Operations.Match is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
         {
@@ -2578,7 +2580,7 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                compiledProgram.Request);
+                ref budget);
         }
         else
         {
@@ -2592,11 +2594,15 @@ internal static partial class Pcre2Runner
             return true;
         }
 
-        result = Pcre2GroupData.FromByteOffsets(
-            input.Bytes,
-            0,
-            directMatch.StartOffsetInBytes,
-            directMatch.EndOffsetInBytes);
+        if (budget.IsUnmetered)
+            result = Pcre2GroupData.FromByteOffsets(input.Bytes, 0,
+                directMatch.StartOffsetInBytes, directMatch.EndOffsetInBytes);
+        else
+        {
+            var projection = input.CreateProjectionCursor();
+            result = Pcre2GlobalCursorProjection.Project(directMatch.StartOffsetInBytes,
+                directMatch.EndOffsetInBytes, ref input, ref projection, ref budget);
+        }
         return true;
     }
 
@@ -2678,90 +2684,16 @@ internal static partial class Pcre2Runner
         return true;
     }
 
-    private static Pcre2LiteralMatch ExecuteLiteral(
-        Pcre2LiteralProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request,
-        out Pcre2ResourceBudget budget)
-    {
-        try
-        {
-            budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-            return Pcre2LiteralRunner.Match(program, ref input, start, matchOptions, ref budget);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-        }
-    }
-
-    private static Pcre2CharacterMatch ExecuteCharacter(
-        Pcre2CharacterProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
-    {
-        try
-        {
-            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-            return Pcre2CharacterRunner.Match(program, ref input, start, matchOptions, ref budget);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-        }
-    }
-
-    private static Pcre2CharacterMatch ExecuteSingleTokenRepeat(
-        Pcre2SingleTokenRepeatProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
-    {
-        try
-        {
-            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-            return Pcre2SingleTokenRepeatRunner.Match(program, ref input, start, matchOptions, ref budget);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-        }
-    }
-
     private static Pcre2CharacterMatch ExecuteSingleTokenRepeatOrFallback(
         Pcre2SingleTokenRepeatProgram program,
         Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request) =>
-        Pcre2GlobalOperationDriver.HasUnmeteredExecution(request)
-            ? ExecuteSingleTokenRepeat(program, ref input, start, matchOptions, request)
-            : ExecuteBacktracking(program.Fallback, candidateSearch, ref input, start, matchOptions, request);
-
-    private static Pcre2CharacterMatch ExecuteBacktracking(
-        Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
-    {
-        try
-        {
-            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-            return Pcre2BacktrackingRunner.Match(program, candidateSearch, ref input, start, matchOptions, ref budget);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-        }
-    }
+        scoped ref Pcre2ResourceBudget budget) =>
+        budget.IsUnmetered
+            ? Pcre2SingleTokenRepeatRunner.Match(program, ref input, start, matchOptions, ref budget)
+            : Pcre2BacktrackingRunner.Match(program.Fallback, candidateSearch, ref input, start, matchOptions, ref budget);
 
     private static Pcre2BacktrackingMatch ExecuteBacktrackingDetailed(
         Pcre2BacktrackingProgram program,

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased PCRE2 value invocation authority (0.4.0-scalar.26-dev)
+
+- Preserve original live cancellation and absolute deadline through `IsMatch`
+  and value `Match`. Reuse their entry invocation for full-subject validation,
+  native/slice/core execution and required range projection; remove token-free
+  helper budget factories. Uncontrolled native fast paths remain available.
+- Fast-path admission now considers the live invocation, including its token.
+  Controlled coordinate projection uses the existing bounded projector, and
+  publication checks the original token/deadline. Boolean/range results do not
+  allocate capture snapshots. Tight limits may reject earlier; the current short
+  literal needs four units for IsMatch and six for value Match. Count/enumeration/
+  output validation and preparation retain separate qualification gates.
+
 ## Unreleased PCRE2 detailed validation authority (0.4.0-scalar.25-dev)
 
 - Extend full-subject work/token/deadline enforcement to normal `MatchDetailed`

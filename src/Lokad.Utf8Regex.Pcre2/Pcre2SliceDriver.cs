@@ -228,10 +228,10 @@ internal static class Pcre2SliceDriver
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        CancellationToken cancellationToken)
+        scoped ref Utf8SliceInvocation invocation)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, input, start, request, cancellationToken);
+            program, invocation, input, start, request);
         return cursor.MoveNext();
     }
 
@@ -240,10 +240,10 @@ internal static class Pcre2SliceDriver
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        CancellationToken cancellationToken)
+        scoped ref Utf8SliceInvocation invocation)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, input, start, request, cancellationToken);
+            program, invocation, input, start, request);
         return cursor.MoveNext() ? cursor.Current : Pcre2CharacterMatch.NoMatch;
     }
 

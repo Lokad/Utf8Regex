@@ -235,8 +235,9 @@ existing bounded search chunks and return, including short hits/misses and empty
 or anchored outcomes. Single-result coordinate projection shares the discovery
 budget and checks before publication. Required endpoint work can exhaust a
 MatchLimit that formerly admitted only discovery: a small ASCII literal first hit
-needs one candidate step for IsMatch and three units for Match. MatchDetailed also
-funds initial validation: the current short ASCII case needs six combined units.
+needs one candidate step for IsMatch and three discovery/projection units for Match.
+With initial validation included, the current controlled short ASCII case needs
+four combined units for IsMatch and six for Match or MatchDetailed.
 Work units remain route dependent. Cold execution and scheduling may consume a
 real 1-ms deadline; small input never exempts an operation from Timeout.
 The accepted scalar.5 core/PythonRe input remains an independent immutable feed.
@@ -321,7 +322,7 @@ a capacity model, not process RSS. Published snapshots remain valid after denial
 independent calls reset the allowance, controlled copies share it.
 
 Discovery and required capture/output shaping borrow the original authority.
-`MatchDetailed` and every `Probe` route also include initial full-subject validation in
+`IsMatch`, value `Match`, `MatchDetailed` and every `Probe` route include initial full-subject validation in
 that allowance and absolute deadline, polling the original token between bounded
 blocks of at most 2048 bytes at scalar boundaries. The unlimited/no-token/infinite
 route retains its existing validator and allocations. Validation work stays spent
@@ -330,8 +331,14 @@ precede a later malformed byte or invalid start offset. With sufficient allowanc
 malformed input keeps its precise original byte offset and no early match skips
 the remaining subject. Pre-cancellation still wins at entry; partial EndAnchored
 still rejects before validation. Normal native, owned-slice and admitted core-extension
-detailed matching borrow the same invocation; Probe's normal detailed fallback
-validates once. Other PCRE2 operations and replacement preparation retain separate
+matching borrow the same invocation; Probe's normal detailed fallback validates once.
+Native boolean/value helpers retain the original token rather than constructing a
+token-free budget. An invocation with a live token declines uncontrolled native
+kernels to the existing metered backend, even with unlimited constructor limits.
+Controlled value coordinates use the existing bounded projector; uncontrolled
+projection retains its fast path. Token/deadline checks precede boolean/value
+publication, without capture arrays. Count, enumeration and output validation and
+replacement preparation retain separate
 qualification gates;
 public construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.

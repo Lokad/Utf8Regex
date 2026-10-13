@@ -303,21 +303,35 @@ public sealed partial class Utf8Pcre2Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, cancellationToken, out var result))
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        try
         {
-            return result;
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref invocation, out var result))
+            {
+                if (!invocation.IsUnmetered)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                }
+                return result;
+            }
+            throw CreateUnsupportedPatternException();
         }
-
-        throw CreateUnsupportedPatternException();
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
-    /// <summary>Determines whether a match exists using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <summary>Determines whether a match exists using an explicit start byte offset and per-operation options, observing cancellation during validation and matching.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe before entry and during bounded validation and matching.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -378,21 +392,35 @@ public sealed partial class Utf8Pcre2Regex
 
     private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, cancellationToken, out var directMatch))
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        try
         {
-            return Utf8Pcre2ValueMatch.Create(input, directMatch);
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch))
+            {
+                if (!invocation.IsUnmetered)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                }
+                return Utf8Pcre2ValueMatch.Create(input, directMatch);
+            }
+            throw CreateUnsupportedPatternException();
         }
-
-        throw CreateUnsupportedPatternException();
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
-    /// <summary>Finds the first match using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <summary>Finds the first match using an explicit start byte offset and per-operation options, observing cancellation during validation, matching and required range projection.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe before entry and during bounded validation and matching.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

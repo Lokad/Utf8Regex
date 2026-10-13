@@ -32,14 +32,14 @@ public sealed class Pcre2SingleShotLimitTests
     }
 
     [Theory]
-    [InlineData("foo", "xxfoo", 3u)]
-    [InlineData("(?#comment)ab", "xxab", 3u)]
-    public void DirectSingleShotsUseTheirDiscoveryAndProjectionAllowance(string pattern, string inputText, uint valueSteps)
+    [InlineData("foo", "xxfoo", 6u)]
+    [InlineData("(?#comment)ab", "xxab", 6u)]
+    public void DirectSingleShotsUseValidationDiscoveryAndProjectionAllowance(string pattern, string inputText, uint valueSteps)
     {
         // A native literal first-hit uses one candidate plus two projected
-        // endpoints. A comment does not change that authority.
+        // endpoints after three validation units. A comment does not change that authority.
         var input = Encoding.UTF8.GetBytes(inputText);
-        var limited = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 });
+        var limited = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 4 });
         var unlimited = Create(pattern, default);
 
         Assert.True(limited.IsMatch(input));
@@ -55,10 +55,11 @@ public sealed class Pcre2SingleShotLimitTests
     [InlineData("^ERROR", "ERROR a", false)]
     public void CharacterSingleShotsMeterEveryProbe(string pattern, string inputText, bool breaches)
     {
-        // Pcre2Character single-shots charge per candidate probe: a first-position hit fits one unit, a later hit does not.
+        // Three validation units precede each candidate probe. A first-position
+        // boolean hit fits four units; value projection needs two more.
         var options = pattern.StartsWith("^") ? Pcre2CompileOptions.Multiline : Pcre2CompileOptions.Caseless;
         var input = Encoding.UTF8.GetBytes(inputText);
-        var regex = new Utf8Pcre2Regex(pattern, options, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 4 }, Utf8Pcre2Regex.DefaultMatchTimeout);
         if (breaches)
         {
             Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
@@ -67,7 +68,9 @@ public sealed class Pcre2SingleShotLimitTests
         else
         {
             Assert.True(regex.IsMatch(input));
-            Assert.True(regex.Match(input).Success);
+            var value = new Utf8Pcre2Regex(pattern, options, default,
+                new Utf8Pcre2ExecutionLimits { MatchLimit = 6 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+            Assert.True(value.Match(input).Success);
         }
     }
 

@@ -308,13 +308,13 @@ public sealed class Pcre2CharacterCompilerTests
             "[0-9]",
             Pcre2CompileOptions.None,
             default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 129 },
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 132 },
             Timeout.InfiniteTimeSpan);
         var insufficient = new Utf8Pcre2Regex(
             "[0-9]",
             Pcre2CompileOptions.None,
             default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 128 },
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 131 },
             Timeout.InfiniteTimeSpan);
 
         Assert.False(sufficient.IsMatch(input));
