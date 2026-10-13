@@ -273,7 +273,8 @@ internal static class Pcre2LiteralRunner
         if (startAnchor == Pcre2LiteralAnchor.AbsoluteStart)
         {
             budget.ChargeCandidate();
-            return requestedStart.Value == 0 && MatchesAt(program, input.Bytes, 0, endAnchored)
+            return requestedStart.Value == 0 && MatchesAt(program, input.Bytes, 0, endAnchored) &&
+                   !RejectsEmptyAtRequestedStart(literal, matchOptions)
                 ? Pcre2LiteralMatch.Create(0, literal.Length)
                 : Pcre2LiteralMatch.NoMatch;
         }
@@ -423,6 +424,19 @@ internal static class Pcre2LiteralProbeRunner
 
             if (partialMode == Pcre2PartialMode.None || program.LiteralUtf8.IsEmpty)
             {
+                // Rejecting an empty full does not reject the explicit end's
+                // EOF partial. Ordinary empty patterns have no such uncertainty;
+                // requested/absolute anchors cannot move to a different start.
+                if (partialMode != Pcre2PartialMode.None && program.LiteralUtf8.IsEmpty &&
+                    program.HasExplicitEndAssertion &&
+                    (!IsEffectivelyAnchored(program, matchOptions) || requestedStart.Value == input.ByteLength) &&
+                    (program.StartAnchor != Pcre2LiteralAnchor.AbsoluteStart || requestedStart.Value == 0))
+                {
+                    budget.ChargeCandidate();
+                    var projected = Project(ref input, input.ByteLength, input.ByteLength, ref budget);
+                    budget.CheckDeadline();
+                    return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+                }
                 budget.CheckDeadline();
                 return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
             }

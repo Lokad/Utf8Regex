@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 literal empty-end probes (0.4.0-scalar.23-dev)
+
+- Preserve native EOF partials for an empty literal with an explicit end assertion
+  after empty-full rejection. Respect original absolute/requested/operation
+  anchors; plain empty patterns keep their existing behavior. Reuse the literal
+  budget/projector and retain result limits and synchronous interruption.
+- Apply the existing NotEmptyAtStart rejection predicate to the absolute-start
+  literal full-match branch, including normal public matching.
+
 ## Unreleased PCRE2 inspected EOF probes (0.4.0-scalar.22-dev)
 
 - Merge the inspected prefix/context literal runners around existing bounded

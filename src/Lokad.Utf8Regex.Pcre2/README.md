@@ -74,6 +74,13 @@ accept a later EOF result when the original flags allow it. Bare and literal-suf
 `\Z` preserve pending-final-CR uncertainty with CRLF; NotEol affects dollar and
 does not alter `\Z`. Both paths retain the original result/interruption authority.
 
+The literal backend keeps empty-full rejection separate from explicit-end partial
+admission. `\z` can report an EOF partial under NotEmpty or NotEmptyAtStart when
+the original absolute/requested/operation anchor permits that position. A plain
+empty pattern gains no partial behavior. Absolute-start literal matches also
+honor NotEmptyAtStart in normal public operations. Projection and interruption
+remain under the original invocation.
+
 The captured `^(a$|a\r)` probe with CRLF keeps its ordered suffixes. Soft partial
 can accept a later complete branch; hard partial preserves an earlier EOF partial,
 including inspected CRLF bytes. Literal-prefix matches before later text remain
