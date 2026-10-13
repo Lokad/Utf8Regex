@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased PCRE2 inspected EOF probes (0.4.0-scalar.22-dev)
+
+- Merge the inspected prefix/context literal runners around existing bounded
+  prefix comparison. Preserve EOF partials for an incomplete consumed prefix,
+  empty suffix after `\K` or unanchored lookbehind, and an incomplete literal body
+  before lookahead. Retain native anchored empty-body rejection, interior mismatch
+  handling, original offsets/FirstLine and consumed versus reported ranges.
+  Remove duplicate selection and premature length guards while preserving result
+  admission, aliases, basic meters and synchronous interruption.
+
 ## Unreleased PCRE2 final-newline probes (0.4.0-scalar.21-dev)
 
 - Select the earliest permitted final newline through the existing scalar/newline

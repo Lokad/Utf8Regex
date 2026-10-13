@@ -73,8 +73,8 @@ public sealed partial class Utf8Pcre2Regex
                         Pcre2PartialProbeProgramKind.LiteralAlternation => ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
                         Pcre2PartialProbeProgramKind.OrderedLiteralAlternation => ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
                         Pcre2PartialProbeProgramKind.WordBoundaryLiteral or Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaLiteralAssertions(input, partialMode, startOffsetInBytes, program.Operands[0], compiled),
-                        Pcre2PartialProbeProgramKind.InspectedPrefixLiteral => ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Flag),
-                        Pcre2PartialProbeProgramKind.InspectedContextLiteral => ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Operands[2]),
+                        Pcre2PartialProbeProgramKind.InspectedPrefixLiteral => ProbeViaInspectedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], ReadOnlySpan<byte>.Empty, program.Flag),
+                        Pcre2PartialProbeProgramKind.InspectedContextLiteral => ProbeViaInspectedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Operands[2], false),
                         Pcre2PartialProbeProgramKind.EndAssertion => ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, program.Flag),
                         Pcre2PartialProbeProgramKind.TrailingCWithLookbehind => ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, program.Flag),
                         Pcre2PartialProbeProgramKind.NegativeStartClassDotStar => ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes, compiled.Request),
@@ -295,93 +295,57 @@ public sealed partial class Utf8Pcre2Regex
             : NoMatch();
     }
 
-    private Utf8Pcre2ProbeResult ProbeViaInspectedPrefixLiteral(
+    private Utf8Pcre2ProbeResult ProbeViaInspectedLiteral(
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        byte[] prefixUtf8,
-        byte[] literalUtf8,
-        bool includePrefixInPartial)
+        ReadOnlySpan<byte> prefixUtf8,
+        ReadOnlySpan<byte> literalUtf8,
+        ReadOnlySpan<byte> suffixUtf8,
+        bool consumesPrefix)
     {
-        var first = includePrefixInPartial ? startOffsetInBytes : Math.Max(0, startOffsetInBytes - prefixUtf8.Length);
-        for (var start = first; start <= input.Length - prefixUtf8.Length; start++)
+        var first = consumesPrefix ? startOffsetInBytes : Math.Max(0, startOffsetInBytes - prefixUtf8.Length);
+        var last = consumesPrefix || prefixUtf8.IsEmpty ? input.Length - 1 : input.Length - prefixUtf8.Length;
+        for (var start = first; start <= last; start++)
         {
             _budget.ChargeWorkspaceStep();
-            var consumedStart = includePrefixInPartial ? start : start + prefixUtf8.Length;
+            var consumedStart = consumesPrefix ? start : start + prefixUtf8.Length;
             if (_anchored && consumedStart != startOffsetInBytes || !CanStartCandidate(consumedStart)) break;
             if (!input[start..].StartsWith(prefixUtf8))
             {
+                // Only a consumed prefix can be an incomplete EOF match.
+                // Borrowed lookbehind context must already be present.
+                if (consumesPrefix && partialMode != Pcre2PartialMode.None &&
+                    LongestLeadingExactPrefixLength(input[start..], prefixUtf8) > 0)
+                    return Partial(Project(0, start, input.Length));
                 continue;
             }
 
-            var suffix = input[(start + prefixUtf8.Length)..];
-            if (suffix.StartsWith(literalUtf8))
+            var bodyStart = start + prefixUtf8.Length;
+            var body = input[bodyStart..];
+            if (!body.StartsWith(literalUtf8))
             {
-                var matchStart = start + prefixUtf8.Length;
-                return Full([Project(0, matchStart, matchStart + literalUtf8.Length)]);
-            }
-
-            if (partialMode == Pcre2PartialMode.None ||
-                suffix.Length == 0 ||
-                suffix.Length >= literalUtf8.Length ||
-                !literalUtf8.AsSpan(0, suffix.Length).SequenceEqual(suffix))
-            {
+                // Native lookbehind context permits an unanchored empty EOF
+                // attempt, while explicit anchors retain their initial cutoff.
+                var emptyBody = body.IsEmpty && prefixUtf8.Length > 0 && (consumesPrefix || !_anchored);
+                if (partialMode != Pcre2PartialMode.None &&
+                    (emptyBody || LongestLeadingExactPrefixLength(body, literalUtf8) > 0))
+                    return Partial(Project(0, consumesPrefix ? start : bodyStart, input.Length));
                 continue;
             }
 
-            var partialStart = includePrefixInPartial
-                ? start
-                : start + prefixUtf8.Length;
-            return Partial(Project(0, partialStart, input.Length));
-        }
-
-        return NoMatch();
-    }
-
-    private Utf8Pcre2ProbeResult ProbeViaInspectedContextLiteral(
-        ReadOnlySpan<byte> input,
-        Pcre2PartialMode partialMode,
-        int startOffsetInBytes,
-        byte[] prefixUtf8,
-        byte[] literalUtf8,
-        byte[] suffixUtf8)
-    {
-        var first = Math.Max(0, startOffsetInBytes - prefixUtf8.Length);
-        var maxStart = input.Length - prefixUtf8.Length - literalUtf8.Length;
-        for (var start = first; start <= maxStart; start++)
-        {
-            _budget.ChargeWorkspaceStep();
-            var matchRelativeStart = start + prefixUtf8.Length;
-            if (_anchored && matchRelativeStart != startOffsetInBytes || !CanStartCandidate(matchRelativeStart)) break;
-            if (prefixUtf8.Length > 0 && !input[start..].StartsWith(prefixUtf8))
-            {
-                continue;
-            }
-
-            if (!input[matchRelativeStart..].StartsWith(literalUtf8))
-            {
-                continue;
-            }
-
-            var suffixStart = matchRelativeStart + literalUtf8.Length;
+            var suffixStart = bodyStart + literalUtf8.Length;
             var suffix = input[suffixStart..];
             if (suffix.StartsWith(suffixUtf8))
-            {
-                var matchStart = matchRelativeStart;
-                return Full([Project(0, matchStart, matchStart + literalUtf8.Length)]);
-            }
+                return Full([Project(0, bodyStart, suffixStart)]);
 
             if (partialMode == Pcre2PartialMode.None ||
-                suffix.Length >= suffixUtf8.Length ||
-                !suffixUtf8.AsSpan(0, suffix.Length).SequenceEqual(suffix))
-            {
+                (!suffix.IsEmpty && LongestLeadingExactPrefixLength(suffix, suffixUtf8) == 0))
                 continue;
-            }
 
-            // Lookbehind bytes precede substring zero; only \K expands a
-            // partial's reported range back to its consumed prefix.
-            var partialStart = matchRelativeStart;
-            return Partial(Project(0, partialStart, input.Length));
+            // Lookbehind precedes group zero; only K includes its consumed
+            // prefix in a partial. Lookahead extends the inspected endpoint.
+            return Partial(Project(0, consumesPrefix ? start : bodyStart, input.Length));
         }
 
         return NoMatch();

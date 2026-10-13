@@ -34,6 +34,13 @@ selected profile are not included. The executable corpus and backlog ledgers
 are the authoritative capability boundary; support is never inferred from
 similarity to .NET behavior.
 
+Inspected literal probes retain EOF partials for consumed prefixes, empty bodies
+after unanchored lookbehind and incomplete bodies before lookahead. A `\K` partial
+includes its consumed prefix; lookbehind bytes remain outside group zero and
+lookahead can extend the inspected endpoint. Explicitly anchored empty-body
+lookbehind attempts retain native rejection. Original start/FirstLine, interior
+mismatches, result admission and interruption remain under the same authority.
+
 The admitted `f.*` probe searches from the original byte start and consumes
 complete scalars using the configured DotAll/newline semantics. Soft partial
 accepts its complete greedy match; hard partial reports an extensible match at
