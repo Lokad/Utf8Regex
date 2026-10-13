@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased literal census boundary checks (0.4.0-scalar.47-dev)
+
+- Cover correlated-literal diagnostic census offsets, vector tails, overlap and
+  agreement with scalar Count and finite policies. Checked census reads are
+  deferred after a10–11% long-input penalty. Production remains unchanged;
+  timed matcher code is identical and scalar.46 packages stay immutable.
+
 ## Private core/PythonRe candidate (0.4.0-scalar.46)
 
 - Preserve scalar.45's accepted prefix-guided source improvements while replacing

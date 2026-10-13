@@ -6,6 +6,14 @@ correctness, Release code-generation and cost evidence. `Unsafe.SizeOf<T>()` is
 accepted for actual managed sizes; manual size estimates are not a substitute.
 There is one engine and no permanent safe/unsafe selector.
 
+The correlated-literal diagnostic census conversion is deferred. Direct checked
+reads keep the existing SIMD algorithm but add guards and increase inspected
+code692→766 bytes on Windows and718→776 on Linux. Long diagnostic replays regress
+about10–11%, with equal zero allocations; the timed production kernel retains
+identical code578/568 bytes. Production is restored and census boundary fixtures
+remain. Evidence: artifacts/census-checked-load-20261013/. No runtime speedup or
+whole-DLL safety claim follows; the55-site inventory remains unchanged.
+
 The category math-symbol reduction pilot is deferred. Checked vector-span
 indexing removed per-vector checks while preserving widths, comparison order,
 popcounts, tails and allocations. Short kernels improved 4–10%, but the 4 KiB
