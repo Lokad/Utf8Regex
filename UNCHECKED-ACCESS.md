@@ -6,6 +6,14 @@ correctness, Release code-generation and cost evidence. `Unsafe.SizeOf<T>()` is
 accepted for actual managed sizes; manual size estimates are not a substitute.
 There is one engine and no permanent safe/unsafe selector.
 
+The category math-symbol reduction pilot is deferred. Checked vector-span
+indexing removed per-vector checks while preserving widths, comparison order,
+popcounts, tails and allocations. Short kernels improved 4–10%, but the 4 KiB
+kernel retained a 0.3–1% penalty in normal/reversed runs, with larger helper setup.
+Production is restored and boundary fixtures remain. Public Core Count selected
+another route, so its timings do not qualify this kernel. Evidence:
+`artifacts/category-checked-load-20261013/`. The 55-site inventory is unchanged.
+
 The original vector-search and short-literal pilots are closed. Checked vector
 loads retained branches and regressed 7–38%; short-literal variants retained tail
 checks or inconclusive/regressing 4–7% timings. Those hot paths remain deferred.

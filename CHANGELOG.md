@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased category vector boundary checks (0.4.0-scalar.45-dev)
+
+- Cover vector widths, entry offsets, scalar tails and borrowed UTF-8 boundaries
+  for math-symbol Count. Checked vector-span loads are deferred after a persistent
+  long-kernel penalty; production access and resource controls are unchanged.
+
 ## Unreleased PythonRe detailed publication checks (0.4.0-scalar.45-dev)
 
 - Cover supplementary, empty, optional and lookbehind capture coordinates,
