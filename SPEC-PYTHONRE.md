@@ -166,10 +166,16 @@ getters have separate scope. Completion metadata reuses the existing rollback
 trail and maps Python slots with bounded metered traversal; enlarged result
 structs participate in the usual array/staging extent charges.
 
-Finite depth and working-byte policies still throw `NotSupportedException`
-before pattern compilation. Zero budgets remain invalid. Core also admits finite
-work; the unfinished common memory, retained-result and default-policy gates
-remain open.
+PythonRe and core also admit positive finite `MaxDepth` and `MaxWorkingBytes`.
+Depth bounds live engine backtracking/continuation frames or pending linear
+alternatives before acquisition. Working bytes conservatively cover major active
+arrays, coordinate maps, output controls and old/new growth overlap. Denials report
+`ExecutionDepth` or `ExecutionWorkingBytes` with `Limit` and `Requested`; zero
+budgets remain invalid. Exclusive scratch releases synchronously; published
+copied-cursor reservations retain their invocation-long credits. Borrowed subjects,
+programs, incidental metadata, preparation and caller-retained results have separate
+scope. These controls do not establish exact GC traffic, process-memory bounds,
+common construction/live-retention policies or safe defaults.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` is an incremental, explicitly owned
 alternative to the materialized `FindIterDetailed` array. Its offset/token overloads
@@ -179,8 +185,10 @@ until EOF or disposal. Early abandonment requires `Dispose`; EOF/failure clean u
 synchronously, without a finalizer. Reference aliases share position and lifetime;
 concurrent/reentrant access is rejected. `Current` is valid only after a successful
 advance, while independently owned snapshots remain valid after future advances
-or disposal. Existing span/value API lifetimes are unchanged. Depth, working-byte
-and live retained-result controls remain unfinished.
+or disposal. Exclusive cursor scratch stays charged while positioned, including
+projection and host waits, and is released on EOF, failure or disposal. Existing
+span/value API lifetimes are unchanged. Common construction, live retained-result
+and safe-default policies remain unfinished.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

@@ -57,6 +57,9 @@ public sealed class PythonReTextAdmissionTests
     [InlineData("\\141", "a")]
     [InlineData("\\0", "\0")]
     [InlineData("\\U0010FFFF", "\U0010FFFF")]
+    [InlineData("^😀\\141\\.\\0[\\101]$", "😀a.\0A")]
+    [InlineData("^(?:😀|X)\\!\\=\\:$", "😀!=:")]
+    [InlineData("^(?:x|😀)\\377[\\7]$", "😀ÿ\u0007")]
     public void NumericEscapesKeepScalarMatchingWithoutTemporaryDigitStrings(string pattern, string subject)
     {
         var regex = new Utf8PythonRegex(pattern);

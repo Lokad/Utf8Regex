@@ -458,7 +458,7 @@ internal sealed partial class PythonReParser
             'B' when !IsAsciiMode(options) => PythonReAstFactory.Raw(UnicodeNonWordBoundary, PythonReRawKind.Escape),
             'Z' => PythonReAstFactory.Raw(@"\z", PythonReRawKind.Escape),
             'A' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
-                PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(['\\', ch]), PythonReRawKind.Escape),
+                PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(_pattern.AsSpan(escapeStart, 2)), PythonReRawKind.Escape),
             'x' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 2, 'x'), options),
             'u' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 4, 'u'), options),
             'U' => CreateEscapedLiteralNode(ParseUnicodeScalarEscapeIntValue(escapeStart), options),
@@ -466,7 +466,7 @@ internal sealed partial class PythonReParser
             '0' => CreateEscapedLiteralNode(ParseOctalEscapeIntValue(escapeStart, ch), options),
             >= '1' and <= '9' => ParseNumericEscapeOrBackreference(ch, escapeStart, options),
             _ when PatternBadEscapeLetters.IndexOf(ch) >= 0 => throw new PythonRePatternException($@"bad escape \{ch}", escapeStart),
-            _ => PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(['\\', ch]), PythonReRawKind.Escape),
+            _ => PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(_pattern.AsSpan(escapeStart, 2)), PythonReRawKind.Escape),
         };
     }
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased checked PythonRe escape text (0.4.0-scalar.34-dev)
+
+- Borrow bounds-checked slices of the immutable pattern for escape text, removing
+  two temporary compiler-generated inline arrays with unchanged construction
+  charges and heap allocations. Defer the octal-digit conversion after a persistent
+  focused slowdown; core/adaptor unchecked accesses and the downstream artifact
+  gate remain unfinished. Cover mixed escapes after supplementary prefixes.
+- Correct the PythonRe specification's obsolete finite-depth/working rejection
+  statements and keep shared policy documentation within the core isolation guard.
+
 ## Unreleased documentation
 
 - Correct the shared result-policy documentation: managed PCRE2 accepts finite
