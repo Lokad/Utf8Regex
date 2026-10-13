@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal;
+
 namespace Lokad.Utf8Regex.Pcre2;
 
 // PLAN.md C11: native PCRE2 reads patterns lexically, so raw substring scans must skip character classes, \Q...\E quotes, and (?#...) comments, plus escaped characters: [(?C], \Q(?C\E, (?#(?C)), and \(?C are literals, while only a code-position (?C is a callout. Extended (#) comments are not tracked here; that residual gap is shared with the lookaround and backslash-C scans.
@@ -15,6 +17,8 @@ internal static class Pcre2PatternCodeScan
 
     private static bool Scan(string pattern, string text, bool matchInsideClass)
     {
+        // Admit the full lexical extent, including skipped quotes/comments.
+        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var quoted = false;
         var inCharacterClass = false;
         var classHasAtom = false;

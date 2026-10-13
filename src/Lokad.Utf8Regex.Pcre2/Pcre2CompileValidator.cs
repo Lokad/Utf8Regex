@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal;
+
 namespace Lokad.Utf8Regex.Pcre2;
 
 internal static class Pcre2CompileValidator
@@ -120,6 +122,7 @@ internal static class Pcre2CompileValidator
 
     private static void ValidateStructure(string pattern)
     {
+        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var groupDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
@@ -263,6 +266,7 @@ internal static class Pcre2CompileValidator
 
     private static bool ContainsLookaroundBackslashK(string pattern)
     {
+        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var parentheses = new Stack<bool>();
         var lookaroundDepth = 0;
         var inCharacterClass = false;
@@ -347,6 +351,7 @@ internal static class Pcre2CompileValidator
 
     private static bool ContainsBackslashC(string pattern, bool onlyInLookbehind)
     {
+        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var parentheses = new Stack<bool>();
         var lookbehindDepth = 0;
         var inCharacterClass = false;
@@ -440,6 +445,7 @@ internal static class Pcre2CompileValidator
 
     private static bool ContainsBackslashCInCharacterClass(string pattern)
     {
+        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var inCharacterClass = false;
         var quoted = false;
         for (var offset = 0; offset < pattern.Length; offset++)

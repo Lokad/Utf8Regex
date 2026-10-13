@@ -1,4 +1,5 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -9,6 +10,7 @@ internal static class Pcre2CaptureNameValidator
     // slots and must start with a non-digit (including Unicode Nd in UTF mode).
     internal static void Validate(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
+        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var extended = (options & (Pcre2CompileOptions.Extended | Pcre2CompileOptions.ExtendedMore)) != 0;
         var scopes = new Stack<bool>();
         var quoted = false;
@@ -42,7 +44,13 @@ internal static class Pcre2CaptureNameValidator
                 {
                     var marker = pattern[offset + 1];
                     for (var end = offset + 2; end + 1 < pattern.Length; end++)
+                    {
+                        // An unterminated token can make later '[' positions
+                        // revisit this suffix. Admit each bounded rescan block.
+                        if (((end - offset - 2) & 2047) == 0)
+                            Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, pattern.Length - end - 1));
                         if (pattern[end] == marker && pattern[end + 1] == ']') { offset = end + 1; break; }
+                    }
                 }
                 classHasAtom = true;
                 continue;
@@ -78,10 +86,11 @@ internal static class Pcre2CaptureNameValidator
             }
             if (tail.StartsWith("(*", StringComparison.Ordinal))
             {
-                var end = pattern.IndexOf(')', offset + 2);
+                var end = FindVerbEnd(pattern, offset + 2);
                 if (end >= 0)
                 {
                     var content = pattern.AsSpan(offset + 2, end - offset - 2);
+                    Utf8ConstructionScope.ChargeWork((ulong)content.Length);
                     var colon = content.IndexOf(':');
                     var verb = colon < 0 ? content : content[..colon];
                     // Named control-verb arguments are text, not regex bodies.
@@ -125,5 +134,20 @@ internal static class Pcre2CaptureNameValidator
             }
             scopes.Push(extended);
         }
+    }
+
+    private static int FindVerbEnd(string pattern, int start)
+    {
+        // Unknown or unterminated verbs need not advance the outer scanner.
+        // Keep SIMD IndexOf, bounding each repeated search under the same owner.
+        for (var offset = start; offset < pattern.Length;)
+        {
+            var count = Math.Min(2048, pattern.Length - offset);
+            Utf8ConstructionScope.ChargeWork((ulong)count);
+            var end = pattern.AsSpan(offset, count).IndexOf(')');
+            if (end >= 0) return offset + end;
+            offset += count;
+        }
+        return -1;
     }
 }

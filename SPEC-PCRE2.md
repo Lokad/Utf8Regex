@@ -17,6 +17,15 @@ arguments win over malformed byte patterns or admission denial. Pattern-dependen
 checks still run after strict decoding. Finite invocation controls do not provide
 a public construction budget or construction cancellation.
 
+Pattern-validation lexical passes admit their full text extent into the shared
+construction-work backstop before scanning. Repeated POSIX-token and control-verb
+searches also admit bounded blocks, so malformed input cannot rescan suffixes
+without consuming the cumulative allowance. Charges are conservative, including
+unused block tails; earlier construction denial is allowed. The existing owner
+supplies internal cancellation/deadline checks at admission points. This does not
+establish public construction interruption, prompt checks within every linear
+pass, or complete admission of validation stacks and other construction storage.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

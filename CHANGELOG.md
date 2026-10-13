@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased PCRE2 validation work (0.4.0-scalar.37-dev)
+
+- Admit pattern-validation scans into the existing shared construction-work
+  backstop. Bound repeated searches for unterminated POSIX tokens and control
+  verbs with conservative block charges, preserving lexical outcomes and the
+  owner's cancellation/deadline authority. Construction can deny earlier;
+  invocation limits and matching behavior are unchanged. Public construction
+  policies and complete storage admission remain unfinished.
+
 ## Unreleased PCRE2 constructor preflight (0.4.0-scalar.36-dev)
 
 - Reject invalid timeout, option bits and newline/BSR/backslash-C settings before
