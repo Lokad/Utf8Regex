@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased PCRE2 FirstLine probes (0.4.0-scalar.20-dev)
+
+- Apply the existing scalar/newline candidate rules to curated probe searches,
+  literal hits and EOF attempts. FirstLine is relative to the requested start;
+  the newline candidate remains eligible and matching keeps the whole subject.
+  Preserve lookbehind/`\K` distinctions, ordered alternatives, owned captures,
+  finite limits and interruption. Reuse numeric scan progress instead of an eager
+  whole-line pre-scan; retain the SIMD literal finder and its basic meters.
+- Reuse the admitted end-assertion helper for `\z` when FirstLine excludes the
+  literal backend. Remove the duplicate CRLF FirstLine branch.
+
 ## Unreleased PCRE2 word and captured-alternative probes (0.4.0-scalar.19-dev)
 
 - Consume the admitted word-class scalar in possessive-a partial probes, honoring

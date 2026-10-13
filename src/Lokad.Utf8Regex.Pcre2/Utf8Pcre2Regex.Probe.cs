@@ -15,7 +15,11 @@ public sealed partial class Utf8Pcre2Regex
     private readonly Pcre2BacktrackingProgram? _captureProgram;
     private readonly bool _anchored;
     private readonly Pcre2MatchOptions _matchOptions;
+    private readonly Pcre2CompiledProgram _compiled;
+    private readonly bool _firstLine;
     private int _originalStart;
+    private int _candidateScan;
+    private int _candidateLimit;
 
     internal Pcre2PartialProbeRunner(Utf8ValidatedInput input, Pcre2CompiledProgram program,
         Pcre2NameEntry[] names, Pcre2MatchOptions matchOptions, CancellationToken token)
@@ -25,8 +29,10 @@ public sealed partial class Utf8Pcre2Regex
             Pcre2SliceDriver.CreateInvocation(program.Request, token), collectDiagnostics: false);
         _names = names;
         _matchOptions = matchOptions;
+        _compiled = program;
         _anchored = (matchOptions & Pcre2MatchOptions.Anchored) != 0 ||
             (program.Request.Options & Pcre2CompileOptions.Anchored) != 0;
+        _firstLine = !_anchored && (program.Request.Options & Pcre2CompileOptions.FirstLine) != 0;
         _captureProgram = program.Operations.Match switch
         {
             Pcre2BacktrackingDirectProgram native when native.Program.CaptureSlotCount > 1 => native.Program,
@@ -35,6 +41,8 @@ public sealed partial class Utf8Pcre2Regex
             _ => null,
         };
         _originalStart = 0;
+        _candidateScan = 0;
+        _candidateLimit = input.Bytes.Length;
     }
 
     internal Utf8Pcre2ProbeResult Probe(
@@ -45,11 +53,12 @@ public sealed partial class Utf8Pcre2Regex
         var program = compiled.PartialProbe;
         var input = _input.Bytes;
         _originalStart = startOffsetInBytes;
+        _candidateScan = startOffsetInBytes;
         try
         {
             _budget.CheckDeadline();
             _budget.ChargeWorkspaceStep();
-            while (true)
+            while (CanStartCandidate(startOffsetInBytes))
             {
                 var accepts = LeadingAssertionAccepts(compiled, input, startOffsetInBytes, matchOptions, out var canRetry);
                 canRetry |= program.Kind is Pcre2PartialProbeProgramKind.AtomicAPlusB or
@@ -92,6 +101,7 @@ public sealed partial class Utf8Pcre2Regex
                 _budget.ChargeWorkspaceStep();
                 startOffsetInBytes = next;
             }
+            return NoMatch();
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -121,7 +131,7 @@ public sealed partial class Utf8Pcre2Regex
         int startOffsetInBytes, byte[] literal, bool dotAll, Pcre2CompileRequest request)
     {
         var index = IndexOf(input[startOffsetInBytes..], literal);
-        if (index < 0) return NoMatch();
+        if (index < 0 || !CanStartCandidate(startOffsetInBytes + index)) return NoMatch();
 
         var start = startOffsetInBytes + index;
         var end = start + literal.Length;
@@ -150,7 +160,7 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaAbPlus(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
     {
         var remaining = input[startOffsetInBytes..];
-        for (var i = 0; i < remaining.Length && (!_anchored || i == 0); i++)
+        for (var i = 0; i < remaining.Length && (!_anchored || i == 0) && CanStartCandidate(startOffsetInBytes + i); i++)
         {
             _budget.ChargeWorkspaceStep();
             if (remaining[i] != (byte)'a')
@@ -212,7 +222,10 @@ public sealed partial class Utf8Pcre2Regex
             }
         }
 
-        if (bestLiteral is not null)
+        // Choose the earliest alternative before checking its line. A later
+        // hit in an earlier-listed alternative must not force a whole-line
+        // scan before a successful candidate at the requested start.
+        if (bestLiteral is not null && CanStartCandidate(startOffsetInBytes + bestIndex))
         {
             var matchStart = startOffsetInBytes + bestIndex;
             return Full([Project(0, matchStart, matchStart + bestLiteral.Length)]);
@@ -227,7 +240,7 @@ public sealed partial class Utf8Pcre2Regex
                 partialLength = Math.Max(partialLength, LongestTrailingPrefixLength(remaining, literal));
             }
 
-            if (partialLength > 0 && (!_anchored || partialLength == remaining.Length))
+            if (partialLength > 0 && (!_anchored || partialLength == remaining.Length) && CanStartCandidate(input.Length - partialLength))
             {
                 return Partial(Project(0, input.Length - partialLength, input.Length));
             }
@@ -245,7 +258,7 @@ public sealed partial class Utf8Pcre2Regex
         var remaining = input[startOffsetInBytes..];
         Pcre2GroupData? firstPartial = null;
 
-        for (var start = 0; start < remaining.Length && (!_anchored || start == 0); start++)
+        for (var start = 0; start < remaining.Length && (!_anchored || start == 0) && CanStartCandidate(startOffsetInBytes + start); start++)
         {
             _budget.ChargeWorkspaceStep();
             var candidate = remaining[start..];
@@ -295,7 +308,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             _budget.ChargeWorkspaceStep();
             var consumedStart = includePrefixInPartial ? start : start + prefixUtf8.Length;
-            if (_anchored && consumedStart != startOffsetInBytes) break;
+            if (_anchored && consumedStart != startOffsetInBytes || !CanStartCandidate(consumedStart)) break;
             if (!input[start..].StartsWith(prefixUtf8))
             {
                 continue;
@@ -339,7 +352,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             _budget.ChargeWorkspaceStep();
             var matchRelativeStart = start + prefixUtf8.Length;
-            if (_anchored && matchRelativeStart != startOffsetInBytes) break;
+            if (_anchored && matchRelativeStart != startOffsetInBytes || !CanStartCandidate(matchRelativeStart)) break;
             if (prefixUtf8.Length > 0 && !input[start..].StartsWith(prefixUtf8))
             {
                 continue;
@@ -388,6 +401,7 @@ public sealed partial class Utf8Pcre2Regex
             if (startOffsetInBytes != input.Length && startOffsetInBytes != matchIndex) return NoMatch();
             matchIndex = partialStart = startOffsetInBytes;
         }
+        if (!CanStartCandidate(matchIndex)) return NoMatch();
 
         if (partialMode == Pcre2PartialMode.Hard)
         {
@@ -397,7 +411,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             // Soft matching may remember this partial then accept a later empty
             // full match. An anchored attempt cannot change its candidate.
-            if (!_anchored && matchIndex < input.Length && AllowsEmptyFull(input.Length))
+            if (!_anchored && matchIndex < input.Length && AllowsEmptyFull(input.Length) && CanStartCandidate(input.Length))
                 return Full([Project(0, input.Length, input.Length)]);
             return Partial(Project(0, partialStart, input.Length));
         }
@@ -407,7 +421,7 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaTrailingCWithLookbehind(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, bool requireAtLeastOneC)
     {
         var candidate = startOffsetInBytes;
-        while (true)
+        while (CanStartCandidate(candidate))
         {
             _budget.ChargeWorkspaceStep();
             var end = candidate;
@@ -429,6 +443,7 @@ public sealed partial class Utf8Pcre2Regex
             if (_anchored || !_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next)) return NoMatch();
             candidate = next.Value;
         }
+        return NoMatch();
     }
 
     private Utf8Pcre2ProbeResult ProbeViaNegativeStartClassDotStar(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
@@ -436,7 +451,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, Pcre2CharacterOptions.None, 0, 0);
         var candidate = startOffsetInBytes;
-        while (true)
+        while (CanStartCandidate(candidate))
         {
             _budget.ChargeWorkspaceStep();
             if (candidate == input.Length || input[candidate] is not ((byte)'a' or (byte)'b'))
@@ -455,6 +470,7 @@ public sealed partial class Utf8Pcre2Regex
             if (_anchored || !_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next)) return NoMatch();
             candidate = next.Value;
         }
+        return NoMatch();
     }
 
     private bool AllowsEmptyFull(int candidate) =>
@@ -713,7 +729,7 @@ public sealed partial class Utf8Pcre2Regex
         var excludesNewline = dot.Kind == Pcre2CharacterTokenKind.AnyNotNewline ||
             (dot.Options & Pcre2CharacterOptions.DotAll) == 0;
         var candidate = startOffsetInBytes;
-        while (candidate < input.Length)
+        while (candidate < input.Length && CanStartCandidate(candidate))
         {
             _budget.ChargeWorkspaceStep();
             var end = candidate;
@@ -744,7 +760,6 @@ public sealed partial class Utf8Pcre2Regex
             // requested start at its LF still uses the normal token semantics.
             if (Pcre2CharacterSemantics.TryGetNewlineWidth(input, candidate, compiled.Request.Settings.Newline, out var width))
             {
-                if ((compiled.Request.Options & Pcre2CompileOptions.FirstLine) != 0) return NoMatch();
                 candidate += width;
             }
             else if (_input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var nextCandidate)) candidate = nextCandidate.Value;
@@ -761,11 +776,12 @@ public sealed partial class Utf8Pcre2Regex
         var first = intrinsic ? 1 : 0;
         Pcre2CharacterToken? leading = tokens[first].Kind == Pcre2CharacterTokenKind.WordBoundary ? tokens[first] : null;
         var search = startOffsetInBytes;
-        while (search <= input.Length)
+        while (search <= input.Length && CanStartCandidate(search))
         {
             _budget.ChargeWorkspaceStep();
             var remaining = input[search..];
             var index = intrinsic ? remaining.StartsWith(literal) ? 0 : -1 : IndexOf(remaining, literal);
+            if (index >= 0 && !CanStartCandidate(search + index)) index = -1;
             if (index < 0)
             {
                 if (partialMode == Pcre2PartialMode.None) return NoMatch();
@@ -774,14 +790,14 @@ public sealed partial class Utf8Pcre2Regex
                 if (length > 0)
                 {
                     var partialStart = input.Length - length;
-                    if (LeadingBoundaryAccepts(leading, compiled.Request, input, partialStart))
+                    if (CanStartCandidate(partialStart) && LeadingBoundaryAccepts(leading, compiled.Request, input, partialStart))
                         return Partial(Project(0, partialStart, input.Length));
                 }
                 // PCRE2 records word-boundary context as lookbehind. Its
                 // unanchored EOF attempt can therefore publish an empty partial
                 // even when no literal prefix remains; explicit anchors retain
                 // their first-candidate optimization and cannot bump to EOF.
-                if (!_anchored && (!intrinsic || search == input.Length &&
+                if (!_anchored && CanStartCandidate(input.Length) && (!intrinsic || search == input.Length &&
                     (tokens[0].Options & Pcre2CharacterOptions.Multiline) != 0) &&
                     tokens[^1].Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary)
                     return Partial(Project(0, input.Length, input.Length));
@@ -954,6 +970,29 @@ public sealed partial class Utf8Pcre2Regex
     {
         _budget.CheckDeadline();
         return Utf8Pcre2ProbeResult.CreateNoMatch(_input.Bytes);
+    }
+
+    private bool CanStartCandidate(int start) => !_firstLine || IsFirstLineCandidate(start);
+
+    private bool IsFirstLineCandidate(int start)
+    {
+        if (start < _originalStart || start > _candidateLimit) return false;
+        // Scan only as far as a requested consumed start. The first newline
+        // itself remains eligible, and matching keeps the complete subject.
+        // Repeated literal/EOF attempts reuse this numeric progress; no eager
+        // whole-line scan, subject slice, or independent resource owner.
+        while (_candidateScan < start)
+        {
+            _budget.ChargeWorkspaceStep();
+            if (!Pcre2CharacterRunner.TryAdvanceCandidate(_compiled.Request, null, ref _input,
+                _candidateScan, allowAcceleration: false, out var next))
+            {
+                _candidateLimit = _candidateScan;
+                return false;
+            }
+            _candidateScan = next;
+        }
+        return true;
     }
 
     private int IndexOf(ReadOnlySpan<byte> subject, ReadOnlySpan<byte> literal)

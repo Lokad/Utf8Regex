@@ -153,9 +153,11 @@ internal static class Pcre2PartialProbeCompiler
         Pcre2CompileRequest request,
         out Pcre2PartialProbeProgram program)
     {
-        if (tokens.Length == 1 && tokens[0].Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline)
+        if (tokens.Length == 1 &&
+            tokens[0].Kind is Pcre2CharacterTokenKind.EndOfSubject or Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline)
         {
-            program = Create(Pcre2PartialProbeProgramKind.EndAssertion, true);
+            program = Create(Pcre2PartialProbeProgramKind.EndAssertion,
+                tokens[0].Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline);
             return true;
         }
 

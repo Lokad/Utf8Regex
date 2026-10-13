@@ -51,6 +51,14 @@ suffixes use their actual assertion tokens, including final-newline/CR partial
 extents and configured scalar word boundaries; a requested offset is never a new
 subject beginning.
 
+Curated FirstLine probes restrict consumed candidate starts to the first
+recognized newline at or after the requested offset, including that newline's
+start. Matching and assertions keep the complete subject and can cross the line;
+lookbehind inspection and `\K` reported starts do not redefine the candidate.
+Numeric candidate progress is metered under the original invocation and is checked
+only as needed, so an early successful candidate does not require a whole-line
+pre-scan. The end-assertion helper also covers `\z` with FirstLine.
+
 The captured `^(a$|a\r)` probe with CRLF keeps its ordered suffixes. Soft partial
 can accept a later complete branch; hard partial preserves an earlier EOF partial,
 including inspected CRLF bytes. Literal-prefix matches before later text remain
