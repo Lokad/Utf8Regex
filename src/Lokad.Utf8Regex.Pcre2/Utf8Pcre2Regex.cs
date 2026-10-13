@@ -38,7 +38,6 @@ public sealed partial class Utf8Pcre2Regex
     /// that legacy <c>new</c> calls with bare <c>default</c> settings or limits keep binding the
     /// <see cref="Utf8Pcre2ExecutionLimits"/> constructor overload unambiguously.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
-    /// <exception cref="NotSupportedException">A result-bytes budget is set.</exception>
     public static Utf8Pcre2Regex Create(
         string pattern,
         Pcre2CompileOptions options,
@@ -68,6 +67,10 @@ public sealed partial class Utf8Pcre2Regex
         Utf8Pcre2ExecutionLimits defaultExecutionLimits,
         TimeSpan matchTimeout)
     {
+        // Preserve timeout-before-flags/settings ordering from string entries,
+        // and reject invalid arguments before any byte-pattern conversion.
+        var validatedTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
+        Pcre2CompileValidator.ValidateArguments(options, compileSettings);
         using var construction = Utf8ConstructionScope.Enter();
         var pattern = patternSource.Text;
         if (patternSource.IsUtf8)
@@ -81,7 +84,7 @@ public sealed partial class Utf8Pcre2Regex
             options,
             compileSettings,
             defaultExecutionLimits,
-            Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout)));
+            validatedTimeout);
         _program = Pcre2Compiler.Compile(request, CreateFoundationProgram);
         var isMatchProgram = _program.Operations.IsMatch;
         if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
@@ -168,7 +171,6 @@ public sealed partial class Utf8Pcre2Regex
     /// construction is a named factory rather than a constructor overload; see
     /// <see cref="Create(string, Pcre2CompileOptions, Utf8Pcre2CompileSettings, Utf8ResourcePolicy, TimeSpan)"/>.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
-    /// <exception cref="NotSupportedException">A result-bytes budget is set.</exception>
     /// <exception cref="ArgumentException">The pattern bytes are not valid UTF-8.</exception>
     public static Utf8Pcre2Regex Create(
         ReadOnlySpan<byte> patternUtf8,

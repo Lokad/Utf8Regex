@@ -2,7 +2,20 @@
 
 ### 1. Top-level decision
 
-Keep the existing `Utf8Regex` type **unchanged** and permanently bound to **.NET regex semantics**. Add a sibling type, `Utf8Pcre2Regex`, for **PCRE2 standard matcher semantics** on UTF-8 input. Do **not** add a flavor flag to `Utf8Regex`, and do **not** try to unify `.NET` and PCRE2 behind one option bag. This is required because the semantic seams are real: `.NET` exposes full capture history through `Group.Captures`, whereas PCRE2’s standard matcher returns only the last portion matched by a repeated capture; PCRE2 also supports duplicate names and name-table-based lookup rules that do not fit the existing `.NET`-shaped by-name APIs. ([Microsoft Learn][1])
+Keep the existing `Utf8Regex` type bound to **strict UTF-8 Unicode-scalar
+matching**, with byte coordinates and derived UTF-16 interoperability. Exact .NET
+code-unit matching is superseded. Add the removable sibling `Utf8Pcre2Regex` for
+**PCRE2 standard matcher semantics** on UTF-8 input; retain explicit opt-ins for
+its isolated byte features. Do not add a flavor flag or a shared option bag to the
+core. Core capture history and PCRE2 last-capture/duplicate-name rules retain their
+own contracts; .NET is an overlapping test/benchmark comparator only.
+
+PCRE2 construction validates a factory resource policy first, then timeout,
+option bits and compile settings, before pattern-byte decoding and construction
+admission. This preserves string-entry error precedence while making invalid
+arguments win over malformed byte patterns or admission denial. Pattern-dependent
+checks still run after strict decoding. Finite invocation controls do not provide
+a public construction budget or construction cancellation.
 
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 

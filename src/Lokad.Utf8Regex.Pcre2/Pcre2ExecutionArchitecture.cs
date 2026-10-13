@@ -25,7 +25,7 @@ internal static class Pcre2Compiler
 {
     internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request, Pcre2FoundationProgramFactory foundationProgramFactory)
     {
-        Pcre2CompileValidator.Validate(request.Pattern, request.Options, request.Settings);
+        Pcre2CompileValidator.ValidatePattern(request.Pattern, request.Options, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
         {
             var literalProgram = foundationProgramFactory(request);

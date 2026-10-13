@@ -27,8 +27,7 @@ internal static class Pcre2CompileValidator
         Pcre2CompileOptions.Ucp |
         Pcre2CompileOptions.FirstLine;
 
-    public static void Validate(
-        string pattern,
+    internal static void ValidateArguments(
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings)
     {
@@ -64,6 +63,11 @@ internal static class Pcre2CompileValidator
             throw new ArgumentOutOfRangeException(nameof(compileSettings), "The backslash-C policy is not defined.");
         }
 
+    }
+
+    // Pattern-dependent scans stay behind strict decoding/construction admission.
+    internal static void ValidatePattern(string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings)
+    {
         if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C"))
         {
             throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);

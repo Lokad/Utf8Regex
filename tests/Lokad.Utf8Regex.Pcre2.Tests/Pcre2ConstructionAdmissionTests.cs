@@ -5,6 +5,63 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ConstructionAdmissionTests
 {
+    [Theory]
+    [InlineData(0, false)] [InlineData(0, true)]
+    [InlineData(1, false)] [InlineData(1, true)]
+    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(3, false)] [InlineData(3, true)]
+    [InlineData(4, false)] [InlineData(4, true)]
+    public void InvalidArgumentsPrecedeByteDecodingAndLeaveConstructionUnspent(int kind, bool factory)
+    {
+        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        var options = kind == 1 ? (Pcre2CompileOptions)(1 << 29) : Pcre2CompileOptions.None;
+        var settings = kind switch
+        {
+            2 => new Utf8Pcre2CompileSettings { Newline = (Pcre2NewlineConvention)999 },
+            3 => new Utf8Pcre2CompileSettings { Bsr = (Pcre2BsrConvention)999 },
+            4 => new Utf8Pcre2CompileSettings { BackslashC = (Pcre2BackslashCPolicy)999 },
+            _ => default,
+        };
+        var timeout = kind == 0 ? TimeSpan.Zero : Timeout.InfiniteTimeSpan;
+        foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
+        {
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                if (factory) _ = Utf8Pcre2Regex.Create(pattern, options, settings, Utf8ResourcePolicy.Unlimited, timeout);
+                else _ = new Utf8Pcre2Regex(pattern, options, settings, default(Utf8Pcre2ExecutionLimits), timeout);
+            });
+            Assert.Equal(kind == 0 ? "matchTimeout" : kind == 1 ? "options" : "compileSettings", error.ParamName);
+            Assert.Equal(0UL, scope.Budget.WorkSteps);
+            Assert.Equal(0UL, scope.Budget.ReservedBytes);
+            Assert.Equal(0UL, scope.Budget.PeakBytes);
+            Assert.Equal(0UL, scope.Budget.Depth);
+        }
+    }
+
+    [Fact]
+    public void FactoryZeroPolicyStillPrecedesOtherInvalidArguments()
+    {
+        using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
+        var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Utf8Pcre2Regex.Create(new byte[] { 0xff }, (Pcre2CompileOptions)(1 << 29),
+                new Utf8Pcre2CompileSettings { Bsr = (Pcre2BsrConvention)999 },
+                new Utf8ResourcePolicy { MaxResultBytes = 0 }, TimeSpan.Zero));
+        Assert.Equal("resourcePolicy", error.ParamName);
+        Assert.Equal(0UL, scope.Budget.WorkSteps);
+        Assert.Equal(0UL, scope.Budget.ReservedBytes);
+    }
+
+    [Fact]
+    public void TimeoutPrecedenceIsConsistentAcrossStringAndByteEntries()
+    {
+        var options = (Pcre2CompileOptions)(1 << 29);
+        var settings = new Utf8Pcre2CompileSettings { Newline = (Pcre2NewlineConvention)999 };
+        Assert.Equal("matchTimeout", Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Utf8Pcre2Regex("[invalid", options, settings, default(Utf8Pcre2ExecutionLimits), TimeSpan.Zero)).ParamName);
+        Assert.Equal("matchTimeout", Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Utf8Pcre2Regex(new byte[] { 0xff }, options, settings, default(Utf8Pcre2ExecutionLimits), TimeSpan.Zero)).ParamName);
+    }
+
     [Fact]
     public void Pcre2CandidateByteSearchSharesCoreAdmissionAndRecoversTheParent()
     {

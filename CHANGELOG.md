@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased PCRE2 constructor preflight (0.4.0-scalar.36-dev)
+
+- Reject invalid timeout, option bits and newline/BSR/backslash-C settings before
+  decoding byte patterns or spending construction allowance. Preserve factory
+  policy-first and string-entry timeout-first precedence; pattern-dependent scans
+  remain behind strict decoding and admission. Remove stale factory documentation
+  claiming that finite result bytes are rejected.
+
 ## Unreleased PythonRe constructor preflight (0.4.0-scalar.35-dev)
 
 - Reject unsupported/incompatible compile flags and invalid timeouts before

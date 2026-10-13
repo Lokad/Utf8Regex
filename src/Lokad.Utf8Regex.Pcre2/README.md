@@ -11,6 +11,12 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
+Construction validates the named factory's resource policy first, then timeout,
+option bits and compile settings, before decoding pattern bytes or spending
+construction allowance. Those argument errors take precedence over malformed
+UTF-8 and construction denial. Valid arguments retain strict decoding and the
+existing admitted pattern-code checks. Public construction controls remain separate.
+
 The package does not bind to native PCRE2. Its only non-BCL implementation
 dependency is `Lokad.Utf8Regex`; there is no P/Invoke, native loader, RID
 payload, or external matcher executable.
