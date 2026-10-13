@@ -18,9 +18,47 @@ public sealed partial class Utf8PythonRegex
         // Capture the invocation before cold full-match preparation. Preparation
         // keeps its fixed backstop, but its elapsed time cannot reset the deadline.
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-        var program = kind == 2 ? _lazyScalarFullProgram.Value : ScalarProgram;
+        var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
             startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation);
+    }
+
+    private Utf8SliceProgram GetScalarFullProgram(ReadOnlySpan<byte> input,
+        Utf8ExecutionDeadline deadline, CancellationToken cancellationToken)
+    {
+        if (_lazyScalarFullProgram.IsValueCreated || deadline.IsInfinite && !cancellationToken.CanBeCanceled)
+            return _lazyScalarFullProgram.Value;
+
+        // Keep the checkpoint closure out of the warm path: the C# compiler
+        // otherwise allocates its display class before the early return above.
+        return PrepareScalarFullProgram(input, deadline, cancellationToken);
+    }
+
+    private Utf8SliceProgram PrepareScalarFullProgram(ReadOnlySpan<byte> input,
+        Utf8ExecutionDeadline deadline, CancellationToken cancellationToken)
+    {
+        // Borrow interruption through the existing construction checkpoints.
+        // Numeric preparation limits and any enclosing authority stay intact.
+        using var construction = Utf8ConstructionScope.Enter();
+        var previousCheckpoint = construction.Budget.CheckpointHook;
+        construction.Budget.CheckpointHook = steps =>
+        {
+            previousCheckpoint?.Invoke(steps);
+            cancellationToken.ThrowIfCancellationRequested();
+            deadline.CheckNow();
+        };
+        try
+        {
+            var program = _lazyScalarFullProgram.Value;
+            construction.Complete();
+            return program;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new System.Text.RegularExpressions.RegexMatchTimeoutException(
+                System.Text.Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+        }
+        finally { construction.Budget.CheckpointHook = previousCheckpoint; }
     }
 
     private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)

@@ -220,7 +220,10 @@ public sealed partial class Utf8PythonRegex
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _translation = PythonReTranslator.Translate(parseResult);
         _scalarProgram = PythonReScalarCompiler.Compile(parseResult, _translation, false);
-        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.Compile(parseResult, _translation, true), LazyThreadSafetyMode.ExecutionAndPublication);
+        // Failed preparation is retryable: a caller's cancellation must not
+        // become a permanently cached failure. Concurrent cold callers may each
+        // compile under their own construction scope; only one result is kept.
+        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.Compile(parseResult, _translation, true), LazyThreadSafetyMode.PublicationOnly);
         _coreGroupNumbersByPythonGroup = _translation.CoreNumbersByPython;
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
