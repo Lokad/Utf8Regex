@@ -322,7 +322,7 @@ a capacity model, not process RSS. Published snapshots remain valid after denial
 independent calls reset the allowance, controlled copies share it.
 
 Discovery and required capture/output shaping borrow the original authority.
-`IsMatch`, value `Match`, `MatchDetailed` and every `Probe` route include initial full-subject validation in
+`IsMatch`, `Count`, value `Match`/enumeration, `MatchDetailed` and every `Probe` route include initial full-subject validation in
 that allowance and absolute deadline, polling the original token between bounded
 blocks of at most 2048 bytes at scalar boundaries. The unlimited/no-token/infinite
 route retains its existing validator and allocations. Validation work stays spent
@@ -337,8 +337,13 @@ token-free budget. An invocation with a live token declines uncontrolled native
 kernels to the existing metered backend, even with unlimited constructor limits.
 Controlled value coordinates use the existing bounded projector; uncontrolled
 projection retains its fast path. Token/deadline checks precede boolean/value
-publication, without capture arrays. Count, enumeration and output validation and
-replacement preparation retain separate
+publication, without capture arrays. Count and enumeration transfer that invocation
+to native/slice/core global cursors; copies share its spent validation and later
+allowance while keeping their positions independent. Both successful and terminal
+advances check interruption, including time between calls. Empty-match retry and
+scalar advancement retain their original subject/anchor semantics. Controlled
+slice enumeration also funds required coordinate projection before publication.
+Output validation and replacement preparation retain separate
 qualification gates;
 public construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.

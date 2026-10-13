@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased PCRE2 global invocation authority (0.4.0-scalar.27-dev)
+
+- Count and value enumeration now validate and execute under the original
+  invocation. Native/slice/core cursors retain its live token, absolute deadline
+  and cumulative limits, including copied cursors and time between advances.
+- Global fast-path admission considers the passed budget rather than only
+  constructor defaults. Controlled slice range projection is bounded, and cursor
+  return checks preserve interruption before success or terminal failure.
+  Same-position nonempty retries and scalar empty advancement remain unchanged.
+  Work boundaries include initial validation; output validation/preparation still
+  has separate qualification gates.
 ## Unreleased PCRE2 value invocation authority (0.4.0-scalar.26-dev)
 
 - Preserve original live cancellation and absolute deadline through `IsMatch`

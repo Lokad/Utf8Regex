@@ -889,12 +889,8 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 return false;
             }
 
-            var range = _sliceMatches.Current;
-            var projected = Pcre2GroupData.FromByteOffsets(
-                _input,
-                0,
-                range.StartOffsetInBytes,
-                range.EndOffsetInBytes);
+            var projected = _sliceMatches.ProjectCurrent();
+            Pcre2SliceDriver.CheckInvocation(ref _sliceMatches.WorkingInvocation);
             _currentData = new Pcre2ValueData
             {
                 Success = true,

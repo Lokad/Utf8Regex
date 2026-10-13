@@ -355,21 +355,30 @@ public sealed partial class Utf8Pcre2Regex
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, cancellationToken, out var result))
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        try
         {
-            return result;
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, ref invocation, out var result))
+            {
+                Pcre2SliceDriver.CheckInvocation(ref invocation);
+                return result;
+            }
+            throw CreateUnsupportedPatternException();
         }
-
-        throw CreateUnsupportedPatternException();
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
-    /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options, observing cancellation during validation and cumulative global matching.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token retained through validation and all matching work.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -512,28 +521,25 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-
-        if (_program.Operations.Enumerate is Pcre2Utf8DirectProgram coreProgram)
-            return new Utf8Pcre2ValueMatchEnumerator(input,
-                new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, subject, start, _program.Request, cancellationToken));
-
-        if (Pcre2GlobalOperationDriver.TryCreateCursor(
-                _program,
-                subject,
-                start,
-                matchOptions,
-                out var directCursor))
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        try
         {
-            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            if (_program.Operations.Enumerate is Pcre2Utf8DirectProgram coreProgram)
+                return new Utf8Pcre2ValueMatchEnumerator(input,
+                    new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, invocation, subject, start, _program.Request));
+            var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+            if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var directCursor, budget))
+                return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
+            if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
+                return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, invocation);
+            throw CreateUnsupportedPatternException();
         }
-
-        if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
+        catch (Utf8ExecutionDeadlineExpiredException)
         {
-            return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, cancellationToken);
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
-
-        throw CreateUnsupportedPatternException();
     }
 
     private static NotSupportedException CreateUnsupportedPatternException() =>
@@ -544,7 +550,7 @@ public sealed partial class Utf8Pcre2Regex
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken)
+        Utf8SliceInvocation invocation)
     {
         if (matchOptions == Pcre2MatchOptions.None &&
             _program.Operations.Enumerate is Pcre2SliceDirectProgram slice)
@@ -553,10 +559,10 @@ public sealed partial class Utf8Pcre2Regex
                 input.Bytes,
                 new Pcre2SliceGlobalMatchCursor(
                     slice.SliceProgram,
+                    invocation,
                     input,
                     start,
-                    _program.Request,
-                    cancellationToken));
+                    _program.Request));
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
@@ -571,19 +577,19 @@ public sealed partial class Utf8Pcre2Regex
                 start,
                 matchOptions,
                 _program.Request,
-                collectDiagnostics: false);
+                new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false));
             return new Utf8Pcre2ValueMatchEnumerator(input.Bytes, fallbackCursor);
         }
 
         return default;
     }
 
-    /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options, observing cancellation when enumeration begins.</summary>
+    /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options, retaining cancellation and cumulative limits through validation and every advance.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token retained during validation and cursor advances, including copies.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {

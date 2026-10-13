@@ -121,6 +121,25 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     internal bool MoveNext()
     {
+        Pcre2SliceDriver.CheckInvocation(ref _invocation);
+        var moved = MoveNextCore();
+        Pcre2SliceDriver.CheckInvocation(ref _invocation);
+        return moved;
+    }
+
+    internal Pcre2GroupData ProjectCurrent()
+    {
+        if (_invocation.IsUnmetered)
+            return Pcre2GroupData.FromByteOffsets(_input.Bytes, 0,
+                Current.StartOffsetInBytes, Current.EndOffsetInBytes);
+        var projection = _input.CreateProjectionCursor();
+        return Pcre2GlobalCursorProjection.Project(Current.StartOffsetInBytes,
+            Current.EndOffsetInBytes, ref _input, ref projection,
+            new Pcre2CaptureProjectionBudget(ref _invocation));
+    }
+
+    private bool MoveNextCore()
+    {
         // Each MoveNext call is one scan: pin \\G to the entry position.
         _invocation.AnchorOriginByte = _position;
         var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
@@ -252,10 +271,10 @@ internal static class Pcre2SliceDriver
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        CancellationToken cancellationToken)
+        scoped ref Utf8SliceInvocation invocation)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, input, start, request, cancellationToken);
+            program, invocation, input, start, request);
         var count = 0;
         while (cursor.MoveNext())
         {
@@ -373,6 +392,23 @@ internal static class Pcre2SliceDriver
                 request.DefaultLimits.ResultLimitInBytes),
             request.MatchTimeout,
             cancellationToken);
+    }
+
+    // Global cursors retain this authority across waits/copies. A return check
+    // spends no additional work and preserves cancellation raised by the clock.
+    internal static void CheckInvocation(scoped ref Utf8SliceInvocation invocation)
+    {
+        if (invocation.IsUnmetered) return;
+        try
+        {
+            invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
+            invocation.Budget.ThrowIfCancellationRequested();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
     }
 
     internal static void ThrowIfSliceBreached(Utf8ExecutionLimitKind breach)

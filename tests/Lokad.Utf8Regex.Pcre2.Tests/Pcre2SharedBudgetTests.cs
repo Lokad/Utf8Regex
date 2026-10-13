@@ -12,15 +12,15 @@ public sealed class Pcre2SharedBudgetTests
     private static extern ref Utf8SliceInvocation Invocation(ref Pcre2ResourceBudget budget);
 
     [Theory]
-    // The two projected endpoints join the native first-hit allowance.
-    [InlineData("a", "aaaa", Pcre2MatchOptions.None, 3u, false)]
-    [InlineData("a", "aaaa", Pcre2MatchOptions.None, 3u, true)]
-    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 3u, false)]
-    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 3u, true)]
-    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, 29u, false)]
-    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, 29u, true)]
-    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, 19u, false)]
-    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, 19u, true)]
+    // Three validation units precede the native first-hit/projection allowance.
+    [InlineData("a", "aaaa", Pcre2MatchOptions.None, 6u, false)]
+    [InlineData("a", "aaaa", Pcre2MatchOptions.None, 6u, true)]
+    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 6u, false)]
+    [InlineData("[ab]", "abab", Pcre2MatchOptions.None, 6u, true)]
+    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, 32u, false)]
+    [InlineData("(a+)+b", "aaab aaab", Pcre2MatchOptions.NotBol, 32u, true)]
+    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, 22u, false)]
+    [InlineData("foo(?<Bar>BAR)?", "fooBAR fooBAR", Pcre2MatchOptions.None, 22u, true)]
     public void PublicCopiedCursorsCannotForkTheirFiniteFirstMatchAllowance(string pattern, string input,
         Pcre2MatchOptions options, uint steps, bool afterFirst)
     {
@@ -54,7 +54,7 @@ public sealed class Pcre2SharedBudgetTests
     public void PublicAliasesKeepIndependentPositionsWithOneWorkAllowance(string pattern, string input)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 9 }, Timeout.InfiniteTimeSpan);
+            new() { MatchLimit = 12 }, Timeout.InfiniteTimeSpan);
         var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
         Assert.True(original.MoveNext());
         var first = original.Current;

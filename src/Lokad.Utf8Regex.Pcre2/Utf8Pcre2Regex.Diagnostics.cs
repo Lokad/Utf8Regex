@@ -18,12 +18,13 @@ public sealed partial class Utf8Pcre2Regex
     internal int DebugCountRaw(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, CancellationToken.None);
         if (Pcre2GlobalOperationDriver.TryCount(
                 _program,
                 ref subject,
                 start,
                 Pcre2MatchOptions.None,
-                CancellationToken.None,
+                ref invocation,
                 out var directCount))
         {
             return directCount;

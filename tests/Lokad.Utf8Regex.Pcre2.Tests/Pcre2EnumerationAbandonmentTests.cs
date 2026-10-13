@@ -38,10 +38,11 @@ public sealed class Pcre2EnumerationAbandonmentTests
         // The stack-only enumerator cannot be captured by a lambda, so the
         // breach is collected with the same try/while idiom as the limit
         // enforcement battery.
-        var enumerator = regex.EnumerateMatches(input);
+
         Pcre2MatchException? caught = null;
         try
         {
+            var enumerator = regex.EnumerateMatches(input);
             while (enumerator.MoveNext())
             {
             }

@@ -2727,13 +2727,13 @@ internal static class Pcre2GlobalOperationDriver
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken,
+        scoped ref Utf8SliceInvocation invocation,
         out int result)
     {
         var program = compiledProgram.Operations.Count;
         if (program is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = Pcre2LiteralPrefixRepeatRunner.Count(
                 literalPrefixRepeatProgram,
@@ -2744,7 +2744,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = Pcre2MultilinePrefixRunner.Count(
                 multilinePrefixProgram,
@@ -2756,7 +2756,7 @@ internal static class Pcre2GlobalOperationDriver
         if (program is Pcre2AsciiOrderedLiteralWindowDirectProgram orderedWindowProgram &&
             !input.Validation.ContainsSupplementaryScalars &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
             return true;
@@ -2764,7 +2764,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2AsciiLiteralAlternationRepeatDirectProgram alternationRepeatProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = alternationRepeatProgram.Count(input.Bytes, start.Value);
             return true;
@@ -2772,7 +2772,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = 0;
             var matches = finiteLiteralProgram.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
@@ -2786,7 +2786,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request))
+            (invocation.IsUnmetered && invocation.CheckpointHook is null))
         {
             result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
             return true;
@@ -2794,7 +2794,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2LiteralDirectProgram literalProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request) &&
+            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
             literalProgram.Program.CanCountDirectly(input.ByteLength - start.Value))
         {
             result = literalProgram.Program.CountNonOverlapping(input.Bytes[start.Value..]);
@@ -2803,7 +2803,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2CharacterDirectProgram characterProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request) &&
+            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
             characterProgram.Program.CanCountSingleCharacterClassDirectly)
         {
             if (characterProgram.Program.TryGetDirectCountCategory(out var category))
@@ -2826,7 +2826,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (program is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram &&
             matchOptions == Pcre2MatchOptions.None &&
-            HasUnmeteredExecution(compiledProgram.Request) &&
+            (invocation.IsUnmetered && invocation.CheckpointHook is null) &&
             singleTokenRepeatProgram.Program.CanCountGreedyExcludedAsciiDirectly)
         {
             result = Pcre2SingleTokenRepeatRunner.CountGreedyExcludedAscii(
@@ -2836,7 +2836,8 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
-        if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor))
+        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
+        if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor, budget))
         {
             result = 0;
             while (cursor.MoveNext())
@@ -2858,7 +2859,7 @@ internal static class Pcre2GlobalOperationDriver
                     start,
                     matchOptions,
                     compiledProgram.Request,
-                    collectDiagnostics: false);
+                    budget);
                 result = 0;
                 while (fallbackCursor.MoveNext())
                 {
@@ -2873,14 +2874,14 @@ internal static class Pcre2GlobalOperationDriver
                 ref input,
                 start,
                 compiledProgram.Request,
-                cancellationToken);
+                ref invocation);
             return true;
         }
 
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = Pcre2SliceDriver.Count(utf8Program.ScalarProgram, ref input, start,
-                compiledProgram.Request, cancellationToken);
+                compiledProgram.Request, ref invocation);
             return true;
         }
 
@@ -2897,7 +2898,7 @@ internal static class Pcre2GlobalOperationDriver
                 start,
                 matchOptions,
                 compiledProgram.Request,
-                collectDiagnostics: false);
+                budget);
             result = 0;
             while (fallbackCursor.MoveNext())
             {
@@ -2937,7 +2938,7 @@ internal static class Pcre2GlobalOperationDriver
     {
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram)
         {
-            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+            cursor = matchOptions == Pcre2MatchOptions.None && budget.IsUnmetered
                 ? Pcre2GlobalMatchCursor.CreateLiteralPrefixRepeat(
                     literalPrefixRepeatProgram,
                     input,
@@ -2956,7 +2957,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (compiledProgram.Operations.Enumerate is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram)
         {
-            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+            cursor = matchOptions == Pcre2MatchOptions.None && budget.IsUnmetered
                 ? Pcre2GlobalMatchCursor.CreateSameStartLiteral(
                     sameStartLiteralProgram,
                     input,
@@ -2975,7 +2976,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (compiledProgram.Operations.Enumerate is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram)
         {
-            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+            cursor = matchOptions == Pcre2MatchOptions.None && budget.IsUnmetered
                 ? Pcre2GlobalMatchCursor.CreateMultilinePrefix(
                     multilinePrefixProgram,
                     input,
@@ -2994,7 +2995,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
-            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+            cursor = matchOptions == Pcre2MatchOptions.None && budget.IsUnmetered
                 ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram, input, start, compiledProgram.Request, budget)
                 : Pcre2GlobalMatchCursor.CreateBacktracking(
                     literalFamilyProgram.Fallback,
@@ -3036,7 +3037,7 @@ internal static class Pcre2GlobalOperationDriver
 
         if (compiledProgram.Operations.Enumerate is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
         {
-            cursor = HasUnmeteredExecution(compiledProgram.Request)
+            cursor = budget.IsUnmetered
                 ? Pcre2GlobalMatchCursor.CreateSingleTokenRepeat(
                     singleTokenRepeatProgram.Program,
                     input,
@@ -3183,12 +3184,16 @@ internal ref struct Pcre2GlobalMatchCursor
             request,
             budget));
 
-    internal bool MoveNext() => _kind switch
+    internal bool MoveNext()
     {
-        Pcre2GlobalCursorKind.LiteralFamily => _literalFamily.MoveNext(),
-        Pcre2GlobalCursorKind.Direct => _direct.MoveNext(),
-        _ => false,
-    };
+        if (_kind == Pcre2GlobalCursorKind.None) return false;
+        var control = WorkingBufferControl;
+        Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
+        var moved = _kind == Pcre2GlobalCursorKind.LiteralFamily
+            ? _literalFamily.MoveNext() : _direct.MoveNext();
+        Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
+        return moved;
+    }
 
     private enum Pcre2GlobalCursorKind : byte
     {

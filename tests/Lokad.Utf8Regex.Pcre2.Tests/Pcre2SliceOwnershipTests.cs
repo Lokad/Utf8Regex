@@ -484,9 +484,10 @@ public sealed class Pcre2SliceOwnershipTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             Utf8Pcre2Regex.DefaultMatchTimeout);
-        var enumerator = regex.EnumerateMatches(Utf8("aab aabb"), 0);
+
         try
         {
+            var enumerator = regex.EnumerateMatches(Utf8("aab aabb"), 0);
             enumerator.MoveNext();
             Assert.Fail("Expected Pcre2MatchException.");
         }
@@ -506,9 +507,10 @@ public sealed class Pcre2SliceOwnershipTests
             default,
             default,
             TimeSpan.FromMilliseconds(1));
-        var enumerator = regex.EnumerateMatches(input, 0);
+
         try
         {
+            var enumerator = regex.EnumerateMatches(input, 0);
             enumerator.MoveNext();
             Assert.Fail("Expected Pcre2MatchException.");
         }

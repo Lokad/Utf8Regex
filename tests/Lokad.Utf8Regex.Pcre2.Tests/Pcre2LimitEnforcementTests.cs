@@ -28,10 +28,11 @@ public sealed class Pcre2LimitEnforcementTests
         Assert.True(expected > 1);
         var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
         var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
-        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(inputText));
+
         Pcre2MatchException? caught = null;
         try
         {
+            var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(inputText));
             while (enumerator.MoveNext())
             {
             }
