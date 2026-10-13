@@ -3,7 +3,8 @@ param(
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
 
-    [switch] $Archive
+    [switch] $Archive,
+    [switch] $SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,15 +17,19 @@ if ($LASTEXITCODE -ne 0 -or $sourceRevision -notmatch '^[0-9a-fA-F]{40}$') {
     throw "Could not resolve the source revision for package qualification."
 }
 
+if ($SkipBuild) { [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true) }
 $locations = New-PackageQualificationRoot -RepositoryRoot $repositoryRoot -SourceRevision $sourceRevision -Archive $Archive
 $version = Read-CoherentPackageVersion -RepositoryRoot $repositoryRoot
 
 $coreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj"
-Invoke-DotNet @(
-    "build", $coreProjectPath, "-t:Rebuild",
-    "-c", $Configuration,
-    "--tl:off", "--nologo", "-v", "minimal",
-    "-p:PackageOutputPath=$($locations.PackageDirectory)")
+if (-not $SkipBuild) {
+    Invoke-DotNet @(
+        "build", $coreProjectPath,
+        "-c", $Configuration,
+        "--tl:off", "--nologo", "-v", "minimal",
+        "-p:GeneratePackageOnBuild=false",
+        "-p:PackageOutputPath=$($locations.PackageDirectory)")
+}
 Invoke-DotNet @(
     "pack", $coreProjectPath,
     "-c", $Configuration, "--no-build",
@@ -33,7 +38,7 @@ Invoke-DotNet @(
 
 $corePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.$version.nupkg"
 Assert-PackageShape $corePackage "Lokad.Utf8Regex.dll" "" ""
-$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage) -ExpectedAssemblies @("Lokad.Utf8Regex.dll") -RequireCleanSource $Archive
+$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage) -ExpectedAssemblies @("Lokad.Utf8Regex.dll") -RequireCleanSource ($Archive -or $SkipBuild)
 
 foreach ($testProjectName in @("Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests")) {
     $projectTestDirectory = New-Item -ItemType Directory -Path (Join-Path $locations.TestDirectory $testProjectName)

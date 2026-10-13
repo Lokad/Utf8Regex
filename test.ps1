@@ -2,6 +2,7 @@ param(
     [string]$Configuration = "Debug",
     [switch]$SkipBuild,
     [string]$Filter,
+    [string]$Project = "Lokad.Utf8Regex.slnx",
     [int]$RetryCount = 3
 )
 
@@ -29,8 +30,7 @@ function Stop-StaleProcesses {
     # excluded on Windows: it is a shared SDK-wide compiler server without
     # repository identity, and this repository's builds set
     # UseSharedCompilation=false, so it never locks repository outputs.
-    # 'dotnet build-server shutdown' below remains the supported lifecycle call
-    # for build servers.
+    # Recovery is attempted only after an observed file-lock failure.
     if ($IsWindows) {
         Get-CimInstance Win32_Process -Filter "Name = 'testhost.exe'" -ErrorAction SilentlyContinue |
             Where-Object { $_.CommandLine -and $_.CommandLine -like ("*" + [WildcardPattern]::Escape($repoRoot) + "*") } |
@@ -38,11 +38,6 @@ function Stop-StaleProcesses {
         return
     }
 
-    foreach ($processName in @("testhost", "VBCSCompiler")) {
-        Get-Process -Name $processName -ErrorAction SilentlyContinue | ForEach-Object {
-            Stop-StaleProcess -process $_ -description $processName
-        }
-    }
 }
 
 function Invoke-DotNetWithRetry {
@@ -75,8 +70,9 @@ function Invoke-DotNetWithRetry {
     return 1
 }
 
-Stop-StaleProcesses
-dotnet build-server shutdown | Out-Null
+if (-not (Test-Path -LiteralPath $Project -PathType Leaf)) {
+    throw "Test project or solution does not exist: $Project"
+}
 
 $stableDotNetArgs = @(
     "--disable-build-servers",
@@ -87,7 +83,7 @@ $stableDotNetArgs = @(
 if (-not $SkipBuild) {
     $buildArguments = @(
         "build",
-        "Lokad.Utf8Regex.slnx",
+        $Project,
         "--configuration", $Configuration,
         "--tl:off",
         "--nologo",
@@ -103,7 +99,7 @@ if (-not $SkipBuild) {
 
 $testArguments = @(
     "test",
-    "Lokad.Utf8Regex.slnx",
+    $Project,
     "--configuration", $Configuration,
     "--tl:off",
     "--nologo",

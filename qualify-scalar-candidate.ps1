@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param()
+param([switch] $SkipBuild)
 
 # Core/PythonRe delivery has its own candidate. PCRE2 qualifies separately through
 # test-packaged-pcre2.ps1 and must not block this downstream input.
@@ -58,12 +58,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Could not inspect the candidate toolchain." }
     $toolchain | Set-Content -LiteralPath (Join-Path $attemptRoot "dotnet-info.txt") -Encoding utf8
     $stableBuildArguments = @("--disable-build-servers", "/m:1", "/nodeReuse:false", "/p:UseSharedCompilation=false")
-    Invoke-CandidateStep "build-once" {
-        Invoke-DotNet (@(
-            "build", (Join-Path $repositoryRoot "Lokad.Utf8Regex.slnx"), "-t:Rebuild",
-            "-c", "Release", "--tl:off", "--nologo", "-v", "minimal",
-            "-p:GeneratePackageOnBuild=false"
-        ) + $stableBuildArguments)
+    if (-not $SkipBuild) {
+        Invoke-CandidateStep "build-once" {
+            Invoke-DotNet (@(
+                "build", (Join-Path $repositoryRoot "src/Lokad.Utf8Regex.PythonRe/Lokad.Utf8Regex.PythonRe.csproj"),
+                "-c", "Release", "--tl:off", "--nologo", "-v", "minimal",
+                "-p:GeneratePackageOnBuild=false"
+            ) + $stableBuildArguments)
+        }
     }
     foreach ($packageId in $packages) {
         Invoke-CandidateStep "pack-once/$packageId" {
@@ -205,7 +207,7 @@ $patterns
         Configuration = "Release"; TargetFramework = "net10.0"
         StartedAtUtc = $startedAt.ToString("O"); CompletedAtUtc = [DateTime]::UtcNow.ToString("O")
         QualificationScope = "Core/PythonRe scalar integration candidate; complete detached fixture suites, exact provenance and restore identities. PCRE2, downstream promotion, current performance measurements and publication are separate acceptance steps."
-        Published = $false; BuildCount = 1; PackCountPerPackage = 1
+        Published = $false; BuildCount = $(if ($SkipBuild) { 0 } else { 1 }); PackCountPerPackage = 1
         Packages = $packageRecords; Consumers = $consumerRecords.ToArray(); Steps = $steps.ToArray()
         ProvenanceRelativePath = "package-provenance.json"
         ProvenanceSha256 = (Get-FileHash -LiteralPath (Join-Path $attemptRoot "package-provenance.json") -Algorithm SHA256).Hash

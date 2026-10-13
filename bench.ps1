@@ -22,9 +22,10 @@ $benchmarkArtifactsRoot = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmark
 
 # Stale benchmark hosts lock BenchmarkDotNet artifacts on Windows. Get-CimInstance is
 # Windows-only; on other platforms file locks do not block artifact cleanup, so skip the kill.
-if ($IsWindows) {
+if (-not $CommandArgs -and $IsWindows) {
     Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" |
-        Where-Object { $_.CommandLine -like '*Lokad.Utf8Regex.Benchmarks-*.dll*' } |
+        Where-Object { $_.CommandLine -like '*Lokad.Utf8Regex.Benchmarks-*.dll*' -and
+            $_.CommandLine -like ("*" + [WildcardPattern]::Escape($benchmarkArtifactsRoot) + "*") } |
         ForEach-Object {
             try {
                 Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
@@ -35,20 +36,25 @@ if ($IsWindows) {
         }
 }
 
-Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf8Regex.Benchmarks-*' -ErrorAction SilentlyContinue |
-    ForEach-Object {
-        try {
-            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
+if (-not $CommandArgs) {
+    Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf8Regex.Benchmarks-*' -ErrorAction SilentlyContinue |
+        ForEach-Object {
+            try {
+                $target = [IO.Path]::GetFullPath($_.FullName)
+                $prefix = [IO.Path]::GetFullPath($benchmarkArtifactsRoot).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+                if (-not $target.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    throw "Benchmark artifact escaped its output directory: $target"
+                }
+                Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Warning "Unable to remove stale benchmark artifact $($_.FullName): $($_.Exception.Message)"
+            }
         }
-        catch {
-            Write-Warning "Unable to remove stale benchmark artifact $($_.FullName): $($_.Exception.Message)"
-        }
-    }
-
-dotnet build-server shutdown | Out-Null
+}
 
 if (-not $SkipBuild) {
-    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore
+    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore --disable-build-servers /nodeReuse:false /p:UseSharedCompilation=false
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }

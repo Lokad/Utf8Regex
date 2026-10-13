@@ -3,7 +3,8 @@ param(
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
 
-    [switch] $Archive
+    [switch] $Archive,
+    [switch] $SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,16 +17,20 @@ if ($LASTEXITCODE -ne 0 -or $sourceRevision -notmatch '^[0-9a-fA-F]{40}$') {
     throw "Could not resolve the source revision for package qualification."
 }
 
+if ($SkipBuild) { [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true) }
 $locations = New-PackageQualificationRoot -RepositoryRoot $repositoryRoot -SourceRevision $sourceRevision -Archive $Archive
 $version = Read-CoherentPackageVersion -RepositoryRoot $repositoryRoot
 
 $coreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj"
 $pythonreProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex.PythonRe\Lokad.Utf8Regex.PythonRe.csproj"
-Invoke-DotNet @(
-    "build", $pythonreProjectPath, "-t:Rebuild",
-    "-c", $Configuration,
-    "--tl:off", "--nologo", "-v", "minimal",
-    "-p:PackageOutputPath=$($locations.PackageDirectory)")
+if (-not $SkipBuild) {
+    Invoke-DotNet @(
+        "build", $pythonreProjectPath,
+        "-c", $Configuration,
+        "--tl:off", "--nologo", "-v", "minimal",
+        "-p:GeneratePackageOnBuild=false",
+        "-p:PackageOutputPath=$($locations.PackageDirectory)")
+}
 Invoke-DotNet @(
     "pack", $coreProjectPath,
     "-c", $Configuration, "--no-build",
@@ -41,7 +46,7 @@ $corePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.$version.n
 $pythonrePackage = Join-Path $locations.PackageDirectory "Lokad.Utf8Regex.PythonRe.$version.nupkg"
 Assert-PackageShape $corePackage "Lokad.Utf8Regex.dll" "" ""
 Assert-PackageShape $pythonrePackage "Lokad.Utf8Regex.PythonRe.dll" "Lokad.Utf8Regex" $version
-$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage, $pythonrePackage) -ExpectedAssemblies @("Lokad.Utf8Regex.dll", "Lokad.Utf8Regex.PythonRe.dll") -RequireCleanSource $Archive
+$provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage, $pythonrePackage) -ExpectedAssemblies @("Lokad.Utf8Regex.dll", "Lokad.Utf8Regex.PythonRe.dll") -RequireCleanSource ($Archive -or $SkipBuild)
 
 # The PythonRe test project links benchmark sources by relative path. Mirror
 # them beside the qualification root so the isolated copy resolves identically.
