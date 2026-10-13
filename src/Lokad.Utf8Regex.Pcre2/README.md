@@ -350,8 +350,17 @@ already-validated dispatcher. Interruption or resource failure may leave a prefi
 already copied into caller storage; it throws rather than returning truncated
 success. Caller-provided destination capacity has separate scope from owned
 result-byte admission. TryGetFirstSetGroup passes the original token into detailed
-matching and checks it before returning its retained group view. Replacement
-validation and preparation retain separate
+matching and checks it before returning its retained group view. TryReplace
+validates its UTF-8 template and full subject under the original invocation,
+admits the decoded template as working scratch while discovery/output overlap,
+and shares already-validated native/slice/core replacement dispatch. Its bounded
+copy observes the original token and deadline. DestinationTooSmall leaves caller
+storage unchanged; interruption during a copy can leave modified bytes, and the
+method throws rather than returning truncated success. Template decoding is
+preparation scratch, separate from published-result byte admission. Parsing keeps
+fixed construction backstops and borrows the original absolute deadline; its
+internal construction allocations/work are not all charged to public execution
+limits. Other replacement entry validation and preparation retain separate
 qualification gates;
 public construction/default/live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased PCRE2 TryReplace authority (0.4.0-scalar.29-dev)
+
+- TryReplace retains the original token, absolute deadline and cumulative limits
+  through template/subject validation, template decoding, discovery and copying.
+  Reuse already-validated replacement dispatch and existing bounded writers;
+  remove repeated fallback validation and independent cursor factories.
+- Admit the decoded template as working scratch during discovery/output overlap.
+  Destination-too-small remains transactional; interruption while copying can
+  leave modified destination bytes. Preserve status/required-length semantics.
+  Parsing keeps separate fixed construction backstops and borrows the operation
+  deadline; other replacement entry validation remains a qualification gate.
+
 ## Unreleased PCRE2 MatchMany and capture-helper authority (0.4.0-scalar.28-dev)
 
 - MatchMany and TryGetFirstSetGroup retain the original live token through

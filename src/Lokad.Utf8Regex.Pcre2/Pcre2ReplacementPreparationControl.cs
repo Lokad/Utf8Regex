@@ -19,6 +19,12 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         return new(new(token, Utf8ExecutionDeadline.Start(timeout), true));
     }
 
+    internal static Pcre2ReplacementPreparationControl Borrow(Utf8ExecutionDeadline deadline, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        return new(new(token, deadline, true));
+    }
+
     internal static Pcre2ReplacementPreparationControl JoinOrEnter(TimeSpan timeout)
         => s_current.Active ? new(s_current) : EnterOperation(timeout, default);
 

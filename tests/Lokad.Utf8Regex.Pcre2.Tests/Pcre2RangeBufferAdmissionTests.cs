@@ -34,8 +34,9 @@ public sealed class Pcre2RangeBufferAdmissionTests
     }
 
     [Theory]
-    [InlineData(223UL, false)] [InlineData(224UL, true)]
-    [InlineData(639UL, false)] [InlineData(640UL, true)]
+    // Include the 48-byte decoded template while range storage is live.
+    [InlineData(271UL, false)] [InlineData(272UL, true)]
+    [InlineData(687UL, false)] [InlineData(688UL, true)]
     public void LiteralDriverAdmitsCompleteRangeArraysAndGrowthOverlap(ulong heap, bool allow)
     {
         var count = heap < 300 ? 1 : 17;

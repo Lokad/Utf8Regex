@@ -843,38 +843,57 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Attempts to write a replacement result using explicit start, substitution, and per-match options.</summary>
     /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the complete result does not fit.</returns>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
+        => TryReplaceCore(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions, default);
+
+    private OperationStatus TryReplaceCore(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8,
+        Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions,
+        Pcre2MatchOptions matchOptions, CancellationToken token)
     {
-        _ = Utf8Validation.Validate(replacementPatternUtf8);
-        var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (TryReplaceUsingLiteralDriver(
-                input,
-                replacementText,
-                startOffsetInBytes,
-                substitutionOptions,
-                matchOptions,
-                destination,
-                out bytesWritten,
-                out var literalStatus))
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
+        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation.Budget.Deadline, token);
+        ulong templateReservation = 0;
+        try
         {
-            return literalStatus;
-        }
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacementPatternUtf8, ref invocation, out var template));
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            // The decoded template is preparation scratch, not a published result.
+            // Keep its major capacity admitted while discovery and output overlap.
+            var bytes = Utf8ConstructionBudget.StringBytes(template.Utf16Length);
+            Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryReserveWorking(bytes));
+            templateReservation = bytes;
+            var replacementText = invocation.IsUnmetered
+                ? Encoding.UTF8.GetString(replacementPatternUtf8)
+                : Utf8SliceBufferWork.DecodeUtf8(replacementPatternUtf8, template.Utf16Length, ref invocation);
+            if (TryReplaceUsingLiteralDriver(input, subject, start, replacementText, substitutionOptions,
+                    matchOptions, invocation, destination, out bytesWritten, out var status))
+            {
+                Pcre2SliceDriver.CheckInvocation(ref invocation);
+                return status;
+            }
 
-        var replaced = Replace(input, replacementPatternUtf8, startOffsetInBytes, substitutionOptions, matchOptions);
-        if (replaced.Length > destination.Length)
-        {
-            bytesWritten = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0
-                ? replaced.Length
-                : 0;
-            return OperationStatus.DestinationTooSmall;
+            var replaced = ReplaceValidated(input, subject, start, replacementText, substitutionOptions,
+                matchOptions, invocation, false).Bytes;
+            if (replaced.Length > destination.Length)
+            {
+                bytesWritten = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0
+                    ? replaced.Length : 0;
+                Pcre2SliceDriver.CheckInvocation(ref invocation);
+                return OperationStatus.DestinationTooSmall;
+            }
+            Utf8SliceBufferWork.Copy(replaced, destination, ref invocation);
+            bytesWritten = replaced.Length;
+            Pcre2SliceDriver.CheckInvocation(ref invocation);
+            return OperationStatus.Done;
         }
-
-        replaced.CopyTo(destination);
-        bytesWritten = replaced.Length;
-        return OperationStatus.Done;
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
+        catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach); throw; }
+        finally { invocation.Ledger.Release(templateReservation); }
     }
 
-    /// <summary>Attempts to write a replacement result using explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
+    /// <summary>Attempts to write a replacement result, observing cancellation during validation, preparation, discovery and copying.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
     /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
@@ -882,12 +901,12 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="substitutionOptions">The substitution options.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The original token retained through the operation.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested; destination bytes copied before interruption may remain.</exception>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions);
+        return TryReplaceCore(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions, cancellationToken);
     }
 
     /// <summary>Gets the number of name-to-slot entries, including duplicate names.</summary>
@@ -1278,11 +1297,12 @@ public sealed partial class Utf8Pcre2Regex
 
     private bool TryReplaceUsingLiteralDriver(
         ReadOnlySpan<byte> input,
+        Utf8ValidatedInput subject,
+        Utf8BytePosition start,
         string replacement,
-        int startOffsetInBytes,
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken,
+        Utf8SliceInvocation invocation,
         bool text,
         out Pcre2ReplacementResult result)
     {
@@ -1296,7 +1316,6 @@ public sealed partial class Utf8Pcre2Regex
             return false;
         }
 
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
@@ -1304,7 +1323,7 @@ public sealed partial class Utf8Pcre2Regex
                 matchOptions,
                 out var cursor,
                 new Pcre2ResourceBudget(_program.Request.DefaultLimits,
-                    Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken), collectDiagnostics: false)))
+                    invocation, collectDiagnostics: false)))
         {
             result = default;
             return false;
@@ -1342,10 +1361,12 @@ public sealed partial class Utf8Pcre2Regex
 
     private bool TryReplaceUsingLiteralDriver(
         ReadOnlySpan<byte> input,
+        Utf8ValidatedInput subject,
+        Utf8BytePosition start,
         string replacement,
-        int startOffsetInBytes,
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions,
+        Utf8SliceInvocation invocation,
         Span<byte> destination,
         out int bytesWritten,
         out OperationStatus status)
@@ -1361,13 +1382,13 @@ public sealed partial class Utf8Pcre2Regex
             return false;
         }
 
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
                 matchOptions,
-                out var cursor))
+                out var cursor,
+                new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false)))
         {
             bytesWritten = 0;
             status = default;
@@ -1551,15 +1572,17 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions,
         CancellationToken cancellationToken, bool text)
     {
-        using var preparationControl = Pcre2ReplacementPreparationControl.EnterOperation(_program.Request.MatchTimeout, cancellationToken);
-        var result = ReplaceCoreWithPreparationControl(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken, text);
+        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation.Budget.Deadline, cancellationToken);
+        var result = ReplaceValidated(input, subject, start, replacement, substitutionOptions, matchOptions, invocation, text);
         Pcre2ReplacementPreparationControl.Check();
         return result;
     }
 
-    private Pcre2ReplacementResult ReplaceCoreWithPreparationControl(ReadOnlySpan<byte> input, string replacement,
-        Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions, CancellationToken cancellationToken, bool text)
+    private Pcre2ReplacementResult ReplaceValidated(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, string replacement,
+        Pcre2SubstitutionOptions substitutionOptions,
+        Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text)
     {
         if (RejectsReplacementIteration())
         {
@@ -1568,11 +1591,12 @@ public sealed partial class Utf8Pcre2Regex
 
         if (TryReplaceUsingLiteralDriver(
                 input,
+                subject,
+                start,
                 replacement,
-                startOffsetInBytes,
                 substitutionOptions,
                 matchOptions,
-                cancellationToken,
+                invocation,
                 text,
                 out var genericResult))
         {
@@ -1582,12 +1606,11 @@ public sealed partial class Utf8Pcre2Regex
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
             return ReplaceBacktrackingDetailed(
-                input,
+                input, subject, start,
                 backtrackingProgram.Program,
                 replacement,
                 substitutionOptions,
-                startOffsetInBytes,
-                matchOptions, cancellationToken, text);
+                matchOptions, invocation, text);
         }
 
         if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram)
@@ -1595,44 +1618,41 @@ public sealed partial class Utf8Pcre2Regex
             if (matchOptions != Pcre2MatchOptions.None)
             {
                 return ReplaceBacktrackingDetailed(
-                    input,
+                    input, subject, start,
                     sliceProgram.Fallback,
                     replacement,
                     substitutionOptions,
-                    startOffsetInBytes,
-                    matchOptions, cancellationToken, text);
+                    matchOptions, invocation, text);
             }
 
             return ReplaceSliceDetailed(
-                input,
+                input, subject, start,
                 sliceProgram.SliceProgram,
                 replacement,
                 substitutionOptions,
-                startOffsetInBytes,
-                cancellationToken, text);
+                invocation, text);
         }
 
         if (_program.Operations.Replace is Pcre2Utf8DirectProgram coreProgram)
         {
-            return ReplaceSliceDetailed(input, coreProgram.ScalarProgram, replacement, substitutionOptions,
-                startOffsetInBytes, cancellationToken, text);
+            return ReplaceSliceDetailed(input, subject, start, coreProgram.ScalarProgram, replacement, substitutionOptions,
+                invocation, text);
         }
 
-        return ReplaceNativeValueTemplate(input, replacement, substitutionOptions, startOffsetInBytes,
-            matchOptions, cancellationToken, text);
+        return ReplaceNativeValueTemplate(input, subject, start, replacement, substitutionOptions,
+            matchOptions, invocation, text);
     }
 
     // Extended templates on capture-free native routes keep the existing
     // global cursor/kernel. Reuse one admitted group-zero slot and lend the
     // discovery authority to the writer; no per-match core rematching.
-    private Pcre2ReplacementResult ReplaceNativeValueTemplate(ReadOnlySpan<byte> input, string replacement,
-        Pcre2SubstitutionOptions options, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
-        CancellationToken token, bool text)
+    private Pcre2ReplacementResult ReplaceNativeValueTemplate(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, string replacement,
+        Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions,
+        Utf8SliceInvocation invocation, bool text)
     {
-        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var cursor,
             new Pcre2ResourceBudget(_program.Request.DefaultLimits,
-                Pcre2SliceDriver.CreateInvocation(_program.Request, token), collectDiagnostics: false)))
+                invocation, collectDiagnostics: false)))
             throw CreateUnsupportedReplacementException();
         var control = cursor.WorkingBufferControl;
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
@@ -1677,14 +1697,13 @@ public sealed partial class Utf8Pcre2Regex
     private static NotSupportedException CreateUnsupportedReplacementException()
         => CreateUnsupportedReplacementException(null);
 
-    private Pcre2ReplacementResult ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Pcre2BacktrackingProgram program,
-        string replacement, Pcre2SubstitutionOptions options, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken token, bool text)
+    private Pcre2ReplacementResult ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Pcre2BacktrackingProgram program,
+        string replacement, Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text)
     {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, _program.CandidateSearchPlan,
             validated, start, matchOptions, _program.Request,
             new Pcre2ResourceBudget(_program.Request.DefaultLimits,
-                Pcre2SliceDriver.CreateInvocation(_program.Request, token), collectDiagnostics: false));
+                invocation, collectDiagnostics: false));
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
@@ -1718,11 +1737,10 @@ public sealed partial class Utf8Pcre2Regex
         finally { writer.Release(); }
     }
 
-    private Pcre2ReplacementResult ReplaceSliceDetailed(ReadOnlySpan<byte> input, Utf8SliceProgram sliceProgram,
-        string replacement, Pcre2SubstitutionOptions options, int startOffsetInBytes, CancellationToken token, bool text)
+    private Pcre2ReplacementResult ReplaceSliceDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Utf8SliceProgram sliceProgram,
+        string replacement, Pcre2SubstitutionOptions options, Utf8SliceInvocation invocation, bool text)
     {
-        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, validated, start, _program.Request, token);
+        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request);
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
