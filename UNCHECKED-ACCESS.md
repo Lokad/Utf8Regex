@@ -19,6 +19,20 @@ loads rely on admitted widths and clamped offsets; the short comparator relies o
 same-length admitted spans and length dispatch. Other sites require further review.
 This inventory is not a complete compiled-code or memory-safety proof.
 
+The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
+removed redundant per-vector checks from the forward loops while preserving block
+order and the overlapping terminal vector. Four bounded code-generation variants
+were investigated. Split width helpers improved long misses about 43–46%, but
+short reverse misses regressed 5–28%. Inlining reduced the gains and retained short
+reverse regressions. A forward-only shared method still altered reverse code.
+Finally, directional forward AVX2 entry points retained the original `Find` code
+(1205 bytes Windows/1242 Linux) and improved wide forward scans, but 31-byte forward
+fallbacks slowed 8–15%. All measured allocations stayed zero; existing boundary,
+offset, tail and except checks passed. Every prototype is restored; no conversion,
+new selector or speedup claim lands. Evidence: `artifacts/vector-span-pilot-20261013/`.
+Loop-bound elimination is proved useful; eliminating the short-path dispatch/layout
+cost is still necessary before accepting this approach.
+
 ## PythonRe compiler-generated accesses
 
 DLL inspection found `Unsafe.Add`, `As` and `AsRef` in generated inline-array
