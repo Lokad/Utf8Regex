@@ -1,5 +1,17 @@
 # Changelog
 
+## Private core/PythonRe candidate (0.4.0-scalar.44)
+
+- Consolidate the accepted finite exact-literal Count simplification, original
+  cold FullMatch/template interruption authority and retryable preparation.
+  Preserve scalar/capture semantics, finite policies and explicit cursor lifetimes.
+- Fixed-arity octal parsing removes the PythonRe DLL's unchecked references.
+  Core's deferred unchecked accesses remain; URI conversion is restored after
+  boundary regressions. This is a scoped producer candidate, with downstream
+  adoption, PCRE2, complete default/retention policies and publication separate.
+- Designate exact immutable packages only after the existing detached-consumer,
+  provenance and platform checks. Preserve all scalar.42 package bytes/evidence.
+
 ## Unreleased PythonRe fixed-arity octal preparation (0.4.0-scalar.44-dev)
 
 - Replace variadic octal span arguments with fixed character arguments, removing
