@@ -43,6 +43,16 @@ Evidence: `artifacts/singleton-span-conversion-20261013/`. The frozen syntactic
 inventory now has 55 remaining sites in 16 files. Other unchecked/implicit
 accesses and the downstream whole-pair artifact gate remain open.
 
+A bounded direct-fill experiment for dynamic IL parameter staging is deferred.
+It removed the custom four-element inline array and its fourteen generated
+helper calls while filling the existing admitted `Type[]`, with the same work,
+storage and heap allocations. The reversed-order repeat retained a roughly
+3.36% three-parameter and 2.79% four-parameter construction penalty, despite
+smaller inspected builder code. The original implementation is restored; no
+performance equivalence or helper-removal claim lands. Arity, null rejection,
+delegate execution after disposal and original-owner cleanup remain covered.
+Evidence: `artifacts/il-parameter-staging-20261013/`.
+
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block
 order and the overlapping terminal vector. Four bounded code-generation variants
