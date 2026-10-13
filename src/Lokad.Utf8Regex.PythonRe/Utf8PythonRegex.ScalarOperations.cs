@@ -20,7 +20,7 @@ public sealed partial class Utf8PythonRegex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
-            startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation);
+            startOffsetInBytes, MatchTimeout, _utf8Regex, _translation.Pattern, invocation);
     }
 
     private Utf8SliceProgram GetScalarFullProgram(ReadOnlySpan<byte> input,
@@ -320,7 +320,7 @@ public sealed partial class Utf8PythonRegex
         textResult = default;
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var cursor = new PythonReScalarMatchCursor(input, ScalarProgram, _coreGroupNumbersByPythonGroup,
-            startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation);
+            startOffsetInBytes, MatchTimeout, _utf8Regex, _translation.Pattern, invocation);
         Utf8SliceOutputWriter writer = default;
         try
         {

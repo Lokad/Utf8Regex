@@ -27,11 +27,17 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         int[] numbersByPython, PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
         string pattern, Utf8SliceInvocation invocation)
+        : this(input, program, numbersByPython, names, startOffsetInBytes, timeout, pattern, invocation, default)
+    { }
+
+    internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
+        int[] numbersByPython, PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
+        string pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex)
     {
         _input = input;
         _names = names;
         _discovery = new PythonReScalarMatchState(input.Span, program, numbersByPython,
-            startOffsetInBytes, timeout, pattern, invocation);
+            startOffsetInBytes, timeout, pattern, invocation, candidateRegex);
         try { _discovery.Checkpoint(input.Span); }
         catch { Close(Status.Faulted); throw; }
     }

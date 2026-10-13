@@ -203,8 +203,11 @@ beyond that value reports `Requested = ulong.MaxValue` without wrapping.
 
 A step is a bounded engine/checkpoint unit, not one byte or scalar. Work counts
 may change between releases; validation/copy loops operate in bounded blocks.
-Finite calls use the metered scalar route rather than uncontrolled native/core
-shortcuts. The limit does not bound wall time, retained output bytes or process
+Eligible nonempty searches borrow an existing exact mandatory-prefix plan to skip
+impossible scalar starts. The Python VM still verifies candidates, captures and
+assertions. Anchored operations and empty-match retry preserve their existing
+paths; finite candidate scans charge the same invocation in bounded blocks.
+The limit does not bound wall time, retained output bytes or process
 memory. Pattern compilation, lazy full-match compilation and replacement-plan
 preparation retain separate construction backstops; they are outside execution
 work counts. Arbitrary evaluator execution and later standalone result getters

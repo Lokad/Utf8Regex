@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -13,6 +14,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 internal struct PythonReScalarMatchState
 {
     private readonly Utf8SliceProgram _program;
+    private readonly Utf8Regex? _candidateRegex;
     private readonly int[] _numbersByPython;
     private readonly string _pattern;
     private readonly TimeSpan _timeout;
@@ -38,9 +40,22 @@ internal struct PythonReScalarMatchState
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout, string pattern,
         Utf8SliceInvocation invocation)
+        : this(input, program, numbersByPython, startOffsetInBytes, timeout, pattern, invocation, default)
+    { }
+
+    internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout, string pattern,
+        Utf8SliceInvocation invocation, Utf8Regex? candidateRegex)
     {
         this = default;
         _program = program;
+        var candidatePlan = candidateRegex?.Inspection.SearchPlan ?? default;
+        if (!program.CanMatchEmpty && !program.HasContiguousAnchor && !program.RightToLeft &&
+            !program.IgnoreCase && candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
+            candidatePlan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals)
+        {
+            _candidateRegex = candidateRegex;
+        }
         _numbersByPython = numbersByPython;
         _pattern = pattern;
         _timeout = timeout;
@@ -146,6 +161,8 @@ internal struct PythonReScalarMatchState
             while (!_finished)
             {
                 Checkpoint(input);
+                if (search && _candidateRegex is not null &&
+                    !SeekCandidate(input)) { _finished = true; return false; }
                 _invocation.AnchorOriginByte = _position;
                 Utf8SliceMatchOutcome outcome;
                 try
@@ -197,6 +214,34 @@ internal struct PythonReScalarMatchState
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { throw ResourceFailure(); }
         finally { if (!keepWorkspace) _workspace.Release(ref _invocation); }
+    }
+
+    private bool SeekCandidate(ReadOnlySpan<byte> input)
+    {
+        // Native rendering expands lexical folding before planning. Prefixes
+        // prove starts only; the profile VM still verifies captures/assertions.
+        try
+        {
+            Utf8ExecutionLimitKind breach;
+            var plan = _candidateRegex!.Inspection.SearchPlan;
+            if (plan.LiteralSearch is { } literal)
+            {
+                if (_position < input.Length && input[_position] == literal.Needle[0]) return true;
+                breach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, _position,
+                    input.Length - literal.Length, false, ref _invocation, out _position);
+            }
+            else
+            {
+                breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(plan.AlternateLiteralsUtf8!, false,
+                    input, _position, input.Length, false, ref _invocation, out var candidate, out var found);
+                _position = found ? candidate.Index : -1;
+            }
+            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+            if (_position >= 0) return true;
+            Checkpoint(input);
+            return false;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
     internal PythonReGroupData SnapshotValueData(ReadOnlySpan<byte> input)

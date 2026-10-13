@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased PythonRe prefix-guided discovery (0.4.0-scalar.45-dev)
+
+- Borrow existing exact mandatory-prefix searches to skip impossible scalar VM
+  attempts in eligible PythonRe discovery. The profile VM still verifies captures,
+  references and assertions; empty-match retry and anchored operations retain their
+  behavior. Validation, cancellation, deadlines and finite limits share the original
+  invocation. Work-step totals can decrease as redundant attempts are removed.
+- A representative sparse captured-search workload improves from about 6.2 ms to
+  22 us. Dense controls retain small value-lane costs and persistent cursors grow
+  by 8 bytes; no universal performance equivalence is claimed. Scalar.44 packages
+  remain unchanged.
+
 ## Unreleased category vector boundary checks (0.4.0-scalar.45-dev)
 
 - Cover vector widths, entry offsets, scalar tails and borrowed UTF-8 boundaries
