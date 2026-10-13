@@ -1344,6 +1344,17 @@ Python scalar widths use UInt128 intermediates and the CPython 3.13.2 2^64
 getwidth clamp/sentinel. Fixedness does not collapse at int.MaxValue; fixed
 lookbehind widths above the 32-bit code limit report "looks too much behind".
 Provisional limits are 67,108,864 work units and 65,536 covered live frames.
+The explicit core/PythonRe `Compile` factories expose caller-selected eager
+admission through `Utf8ConstructionPolicy`: covered work, live traversal depth,
+instruction capacity and major bytes. Null retains the fixed backstop; a positive
+value tightens that ceiling. The work/storage units and coverage above apply;
+this is not every allocation, CLR/JIT metadata, lazy preparation, caller retention
+or process RSS. Existing constructors retain their defaults. Construction timeout
+and cancellation are separate from the resulting expression's execution policy.
+One synchronous owner spans eager compilation, with a final interruption check
+before publication; pre-cancellation precedes all pattern/argument work. Deadline
+denial uses `RegexMatchTimeoutException`; byte-pattern diagnostics omit Pattern
+to avoid additional decoding. Factories do not consult static pattern caches.
 Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.

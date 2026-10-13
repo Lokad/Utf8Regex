@@ -188,6 +188,8 @@ class PythonRe.Utf8PythonRegex
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit)
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes)
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
+  method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
 struct PythonRe.Utf8PythonSplitItem
   property Boolean IsCapture { get; set; }
   property Int32 CaptureGroupNumber { get; set; }

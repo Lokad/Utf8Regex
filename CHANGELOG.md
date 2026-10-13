@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased explicit eager compilation (0.4.0-scalar.42-dev)
+
+- Add core/PythonRe `Compile` factories with a separate four-limit
+  `Utf8ConstructionPolicy`, construction timeout and cancellation token. Reuse
+  the existing owner for covered eager work, depth, instruction capacity and
+  major storage. Positive limits tighten fixed ceilings; null retains them.
+  Execution policy/timeout remain independent. Lazy preparation, incidental
+  acquisitions, CLR/JIT metadata and caller retention remain outside this
+  admission contract; existing constructors and defaults are unchanged.
+
 ## Unreleased linear construction normalization (0.4.0-scalar.41-dev)
 
 - Charge ordinal construction replacement once per candidate position, with a

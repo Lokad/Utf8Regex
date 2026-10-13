@@ -10,6 +10,16 @@ struct Utf8CaptureContext
   method Boolean TryGetValueBytes(out ReadOnlySpan<Byte> valueBytes)
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
+struct Utf8ConstructionPolicy
+  property Nullable<UInt32> MaxDepth { get; set; }
+  property Nullable<UInt64> MaxBytes { get; set; }
+  property Nullable<UInt64> MaxInstructionCapacity { get; set; }
+  property Nullable<UInt64> MaxWorkSteps { get; set; }
+  property Utf8ConstructionPolicy Default { get; }
+  method Boolean Equals(Object obj)
+  method Boolean Equals(Utf8ConstructionPolicy other)
+  method Int32 GetHashCode()
+  method String ToString()
 struct Utf8CountDiagnostics
   ctor Utf8CountDiagnostics(Int32 Result, String ExecutionKind, String SearchKind, String FallbackVerifierMode, Boolean RequiresCandidateEndCoverage, Boolean RequiresTrailingAnchorCoverage, String ExecutionRoute, Int32 SearchCandidates, Int32 FixedCheckRejects, Int32 VerifierInvocations, Int32 VerifierMatches, Int32 PrefilterWindows, Int32 PrefilterSkippedWindows, Int32 PrefilterPromotedWindows, Int32 PrefilterSkippedBytes, Int32 PrefilterPromotedBytes, Int32 EngineDemotions)
   property Boolean RequiresCandidateEndCoverage { get; set; }
@@ -150,6 +160,7 @@ class Utf8Regex
   method static Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, String pattern)
   method static Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options)
   method static Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
+  method static Utf8Regex Compile(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
   method static Utf8ValueMatch Match(ReadOnlySpan<Byte> input, String pattern)
   method static Utf8ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options)
   method static Utf8ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)

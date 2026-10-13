@@ -68,6 +68,24 @@ internal sealed class Utf8ConstructionScope : IDisposable
     // construction inherits the owner instead of resetting its capacity counter.
     internal static Utf8ConstructionScope Enter() => new(DefaultInstructionCapacity);
 
+    // Public factories start one eager construction owner. Synchronous nested
+    // compilation shares it; factories cannot silently replace an active owner.
+    internal static Utf8ConstructionScope Enter(Utf8ConstructionPolicy policy,
+        TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (s_current is not null)
+            throw new InvalidOperationException("An explicit compilation cannot replace an active construction owner.");
+        var scope = new Utf8ConstructionScope(
+            Math.Min(policy.MaxInstructionCapacity ?? DefaultInstructionCapacity, DefaultInstructionCapacity),
+            Math.Min(policy.MaxBytes ?? DefaultBufferBytes, DefaultBufferBytes),
+            Math.Min(policy.MaxWorkSteps ?? DefaultWorkSteps, DefaultWorkSteps),
+            Math.Min(policy.MaxDepth ?? DefaultDepth, DefaultDepth));
+        scope.Budget.CancellationToken = cancellationToken;
+        scope.Budget.Deadline = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Start(timeout);
+        return scope;
+    }
+
     // PCRE2-INTEGRATION-POINT: reuse this numeric owner and its allocation
     // admissions, restoring both the parent limit and historical peak on exit.
     internal static Utf8ConstructionScope RestrictAdditionalBytes(ulong additional)

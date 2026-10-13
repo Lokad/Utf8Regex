@@ -140,6 +140,19 @@ Unsupported/incompatible flags and an invalid timeout therefore take precedence
 over malformed pattern bytes and construction admission. Valid arguments retain
 strict pattern decoding and the existing shared construction backstops. These
 checks do not provide a public construction budget or construction cancellation.
+The explicit `Utf8PythonRegex.Compile` text/UTF-8 factories additionally accept
+`Utf8ConstructionPolicy`, a construction timeout and construction token. They
+share one eager owner through strict decoding, parsing, translation, scalar
+compilation and capture metadata. Positive work/depth/instruction/byte limits
+tighten the fixed ceilings; null retains them. Limits bound covered admission,
+including major growth overlap, rather than every acquisition or process memory.
+Pre-cancellation wins over argument/decoding failures; later cancellation keeps
+the original token and a deadline failure throws `RegexMatchTimeoutException`.
+For UTF-8 pattern timeout failures the exception's Pattern is empty, avoiding an
+unbounded diagnostic decode. Construction authority ends before publication;
+the expression's invocation policy/token/timeout remain independent. Lazy
+full-match and replacement preparation, CLR/JIT metadata, incidental acquisitions
+and caller retention retain separate scope. Static caches are not consulted.
 
 Capture-name metadata shares the existing construction owner. The public-name
 array and named-entry array are admitted before acquisition; numeric group labels
