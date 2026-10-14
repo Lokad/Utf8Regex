@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -63,6 +64,7 @@ internal struct Utf8ExecutionBudget
 
     internal void CheckDeadline() => _deadline.CheckNow();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Utf8ExecutionLimitKind TryChargeStep()
     {
         _token.ThrowIfCancellationRequested();

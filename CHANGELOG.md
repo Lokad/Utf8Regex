@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased work-step call overhead (0.4.0-scalar.48-dev)
+
+- Inline the existing budget step into callers without changing work charges,
+  saturation, sticky denial, cancellation, deadlines or cursor authority.
+- Focused quiet-VM controls improve finite literal Count about5–6% and dense
+  PythonRe results about8–10%, with larger generated callers. One sparse cursor
+  noise repeat does not reproduce the initial slowdown. This is scoped source
+  evidence; scalar.47 package bytes and the Core unchecked API gate are unchanged.
+
 ## Unreleased validation drain boundaries (0.4.0-scalar.48-dev)
 
 - Cover vector-width boundaries, borrowed offsets, complete Unicode stops,
