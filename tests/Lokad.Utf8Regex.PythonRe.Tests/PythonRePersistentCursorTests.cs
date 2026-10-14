@@ -223,7 +223,9 @@ public sealed class PythonRePersistentCursorTests
             first = false; entered.Set();
             if (!resume.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Cursor witness was not resumed.");
         };
-        var advance = Task.Run(cursor.MoveNext);
+        // The caller blocks on entry, so the advancing worker must not depend on pool availability.
+        var advance = Task.Factory.StartNew(cursor.MoveNext, CancellationToken.None,
+            TaskCreationOptions.LongRunning, TaskScheduler.Default);
         try
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
