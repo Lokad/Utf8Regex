@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased literal comparison boundaries (0.4.0-scalar.48-dev)
+
+- Cover empty and shorter inputs, offset prefixes, folded/ordinal tails and
+  denied multi-block comparisons while preserving caller storage reservations.
+- A suffix-span loop is deferred after a3.5–4.7% finite Count penalty despite
+  smaller generated code. The original comparator is restored; the accepted
+  invocation-budget improvement remains in place.
+
 ## Unreleased invocation budget access (0.4.0-scalar.48-dev)
 
 - Borrow the current work budget once before charging and reading checkpoint
