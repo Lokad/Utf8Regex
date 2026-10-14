@@ -95,7 +95,8 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+");
         using var bothCompiling = new CountdownEvent(2);
         using var cancellation = new CancellationTokenSource();
-        Task<int> RunCold(bool cancel) => Task.Run(() =>
+        // Blocking factory barriers need dedicated workers, independent of pool availability.
+        Task<int> RunCold(bool cancel) => Task.Factory.StartNew(() =>
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
@@ -122,7 +123,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
                 Assert.Same(hook, construction.Budget.CheckpointHook);
             }
             return checkpoints;
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         var results = await Task.WhenAll(RunCold(true), RunCold(false));
         Assert.True(results[1] > 8);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);

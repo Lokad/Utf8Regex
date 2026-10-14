@@ -120,7 +120,8 @@ public sealed class PythonReTemplateAuthorityTests
         var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
-        var owner = Task.Run(() =>
+        // Pending preparation blocks this worker; avoid tying progress to the thread pool.
+        var owner = Task.Factory.StartNew(() =>
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
@@ -131,12 +132,12 @@ public sealed class PythonReTemplateAuthorityTests
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)), "Release pending preparation.");
             };
             return regex.ReplaceToString("😀a"u8, Template);
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         try
         {
             await preparing.Task.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
-            var waiter = Task.Run(() =>
+            var waiter = Task.Factory.StartNew(() =>
             {
                 var reads = 0;
                 using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -145,7 +146,7 @@ public sealed class PythonReTemplateAuthorityTests
                     return 0;
                 });
                 return Record.Exception(() => Run(regex, 0, cancellation.Token));
-            });
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             await waiting.Task.WaitAsync(TimeSpan.FromSeconds(10));
             cancellation.Cancel();
             var error = Assert.IsType<OperationCanceledException>(await waiter.WaitAsync(TimeSpan.FromSeconds(10)));
@@ -169,7 +170,7 @@ public sealed class PythonReTemplateAuthorityTests
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
         long ownerTicks = 0;
-        var owner = Task.Run(() =>
+        var owner = Task.Factory.StartNew(() =>
         {
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => Volatile.Read(ref ownerTicks));
             using var construction = Utf8ConstructionScope.Enter();
@@ -181,11 +182,11 @@ public sealed class PythonReTemplateAuthorityTests
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
             };
             return Record.Exception(() => Run(regex, 0, cancellation.Token));
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         try
         {
             await preparing.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            var waiter = Task.Run(() =>
+            var waiter = Task.Factory.StartNew(() =>
             {
                 var reads = 0;
                 using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -194,7 +195,7 @@ public sealed class PythonReTemplateAuthorityTests
                     return 0;
                 });
                 return regex.ReplaceToString("😀a"u8, Template);
-            });
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             await waiting.Task.WaitAsync(TimeSpan.FromSeconds(10));
             if (timeout) Volatile.Write(ref ownerTicks, 250);
             else cancellation.Cancel();
@@ -220,7 +221,7 @@ public sealed class PythonReTemplateAuthorityTests
         using var cancellation = new CancellationTokenSource();
         string? result = null;
         Exception? failure = null;
-        var owner = Task.Run(() =>
+        var owner = Task.Factory.StartNew(() =>
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
@@ -231,7 +232,7 @@ public sealed class PythonReTemplateAuthorityTests
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
             };
             return Record.Exception(() => Run(regex, 0, cancellation.Token));
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         var waiter = new Thread(() =>
         {
             try { result = regex.ReplaceToString("😀a"u8, Template); }
