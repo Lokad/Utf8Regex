@@ -1,5 +1,14 @@
 # Changelog
 
+## Private core/PythonRe candidate (0.4.0-scalar.47)
+
+- Include the accepted numeric construction arena, atomic map insertion and
+  indexed PythonRe capture bodies. Major allocation admission, finite limits,
+  scalar semantics, captures and original interruption remain required.
+- Qualify one new immutable pair with existing provenance and detached consumer
+  checks. Explicit retained construction extents may be charged more than once;
+  work totals may decrease. Preserve scalar.46 and all earlier candidate bytes.
+
 ## Unreleased indexed PythonRe capture bodies (0.4.0-scalar.47-dev)
 
 - Replace the capture-body hash table and separate open-group buffer with one
