@@ -6,8 +6,18 @@ correctness, Release code-generation and cost evidence. `Unsafe.SizeOf<T>()` is
 accepted for actual managed sizes; manual size estimates are not a substitute.
 There is one engine and no permanent safe/unsafe selector.
 
-The current source inventory is 55 sites across all shipped projects: **53 Core
-sites in 15 files**, plus two PCRE2 null-reference placeholders in one file.
+The 2026-10-14 acceptance gate permits up to a 10% execution-time slowdown on
+representative affected public workloads. This supersedes the former no-regression
+gate. Revisit promising deferred conversions with one bounded before/after
+comparison and an unchanged control; allow one noise confirmation, then stop.
+Kernel timings are diagnostic and do not substitute for public-operation costs.
+Preserve semantics, cancellation, resource admission and managed safety, retaining
+algorithms/SIMD where practical. Full platform/package qualification is batched at
+a coherent delivery milestone. Historical deferrals below retain their original
+evidence; the revised allowance does not designate conversions automatically.
+
+The current source inventory is 38 sites across all shipped projects: **36 Core
+sites in 14 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -28,7 +38,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
-| Utf8LiteralEquality /17 | Complete candidate Slice before length-dispatched 4/6/8-byte reads and overlapping tails. End admission is repaired; checked-load pilots remain deferred. |
 | AsciiSearch /6 | Serving callers pass equal-length checked slices; folded 9–16-byte dispatch supplies both 8-byte windows. This internal precondition remains necessary. |
 | PreparedByteSet /2 | Width chosen from subject length; positions clamped to0..length-width, including final overlap. Closed pilots regress at short boundaries. |
 | PreparedSearchPrimitives /4 | Correlated windows stop at length-compareOffset-width; candidate confirmation slices the full admitted literal. No new conversion qualified. |
@@ -49,6 +58,25 @@ stack-only borrowed projection authority. `_isSlice` selects the populated arm
 before access. This is an invariant, not a claim of checked replacement or a
 reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
 inline-array staging also remains deferred after the recorded cost penalties.
+
+The short-literal comparator is accepted under the revised 10% public-cost gate.
+Its complete candidate admission retains the scalar.48 end-guard repair. Checked
+span indices and MemoryMarshal.Read replace the primitive unaligned reads for
+four through sixteen bytes; widths, comparison order, overlapping tails and
+allocations remain. This removes all 17 explicit unchecked source sites in
+Utf8LiteralEquality, while other Core APIs and generated staging remain open.
+
+One bounded actual-DLL public Count comparison plus its one noise confirmation
+covers mixed five/eight-, six/seven- and nine/twelve/sixteen-byte families, ordinary
+and compiled engines, all four finite controls, and an unchanged literal control.
+Confirmation medians for affected operations range about -0.7% to +1.2%; the
+unlimited control moves about -7% to -8%, so exact equivalence is not claimed.
+All allocations match. These are current public-operation costs, not a conclusion
+from the earlier 4–7% isolated kernel penalty. The inspected Linux callers grow
+1515→2059 and1532→1927 bytes and retain some bounds branches. Boundary, offset,
+tail, known-prefix, malformed-input, cutoff and original-interruption checks pass.
+Evidence: artifacts/short-literal-checked-10pct-20261014/. Full platform/package
+qualification is reserved for a coherent delivery batch; scalar.48 bytes stay fixed.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,

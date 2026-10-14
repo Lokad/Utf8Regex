@@ -59,42 +59,38 @@ internal static class Utf8LiteralEquality
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool EqualsFastShort(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> literal)
     {
-        // EqualsAt admits both complete spans to the same literal length.
-        // Checked loads/slices were investigated on .NET 10: added tail checks
-        // and inconclusive/regressing head timings prevent claiming equal cost.
-        // Keep this dispatch until a bounded repeat supports a whole-path change.
-        ref var candidateRef = ref MemoryMarshal.GetReference(candidate);
-        ref var literalRef = ref MemoryMarshal.GetReference(literal);
+        // Both complete spans are admitted by EqualsAt. Keep the existing
+        // primitive reads and overlapping tail, using checked span operations.
         switch (literal.Length)
         {
             case 4:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) ==
-                    Unsafe.ReadUnaligned<uint>(ref literalRef);
+                return MemoryMarshal.Read<uint>(candidate) ==
+                    MemoryMarshal.Read<uint>(literal);
             case 5:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) == Unsafe.ReadUnaligned<uint>(ref literalRef) &&
-                    Unsafe.Add(ref candidateRef, 4) == Unsafe.Add(ref literalRef, 4);
+                return MemoryMarshal.Read<uint>(candidate) == MemoryMarshal.Read<uint>(literal) &&
+                    candidate[4] == literal[4];
             case 6:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) == Unsafe.ReadUnaligned<uint>(ref literalRef) &&
-                    Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref candidateRef, 4)) ==
-                    Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref literalRef, 4));
+                return MemoryMarshal.Read<uint>(candidate) == MemoryMarshal.Read<uint>(literal) &&
+                    MemoryMarshal.Read<ushort>(candidate.Slice(4, sizeof(ushort))) ==
+                    MemoryMarshal.Read<ushort>(literal.Slice(4, sizeof(ushort)));
             case 7:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) == Unsafe.ReadUnaligned<uint>(ref literalRef) &&
-                    Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref candidateRef, 4)) ==
-                    Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref literalRef, 4)) &&
-                    Unsafe.Add(ref candidateRef, 6) == Unsafe.Add(ref literalRef, 6);
+                return MemoryMarshal.Read<uint>(candidate) == MemoryMarshal.Read<uint>(literal) &&
+                    MemoryMarshal.Read<ushort>(candidate.Slice(4, sizeof(ushort))) ==
+                    MemoryMarshal.Read<ushort>(literal.Slice(4, sizeof(ushort))) &&
+                    candidate[6] == literal[6];
             case 8:
-                return Unsafe.ReadUnaligned<ulong>(ref candidateRef) ==
-                    Unsafe.ReadUnaligned<ulong>(ref literalRef);
+                return MemoryMarshal.Read<ulong>(candidate) ==
+                    MemoryMarshal.Read<ulong>(literal);
             case > 8 and <= 16:
-                if (Unsafe.ReadUnaligned<ulong>(ref candidateRef) !=
-                    Unsafe.ReadUnaligned<ulong>(ref literalRef))
+                if (MemoryMarshal.Read<ulong>(candidate) !=
+                    MemoryMarshal.Read<ulong>(literal))
                 {
                     return false;
                 }
 
                 var tailOffset = literal.Length - sizeof(ulong);
-                return Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref candidateRef, tailOffset)) ==
-                    Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref literalRef, tailOffset));
+                return MemoryMarshal.Read<ulong>(candidate.Slice(tailOffset, sizeof(ulong))) ==
+                    MemoryMarshal.Read<ulong>(literal.Slice(tailOffset, sizeof(ulong)));
             default:
                 return candidate.SequenceEqual(literal);
         }

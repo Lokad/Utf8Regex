@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased checked short-literal comparison (0.4.0-scalar.49-dev)
+
+- Replace the comparator's unchecked primitive reads with bounds-checked span
+  reads. Preserve complete literal admission, widths, tail overlap, scalar
+  matching, allocations and resource/cancellation behavior.
+- Accept under the 10% allowance on representative affected public operations:
+  one paired Count comparison and its noise confirmation stay within that gate.
+  Some bounds branches and larger callers remain; no exact parity claim or new
+  package designation follows from this source change.
+
 ## Unreleased numeric emission scratch accounting (0.4.0-scalar.49-dev)
 
 - Replace the IL builder's array-retaining descriptor buffer with one numeric
