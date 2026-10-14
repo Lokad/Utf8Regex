@@ -1,5 +1,13 @@
 # Changelog
 
+## Private repaired core/PythonRe candidate (0.4.0-scalar.48)
+
+- Include the unequal-literal admission repair and accepted work/working-budget
+  access improvements. Qualify a new immutable pair through the existing detached
+  consumer checks; preserve scalar.47 and all earlier package bytes.
+- Core's unchecked API gate still prevents a Lython adoption claim. Package
+  qualification, selected operating-cost evidence and publication are separate.
+
 ## Unreleased literal admission repair (0.4.0-scalar.48-dev)
 
 - Return a miss when a literal exceeds the subject, including known-prefix and
