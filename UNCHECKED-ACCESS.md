@@ -247,3 +247,16 @@ LoadUnsafe call. The 55-site/16-file inventory and whole-pair gate are unchanged
 Evidence and all three source/code-generation variants:
 artifacts/uri-checked-load-20261013/. Do not extend this closed pilot into another
 benchmark campaign without a concrete new reason.
+
+## Fixed literal-byte indices — deferred
+
+Replacing the literal-side trailing byte reads for five- and seven-byte literals
+with checked indices preserves existing exhaustive bounds/offset/mismatch checks.
+Inspected EqualsAt instructions are identical after address normalization on
+Windows (331 bytes) and Linux (281 bytes), with no added bounds branches.
+Nevertheless, the Linux reverse-order repeat retains about 3.4–4.6% slower
+selected timings; unchanged lengths also move 4.4–8.9%. Windows samples contain
+large control noise. All kernel allocations remain zero. These observations do
+not establish the requested performance gate or a causal regression. Production
+is restored; no conversion or equivalence claim lands. The broader comparator
+loads remain deferred. Evidence: artifacts/literal-fixed-byte-index-20261014/.
