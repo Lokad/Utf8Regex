@@ -29,11 +29,16 @@ jobs:
       - name: Test Release
         shell: pwsh
         run: |
-          try { dotnet test Lokad.Utf8Regex.slnx -c Release --tl:off --nologo -v minimal 2>&1 | Tee-Object -FilePath test.log } catch { exit 1 }
+          # Complete the build before any inventory test inspects adapter DLLs.
+          try { dotnet build Lokad.Utf8Regex.slnx -c Release --tl:off --nologo -v minimal -p:GeneratePackageOnBuild=false 2>&1 | Tee-Object -FilePath build.log } catch { exit 1 }
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          try { dotnet test Lokad.Utf8Regex.slnx -c Release --no-build --no-restore --tl:off --nologo -v minimal 2>&1 | Tee-Object -FilePath test.log } catch { exit 1 }
           if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: Publish test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-log-${{ matrix.os }}
-          path: test.log
+          path: |
+            build.log
+            test.log
