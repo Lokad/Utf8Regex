@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased working admission access (0.4.0-scalar.48-dev)
+
+- Select the current budget and ledger once after cancellation/deadline checks
+  during working-capacity admission. Keep sticky denial, overflow handling,
+  growth overlap, caller loans and shared cursor allowance unchanged.
+- Generated code is smaller on Windows/Linux. Bounded PythonRe controls retain
+  allocations and show no clear regression; noisy rows do not establish general
+  speedup or performance equivalence. Scalar.47 packages remain immutable.
+
 ## Unreleased literal comparison boundaries (0.4.0-scalar.48-dev)
 
 - Cover empty and shorter inputs, offset prefixes, folded/ordinal tails and

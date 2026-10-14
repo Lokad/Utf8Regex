@@ -76,12 +76,14 @@ internal struct Utf8SliceInvocation
     {
         Budget.ThrowIfCancellationRequested();
         Budget.CheckDeadline();
-        if (Budget.LimitBreach != Utf8ExecutionLimitKind.None) return Budget.LimitBreach;
-        var held = Ledger.ReservedBytes;
+        ref var budget = ref Budget;
+        if (budget.LimitBreach != Utf8ExecutionLimitKind.None) return budget.LimitBreach;
+        ref var ledger = ref Ledger;
+        var held = ledger.ReservedBytes;
         var requested = bytes > ulong.MaxValue - held ? ulong.MaxValue : held + bytes;
-        var breach = Budget.TryNoteWorkingBytes(requested);
+        var breach = budget.TryNoteWorkingBytes(requested);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        return Ledger.TryReserve(bytes) ? Utf8ExecutionLimitKind.None : Budget.DenyWorkingBytes(requested);
+        return ledger.TryReserve(bytes) ? Utf8ExecutionLimitKind.None : budget.DenyWorkingBytes(requested);
     }
 
     internal Utf8ExecutionLimitKind TryChargeStep()
