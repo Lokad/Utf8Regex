@@ -4,7 +4,22 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-Version 0.4.0-scalar.46 is a private core/PythonRe integration candidate, with finite invocation work/depth/working/result policies, authoritative capture completion, an explicitly owned persistent cursor and controls for covered eager construction. Use artifacts/scalar-candidates/0.4.0-scalar.46/ only after its immutable manifest is designated; scalar.44 remains the preceding qualified input. This candidate includes metered prefix-guided discovery; dense controls and cursor storage tradeoffs remain explicit in its evidence. Complete construction/live-retention controls, safe defaults, category-version reconciliation and broader profile acceptance remain unfinished; PCRE2 qualifies independently. Prior candidate bytes remain unchanged.
+The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.48**,
+producer `cab9c04209c7f0d291623791e0d585af507d53af`. It covers strict UTF-8 scalar
+matching, authoritative capture completion, an explicitly owned persistent cursor,
+finite invocation work/depth/working/result limits and covered eager construction
+controls. Exact detached Windows/Linux consumers and CPython capture/digest checks
+pass. Use `artifacts/scalar-candidates/0.4.0-scalar.48/candidate.json`, its immutable
+feed/config and `artifacts/core-python-scalar48-20261014/HANDOFF.md`; the delivery
+receipt records exact identities, coverage and current operating costs.
+
+This pair is not published or accepted downstream automatically. Lython's Core DLL
+unchecked-API gate remains unmet even though the PythonRe DLL has no unchecked API
+references. Defaults and static cached calls remain unlimited; embedders select
+finite policies explicitly. Complete construction/lazy/live-retention controls,
+safe defaults, category-version reconciliation and broader profile acceptance
+remain unfinished. PCRE2 qualifies independently; prior candidate bytes stay
+unchanged. Development source beyond the candidate requires its own acceptance.
 
 ## Support Scope
 
@@ -49,16 +64,26 @@ the token supplied to each operation remain independent.
 This candidate additionally preserves the original call deadline through
 cold scalar FullMatch and template substitution preparation. Construction/cache
 checkpoints observe call interruption; interrupted preparation is retryable and
-warm reuse has no preparation scope allocation. These source fixes follow the
-scalar.42 candidate; exact package checks must establish their delivery before adoption.
+warm reuse has no preparation scope allocation. These fixes are included in the
+qualified scalar.48 pair; later development is outside that immutable input.
 See [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md) for the exact scopes and exclusions.
 
 ```csharp
+using System;
+using Lokad.Utf8Regex;
 using Lokad.Utf8Regex.PythonRe;
 
 var regex = new Utf8PythonRegex(
     pattern: @"(?P<word>foo)-(?P=word)",
-    options: PythonReCompileOptions.None);
+    options: PythonReCompileOptions.None,
+    matchTimeout: TimeSpan.FromSeconds(1),
+    resourcePolicy: new Utf8ResourcePolicy
+    {
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 1024,
+        MaxWorkingBytes = 16 * 1024 * 1024,
+        MaxResultBytes = 16 * 1024 * 1024
+    });
 
 bool isMatch = regex.IsMatch("foo-foo"u8);
 var first = regex.Search("xx foo-foo yy"u8);
