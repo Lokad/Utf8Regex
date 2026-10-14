@@ -675,7 +675,7 @@ quoted/Unicode-count engine callbacks are removed. Bounded letter runs count
 complete scalars; zero-minimum shapes decline to the scalar VM. These consumer
 replacements do not qualify remaining result/metadata holders,
 shared pool/cache policies or the final dependency and R07 gates.
-Python parser branch/sequence/class-item arrays, capture/open-group metadata,
+Python parser branch/sequence/class-item arrays, capture metadata,
 their collection owners, and old/new growth and final-copy overlap
 share admission. Completed AST arrays and immutable metadata tables retain their
 loans through the enclosing construction owner; parser scratch releases on every
@@ -687,6 +687,11 @@ retained charges, and cleanup never refunds work or depends on GC timing.
 Immutable metadata lookup/enumeration spends the current construction
 owner's work, rather than a closed original owner. Its generic enumerable views
 and boxed enumerators admit descriptor capacity before acquisition.
+Capture bodies use one opening-order array: a null slot marks an open group,
+and closing stores its body at the same index. The parser transfers the admitted
+final array through the numeric arena; retained aliases survive scratch cleanup.
+Width/reference lookup charges the current construction owner without a hash
+table or separate open-group buffer. Covered work totals may decrease.
 Mutable construction maps hash/probe once for insertion. Growth keeps the old
 table until rehash and the final metered probe succeed; failure releases the new
 capacity without publishing a partial insertion. Collision chains still spend

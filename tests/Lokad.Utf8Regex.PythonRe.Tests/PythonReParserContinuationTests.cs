@@ -27,7 +27,7 @@ public sealed class PythonReParserContinuationTests
             if (opener == "(")
             {
                 Assert.Equal(level + 1, group.GroupNumber);
-                Assert.Same(group.Inner, parse.GroupBodies[group.GroupNumber]);
+                Assert.Same(group.Inner, parse.GroupBodies[group.GroupNumber - 1]);
             }
             node = group.Inner;
         }

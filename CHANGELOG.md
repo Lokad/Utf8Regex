@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased indexed PythonRe capture bodies (0.4.0-scalar.47-dev)
+
+- Replace the capture-body hash table and separate open-group buffer with one
+  admitted array in opening order. Preserve nested closing, reference validation,
+  retained parser results, bounded construction and cancellation/deadlines.
+- Focused constructor controls allocate 56–2,768 fewer bytes per call, with
+  modest timing improvements. Public APIs and scalar.46 packages stay unchanged.
+
 ## Unreleased construction map insertion (0.4.0-scalar.47-dev)
 
 - Share one insertion path for Add and replacement, removing duplicate hashing

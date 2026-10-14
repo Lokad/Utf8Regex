@@ -73,7 +73,7 @@ internal sealed partial class PythonReParser
                 throw Error("unexpected character");
             }
             result = new PythonReParseResult(node, options, _groupCount,
-                Storage.NamedGroups.Freeze(Storage.Arena), _hasLookbehind, Storage.GroupBodies.Freeze(Storage.Arena));
+                Storage.NamedGroups.Freeze(Storage.Arena), _hasLookbehind, Storage.Arena.Take(Storage.GroupBodies, true));
             Storage.Arena.Complete();
         }
         catch
@@ -1023,7 +1023,15 @@ internal readonly record struct PythonReParseResult(
     int CaptureGroupCount,
     IReadOnlyDictionary<string, int> NamedGroups,
     bool HasLookbehind,
-    IReadOnlyDictionary<int, PythonReNode> GroupBodies);
+    PythonReNode?[] GroupBodies)
+{
+    internal bool TryGetGroupBody(int number, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out PythonReNode? body)
+    {
+        Utf8ConstructionScope.ChargeWork(1);
+        body = number > 0 && number <= GroupBodies.Length ? GroupBodies[number - 1] : null;
+        return body is not null;
+    }
+}
 
 internal enum FlagParseContext
 {

@@ -69,10 +69,10 @@ public sealed class PythonReParserCollectionAdmissionTests
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         Assert.Equal(names, parse.NamedGroups.Count);
-        Assert.Equal(parse.CaptureGroupCount, parse.GroupBodies.Count);
+        Assert.Equal(parse.CaptureGroupCount, parse.GroupBodies.Length);
         var translation = PythonReTranslator.Translate(parse);
         Assert.NotEmpty(translation.NativePattern);
-        foreach (var entry in parse.NamedGroups) Assert.NotNull(parse.GroupBodies[entry.Value]);
+        foreach (var entry in parse.NamedGroups) Assert.NotNull(parse.GroupBodies[entry.Value - 1]);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 

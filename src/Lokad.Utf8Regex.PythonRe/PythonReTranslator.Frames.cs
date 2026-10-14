@@ -182,8 +182,8 @@ internal static partial class PythonReTranslator
             PythonReGroupNode group when index == 0 => group.Inner,
             PythonReConditionalNode conditional => index switch { 0 => conditional.YesBranch, 1 => conditional.NoBranch, _ => null },
             PythonReNamedBackreferenceNode named when index == 0 && parseResult.NamedGroups.TryGetValue(named.Name, out var slot)
-                && parseResult.GroupBodies.TryGetValue(slot, out var body) => body,
-            PythonReNumericBackreferenceNode numeric when index == 0 && parseResult.GroupBodies.TryGetValue(numeric.GroupNumber, out var body) => body,
+                && parseResult.TryGetGroupBody(slot, out var body) => body,
+            PythonReNumericBackreferenceNode numeric when index == 0 && parseResult.TryGetGroupBody(numeric.GroupNumber, out var body) => body,
             _ => null,
         };
         child = next ?? PythonReAstFactory.Empty;

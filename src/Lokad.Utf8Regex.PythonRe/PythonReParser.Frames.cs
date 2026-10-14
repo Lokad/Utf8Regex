@@ -143,9 +143,8 @@ internal sealed partial class PythonReParser
         if (frame.Stage == 1)
         {
             var inner = _parsedNode;
-            if (frame.GroupNumber != 0) Storage.OpenGroups[frame.GroupNumber - 1] = false;
             ExpectGroupEnd(frame.GroupStart, "missing ), unterminated subpattern");
-            if (frame.GroupNumber != 0) Storage.GroupBodies[frame.GroupNumber] = inner;
+            if (frame.GroupNumber != 0) Storage.GroupBodies[frame.GroupNumber - 1] = inner;
             if (frame.GroupKind is PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind)
                 _hasLookbehind = true;
             _parsedNode = PythonReAstFactory.Group(frame.GroupKind, inner, frame.GroupName,
@@ -178,7 +177,7 @@ internal sealed partial class PythonReParser
         if (!TryConsume('?'))
         {
             frame.GroupNumber = ++_groupCount;
-            Storage.OpenGroups.Add(true);
+            Storage.GroupBodies.Add(null);
             frame.GroupKind = PythonReGroupKind.Capturing;
         }
         else
@@ -210,7 +209,7 @@ internal sealed partial class PythonReParser
                 if (Storage.NamedGroups.ContainsKey(frame.GroupName))
                     throw Error($"redefinition of group name '{frame.GroupName}'");
                 Storage.NamedGroups.Add(frame.GroupName, frame.GroupNumber);
-                Storage.OpenGroups.Add(true);
+                Storage.GroupBodies.Add(null);
                 frame.GroupKind = PythonReGroupKind.NamedCapturing;
             }
             else if (TryConsumeExact("P="))
