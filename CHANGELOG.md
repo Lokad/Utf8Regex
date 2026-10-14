@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased literal admission repair (0.4.0-scalar.48-dev)
+
+- Return a miss when a literal exceeds the subject, including known-prefix and
+  unequal-length family checks. Count of `abcdefgh|xyzzz|ztzzz` over `abcde`
+  previously threw in ordinary and compiled modes; it now returns zero.
+- Use one widened end guard, retaining existing comparison algorithms and loads.
+  The selected public Count control shows no penalty, while short comparator
+  microbenchmarks still regress. No general performance equivalence is claimed.
+- The defect is reproduced on the exact scalar.47 Core DLL. Preserve its bytes
+  and earlier evidence; a repaired immutable candidate needs a new identity.
+
 ## Unreleased work-step call overhead (0.4.0-scalar.48-dev)
 
 - Inline the existing budget step into callers without changing work charges,

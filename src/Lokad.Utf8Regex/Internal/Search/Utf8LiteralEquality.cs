@@ -22,7 +22,9 @@ internal static class Utf8LiteralEquality
         ReadOnlySpan<byte> literal,
         Utf8LiteralComparisonKind comparisonKind)
     {
-        if ((uint)index > (uint)(input.Length - literal.Length))
+        // Widen the end calculation: negative offsets and longer literals decline,
+        // and matching Slice's end guard lets the JIT remove its redundant check.
+        if ((ulong)(uint)index + (uint)literal.Length > (uint)input.Length)
         {
             return false;
         }
@@ -42,7 +44,7 @@ internal static class Utf8LiteralEquality
         Utf8LiteralComparisonKind comparisonKind)
     {
         if ((uint)knownPrefixLength > (uint)literal.Length ||
-            (uint)index > (uint)(input.Length - literal.Length))
+            (ulong)(uint)index + (uint)literal.Length > (uint)input.Length)
         {
             return false;
         }

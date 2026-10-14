@@ -6,6 +6,50 @@ correctness, Release code-generation and cost evidence. `Unsafe.SizeOf<T>()` is
 accepted for actual managed sizes; manual size estimates are not a substitute.
 There is one engine and no permanent safe/unsafe selector.
 
+The current source inventory is 55 sites across all shipped projects: **53 Core
+sites in 15 files**, plus two PCRE2 null-reference placeholders in one file.
+PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
+compiler-generated accesses and whole-DLL API gates remain separate observations.
+
+A bounds review found an admission defect independent of the deferred load
+conversions. Unsigned subtraction allowed a literal longer than the subject to
+reach Slice. The exact scalar.47 DLL throws for Count of `abcdefgh|xyzzz|ztzzz`
+over `abcde`, in ordinary and compiled modes. One widened end guard fixes equality
+and known-prefix admission and lets the JIT remove the duplicate Slice check.
+Original comparator loads, algorithms and resource controls remain. Code shrinks
+356→336 bytes on Linux, but short comparator microbenchmarks still regress; the
+selected public family Count control shows no penalty. This correctness repair
+does not qualify the previously rejected checked loads or clear the artifact gate.
+Evidence: artifacts/literal-admission-bounds-20261014/.
+
+The following are the reviewed access contracts, not independent whole-program
+proofs. Keep remaining loads while their conversions lack acceptable evidence;
+revisit demonstrated defects or concrete source/JIT changes.
+
+| Remaining Core file / sites | Bounds contract and reason retained |
+| --- | --- |
+| Utf8LiteralEquality /17 | Complete candidate Slice before length-dispatched 4/6/8-byte reads and overlapping tails. End admission is repaired; checked-load pilots remain deferred. |
+| AsciiSearch /6 | Serving callers pass equal-length checked slices; folded 9–16-byte dispatch supplies both 8-byte windows. This internal precondition remains necessary. |
+| PreparedByteSet /2 | Width chosen from subject length; positions clamped to0..length-width, including final overlap. Closed pilots regress at short boundaries. |
+| PreparedSearchPrimitives /4 | Correlated windows stop at length-compareOffset-width; candidate confirmation slices the full admitted literal. No new conversion qualified. |
+| PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
+| AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
+| Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. No new conversion qualified. |
+| Utf8AsciiExactLiteralCountExecutor /1 | Each32-byte load has index≤length-32; candidate full literals are admitted separately. No new conversion qualified. |
+| Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
+| Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission; closed URI conversions regress at boundaries. |
+| Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
+| Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. No new conversion qualified. |
+| Utf8LiteralCompiledEngineRuntime /6 | Runtime and diagnostic correlated offsets0/1/3 reserve a complete literal plus31 starts. Diagnostic conversion regressed; timed kernel remains. |
+| Utf8UnicodeCategoryExecutor /2 | Full32/16-byte blocks from current nonnegative scan index. Category pilot retains a long-input penalty. |
+| Utf8ValidationCore /3 | Full32/16-byte blocks from scalar-boundary offsets. ASCII-drain conversion regressed; common UTF-8 drain remains unconverted. |
+
+The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
+stack-only borrowed projection authority. `_isSlice` selects the populated arm
+before access. This is an invariant, not a claim of checked replacement or a
+reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
+inline-array staging also remains deferred after the recorded cost penalties.
+
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,
 but add entry/setup/index work. Linux FullOpts code grows454→533 bytes; long
