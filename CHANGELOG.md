@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased anchored Count boundary checks (0.4.0-scalar.49-dev)
+
+- Cover Unicode/CRLF line starts, derived offset floors, empty and folded/RTL/NFA
+  exclusions, malformed tails, cumulative work cutoffs and original interruption.
+- An initial-byte filter reduced selected imports Count time, but its one repeat
+  retained a slower unrelated literal control. Restore production and defer the
+  filter; preserve the checks and failed evidence. The accepted C21 family driver
+  and scalar.48 immutable package pair remain unchanged.
+
 ## Unreleased bounded small-family Count (0.4.0-scalar.49-dev)
 
 - Reuse the existing metered native Count driver for eligible exact LTR families
