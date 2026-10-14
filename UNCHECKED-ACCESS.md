@@ -6,6 +6,17 @@ correctness, Release code-generation and cost evidence. `Unsafe.SizeOf<T>()` is
 accepted for actual managed sizes; manual size estimates are not a substitute.
 There is one engine and no permanent safe/unsafe selector.
 
+The ASCII validation drain pilot is deferred. Counted checked vector spans keep
+the same SIMD reduction and scalar tails and eliminate per-vector range checks,
+but add entry/setup/index work. Linux FullOpts code grows454→533 bytes; long
+kernel controls regress30–39% and mixed public validation12–15%, with unchanged
+allocations. Production is restored and its method IL matches baseline. New
+borrowed-offset, Unicode-stop, malformed-tail and exact work-cutoff checks remain.
+One short kernel sample missed the timing floor and is not parity evidence; the
+long controls do not need a repeat to decline this conversion. Evidence:
+artifacts/validation-ascii-drain-checked-20261014/. The55-site inventory and Core
+unchecked API gate remain open; no safety/performance equivalence claim follows.
+
 The correlated-literal diagnostic census conversion is deferred. Direct checked
 reads keep the existing SIMD algorithm but add guards and increase inspected
 code692→766 bytes on Windows and718→776 on Linux. Long diagnostic replays regress

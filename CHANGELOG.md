@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased validation drain boundaries (0.4.0-scalar.48-dev)
+
+- Cover vector-width boundaries, borrowed offsets, complete Unicode stops,
+  malformed suffixes and cumulative validation work/working reservations.
+- Checked vector-span drains are deferred after long kernel and mixed validation
+  regressions. Production SIMD loads and algorithms are restored; the tests and
+  failed evidence remain, and scalar.47 packages are unchanged.
+
 ## Unreleased working admission access (0.4.0-scalar.48-dev)
 
 - Select the current budget and ledger once after cancellation/deadline checks
