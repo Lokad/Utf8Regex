@@ -1238,6 +1238,13 @@ admit their acquired arrays while borrowing existing literal payloads. Every
 growth and final copy admits overlapping extents. Labels/locals and the emitter
 are value carriers; no ILGenerator, LocalBuilder, SignatureHelper or independent
 construction owner retains a second set of library program buffers.
+Temporary dynamic-emission arrays use one numeric scratch subtotal rather than
+object-retaining descriptors. Each major array is admitted before allocation and
+remains charged until builder disposal, even if GC collects an unreferenced array.
+Disposal does not invalidate caller-held arrays or published delegates. Removing
+descriptor storage/work can lower construction byte/work requirements; runtime
+copy admission, instruction/depth bounds and interruption remain unchanged.
+
 Serialized IL byte capacity conservatively counts against the provisional
 instruction-capacity gate, including the managed runtime code copy. Parameter,
 code and local-signature managed copies are admitted separately before CLR calls.

@@ -8,6 +8,90 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8EmissionConstructionAdmissionTests
 {
+    [Fact]
+    public void ScratchLoansRemainUntilDisposalAndRetainedArraysRemainValid()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 37;
+        var builder = Utf8DynamicIlBuilder.Create("ScratchLoans", typeof(int),
+            typeof(Utf8EmissionConstructionAdmissionTests), typeof(int));
+        var before = owner.Budget.ReservedBytes;
+        var empty = builder.AllocateScratch<byte>(0);
+        Assert.Empty(empty);
+        Assert.Equal(before, owner.Budget.ReservedBytes);
+        var bytes = builder.AllocateScratch<byte>(65);
+        var integers = builder.AllocateScratch<int>(17);
+        bytes[64] = 91;
+        integers[16] = 123;
+        Assert.Equal(before + Utf8ConstructionBudget.ArrayBytes<byte>(65) +
+            Utf8ConstructionBudget.ArrayBytes<int>(17), owner.Budget.ReservedBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => builder.AllocateScratch<byte>(-1));
+        builder.Dispose();
+        builder.Dispose();
+        Assert.Equal(48UL, owner.Budget.ReservedBytes);
+        Assert.Equal(0UL, owner.Budget.Depth);
+        Assert.Equal(91, bytes[64]);
+        Assert.Equal(123, integers[16]);
+        Assert.Equal(37, parent[0]);
+        Assert.Throws<ObjectDisposedException>(() => builder.AllocateScratch<byte>(1));
+    }
+
+    [Fact]
+    public void DeniedScratchCapacityKeepsEarlierLoansAndRestoresTheParent()
+    {
+        ulong maximum;
+        using (var funded = Utf8ConstructionScope.Enter())
+        {
+            _ = funded.Budget.AllocateArray<byte>(1, false);
+            using var builder = Utf8DynamicIlBuilder.Create("ScratchCapacity", typeof(int),
+                typeof(Utf8EmissionConstructionAdmissionTests), typeof(int));
+            maximum = funded.Budget.ReservedBytes + Utf8ConstructionBudget.ArrayBytes<byte>(65);
+        }
+        using var owner = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, maximum);
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 37;
+        using (var builder = Utf8DynamicIlBuilder.Create("ScratchCapacity", typeof(int),
+            typeof(Utf8EmissionConstructionAdmissionTests), typeof(int)))
+        {
+            var bytes = builder.AllocateScratch<byte>(65);
+            bytes[64] = 91;
+            Assert.Equal(maximum, owner.Budget.ReservedBytes);
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => builder.AllocateScratch<int>(1));
+            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, error.ResourceKind);
+            Assert.Equal(maximum, error.Limit);
+            Assert.Equal(maximum + Utf8ConstructionBudget.ArrayBytes<int>(1), error.Requested);
+            Assert.Equal(maximum, owner.Budget.ReservedBytes);
+            Assert.Equal(91, bytes[64]);
+        }
+        Assert.Equal(48UL, owner.Budget.ReservedBytes);
+        Assert.Equal(0UL, owner.Budget.Depth);
+        Assert.Equal(37, parent[0]);
+    }
+
+    [Fact]
+    public void PublishedDelegateAndScratchAliasesSurviveBuilderDisposal()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 37;
+        Func<int, int> callback;
+        byte[] retained;
+        using (var builder = Utf8DynamicIlBuilder.Create("ScratchPublication", typeof(int),
+            typeof(Utf8EmissionConstructionAdmissionTests), typeof(int)))
+        {
+            retained = builder.AllocateScratch<byte>(65);
+            retained[64] = 91;
+            builder.Emit(OpCodes.Ldarg_0);
+            builder.Emit(OpCodes.Ret);
+            callback = builder.CreateDelegate<Func<int, int>>().Callback;
+        }
+        Assert.Equal(123, callback(123));
+        Assert.Equal(91, retained[64]);
+        Assert.Equal(37, parent[0]);
+        Assert.Equal(0UL, owner.Budget.Depth);
+    }
+
     private static Delegate CompileCount()
     {
         var method = typeof(Utf8EmittedSearchGuidedFallback).GetMethod("CompileCount", BindingFlags.NonPublic | BindingFlags.Static)

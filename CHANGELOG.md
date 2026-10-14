@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased numeric emission scratch accounting (0.4.0-scalar.49-dev)
+
+- Replace the IL builder's array-retaining descriptor buffer with one numeric
+  total. Keep each major scratch allocation charged until synchronous disposal;
+  retained arrays and emitted delegates remain valid.
+- Remove descriptor allocation/growth and its bookkeeping work. Construction
+  byte/work requirements can decrease; major admission, instruction/depth bounds,
+  cancellation, deadlines and rollback remain enforced.
+
 ## Unreleased anchored Count boundary checks (0.4.0-scalar.49-dev)
 
 - Cover Unicode/CRLF line starts, derived offset floors, empty and folded/RTL/NFA

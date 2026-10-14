@@ -20,13 +20,12 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     private readonly record struct Fixup(int Offset, int Label, int Width);
     private readonly record struct Instruction(int Pops, int Pushes, int Target, FlowControl Flow);
     private readonly record struct MethodToken(int Token, int Parameters, int Returns, bool Instance);
-    private readonly record struct ScratchArray(Array Value, ulong Bytes);
     private readonly record struct ConstructionState(Utf8ConstructionScope Scope, Utf8ConstructionBudget Budget,
         DynamicMethod Method, DynamicILInfo Info, Utf8ConstructionBuffer<byte> Code,
         Utf8ConstructionBuffer<LabelPoint> Labels, Utf8ConstructionBuffer<Fixup> Fixups,
         Utf8ConstructionBuffer<Instruction> Instructions, Utf8ConstructionBuffer<Type> Locals,
         Utf8ConstructionMap<MethodBase, MethodToken> Methods, Utf8ConstructionMap<Type, nint> Types,
-        Utf8ConstructionBuffer<ScratchArray> Scratch,
+        ulong ScratchBytes,
         int ParameterCount, bool Returns, bool Completed, bool Disposed);
 
     private readonly Utf8ConstructionScope _scope;
@@ -40,7 +39,8 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     private readonly Utf8ConstructionBuffer<Type> _locals;
     private readonly Utf8ConstructionMap<MethodBase, MethodToken> _methods;
     private readonly Utf8ConstructionMap<Type, nint> _types;
-    private readonly Utf8ConstructionBuffer<ScratchArray> _scratch;
+    // This subtotal is bounded by the admitted shared ledger; it does not root arrays.
+    private ulong _scratchBytes;
     private readonly int _parameterCount;
     private readonly bool _returns;
     private bool _completed;
@@ -51,7 +51,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         _scope = state.Scope; _budget = state.Budget; _method = state.Method; _info = state.Info;
         _code = state.Code; _labels = state.Labels; _fixups = state.Fixups;
         _instructions = state.Instructions; _locals = state.Locals;
-        _methods = state.Methods; _types = state.Types; _scratch = state.Scratch; _parameterCount = state.ParameterCount; _returns = state.Returns;
+        _methods = state.Methods; _types = state.Types; _scratchBytes = state.ScratchBytes; _parameterCount = state.ParameterCount; _returns = state.Returns;
         _completed = state.Completed; _disposed = state.Disposed;
     }
 
@@ -102,7 +102,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
                     Utf8ConstructionBuffer<Type>.Create(budget),
                     Utf8ConstructionMap<MethodBase, MethodToken>.Create(budget, EqualityComparer<MethodBase>.Default),
                     Utf8ConstructionMap<Type, nint>.Create(budget, EqualityComparer<Type>.Default),
-                    Utf8ConstructionBuffer<ScratchArray>.Create(budget),
+                    0UL,
                     copied.Length, result != typeof(void), false, false);
                 return budget.AllocateObject(state, static value => new Utf8DynamicIlBuilder(value));
             }
@@ -132,8 +132,9 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     {
         CheckMutable();
         var array = _budget.AllocateArray<T>(count, false);
-        try { _scratch.Add(new(array, Utf8ConstructionBudget.ArrayBytes<T>(count))); }
-        catch { _budget.ReleaseArray(array, false); throw; }
+        // Array admission precedes this subtotal. Keep its charge until disposal,
+        // even if no caller retains the array and GC collects it meanwhile.
+        _scratchBytes += Utf8ConstructionBudget.ArrayBytes<T>(count);
         return array;
     }
 
@@ -430,8 +431,8 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         _disposed = true;
         _code.Dispose(); _labels.Dispose(); _fixups.Dispose(); _instructions.Dispose(); _locals.Dispose();
         _methods.Dispose(); _types.Dispose();
-        foreach (var array in _scratch) _budget.ReleaseBytes(array.Bytes);
-        _scratch.Dispose();
+        _budget.ReleaseBytes(_scratchBytes);
+        _scratchBytes = 0;
         _method = null; _info = null;
         _budget.LeaveDepth(); _scope.Dispose();
     }
