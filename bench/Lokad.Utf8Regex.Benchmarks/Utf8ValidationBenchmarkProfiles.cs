@@ -46,7 +46,9 @@ internal static class Utf8ValidationBenchmarkProfiles
     private static string BuildRepeatedToByteLength(string seed, int targetBytes)
     {
         var builder = new StringBuilder(targetBytes);
-        while (Encoding.UTF8.GetByteCount(builder.ToString()) < targetBytes)
+        var seedBytes = Encoding.UTF8.GetByteCount(seed);
+        var repetitions = (targetBytes + seedBytes - 1) / seedBytes;
+        for (var i = 0; i < repetitions; i++)
         {
             builder.Append(seed);
         }
