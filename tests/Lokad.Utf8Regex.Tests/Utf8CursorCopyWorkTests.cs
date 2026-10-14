@@ -80,6 +80,87 @@ public sealed class Utf8CursorCopyWorkTests
         Assert.Equal(0L, allocated);
     }
 
+    [Fact]
+    public void CheckpointCanPromoteInlineStorageAndPublishSharedAliases()
+    {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        Utf8SliceInvocation published = default;
+        var checkpoints = new List<ulong>();
+        invocation.CheckpointHook = steps =>
+        {
+            checkpoints.Add(steps);
+            invocation.ShareStorageForCursor();
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
+            published = invocation;
+        };
+        for (var i = 0; i < 64; i++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+
+        Assert.Equal(new[] { 64UL }, checkpoints);
+        Assert.Equal(64UL, published.Budget.Steps);
+        Assert.Equal(13UL, published.Ledger.ReservedBytes);
+        Assert.Equal(Utf8ExecutionLimitKind.None, published.TryChargeInputStep());
+        Assert.Equal(65UL, invocation.Budget.Steps);
+        published.Ledger.Release(13);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(new[] { 64UL }, checkpoints);
+    }
+
+    [Theory]
+    [InlineData(63UL)]
+    [InlineData(64UL)]
+    public void DenialAtCheckpointBoundaryKeepsSharedWorkAndSuppressesLaterHooks(ulong cap)
+    {
+        var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
+        var checkpoints = new List<ulong>();
+        invocation.CheckpointHook = checkpoints.Add;
+        var alias = invocation;
+        for (ulong i = 0; i < cap; i++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+
+        Assert.Equal(cap == 64 ? new[] { 64UL } : Array.Empty<ulong>(), checkpoints);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, alias.TryChargeInputStep());
+        Assert.Equal(cap + 1, invocation.Budget.Steps);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.TryChargeInputStep());
+        Assert.Equal(cap + 2, alias.Budget.Steps);
+        Assert.Equal(cap == 64 ? new[] { 64UL } : Array.Empty<ulong>(), checkpoints);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CheckpointPreservesOriginalCancellationAndImmediateInputDeadline(bool expire)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20)) : Utf8ExecutionDeadline.Infinite;
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), deadline, token.Token);
+        var alias = invocation;
+        var checkpoints = new List<ulong>();
+        invocation.CheckpointHook = steps =>
+        {
+            checkpoints.Add(steps);
+            invocation.ShareStorageForCursor();
+            if (expire) ticks = 21;
+            else token.Cancel();
+        };
+        for (var i = 0; i < 63; i++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+
+        if (expire)
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => invocation.TryChargeInputStep());
+        else
+        {
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => alias.TryChargeInputStep()).CancellationToken);
+        }
+        Assert.Equal(64UL, alias.Budget.Steps);
+        Assert.Same(deadline, alias.Budget.Deadline);
+        Assert.Equal(new[] { 64UL }, checkpoints);
+        Assert.Equal(Utf8ExecutionLimitKind.None, alias.Budget.LimitBreach);
+    }
+
     [Theory]
     [MemberData(nameof(Routes))]
     public void PublicCopiesKeepIndependentPositionsAndOneCumulativeWorkCounter(string pattern, string text, bool compiled, bool rtl)

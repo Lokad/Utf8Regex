@@ -86,10 +86,12 @@ internal struct Utf8SliceInvocation
 
     internal Utf8ExecutionLimitKind TryChargeStep()
     {
-        var breach = Budget.TryChargeStep();
-        if (breach == Utf8ExecutionLimitKind.None && CheckpointHook is not null && (Budget.Steps & 63) == 0)
+        // Borrow only until invoking the hook; later checks select the current owner again.
+        ref var budget = ref Budget;
+        var breach = budget.TryChargeStep();
+        if (breach == Utf8ExecutionLimitKind.None && CheckpointHook is not null && (budget.Steps & 63) == 0)
         {
-            CheckpointHook(Budget.Steps);
+            CheckpointHook(budget.Steps);
         }
         return breach;
     }

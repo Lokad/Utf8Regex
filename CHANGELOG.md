@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased invocation budget access (0.4.0-scalar.48-dev)
+
+- Borrow the current work budget once before charging and reading checkpoint
+  steps. Keep exact work units, sticky denial, shared cursor allowance and the
+  original token/deadline; checks after a callback select the current owner again.
+- A focused quiet-VM literal Count control improves finite lanes about10–11%
+  with unchanged allocations. This is source evidence, not a new package or
+  universal performance claim; scalar.47 remains immutable.
+
 ## Private core/PythonRe candidate (0.4.0-scalar.47)
 
 - Include the accepted numeric construction arena, atomic map insertion and
