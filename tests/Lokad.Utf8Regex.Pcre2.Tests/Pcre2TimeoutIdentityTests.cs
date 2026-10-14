@@ -97,10 +97,11 @@ public sealed class Pcre2TimeoutIdentityTests
             default(Utf8Pcre2ExecutionLimits),
             TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Analyze().IsFullyNative);
-        var enumerator = regex.EnumerateMatches(CreateCatastrophicInput());
         Pcre2MatchException? caught = null;
         try
         {
+            // Startup participates in the same deadline as MoveNext.
+            var enumerator = regex.EnumerateMatches(CreateCatastrophicInput());
             while (enumerator.MoveNext())
             {
             }
