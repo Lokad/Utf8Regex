@@ -13,6 +13,60 @@ public sealed class Utf8FiniteLiteralCountTests
             new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
 
     [Theory]
+    [InlineData("aa|a", "aaa", 2)]
+    [InlineData("a|aa", "aaa", 3)]
+    [InlineData("abcdefgh|xyzzz|ztzzz", "abcde xyzzz ztzzz abcdefgh", 3)]
+    [InlineData("😀😀|😀|中", "😀😀😀中", 3)]
+    [InlineData("😀|😀😀|中", "😀😀😀中", 4)]
+    [InlineData("(a)|(bc)|(def)", "adefbca", 4)]
+    public void SmallOrderedFamiliesCountWithoutVmStorage(string pattern, string text, int expected)
+    {
+        var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = Create(pattern, 100000, mode);
+            Assert.Equal(expected, regex.Count(storage.AsSpan(7, Encoding.UTF8.GetByteCount(text))));
+        }
+    }
+
+    [Theory]
+    [InlineData("aa|a", "aaa")]
+    [InlineData("😀😀|😀|中", "😀😀😀中")]
+    public void SmallFamilyWorkDenialIsCumulativeAndNeverPublishesPartialCount(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Utf8Regex(pattern).Count(input);
+        ulong low = 1, high = 100000;
+        while (low < high)
+        {
+            var cap = low + (high - low) / 2;
+            try { Assert.Equal(expected, Create(pattern, cap, RegexOptions.Compiled).Count(input)); high = cap; }
+            catch (Utf8ResourceLimitExceededException failure)
+            {
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+                Assert.Equal(cap + 1, failure.Requested);
+                low = cap + 1;
+            }
+        }
+        for (ulong cap = 1; cap < low; cap++)
+        {
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                Create(pattern, cap, RegexOptions.Compiled).Count(input));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+            Assert.Equal(cap + 1, failure.Requested);
+        }
+        Assert.Equal(expected, Create(pattern, low, RegexOptions.Compiled).Count(input));
+    }
+
+    [Fact]
+    public void SmallFamilyCountStillRejectsMalformedSuffix()
+    {
+        var regex = Create("ab|cd|ef", 100000, RegexOptions.Compiled);
+        byte[] input = [.. "ab cd"u8, 0xF0, 0x9F];
+        Assert.Throws<ArgumentException>(() => regex.Count(input));
+    }
+
+    [Theory]
     [InlineData(1)] [InlineData(2)] [InlineData(31)] [InlineData(2047)]
     [InlineData(2048)] [InlineData(2049)] [InlineData(4097)]
     public void BoundedLiteralCountPreservesFalseCandidatesChunkEdgesAndBorrowedSlices(int length)
@@ -98,15 +152,17 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
-    public void OriginalInterruptionCoversValidationAndNativeSearch(bool validationPhase, bool expire)
+    [InlineData("(a)(b)", false, false)] [InlineData("(a)(b)", false, true)]
+    [InlineData("(a)(b)", true, false)] [InlineData("(a)(b)", true, true)]
+    [InlineData("ab|cd|ef", false, false)] [InlineData("ab|cd|ef", false, true)]
+    [InlineData("ab|cd|ef", true, false)] [InlineData("ab|cd|ef", true, true)]
+    public void OriginalInterruptionCoversValidationAndNativeSearch(string pattern, bool validationPhase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var input = new byte[320000]; Array.Fill(input, (byte)'x');
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var regex = new Utf8Regex("(a)(b)", RegexOptions.CultureInvariant | RegexOptions.Compiled,
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, policy);
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         _ = Utf8Validation.Validate(input, ref probe);
@@ -148,6 +204,15 @@ public sealed class Utf8FiniteLiteralCountTests
     [InlineData("(?<s>a)(?<s>b)", "ab ab", RegexOptions.None)]
     [InlineData("(?<1>a)(b)", "ab ab", RegexOptions.None)]
     [InlineData("^(a)(b)$", "ab", RegexOptions.None)]
+    [InlineData("^(aa|bb)$", "xaa aa bb bbx", RegexOptions.None)]
+    [InlineData(@"\b(?:aa|ab)\b", "xaa ab aa abx", RegexOptions.None)]
+    [InlineData("aa|a", "aaa", RegexOptions.RightToLeft)]
+    [InlineData("aa|a", "AAA", RegexOptions.IgnoreCase)]
+    [InlineData("|ab", "😀ab", RegexOptions.None)]
+    [InlineData(@"(aa|bb)\1", "aaaa aa bb bbbb", RegexOptions.None)]
+    [InlineData("(?<x>aa)|(?<x>bb)", "aa bb", RegexOptions.None)]
+    [InlineData("(?<1>aa)|bb", "aa bb", RegexOptions.None)]
+    [InlineData("a|aa", "aaa", RegexOptions.NonBacktracking)]
     public void UnqualifiedShapesKeepTheirScalarOutcomes(string pattern, string text, RegexOptions mode)
     {
         var input = Encoding.UTF8.GetBytes(text);

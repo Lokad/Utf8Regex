@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased bounded small-family Count (0.4.0-scalar.49-dev)
+
+- Reuse the existing metered native Count driver for eligible exact LTR families
+  of two or three nonempty literals. Preserve ordered scalar matching, complete
+  validation, original interruption and cumulative finite limits.
+- Count needs no published captures, so remove VM slots/workspace and duplicate
+  verification on this route. Work/depth/working requirements can decrease; larger
+  and semantically excluded families retain the VM.
+- The selected family control removes1,872B/call and shows a large finite-lane
+  improvement in bounded WSL runs. No general parity or quiet-VM claim; scalar.48
+  package bytes remain unchanged.
+
 ## Private repaired core/PythonRe candidate (0.4.0-scalar.48)
 
 - Include the unequal-literal admission repair and accepted work/working-budget

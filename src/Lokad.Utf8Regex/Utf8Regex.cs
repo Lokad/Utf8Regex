@@ -1165,7 +1165,7 @@ public sealed partial class Utf8Regex
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, ref Utf8SliceInvocation invocation)
     {
-        // A pure literal Count needs no capture slots or continuation frames.
+        // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
         // into the VM solely because they selected an enforceable policy.
         if (HasFiniteExecutionLimits && !program.RightToLeft && !program.IgnoreCase &&
@@ -1173,8 +1173,11 @@ public sealed partial class Utf8Regex
             !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
             !program.SawLookaround && !program.HasConditionalTest &&
             !_requiresKelvinSignFallback &&
-            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
-            _preparedRegex.LiteralUtf8 is { Length: > 0 } &&
+            !program.CanMatchEmpty &&
+            (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
+                _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
+             _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+                _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: 2 or 3 }) &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(

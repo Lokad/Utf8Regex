@@ -191,6 +191,15 @@ scratch requirement. Folded, boundary/trailing assertions, contiguous anchors,
 shared/explicit numbering and balancing retain their qualified routes; captured
 Unicode and NonBacktracking patterns without a native plan also retain the VM.
 Offset interoperability maps keep their separate working/result admission.
+Development source also reuses this existing metered driver for prepared exact
+LTR families with two or three nonempty branches and no stateful/anchor/folding
+exclusions. Count publishes no capture values, so ordinary distinct captures need
+no slots; the driver retains ordered non-overlapping matching and full-subject
+validation. Removing VM verification/workspace lowers actual work/depth/working
+requirements and can admit calls below the previous scratch cap. It does not
+remove per-window/predicate metering or the terminal interruption check. Larger,
+empty and excluded families retain their existing routes. Scalar.48 predates this
+source change; it is not a new package designation or a CPU-time equivalence claim.
 Controlled Count for one exact forward literal without boundary/trailing
 conditions invokes the same bounded candidate/comparison kernels directly. It
 omits generic match construction and unconditional boundary confirmation,
