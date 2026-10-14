@@ -54,7 +54,7 @@ if (-not $CommandArgs) {
 }
 
 if (-not $SkipBuild) {
-    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore --disable-build-servers /nodeReuse:false /p:UseSharedCompilation=false
+    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore -p:GeneratePackageOnBuild=false --disable-build-servers /nodeReuse:false /p:UseSharedCompilation=false
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }

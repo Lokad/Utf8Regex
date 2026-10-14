@@ -88,7 +88,8 @@ if (-not $SkipBuild) {
         "--tl:off",
         "--nologo",
         "-v", "minimal",
-        "--no-restore"
+        "--no-restore",
+        "-p:GeneratePackageOnBuild=false"
     ) + $stableDotNetArgs
 
     $buildExitCode = Invoke-DotNetWithRetry -Arguments $buildArguments -MaxAttempts $RetryCount

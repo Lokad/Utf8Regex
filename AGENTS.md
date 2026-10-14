@@ -26,6 +26,8 @@ configuration binaries with `-SkipBuild` for subsequent focused filters. The
 default solution target is for meaningful delivery boundaries, when the complete
 relevant configuration/platform/package checks are due. Normal runs do not stop
 build servers or test hosts; Windows file-lock retries recover repository hosts.
+Test and benchmark script builds disable incidental NuGet packing; explicit
+package qualification keeps its separate build/provenance/pack steps.
 
 ```powershell
 ./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8FiniteLiteralCountTests'
