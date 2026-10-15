@@ -3,8 +3,11 @@
 ## Private scalar.52 Core/PythonRe candidate (qualification pending)
 
 - Prepare a fresh identity for the completed checked-access batch. Cumulative
-  original-baseline costs and exact package/consumer qualification are pending;
-  no publication, downstream adoption or PCRE2 designation is implied.
+  original-baseline qualification fails: folded24 public Count is13–14% slower,
+  Cyrillic ASCII-miss Count about65% slower, with unchanged Core allocations.
+  A bounded repair failed and was restored exactly. Exact package/consumer
+  qualification has not run; these remain delivery blockers.
+  No publication, downstream adoption or PCRE2 designation is implied.
 - Library builds no longer pack implicitly. Explicit package qualification
   remains responsible for the one producer build, pack and provenance checks.
 

@@ -69,6 +69,14 @@ integration remain open. This recipe is a conditional composition of already
 qualified scope, with no consumer adoption, new shared engine meter or package
 designation implied.
 
+The proposed consumer reconciliation is an explicit member exception for
+`System.Runtime.CompilerServices.Unsafe.SizeOf<T>()` only. It queries a managed
+type's size and performs no unchecked read, pointer arithmetic or reference
+reinterpretation. Keep rejecting the other Unsafe members and SIMD LoadUnsafe;
+do not replace SizeOf with manual estimates. This is a producer proposal, not
+downstream agreement: the unmodified strict gate still fails. Prepared scalar.52
+also fails the cumulative performance gate and has no package designation.
+
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.
 `PythonReFiniteResultPolicyTests.CursorTrafficSurvivesPublicationAndAliasesShareFailureCleanup`

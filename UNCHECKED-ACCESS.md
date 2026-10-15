@@ -21,9 +21,33 @@ fixed pre-C28 source c79f80620ef95a27c43ab8f5619795833feae8d9. Its preserved Cor
 DLL is artifacts/short-literal-checked-10pct-20261014/core-before.dll, SHA256
 8642E9A261E56EDC4B9CFC6D72FF9A9B3ADB9B72BE22AEA40AD5714C555B4202. Focused
 predecessor comparisons remain evidence for individual changes, but do not prove
-that their combined public-operation cost is within 10%. That final comparison
-is unfinished. Keep SizeOf separate: it performs no unchecked memory access;
+that their combined public-operation cost is within 10%. The first cumulative
+comparison **fails**: 24-byte folded Count is +13.33% ordinary/+14.17% compiled,
+and Cyrillic ASCII-miss Count is +64.76%. The unchanged BCL control is -0.35%;
+Core allocations are unchanged. These are public-operation costs, not kernel
+figures. Keep SizeOf separate: it performs no unchecked memory access;
 Lython's blanket rejection requires explicit acceptance-contract reconciliation.
+
+The frozen candidate is source11a99f14, Core SHA256
+2377238ECB9A3C9CA5687F66329606773D546F67DC6462437B8E49A4BD19844C.
+The exact predeclared set covers40 affected Core public rows and an unchanged
+BCL control,16 PythonRe result/cursor comparisons and four construction rows.
+Python capture values, ranges, LastIndex and tuple contents agree, but cost
+spreads reach113%; their medians do not establish cumulative acceptance or
+precise allocation equivalence. Existing scalar.51 bytes remain immutable;
+scalar.52 is prepared source only, with no package qualification/designation.
+
+One bounded repair also fails: a checked tiny-fragment comparer leaves folded24
+at +14.68/+15.31%, while numeric-offset fixed-width checked Slice gives Cyrillic
+ASCII-miss +94.69% and ASCII-runs +62.66%; its BCL control is +1.15%.
+Release388 affected correctness/resource tests pass. Both experimental source
+files were restored byte-for-byte, and rebuilt Core/PythonRe SHA256 exactly
+match the prepared source pair. No confirmation, next variant or package matrix
+follows. Source removal remains preserved, but these cumulative regressions are
+delivery blockers. Another bounded attempt needs a specific new mechanism and
+untimed evidence, not a different spelling of the same load or a rolling baseline.
+Evidence: artifacts/checked-cumulative-20261015/, including PREDECLARED.json,
+raw samples, delivery-receipt.json and repair/restored-identities.json.
 
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
@@ -52,7 +76,8 @@ revisit demonstrated defects or concrete source/JIT changes.
 There are no retained unchecked Core reads. Earlier failed prototypes below are
 historical, not the current implementation. Lython's stricter SizeOf rejection
 still fails its gate; the producer's allowed-member gate passes. Neither result
-substitutes for the unfinished cumulative cost/package/consumer qualification.
+substitutes for the failed cumulative cost decision or pending package/consumer
+qualification. Historical local acceptances below do not override that failure.
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
