@@ -51,9 +51,8 @@ changes, including configured CRLF, Unicode and NUL newline terminators. Ignored
 escapes, callouts, brackets and option text no longer cause false compilation
 errors. Literal hashes and actual syntax after classes/comments remain checked;
 the existing parsers share the same bounded comment skipper. This also preserves
-captures after non-ASCII/NUL comment terminators. Scoped reset-option execution
-such as `(?^:...)` remains explicitly unserved; lexical recognition does not imply
-matching support. Existing construction authority and immutable packages remain.
+captures after non-ASCII/NUL comment terminators. Existing construction authority
+and immutable packages remain.
 
 Development also fixes per-directive extended settings in execution: scoped `xx`
 ignores class spaces/tabs, one `x` clears inherited `xx`, and `-x` clears both.
@@ -61,6 +60,13 @@ Repeated single-`x` directives stay in ordinary extended mode. Inline extended
 capture shapes keep the owned PCRE2 program, preserving their whitespace rules,
 byte ranges, captures and replacement output through the existing resource
 authority. Incompatible Core preparation is omitted. This is post53 source work.
+
+Development executes scoped and captured reset-option forms such as `(?^:...)`
+and `(?^)(...)` in the owned parser. Reset clears the supported case, line, capture
+and extended settings; supported options can then be enabled within that scope.
+Ungreedy and existing duplicate-name settings remain. Outer settings restore when
+the scope closes; capture numbering, scalar references and empty advancement stay
+valid. The invalid combination of reset and `-` fails at construction.
 
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class

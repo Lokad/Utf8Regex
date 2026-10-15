@@ -202,7 +202,13 @@ internal static class Pcre2PatternCodeScan
             for (; end < pattern.Length; end++)
             {
                 var flag = pattern[end];
-                if (flag == '-') { enable = false; continue; }
+                if (flag == '-')
+                {
+                    if (reset) throw new Pcre2CompileException("A reset-option directive cannot contain '-'.",
+                        Pcre2ErrorKind.InvalidAfterParensQuery);
+                    enable = false;
+                    continue;
+                }
                 if (!char.IsAsciiLetter(flag)) break;
                 if (flag == 'x')
                 {

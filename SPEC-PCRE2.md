@@ -65,6 +65,12 @@ Under `xx`, unescaped class spaces/tabs are ignored; under `x`, they are literal
 Owned profile execution must retain these rules through captures, coordinates,
 references and replacement instead of delegating incompatible class semantics.
 
+Reset-option forms `(?^:...)` and `(?^)` clear the supported `i`, `m`, `n`, `s`,
+`x` and `xx` settings before applying following supported flags. They retain
+ungreedy (`U`) and duplicate-name (`J`) state. Scoped settings restore on exit;
+global directives apply to the current scope. `-` cannot appear in a reset
+directive and must fail construction with `InvalidAfterParensQuery`.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

@@ -24,18 +24,18 @@ internal sealed class Pcre2CompiledBacktrackingOutcome : IPcre2BacktrackingCompi
     internal Pcre2CompiledBacktrackingOutcome(
         Pcre2BacktrackingSyntaxTree syntaxTree,
         Pcre2BacktrackingProgram program,
-        bool hasInlineExtendedOptions)
+        bool requiresProfileOptions)
     {
         SyntaxTree = syntaxTree;
         Program = program;
-        HasInlineExtendedOptions = hasInlineExtendedOptions;
+        RequiresProfileOptions = requiresProfileOptions;
     }
 
     internal Pcre2BacktrackingSyntaxTree SyntaxTree { get; }
 
     internal Pcre2BacktrackingProgram Program { get; }
 
-    internal bool HasInlineExtendedOptions { get; }
+    internal bool RequiresProfileOptions { get; }
 }
 
 internal static class Pcre2BacktrackingCompiler
@@ -60,7 +60,7 @@ internal static class Pcre2BacktrackingCompiler
         return new Pcre2CompiledBacktrackingOutcome(
             new Pcre2BacktrackingSyntaxTree(root),
             program,
-            parser.HasInlineExtendedOptions);
+            parser.RequiresProfileOptions);
     }
 }
 

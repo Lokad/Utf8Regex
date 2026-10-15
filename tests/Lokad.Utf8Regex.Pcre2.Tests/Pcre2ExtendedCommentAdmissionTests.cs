@@ -48,14 +48,11 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     }
 
     [Fact]
-    public void ResetDirectiveKeepsLexicalModeWithoutClaimingUnservedExecution()
+    public void ResetDirectiveKeepsLexicalAndExecutionMode()
     {
         const string pattern = "(?^:a#b)";
         Pcre2CompileValidator.ValidatePattern(pattern, Pcre2CompileOptions.Extended, default);
-        // Reset execution remains outside the currently served parser profile.
-        // Its lexical guard must still distinguish a literal hash from comments.
-        Assert.Throws<NotSupportedException>(() =>
-            new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended).IsMatch("a#b"u8));
+        Assert.True(new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended).IsMatch("a#b"u8));
     }
 
     [Theory]

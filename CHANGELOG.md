@@ -2,6 +2,11 @@
 
 ## PCRE2 development after scalar.53
 
+- Execute scoped/captured reset-option forms in the existing owned parser.
+  Reset supported case/line/capture/extended flags, retain ungreedy/duplicate-name
+  state and restore outer settings on scope exit. Preserve scalar captures,
+  references, replacement, empty advancement and existing invocation controls.
+  Reject reset-with-minus syntax before backend selection; native probes agree.
 - Apply inline x/xx settings per directive in the existing parsers. Fix scoped
   class whitespace, switches from xx to x, repeated single-x directives and -x
   clearing both modes. Keep inline extended capture shapes in the owned PCRE2
@@ -12,7 +17,7 @@
   preserve global/scoped x/xx, configured newlines, literal hashes and real
   restrictions after class boundaries. Fix false rejection of commented syntax
   and lost captures after Unicode/NUL terminators. Curated native UTF-8 comparisons
-  agree; scoped reset-option execution remains explicitly unserved.
+  agree for the recorded comment corpus.
 - Enforce the selected eight-bit profile's metadata limits before backend
   selection: capture names at most 128 UTF-8 bytes, verb labels at most 255.
   Fix over-admission through UTF-16 length checks and backend declines. Preserve

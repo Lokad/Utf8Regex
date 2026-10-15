@@ -34,7 +34,7 @@ internal sealed class Pcre2BacktrackingParser
 
     internal int CaptureCount => _captureCount;
 
-    internal bool HasInlineExtendedOptions { get; private set; }
+    internal bool RequiresProfileOptions { get; private set; }
 
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
 
@@ -1320,11 +1320,20 @@ internal sealed class Pcre2BacktrackingParser
         var enabledX = false;
         var enabledMore = false;
         var disabledX = false;
+        var reset = cursor < _pattern.Length && _pattern[cursor] == '^';
+        if (reset)
+        {
+            options = Pcre2CharacterOptions.None;
+            noAutoCapture = false;
+            sawOption = true;
+            cursor++;
+        }
         while (cursor < _pattern.Length)
         {
             var ch = _pattern[cursor];
             if (ch == '-')
             {
+                if (reset) return false;
                 enabling = false;
                 cursor++;
                 continue;
@@ -1338,7 +1347,7 @@ internal sealed class Pcre2BacktrackingParser
                 }
 
                 options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(options, enabledX, enabledMore, disabledX);
-                HasInlineExtendedOptions |= enabledX;
+                RequiresProfileOptions |= enabledX || reset;
                 openingLength = cursor - _offset + 1;
                 return true;
             }
@@ -1380,11 +1389,20 @@ internal sealed class Pcre2BacktrackingParser
         var enabledX = false;
         var enabledMore = false;
         var disabledX = false;
+        var reset = cursor < _pattern.Length && _pattern[cursor] == '^';
+        if (reset)
+        {
+            options = Pcre2CharacterOptions.None;
+            noAutoCapture = false;
+            sawOption = true;
+            cursor++;
+        }
         while (cursor < _pattern.Length)
         {
             var ch = _pattern[cursor];
             if (ch == '-')
             {
+                if (reset) return false;
                 enabling = false;
                 cursor++;
                 continue;
@@ -1398,7 +1416,7 @@ internal sealed class Pcre2BacktrackingParser
                 }
 
                 _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(options, enabledX, enabledMore, disabledX);
-                HasInlineExtendedOptions |= enabledX;
+                RequiresProfileOptions |= enabledX || reset;
                 _ungreedy = ungreedy;
                 _noAutoCapture = noAutoCapture;
                 _allowDuplicateNames = allowDuplicateNames;
