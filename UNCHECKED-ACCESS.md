@@ -45,7 +45,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | PreparedSearchPrimitives /4 | Correlated windows stop at length-compareOffset-width; candidate confirmation slices the full admitted literal. No new conversion qualified. |
 | PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
-| Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. No new conversion qualified. |
+| Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. Checked shared-helper conversion exceeds10% on width8 public Count; retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission; closed URI conversions regress at boundaries. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
@@ -133,6 +133,20 @@ and are controls only. These are public-operation timings, not isolated kernel
 estimates. Borrowed offsets, every block tail, malformed/non-ASCII input and
 finite/interruption checks pass. No confirmation, additional variant or per-helper
 package matrix is needed. Evidence: artifacts/exact-count-checked-20261015/.
+
+The fixed-width class Count pilot is deferred. Passing the subject span into
+CreateMatchMask and reading a checked suffix preserves SIMD, masks, nonoverlap,
+final overlapping blocks, scalar suffix fallback and allocations. Public Count
+executes the helper for both ordinary and compiled patterns. One bounded actual-
+DLL comparison finds width4 medians about5.7–5.8% slower, but width8 about19.6–20.5%
+slower; unchanged literal controls move1.3–2.5%. The width8 result exceeds10%
+without needing a confirmation. Linux FullOpts helper code grows588→635 bytes
+and retains guards. The original source is restored; no width-specific safe/
+unsafe selector or further variant is added. New widths3..8/borrowed-offset/tail
+tests remain, alongside predicate, decline and interruption coverage. Core Release
+6777 and Debug76 checks pass on the candidate, and20 fixed-width checks pass after
+restoration. Evidence: artifacts/fixed-width-checked-20261015/. Scalar.50 remains
+immutable; there is no new package qualification for this pilot.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,

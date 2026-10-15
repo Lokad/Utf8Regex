@@ -318,6 +318,34 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Fact]
+    public void VectorizedFixedWidthCountPreservesBorrowedOffsetsAndOverlappingTails()
+    {
+        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported) return;
+
+        for (var width = 3; width <= 8; width++)
+        {
+            var prefix = new string('a', width - 2);
+            var pattern = prefix + "[0-9]b";
+            var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+            var corpus = string.Concat(Enumerable.Repeat(prefix + "1b-" + prefix + "Xb-", 16));
+            for (var length = width + 31; length <= width + 95; length++)
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(corpus[..length]);
+                var expected = Regex.Count(corpus[..length], pattern, RegexOptions.CultureInvariant);
+                foreach (var offset in new[] { 0, 1, 7, 17, 31 })
+                {
+                    var storage = Enumerable.Repeat((byte)'x', offset + length + 33).ToArray();
+                    bytes.CopyTo(storage.AsSpan(offset));
+                    Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+                        analysis.StructuralLinearProgram, storage.AsSpan(offset, length),
+                        Utf8ExecutionDeadline.Infinite, out var actual));
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void VectorizedFixedWidthCountHandsLongBarrenSuffixToScalarSearch()
     {
         if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
