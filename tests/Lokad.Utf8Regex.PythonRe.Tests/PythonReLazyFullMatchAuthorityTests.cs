@@ -5,6 +5,11 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReLazyFullMatchAuthorityTests
 {
+    // Entry, instruction-array admission, then the bounded instruction copy.
+    // Interrupt after acquisition so cleanup is exercised without depending on
+    // the retired AST conversion's number of helper checkpoints.
+    private const int CopyCheckpoint = 3;
+
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void ColdFullMatchDoesNotRestartDeadlineAfterPreparation(int result)
@@ -15,12 +20,12 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var construction = Utf8ConstructionScope.Enter();
         var checkpoints = 0;
-        Action<ulong> hook = _ => { if (++checkpoints == 8) ticks = 250; };
+        Action<ulong> hook = _ => { if (++checkpoints == CopyCheckpoint) ticks = 250; };
         construction.Budget.CheckpointHook = hook;
         var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, result, CancellationToken.None));
         Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
         Assert.Equal("😀a", error.Input);
-        Assert.Equal(8, checkpoints);
+        Assert.Equal(CopyCheckpoint, checkpoints);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         AssertRestored(construction, hook);
         // Interrupted preparation must not poison future invocations.
@@ -37,11 +42,11 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         using var cancellation = new CancellationTokenSource();
         using var construction = Utf8ConstructionScope.Enter();
         var checkpoints = 0;
-        Action<ulong> hook = _ => { if (++checkpoints == 8) cancellation.Cancel(); };
+        Action<ulong> hook = _ => { if (++checkpoints == CopyCheckpoint) cancellation.Cancel(); };
         construction.Budget.CheckpointHook = hook;
         var error = Assert.Throws<OperationCanceledException>(() => Run(regex, result, cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
-        Assert.Equal(8, checkpoints);
+        Assert.Equal(CopyCheckpoint, checkpoints);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         AssertRestored(construction, hook);
         Assert.True(regex.FullMatch("😀a"u8).Success);
@@ -57,7 +62,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         {
             construction.Budget.CancellationToken = parent.Token;
             var checkpoints = 0;
-            Action<ulong> hook = _ => { if (++checkpoints == 8) parent.Cancel(); };
+            Action<ulong> hook = _ => { if (++checkpoints == CopyCheckpoint) parent.Cancel(); };
             construction.Budget.CheckpointHook = hook;
             var error = Assert.Throws<OperationCanceledException>(() => regex.FullMatch("😀a"u8, 0, call.Token));
             Assert.Equal(parent.Token, error.CancellationToken);
@@ -102,7 +107,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             var checkpoints = 0;
             Action<ulong> hook = _ =>
             {
-                if (++checkpoints != 8) return;
+                if (++checkpoints != CopyCheckpoint) return;
                 bothCompiling.Signal();
                 Assert.True(bothCompiling.Wait(TimeSpan.FromSeconds(10)), "Both cold factories must enter independently.");
                 if (cancel) cancellation.Cancel();
@@ -113,7 +118,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
                 var error = Assert.Throws<OperationCanceledException>(() => regex.FullMatch("😀a"u8, 0, cancellation.Token));
                 Assert.Equal(cancellation.Token, error.CancellationToken);
                 AssertRestored(construction, hook);
-                Assert.Equal(8, checkpoints);
+                Assert.Equal(CopyCheckpoint, checkpoints);
             }
             else
             {
@@ -125,7 +130,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             return checkpoints;
         }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         var results = await Task.WhenAll(RunCold(true), RunCold(false));
-        Assert.True(results[1] > 8);
+        Assert.True(results[1] > CopyCheckpoint);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.FullMatch("😀a"u8).Success);
     }

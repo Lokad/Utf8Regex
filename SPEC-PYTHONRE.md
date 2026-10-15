@@ -154,7 +154,13 @@ the expression's invocation policy/token/timeout remain independent. Lazy
 full-match and replacement preparation, CLR/JIT metadata, incidental acquisitions
 and caller retention retain separate scope. Static caches are not consulted.
 For scalar FullMatch value/context/data/string calls, invocation authority is created
-before accessing the lazy full-match program. Elapsed cold preparation therefore
+before accessing the lazy full-match program. Preparation copies the existing
+top-level scalar instructions, replaces their terminal Accept with an absolute
+end anchor, and appends Accept. Existing instruction targets and backtracking
+remain intact. Immutable predicate tables, assertion programs and capture names
+are shared; the expression no longer retains its parse tree to compile again.
+New instruction storage and program metadata retain construction admission.
+Elapsed cold preparation therefore
 counts toward the original absolute match deadline; the cursor does not restart
 it. Cold compilation observes that call's token and deadline at the existing
 construction checkpoints, preserving any enclosing construction authority.

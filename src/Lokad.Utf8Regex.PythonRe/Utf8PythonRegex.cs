@@ -219,17 +219,17 @@ public sealed partial class Utf8PythonRegex
         _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _translation = PythonReTranslator.Translate(parseResult);
-        _scalarProgram = PythonReScalarCompiler.Compile(parseResult, _translation, false);
+        _scalarProgram = PythonReScalarCompiler.Compile(parseResult, _translation);
         // Failed preparation is retryable: a caller's cancellation must not
         // become a permanently cached failure. Concurrent cold callers may each
-        // compile under their own construction scope; only one result is kept.
-        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.Compile(parseResult, _translation, true), LazyThreadSafetyMode.PublicationOnly);
+        // derive under their own construction scope; only one result is kept.
+        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
         _coreGroupNumbersByPythonGroup = _translation.CoreNumbersByPython;
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
         _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
-        // The parser transfers an admitted immutable map; the lazy full program
-        // already retains the parse result. Borrow it for replacement lookup.
+        // Transfer the parser's admitted immutable name map for replacement
+        // lookup without retaining the rest of the parse tree.
         _namedGroups = parseResult.NamedGroups;
 
         try

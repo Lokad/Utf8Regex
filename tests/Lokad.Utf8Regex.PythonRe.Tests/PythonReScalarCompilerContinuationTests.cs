@@ -34,7 +34,8 @@ public sealed class PythonReScalarCompilerContinuationTests
                 _ => new PythonReGroupNode(PythonReGroupKind.ScopedFlags, node, null,
                     PythonReCompileOptions.Multiline, PythonReCompileOptions.None),
             };
-        var program = PythonReScalarCompiler.Compile(parse with { Root = node }, translation, full);
+        var program = PythonReScalarCompiler.Compile(parse with { Root = node }, translation);
+        if (full) program = PythonReScalarCompiler.RequireFullMatch(program);
         Assert.NotNull(program);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];

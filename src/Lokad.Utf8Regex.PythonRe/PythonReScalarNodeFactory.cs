@@ -43,10 +43,6 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.EmptyNode Empty() =>
         Create(Utf8SliceNodeKind.Empty, static _ => new Utf8SliceNode.EmptyNode());
 
-    internal static Utf8SliceNode.AnchorNode VeryEnd() =>
-        Create((Utf8SliceNodeKind.Anchor, Utf8SliceAnchorKind.VeryEnd, false), static state =>
-            new Utf8SliceNode.AnchorNode(state.Item2, state.Item3));
-
     private static TNode Create<TState, TNode>(TState state, Func<TState, TNode> factory) where TNode : class =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(state, factory);
 }

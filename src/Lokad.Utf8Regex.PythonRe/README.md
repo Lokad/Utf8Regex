@@ -149,6 +149,12 @@ and result caps with an existing host batch owner. Its reservation must survive
 retained snapshots and fresh calls need new admission. It covers only the already
 modeled payloads; complete host containment and downstream acceptance remain open.
 
+Development after scalar.50 derives the lazy `FullMatch` program from existing
+immutable instructions and shares predicate/assertion tables. It no longer
+retains the parse tree for a second conversion. Cold preparation still observes
+the original call's cancellation/deadline and admits new instruction storage;
+complete construction and retained-storage policies remain separate.
+
 ```csharp
 var bounded = new Utf8PythonRegex("(?P<word>\\w+)", PythonReCompileOptions.None,
     TimeSpan.FromSeconds(1), new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1_024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
