@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased checked category and folded searches (0.4.0-scalar.51-dev)
+## Private scalar.51 Core/PythonRe candidate preparation
+
+- Freeze the checked category/folded/packed search and PythonRe full-program
+  reuse batch under a fresh identity. Qualification is pending; scalar.50 and
+  all previous immutable bytes remain unchanged. No publication, consumer pin,
+  adoption or independent PCRE2 designation is implied.
 
 - Replace two packed multi-literal search SIMD load sites with checked suffix
   reads, preserving nibble masks, candidate order, tails and allocations. One
