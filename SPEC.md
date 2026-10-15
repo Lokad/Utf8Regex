@@ -308,9 +308,13 @@ scope. Covered output controls retain their fixed charges. This is neither exact
 GC traffic/heap usage nor a caller live-retention or process-RSS limit.
 
 `MatchTimeout` defaults to
-`Regex.InfiniteMatchTimeout`. PCRE2 supports finite work/depth/working budgets under
-its existing profile contract and still rejects result-byte caps. These are staged
-controls, not completion of common policies, legacy ownership or safe-default gates.
+`Regex.InfiniteMatchTimeout`. PCRE2 also accepts finite values for all four
+invocation budget kinds within its profile ranges through explicit factories,
+mapping result capacity to the managed
+`ResultLimitInBytes` extension. Its metering units, `ResultLimit` failure and
+publication/staging exclusions are defined in `SPEC-PCRE2.md`; they do not imply
+shared host ownership or a live-retention/RSS bound. These remain staged controls,
+not completion of common construction, ownership or safe-default gates.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

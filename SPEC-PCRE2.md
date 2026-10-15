@@ -573,7 +573,7 @@ therefore report depth earlier; original work, cancellation and deadline checks
 remain authoritative. Other managed routes retain their documented metering units.
 Breaches report `DepthLimit` or `HeapLimit`. Zero disables each limit and defaults
 are unlimited. Timeout breach on owned routes reports `Timeout`. The shared
-`Utf8ResourcePolicy` maps onto these limits through explicit constructor overloads
+`Utf8ResourcePolicy` maps onto these limits through explicit `Utf8Pcre2Regex.Create` factories
 (null becomes legacy zero; overflow and zero budgets are rejected). This PCRE2
 profile also maps positive `MaxResultBytes` to the managed extension
 `ResultLimitInBytes`; legacy zero is unlimited. `ResultLimit` reports cumulative
