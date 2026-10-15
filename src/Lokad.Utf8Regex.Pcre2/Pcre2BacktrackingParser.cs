@@ -675,7 +675,7 @@ internal sealed class Pcre2BacktrackingParser
 
     private static bool IsValidCaptureName(ReadOnlySpan<char> name)
     {
-        if (name.IsEmpty || name.Length > 128)
+        if (name.IsEmpty || !Pcre2CaptureNameValidator.FitsUtf8Limit(name, 128))
         {
             return false;
         }
@@ -842,7 +842,7 @@ internal sealed class Pcre2BacktrackingParser
         }
 
         if ((verbKind == Pcre2ControlVerbKind.Mark && name.IsEmpty) ||
-            name.Length > 255)
+            !Pcre2CaptureNameValidator.FitsUtf8Limit(name, 255))
         {
             return false;
         }

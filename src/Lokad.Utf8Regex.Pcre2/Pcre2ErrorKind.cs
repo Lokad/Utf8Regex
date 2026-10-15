@@ -5,7 +5,7 @@ public enum Pcre2ErrorKind
 {
     /// <summary>The pattern contains an escape that the dialect does not recognize.</summary>
     UnrecognizedEscape,
-    /// <summary>A parenthesized question construct has an invalid discriminator.</summary>
+    /// <summary>A parenthesized construct has invalid syntax, including an invalid capture name or verb label.</summary>
     InvalidAfterParensQuery,
     /// <summary>A quantifier's lower bound exceeds its upper bound.</summary>
     QuantifierNumbersOutOfOrder,

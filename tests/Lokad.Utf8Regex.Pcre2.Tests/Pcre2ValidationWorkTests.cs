@@ -67,7 +67,10 @@ public sealed class Pcre2ValidationWorkTests
     [InlineData(2047, true)] [InlineData(2048, true)] [InlineData(4096, true)]
     public void FundedTokenBoundariesKeepLiteralNamesAndRejectFollowingDefinitions(int length, bool verb)
     {
-        var literal = verb ? "(*MARK:" + new string('a', length) + "(?<100>a)"
+        // Keep token positions around the old scan boundaries while using a
+        // valid 255-byte label. Larger verb names are syntax errors, not literals
+        // that the complete admission validator may accept.
+        var literal = verb ? new string('x', length) + "(*MARK:" + new string('a', 247) + "(?<100>a)"
             : "[[:" + new string('a', length) + ":]]";
         using var owner = Utf8ConstructionScope.Enter();
         // Qualify lexical admission alone; these bodies need not be served by
@@ -77,6 +80,37 @@ public sealed class Pcre2ValidationWorkTests
         var failure = Assert.Throws<Pcre2CompileException>(() =>
             Pcre2CaptureNameValidator.Validate(literal + "(?<100>b)", Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
         Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, failure.ErrorKind);
+    }
+
+    [Theory]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(4096)]
+    public void FundedOversizedVerbLabelsFailAtTheirUtf8Limit(int length)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var failure = Assert.Throws<Pcre2CompileException>(() =>
+            Pcre2CaptureNameValidator.Validate("(*MARK:" + new string('a', length) + "(?<100>a)",
+                Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
+        Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, failure.ErrorKind);
+        Assert.Contains("255 UTF-8 bytes", failure.Message);
+        Assert.Equal(0UL, owner.Budget.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void NewNameChecksKeepTheExistingParentWorkAllowance(bool verb)
+    {
+        var pattern = verb ? "(*MARK:" + new string('é', 128) + ")a"
+            : "(?<" + new string('é', 65) + ">a)";
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 48,
+            (ulong)pattern.Length + 1, ulong.MaxValue);
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 37;
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+        Assert.Equal(48UL, owner.Budget.ReservedBytes);
+        Assert.Equal(0UL, owner.Budget.Depth);
+        Assert.Equal(37, parent[0]);
     }
 
     [Theory]

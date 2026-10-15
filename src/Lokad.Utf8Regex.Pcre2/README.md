@@ -37,6 +37,15 @@ construction allowance. Those argument errors take precedence over malformed
 UTF-8 and construction denial. Valid arguments retain strict decoding and the
 existing admitted pattern-code checks. Public construction controls remain separate.
 
+Current development enforces capture names of at most 128 UTF-8 bytes and literal
+verb labels of at most 255 UTF-8 bytes, before choosing a backend. Previously,
+UTF-16 length checks and backend decline could admit overlong names. String and
+UTF-8 pattern inputs now throw `Pcre2CompileException` with the existing
+`InvalidAfterParensQuery` kind. Valid boundary names retain captures, name tables,
+references and MARK; quoted, class, comment and lookbehind bodies retain their
+meaning. Bounded checks share the existing construction-work/interruption owner.
+This is a post53 source correction; earlier immutable packages retain their scope.
+
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges

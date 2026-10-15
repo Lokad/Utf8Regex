@@ -67,6 +67,14 @@ invalid PCRE2 syntax; it must throw `Pcre2CompileException` with the existing
 extension to repair their result projection. Ordinary capture slots and numeric
 backreferences retain PCRE2 declaration-order numbering. ([PCRE][7])
 
+The selected eight-bit profile limits capture names to **128 UTF-8 bytes** and
+backtracking-control verb labels to **255 UTF-8 bytes**. These limits measure the
+encoded name, excluding syntax delimiters; UTF-16 length is insufficient for
+non-ASCII names. Overlong declarations must fail before backend selection with
+`Pcre2CompileException` and the existing `InvalidAfterParensQuery` kind. Literal,
+quoted, class and comment text does not become a declaration. Validation retains
+bounded construction-work admission and the original interruption authority.
+
 PCRE2 match values must be modeled using **reported start and end offsets**, not just `Index + Length`. This is necessary because PCRE2 documents that `\K` inside positive lookahead can yield a successful match whose reported start offset is greater than its end offset. ([PCRE][3])
 
 Partial matching must be exposed through a **dedicated tri-state probing API**, not smuggled into normal “successful match” APIs. PCRE2 documents partial matching as a distinct outcome (`PCRE2_ERROR_PARTIAL`), and when it occurs only substring 0 is defined; the rest of the ovector is undefined. ([PCRE][4])

@@ -2,6 +2,12 @@
 
 ## PCRE2 development after scalar.53
 
+- Enforce the selected eight-bit profile's metadata limits before backend
+  selection: capture names at most 128 UTF-8 bytes, verb labels at most 255.
+  Fix over-admission through UTF-16 length checks and backend declines. Preserve
+  valid captures/references/name tables/MARK and literal/comment/class/lookbehind
+  text; keep bounded construction work under the existing owner. Native UTF-8
+  PCRE2 10.47 boundary probes now agree, with structured existing compile errors.
 - Reuse the existing admitted attempt workspace across candidate checks within
   one slice-cursor advance, then release it before returning or failing. Keep
   PCRE2 empty retry/scalar progression, captures, copied cursor lifetimes and
