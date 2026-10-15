@@ -8,6 +8,31 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LiteralCensusBoundaryTests
 {
     private delegate Utf8SelectedCountKernelMetrics Census(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal);
+    private delegate int ProductionCount(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal);
+
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(17)] [InlineData(31)]
+    public void ProductionCorrelatedCountRespectsBorrowedOffsetsAndVectorTails(int offset)
+    {
+        var method = typeof(Utf8LiteralCompiledEngineRuntime).GetMethod("CountExactUtf8LiteralCorrelatedTwoBytePrefix",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        var count = method.CreateDelegate<ProductionCount>();
+        foreach (var text in new[] { "éé", "аб", "éabc" })
+        for (var prefix = 0; prefix < 64; prefix++)
+        for (var tail = 0; tail < 32; tail++)
+        {
+            var literal = Encoding.UTF8.GetBytes(text);
+            var length = prefix + literal.Length + tail;
+            var storage = Enumerable.Repeat((byte)0xff, offset + length + 1).ToArray();
+            var input = storage.AsSpan(offset, length);
+            input.Fill((byte)'x');
+            literal.CopyTo(input[prefix..]);
+            Assert.Equal(1, count(input, literal));
+        }
+        var overlapping = Encoding.UTF8.GetBytes(new string('é', 97));
+        Assert.Equal(48, count(overlapping, "éé"u8));
+    }
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(17)] [InlineData(31)]

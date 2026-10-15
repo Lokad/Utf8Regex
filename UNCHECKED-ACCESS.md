@@ -56,7 +56,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission. Private boundary penalties were observed, but affected public coverage remains missing; unqualified. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
-| Utf8LiteralCompiledEngineRuntime /3 | Production correlated offsets0/1/3 reserve a complete literal plus31 starts. The three diagnostic loads are now checked; these separate production loads remain. |
+| Utf8LiteralCompiledEngineRuntime /3 | Production offsets0/1/3 reserve a complete literal plus31 starts. One checked35-byte window regresses dense public Count15–16%; original restored. Diagnostic loads are checked. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
@@ -630,3 +630,24 @@ variant or package replay follows. This removes one explicit site and finishes
 explicit unchecked reads in Utf8ValidationCore; other Core sites, SizeOf agreement
 and the fixed-original cumulative gate remain open. Evidence:
 artifacts/common-utf8-drain-checked-20261015/.
+
+The production correlated-count admitted-window pilot is deferred. It admits
+35 bytes once for32 candidate starts and fixed offsets0/1/3, replacing three
+loads with checked reads while preserving masks, full verification, nonoverlap,
+scalar tails, validation and allocations. Actual large public Count probes reach
+the helper; short public inputs stay below its128KiB selection threshold and
+are not claimed as affected coverage. Direct production-kernel boundary tests
+cover offsets0/1/17/31, prefixes0..63, tails0..31, literal widths4/5 and overlaps.
+
+One bounded quiet-VM pair finds sparse/mixed/ascii medians within4%, but dense
+short two-byte literals regress+16.48% ordinary/+15.49% compiled. Literal and
+all-four-finite controls move-2.93%/-1.75%; allocations stay0B/112B. Spreads on
+the dense rows are below3%, so the >10% rejection needs no confirmation. Smaller
+code(Windows578->574B/Linux568->550B) does not establish acceptable cost. Restore
+the exact source with a fresh timestamp; production/diagnostic IL matches and
+restored Release/Debug41 checks pass. Candidate Release408 plus11 new-boundary
+checks, Debug41 and sourceguards4 passed. Keep the independent boundary tests.
+No new mode, variant, package or timing follows. The successful-match branch
+reloads the vector window after every match; mask reuse or whole BCL sequence
+counting is only a separately recorded, unmeasured future opportunity. Evidence:
+artifacts/correlated-count-block-checked-20261015/.
