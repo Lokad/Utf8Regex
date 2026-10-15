@@ -178,7 +178,8 @@ safe defaults through the R01/R06 gates in PLAN.md; partial internal admission
 must not be advertised as complete public bounds or a process-RSS guarantee.
 
 Current public support is narrower: core and PythonRe accept finite
-`Utf8ResourcePolicy.MaxWorkSteps`. A finite policy selects owned metered
+`Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and
+`MaxResultBytes`. A finite policy selects owned metered
 execution with one cumulative invocation through full strict UTF-8 validation,
 discovery, required coordinate/capture projection, output and publication. Lazy
 advances share that allowance, including copies of core value cursors; copies keep
@@ -198,8 +199,9 @@ no slots; the driver retains ordered non-overlapping matching and full-subject
 validation. Removing VM verification/workspace lowers actual work/depth/working
 requirements and can admit calls below the previous scratch cap. It does not
 remove per-window/predicate metering or the terminal interruption check. Larger,
-empty and excluded families retain their existing routes. Scalar.48 predates this
-source change; it is not a new package designation or a CPU-time equivalence claim.
+empty and excluded families retain their existing routes. This is included in
+the private scalar.49 pair; scalar.48 predates it. It is not a CPU-time equivalence
+claim.
 Controlled Count for one exact forward literal without boundary/trailing
 conditions invokes the same bounded candidate/comparison kernels directly. It
 omits generic match construction and unconditional boundary confirmation,
@@ -213,6 +215,16 @@ are candidates; checked scans cover at most 2048 bytes per invocation checkpoint
 Match verification and full validation remain unchanged. Fewer impossible attempts
 may lower the selected route's work requirement; this is not a fixed scalar/byte
 charge or a change to finite-limit failure semantics.
+Scalar.50-dev also rejects impossible anchored starts when the next instruction
+is an exact unfolded ASCII literal and the program cannot match empty. The
+existing line-start helper performs this necessary byte test; the scalar VM
+verifies every survivor. Empty, folded, Unicode-leading, RTL and NonBacktracking
+paths retain their existing behavior. The test spends an input-probe step under
+the original invocation authority. Avoided VM attempts omit their capture resets,
+instruction work and workspace acquisition, so required work/working capacity
+may decrease; all-hit inputs can spend extra probe work. Full strict validation,
+sticky denial, original cancellation/deadlines, retained results and parent loans
+remain unchanged.
 Denial throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`, the
 configured limit and a saturating requested count. A cap is in bounded engine/
 checkpoint steps, whose granularity may change, not bytes, wall time or RSS.

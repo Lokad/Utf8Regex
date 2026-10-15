@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased anchored scalar search (0.4.0-scalar.50-dev)
+
+- Reject impossible exact-ASCII anchored starts in the existing line-start helper
+  before VM capture resets and workspace acquisition. Preserve full validation,
+  scalar boundaries, captures, cancellation/deadlines and resource admission.
+- The bounded quiet-VM public comparison improves structured imports Count about
+  2.8x with unchanged allocations. All-hit anchored Count costs about1.5–4.3% more;
+  the extra input probe is charged, while skipped VM work/capacity disappears.
+  Keep the shared Count loop small; no new mode or per-pattern state is added.
+- This source change is outside the immutable scalar.49 pair. The handoff and
+  benchmark evidence retain their original scopes; no new package is designated.
+
 ## Private scalar.49 Core/PythonRe candidate
 
 - Freeze the accumulated bounded Count, construction-accounting and checked-read

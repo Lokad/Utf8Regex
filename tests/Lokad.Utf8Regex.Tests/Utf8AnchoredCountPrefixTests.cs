@@ -7,6 +7,44 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8AnchoredCountPrefixTests
 {
     [Theory]
+    [InlineData("^i(?<tail>.+)$", "x\né\n😀line\ni1\r\nx\ni😀\n", RegexOptions.Multiline)]
+    [InlineData("^i(?<tail>.*)$", "\n\ni\ni😀\n", RegexOptions.Multiline)]
+    [InlineData(@"\Ai(?<tail>.*)$", "x\ni1", RegexOptions.None)]
+    [InlineData("^i?(?<tail>.*)$", "x\n\ni\n", RegexOptions.Multiline)]
+    [InlineData("^😀(?<tail>.*)$", "x\n😀a\n😀\n", RegexOptions.Multiline)]
+    [InlineData("^(?i:i)(?<tail>.*)$", "x\nI1\ni😀\n", RegexOptions.Multiline)]
+    public void AnchoredDiscoveryPreservesCapturesAndRetainedResults(string pattern, string text, RegexOptions options)
+    {
+        var expected = new Regex(pattern, options);
+        var first = expected.Match(text);
+        var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+        var length = Encoding.UTF8.GetByteCount(text);
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var finite in new[] { false, true })
+        {
+            var policy = finite
+                ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 }
+                : new Utf8ResourcePolicy();
+            var actual = new Utf8Regex(pattern, options | mode, Timeout.InfiniteTimeSpan, policy);
+            var input = storage.AsSpan(7, length);
+            Assert.Equal(first.Success, actual.IsMatch(input));
+            var detailed = actual.MatchDetailed(input);
+            Assert.Equal(first.Success, detailed.Success);
+            if (first.Success)
+                Assert.Equal(first.Groups["tail"].Value, detailed.GetGroup("tail").GetValueString());
+            var ranges = new List<(int Index, int Length)>();
+            foreach (var match in actual.EnumerateMatches(input))
+                ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(expected.Matches(text).Select(match => (
+                Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)),
+                Encoding.UTF8.GetByteCount(match.Value))).ToArray(), ranges);
+            Assert.Equal(ranges.Count, actual.Count(input));
+            if (first.Success)
+                Assert.Equal(first.Groups["tail"].Value, detailed.GetGroup("tail").GetValueString());
+        }
+    }
+
+    [Theory]
     [InlineData("^a.*$", "x\n😀line\nab\r\néa\na\n", RegexOptions.Multiline)]
     [InlineData(@"\Aa.*$", "xabc", RegexOptions.None)]
     [InlineData(@"\Aa.*$", "abc", RegexOptions.None)]
@@ -72,9 +110,11 @@ public sealed class Utf8AnchoredCountPrefixTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void AnchoredMissObservesOriginalCheckpointInterruption(bool expire)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void AnchoredMissObservesOriginalCheckpointInterruption(bool expire, bool firstOnly)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var token = new CancellationTokenSource();
@@ -87,8 +127,15 @@ public sealed class Utf8AnchoredCountPrefixTests
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
         var triggered = false;
         invocation.CheckpointHook = _ => { triggered = true; if (expire) clock.Advance(250); else token.Cancel(); };
-        void Run() => Utf8SliceRunner.CountFromBytes(program, input, 0,
-            new int[program.GroupCount], new int[program.GroupCount], ref invocation);
+        void Run()
+        {
+            if (firstOnly)
+                _ = Utf8SliceRunner.TryFindFirst(program, input, 0,
+                    new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
+            else
+                _ = Utf8SliceRunner.CountFromBytes(program, input, 0,
+                    new int[program.GroupCount], new int[program.GroupCount], ref invocation);
+        }
         if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(Run);
         else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
         Assert.True(triggered);

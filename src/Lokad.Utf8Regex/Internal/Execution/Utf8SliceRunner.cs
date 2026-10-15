@@ -429,7 +429,7 @@ internal static partial class Utf8SliceRunner
             {
                 if (seekBeginning)
                 {
-                    var seekBreach = TrySeekBeginning(input, ref position, first.B != 0, ref invocation);
+                    var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation);
                     if (seekBreach != Utf8ExecutionLimitKind.None)
                         return new(false, -1, -1, null, null, seekBreach);
                     if (position < 0) break;
@@ -456,29 +456,48 @@ internal static partial class Utf8SliceRunner
             ? position + (reverse ? -width : width) : -1;
 
     // Only an initial mandatory anchor proves that other starts cannot match.
+    // Callers establish LTR/backtracking eligibility. An immediate exact ASCII
+    // literal can also reject a start before capture reset/workspace acquisition.
     // LF is one byte and cannot occur inside a scalar. Full validation belongs
     // to the caller; this filter neither restricts a match's end nor its body.
-    private static Utf8ExecutionLimitKind TrySeekBeginning(ReadOnlySpan<byte> input,
-        ref int position, bool multiline, ref Utf8SliceInvocation invocation)
+    private static Utf8ExecutionLimitKind TrySeekBeginning(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
     {
-        if (position == 0) return Utf8ExecutionLimitKind.None;
-        if (!multiline) { position = -1; return Utf8ExecutionLimitKind.None; }
-        if (input[position - 1] == (byte)'\n') return Utf8ExecutionLimitKind.None;
-        while (position < input.Length)
+        var multiline = program.Instructions[0].B != 0;
+        var leadingLiteral = !program.IgnoreCase && !program.CanMatchEmpty &&
+            program.Instructions.Length > 1 &&
+            program.Instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } leading &&
+            (uint)leading.A < 0x80 ? leading.A : -1;
+        while (true)
         {
+            if (position != 0 && !multiline) { position = -1; return Utf8ExecutionLimitKind.None; }
+            if (position != 0 && input[position - 1] != (byte)'\n')
+            {
+                while (position < input.Length)
+                {
+                    var seekBreach = invocation.TryChargeInputStep();
+                    if (seekBreach != Utf8ExecutionLimitKind.None) return seekBreach;
+                    var length = Math.Min(2048, input.Length - position);
+                    var newline = input.Slice(position, length).IndexOf((byte)'\n');
+                    position += newline >= 0 ? newline + 1 : length;
+                    if (newline >= 0) break;
+                }
+                // A trailing LF still admits the final empty line for patterns
+                // without a mandatory literal; exhaustion elsewhere does not.
+                if (position == input.Length && input[position - 1] != (byte)'\n')
+                { position = -1; return Utf8ExecutionLimitKind.None; }
+            }
+            if (leadingLiteral < 0) return Utf8ExecutionLimitKind.None;
+            // A mandatory first literal rejects this line start before VM state
+            // acquisition. This is necessary only; survivors still run the VM.
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            var length = Math.Min(2048, input.Length - position);
-            var newline = input.Slice(position, length).IndexOf((byte)'\n');
-            if (newline >= 0)
-            {
-                position += newline + 1;
-                return Utf8ExecutionLimitKind.None;
-            }
-            position += length;
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (position == input.Length) { position = -1; return Utf8ExecutionLimitKind.None; }
+            if (input[position] == leadingLiteral) return Utf8ExecutionLimitKind.None;
+            position = AdvancePastScalar(input, position, false);
+            if (position < 0) return Utf8ExecutionLimitKind.None;
         }
-        position = -1;
-        return Utf8ExecutionLimitKind.None;
     }
 
     internal static Utf8SliceMatchOutcome IsMatch(
@@ -573,7 +592,7 @@ internal static partial class Utf8SliceRunner
                 }
                 if (seekBeginning)
                 {
-                    var seekBreach = TrySeekBeginning(input, ref position, first.B != 0, ref invocation);
+                    var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0) break;
                 }
