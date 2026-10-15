@@ -19,7 +19,7 @@ evidence; the revised allowance does not designate conversions automatically.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 36 sites across all shipped projects: **34 Core
+The current source inventory is 32 sites across all shipped projects: **30 Core
 sites in 13 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
@@ -41,7 +41,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
-| AsciiSearch /6 | Serving callers pass equal-length checked slices; folded 9–16-byte dispatch supplies both 8-byte windows. This internal precondition remains necessary. |
+| AsciiSearch /2 | General folded-loop callers pass equal-length admitted slices; each iteration reserves eight literal bytes. The checked long-loop prototype exceeded10% on an affected public workload. |
 | PreparedSearchPrimitives /4 | Correlated windows stop at length-compareOffset-width; candidate confirmation slices the full admitted literal. No new conversion qualified. |
 | PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
@@ -96,6 +96,27 @@ control; its noisy partial samples remain evidence, not acceptance. The single
 70-second confirmation completed; no further timing or full package matrix was
 run. Focused boundaries, offsets, tails, scalar/resource behavior and managed
 safety checks are retained. Evidence: artifacts/byteset-checked-10pct-20261015/.
+
+The separate folded 9–16-byte comparator retains four checked primitive reads.
+Eight-byte widths, overlapping tails, folding arithmetic, comparison order and
+allocation behavior are unchanged. A broader six-read prototype measured public
+Count of mixed matches/near misses in ordinary/compiled modes. Its12-byte rows
+increase about5–6% in the sole reversed-order confirmation; unchanged exact-literal
+controls move about+0.9% to+1.3%. Allocations match. These are public-operation
+costs of that broader prototype, not isolated kernel timings or a fresh timing
+of the final subset.
+
+The two general-loop reads are restored: one24-byte compiled row regresses about
+11.9% initially and10.1% in the confirmation, exceeding the allowance. No third
+timing or new load variant is attempted. The retained short helper and selected
+public vector caller/verifier have identical Release instruction listings to the
+measured prototype; short-helper IL differs only in resolved-identical method
+tokens. The restored general helper has identical baseline IL. Its short dispatch
+register allocation differs from the prototype, so final end-to-end equivalence
+is not claimed. The short helper grows294→375 bytes on Linux. Focused ASCII-case,
+punctuation, offset, tail, Unicode-folding, resource and interruption checks pass.
+Evidence: artifacts/folded-comparator-checked-20261015/. Full platform/package
+qualification remains batched; the Core whole-DLL gate is still open.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,

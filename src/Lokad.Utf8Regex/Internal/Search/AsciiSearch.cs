@@ -210,11 +210,11 @@ internal static partial class AsciiSearch
     {
         var secondReadOffset = foldedLiteral.Length - sizeof(ulong);
         return UInt64OrdinalIgnoreCaseAscii(
-                   Unsafe.ReadUnaligned<ulong>(ref MemoryMarshal.GetReference(candidate)),
-                   Unsafe.ReadUnaligned<ulong>(ref MemoryMarshal.GetReference(foldedLiteral))) &&
+                   MemoryMarshal.Read<ulong>(candidate),
+                   MemoryMarshal.Read<ulong>(foldedLiteral)) &&
                UInt64OrdinalIgnoreCaseAscii(
-                   Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(candidate), secondReadOffset)),
-                   Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(foldedLiteral), secondReadOffset)));
+                   MemoryMarshal.Read<ulong>(candidate[secondReadOffset..]),
+                   MemoryMarshal.Read<ulong>(foldedLiteral[secondReadOffset..]));
     }
 
     public static byte FoldCase(byte value)

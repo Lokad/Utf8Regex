@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased checked folded short comparison (0.4.0-scalar.49-dev)
+
+- Replace four unchecked reads in the folded9–16-byte comparator with checked
+  span reads, preserving folding, overlapping tails, allocations and controls.
+- Retain the short conversion with roughly5–6% affected public Count overhead
+  in the broader prototype. Restore the separate long-loop reads after its one
+  confirmation exceeds10%; preserve boundary checks and bounded evidence.
+
 ## Unreleased checked byte-set vector reads (0.4.0-scalar.49-dev)
 
 - Replace both byte-set SIMD LoadUnsafe calls with checked span reads, retaining
