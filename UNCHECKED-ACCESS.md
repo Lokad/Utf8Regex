@@ -252,6 +252,27 @@ UTF-8, work/cancellation and source checks pass. Evidence:
 artifacts/ascii-drain-bcl-20261015/. The original fixed cumulative gate and whole
 Core DLL gate remain unfinished; no new package or snapshot refresh follows.
 
+The subsequent prefix-reuse change removes a duplicate ASCII-prefix scan in
+ValidateOnly. The suffix starts at the already discovered first non-ASCII byte;
+the result restores whole-input byte/UTF-16 lengths and errors restore the original
+byte offset. Supplementary/Kelvin flags are unchanged, because an ASCII prefix
+cannot contain either. This adds no owner, policy, allocation or invocation meter.
+The checked BCL drain itself is unchanged. Borrowed-offset/boundary and malformed
+suffix tests verify coordinates and flags independently of the implementation.
+
+One bounded public Count pair reuses the same twelve lanes as the drain pilot.
+Two apparent +10.1%/+14.2% rows have106–166% sample spreads. The single allowed
+confirmation runs only those two workload families plus the exact-literal control
+on the quiet VM, with the same frozen DLLs and candidate-first order. Their
+affected medians move -0.33%..-6.42%; allocations match and the apparent regressions
+do not persist. The initial other affected rows are within-4.64%..+0.70%; finite
+control-0.60%. Quiet confirmation's control is-2.23%, with some ordinary/control
+rows still noisy. No exact equivalence or general speedup claim follows, and no
+further timing is performed. The actual public caller's analyzer grows159→245
+bytes on Linux while the validator remains1456 bytes. Final Release/Debug,
+cancellation/source guards and focused PythonRe checks pass. Evidence:
+artifacts/validation-prefix-reuse-20261015/. No package/whole-DLL gate claim follows.
+
 The correlated-literal diagnostic census conversion was historically deferred. Direct checked
 reads keep the existing SIMD algorithm but add guards and increase inspected
 code692→766 bytes on Windows and718→776 on Linux. Long diagnostic replays regress

@@ -35,16 +35,20 @@ internal static class Utf8InputAnalyzer
         }
 
         if (!Utf8ValidationCore.TryValidate(
-                input,
+                input[firstNonAscii..],
                 computeUtf16Length: true,
                 out var validation,
                 out var errorOffset,
                 out containsKelvinSign))
         {
-            throw Utf8Validation.CreateInvalidUtf8Exception(errorOffset);
+            throw Utf8Validation.CreateInvalidUtf8Exception(firstNonAscii + errorOffset);
         }
 
-        return validation;
+        return new Utf8ValidationResult(
+            input.Length,
+            firstNonAscii + validation.Utf16Length,
+            isAscii: false,
+            validation.ContainsSupplementaryScalars);
     }
 
     public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input)

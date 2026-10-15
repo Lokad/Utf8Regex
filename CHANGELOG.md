@@ -2,6 +2,9 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Reuse the discovered ASCII prefix during unmetered UTF-8 analysis, validating
+  only the remaining suffix. Preserve whole-input byte/UTF-16 lengths, Unicode
+  flags and original malformed-byte offsets without changing invocation controls.
 - Replace the custom ASCII validation drain with checked BCL range search,
   removing its two unchecked SIMD loads and custom vector/word/tail loops.
   Preserve scalar/error coordinates, allocation behavior and resource controls.
