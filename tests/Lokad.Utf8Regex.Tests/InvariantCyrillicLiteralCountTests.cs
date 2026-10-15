@@ -164,6 +164,27 @@ public sealed class InvariantCyrillicLiteralCountTests
         }
     }
 
+    [Theory]
+    [InlineData("12Ш", "12ш")]
+    [InlineData(" Ш", " ш")]
+    [InlineData("1Ш 2Х", "1ш 2х")]
+    public void AsciiPrefixBeforeFirstCyrillicScalarCanBelongToTheMatch(string pattern, string value)
+    {
+        var ordinary = new Utf8Regex(pattern, Options);
+        var compiled = new Utf8Regex(pattern, Options | RegexOptions.Compiled);
+        var oracle = new Regex(pattern, Options);
+        for (var padding = 0; padding < 64; padding++)
+        {
+            var text = new string('.', padding) + value + new string('.', 32);
+            var bytes = Encoding.UTF8.GetBytes(text);
+            var storage = Enumerable.Repeat((byte)0xFF, bytes.Length + 48).ToArray();
+            bytes.CopyTo(storage, 17);
+            var input = storage.AsSpan(17, bytes.Length);
+            Assert.Equal(oracle.Count(text), ordinary.Count(input));
+            Assert.Equal(oracle.Count(text), compiled.Count(input));
+        }
+    }
+
     [Fact]
     public void FusedSingleLiteralCountResumesAcrossMixedWidthScalars()
     {

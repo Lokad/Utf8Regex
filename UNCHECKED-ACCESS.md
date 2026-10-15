@@ -707,3 +707,28 @@ stop-byte, borrowed-offset/vector-tail, resource, cancellation and source checks
 pass. The temporary diagnostic driver initially used an incorrect expected
 negated match; correcting its subject, without changing production, makes both
 DLL replays pass. Evidence: artifacts/legacy-token-checked-20261015/.
+
+The distinct whole-BCL emitted candidate proposal also fails the public cost
+gate. IndexOf(firstByte) then a bounded-prefix non-ASCII range search removes the
+custom loop in the prototype, but compiled public Count costs+15.08% dense,
++59.98/+81.96%8/128KiB misses and+48.80% near-misses. Most affected sample spreads
+are1..5%; near-miss candidate spread10.8%. Exact/finite controls-5.38/-0.75%,
+allocations unchanged0/1872/112B by lane, sample floors>=54ms. The helper shrinks
+Windows247->136B/Linux205->144B (shared BCL code excluded); the emitted caller is
+unchanged6476/6541B. Smaller code is not a performance proof. No confirmation or
+new variant. Restore original source and helper IL. CandidateR355/D60 pass.
+Ordinary rows are largely unchanged but do not prove use of the compiled fused
+helper; no descriptor/private replay substitutes for per-route evidence.
+Evidence: artifacts/emitted-family-bcl-search-20261015/.
+
+The Cyrillic ASCII-prefix-skip proposal is also closed above10%. BCL range search
+first proves the ASCII prefix, then the checked fused scan starts at its first
+non-ASCII byte. Actual public Count costs+163..166% on ASCII misses and+317..319%
+on the32-byte hit. In that short case shifting the start leaves no full vector,
+so the scalar tail replaces the previous vector path. Dense+10.2..10.6%, mixed
++4.8..5.3% (ordinary noisy), exact controls-1.55/+0.15%, finite-0.28%. Allocations
+stay0/112B by lane. One quiet-VM .NET10.0.12 FullOpts pair; no confirmation or
+variant. Helper Windows2062->2074B/Linux1782->1791B. Original source and raw IL
+restored. CandidateR348/D23 and restoredR23 pass; new public tests preserving
+ASCII-prefixed literal starts remain. Evidence:
+artifacts/cyrillic-prefix-checked-20261015/.
