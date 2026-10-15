@@ -220,6 +220,14 @@ work counts. Arbitrary evaluator execution and later standalone result getters
 are outside this cap; the library charges encoding/copying the evaluator's return.
 Cancellation and the absolute invocation deadline remain independently enforced.
 
+When either invocation byte cap is finite, timeout failures omit diagnostic
+subject text: `RegexMatchTimeoutException.Input` is empty. This applies to
+one-shot, bulk, durable cursor and cold preparation failures. The original
+timeout remains authoritative, with the existing route's pattern metadata and
+configured duration; no new result admission replaces it. Unlimited and
+work/depth-only policies keep their diagnostic input. Omitting this copy does
+not bound exception metadata, callbacks, retained host storage or process RSS.
+
 PythonRe and core also admit finite `MaxResultBytes`, charging modeled major
 arrays/text, capture and name roots, coordinate maps, staging and output growth
 before acquisition. The cumulative counter never refunds and may conservatively

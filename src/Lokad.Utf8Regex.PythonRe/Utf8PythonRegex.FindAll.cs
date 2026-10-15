@@ -79,7 +79,7 @@ public sealed partial class Utf8PythonRegex
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+                throw CreateMatchTimeoutException(input);
             }
             finally { ranges.Dispose(); }
         }
@@ -126,7 +126,7 @@ public sealed partial class Utf8PythonRegex
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+                throw CreateMatchTimeoutException(input);
             }
             finally { ranges.Dispose(); }
         }

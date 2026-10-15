@@ -73,7 +73,7 @@ internal struct PythonReScalarMatchState
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             Dispose();
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), pattern, timeout);
+            throw TimeoutFailure(input);
         }
         catch
         {
@@ -129,7 +129,7 @@ internal struct PythonReScalarMatchState
         => _invocation.Budget.CreateResourceFailure();
 
     private readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
-        => new(Encoding.UTF8.GetString(input), _pattern, _timeout);
+        => Utf8Regex.CreateMatchTimeoutException(input, _pattern, _timeout, _invocation.Budget.Limits);
 
     internal void Checkpoint(ReadOnlySpan<byte> input)
     {
@@ -143,7 +143,7 @@ internal struct PythonReScalarMatchState
         { throw ResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
+            throw TimeoutFailure(input);
         }
     }
 
@@ -174,7 +174,7 @@ internal struct PythonReScalarMatchState
                 { throw ResourceFailure(); }
                 catch (Utf8ExecutionDeadlineExpiredException)
                 {
-                    throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
+                    throw TimeoutFailure(input);
                 }
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
@@ -334,7 +334,7 @@ internal struct PythonReScalarMatchState
             { throw ResourceFailure(); }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
+                throw TimeoutFailure(input);
             }
         }
     }
@@ -389,7 +389,7 @@ internal struct PythonReScalarMatchState
         { throw ResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
+            throw TimeoutFailure(input);
         }
     }
 
@@ -487,7 +487,7 @@ internal struct PythonReScalarMatchState
         { throw ResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _pattern, _timeout);
+            throw TimeoutFailure(input);
         }
     }
 

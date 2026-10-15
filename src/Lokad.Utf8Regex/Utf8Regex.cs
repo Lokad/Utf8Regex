@@ -3032,7 +3032,15 @@ public sealed partial class Utf8Regex
     }
 
     private RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input) =>
-        new(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+        CreateMatchTimeoutException(input, Pattern, MatchTimeout, InvocationLimits);
+
+    // Byte-bounded invocations must not copy a subject-sized diagnostic string
+    // after their deadline. Keep the original timeout authoritative rather than
+    // starting another admission/cleanup path while constructing its exception.
+    internal static RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input,
+        string pattern, TimeSpan timeout, Utf8ExecutionLimits limits) =>
+        new(limits.MaxWorkingBytes != 0 || limits.MaxResultBytes != 0
+            ? string.Empty : Encoding.UTF8.GetString(input), pattern, timeout);
 
     private static bool TryEncodeUtf8ToDestination(string value, Span<byte> destination, out int bytesWritten)
     {

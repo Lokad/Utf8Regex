@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
@@ -72,10 +71,7 @@ public ref struct Utf8ValueMatchEnumerator
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
         {
-            throw new RegexMatchTimeoutException(
-                Encoding.UTF8.GetString(_timeoutInput),
-                _timeoutPattern,
-                _timeout);
+            throw _cursor.CreateMatchTimeoutException(_timeoutInput, _timeoutPattern, _timeout);
         }
     }
 

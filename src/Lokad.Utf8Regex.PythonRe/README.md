@@ -149,6 +149,11 @@ and result caps with an existing host batch owner. Its reservation must survive
 retained snapshots and fresh calls need new admission. It covers only the already
 modeled payloads; complete host containment and downstream acceptance remain open.
 
+Development after scalar.51 leaves `RegexMatchTimeoutException.Input` empty when
+working or result bytes are bounded. Timeout failure therefore does not copy the
+subject into diagnostic text. Existing pattern/duration metadata and cancellation
+remain; this is not a complete exception or process-memory cap.
+
 Scalar.51 derives the lazy `FullMatch` program from existing
 immutable instructions and shares predicate/assertion tables. It no longer
 retains the parse tree for a second conversion. Cold preparation still observes

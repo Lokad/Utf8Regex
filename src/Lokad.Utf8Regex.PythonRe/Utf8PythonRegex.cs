@@ -305,6 +305,9 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, ResourcePolicy.MaxWorkingBytes ?? 0, ResourcePolicy.MaxResultBytes ?? 0);
 
+    private RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input, string? pattern = null)
+        => Utf8Regex.CreateMatchTimeoutException(input, pattern ?? Pattern, MatchTimeout, InvocationLimits);
+
     internal bool DebugUsesOwnedSlice => _scalarProgram is not null;
 
     internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;

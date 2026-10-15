@@ -10,6 +10,86 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CoreResultPolicyTests
 {
+    [Fact]
+    public void ByteBoundedTimeoutDoesNotDecodeTheSubjectForDiagnostics()
+    {
+        var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
+        var regex = new Utf8Regex("z", RegexOptions.CultureInvariant,
+            TimeSpan.FromMilliseconds(1), new() { MaxResultBytes = 1 });
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input));
+        Assert.Empty(error.Input);
+        Assert.Equal("z", error.Pattern);
+        Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
+    }
+
+    [Theory]
+    [InlineData("count")]
+    [InlineData("detail")]
+    [InlineData("matches")]
+    [InlineData("split")]
+    [InlineData("replace")]
+    [InlineData("callback-text")]
+    public void ByteLimitsOmitTimeoutInputAcrossFailureOwners(string operation)
+    {
+        var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
+        foreach (var kind in new[] { 0, 1, 2 })
+        {
+            var policy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = kind != 1 ? 1_048_576ul : null,
+                MaxResultBytes = kind != 0 ? 1_048_576ul : null,
+            };
+            var regex = new Utf8Regex("z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1), policy);
+            long ticks = 0;
+            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
+            var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, operation, input, default));
+            Assert.Empty(error.Input);
+            Assert.Equal("z", error.Pattern);
+            Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
+        }
+    }
+
+    [Fact]
+    public void WorkOnlyTimeoutKeepsExistingDiagnosticInput()
+    {
+        var regex = new Utf8Regex("z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1),
+            new() { MaxWorkSteps = ulong.MaxValue });
+        var input = "xxxxxxxx"u8.ToArray();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input));
+        Assert.Equal("xxxxxxxx", error.Input);
+    }
+
+    [Fact]
+    public void CopiedMatchAndSplitCursorsOmitInputAfterAnInterveningWait()
+    {
+        var regex = new Utf8Regex(".", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(200),
+            new() { MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+        var input = "😀a"u8.ToArray();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var cursor = regex.EnumerateMatches(input);
+        Assert.True(cursor.MoveNext());
+        var retained = cursor.Current;
+        var alias = cursor;
+        ticks = 250;
+        try { _ = cursor.MoveNext(); Assert.Fail("Cursor deadline must expire."); }
+        catch (RegexMatchTimeoutException error) { Assert.Empty(error.Input); Assert.Equal(".", error.Pattern); }
+        try { _ = alias.MoveNext(); Assert.Fail("A copy must keep the same deadline."); }
+        catch (RegexMatchTimeoutException error) { Assert.Empty(error.Input); }
+        Assert.Equal((0, 4), (retained.IndexInBytes, retained.LengthInBytes));
+        Assert.Equal("😀"u8.ToArray(), input[..4]);
+
+        ticks = 0;
+        var split = regex.EnumerateSplits(input);
+        ticks = 250;
+        try { _ = split.MoveNext(); Assert.Fail("Split deadline must expire."); }
+        catch (RegexMatchTimeoutException error) { Assert.Empty(error.Input); Assert.Equal(".", error.Pattern); }
+    }
+
     private static Utf8Regex Create(string pattern, ulong result, RegexOptions options = RegexOptions.CultureInvariant,
         ulong? work = null, TimeSpan? timeout = null) => new(pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxResultBytes = result, MaxWorkSteps = work });

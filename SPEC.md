@@ -86,6 +86,15 @@ capture projection, copying and output belong to the same operation authority.
 Construction has its own contract; reusable instances and caches never retain an
 evaluation deadline.
 
+For Core/PythonRe calls with a finite `MaxWorkingBytes` or `MaxResultBytes`,
+timeout exceptions have an empty `Input`: failure construction does not decode
+the subject into an unadmitted diagnostic string. The existing route's `Pattern`,
+configured `MatchTimeout` and exception type are preserved. Unlimited and
+work/depth-only policies retain their existing diagnostic input. This removes
+one subject-sized failure allocation; exception objects, pattern metadata and
+complete process-memory containment remain outside the byte model. PCRE2 keeps
+its independent failure contract.
+
 Responsiveness is measured in bounded library work between checkpoints, not an
 exact wall-clock return time. OS scheduling, CLR compilation/GC and arbitrary
 evaluator code cannot be synchronously preempted by the library. Observe the

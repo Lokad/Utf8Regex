@@ -28,6 +28,10 @@ internal ref partial struct Utf8OperationMatchCursor
     internal Utf8ResourceLimitExceededException CreateExecutionResourceFailure()
         => _sliceInvocation.Budget.CreateResourceFailure();
 
+    internal System.Text.RegularExpressions.RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input,
+        string pattern, TimeSpan timeout)
+        => Utf8Regex.CreateMatchTimeoutException(input, pattern, timeout, _sliceInvocation.Budget.Limits);
+
 
     internal ulong DebugInvocationReservedBytes => _sliceInvocation.Ledger.ReservedBytes;
 

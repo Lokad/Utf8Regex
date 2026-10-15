@@ -22,6 +22,11 @@ the reported requested total exceed a cap; its refused allocation is not acquire
 This is a bound on the defined modeled capacities, not measured managed-heap
 usage, cumulative allocations or RSS.
 
+Development after scalar.51 also omits the diagnostic subject string on a
+timeout when either byte cap is finite (`RegexMatchTimeoutException.Input` is
+empty). This avoids a subject-sized decode after deadline expiry. It is outside
+the immutable scalar.51 bytes and does not establish an exception/RSS cap.
+
 Attach the reservation to a host owner that survives every covered result and
 permitted cursor alias. The simplest rule holds each invocation's whole envelope until the
 batch closes and all escaping storage is either gone or admitted by another

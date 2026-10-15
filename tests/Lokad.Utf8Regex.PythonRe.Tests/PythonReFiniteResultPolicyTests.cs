@@ -6,6 +6,67 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReFiniteResultPolicyTests
 {
+    [Theory]
+    [InlineData(0)] [InlineData(11)] [InlineData(13)] [InlineData(15)]
+    [InlineData(17)] [InlineData(18)] [InlineData(20)] [InlineData(22)]
+    public void ByteBoundedTimeoutOmitsSubjectAcrossPreparationAndResultOwners(int operation)
+    {
+        var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
+        foreach (var kind in new[] { 0, 1, 2 })
+        {
+            var policy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = kind != 1 ? 1_048_576ul : null,
+                MaxResultBytes = kind != 0 ? 1_048_576ul : null,
+            };
+            var regex = new Utf8PythonRegex("z", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), policy);
+            long ticks = 0;
+            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
+            var error = Assert.Throws<RegexMatchTimeoutException>(() =>
+                PythonReFiniteWorkPolicyTests.Run(regex, input, operation));
+            Assert.Empty(error.Input);
+            Assert.Equal("z", error.Pattern);
+            Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
+        }
+    }
+
+    [Fact]
+    public void CursorTimeoutKeepsPriorSnapshotAndReleasesScratchWithoutDiagnosticCopy()
+    {
+        var regex = new Utf8PythonRegex(".", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200),
+            new() { MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray());
+        Assert.True(cursor.MoveNext());
+        var retained = cursor.Current;
+        var invocation = cursor.WorkingInvocation;
+        ticks = 250;
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
+        Assert.Empty(error.Input);
+        Assert.Equal(regex.DebugTranslatedPattern, error.Pattern);
+        Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
+        Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
+        Assert.Equal("😀", retained.Value.ValueText);
+        cursor.Dispose();
+        Assert.Equal("😀", retained.Value.ValueText);
+    }
+
+    [Fact]
+    public void WorkOnlyTimeoutRetainsInputAndPreCancellationRetainsToken()
+    {
+        var regex = new Utf8PythonRegex("z", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1),
+            new() { MaxWorkSteps = ulong.MaxValue });
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch("xxxxxxxx"u8));
+        Assert.Equal("xxxxxxxx", error.Input);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var canceled = Assert.Throws<OperationCanceledException>(() => regex.IsMatch("x"u8, 0, cancellation.Token));
+        Assert.Equal(cancellation.Token, canceled.CancellationToken);
+    }
+
     public static IEnumerable<object[]> Operations() => PythonReFiniteWorkPolicyTests.Operations();
     private static Utf8PythonRegex Create(string pattern, ulong cap, bool bytes = false, ulong? work = null,
         PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? timeout = null)

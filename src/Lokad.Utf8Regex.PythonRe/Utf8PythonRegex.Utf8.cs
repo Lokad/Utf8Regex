@@ -39,7 +39,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+            throw CreateMatchTimeoutException(input);
         }
         finally
         {
@@ -72,7 +72,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+            throw CreateMatchTimeoutException(input);
         }
         finally { ledger.Release(ref invocation); }
     }
@@ -119,7 +119,7 @@ public sealed partial class Utf8PythonRegex
         {
             ranges.Dispose();
             ranges = default;
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+            throw CreateMatchTimeoutException(input);
         }
         catch
         {
@@ -160,7 +160,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
+            throw CreateMatchTimeoutException(input);
         }
         finally { results.Release(ref invocation); }
     }
@@ -188,7 +188,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _translation.Pattern, MatchTimeout);
+            throw CreateMatchTimeoutException(input, _translation.Pattern);
         }
     }
 
@@ -218,7 +218,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new RegexMatchTimeoutException(Encoding.UTF8.GetString(input), _translation.Pattern, MatchTimeout);
+            throw CreateMatchTimeoutException(input, _translation.Pattern);
         }
     }
 

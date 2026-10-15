@@ -1,7 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
@@ -117,10 +116,7 @@ public ref struct Utf8ValueSplitEnumerator
         catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
         {
             if (_sourceKind is SplitSourceKind.OwnedSlice or SplitSourceKind.OwnedSliceRtl) _matchCursor.AbortOwnedSplitMatches();
-            throw new RegexMatchTimeoutException(
-                Encoding.UTF8.GetString(_input),
-                _timeoutPattern,
-                _timeout);
+            throw _matchCursor.CreateMatchTimeoutException(_input, _timeoutPattern, _timeout);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _matchCursor.HasResourceLimitBreach)
         {

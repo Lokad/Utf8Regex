@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Omit timeout diagnostic subject text for Core/PythonRe calls with finite
+  working/result byte limits. Keep the original timeout and pattern/duration
+  metadata without decoding a subject-sized string after expiry. Unlimited and
+  work/depth-only policies retain diagnostic input. Scalar.51 stays immutable.
 - Continue from immutable scalar.51. Its exact Windows/Linux package consumers
   and CPython capture/digest checks pass; producer CI remains a separate receipt.
   No publication, consumer adoption or PCRE2 designation is implied.
