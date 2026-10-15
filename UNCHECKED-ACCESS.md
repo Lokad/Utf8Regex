@@ -51,7 +51,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
-| Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. Checked shared-helper conversion exceeds10% on width8 public Count; retained. |
+| Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission. Private boundary penalties were observed, but affected public coverage remains missing; unqualified. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
@@ -68,8 +68,8 @@ construction penalties were rejected under the superseded zero-regression rule.
 No generated inline-array helper calls remain in the current Core DLL. The last
 three calls in Utf8FallbackTreeQuery.TryShapeAtom are removed by testing both
 case variants in the already projected positive mask of at most two members.
-The same DLL has no Unsafe.As or Unsafe.AsRef references. Sixteen explicit Core
-source sites and the stricter downstream SizeOf acceptance issue remain separate.
+The same DLL has no Unsafe.As or Unsafe.AsRef references. At that boundary,
+sixteen explicit Core sites and the stricter SizeOf acceptance issue remained.
 
 The query-mask simplification preserves exact-pair eligibility, construction work,
 admission, aliases and allocations without staging a temporary pair. Real public
@@ -197,6 +197,24 @@ the immediate incremental restoration run had reused a stale DLL because the
 restored source kept its timestamp. Evidence: artifacts/fixed-width-checked-20261015/
 and artifacts/category-public-checked-20261015/restoration-audit.json. Scalar.50 remains
 immutable; there is no new package qualification for this pilot.
+
+The subsequent admitted-block design is also deferred. It slices one block
+covering32 candidate starts plus the pattern width, derives the checks window
+from that block and uses checked32-byte reads. This preserves SIMD, masks, dense
+matching, final overlap, scalar fallback and allocations. However, Release code
+still has a width check inside the per-position loop; the initial commentary
+suggesting otherwise was corrected after inspecting that loop. Windows helper
+code grows582→645 bytes and Linux589→656.
+
+One bounded quiet-VM public Count pair finds width8+24.65% ordinary/+28.33%
+compiled, against literal controls-2.31..-3.66% and finite control-4.43%. Width4
+is+5.80..+10.04%; allocations stay0B/112B. The clear width8 penalty exceeds10%
+without a confirmation. Restore the exact original source with a fresh timestamp;
+both restored Release/Debug56 checks pass and TryCount/CreateMatchMask IL matches
+the original. DLL hashes differ because the informational producer advanced from
+d4f9d717 to d89c9d5f; no identical-DLL claim is made. Candidate Release347/Debug56
+and sourceguards4 also passed. No further variant, timing, mode or package
+follows. Evidence: artifacts/fixed-width-admitted-block-20261015/.
 
 The folded prepared-search conversion is accepted. Four checked suffix reads
 replace its128/256-bit LoadUnsafe calls and remove the ref origin. Correlated
