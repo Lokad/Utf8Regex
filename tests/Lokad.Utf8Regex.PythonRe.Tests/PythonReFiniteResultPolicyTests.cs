@@ -126,7 +126,8 @@ public sealed class PythonReFiniteResultPolicyTests
             Assert.True(probe.MoveNext()); firstBytes = probe.WorkingInvocation.Budget.ResultBytes;
             Assert.True(probe.MoveNext()); Assert.True(probe.WorkingInvocation.Budget.ResultBytes > firstBytes);
         }
-        using var cursor = Create("(?P<x>.)", firstBytes).CreateMatchCursor(input);
+        var regex = Create("(?P<x>.)", firstBytes);
+        using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
         var authority = cursor.WorkingInvocation;
         Assert.True(alias.MoveNext()); var retained = cursor.Current;
@@ -137,6 +138,17 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Throws<InvalidOperationException>(() => alias.MoveNext());
         alias.Dispose(); cursor.Dispose();
         Assert.Equal("😀", retained.Value.ValueText);
+
+        // The instance policy is per invocation, not a shared host allowance.
+        // A fresh cursor can publish again while the first snapshot is retained.
+        using var fresh = regex.CreateMatchCursor(input);
+        Assert.True(fresh.MoveNext());
+        var secondRetained = fresh.Current;
+        Assert.Equal(firstBytes, fresh.WorkingInvocation.Budget.ResultBytes);
+        Assert.NotSame(retained.Groups, secondRetained.Groups);
+        fresh.Dispose();
+        Assert.Equal("😀", retained.Value.ValueText);
+        Assert.Equal("😀", secondRetained.Value.ValueText);
     }
 
     [Fact]

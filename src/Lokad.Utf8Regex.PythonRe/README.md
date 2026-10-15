@@ -144,6 +144,11 @@ Working bytes bound modeled major active capacity and old/new overlap, with reus
 nesting, workspace, result size or cumulative work. Result capacity traffic
 has separate scope from live caller retention; these controls do not complete safe defaults.
 
+The [host integration recipe](../../HOST-INTEGRATION.md) composes finite working
+and result caps with an existing host batch owner. Its reservation must survive
+retained snapshots and fresh calls need new admission. It covers only the already
+modeled payloads; complete host containment and downstream acceptance remain open.
+
 ```csharp
 var bounded = new Utf8PythonRegex("(?P<word>\\w+)", PythonReCompileOptions.None,
     TimeSpan.FromSeconds(1), new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1_024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });

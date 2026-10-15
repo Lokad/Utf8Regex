@@ -6,6 +6,11 @@ The immutable 0.4.0-scalar.50 core/PythonRe candidate uses Unicode-scalar matchi
 
 Use a qualified candidate's exact version and immutable feed/manifest for reproducible integration. [qualify-scalar-candidate.ps1](qualify-scalar-candidate.ps1) builds and packs core/PythonRe once, checks provenance, runs detached consumers and records package hashes; it does not publish to NuGet.org. PCRE2 is qualified independently with [test-packaged-pcre2.ps1](test-packaged-pcre2.ps1). Existing benchmark snapshots describe their recorded implementations; historical measurements do not qualify the current engine's performance.
 
+[Host integration](HOST-INTEGRATION.md) describes conservative up-front reservations
+for the covered working/result payloads and the required lifetime of surviving
+results. Preparation, borrowed storage and the other exclusions remain separate;
+invocation limits alone do not establish a shared host memory allowance.
+
 Run `./qualify-scalar-candidate.ps1` from a clean committed checkout. Successful output is designated once under `artifacts/scalar-candidates/<version>/`, with `candidate.json`, a `feed/` directory and a reusable `NuGet.Config`. Consumers should pin the exact version, restore with that config and an isolated cache, and retain their package lockfile. A changed candidate requires a new version.
 
 The scalar.3 candidate adds metered native `Count` for prepared exact literals. The immutable scalar.2 candidate predates this route; its finite `Count` uses the scalar VM. Use the candidate manifest and platform/downstream receipts for acceptance; development measurements alone do not replace package qualification.
