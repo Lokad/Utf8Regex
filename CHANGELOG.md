@@ -1,11 +1,19 @@
 # Changelog
 
-## Private scalar.52 Core/PythonRe candidate (qualification pending)
+## Private scalar.52 Core/PythonRe candidate
 
-- Prepare a fresh identity for the checked-access batch. Selected Core public
+- Qualify immutable producer 5e50b7b1 on Windows/Linux using identical package
+  bytes: detached Core39017/Diff1504/PythonRe2989, exact feed/lock/loaded-DLL and
+  source/symbol identities. CPython captures91/digests91 on both platforms;
+  complete Debug Core39017 and producer CI38793242629 pass. Earlier bytes stay
+  immutable. Lython's strict Core member gate still rejects permitted SizeOf;
+  PythonRe passes. No downstream promotion is claimed.
+- Complete the checked-access batch. Selected Core public
   cumulative medians now fit10% of the fixed original, allocations unchanged;
-  the emitted near-miss confirmation is a narrow9.91%. Python cost and exact
-  package/consumer qualification remain pending.
+  the emitted near-miss confirmation is a narrow9.91%. Python's only17-pair
+  confirmation uses exact scalar.52 DLLs: medians -6.89..+2.16%, paired medians
+  -3.26..+2.28%; large tails/pool variation remain explicit. Core source costs
+  and focused final follow-ups are not relabeled as an all-row package run.
   No publication, downstream adoption or PCRE2 designation is implied.
 - Dispatch the prepared Cyrillic strategy before ineligible native-invocation
   probes, retaining finite-first, live-token and deadline gates. Its checked
@@ -29,7 +37,8 @@
 - Fuse fixed-width literal dispatch and mask updates while consuming a checked
   block. Remove the remaining unchecked read in this executor, preserving SIMD,
   overlap/tails, scalar fallback and resource admission. Focused public Count
-  costs15–24% less with unchanged allocations; cumulative qualification is open.
+  costs15–24% less with unchanged allocations; the later selected cumulative
+  gate includes this executor.
 - Scan complete emitted-family vector blocks through a bounds-checked typed
   span, preserving SIMD masks, scalar tails, validation and resource routing.
   Focused compiled sparse/near-miss Count costs about8–9% more, within the10%

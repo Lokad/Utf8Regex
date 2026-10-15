@@ -4,29 +4,31 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.51**,
-producer `09b165463e5e917cf256411a00bc740f972e93dd`. It covers strict UTF-8 scalar
+The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.52**,
+producer `5e50b7b1370fa0b88513bda3701cad27855cd2c7`. It covers strict UTF-8 scalar
 matching, authoritative capture completion, an explicitly owned persistent cursor,
 finite invocation work/depth/working/result limits and covered eager construction
 controls. Exact detached Windows/Linux consumers and CPython capture/digest checks
-pass. Use `artifacts/scalar-candidates/0.4.0-scalar.51/candidate.json`, its immutable
-feed/config and `artifacts/core-python-scalar51-20261015/HANDOFF.md`; the delivery
+pass. Use `artifacts/scalar-candidates/0.4.0-scalar.52/candidate.json`, its immutable
+feed/config and `artifacts/core-python-scalar52-20261015/HANDOFF.md`; the delivery
 receipt records exact identities, coverage and the scope of cost evidence.
 
 This pair is not published or accepted downstream automatically. Lython's Core DLL
-unchecked-API gate remains unmet even though the PythonRe DLL has no unchecked API
-references. Defaults and static cached calls remain unlimited; embedders select
-finite policies explicitly. Complete construction/lazy/live-retention controls,
+unchecked-API gate rejects Core's sole remaining reference, the producer-permitted
+`Unsafe.SizeOf`; PythonRe has no such references. Defaults and static cached calls
+remain unlimited; embedders select finite policies explicitly. Complete
+construction/lazy/live-retention controls,
 safe defaults, category-version reconciliation and broader profile acceptance
 remain unfinished. PCRE2 qualifies independently; prior candidate bytes stay
 unchanged. Development source beyond the candidate requires its own acceptance.
 
-The next private pair, **0.4.0-scalar.52**, is being prepared. Its Core source has
-completed the checked-access batch; the allowed SizeOf calls remain. Selected
-Core original-baseline medians fit10%, with unchanged allocations and a narrow
-9.91% emitted-search row. Python cost and exact-package/consumer qualification
-remain pending. Finite work/depth/working/result and cursor contracts are unchanged.
-Lython's stricter SizeOf requirement still needs explicit reconciliation.
+This pair completes the Core/PythonRe checked-access batch. Selected Core costs
+against the fixed original fit10%, with unchanged allocations and a narrow
+9.91% emitted-search row. Python's exact-package 17-pair confirmation has per-row
+median changes -6.89..+2.16%; some large tails and materialization pool variation
+remain explicit. This is selected public-workload evidence, not broad equivalence.
+Finite work/depth/working/result and cursor contracts are preserved. Lython's
+stricter SizeOf requirement still needs explicit reconciliation.
 
 ## Support Scope
 
@@ -64,7 +66,7 @@ The explicit text/UTF-8 `Utf8PythonRegex.Compile` factories accept
 `Utf8ConstructionPolicy`, a construction timeout and a construction token.
 Positive work/depth/instruction/byte limits tighten the fixed backstops for
 covered eager decoding, parsing, translation, compilation and capture metadata.
-Development after scalar.51 also prepares the derived FullMatch program under
+Scalar.52 also prepares the derived FullMatch program under
 that same owner before returning. This pays its instruction-copy/metadata cost
 upfront, even if FullMatch is unused, and tighter budgets can consequently deny
 more compilations. Constructors remain lazy; replacement preparation, incidental
@@ -76,7 +78,7 @@ This candidate additionally preserves the original call deadline through
 cold scalar FullMatch and template substitution preparation. Construction/cache
 checkpoints observe call interruption; interrupted preparation is retryable and
 warm reuse has no preparation scope allocation. These fixes are included in the
-qualified scalar.51 pair; later development is outside that immutable input.
+qualified scalar.51 pair and preserved in scalar.52.
 See [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md) for the exact scopes and exclusions.
 
 ```csharp
@@ -160,7 +162,7 @@ and result caps with an existing host batch owner. Its reservation must survive
 retained snapshots and fresh calls need new admission. It covers only the already
 modeled payloads; complete host containment and downstream acceptance remain open.
 
-Development after scalar.51 leaves `RegexMatchTimeoutException.Input` empty when
+Scalar.52 leaves `RegexMatchTimeoutException.Input` empty when
 working or result bytes are bounded. Timeout failure therefore does not copy the
 subject into diagnostic text. Existing pattern/duration metadata and cancellation
 remain; this is not a complete exception or process-memory cap.

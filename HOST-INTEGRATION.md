@@ -22,7 +22,7 @@ the reported requested total exceed a cap; its refused allocation is not acquire
 This is a bound on the defined modeled capacities, not measured managed-heap
 usage, cumulative allocations or RSS.
 
-Development after scalar.51 also omits the diagnostic subject string on a
+Scalar.52 omits the diagnostic subject string on a
 timeout when either byte cap is finite (`RegexMatchTimeoutException.Input` is
 empty). This avoids a subject-sized decode after deadline expiry. It is outside
 the immutable scalar.51 bytes and does not establish an exception/RSS cap.
@@ -50,7 +50,7 @@ separate program/subject owner alive while a surviving result or view borrows it
 storage. The envelope does not turn these exclusions into covered allocations.
 Host-created lists of snapshots, for example, need their own admission.
 
-Development after scalar.51 includes the derived FullMatch program in the
+Scalar.52 includes the derived FullMatch program in the
 explicit PythonRe `Compile` construction allowance before publication. Hosts
 can use that factory to finish this program eagerly; constructors still defer
 it. This adds upfront construction work/storage and can deny tighter policies.
@@ -74,8 +74,9 @@ The proposed consumer reconciliation is an explicit member exception for
 type's size and performs no unchecked read, pointer arithmetic or reference
 reinterpretation. Keep rejecting the other Unsafe members and SIMD LoadUnsafe;
 do not replace SizeOf with manual estimates. This is a producer proposal, not
-downstream agreement: the unmodified strict gate still fails. Prepared scalar.52
-also fails the cumulative performance gate and has no package designation.
+downstream agreement: the unmodified strict gate still fails. Scalar.52 has passed
+private producer package/platform qualification and the selected cumulative cost
+gate; neither grants consumer acceptance or completes host containment.
 
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.

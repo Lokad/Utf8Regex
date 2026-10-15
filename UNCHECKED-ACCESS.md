@@ -1,5 +1,29 @@
 # Bounded checked-access work
 
+## Current delivery: scalar.52
+
+The checked-access batch is complete for Core/PythonRe. Exact immutable scalar.52
+DLLs have no explicit unchecked reads or generated inline-array helpers; Core's
+only Unsafe member reference is the permitted SizeOf, and PythonRe has none.
+Two independent PCRE2 NullRef placeholders remain outside this delivery.
+
+Same-byte detached Windows/Linux package suites and CPython controls pass;
+producer5e50b7b1/CI38793242629 and complete Debug Core also pass. Exact identities,
+scope and evidence are in
+[the handoff](artifacts/core-python-scalar52-20261015/HANDOFF.md).
+Core selected source comparisons plus focused final follow-ups fit the10%
+fixed-original median gate; the emitted-only confirmation +9.91% is a narrow
+estimate. Python's exact scalar.52 pair has17-pair per-row medians -6.89..+2.16%
+and paired medians -3.26..+2.28%; large tails/pool variation stay explicit.
+This is neither broad equivalence nor an all-row same-snapshot Core package run.
+No further timing campaign follows this batch.
+
+Lython's unmodified member gate still rejects Core solely for SizeOf. Producer
+qualification does not settle that consumer contract. No publication, consumer
+pin/default/promotion, host containment or PCRE2 designation is implied.
+
+## Acceptance rule and chronological evidence
+
 The core matches strict UTF-8 scalars. Checked-access conversions must preserve
 algorithms, SIMD, allocations, semantics and resource controls, with focused
 correctness, Release code-generation and cost evidence. `Unsafe.SizeOf<T>()` is
@@ -50,7 +74,8 @@ The only emitted near-miss noise confirmation gives+9.91%, with2.3/3.7% sample
 spreads and unchanged allocations. This is a narrow point estimate, not a broad
 equivalence or performance guarantee. The original63-row Core comparison and
 focused control follow-up retain raw samples and floors. Selected Core medians
-fit10%; Python cost and exact-package qualification are still separate gates.
+fit10%; the Python/package gates were still open at that source stage and are
+closed by the current delivery above.
 Evidence: artifacts/cyrillic-direct-dispatch-checked-20261015/ and
 artifacts/invocation-ascii-drain-checked-20261015/. Earlier failed receipts below
 remain historical; accepted source supersedes their unrepaired source snapshots.
@@ -71,7 +96,8 @@ Allocations remain0/112B. Sample floors/spreads are recorded; no confirmation or
 general equivalence claim follows. Release421/Debug100 prototype checks, final
 source Release421 and PythonRe95 pass. New17/24/33-byte qualification checks borrowed
 tails/offsets, scalar noise and all256 candidate byte values. The actual final
-Core DLL still references only accepted SizeOf; PythonRe none. No package follows.
+Core DLL still references only accepted SizeOf; PythonRe none. That experiment
+did not itself qualify a package.
 
 The same last bounded pair rejects the separate Cyrillic extent-loop proposal:
 its duplicate slice guard is gone, but Unicode-first costs +15.5/+16.7%, Unicode-last
@@ -79,19 +105,21 @@ its duplicate slice guard is gone, but Unicode-first costs +15.5/+16.7%, Unicode
 Earlier whole-ASCII proof, prefix-admission and whole-candidate BCL proposals
 also fail; their source is restored. Broad inlining closes at code generation,
 without timing. These are closed experiments, not retained alternate paths.
-Cyrillic's original TryRead source remains cumulatively unaccepted. Full package
-and consumer qualification stays deferred. Evidence:
+Cyrillic's original TryRead source remained cumulatively unaccepted at that
+stage. The later direct-dispatch/numeric-loop follow-up above supersedes it.
+Package qualification was deferred then. Evidence:
 artifacts/checked-extent-loops-20261015/ and folded-route-witness-20261015/;
 closed proposal receipts remain in their separately named artifact directories.
 
-The frozen candidate is source11a99f14, Core SHA256
+The initial unaccepted frozen source was11a99f14, Core SHA256
 2377238ECB9A3C9CA5687F66329606773D546F67DC6462437B8E49A4BD19844C.
 The exact predeclared set covers40 affected Core public rows and an unchanged
 BCL control,16 PythonRe result/cursor comparisons and four construction rows.
 Python capture values, ranges, LastIndex and tuple contents agree, but cost
 spreads reach113%; their medians do not establish cumulative acceptance or
 precise allocation equivalence. Existing scalar.51 bytes remain immutable;
-scalar.52 is prepared source only, with no package qualification/designation.
+scalar.52 was prepared source only then. The current5e50b7b1 delivery supersedes
+that status without modifying the earlier evidence.
 
 One bounded repair also fails: a checked tiny-fragment comparer leaves folded24
 at +14.68/+15.31%, while numeric-offset fixed-width checked Slice gives Cyrillic
@@ -132,8 +160,8 @@ revisit demonstrated defects or concrete source/JIT changes.
 There are no retained unchecked Core reads. Earlier failed prototypes below are
 historical, not the current implementation. Lython's stricter SizeOf rejection
 still fails its gate; the producer's allowed-member gate passes. Neither result
-substitutes for the failed cumulative cost decision or pending package/consumer
-qualification. Historical local acceptances below do not override that failure.
+substitutes for cumulative cost or package qualification. The current delivery
+above records those gates; historical receipts below keep their original scope.
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
