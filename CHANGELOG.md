@@ -2,6 +2,10 @@
 
 ## PythonRe development after scalar.52
 
+- Prepare distinct private Core/PythonRe input 0.4.0-scalar.55 for the coherent
+  identifier/class/boundary batch. Existing qualifier supplies exact source-mapped
+  references, locks and detached results; preserve prior immutable inputs.
+  Qualification, publication and downstream adoption remain separate.
 - Lower Python predefined classes/bracket unions/negation and word boundaries
   directly with owned CPython 3.13.2 / Unicode 15.1 predicates. Reuse existing
   class instructions and invocation controls; fixed masks/ranges avoid expanded

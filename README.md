@@ -6,6 +6,12 @@ The immutable **0.4.0-scalar.52** Core/PythonRe candidate provides Unicode-scala
 
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
+The next private Core/PythonRe input is **0.4.0-scalar.55**, preparing one coherent
+package/platform boundary for pinned identifiers, predefined scalar classes and
+word boundaries, including corrected `\B` lookbehind width. This is not yet a
+qualified candidate or a PCRE2 designation. Existing immutable Core/PythonRe52
+and separate Core/PCRE2 54 inputs retain their exact bytes and recorded scope.
+
 Use a qualified candidate's exact version and immutable feed/manifest for reproducible integration. [qualify-scalar-candidate.ps1](qualify-scalar-candidate.ps1) builds and packs core/PythonRe once, checks provenance, runs detached consumers and records package hashes; it does not publish to NuGet.org. PCRE2 is qualified independently with [test-packaged-pcre2.ps1](test-packaged-pcre2.ps1). Existing benchmark snapshots describe their recorded implementations; historical measurements do not qualify the current engine's performance.
 
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,

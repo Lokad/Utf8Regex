@@ -13,6 +13,11 @@ pass. Use `artifacts/scalar-candidates/0.4.0-scalar.52/candidate.json`, its immu
 feed/config and `artifacts/core-python-scalar52-20261015/HANDOFF.md`; the delivery
 receipt records exact identities, coverage and the scope of cost evidence.
 
+The next private Core/PythonRe input is **0.4.0-scalar.55**, preparing a single
+immutable delivery boundary for the identifier/class/boundary corrections below.
+It is not yet qualified. Existing scalar.52 and separate PCRE2 inputs remain
+unchanged; no publication, consumer pin/default change or adoption is implied.
+
 This pair is not published or accepted downstream automatically. Lython's Core DLL
 unchecked-API gate rejects Core's sole remaining reference, the producer-permitted
 `Unsafe.SizeOf`; PythonRe has no such references. Defaults and static cached calls
