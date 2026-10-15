@@ -2,6 +2,9 @@
 
 ## PCRE2 development after the Core/PythonRe scalar.52 boundary
 
+- Prepare distinct private Core/PCRE2 identity0.4.0-scalar.53 for one coherent
+  profile qualification boundary. Preserve immutable Core/PythonRe52; no new
+  PythonRe candidate, publication or broader-profile acceptance is implied.
 - Execute quoted scalar classes with the existing owned parser. Honor literal
   hyphens/brackets/backslashes, supplementary members, empty markers, scalar
   ranges across quote boundaries and extended-more whitespace. Remove duplicate

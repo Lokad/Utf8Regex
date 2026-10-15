@@ -11,6 +11,12 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
+The next private Core/PCRE2 input is **0.4.0-scalar.53**, being prepared for its
+own package/platform qualification. It includes the checked-access and scalar
+range/quoted-class/control-label corrections below. This is not a package
+designation, publication or a PythonRe53 candidate; the qualified Core/PythonRe52
+pair and all earlier immutable inputs remain unchanged.
+
 Construction validates the named factory's resource policy first, then timeout,
 option bits and compile settings, before decoding pattern bytes or spending
 construction allowance. Those argument errors take precedence over malformed
