@@ -28,6 +28,33 @@ Core allocations are unchanged. These are public-operation costs, not kernel
 figures. Keep SizeOf separate: it performs no unchecked memory access;
 Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 
+The later Core follow-up resolves both initial failures within the selected
+fixed-original workload set. Count dispatches its prepared Cyrillic strategy
+before two ineligible native-invocation probes, after the finite-policy gate and
+with the same token/deadline checks. A numeric SIMD offset and widened complete-
+block admission avoid moving-span traffic without restoring unchecked reads.
+Expanded Cyrillic public rows range -37..+4.2%, allocations unchanged. New tests
+retain a prepared strategy while testing finite denial and cancellation during
+the original invocation, including ordinary/compiled and alternative patterns.
+
+The expanded gate also exposed live-token/deadline Count costs of21–22% in
+bounded ASCII validation. Its2KiB chunks used the general BCL ASCII drain.
+Restore the original SIMD/word algorithm through checked complete-block slices,
+including scalar-word first-high-byte detection. Strict UTF-8, error offsets,
+metadata, borrowed bounds and checkpoint cadence remain. Release626/Debug275
+validation/native/control checks pass. One17-pair confirmation gives live-token
++6.20%,deadline+3.54% (paired medians+5.84/+4.01), allocations112/160B unchanged.
+Other measured128B/128KiB/mixed controls fit10%; no further variant follows.
+
+The only emitted near-miss noise confirmation gives+9.91%, with2.3/3.7% sample
+spreads and unchanged allocations. This is a narrow point estimate, not a broad
+equivalence or performance guarantee. The original63-row Core comparison and
+focused control follow-up retain raw samples and floors. Selected Core medians
+fit10%; Python cost and exact-package qualification are still separate gates.
+Evidence: artifacts/cyrillic-direct-dispatch-checked-20261015/ and
+artifacts/invocation-ascii-drain-checked-20261015/. Earlier failed receipts below
+remain historical; accepted source supersedes their unrepaired source snapshots.
+
 The checked folded follow-up now resolves that part of the first failure. An
 actual public24-byte Count witness records511 calls each for13/9-byte fragments
 and one full-width tail call. Preserve split candidate discovery/verification;

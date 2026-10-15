@@ -815,6 +815,14 @@ public sealed partial class Utf8Regex
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
+        // This prepared Unicode strategy cannot use the ASCII structural or
+        // metered literal routes. Dispatch it before those ineligible probes;
+        // finite policies, live tokens and deadlines keep their owned authority.
+        if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout)
+        {
+            return invariantCyrillicLiteralCountStrategy.Count(input);
+        }
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
             if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
@@ -839,14 +847,6 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return count;
         }
-        // Retain the qualified Unicode literal Count kernel. Other operations
-        // can now use the newly admitted owned program for the same pattern.
-        if (!cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
-            _invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
-        {
-            return invariantCyrillicLiteralCountStrategy.Count(input);
-        }
-
         // This qualified kernel consumes scalar whitespace around an ASCII-only
         // repeated run and literal. Keep its unlimited, no-token native lane;
         // metered and cancellation-aware calls retain the shared scalar VM.

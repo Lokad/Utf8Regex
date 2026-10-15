@@ -8,11 +8,13 @@ Use a qualified candidate's exact version and immutable feed/manifest for reprod
 
 The next private Core/PythonRe candidate, **0.4.0-scalar.52**, is being prepared.
 Its source removes the remaining Core unchecked reads while retaining the allowed
-`Unsafe.SizeOf` sizing calls. A checked folded-comparison follow-up resolves its
-initial cumulative regression: measured public12–64-byte workloads stay within
-4.6% of the fixed original, with unchanged allocations. Cyrillic ASCII-miss Count
-remains about65% slower; bounded alternatives failed and were restored.
-Scalar.52 is not package-qualified. See [the evidence](UNCHECKED-ACCESS.md).
+`Unsafe.SizeOf` sizing calls. The selected Core cumulative medians now fit the10%
+allowance against the fixed original, with unchanged allocations. Prepared Cyrillic
+Count skips two ineligible invocation probes; checked ASCII drains retain the
+original checkpoint cadence. The emitted near-miss row has a narrow9.91% margin;
+live-token/deadline confirmations cost6.2%/3.5% more. No broad parity claim follows.
+Python cost and exact-package qualification remain pending. See
+[the evidence](UNCHECKED-ACCESS.md).
 Lython's stricter `SizeOf` restriction still needs
 explicit reconciliation. Library builds compile; qualification packs explicitly.
 

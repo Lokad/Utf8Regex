@@ -2,12 +2,18 @@
 
 ## Private scalar.52 Core/PythonRe candidate (qualification pending)
 
-- Prepare a fresh identity for the completed checked-access batch. The folded
-  follow-up resolves its initial cumulative regression; Cyrillic ASCII-miss
-  Count remains about65% slower, with unchanged Core allocations.
-  A bounded repair failed and was restored exactly. Exact package/consumer
-  qualification has not run; these remain delivery blockers.
+- Prepare a fresh identity for the checked-access batch. Selected Core public
+  cumulative medians now fit10% of the fixed original, allocations unchanged;
+  the emitted near-miss confirmation is a narrow9.91%. Python cost and exact
+  package/consumer qualification remain pending.
   No publication, downstream adoption or PCRE2 designation is implied.
+- Dispatch the prepared Cyrillic strategy before ineligible native-invocation
+  probes, retaining finite-first, live-token and deadline gates. Its checked
+  SIMD loop admits complete blocks with one widened extent test.
+- Restore the original ASCII SIMD/word drain through checked spans instead of
+  general range-search dispatch. Keep strict validation and2KiB invocation
+  checkpoints. Live-token/deadline Count confirmations cost6.2%/3.5% more than
+  the original, with unchanged allocations.
 - Admit folded comparison prefixes and checked word extents explicitly; inline
   only the short comparer and restore the original generic word/byte algorithm.
   Remove BCL equality/validity dispatch without restoring unchecked reads.
@@ -16,10 +22,10 @@
 - Library builds no longer pack implicitly. Explicit package qualification
   remains responsible for the one producer build, pack and provenance checks.
 
-- Use checked TryRead admission for the Cyrillic SIMD loop, preserving masks,
-  continuation carry, candidates and scalar tails. Focused public costs fit10%
-  with unchanged allocations. Core's only remaining Unsafe member reference is
-  the explicitly allowed SizeOf; cumulative and downstream qualification remain.
+- Remove the Cyrillic loop's unchecked read, preserving masks, continuation
+  carry, candidates and scalar tails. The later direct-dispatch/single-admission
+  follow-up supersedes TryRead after the cumulative cost review. Core's only
+  remaining Unsafe member reference is the explicitly allowed SizeOf.
 - Fuse fixed-width literal dispatch and mask updates while consuming a checked
   block. Remove the remaining unchecked read in this executor, preserving SIMD,
   overlap/tails, scalar fallback and resource admission. Focused public Count

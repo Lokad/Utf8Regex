@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
@@ -483,8 +484,48 @@ internal static class Utf8ValidationCore
 
     private static int DrainAscii(ReadOnlySpan<byte> input, int offset)
     {
-        var relative = input[offset..].IndexOfAnyInRange((byte)0x80, (byte)0xFF);
-        return relative < 0 ? input.Length : offset + relative;
+        // Match each checked Slice's end admission. Invocation callers retain
+        // their original 2 KiB checkpoints; no validation block is widened.
+        if (Vector256.IsHardwareAccelerated)
+        {
+            while ((ulong)(uint)offset + (uint)Vector256<byte>.Count <= (uint)input.Length)
+            {
+                var mask = MemoryMarshal.Read<Vector256<byte>>(
+                    input.Slice(offset, Vector256<byte>.Count)).ExtractMostSignificantBits();
+                if (mask != 0) return offset + BitOperations.TrailingZeroCount(mask);
+                offset += Vector256<byte>.Count;
+            }
+        }
+
+        if (Vector128.IsHardwareAccelerated)
+        {
+            while ((ulong)(uint)offset + (uint)Vector128<byte>.Count <= (uint)input.Length)
+            {
+                var mask = MemoryMarshal.Read<Vector128<byte>>(
+                    input.Slice(offset, Vector128<byte>.Count)).ExtractMostSignificantBits();
+                if (mask != 0) return offset + BitOperations.TrailingZeroCount(mask);
+                offset += Vector128<byte>.Count;
+            }
+        }
+
+        while ((ulong)(uint)offset + sizeof(ulong) <= (uint)input.Length)
+        {
+            var mask = BinaryPrimitives.ReadUInt64LittleEndian(
+                input.Slice(offset, sizeof(ulong))) & 0x8080_8080_8080_8080ul;
+            if (mask != 0) return offset + (BitOperations.TrailingZeroCount(mask) >> 3);
+            offset += sizeof(ulong);
+        }
+
+        while ((ulong)(uint)offset + sizeof(uint) <= (uint)input.Length)
+        {
+            var mask = BinaryPrimitives.ReadUInt32LittleEndian(
+                input.Slice(offset, sizeof(uint))) & 0x8080_8080u;
+            if (mask != 0) return offset + (BitOperations.TrailingZeroCount(mask) >> 3);
+            offset += sizeof(uint);
+        }
+
+        while (offset < input.Length && input[offset] < 0x80) offset++;
+        return offset;
     }
 
     private static int ConsumeTwoByteRun(ReadOnlySpan<byte> input, int offset, ref int utf16Length)

@@ -2,6 +2,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -120,6 +121,46 @@ public sealed class InvariantCyrillicLiteralCountTests
         var canceled = Assert.Throws<OperationCanceledException>(() => denied.Count(input, cancellation.Token));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
         Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xFF }));
+    }
+
+    [Theory]
+    [InlineData(false, "Шерлок Холмс")]
+    [InlineData(true, "Шерлок Холмс")]
+    [InlineData(false, "Шерлок Холмс|Джон Уотсон")]
+    [InlineData(true, "Шерлок Холмс|Джон Уотсон")]
+    public void PreparedStrategyKeepsFiniteAndLiveTokenAuthority(bool compiled, string pattern)
+    {
+        var options = Options | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var input = Encoding.UTF8.GetBytes(new string('x', 4096) + "ШЕРЛОК ХОЛМС; шерлок холмс");
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+
+        var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, new()
+        {
+            MaxWorkSteps = 50_000_000, MaxDepth = 1024,
+            MaxWorkingBytes = 64 * 1_048_576, MaxResultBytes = 128 * 1_048_576,
+        });
+        Assert.True(finite.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+        Assert.Equal(2, finite.Count(input));
+        var denied = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 1 });
+        Assert.True(denied.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
+
+        using var cancellation = new CancellationTokenSource();
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => cancellation.Cancel());
+        try
+        {
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token));
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+        }
+        finally
+        {
+            diagnostics.Complete();
+        }
+
+        Assert.Equal(2, regex.Count(input));
     }
 
     [Fact]

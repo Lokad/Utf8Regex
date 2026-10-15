@@ -299,7 +299,6 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         var maxStart = input.Length - literal.ByteLength;
         var offset = 0;
         var expectedContinuationCarry = 0u;
-        var remaining = input;
         var continuationTag = Vector256.Create((byte)0x80);
         var continuationMask = Vector256.Create((byte)0xC0);
         var twoByteLeadTag = Vector256.Create((byte)0xC0);
@@ -314,16 +313,16 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         // validation proof while extracting the one literal anchor from the same
         // loaded block. Rare wider scalars resume through Rune below; structural
         // uncertainty returns to the canonical validator and direct search.
-        while (MemoryMarshal.TryRead<Vector256<byte>>(remaining, out var current))
+        while ((ulong)(uint)offset + (uint)Vector256<byte>.Count <= (uint)input.Length)
         {
+            var current = MemoryMarshal.Read<Vector256<byte>>(input.Slice(offset, Vector256<byte>.Count));
             var nonAsciiBits = current.ExtractMostSignificantBits();
             if (nonAsciiBits == 0 && expectedContinuationCarry == 0)
             {
-                remaining = remaining[Vector256<byte>.Count..];
+                offset += Vector256<byte>.Count;
                 continue;
             }
 
-            offset = input.Length - remaining.Length;
             var continuationBits = Vector256.Equals(
                 Vector256.BitwiseAnd(current, continuationMask),
                 continuationTag).ExtractMostSignificantBits();
@@ -353,7 +352,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
                     ref nextMatchStart,
                     ref count);
                 expectedContinuationCarry = (uint)(expectedContinuationWide >> 32);
-                remaining = remaining[Vector256<byte>.Count..];
+                offset += Vector256<byte>.Count;
                 continue;
             }
 
@@ -385,11 +384,9 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             }
 
             offset += bytesConsumed;
-            remaining = input[offset..];
             expectedContinuationCarry = 0;
         }
 
-        offset = input.Length - remaining.Length;
         while (expectedContinuationCarry != 0)
         {
             if ((uint)offset >= (uint)input.Length || (input[offset] & 0xC0) != 0x80)

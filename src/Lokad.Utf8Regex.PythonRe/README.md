@@ -22,8 +22,10 @@ remain unfinished. PCRE2 qualifies independently; prior candidate bytes stay
 unchanged. Development source beyond the candidate requires its own acceptance.
 
 The next private pair, **0.4.0-scalar.52**, is being prepared. Its Core source has
-completed the checked-access batch; the allowed SizeOf calls remain. Cumulative
-original-baseline costs and exact-package/consumer qualification are pending.
+completed the checked-access batch; the allowed SizeOf calls remain. Selected
+Core original-baseline medians fit10%, with unchanged allocations and a narrow
+9.91% emitted-search row. Python cost and exact-package/consumer qualification
+remain pending. Finite work/depth/working/result and cursor contracts are unchanged.
 Lython's stricter SizeOf requirement still needs explicit reconciliation.
 
 ## Support Scope
