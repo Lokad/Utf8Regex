@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 8 sites across all shipped projects: **6 Core
-sites in 4 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 5 sites across all shipped projects: **3 Core
+sites in 3 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -53,7 +53,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. Checked suffix read regresses compiled sparse public Count10.2–11.8%; original restored. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
-| Utf8LiteralCompiledEngineRuntime /3 | Production offsets0/1/3 reserve a complete literal plus31 starts. One checked35-byte window regresses dense public Count15–16%; original restored. Diagnostic loads are checked. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
@@ -732,3 +731,25 @@ variant. Helper Windows2062->2074B/Linux1782->1791B. Original source and raw IL
 restored. CandidateR348/D23 and restoredR23 pass; new public tests preserving
 ASCII-prefixed literal starts remain. Evidence:
 artifacts/cyrillic-prefix-checked-20261015/.
+
+Correlated Count now uses three checked reads from one admitted35-byte block and
+retains its candidate mask after a successful match. Visit remaining starts in
+order, skip those consumed by the previous match, then advance beyond the block
+or the last match end, whichever is later. This removes redundant vector reloads
+on dense matches, origin ref and matched/break state. Preserve SIMD correlation,
+full verification, nonoverlap, long-literal advancement, scalar tails, validation,
+allocations and caller invocation authority. Diagnostic candidate/verification/
+match counts describe the same eligible starts and need no new counters.
+
+Actual public Count-only probes reach the helper. One quiet-VM FullOpts pair
+uses the earlier driver unchanged. Dense public Count-59.17/-58.94% ordinary/
+compiled (about2.45x on that row); other affected-1.12..+3.11%, exactcontrol+0.53%,
+all-four-finite-0.54%, allocations0/112B unchanged. Floors>=49ms; sparse ordinary
+candidate spread12.9%, so no exact-equivalence/general-speedup claim. No noise
+confirmation or further variant. Windows578->592B/Linux568->576B, guards remain.
+Release334/Debug43 pass, including borrowed-offset/tail/malformed/resource checks
+and extended40/41-byte literal boundaries. No new package qualification. All
+Utf8LiteralCompiledEngineRuntime explicit unchecked reads are gone; the actual
+Core DLL still references Unsafe.Add/Vector256.LoadUnsafe and accepted SizeOf.
+Evidence: artifacts/correlated-mask-reuse-checked-20261015/. The earlier failed
+checked-window-only receipt remains historical, not the current implementation.

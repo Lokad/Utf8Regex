@@ -2,6 +2,11 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Reuse the remaining correlated candidate mask after each non-overlapping
+  literal match and check all three vector reads. Preserve scalar tails,
+  validation and resource routing. Focused dense Count is about2.45x faster;
+  other measured public costs fit10%, with unchanged allocations. The fixed
+  cumulative gate and remaining unchecked-access blockers are still open.
 - Check three remaining URI and negated-run helper reads, retaining their SIMD,
   scalar tails and validation behavior. Public fallback probes use the owned
   scalar engine; this does not qualify a new public fast path or cumulative cost.

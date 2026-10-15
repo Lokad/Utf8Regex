@@ -18,7 +18,7 @@ public sealed class Utf8LiteralCensusBoundaryTests
             BindingFlags.Static | BindingFlags.NonPublic);
         Assert.NotNull(method);
         var count = method.CreateDelegate<ProductionCount>();
-        foreach (var text in new[] { "éé", "аб", "éabc" })
+        foreach (var text in new[] { "éé", "аб", "éabc", "é" + new string('a', 39), new string('é', 20) })
         for (var prefix = 0; prefix < 64; prefix++)
         for (var tail = 0; tail < 32; tail++)
         {
@@ -32,6 +32,7 @@ public sealed class Utf8LiteralCensusBoundaryTests
         }
         var overlapping = Encoding.UTF8.GetBytes(new string('é', 97));
         Assert.Equal(48, count(overlapping, "éé"u8));
+        Assert.Equal(4, count(overlapping, Encoding.UTF8.GetBytes(new string('é', 20))));
     }
 
     [Theory]

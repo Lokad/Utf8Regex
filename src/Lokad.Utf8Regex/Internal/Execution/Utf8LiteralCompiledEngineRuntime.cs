@@ -1088,45 +1088,42 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         var first = Vector256.Create(literal[0]);
         var second = Vector256.Create(literal[1]);
         var fourth = Vector256.Create(literal[3]);
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
 
         while (index <= maxStart - (Vector256<byte>.Count - 1))
         {
             // Correlate the first scalar and the final byte of the next scalar.
             // A full compare is then needed only for the surviving start lanes.
+            var blockStart = index;
+            var block = input.Slice(blockStart, Vector256<byte>.Count + 3);
             var matches = Vector256.BitwiseAnd(
                 Vector256.Equals(
-                    Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index)),
+                    MemoryMarshal.Read<Vector256<byte>>(block),
                     first),
                 Vector256.Equals(
-                    Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 1)),
+                    MemoryMarshal.Read<Vector256<byte>>(block[1..]),
                     second));
             matches = Vector256.BitwiseAnd(
                 matches,
                 Vector256.Equals(
-                    Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 3)),
+                    MemoryMarshal.Read<Vector256<byte>>(block[3..]),
                     fourth));
             var candidateBits = matches.ExtractMostSignificantBits();
-            var matched = false;
 
             while (candidateBits != 0)
             {
-                var candidate = index + BitOperations.TrailingZeroCount(candidateBits);
-                if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
+                var candidate = blockStart + BitOperations.TrailingZeroCount(candidateBits);
+                if (candidate >= index && input.Slice(candidate, literal.Length).SequenceEqual(literal))
                 {
                     count++;
                     index = candidate + literal.Length;
-                    matched = true;
-                    break;
                 }
 
                 candidateBits &= candidateBits - 1;
             }
 
-            if (!matched)
-            {
-                index += Vector256<byte>.Count;
-            }
+            // A successful match consumes starts, not the rest of this mask.
+            // Long literals can carry the next eligible start beyond the block.
+            index = Math.Max(index, blockStart + Vector256<byte>.Count);
         }
 
         while (index <= maxStart)
