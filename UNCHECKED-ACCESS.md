@@ -28,9 +28,10 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 3 sites across all shipped projects: **1 Core
-site in 1 file**, plus two PCRE2 null-reference placeholders in one file.
-PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
+The current source inventory is two independent PCRE2 null-reference placeholders.
+**Core and PythonRe have no explicit unchecked-access sites.** The current Core
+DLL's only Unsafe member reference is the explicitly accepted Unsafe.SizeOf;
+it has no LoadUnsafe references or generated inline-array methods. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
 A bounds review found an admission defect independent of the deferred load
@@ -48,9 +49,10 @@ The following are the reviewed access contracts, not independent whole-program
 proofs. Keep remaining loads while their conversions lack acceptable evidence;
 revisit demonstrated defects or concrete source/JIT changes.
 
-| Remaining Core file / sites | Bounds contract and reason retained |
-| --- | --- |
-| Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
+There are no retained unchecked Core reads. Earlier failed prototypes below are
+historical, not the current implementation. Lython's stricter SizeOf rejection
+still fails its gate; the producer's allowed-member gate passes. Neither result
+substitutes for the unfinished cumulative cost/package/consumer qualification.
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
@@ -812,3 +814,23 @@ including existing vector widths, borrowed offsets/tails and resource/interrupti
 checks. No package qualification. Earlier checked-window/inline-only failures
 remain historical, not this implementation. Evidence:
 artifacts/fixed-width-dispatch-checked-20261015/. One Core unchecked site remains.
+
+The last Core unchecked read is now checked TryRead admission in the Cyrillic
+fused loop. Success supplies the complete vector and proves the following32-byte
+advance; absolute offsets are derived only for nonASCII work and the scalar tail.
+Keep the original SIMD masks, continuation carry, candidate verification/order,
+nonoverlap, wider Rune resume, malformed errors, allocations and caller authority.
+No typed-loop origin/index, ASCII probes, new helper, mode or retained state.
+
+One expanded quiet public pair plus its only targeted noise confirmation passes:
+all initial affected medians<=+4.11%, large ASCII/head/tail Unicode-11.5..-14.2%;
+short-hit within0.3%. Confirmation ASCIIruns ordinary+0.12/compiled+3.69%,dense
++2.36/+2.08%; compiled affected spreads1.8..4.6%. Exact controls+2.41/-0.81%,
+ordinary control noisy66..72%; initial finite-3.77%. Allocations0/112B unchanged.
+No further timing/equivalence/general-speedup claim. Windows2062->2308B/
+Linux1782->1865B; one width admission and no duplicate32Badvance guard, extra
+register moves remain. R351/D26 pass. The actual Core DLL now references only
+accepted Unsafe.SizeOf, with no generated inline-array methods. The producer's
+unchecked-read gate passes; Lython's blanket SizeOf gate still fails separately.
+Fixed-original cumulative costs and coherent package/consumer qualification are
+unfinished. Evidence: artifacts/cyrillic-tryread-checked-20261015/.

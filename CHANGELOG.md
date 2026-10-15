@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Use checked TryRead admission for the Cyrillic SIMD loop, preserving masks,
+  continuation carry, candidates and scalar tails. Focused public costs fit10%
+  with unchanged allocations. Core's only remaining Unsafe member reference is
+  the explicitly allowed SizeOf; cumulative and downstream qualification remain.
 - Fuse fixed-width literal dispatch and mask updates while consuming a checked
   block. Remove the remaining unchecked read in this executor, preserving SIMD,
   overlap/tails, scalar fallback and resource admission. Focused public Count
