@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive owned scalar case data from a pinned local CPython oracle.
+"""Derive owned scalar case and identifier data from a pinned CPython oracle.
 
 Use --check for verification. --write regenerates data after an explicit
 Unicode/profile version decision; run it only with repository builds/tests/
@@ -80,11 +80,58 @@ source += '\n'.join(array(n, v) for n, v in [
     ('LowerKeys', [c for c, _ in pairs]), ('LowerValues', [v for _, v in pairs]),
     ('PartnerKeys', sorted(groups)), ('PartnerOffsets', offsets),
     ('PartnerLengths', lengths), ('Partners', flat)]) + '}\n'
-destination = py / 'PythonReScalarCaseData.cs'
-if args.check:
-    if destination.read_text(encoding='utf-8-sig') != source:
-        raise SystemExit('Pinned scalar case data differs; explicit version/semantic review required.')
-    print('Pinned CPython 3.13.2 / Unicode 15.1.0 scalar case data verified.')
-else:
-    destination.write_text(source, encoding='utf-8')
-    print('Wrote owned scalar case data; qualify public scalar semantics before committing.')
+identifier_source = '''namespace Lokad.Utf8Regex.PythonRe;
+
+// Owned identifier data from CPython 3.13.2 / Unicode 15.1.0 str.isidentifier.
+// Regenerate/check with tools/generate-pythonre-scalar-case-data.py. These are
+// sorted disjoint half-open scalar intervals, independent of host categories.
+// Validation preserves the original group spelling; it does not normalize it.
+internal static class PythonReIdentifierData
+{
+    internal static bool IsStart(int scalar) => scalar < 128
+        ? scalar is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or '_'
+        : Contains(StartRanges, scalar);
+
+    internal static bool IsContinue(int scalar) => scalar < 128
+        ? scalar is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_'
+        : Contains(ContinueRanges, scalar);
+
+    private static bool Contains(int[] ranges, int scalar)
+    {
+        var low = 0;
+        var high = ranges.Length / 2;
+        while (low < high)
+        {
+            var middle = low + (high - low) / 2;
+            if (scalar < ranges[2 * middle]) high = middle;
+            else if (scalar >= ranges[2 * middle + 1]) low = middle + 1;
+            else return true;
+        }
+        return false;
+    }
+
+'''
+for name, accepts in [('StartRanges', str.isidentifier),
+                      ('ContinueRanges', lambda c: ('A' + c).isidentifier())]:
+    endpoints = []
+    start = None
+    for scalar in range(128, 0x110001):
+        hit = scalar < 0x110000 and not 0xD800 <= scalar <= 0xDFFF and accepts(chr(scalar))
+        if hit and start is None:
+            start = scalar
+        elif not hit and start is not None:
+            endpoints.extend((start, scalar))
+            start = None
+    identifier_source += array(name, endpoints) + '\n'
+identifier_source += '}\n'
+
+for filename, contents in [('PythonReScalarCaseData.cs', source),
+                           ('PythonReIdentifierData.cs', identifier_source)]:
+    destination = py / filename
+    if args.check:
+        if destination.read_text(encoding='utf-8-sig') != contents:
+            raise SystemExit(f'Pinned {filename} differs; explicit version/semantic review required.')
+        print(f'Pinned CPython 3.13.2 / Unicode 15.1.0 {filename} verified.')
+    else:
+        destination.write_text(contents, encoding='utf-8')
+        print(f'Wrote {filename}; qualify public semantics before committing.')

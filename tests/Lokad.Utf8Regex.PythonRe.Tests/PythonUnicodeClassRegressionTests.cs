@@ -5,13 +5,10 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 // PLAN.md C04: non-ASCII `\w`, `\s` (and related escapes) inherited .NET
 // character definitions instead of CPython semantics. Expectations below are
-// CPython 3.13.2 ground truth (see ground-c04.py). A full-scalar census
-// (census-c04.py) additionally establishes that `[\p{L}\p{N}_]` agrees with
-// Python `\w`, and `[\s\x1c-\x1f]` agrees with Python `\s`, on every
-// non-surrogate scalar, while .NET `\w` diverges on 3,610 scalars (marks,
-// letter/other numbers, connector punctuation beyond `_`) and .NET `\s`
-// diverges exactly on U+001C-U+001F. Python `\d` agrees with .NET `\d`
-// (Unicode decimal digits) on every scalar.
+// CPython 3.13.2 ground truth (see ground-c04.py). The historical census is
+// specific to its runtime Unicode version. These fixtures do not qualify newly
+// assigned host categories: U+1C89/U+1E5D0/U+1E5F1 expose the still-open version
+// gap described in SPEC-PYTHONRE.md. Scalar case data is pinned independently.
 public sealed class PythonUnicodeClassRegressionTests
 {
     [Theory]

@@ -1,5 +1,19 @@
 # Changelog
 
+## PythonRe development after scalar.52
+
+- Validate group names using owned CPython 3.13.2 / Unicode 15.1 identifier data,
+  replacing host general-category checks. Fix invalid admission of U+037A/newer
+  assignments and rejection of identifier-only start/continue characters.
+  Declarations, named references/conditionals and replacement references share
+  the validator; exact spelling, scalar decoding and construction checks remain.
+  No matching kernel, invocation policy, public API or qualified package changes.
+- Record the demonstrated host-category gap in predefined classes/boundaries.
+  An expanded-range prototype passed a full scalar census but caused substantial
+  public-operation and preparation regressions; restore it and retain evidence.
+  Keep this defect open without relabeling historical category qualification or
+  starting another timing round for the rejected representation.
+
 ## Private scalar.54 Core/PCRE2 candidate
 
 - Qualify immutable Core/PCRE2 input 0.4.0-scalar.54, producer 66328362. Both

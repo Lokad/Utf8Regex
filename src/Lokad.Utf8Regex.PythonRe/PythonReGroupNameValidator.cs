@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 
@@ -19,7 +18,7 @@ internal static class PythonReGroupNameValidator
             return false;
         }
 
-        if (!(first.Value == '_' || IsIdentifierStart(first)))
+        if (!PythonReIdentifierData.IsStart(first.Value))
         {
             return false;
         }
@@ -31,7 +30,7 @@ internal static class PythonReGroupNameValidator
                 return false;
             }
 
-            if (!(rune.Value == '_' || IsIdentifierContinue(rune)))
+            if (!PythonReIdentifierData.IsContinue(rune.Value))
             {
                 return false;
             }
@@ -52,20 +51,4 @@ internal static class PythonReGroupNameValidator
         return true;
     }
 
-    private static bool IsIdentifierStart(Rune rune)
-        => Rune.GetUnicodeCategory(rune) is
-            UnicodeCategory.UppercaseLetter or
-            UnicodeCategory.LowercaseLetter or
-            UnicodeCategory.TitlecaseLetter or
-            UnicodeCategory.ModifierLetter or
-            UnicodeCategory.OtherLetter or
-            UnicodeCategory.LetterNumber;
-
-    private static bool IsIdentifierContinue(Rune rune)
-        => IsIdentifierStart(rune) ||
-           Rune.GetUnicodeCategory(rune) is
-               UnicodeCategory.DecimalDigitNumber or
-               UnicodeCategory.NonSpacingMark or
-               UnicodeCategory.SpacingCombiningMark or
-               UnicodeCategory.ConnectorPunctuation;
 }

@@ -30,6 +30,22 @@ remain explicit. This is selected public-workload evidence, not broad equivalenc
 Finite work/depth/working/result and cursor contracts are preserved. Lython's
 stricter SizeOf requirement still needs explicit reconciliation.
 
+Unicode category versions remain a known semantic limitation. With the current
+.NET 10.0.13 host data, `\w` admits U+1C89/U+1E5D0 and `\d` admits U+1E5F1;
+CPython 3.13.2 / Unicode 15.1 treats them as unassigned. Complements, brackets and
+boundaries share this gap. The owned case table does not resolve it. A fully
+expanded pinned-class prototype passed a scalar census but substantially slowed
+overlapping public workloads and construction, so it was restored. No new package
+or category qualification follows; see [the specification](../../SPEC-PYTHONRE.md).
+
+Development separately fixes group-name admission using pinned CPython identifier
+data, shared by declarations, named references/conditionals and replacement
+references. General categories incorrectly admitted U+037A/new host assignments
+and rejected valid identifier-only characters. Validation now follows the pinned
+identifier rules while preserving the exact name spelling. Matching kernels and
+invocation controls are unchanged. This source correction is beyond the frozen
+scalar.52 pair; it does not resolve predefined classes or designate a new package.
+
 ## Support Scope
 
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.

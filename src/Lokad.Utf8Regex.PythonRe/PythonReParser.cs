@@ -15,12 +15,12 @@ internal sealed partial class PythonReParser
     private const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
     // PLAN.md C08: `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
     private const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
-    // PLAN.md C04: Python Unicode classes in terms of BCL categories, verified by a
-    // full-scalar census against CPython 3.13.2 (census-c04.py): `[\p{L}\p{N}_]`
-    // agrees with Python `\w` and `[\s\x1c-\x1f]` agrees with Python `\s` on every
-    // non-surrogate scalar. No Unicode property tables are embedded: the BCL
-    // supplies the category data. `\d` keeps its .NET pass-through, verified
-    // identical (Unicode decimal digits) on the same census.
+    // C04's category census was specific to its runtime Unicode version. These
+    // spellings inherit host category data, unlike the owned scalar case table.
+    // With Unicode 16 data, U+1C89/U+1E5D0 become word members and U+1E5F1 a
+    // decimal digit although CPython 3.13.2 / Unicode 15.1 leaves them unassigned.
+    // SPEC-PYTHONRE.md records the open class/boundary reconciliation. Do not
+    // treat the historical census as qualification for a different host version.
     private const string UnicodeWordClass = @"[\p{L}\p{N}_]";
     private const string UnicodeNonWordClass = @"(?:(?![\p{L}\p{N}_])" + ManagedUnicodeScalarPattern + ")";
     private const string UnicodeSpaceClass = @"[\s\x1c-\x1f]";

@@ -90,6 +90,16 @@ This profile is still incomplete. In particular:
 * bytes-pattern semantics are intentionally unsupported in this profile; PythonRe only targets `str` regex semantics over UTF-8 inputs
 * `LOCALE` semantics are intentionally unsupported; this profile is culture-invariant by construction
 * `\N{...}` named Unicode escapes are intentionally unsupported; a faithful resolver would require embedding a large Unicode-name table, which is out of scope under the package-size constraint
+* development validates group names with owned CPython 3.13.2 / Unicode 15.1
+  identifier data. Declarations, named references/conditionals and replacement
+  references share this validator. It includes identifier-only start/continue
+  characters and normalization exclusions that general Unicode categories miss;
+  it rejects characters assigned only by newer host versions. Accepted spelling
+  remains unchanged, so canonically equivalent names can remain distinct. The
+  existing scalar-decoding/construction work checks remain; no matching kernel,
+  invocation limit or cursor/result lifetime changes. The generator's `--check`
+  covers this data as well as scalar folding. This source correction is beyond
+  immutable scalar.52 and does not close the predefined-class gap below.
 * the execution classifier for `Utf8Regex` is conservative by design
 * admitted scalar programs use owned CPython 3.13.2 / Unicode 15.1.0 case data.
   Unicode literals and classes include simple-lower inverses and the extra
@@ -125,6 +135,15 @@ This profile is still incomplete. In particular:
   adds an end assertion before discovery so alternatives can backtrack to a
   complete result. Production BCL matching and result shaping have been removed;
   category-version reconciliation and the remaining common resource gates stay open.
+  This is a demonstrated version gap, not only an unverified target: on the
+  current .NET 10.0.13 host, U+1C89 and U+1E5D0 match `\w`, and U+1E5F1 matches
+  `\w` and `\d`; CPython 3.13.2 / Unicode 15.1 leaves all three unassigned and
+  rejects those memberships. Bracketed complements and word boundaries inherit
+  the same gap. Owned case-folding data does not pin class/category data. A
+  bounded expanded-range prototype corrected the scalar census but was restored
+  after substantial public-operation and preparation regressions; it is not a
+  shipped fix or a reason to claim new category acceptance. Evidence and the
+  rejected source are in `artifacts/python-category-version-20261016/`.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
   find the whole scalar. Search, Match, and FullMatch here stay mutually consistent
