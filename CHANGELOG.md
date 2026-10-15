@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Replace three diagnostic census SIMD loads with checked reads, preserving its
+  candidate/match counts and leaving production Count instructions unchanged.
+  Diagnostic replay overhead is an explicit tradeoff; the Core DLL still has
+  unchecked references and is not qualified for Lython's managed-only gate.
 - Complete PythonRe's derived FullMatch program inside explicit Compile's
   existing construction owner. Caller-selected admission and construction
   interruption cover that upfront work; no policy/token is retained. Constructors

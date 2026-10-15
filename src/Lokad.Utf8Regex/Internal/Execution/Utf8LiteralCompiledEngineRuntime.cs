@@ -740,16 +740,15 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         var first = Vector256.Create(literal[0]);
         var second = Vector256.Create(literal[1]);
         var fourth = Vector256.Create(literal[3]);
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
 
         while (index <= maxStart - (Vector256<byte>.Count - 1))
         {
             var correlated = Vector256.BitwiseAnd(
-                Vector256.Equals(Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index)), first),
-                Vector256.Equals(Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 1)), second));
+                Vector256.Equals(MemoryMarshal.Read<Vector256<byte>>(input[index..]), first),
+                Vector256.Equals(MemoryMarshal.Read<Vector256<byte>>(input[(index + 1)..]), second));
             correlated = Vector256.BitwiseAnd(
                 correlated,
-                Vector256.Equals(Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 3)), fourth));
+                Vector256.Equals(MemoryMarshal.Read<Vector256<byte>>(input[(index + 3)..]), fourth));
             var candidateBits = correlated.ExtractMostSignificantBits();
             var matched = false;
             while (candidateBits != 0)

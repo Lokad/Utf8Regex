@@ -16,10 +16,19 @@ algorithms/SIMD where practical. Full platform/package qualification is batched 
 a coherent delivery milestone. Historical deferrals below retain their original
 evidence; the revised allowance does not designate conversions automatically.
 
+The allowance applies cumulatively to the completed checked batch, against the
+fixed pre-C28 source c79f80620ef95a27c43ab8f5619795833feae8d9. Its preserved Core
+DLL is artifacts/short-literal-checked-10pct-20261014/core-before.dll, SHA256
+8642E9A261E56EDC4B9CFC6D72FF9A9B3ADB9B72BE22AEA40AD5714C555B4202. Focused
+predecessor comparisons remain evidence for individual changes, but do not prove
+that their combined public-operation cost is within 10%. That final comparison
+is unfinished. Keep SizeOf separate: it performs no unchecked memory access;
+Lython's blanket rejection requires explicit acceptance-contract reconciliation.
+
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 23 sites across all shipped projects: **21 Core
+The current source inventory is 20 sites across all shipped projects: **18 Core
 sites in 9 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
@@ -48,14 +57,15 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission; closed URI conversions regress at boundaries. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
-| Utf8LiteralCompiledEngineRuntime /6 | Runtime and diagnostic correlated offsets0/1/3 reserve a complete literal plus31 starts. Diagnostic conversion regressed; timed kernel remains. |
-| Utf8ValidationCore /3 | Full32/16-byte blocks from scalar-boundary offsets. ASCII-drain conversion regressed; common UTF-8 drain remains unconverted. |
+| Utf8LiteralCompiledEngineRuntime /3 | Production correlated offsets0/1/3 reserve a complete literal plus31 starts. The three diagnostic loads are now checked; these separate production loads remain. |
+| Utf8ValidationCore /3 | Full32/16-byte blocks from scalar-boundary offsets. Reopened: the cited12–15% penalty belongs to an internal helper, not public Match. Check public coverage and a bounded BCL replacement; common UTF-8 drain remains unconverted. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
 before access. This is an invariant, not a claim of checked replacement or a
 reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
-inline-array staging also remains deferred after the recorded cost penalties.
+inline-array staging is prioritized for current-source qualification: its recorded
+small construction penalties were rejected under the superseded zero-regression rule.
 
 The short-literal comparator is accepted under the revised 10% public-cost gate.
 Its complete candidate admission retains the scalar.48 end-guard repair. Checked
@@ -200,24 +210,45 @@ source, keep the expanded borrowed-offset/every-tail validation and explicit
 finite/live-token checks, and stop. No safe/unsafe mode, further variant, package
 replay or new candidate follows. Evidence: artifacts/cyrillic-count-checked-20261015/.
 
-The ASCII validation drain pilot is deferred. Counted checked vector spans keep
+The original ASCII validation drain prototype was restored. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,
 but add entry/setup/index work. Linux FullOpts code grows454→533 bytes; long
-kernel controls regress30–39% and mixed public validation12–15%, with unchanged
-allocations. Production is restored and its method IL matches baseline. New
+kernel controls regress30–39% and the internal ValidateOnly helper12–15%, with unchanged
+allocations. Public unlimited Match measures -2.2% (noisy) at4KiB and +1.9% at128KiB;
+finite public lanes do not show the cited12–15% penalty either. These are separate
+driver lanes. The earlier "mixed public validation" classification was incorrect:
+this evidence does not establish a >10% affected-public-operation regression.
+Current public-route coverage through the changed helper must still be demonstrated
+before acceptance; the two loads and a checked BCL range-search alternative are
+reopened by the 2026-10-15 review. Production method IL matches baseline. New
 borrowed-offset, Unicode-stop, malformed-tail and exact work-cutoff checks remain.
 One short kernel sample missed the timing floor and is not parity evidence; the
-long controls do not need a repeat to decline this conversion. Evidence:
+long controls explain private costs but cannot close the public-cost gate. Evidence:
 artifacts/validation-ascii-drain-checked-20261014/. The55-site inventory and Core
 unchecked API gate remain open; no safety/performance equivalence claim follows.
 
-The correlated-literal diagnostic census conversion is deferred. Direct checked
+The correlated-literal diagnostic census conversion was historically deferred. Direct checked
 reads keep the existing SIMD algorithm but add guards and increase inspected
 code692→766 bytes on Windows and718→776 on Linux. Long diagnostic replays regress
 about10–11%, with equal zero allocations; the timed production kernel retains
 identical code578/568 bytes. Production is restored and census boundary fixtures
 remain. Evidence: artifacts/census-checked-load-20261013/. No runtime speedup or
-whole-DLL safety claim follows; the55-site inventory remains unchanged.
+whole-DLL safety claim follows; the55-site inventory remains unchanged at that
+historical boundary. The2026-10-15 review reopens these three diagnostic loads:
+diagnostic replay overhead is an explicit diagnostic tradeoff, and unchanged
+production matching throughput does not need another benchmark campaign.
+
+The current-source follow-up accepts the three diagnostic checked reads. The
+existing census and selected-runtime fixtures pass in Release and Debug, including
+borrowed offsets, tails, nonoverlap, finite public controls and malformed input.
+An untimed actual-DLL replay agrees at seven short/long boundaries. Windows
+.NET10.0.13 Release FullOpts production instructions remain identical apart from
+relocated addresses (578 bytes both); diagnostic code grows692→766 bytes. The
+historical diagnostic slowdown is accepted as a diagnostic tradeoff, without a
+new matching timing or performance-equivalence claim. This removes three explicit
+sites and one diagnostic origin reference, preserving SIMD masks, candidates,
+verification, ordering and allocations. No new package or whole-DLL compliance
+claim follows. Evidence: artifacts/diagnostic-census-checked-20261015/.
 
 The original category math-symbol reduction pilot was deferred. Checked vector-span
 indexing removed per-vector checks while preserving widths, comparison order,
@@ -287,7 +318,8 @@ Evidence: `artifacts/singleton-span-conversion-20261013/`. The frozen syntactic
 inventory now has 55 remaining sites in 16 files. Other unchecked/implicit
 accesses and the downstream whole-pair artifact gate remain open.
 
-A bounded direct-fill experiment for dynamic IL parameter staging is deferred.
+A bounded direct-fill experiment for dynamic IL parameter staging was deferred
+under the former zero-regression gate; it is now prioritized for qualification.
 It removed the custom four-element inline array and its fourteen generated
 helper calls while filling the existing admitted `Type[]`, with the same work,
 storage and heap allocations. The reversed-order repeat retained a roughly
@@ -297,7 +329,8 @@ performance equivalence or helper-removal claim lands. Arity, null rejection,
 delegate execution after disposal and original-owner cleanup remain covered.
 Evidence: `artifacts/il-parameter-staging-20261013/`.
 
-The parser's seven-int case-fold set staging is also deferred. A fixed stack span
+The parser's seven-int case-fold set staging was also deferred under that old
+gate and is now prioritized for qualification. A fixed stack span
 removed eight generated inline-array helper calls with unchanged wire values,
 work/capacity admission and heap allocations. The reversed-order repeat retained
 about 0.8–1.3% parser penalties against roughly 0.5% movement in the unchanged
@@ -305,6 +338,14 @@ plain control. Inspected stack frames grew16 bytes and gained a stack guard.
 Whole-constructor comparisons had large control drift and do not qualify cost
 equivalence. Restore the original collection expression; no helper-removal or
 speedup claim lands. Evidence: `artifacts/folded-set-staging-20261013/`.
+
+Those historical construction costs fit the revised10% allowance, but are not
+current-source qualification. Reuse existing arity/folding/resource checks, inspect
+actual generated helpers and run one bounded public construction comparison with
+an unchanged control. Do not seek exact equivalence or treat private parser/builder
+timings as matching-workload regressions. PLAN.md records the finite implementation
+order, BCL/prefix-reuse candidates, fixed-width admitted-block hypothesis and one
+cumulative performance/package boundary; none is automatically accepted.
 
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block
