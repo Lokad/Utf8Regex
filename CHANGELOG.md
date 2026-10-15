@@ -1,9 +1,16 @@
 # Changelog
 
-## Private scalar.51 Core/PythonRe candidate preparation
+## Development (0.4.0-scalar.52-dev)
+
+- Continue from immutable scalar.51. Its exact Windows/Linux package consumers
+  and CPython capture/digest checks pass; producer CI remains a separate receipt.
+  No publication, consumer adoption or PCRE2 designation is implied.
+
+## Private scalar.51 Core/PythonRe candidate
 
 - Freeze the checked category/folded/packed search and PythonRe full-program
-  reuse batch under a fresh identity. Qualification is pending; scalar.50 and
+  reuse batch under a fresh identity. Exact detached Windows/Linux consumers and
+  CPython controls pass; producer CI is recorded in the delivery receipt. Scalar.50 and
   all previous immutable bytes remain unchanged. No publication, consumer pin,
   adoption or independent PCRE2 designation is implied.
 
@@ -23,7 +30,7 @@
   masks, scalar tails, consumed ranges, allocations and resource routing.
 - A bounded public PCRE2 Count comparison fits the10% allowance, with observed
   medians about-0.7% to+4.1%. Preserve the explicit workload/noise scope. This
-  source change is outside immutable scalar.50; package checks remain batched.
+  source change is outside immutable scalar.50 and included in qualified scalar.51.
 
 ## Private scalar.50 Core/PythonRe candidate
 

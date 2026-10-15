@@ -4,14 +4,14 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.50**,
-producer `3879bbb6bcfbee4b44771075e2417de8f1ab19ba`. It covers strict UTF-8 scalar
+The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.51**,
+producer `09b165463e5e917cf256411a00bc740f972e93dd`. It covers strict UTF-8 scalar
 matching, authoritative capture completion, an explicitly owned persistent cursor,
 finite invocation work/depth/working/result limits and covered eager construction
 controls. Exact detached Windows/Linux consumers and CPython capture/digest checks
-pass. Use `artifacts/scalar-candidates/0.4.0-scalar.50/candidate.json`, its immutable
-feed/config and `artifacts/core-python-scalar50-20261015/HANDOFF.md`; the delivery
-receipt records exact identities, coverage and current operating costs.
+pass. Use `artifacts/scalar-candidates/0.4.0-scalar.51/candidate.json`, its immutable
+feed/config and `artifacts/core-python-scalar51-20261015/HANDOFF.md`; the delivery
+receipt records exact identities, coverage and the scope of cost evidence.
 
 This pair is not published or accepted downstream automatically. Lython's Core DLL
 unchecked-API gate remains unmet even though the PythonRe DLL has no unchecked API
@@ -65,7 +65,7 @@ This candidate additionally preserves the original call deadline through
 cold scalar FullMatch and template substitution preparation. Construction/cache
 checkpoints observe call interruption; interrupted preparation is retryable and
 warm reuse has no preparation scope allocation. These fixes are included in the
-qualified scalar.50 pair; later development is outside that immutable input.
+qualified scalar.51 pair; later development is outside that immutable input.
 See [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md) for the exact scopes and exclusions.
 
 ```csharp
@@ -149,7 +149,7 @@ and result caps with an existing host batch owner. Its reservation must survive
 retained snapshots and fresh calls need new admission. It covers only the already
 modeled payloads; complete host containment and downstream acceptance remain open.
 
-Development after scalar.50 derives the lazy `FullMatch` program from existing
+Scalar.51 derives the lazy `FullMatch` program from existing
 immutable instructions and shares predicate/assertion tables. It no longer
 retains the parse tree for a second conversion. Cold preparation still observes
 the original call's cancellation/deadline and admits new instruction storage;
