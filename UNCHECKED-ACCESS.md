@@ -53,7 +53,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission. Private boundary penalties were observed, but affected public coverage remains missing; unqualified. |
-| Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
+| Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. Checked suffix read regresses compiled sparse public Count10.2–11.8%; original restored. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 | Utf8LiteralCompiledEngineRuntime /3 | Production offsets0/1/3 reserve a complete literal plus31 starts. One checked35-byte window regresses dense public Count15–16%; original restored. Diagnostic loads are checked. |
 
@@ -671,3 +671,17 @@ sourceguards4 pass, including candidate lanes, Unicode whitespace, malformed
 suffix after an ASCII match, ranges, resource and original interruption checks.
 No additional variant, timing or package replay follows. Evidence:
 artifacts/ordered-window-checked-20261015/.
+
+The emitted-family fused ASCII candidate scan was tested with one checked
+MemoryMarshal.Read over its admitted suffix. Actual public Count probes reach
+FindNextAsciiCandidate1 in ordinary and compiled configurations. One bounded
+quiet-VM FullOpts pair finds compiled sparse Count +10.24% at8KiB and +11.79%
+at128KiB, with3.4..4.9% sample spreads. Other affected rows move-4.48..+2.88%;
+exact/all-four-finite controls-3.03/-1.82%. Allocations stay0B for ASCII rows,
+1872B for mixed Unicode fallback,112B for the finite control. Sample floors are
+at least52ms. Windows helper247->298B/Linux205->268B; checks remain. This exceeds
+the public10% gate: no confirmation or further variant. Original source and raw
+helper IL are restored; rebuilt DLL hash differs because its producer revision
+advanced. Candidate Release351/Debug60/sourceguards4 and restoredRelease8/Debug8
+pass. No new package qualification. Evidence:
+artifacts/emitted-family-read-checked-20261015/.
