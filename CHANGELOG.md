@@ -2,6 +2,10 @@
 
 ## PCRE2 development after scalar.53
 
+- Prepare distinct private Core/PCRE2 input0.4.0-scalar.54 for the completed
+  source batch. Existing qualification explicitly requests exact references,
+  source mapping, a lockfile and TRX; preserve prior immutable inputs. Package
+  acceptance, publication and downstream adoption remain separate.
 - Execute scoped/captured reset-option forms in the existing owned parser.
   Reset supported case/line/capture/extended flags, retain ungreedy/duplicate-name
   state and restore outer settings on scope exit. Preserve scalar captures,

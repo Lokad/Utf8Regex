@@ -20,6 +20,12 @@ public-operation costs with all four finite limits. This is private producer
 acceptance; downstream adoption and publication remain separate. The qualified
 Core/PythonRe52 pair and all earlier immutable inputs remain unchanged.
 
+The next private Core/PCRE2 input is **0.4.0-scalar.54**, preparing one coherent
+package/platform boundary for the source corrections below. It is not yet a
+qualified candidate or a PythonRe54 designation. The existing package qualifier
+now requests exact-version source-mapped restore, a lockfile and detached TRX
+results explicitly; earlier immutable inputs and their recorded caveats remain.
+
 Development after scalar.53 reuses the existing admitted attempt workspace across
 candidate checks within one slice-cursor advance. Scratch is released before
 returning, failing or interrupting; no workspace survives between advances or

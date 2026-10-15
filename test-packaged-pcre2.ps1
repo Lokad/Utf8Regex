@@ -48,7 +48,7 @@ Assert-PackageShape $corePackage "Lokad.Utf8Regex.dll" "" ""
 Assert-PackageShape $pcre2Package "Lokad.Utf8Regex.Pcre2.dll" "Lokad.Utf8Regex" $version
 $provenance = Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths @($corePackage, $pcre2Package) -ExpectedAssemblies @("Lokad.Utf8Regex.dll", "Lokad.Utf8Regex.Pcre2.dll") -RequireCleanSource ($Archive -or $SkipBuild)
 
-Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -PackageDirectory $locations.PackageDirectory -TestDirectory $locations.TestDirectory -PackageCache $locations.PackageCache -Configuration $Configuration -SourceTestProjectName "Lokad.Utf8Regex.Pcre2.Tests" -PackageIds @("Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2") -Version $version
+Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $locations.QualificationRoot -PackageDirectory $locations.PackageDirectory -TestDirectory $locations.TestDirectory -PackageCache $locations.PackageCache -Configuration $Configuration -SourceTestProjectName "Lokad.Utf8Regex.Pcre2.Tests" -PackageIds @("Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2") -Version $version -PinQualifiedPackageSources -TestResultsDirectory (Join-Path $locations.QualificationRoot "test-results")
 
 if ($Archive) {
     [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
