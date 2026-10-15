@@ -416,6 +416,8 @@ public sealed class Utf8SliceByteEvaluatorTests
     [Fact]
     public void CallbackExceptionsAndDeadlinesUnwindEveryWriterAliasAndPreserveFailureIdentity()
     {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex("((.){2})", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
         var input = "\U0001f600\U0001f600"u8.ToArray();
         var failure = new ApplicationException("writer evaluator failure");
@@ -431,10 +433,10 @@ public sealed class Utf8SliceByteEvaluatorTests
         Assert.Null(Utf8SliceByteOutputScope.Current);
         var calls = new List<int>();
         var timeout = Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, calls,
-            static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref List<int> state) =>
+            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref List<int> state) =>
             {
                 state.Add(context.IndexInUtf16);
-                Thread.Sleep(300);
+                ticks = 300;
                 writer.Append("ignored"u8);
             }));
         Assert.Single(calls);
