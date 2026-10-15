@@ -19,8 +19,8 @@ evidence; the revised allowance does not designate conversions automatically.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 31 sites across all shipped projects: **29 Core
-sites in 12 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 29 sites across all shipped projects: **27 Core
+sites in 11 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -51,7 +51,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. No new conversion qualified. |
 | Utf8LiteralCompiledEngineRuntime /6 | Runtime and diagnostic correlated offsets0/1/3 reserve a complete literal plus31 starts. Diagnostic conversion regressed; timed kernel remains. |
-| Utf8UnicodeCategoryExecutor /2 | Full32/16-byte blocks from current nonnegative scan index. Category pilot retains a long-input penalty. |
 | Utf8ValidationCore /3 | Full32/16-byte blocks from scalar-boundary offsets. ASCII-drain conversion regressed; common UTF-8 drain remains unconverted. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
@@ -144,8 +143,11 @@ without needing a confirmation. Linux FullOpts helper code grows588→635 bytes
 and retains guards. The original source is restored; no width-specific safe/
 unsafe selector or further variant is added. New widths3..8/borrowed-offset/tail
 tests remain, alongside predicate, decline and interruption coverage. Core Release
-6777 and Debug76 checks pass on the candidate, and20 fixed-width checks pass after
-restoration. Evidence: artifacts/fixed-width-checked-20261015/. Scalar.50 remains
+6777 and Debug76 checks pass on the candidate. A subsequent fresh-build signature
+audit confirms the restored ref-byte helper, and20 matching-binary checks pass;
+the immediate incremental restoration run had reused a stale DLL because the
+restored source kept its timestamp. Evidence: artifacts/fixed-width-checked-20261015/
+and artifacts/category-public-checked-20261015/restoration-audit.json. Scalar.50 remains
 immutable; there is no new package qualification for this pilot.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
@@ -167,13 +169,34 @@ identical code578/568 bytes. Production is restored and census boundary fixtures
 remain. Evidence: artifacts/census-checked-load-20261013/. No runtime speedup or
 whole-DLL safety claim follows; the55-site inventory remains unchanged.
 
-The category math-symbol reduction pilot is deferred. Checked vector-span
+The original category math-symbol reduction pilot was deferred. Checked vector-span
 indexing removed per-vector checks while preserving widths, comparison order,
 popcounts, tails and allocations. Short kernels improved 4–10%, but the 4 KiB
 kernel retained a 0.3–1% penalty in normal/reversed runs, with larger helper setup.
 Production is restored and boundary fixtures remain. Public Core Count selected
 another route, so its timings do not qualify this kernel. Evidence:
-`artifacts/category-checked-load-20261013/`. The 55-site inventory is unchanged.
+`artifacts/category-checked-load-20261013/`. Its55-site inventory is historical.
+
+The category conversion is now accepted with actual public PCRE2 Count evidence.
+The existing Pcre2CharacterDirectProgram calls the shared Core math-symbol
+reduction; no selector or integration framework is added. Counted checked
+ReadOnlySpan<Vector128<byte>>/ReadOnlySpan<Vector256<byte>> views remove both
+unaligned Unsafe reads/ref origins. SIMD widths, six comparisons, popcounts,
+consumed index, scalar tails and allocations remain. Finite/token/deadline paths
+keep their original admission and interruption authority.
+
+One bounded before/after uses immutable scalar.50 Core versus the new source
+with the identical PCRE2 DLL in both lanes. Public Count medians change about
+-0.7% to+4.1% on128B/4096B ASCII and3328B mixed BMP/astral subjects; unchanged
+literal/finite controls move-0.1%/+1.4%. Allocations match. The mixed after lane
+has a21% sample range, so exact parity is not claimed; the observed medians fit
+the10% allowance without a confirmation. These timings exercise256-bit public
+selection;128-bit correctness is covered directly, without a separate public
+128-bit cost claim. The inlined reduction caller grows428→450 bytes on Linux
+FullOpts and has no per-vector range checks; the outer category loop stays673B.
+Core Release369/Debug22, PCRE2 Release81/Debug52 and the full PythonRe suite pass.
+Evidence: artifacts/category-public-checked-20261015/. No Core Count speedup,
+benchmark Status, full platform coverage or new package designation is implied.
 
 The original vector-search and short-literal pilots were deferred under the
 former no-regression gate. Checked vector loads retained branches and regressed

@@ -198,11 +198,10 @@ internal static class Utf8UnicodeCategoryExecutor
         var pipe = Vector256.Create((byte)'|');
         var tilde = Vector256.Create((byte)'~');
 
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
-        var lastVectorStart = input.Length - Vector256<byte>.Count;
-        while (index <= lastVectorStart)
+        var vectors = MemoryMarshal.Cast<byte, Vector256<byte>>(input[index..]);
+        for (var block = 0; block < vectors.Length; block++)
         {
-            var current = Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.Add(ref inputRef, index));
+            var current = vectors[block];
             var matches = Vector256.Equals(current, plus);
             matches = Vector256.BitwiseOr(matches, Vector256.Equals(current, less));
             matches = Vector256.BitwiseOr(matches, Vector256.Equals(current, equal));
@@ -210,8 +209,9 @@ internal static class Utf8UnicodeCategoryExecutor
             matches = Vector256.BitwiseOr(matches, Vector256.Equals(current, pipe));
             matches = Vector256.BitwiseOr(matches, Vector256.Equals(current, tilde));
             count += BitOperations.PopCount(matches.ExtractMostSignificantBits());
-            index += Vector256<byte>.Count;
         }
+
+        index += vectors.Length * Vector256<byte>.Count;
 
         return count;
     }
@@ -227,11 +227,10 @@ internal static class Utf8UnicodeCategoryExecutor
         var pipe = Vector128.Create((byte)'|');
         var tilde = Vector128.Create((byte)'~');
 
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
-        var lastVectorStart = input.Length - Vector128<byte>.Count;
-        while (index <= lastVectorStart)
+        var vectors = MemoryMarshal.Cast<byte, Vector128<byte>>(input[index..]);
+        for (var block = 0; block < vectors.Length; block++)
         {
-            var current = Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.Add(ref inputRef, index));
+            var current = vectors[block];
             var matches = Vector128.Equals(current, plus);
             matches = Vector128.BitwiseOr(matches, Vector128.Equals(current, less));
             matches = Vector128.BitwiseOr(matches, Vector128.Equals(current, equal));
@@ -239,8 +238,9 @@ internal static class Utf8UnicodeCategoryExecutor
             matches = Vector128.BitwiseOr(matches, Vector128.Equals(current, pipe));
             matches = Vector128.BitwiseOr(matches, Vector128.Equals(current, tilde));
             count += BitOperations.PopCount(matches.ExtractMostSignificantBits());
-            index += Vector128<byte>.Count;
         }
+
+        index += vectors.Length * Vector128<byte>.Count;
 
         return count;
     }

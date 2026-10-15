@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased checked category reduction (0.4.0-scalar.51-dev)
+
+- Replace two shared math-symbol SIMD reads with checked vector spans, preserving
+  masks, scalar tails, consumed ranges, allocations and resource routing.
+- A bounded public PCRE2 Count comparison fits the10% allowance, with observed
+  medians about-0.7% to+4.1%. Preserve the explicit workload/noise scope. This
+  source change is outside immutable scalar.50; package checks remain batched.
+
 ## Private scalar.50 Core/PythonRe candidate
 
 - Freeze the accepted scalar.50 source batch under a fresh immutable identity.
