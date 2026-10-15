@@ -5,8 +5,9 @@
 The checked-access batch is complete for Core/PythonRe. Exact immutable scalar.52
 DLLs have no explicit unchecked reads or generated inline-array helpers; Core's
 only Unsafe member reference is the permitted SizeOf, and PythonRe has none.
-An independent later PCRE2 source follow-up removes its two NullRef placeholders;
-compiler-generated PCRE2 staging remains separate from this qualified pair.
+Independent later PCRE2 source follow-ups remove its two NullRef placeholders and
+the sole generated two-group staging expression. Its development DLL now
+references only permitted SizeOf; this does not designate a PCRE2 package.
 
 Same-byte detached Windows/Linux package suites and CPython controls pass;
 producer5e50b7b1/CI38793242629 and complete Debug Core also pass. Exact identities,
@@ -138,9 +139,9 @@ Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
 The current source inventory has no explicit unchecked-access sites in Core,
-PythonRe or PCRE2; permitted SizeOf queries remain. PCRE2's generated inline-array
-helpers still reference Unsafe.Add/As/AsRef and do not pass the whole-DLL gate.
-**The qualified Core/PythonRe pair has no such generated helpers.** Current Core
+PythonRe or PCRE2; permitted SizeOf queries remain. Actual development PCRE2 DLL
+inspection after its separate probe follow-up also finds only SizeOf and no
+generated inline-array helpers. **The qualified Core/PythonRe pair is unchanged.** Core
 DLL's only Unsafe member reference is the explicitly accepted Unsafe.SizeOf;
 it has no LoadUnsafe references or generated inline-array methods. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
@@ -174,10 +175,29 @@ Release101+119/Debug101 projection/authority checks pass. Windows FullOpts keeps
 both constructors14B; ten other methods and both projecting wrappers have
 identical instructions after address normalization. Constructor differences are
 register-zeroing syntax/store order, not additional work. No public timing or
-whole-PCRE2 API-pass claim follows. Exact DLL inventory removes NullRef but retains
-generated Add/As/AsRef plus allowed SizeOf. Evidence:
+whole-PCRE2 API-pass claim followed that first step. Its exact DLL inventory
+removed NullRef but retained generated Add/As/AsRef plus allowed SizeOf. Evidence:
 artifacts/pcre2-projection-default-20261015/. No package designation or repeated
-Core/PythonRe qualification. Compiler-generated Core
+Core/PythonRe qualification.
+
+The subsequent exact IL call map locates all three remaining generated calls in
+ProbeViaAbPlus: two InlineArrayElementRef and one InlineArrayAsReadOnlySpan. A
+fixed two-element stack span and checked stores replace that single expression;
+the successful branch returns immediately, so it acquires this stack buffer at
+most once. Existing scoped-span Full publication/admission/capture replay remain.
+No owner, overload, heap allocation, mode or algorithm is introduced.
+
+Release443/Debug443 partial/scalar/anchored/first-line/publication/interruption/
+resource checks pass. Windows FullOpts probe code1443->1394B; Full stays1268B.
+One quiet public Probe pair covers eight affected soft/hard-full, short/4KiB/
+Unicode-prefix, unlimited/all-four-finite/live-token rows. Medians -10.45..+1.25%,
+unchanged allocations80/192B; unchanged BCL control+1.09%. Some raw tails reach80%,
+sample floors>=65.5ms: no equivalence or general-speedup claim, and no repeat.
+Actual development PCRE2 DLL references only allowed SizeOf with no generated
+inline-array methods. No PCRE2 package designation or Core/PythonRe52 rebuild.
+Evidence: artifacts/pcre2-probe-staging-checked-20261015/.
+
+Compiler-generated Core
 inline-array parameter/fold staging is now converted; its historical small
 construction penalties were rejected under the superseded zero-regression rule.
 No generated inline-array helper calls remain in the current Core DLL. The last

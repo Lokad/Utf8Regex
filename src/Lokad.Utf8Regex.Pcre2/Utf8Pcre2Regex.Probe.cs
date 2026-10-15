@@ -184,8 +184,10 @@ public sealed partial class Utf8Pcre2Regex
                     return Partial(Project(0, matchStart, startOffsetInBytes + j));
                 }
 
-                return Full([Project(0, matchStart, startOffsetInBytes + j),
-                    Project(1, matchStart, matchStart + 1)]);
+                Span<Pcre2GroupData> groups = stackalloc Pcre2GroupData[2];
+                groups[0] = Project(0, matchStart, startOffsetInBytes + j);
+                groups[1] = Project(1, matchStart, matchStart + 1);
+                return Full(groups);
             }
 
             if (partialMode != Pcre2PartialMode.None && i == remaining.Length - 1)

@@ -6,8 +6,13 @@
   using compiler-default inactive fields. Preserve original owner references,
   selector, admission, interruption and result lifetimes. Focused projection and
   authority checks pass; Release projection code generation is unchanged.
-  PCRE2's generated inline-array Unsafe references remain a separate item. This
-  does not designate a PCRE2 package or modify the immutable Core/PythonRe pair.
+  This does not designate a PCRE2 package or modify the immutable Core/PythonRe pair.
+- Replace the sole two-group probe collection staging with a fixed stack span
+  and checked stores. Remove three generated calls, their two helper definitions
+  and remaining Add/As/AsRef references; development PCRE2 retains only SizeOf.
+  Preserve captures, partial ordering, admission and interruption. Release443/
+  Debug443 pass. Selected public Probe medians -10.45..+1.25% with unchanged
+  allocations; noisy tails and unchanged control remain explicit in the ledger.
 
 ## Private scalar.52 Core/PythonRe candidate
 
