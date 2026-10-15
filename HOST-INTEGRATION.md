@@ -50,6 +50,12 @@ separate program/subject owner alive while a surviving result or view borrows it
 storage. The envelope does not turn these exclusions into covered allocations.
 Host-created lists of snapshots, for example, need their own admission.
 
+Development after scalar.51 includes the derived FullMatch program in the
+explicit PythonRe `Compile` construction allowance before publication. Hosts
+can use that factory to finish this program eagerly; constructors still defer
+it. This adds upfront construction work/storage and can deny tighter policies.
+Replacement preparation and complete program/cache retention remain separate.
+
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior
 snapshots stay valid; they do not make a failed bulk operation successful or

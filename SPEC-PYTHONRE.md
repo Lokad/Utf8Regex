@@ -143,18 +143,24 @@ checks do not provide a public construction budget or construction cancellation.
 The explicit `Utf8PythonRegex.Compile` text/UTF-8 factories additionally accept
 `Utf8ConstructionPolicy`, a construction timeout and construction token. They
 share one eager owner through strict decoding, parsing, translation, scalar
-compilation and capture metadata. Positive work/depth/instruction/byte limits
+compilation, capture metadata and preparation of the derived FullMatch program.
+That program's instruction copy and metadata are admitted before publication,
+even when the caller never uses FullMatch. Explicit compilation can therefore
+cost more or reach a construction limit that formerly deferred preparation;
+it does not retain a construction owner, policy or token for future calls.
+Positive work/depth/instruction/byte limits
 tighten the fixed ceilings; null retains them. Limits bound covered admission,
 including major growth overlap, rather than every acquisition or process memory.
 Pre-cancellation wins over argument/decoding failures; later cancellation keeps
 the original token and a deadline failure throws `RegexMatchTimeoutException`.
 For UTF-8 pattern timeout failures the exception's Pattern is empty, avoiding an
 unbounded diagnostic decode. Construction authority ends before publication;
-the expression's invocation policy/token/timeout remain independent. Lazy
-full-match and replacement preparation, CLR/JIT metadata, incidental acquisitions
+the expression's invocation policy/token/timeout remain independent. Replacement
+preparation, CLR/JIT metadata, incidental acquisitions
 and caller retention retain separate scope. Static caches are not consulted.
-For scalar FullMatch value/context/data/string calls, invocation authority is created
-before accessing the lazy full-match program. Preparation copies the existing
+Constructors still defer FullMatch preparation. For scalar FullMatch
+value/context/data/string calls, invocation authority is created before accessing
+that lazy program; explicitly compiled instances already have it. Preparation copies the existing
 top-level scalar instructions, replaces their terminal Accept with an absolute
 end anchor, and appends Accept. Existing instruction targets and backtracking
 remain intact. Immutable predicate tables, assertion programs and capture names

@@ -57,7 +57,11 @@ The explicit text/UTF-8 `Utf8PythonRegex.Compile` factories accept
 `Utf8ConstructionPolicy`, a construction timeout and a construction token.
 Positive work/depth/instruction/byte limits tighten the fixed backstops for
 covered eager decoding, parsing, translation, compilation and capture metadata.
-They do not bound every allocation, lazy preparation or process memory.
+Development after scalar.51 also prepares the derived FullMatch program under
+that same owner before returning. This pays its instruction-copy/metadata cost
+upfront, even if FullMatch is unused, and tighter budgets can consequently deny
+more compilations. Constructors remain lazy; replacement preparation, incidental
+acquisitions and process memory remain outside this partial construction bound.
 Construction authority ends before expression publication; execution policy and
 the token supplied to each operation remain independent.
 

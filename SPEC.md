@@ -1424,6 +1424,11 @@ One synchronous owner spans eager compilation, with a final interruption check
 before publication; pre-cancellation precedes all pattern/argument work. Deadline
 denial uses `RegexMatchTimeoutException`; byte-pattern diagnostics omit Pattern
 to avoid additional decoding. Factories do not consult static pattern caches.
+The explicit PythonRe factory also completes its derived FullMatch program in
+this owner before publication. Its instruction copy and metadata consume the
+construction allowance upfront, even if FullMatch is unused; no construction
+authority is retained. PythonRe constructors keep retryable lazy preparation.
+Replacement preparation and other uncovered acquisitions remain separate.
 Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.

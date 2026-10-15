@@ -5,6 +5,41 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonRePublicConstructionTests
 {
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void ExplicitCompileNeedsNoLaterFullMatchConstruction(bool bytes)
+    {
+        var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
+        using var deniedPreparation = new Utf8ConstructionScope(1, 1, 1, 1);
+        var match = regex.FullMatchDetailedData("😀😀"u8);
+        Assert.True(match.Success);
+        Assert.Equal("😀", match.Groups[1].ValueText);
+        Assert.Equal("x", match.LastGroup);
+        Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
+        Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
+        Assert.Equal(0ul, deniedPreparation.Budget.Reserved);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void EagerFullProgramUsesConstructionDeadlineInsteadOfMatchDeadline(bool bytes)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++);
+        var regex = bytes
+            ? Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, PythonReCompileOptions.None,
+                TimeSpan.FromMilliseconds(1), Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
+                TimeSpan.FromSeconds(30), CancellationToken.None)
+            : Utf8PythonRegex.Compile("(?P<x>😀){2,4}", PythonReCompileOptions.None,
+                TimeSpan.FromMilliseconds(1), Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
+                TimeSpan.FromSeconds(30), CancellationToken.None);
+        Assert.True(ticks > 1);
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
+        Assert.Equal(TimeSpan.FromMilliseconds(1), regex.MatchTimeout);
+        Assert.False(Utf8ConstructionScope.IsActive);
+    }
+
     private static Utf8PythonRegex Compile(Utf8ConstructionPolicy policy, bool bytes)
         => bytes ? Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
@@ -36,6 +71,7 @@ public sealed class PythonRePublicConstructionTests
         Assert.Equal(1ul, error.Limit);
         Assert.False(Utf8ConstructionScope.IsActive);
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         var result = regex.SearchDetailedData("😀😀"u8);
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
@@ -64,11 +100,12 @@ public sealed class PythonRePublicConstructionTests
                 MaxInstructionCapacity = 10000, MaxBytes = 1000000 },
             TimeSpan.FromSeconds(30), cancellation.Token);
         cancellation.Cancel();
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         var result = regex.SearchDetailedData("😀😀"u8);
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
-        Assert.True(regex.FullMatch("😀😀"u8).Success); // Later lazy preparation has its own backstop.
+        Assert.True(regex.FullMatch("😀😀"u8).Success);
     }
 
     [Fact]

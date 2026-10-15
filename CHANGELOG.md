@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Complete PythonRe's derived FullMatch program inside explicit Compile's
+  existing construction owner. Caller-selected admission and construction
+  interruption cover that upfront work; no policy/token is retained. Constructors
+  remain lazy. Compile can cost more or exhaust tighter construction budgets.
 - Record current immutable scalar.51 quiet-VM public costs, including all four
   finite controls and retained PythonRe results. Finite family Count remains
   about9.8x unlimited; preserve raw noise/control evidence without a parity claim.
