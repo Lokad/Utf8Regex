@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
-    <Version>0.4.0-scalar.49-dev</Version>
+    <Version>0.4.0-scalar.49</Version>
     <AssemblyVersion>0.4.0</AssemblyVersion>
     <FileVersion>0.4.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
