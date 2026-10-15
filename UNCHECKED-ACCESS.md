@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 11 sites across all shipped projects: **9 Core
-sites in 6 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 8 sites across all shipped projects: **6 Core
+sites in 4 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -51,8 +51,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
-| Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
-| Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission. Private boundary penalties were observed, but affected public coverage remains missing; unqualified. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. Checked suffix read regresses compiled sparse public Count10.2–11.8%; original restored. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 | Utf8LiteralCompiledEngineRuntime /3 | Production offsets0/1/3 reserve a complete literal plus31 starts. One checked35-byte window regresses dense public Count15–16%; original restored. Diagnostic loads are checked. |
@@ -685,3 +683,27 @@ helper IL are restored; rebuilt DLL hash differs because its producer revision
 advanced. Candidate Release351/Debug60/sourceguards4 and restoredRelease8/Debug8
 pass. No new package qualification. Evidence:
 artifacts/emitted-family-read-checked-20261015/.
+
+Three legacy token-helper loads are now checked suffix reads: URI body scan1,
+negated-run boolean scan2. Remove the negated scan's origin ref and unused Unsafe
+import; retain SIMD, masks, neighbor bounds, full ASCII proof, scalar tails and
+all caller routing/authority. Public IsMatch/Count/Match/enumeration probes over
+URI and negated-run profiles, ASCII/mixed input and ordinary/compiled options
+produce identical results before/after. All30 fixtures classify FallbackRegex:
+GetOwnedSliceProgram selects the scalar program before these shortcuts. Prepared
+PCRE2 boolean/count adapters similarly fence FallbackRegex before direct probes.
+No token-helper JIT output is produced by those public calls; separate explicit
+internal replays with the same filter compile the helpers and pass. This proves
+the tested routing, not absence of every possible public caller or qualification
+of a future fast path. No public matching algorithm/selector is changed.
+
+These checked internal probes are accepted as diagnostic/legacy safety cleanup;
+historical private penalties do not establish public matching regressions. No new
+matching timing, equivalence claim or package campaign is warranted for the
+unchanged observed public routes. Any subsequently demonstrated public use remains
+subject to the public cost gate. Windows FullOpts URI helper511->539B, negated
+helper756->801B; guards remain. Release393/Debug68 focused semantic, every-ASCII
+stop-byte, borrowed-offset/vector-tail, resource, cancellation and source checks
+pass. The temporary diagnostic driver initially used an incorrect expected
+negated match; correcting its subject, without changing production, makes both
+DLL replays pass. Evidence: artifacts/legacy-token-checked-20261015/.

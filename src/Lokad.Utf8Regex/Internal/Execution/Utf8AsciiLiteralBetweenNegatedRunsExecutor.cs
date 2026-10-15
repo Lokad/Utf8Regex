@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -24,7 +23,6 @@ internal static class Utf8AsciiLiteralBetweenNegatedRunsExecutor
         var minimumCandidate = startIndex + 1;
         var maximumCandidate = input.Length - 2;
         var offset = 0;
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
 
         // A found candidate is not enough to bypass validation: keep scanning so the
         // definitive result also proves that every input byte is ASCII.
@@ -34,7 +32,7 @@ internal static class Utf8AsciiLiteralBetweenNegatedRunsExecutor
             var vectorLimit = input.Length - Vector256<byte>.Count;
             while (offset <= vectorLimit)
             {
-                var values = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                var values = MemoryMarshal.Read<Vector256<byte>>(input[offset..]);
                 if (values.ExtractMostSignificantBits() != 0)
                 {
                     return false;
@@ -48,7 +46,7 @@ internal static class Utf8AsciiLiteralBetweenNegatedRunsExecutor
 
         if (Vector128.IsHardwareAccelerated && input.Length - offset >= Vector128<byte>.Count)
         {
-            var values = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+            var values = MemoryMarshal.Read<Vector128<byte>>(input[offset..]);
             if (values.ExtractMostSignificantBits() != 0)
             {
                 return false;

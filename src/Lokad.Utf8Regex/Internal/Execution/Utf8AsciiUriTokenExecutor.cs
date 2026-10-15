@@ -195,7 +195,7 @@ internal static class Utf8AsciiUriTokenExecutor
             var space = Vector256.Create((byte)' ');
             while (input.Length - index >= Vector256<byte>.Count)
             {
-                var values = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(input[index..]));
+                var values = MemoryMarshal.Read<Vector256<byte>>(input[index..]);
                 var stopMask = values.ExtractMostSignificantBits() |
                     Vector256.Equals(values, questionMark).ExtractMostSignificantBits() |
                     Vector256.Equals(values, hashMark).ExtractMostSignificantBits() |

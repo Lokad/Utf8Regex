@@ -2,6 +2,9 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Check three remaining URI and negated-run helper reads, retaining their SIMD,
+  scalar tails and validation behavior. Public fallback probes use the owned
+  scalar engine; this does not qualify a new public fast path or cumulative cost.
 - Check the four128/256-bit reads in separator-only ordered-window Count.
   Preserve whole-input ASCII validation, candidate order, tails, Unicode fallback
   and budget checkpoints. Focused public costs fit the10% allowance; the fixed
