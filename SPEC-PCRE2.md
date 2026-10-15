@@ -34,6 +34,14 @@ endpoint. Invalid or reversed ranges throw `Pcre2CompileException` with the
 existing `ClassRangeOrder` kind. Leading and trailing literal hyphens retain
 their normal class meaning.
 
+`\Q...\E` quotes literal scalars inside character classes as well as outside
+them. Quoted hyphens, brackets, carets and backslashes retain literal membership;
+unquoted range delimiters still compare scalar endpoints across quote boundaries.
+Quote markers, including an isolated `\E`, contribute no atom. Whitespace inside
+quotes remains literal with extended-more mode. A quote that consumes the class's
+closing bracket leaves an unterminated class; empty quotes do not create a
+repeatable atom. Pattern syntax guards must make the same distinction.
+
 Recognized backtracking-control verb labels are literal text ending at the first
 closing parenthesis; this profile does not expose `ALT_VERBNAMES`. Parentheses,
 brackets, escape spellings and callout/quantifier-looking text inside a label do

@@ -126,6 +126,7 @@ internal static class Pcre2CompileValidator
         var groupDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
+        var classStart = false;
         var quoted = false;
         var previousWasZeroWidth = true; // No repeatable item at pattern entry.
         for (var offset = 0; offset < pattern.Length; offset++)
@@ -138,12 +139,15 @@ internal static class Pcre2CompileValidator
                     quoted = false;
                     offset++;
                 }
+                else if (inCharacterClass) { classHasAtom = true; classStart = false; }
+                else previousWasZeroWidth = false;
 
                 continue;
             }
 
             if (inCharacterClass)
             {
+                if (classStart && character == '^') { classStart = false; continue; }
                 if (character == ']' && classHasAtom)
                 {
                     inCharacterClass = false;
@@ -154,18 +158,25 @@ internal static class Pcre2CompileValidator
                 if (character == '\\' && offset + 1 < pattern.Length)
                 {
                     var escape = pattern[++offset];
+                    if (escape is 'Q' or 'E')
+                    {
+                        quoted = escape == 'Q';
+                        continue;
+                    }
                     if (escape is 'B' or 'R' or 'X')
                     {
                         throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
                     }
 
                     classHasAtom = true;
+                    classStart = false;
                     continue;
                 }
 
                 // Endpoint ordering belongs to the scalar class parser. Raw
                 // UTF-16 characters and escape spellings are not endpoint values.
                 classHasAtom = true;
+                classStart = false;
                 continue;
             }
 
@@ -182,7 +193,8 @@ internal static class Pcre2CompileValidator
                     quoted = true;
                 }
 
-                previousWasZeroWidth = escape is 'A' or 'b' or 'B' or 'G' or 'z' or 'Z';
+                if (escape is not ('Q' or 'E'))
+                    previousWasZeroWidth = escape is 'A' or 'b' or 'B' or 'G' or 'z' or 'Z';
                 continue;
             }
 
@@ -190,6 +202,7 @@ internal static class Pcre2CompileValidator
             {
                 inCharacterClass = true;
                 classHasAtom = false;
+                classStart = true;
                 previousWasZeroWidth = false;
                 continue;
             }
@@ -272,7 +285,7 @@ internal static class Pcre2CompileValidator
                     return true;
                 }
 
-                if (!inCharacterClass && offset + 1 < pattern.Length && pattern[offset + 1] == 'Q')
+                if (offset + 1 < pattern.Length && pattern[offset + 1] == 'Q')
                 {
                     quoted = true;
                 }
@@ -359,7 +372,7 @@ internal static class Pcre2CompileValidator
                 }
 
                 var escape = pattern[++offset];
-                if (!inCharacterClass && escape == 'Q')
+                if (escape == 'Q')
                 {
                     quoted = true;
                     continue;
@@ -453,7 +466,7 @@ internal static class Pcre2CompileValidator
                 }
 
                 var escape = pattern[++offset];
-                if (!inCharacterClass && escape == 'Q')
+                if (escape == 'Q')
                 {
                     quoted = true;
                 }

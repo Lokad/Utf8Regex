@@ -24,13 +24,14 @@ internal static class Pcre2CaptureNameValidator
             {
                 if (character == '\\' && offset + 1 < pattern.Length && pattern[offset + 1] == 'E')
                 { quoted = false; offset++; }
-                else if (inClass) classHasAtom = true;
+                else if (inClass) { classHasAtom = true; classStart = false; }
                 continue;
             }
             if (character == '\\')
             {
                 if (offset + 1 < pattern.Length && pattern[offset + 1] == 'Q') quoted = true;
-                else if (inClass) classHasAtom = true;
+                else if (inClass && offset + 1 < pattern.Length && pattern[offset + 1] != 'E')
+                { classHasAtom = true; classStart = false; }
                 offset++;
                 continue;
             }

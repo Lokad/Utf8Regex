@@ -2,6 +2,13 @@
 
 ## PCRE2 development after the Core/PythonRe scalar.52 boundary
 
+- Execute quoted scalar classes with the existing owned parser. Honor literal
+  hyphens/brackets/backslashes, supplementary members, empty markers, scalar
+  ranges across quote boundaries and extended-more whitespace. Remove duplicate
+  whitespace lookaheads; keep lexical guards consistent with quote state. Upgrade
+  former admission-only fixtures to real matching/capture checks. Native10.47
+  agreement covers30patterns/22subjects; this is source evidence, not a package
+  designation or broad performance claim.
 - Keep recognized control-verb labels literal across structural and syntax guards.
   Share the existing bounded label scanner instead of interpreting parentheses,
   brackets, escape or callout spellings in names. Preserve actual regex-body and

@@ -764,7 +764,9 @@ internal sealed class Pcre2CharacterParser
     private bool TryParseClass(int start, out Pcre2CharacterClass characterClass)
     {
         _offset++;
-        var negated = _offset < _pattern.Length && _pattern[_offset] == '^';
+        var quoted = false;
+        SkipClassTrivia(ref _offset, ref quoted);
+        var negated = !quoted && _offset < _pattern.Length && _pattern[_offset] == '^';
         if (negated)
         {
             _offset++;
@@ -774,13 +776,10 @@ internal sealed class Pcre2CharacterParser
         var first = true;
         while (_offset < _pattern.Length)
         {
-            if ((_options & Pcre2CharacterOptions.ExtendedMore) != 0 && _pattern[_offset] is ' ' or '\t')
-            {
-                _offset++;
-                continue;
-            }
+            SkipClassTrivia(ref _offset, ref quoted);
+            if (_offset == _pattern.Length) break;
 
-            if (_pattern[_offset] == ']' && !first)
+            if (!quoted && _pattern[_offset] == ']' && !first)
             {
                 _offset++;
                 characterClass = CreateClass(terms, negated);
@@ -788,38 +787,26 @@ internal sealed class Pcre2CharacterParser
             }
 
             first = false;
-            Rune? scalar = null;
-            if (!TryParsePosixTerm(out var term) && !TryParseClassTerm(out term, out scalar))
+            if (!TryParseClassTerm(quoted, out var term, out var scalar))
             {
                 characterClass = Pcre2CharacterClass.Empty;
                 return false;
             }
 
-            if ((_options & Pcre2CharacterOptions.ExtendedMore) != 0)
-            {
-                while (_offset < _pattern.Length && _pattern[_offset] is ' ' or '\t')
-                {
-                    _offset++;
-                }
-            }
+            SkipClassTrivia(ref _offset, ref quoted);
 
             var rangeEndOffset = _offset + 1;
-            if ((_options & Pcre2CharacterOptions.ExtendedMore) != 0)
-            {
-                while (rangeEndOffset < _pattern.Length && _pattern[rangeEndOffset] is ' ' or '\t')
-                {
-                    rangeEndOffset++;
-                }
-            }
+            var rangeEndQuoted = false;
+            if (!quoted && _offset < _pattern.Length && _pattern[_offset] == '-')
+                SkipClassTrivia(ref rangeEndOffset, ref rangeEndQuoted);
 
-            if (_offset < _pattern.Length - 1 &&
-                _pattern[_offset] == '-' &&
-                rangeEndOffset < _pattern.Length &&
-                _pattern[rangeEndOffset] != ']')
+            if (!quoted && _offset < _pattern.Length - 1 &&
+                _pattern[_offset] == '-' && rangeEndOffset < _pattern.Length &&
+                (rangeEndQuoted || _pattern[rangeEndOffset] != ']'))
             {
                 _offset = rangeEndOffset;
-                Rune? high = null;
-                if (!TryParsePosixTerm(out _) && !TryParseClassTerm(out _, out high))
+                quoted = rangeEndQuoted;
+                if (!TryParseClassTerm(quoted, out _, out var high))
                 {
                     characterClass = Pcre2CharacterClass.Empty;
                     return false;
@@ -846,10 +833,29 @@ internal sealed class Pcre2CharacterParser
         return false;
     }
 
-    private bool TryParseClassTerm(out Pcre2CharacterClassTerm term, out Rune? scalar)
+    private void SkipClassTrivia(ref int offset, ref bool quoted)
+    {
+        // Quote markers are zero-width, including an isolated E. Keep quote
+        // state when peeking across a range delimiter; its endpoint is a Rune.
+        while (offset < _pattern.Length)
+        {
+            if (offset + 1 < _pattern.Length && _pattern[offset] == '\\' &&
+                (_pattern[offset + 1] == 'E' || !quoted && _pattern[offset + 1] == 'Q'))
+            {
+                quoted = _pattern[offset + 1] == 'Q';
+                offset += 2;
+            }
+            else if (!quoted && (_options & Pcre2CharacterOptions.ExtendedMore) != 0 &&
+                _pattern[offset] is ' ' or '\t') offset++;
+            else break;
+        }
+    }
+
+    private bool TryParseClassTerm(bool quoted, out Pcre2CharacterClassTerm term, out Rune? scalar)
     {
         scalar = null;
-        if (_pattern[_offset] != '\\')
+        if (!quoted && TryParsePosixTerm(out term)) return true;
+        if (quoted || _pattern[_offset] != '\\')
         {
             if (!TryReadPatternRune(out var literal, out _))
             {

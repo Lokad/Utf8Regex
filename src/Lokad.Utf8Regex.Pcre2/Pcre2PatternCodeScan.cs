@@ -24,6 +24,7 @@ internal static class Pcre2PatternCodeScan
         var quoted = false;
         var inCharacterClass = false;
         var classHasAtom = false;
+        var classStart = false;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
             var character = pattern[offset];
@@ -34,6 +35,7 @@ internal static class Pcre2PatternCodeScan
                     quoted = false;
                     offset++;
                 }
+                else if (inCharacterClass) { classHasAtom = true; classStart = false; }
 
                 continue;
             }
@@ -42,6 +44,12 @@ internal static class Pcre2PatternCodeScan
             {
                 if (character == '\\' && offset + 1 < pattern.Length)
                 {
+                    if (pattern[offset + 1] is 'Q' or 'E')
+                    {
+                        quoted = pattern[offset + 1] == 'Q';
+                        offset++;
+                        continue;
+                    }
                     if (matchInsideClass && pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
                     {
                         return true;
@@ -49,9 +57,12 @@ internal static class Pcre2PatternCodeScan
 
                     offset++;
                     classHasAtom = true;
+                    classStart = false;
                     continue;
                 }
 
+                if (classStart && character == '^') { classStart = false; continue; }
+                classStart = false;
                 if (character == ']' && classHasAtom)
                 {
                     inCharacterClass = false;
@@ -98,6 +109,7 @@ internal static class Pcre2PatternCodeScan
 
                 inCharacterClass = true;
                 classHasAtom = false;
+                classStart = true;
                 continue;
             }
 

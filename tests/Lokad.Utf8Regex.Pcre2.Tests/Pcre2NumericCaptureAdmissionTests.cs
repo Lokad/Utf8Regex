@@ -64,14 +64,16 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     [Theory]
     [InlineData(@"[\Q(?<100>a)\E]")]
     [InlineData("(*MARK:(?<100>a)a")]
-    public void AdmissionSeparatesLiteralSpellingsFromDefinitionsInUnservedBodies(string pattern)
+    public void LiteralBodiesMatchWithoutDeclaringCapturesOrHidingFollowingDefinitions(string pattern)
     {
-        // Published 0.3.0 and the prior source have matching/structural gaps for
-        // these native-valid bodies. This check qualifies name admission alone;
-        // it neither asserts their matching support nor freezes those gaps.
+        // Both formerly unserved bodies now execute in the owned profile.
         Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf);
+        var match = new Utf8Pcre2Regex(pattern).MatchDetailed("a"u8);
+        Assert.True(match.Success);
+        Assert.Equal("a", match.GetValueString());
+        Assert.Equal(1, match.CaptureSlotCount);
         var exception = Assert.Throws<Pcre2CompileException>(() =>
-            Pcre2CaptureNameValidator.Validate(pattern + "(?<100>b)", Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf));
+            new Utf8Pcre2Regex(pattern + "(?<100>b)"));
         Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, exception.ErrorKind);
     }
 

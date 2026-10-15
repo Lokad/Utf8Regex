@@ -20,11 +20,13 @@ Published 0.3.0 remains the reported affected release; local development package
 with that same version need isolated caches and an explicit source identity.
 
 Additional native-valid probes found quoted-class matching and parenthesized
-MARK-label structural gaps. Current source corrects the latter: shared lexical
-validation treats recognized verb labels as literal text while preserving checks
-in actual regex bodies and after labels. Native10.47 controls and focused tests
-record that source correction separately from immutable package qualification.
-Quoted classes remain separate profile work, not a numeric-capture fix.
+MARK-label structural gaps. Current source corrects both: shared lexical validation
+keeps recognized verb labels literal, and the existing scalar class parser honors
+quote boundaries, literal punctuation, empty markers and scalar range endpoints.
+Guards preserve actual syntax checks outside those literal regions. Former
+admission-only fixtures now assert actual matches and capture slots. Native10.47
+controls and focused tests record these source corrections separately from
+immutable package qualification; they are not sparse numeric-capture extensions.
 
 ## Package provenance enforcement (development, 2026-10-07)
 

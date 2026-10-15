@@ -24,6 +24,12 @@ use the existing `ClassRangeOrder` compile-error kind. This also rejects formerl
 admitted invalid forms such as `[\d-z]`. Earlier immutable package receipts retain
 their original coverage; this correction needs its own PCRE2 delivery boundary.
 
+Quoted classes execute in the owned scalar parser. `[\Qa-z\E]` contains `a`,
+`-` and `z`; `[a-\Qz\E]` spans `a` through `z`. Quotes also protect brackets,
+backslashes, supplementary scalars and extended-more whitespace. Empty quote
+markers add no atom; malformed classes retain structured compilation errors.
+Earlier admission-only fixtures now assert actual matches and capture slots.
+
 Control-verb labels remain literal through validation, including parentheses,
 brackets and backslash/callout-looking spellings. For example,
 `(*MARK:(?<100>a)a` reports the label `(?<100>a` without declaring a capture.
