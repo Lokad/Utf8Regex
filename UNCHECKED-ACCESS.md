@@ -47,7 +47,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission; closed URI conversions regress at boundaries. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
-| Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. No new conversion qualified. |
+| Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 | Utf8LiteralCompiledEngineRuntime /6 | Runtime and diagnostic correlated offsets0/1/3 reserve a complete literal plus31 starts. Diagnostic conversion regressed; timed kernel remains. |
 | Utf8ValidationCore /3 | Full32/16-byte blocks from scalar-boundary offsets. ASCII-drain conversion regressed; common UTF-8 drain remains unconverted. |
 
@@ -184,6 +184,21 @@ No confirmation or additional variant is needed. Candidate ordering, every
 vector lane/tail, borrowed offsets0/1/17/31, scalar/folding and resource checks
 pass. Evidence: artifacts/packed-search-checked-20261015/. Full package/platform
 qualification remains batched; immutable scalar.50 is unchanged.
+
+The fused Cyrillic Count read is deferred. One checked suffix read preserves
+the256-bit masks, continuation carry, candidate verification, wider-scalar resume,
+nonoverlap, tails and zero allocations. Public Count compiles the kernel; a
+separate untimed ASCII-miss-only audit confirms coverage for that row. One bounded
+ordinary/compiled comparison finds dense Cyrillic and mixed-width medians within
+4%, but4096-byte ASCII misses regress25–26.5% against literal controls about1–2%.
+The ordinary32-byte hit is noisy (148–167% sample spread), so it is not parity
+evidence. The clear ASCII-miss penalty exceeds10% without a confirmation.
+
+Linux Release FullOpts code shrinks1810→1808 bytes while bounds guards remain;
+smaller code does not establish equivalent cost. Restore the exact original
+source, keep the expanded borrowed-offset/every-tail validation and explicit
+finite/live-token checks, and stop. No safe/unsafe mode, further variant, package
+replay or new candidate follows. Evidence: artifacts/cyrillic-count-checked-20261015/.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,

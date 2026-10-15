@@ -102,6 +102,27 @@ public sealed class InvariantCyrillicLiteralCountTests
     }
 
     [Fact]
+    public void SingleLiteralFiniteAndLiveTokenCallsKeepTheirInvocationAuthority()
+    {
+        var input = "ШЕРЛОК ХОЛМС; шерлок холмс"u8.ToArray();
+        var regex = new Utf8Regex("Шерлок Холмс", Options, TimeSpan.FromSeconds(5), new()
+        {
+            MaxWorkSteps = 100_000, MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
+        });
+        using var cancellation = new CancellationTokenSource();
+        Assert.Equal(2, regex.Count(input, cancellation.Token));
+        var denied = new Utf8Regex("Шерлок Холмс", Options, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 1 });
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+        cancellation.Cancel();
+        var canceled = Assert.Throws<OperationCanceledException>(() => denied.Count(input, cancellation.Token));
+        Assert.Equal(cancellation.Token, canceled.CancellationToken);
+        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xFF }));
+    }
+
+    [Fact]
     public void StrategyStillRejectsMalformedUtf8()
     {
         var regex = new Utf8Regex("Шерлок Холмс", Options);
@@ -118,10 +139,16 @@ public sealed class InvariantCyrillicLiteralCountTests
         var oracle = new Regex("Шерлок Холмс", Options, Regex.InfiniteMatchTimeout);
         var literal = "Шерлок Холмс"u8;
 
+        foreach (var borrowedOffset in new[] { 0, 1, 17, 31 })
         for (var offset = 0; offset < 96; offset++)
+        for (var tail = 0; tail < 32; tail++)
         {
-            var input = Enumerable.Repeat((byte)'.', 160).ToArray();
-            literal.CopyTo(input.AsSpan(offset));
+            // Invalid bytes outside the borrowed subject must never enter its
+            // validation proof, including at every complete-vector/tail edge.
+            var storage = Enumerable.Repeat((byte)0xFF, borrowedOffset + offset + literal.Length + tail + 32).ToArray();
+            var input = storage.AsSpan(borrowedOffset, offset + literal.Length + tail);
+            input.Fill((byte)'.');
+            literal.CopyTo(input[offset..]);
             var text = Encoding.UTF8.GetString(input);
             var expected = oracle.Count(text);
 
