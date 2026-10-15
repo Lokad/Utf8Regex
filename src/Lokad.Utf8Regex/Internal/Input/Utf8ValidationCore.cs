@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -486,78 +485,8 @@ internal static class Utf8ValidationCore
 
     private static int DrainAscii(ReadOnlySpan<byte> input, int offset)
     {
-        if (Vector256.IsHardwareAccelerated && input.Length - offset >= Vector256<byte>.Count)
-        {
-            ref var inputRef = ref MemoryMarshal.GetReference(input);
-            var lastVectorStart = input.Length - Vector256<byte>.Count;
-            while (offset <= lastVectorStart)
-            {
-                var current = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
-                var nonAsciiMask = current.ExtractMostSignificantBits();
-                if (nonAsciiMask != 0)
-                {
-                    return offset + BitOperations.TrailingZeroCount(nonAsciiMask);
-                }
-
-                offset += Vector256<byte>.Count;
-            }
-        }
-
-        if (Vector128.IsHardwareAccelerated && input.Length - offset >= Vector128<byte>.Count)
-        {
-            ref var inputRef = ref MemoryMarshal.GetReference(input);
-            var lastVectorStart = input.Length - Vector128<byte>.Count;
-            while (offset <= lastVectorStart)
-            {
-                var current = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
-                var nonAsciiMask = current.ExtractMostSignificantBits();
-                if (nonAsciiMask != 0)
-                {
-                    return offset + BitOperations.TrailingZeroCount(nonAsciiMask);
-                }
-
-                offset += Vector128<byte>.Count;
-            }
-        }
-
-        while (offset + sizeof(ulong) <= input.Length)
-        {
-            var value = BinaryPrimitives.ReadUInt64LittleEndian(input[offset..]);
-            if ((value & 0x8080_8080_8080_8080ul) != 0)
-            {
-                if ((value & 0x0000_0000_0000_0080ul) != 0) return offset;
-                if ((value & 0x0000_0000_0000_8000ul) != 0) return offset + 1;
-                if ((value & 0x0000_0000_0080_0000ul) != 0) return offset + 2;
-                if ((value & 0x0000_0000_8000_0000ul) != 0) return offset + 3;
-                if ((value & 0x0000_0080_0000_0000ul) != 0) return offset + 4;
-                if ((value & 0x0000_8000_0000_0000ul) != 0) return offset + 5;
-                if ((value & 0x0080_0000_0000_0000ul) != 0) return offset + 6;
-                return offset + 7;
-            }
-
-            offset += sizeof(ulong);
-        }
-
-        while (offset + sizeof(uint) <= input.Length)
-        {
-            var value = BinaryPrimitives.ReadUInt32LittleEndian(input[offset..]);
-            if ((value & 0x8080_8080u) != 0)
-            {
-                if ((value & 0x0000_0080u) != 0) return offset;
-                if ((value & 0x0000_8000u) != 0) return offset + 1;
-                if ((value & 0x0080_0000u) != 0) return offset + 2;
-                return offset + 3;
-            }
-
-            offset += sizeof(uint);
-        }
-
-        while (offset < input.Length && input[offset] < 0x80)
-        {
-            offset++;
-        }
-
-        return offset;
+        var relative = input[offset..].IndexOfAnyInRange((byte)0x80, (byte)0xFF);
+        return relative < 0 ? input.Length : offset + relative;
     }
 
     private static int ConsumeTwoByteRun(ReadOnlySpan<byte> input, int offset, ref int utf16Length)

@@ -28,7 +28,7 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 20 sites across all shipped projects: **18 Core
+The current source inventory is 18 sites across all shipped projects: **16 Core
 sites in 9 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
@@ -58,7 +58,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 | Utf8LiteralCompiledEngineRuntime /3 | Production correlated offsets0/1/3 reserve a complete literal plus31 starts. The three diagnostic loads are now checked; these separate production loads remain. |
-| Utf8ValidationCore /3 | Full32/16-byte blocks from scalar-boundary offsets. Reopened: the cited12–15% penalty belongs to an internal helper, not public Match. Check public coverage and a bounded BCL replacement; common UTF-8 drain remains unconverted. |
+| Utf8ValidationCore /1 | The common UTF-8 drain admits full32-byte blocks from scalar-boundary offsets. The separate ASCII drain now uses checked BCL range search, removing its two loads and custom loop. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
@@ -67,7 +67,7 @@ reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
 inline-array parameter/fold staging is now converted; its historical small
 construction penalties were rejected under the superseded zero-regression rule.
 Three generated helper calls remain in Utf8FallbackTreeQuery.TryShapeAtom; keep
-that inventory separate from the eighteen explicit Core source sites.
+that inventory separate from the sixteen explicit Core source sites.
 
 The short-literal comparator is accepted under the revised 10% public-cost gate.
 Its complete candidate admission retains the scalar.48 end-guard repair. Checked
@@ -228,6 +228,29 @@ One short kernel sample missed the timing floor and is not parity evidence; the
 long controls explain private costs but cannot close the public-cost gate. Evidence:
 artifacts/validation-ascii-drain-checked-20261014/. The55-site inventory and Core
 unchecked API gate remain open; no safety/performance equivalence claim follows.
+
+A separate checked BCL follow-up replaces the entire ASCII drain with bounded
+IndexOfAnyInRange(0x80,0xff). It removes two LoadUnsafe/ref-arithmetic sites,
+the custom vector/word/tail loops and the unused BinaryPrimitives import. The
+runtime retains SIMD implementation; scalar stop/error coordinates, validation
+flags, allocations and resource/cancellation authority remain. Prefix reuse is
+deliberately separate and not part of this measurement.
+
+Actual public Count-only probes over an invariant folded literal compile the
+old drain and the new validator's BCL range-search call, in ordinary/compiled
+lanes on Windows10.0.13 and Linux10.0.12. This is affected public coverage, not the
+earlier private ValidateOnly lane or a route descriptor alone. One bounded warm
+pair over short/4KiB/128KiB late-Unicode, alternating-width and Kelvin subjects
+measures affected medians -1.49%..+2.98%; exact-literal and all-four-finite controls
+move -1.59%/-0.61%. Allocations stay0B/112B. Samples exceed51ms; one compiled4KiB
+row has46–76% spread, so no exact equivalence or general speedup is claimed.
+No confirmation or extra variant is needed. Linux validator code1404→1456 bytes
+and Windows1494→1534, with the drain now inlined; the old standalone454/510-byte
+body is gone. Shared BCL code is outside those sizes. Final whitespace-only
+cleanup retains identical drain/validator IL. Boundary/offset/tail, malformed
+UTF-8, work/cancellation and source checks pass. Evidence:
+artifacts/ascii-drain-bcl-20261015/. The original fixed cumulative gate and whole
+Core DLL gate remain unfinished; no new package or snapshot refresh follows.
 
 The correlated-literal diagnostic census conversion was historically deferred. Direct checked
 reads keep the existing SIMD algorithm but add guards and increase inspected

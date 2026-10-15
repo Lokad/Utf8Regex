@@ -2,6 +2,9 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Replace the custom ASCII validation drain with checked BCL range search,
+  removing its two unchecked SIMD loads and custom vector/word/tail loops.
+  Preserve scalar/error coordinates, allocation behavior and resource controls.
 - Remove generated inline-array staging from dynamic-method parameters and
   parser fold sets, using the existing admitted array and a fixed stack span.
   Preserve construction charges and supplied-parameter validation. Cumulative
