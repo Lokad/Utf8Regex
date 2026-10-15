@@ -20,11 +20,13 @@ public-operation costs with all four finite limits. This is private producer
 acceptance; downstream adoption and publication remain separate. The qualified
 Core/PythonRe52 pair and all earlier immutable inputs remain unchanged.
 
-The next private Core/PCRE2 input is **0.4.0-scalar.54**, preparing one coherent
-package/platform boundary for the source corrections below. It is not yet a
-qualified candidate or a PythonRe54 designation. The existing package qualifier
-now requests exact-version source-mapped restore, a lockfile and detached TRX
-results explicitly; earlier immutable inputs and their recorded caveats remain.
+The current private Core/PCRE2 candidate is **0.4.0-scalar.54**, producer
+`66328362`. Identical immutable packages pass 5,428 detached checks on each of
+Windows and Linux. Both original runs use exact source-mapped references,
+lockfiles and TRX results, with no fixture recovery or restore replay. It includes
+the completed post53 corrections below. [Qualification](QUALIFICATION.md) records
+identities, scope and one bounded current public-cost observation. There is no
+PythonRe54 designation; earlier immutable inputs and their caveats remain.
 
 Development after scalar.53 reuses the existing admitted attempt workspace across
 candidate checks within one slice-cursor advance. Scratch is released before
@@ -35,7 +37,7 @@ conservative earlier heap denial; removed acquisitions spend less actual work.
 One bounded public comparison against scalar.53 reduced the selected email Count
 times by about 40–43%, including all-four-finite/live-token lanes; hit allocations
 fell from 4.98 MB to 458 KB per call. This source improvement does not change the
-immutable scalar.53 package or designate a new candidate.
+immutable scalar.53 package. The correction is included in scalar.54.
 
 Construction validates the named factory's resource policy first, then timeout,
 option bits and compile settings, before decoding pattern bytes or spending
@@ -50,7 +52,7 @@ UTF-8 pattern inputs now throw `Pcre2CompileException` with the existing
 `InvalidAfterParensQuery` kind. Valid boundary names retain captures, name tables,
 references and MARK; quoted, class, comment and lookbehind bodies retain their
 meaning. Bounded checks share the existing construction-work/interruption owner.
-This is a post53 source correction; earlier immutable packages retain their scope.
+This correction is included in scalar.54; earlier immutable packages retain their scope.
 
 Development syntax guards now honor extended-mode comments and scoped `x`/`xx`
 changes, including configured CRLF, Unicode and NUL newline terminators. Ignored
@@ -65,7 +67,7 @@ ignores class spaces/tabs, one `x` clears inherited `xx`, and `-x` clears both.
 Repeated single-`x` directives stay in ordinary extended mode. Inline extended
 capture shapes keep the owned PCRE2 program, preserving their whitespace rules,
 byte ranges, captures and replacement output through the existing resource
-authority. Incompatible Core preparation is omitted. This is post53 source work.
+authority. Incompatible Core preparation is omitted. This is included in scalar.54.
 
 Development executes scoped and captured reset-option forms such as `(?^:...)`
 and `(?^)(...)` in the owned parser. Reset clears the supported case, line, capture

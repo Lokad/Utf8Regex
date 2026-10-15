@@ -1,5 +1,78 @@
 # Managed PCRE2 profile qualification
 
+## Private scalar.54 candidate (2026-10-16)
+
+Immutable Core/PCRE2 **0.4.0-scalar.54**, producer
+`6632836223957eec125cdfea077135352c5d16b1`, completes the post53 source batch.
+The archive is `artifacts/package-qualification/archive/6632836223957eec125cdfea077135352c5d16b1/`;
+manifest SHA256:
+`C7E8D9C3F9B7FCF2030CE460CCF13BC98C3698C1371CF5C92C4E7599CE00D67D`.
+One affected producer closure build and one pack per package/symbol; existing
+archive verification passes all seven artifacts, clean revision, NuSpec,
+assembly, SourceLink and portable-PDB/symbol agreement.
+
+| Package | nupkg SHA256 | Loaded DLL SHA256 |
+| --- | --- | --- |
+| Core | DDEB6AAF727FD7F4BBB222FC51BF999E3D31DFDE7FE78E6133ADDD196E64EBDD | 85AE7B5CEF11BC2F54D67B51CDAD3CCDFE4BDAECE3E3967750F7AD03B8A4B475 |
+| PCRE2 | 3585081396FBB655F239B270830174A5BACB8900AE912EDF554CEADDC62E76F6 | E325DA5146C119E1AAD48B6771B28E9B5E3EB21EA9AE0BB13C04EAF5EB8FD39C |
+
+Both original detached Windows and Linux runs pass 5,428 checks, zero failures,
+against identical Windows-produced packages. Each uses exact source-mapped
+references, a tested lockfile, isolated cache, retained TRX and zero
+ProjectReferences. Feed/cache/package SHA512 and loaded DLL identities match.
+Linux tests start beneath the clean checkout for source-inspection fixtures;
+no fixture recovery, restore replay, Linux producer build or repack is needed.
+Source Release 5,428 and focused Debug 164 pass. Producer CI passes on both
+Windows and Linux:
+[run 38817963640](https://github.com/Lokad/Utf8Regex/actions/runs/38817963640).
+
+The selected scalar/capture/MARK contract, cancellation/deadlines, four finite
+invocation controls and documented cursor/result lifetimes remain. This batch
+includes local-scan workspace reuse, UTF-8 metadata bounds, extended comments
+and configured newlines, per-directive x/xx execution and supported scoped/
+captured reset forms. Curated native source comparisons cover 35 comment,
+48 mode and 80 reset cases; they do not establish complete upstream parity.
+Exact DLLs contain only allowed `Unsafe.SizeOf`, no unchecked reads, generated
+inline-array helpers, native imports or BCL matcher/result members. Lython's
+stricter SizeOf acceptance remains unresolved. Complete public construction,
+safe defaults, live retention, host containment and broader profile completion
+remain separate objectives.
+
+One bounded current-cost observation used the exact packaged DLLs on the quiet
+VM, Release FullOpts/.NET 10.0.12/CPU2, five alternating samples after warmup and
+calibration. Finite lanes set work 50M, depth 1024, working 64 MiB and result
+128 MiB together; a third adds a live uncancelled token. These are measurement
+allowances, not host defaults. Construction is excluded; public validation,
+discovery and required projection are included. Selected medians, microseconds:
+
+| Public operation | Unlimited | Finite | Finite+token |
+| --- | ---: | ---: | ---: |
+| Literal IsMatch,4104B | 0.67 | 0.67 | 0.68 |
+| Literal Count,4104B | 0.69 | 1.80 | 1.83 |
+| Captured Count,3000B/1000matches | 145.85 | 561.74 | 580.83 |
+| Captured MatchDetailed,first match | 1.07 | 1.38 | 1.38 |
+| Email Count,3840B/128matches | 654.63 | 662.41 | 674.48 |
+| Scalar quoted-class/MARK Count,768B/64matches | 164.78 | 196.00 | 197.21 |
+| Scalar quoted-class/MARK MatchDetailed,first match | 4.52 | 5.08 | 4.94 |
+| Soft captured Probe,10B | 0.35 | 0.53 | 0.53 |
+
+Email Count allocates about 458 KB per call; finite captured Count still costs
+3.85x and basic metering stays. ASCII predecoded/decode-then-Regex controls cost
+81.38/83.26 us for captured Count and 42.55/41.73 us for email Count, exposing
+remaining gaps. Scalar/control-label and Probe rows exclude non-equivalent BCL
+operations. Six samples in two short lanes fell below the requested 50 ms
+minimum (actual minimum 43.72 ms), and short-lane spreads reach 70.5%; pool
+variation remains explicit. No repeat or general equivalence/Status claim.
+This is current operating cost, distinct from the completed fixed-original
+checked-access regression gate and the earlier paired workspace experiment.
+
+`artifacts/pcre2-scalar54-delivery-20261016/HANDOFF.md` and `delivery-receipt.json`
+provide exact restore guidance, platform locks/TRXs/identities, member inventory,
+raw samples, driver and provenance/symbol hashes. Core/PythonRe52 and scalar53
+remain unchanged. No PythonRe54, publication, consumer pin/default changes or
+adoption is implied. Embedded documentation retains its preparing54 state at
+producer freeze; these packages are not repacked for later documentation.
+
 ## Private scalar.53 candidate (2026-10-15)
 
 Immutable Core/PCRE2 **0.4.0-scalar.53**, producer

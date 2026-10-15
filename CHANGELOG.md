@@ -1,11 +1,18 @@
 # Changelog
 
-## PCRE2 development after scalar.53
+## Private scalar.54 Core/PCRE2 candidate
 
-- Prepare distinct private Core/PCRE2 input0.4.0-scalar.54 for the completed
-  source batch. Existing qualification explicitly requests exact references,
-  source mapping, a lockfile and TRX; preserve prior immutable inputs. Package
-  acceptance, publication and downstream adoption remain separate.
+- Qualify immutable Core/PCRE2 input 0.4.0-scalar.54, producer 66328362. Both
+  original detached Windows/Linux runs pass 5,428 checks against identical
+  packages, using exact references, source mapping, lockfiles and TRX results.
+  No fixture recovery, restore replay, Linux producer rebuild or repack. Preserve
+  Core/PythonRe52 and earlier archives; no PythonRe54 or adoption is implied.
+- Record one bounded exact-package public-cost observation with all four finite
+  controls and a live-token lane. Email Count costs 655/662/674 us across
+  unlimited/finite/token lanes, about 458 KB allocated per call. Captured Count
+  still costs 146/562/581 us; basic metering remains. Six short samples fall
+  below the 50 ms target and some tails are noisy. No broad parity/Status claim
+  or additional benchmark campaign follows.
 - Execute scoped/captured reset-option forms in the existing owned parser.
   Reset supported case/line/capture/extended flags, retain ungreedy/duplicate-name
   state and restore outer settings on scope exit. Preserve scalar captures,

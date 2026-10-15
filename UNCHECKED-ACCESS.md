@@ -9,6 +9,10 @@ Independent PCRE2 follow-ups remove its two NullRef placeholders and the sole
 generated two-group staging expression. The separately qualified scalar.53
 Core/PCRE2 DLLs reference only permitted SizeOf; exact identities and the explicit
 Linux fixture recovery are in the [PCRE2 qualification](src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md).
+The subsequent independent scalar.54 Core/PCRE2 pair retains this inventory:
+exact packaged DLLs reference only SizeOf, with no generated helpers or native
+imports. Both original detached platform runs pass with exact references/locks;
+its current-cost observation does not reopen or replace the fixed-original gate.
 
 Same-byte detached Windows/Linux package suites and CPython controls pass;
 producer5e50b7b1/CI38793242629 and complete Debug Core also pass. Exact identities,
