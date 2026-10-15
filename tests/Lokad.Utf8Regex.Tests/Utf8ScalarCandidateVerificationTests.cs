@@ -250,7 +250,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     }
 
     [Fact]
-    public void EmittedWindowPortfolioUsesOneScalarInvocationWithoutDecodedSubjects()
+    public void ManagedWindowPortfolioUsesOneScalarInvocationWithoutDecodedSubjects()
     {
         const string pattern = @"foo(?<x>.)\k<x>bar";
         var search = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None, new Utf8SearchFactData
@@ -263,20 +263,26 @@ public sealed class Utf8ScalarCandidateVerificationTests
         var prepared = Utf8VerifierTestPlans.WithSearchPlan(Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant), search);
         prepared = Utf8VerifierTestPlans.WithScalarVerifier(prepared, new(true, true));
         Assert.True(prepared.SearchPlan.FallbackSearch.HasCandidates);
-        Assert.True(Utf8CompiledBackendCapability.CanUseEmittedSearchGuidedFallback(prepared));
         var verifier = Utf8VerifierRuntime.Create(prepared);
-        Assert.True(Utf8EmittedSearchGuidedFallback.TryCreate(prepared, verifier, out var backend));
-        Assert.NotNull(backend);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo😀😀bar\n", 40)));
         var validation = Utf8Validation.Validate(input);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        Assert.Equal(40, backend.Count(input, validation, ref invocation));
+        var count = 0;
+        var position = 0;
+        while (Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(prepared.SearchPlan.FallbackCandidatePlans!,
+            verifier, input, validation, position, ref invocation, out _, out var match))
+        {
+            count++;
+            position = match.IndexInBytes + match.LengthInBytes;
+            invocation.AnchorOriginByte = position;
+        }
+        Assert.Equal(40, count);
         var spent = invocation.Budget.Steps;
         invocation.AnchorOriginByte = 0;
-        Assert.True(backend.IsMatch(input, validation, ref invocation));
+        Assert.True(Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(prepared.SearchPlan.FallbackCandidatePlans!,
+            verifier, input, validation, 0, ref invocation, out _, out _));
         Assert.True(invocation.Budget.Steps > spent); Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
     }
 }

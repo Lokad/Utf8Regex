@@ -2,6 +2,10 @@
 
 ## Unreleased anchored scalar search (0.4.0-scalar.50-dev)
 
+- Retire the optional search-guided fallback emitter, its selector and retained
+  state. Public fallback matching keeps the owned scalar program; internal
+  candidate verification uses its canonical managed executor. Live emitters
+  retain construction admission, cancellation, deadlines and rollback checks.
 - Reject impossible exact-ASCII anchored starts in the existing line-start helper
   before VM capture resets and workspace acquisition. Preserve full validation,
   scalar boundaries, captures, cancellation/deadlines and resource admission.

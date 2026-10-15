@@ -38,6 +38,9 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         var guided = typeof(Utf8SearchGuidedFallbackCompiledEngineRuntime);
         Assert.Null(guided.GetField("_candidatePlans", BindingFlags.NonPublic | BindingFlags.Instance));
         Assert.Null(guided.GetField("_backend", BindingFlags.NonPublic | BindingFlags.Instance));
+        Assert.Null(guided.GetField("_emittedBackend", BindingFlags.NonPublic | BindingFlags.Instance));
+        Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8EmittedSearchGuidedFallback"));
+        Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8SearchGuidedFallbackCompiledPolicy"));
         Assert.Single(typeof(Utf8StructuralLinearRuntime).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
         foreach (var type in new[] { typeof(Utf8NoStructuralLinearRuntime), typeof(Utf8AsciiInstructionLinearRuntime), typeof(Utf8AsciiStructuralFamilyLinearRuntime) })
             Assert.Empty(type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));

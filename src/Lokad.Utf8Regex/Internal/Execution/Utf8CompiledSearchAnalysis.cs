@@ -21,7 +21,6 @@ internal enum Utf8CompiledEmittedFamily : byte
 {
     None = 0,
     LiteralFamily = 1,
-    SearchGuidedFallback = 2,
     StructuralDeterministic = 3,
     UpperWordIdentifier = 4,
     SharedPrefixSuffix = 5,
@@ -133,13 +132,10 @@ internal static class Utf8CompiledSearchAnalyzer
              candidatePlans.Any(static plan => plan.YieldKind == Utf8StructuralSearchYieldKind.Window) ||
              Utf8CompiledSearchAnalysisPolicy.IsSearchGuidedFallbackPipeline(countPipeline, firstMatchPipeline)))
         {
-            var backend = Utf8CompiledBackendCapability.CanUseEmittedSearchGuidedFallback(regexPlan)
-                ? Utf8CompiledExecutionBackend.EmittedInstruction
-                : Utf8CompiledExecutionBackend.InterpretedInstruction;
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.SearchGuidedFallback,
-                new Utf8CompiledEngine(Utf8CompiledEngineKind.SearchGuidedFallback, backend),
-                backend == Utf8CompiledExecutionBackend.EmittedInstruction ? Utf8CompiledEmittedFamily.SearchGuidedFallback : Utf8CompiledEmittedFamily.None,
+                new Utf8CompiledEngine(Utf8CompiledEngineKind.SearchGuidedFallback, Utf8CompiledExecutionBackend.InterpretedInstruction),
+                Utf8CompiledEmittedFamily.None,
                 countPipeline.CandidateSource.Kind);
         }
 

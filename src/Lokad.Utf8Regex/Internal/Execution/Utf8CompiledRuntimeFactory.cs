@@ -49,7 +49,7 @@ internal static class Utf8CompiledRuntimeFactory
                     Utf8CompiledEngineKind.CompiledFallback
                         => Utf8CompiledFallbackCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
                     Utf8CompiledEngineKind.SearchGuidedFallback
-                        => Utf8SearchGuidedFallbackCompiledEngineRuntime.Create(compiledEngine, regexPlan, verifierRuntime),
+                        => Utf8SearchGuidedFallbackCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
                     _ => Utf8FallbackRegexCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
                 };
             }

@@ -37,6 +37,21 @@ originated in UTF-16 parity work. The reference inventory and review notes are i
 
 ## Required survivors
 
+The scalar.50-dev cleanup also retires `Utf8EmittedSearchGuidedFallback`, its
+capability/policy and optional runtime field. Public `FallbackRegex` discovery
+selects the owned scalar program before compiled-runtime dispatch. Direct
+internal search-guided consumers retain the canonical managed candidate search
+and scalar verifier; the search mode remains available. The unused emitted-family
+designation is removed. This is a reduction in implementation and construction
+state, without a public matching speedup claim.
+
+Admission/rollback/interruption tests now exercise the live literal-family
+emitter. Candidate-window verification still proves cumulative work and caller
+loan preservation. Retired-type/field absence and every remaining retained-layout
+check pass. Focused Core Release, PythonRe Release and Core Debug evidence is in
+`artifacts/fallback-emitter-cleanup-20261015/`. No package qualification or new
+package designation follows from this source cleanup.
+
 | Area | Why it remains |
 | --- | --- |
 | `Utf8BoundaryMap`, `Utf16Boundary`, projection cursors | Public UTF-16 coordinates and string APIs are derived interoperability. Maps resolve scalar boundaries and reject a caller's surrogate-split offset. They do not choose matching units or decode a whole subject for a second engine. `Utf8MappedEntryInvocationTests` checks scalar/split mappings and finite admission; boundary/astral tests check public results. |

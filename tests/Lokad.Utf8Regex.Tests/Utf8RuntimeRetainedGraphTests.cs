@@ -62,7 +62,9 @@ public sealed class Utf8RuntimeRetainedGraphTests
         foreach(var type in RuntimeTypes(library)) Assert.Contains(type,layouts);
         foreach(var type in library.GetTypes().Where(static type=>type.IsSubclassOf(typeof(MulticastDelegate))&&
             type.DeclaringType is not null&&RuntimeTypeNames.Contains(type.DeclaringType.Name))) Assert.Contains(type,layouts);
-        Assert.Equal(100,layouts.Count);
+        // The retired fallback emitter and its two delegate/receipt pairs no
+        // longer contribute layouts. The loops above require every live type.
+        Assert.Equal(95,layouts.Count);
         var expected=InspectRuntimeGraph(roots);
         Assert.True(expected.Keys.OfType<string>().Count(static text=>text=="qqq")>1);
         AssertManifest(expected,Collect(roots));
@@ -169,7 +171,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
         nameof(Utf8StructuralFamilyCompiledEngineRuntime),nameof(Utf8SimplePatternCompiledEngineRuntime),nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime),
         nameof(Utf8ByteSafeLinearCompiledEngineRuntime),nameof(Utf8SearchGuidedFallbackCompiledEngineRuntime),nameof(Utf8CompiledFallbackCompiledEngineRuntime),
         nameof(Utf8FallbackRegexCompiledEngineRuntime),nameof(Utf8CompiledSymmetricLiteralWindowCounter),nameof(Utf8EmittedDeterministicMatcher),
-        nameof(Utf8EmittedKernelMatcher),nameof(Utf8EmittedLiteralFamilyCounter),nameof(Utf8EmittedSearchGuidedFallback),nameof(Utf8EmittedTokenFamilyMatcher),
+        nameof(Utf8EmittedKernelMatcher),nameof(Utf8EmittedLiteralFamilyCounter),nameof(Utf8EmittedTokenFamilyMatcher),
         nameof(Utf8EmittedWholeMatcher),nameof(Utf8NoStructuralVerifierRuntime),nameof(Utf8AsciiStructuralVerifierRuntime),
         nameof(Utf8ByteSafeLinearVerifierRuntime),nameof(Utf8ByteSafeLazyDfaVerifierRuntime),nameof(Utf8NoStructuralLinearRuntime),
         nameof(Utf8AsciiInstructionLinearRuntime),nameof(Utf8AsciiStructuralFamilyLinearRuntime),"CompositeTrailingLiteralSearch"];
@@ -252,7 +254,6 @@ public sealed class Utf8RuntimeRetainedGraphTests
                 case Utf8EmittedDeterministicMatcher deterministic:deterministic.CollectRetainedStorage(storage);break;
                 case Utf8EmittedKernelMatcher kernel:kernel.CollectRetainedStorage(storage);break;
                 case Utf8EmittedLiteralFamilyCounter family:family.CollectRetainedStorage(storage);break;
-                case Utf8EmittedSearchGuidedFallback guided:guided.CollectRetainedStorage(storage);break;
                 case Utf8EmittedTokenFamilyMatcher token:token.CollectRetainedStorage(storage);break;
                 case Utf8EmittedWholeMatcher whole:whole.CollectRetainedStorage(storage);break;
                 default:throw new InvalidOperationException("Unqualified test root: "+root.GetType().FullName);
@@ -361,8 +362,6 @@ public sealed class Utf8RuntimeRetainedGraphTests
             nameof(Utf8EmittedWholeMatcher)=>Utf8ConstructionBudget.ObjectBytes<Utf8EmittedDelegate<Utf8EmittedWholeMatcher.MatchDelegate>>(),
             nameof(Utf8EmittedDeterministicMatcher)=>Utf8ConstructionBudget.ObjectBytes<
                 (Utf8EmittedDelegate<Utf8EmittedDeterministicMatcher.FindNextDelegate>,byte[],AsciiCharClass[],bool)>(),
-            nameof(Utf8EmittedSearchGuidedFallback)=>Utf8ConstructionBudget.ObjectBytes<
-                (Utf8SearchPlan,Utf8VerifierRuntime,Utf8EmittedDelegate<Utf8EmittedSearchGuidedFallback.IsMatchDelegate>,Utf8EmittedDelegate<Utf8EmittedSearchGuidedFallback.CountDelegate>)>(),
             "CompositeTrailingLiteralSearch"=>Utf8ConstructionBudget.ObjectBytes<(PreparedSubstringSearch,int,int)>(),
             nameof(PreparedByteSet)=>Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>(),
             nameof(PreparedAsciiIgnoreCaseLiteralSetSearchData)=>StateBytes(typeof(Utf8Regex).Assembly.GetType(

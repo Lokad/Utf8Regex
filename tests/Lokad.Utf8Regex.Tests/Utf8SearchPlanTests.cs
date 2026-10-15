@@ -547,8 +547,6 @@ public sealed class Utf8SearchPlanTests
         var miss = Encoding.UTF8.GetBytes("zzza123czzz");
 
         Assert.False(regex.Inspection.PreparedRegex.SearchPlan.FirstMatchOperation.Projection.HasValue);
-        Assert.False(Utf8EmittedSearchGuidedFallback.TryCreate(regex.Inspection.PreparedRegex, verifierRuntime, out var backend));
-        Assert.Null(backend);
         var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.SearchGuidedFallback,
             Utf8CompiledExecutionBackend.EmittedInstruction), analysis, verifierRuntime, RegexOptions.CultureInvariant);
         Assert.True(runtime.IsMatch(hit, Utf8Validation.Validate(hit), Utf8ExecutionDeadline.Infinite));

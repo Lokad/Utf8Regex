@@ -885,13 +885,11 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime : Ut
 {
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly Utf8EmittedSearchGuidedFallback? _emittedBackend;
 
     private Utf8SearchGuidedFallbackCompiledEngineRuntime(ConstructionState state)
     {
         _regexPlan = state.RegexPlan;
         _verifierRuntime = state.VerifierRuntime;
-        _emittedBackend = state.EmittedBackend;
     }
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
@@ -899,10 +897,6 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime : Ut
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         invocation.AnchorOriginByte = 0;
-        if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget) &&
-            _emittedBackend is { } emittedBackend)
-            return emittedBackend.IsMatch(input, validation, ref invocation);
-
         var probe = GetProbeValidation(input, validation);
         return TryFindNextVerifiedMatch(input, probe, 0, ref invocation, out _, out _);
     }
@@ -912,10 +906,6 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime : Ut
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         invocation.AnchorOriginByte = 0;
-        if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget) &&
-            _emittedBackend is { } emittedBackend)
-            return emittedBackend.Count(input, validation, ref invocation);
-
         var probe = GetProbeValidation(input, validation);
         var count = 0;
         var startIndex = 0;

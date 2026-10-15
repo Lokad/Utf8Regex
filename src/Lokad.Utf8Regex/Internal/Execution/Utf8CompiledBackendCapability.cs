@@ -17,27 +17,6 @@ internal static class Utf8CompiledBackendCapability
         return Utf8EmittedDeterministicMatcher.CanCreate(regexPlan.StructuralLinearProgram);
     }
 
-    public static bool CanUseEmittedSearchGuidedFallback(Utf8PreparedRegex regexPlan)
-    {
-        return IsEmittableSearchGuidedFallbackProgram(regexPlan.SearchPlan.CountOperation) &&
-            IsEmittableSearchGuidedFallbackProgram(regexPlan.SearchPlan.FirstMatchOperation) &&
-            CanUseVerifierDrivenSearchGuidedFallback(regexPlan);
-    }
-
-    private static bool IsEmittableSearchGuidedFallbackProgram(Utf8SearchOperationPlan program)
-    {
-        return program.HasValue &&
-            program.Confirmation.HasValue &&
-            program.CandidateSource.Kind is Utf8CandidateSearchKind.StructuralSearchSet or Utf8CandidateSearchKind.PreparedSearcher &&
-            program.Projection.Kind == Utf8ProjectionKind.None;
-    }
-
-    private static bool CanUseVerifierDrivenSearchGuidedFallback(Utf8PreparedRegex regexPlan)
-    {
-        return regexPlan.SearchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.ScalarVerifier &&
-            regexPlan.SearchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.ScalarVerifier;
-    }
-
     private static bool IsEmittableLiteralFamilyProgram(Utf8SearchOperationPlan program)
     {
         return program.HasValue &&

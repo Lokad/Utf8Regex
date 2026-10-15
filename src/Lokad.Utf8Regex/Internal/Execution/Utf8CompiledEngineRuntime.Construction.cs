@@ -206,10 +206,9 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime
 {
     private readonly record struct ConstructionState(
         Utf8PreparedRegex RegexPlan,
-        Utf8VerifierRuntime VerifierRuntime,
-        Utf8EmittedSearchGuidedFallback? EmittedBackend);
+        Utf8VerifierRuntime VerifierRuntime);
 
-    internal static Utf8SearchGuidedFallbackCompiledEngineRuntime Create(Utf8CompiledEngine compiledEngine, Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
+    internal static Utf8SearchGuidedFallbackCompiledEngineRuntime Create(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -218,12 +217,7 @@ internal sealed partial class Utf8SearchGuidedFallbackCompiledEngineRuntime
         {
             var regexPlan = plan;
             var verifierRuntime = verifier;
-            var backend = compiledEngine.Backend;
-            var emittedBackend = backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
-                              Utf8EmittedSearchGuidedFallback.TryCreate(regexPlan, verifierRuntime, out var emitted)
-                ? emitted
-                : null;
-            var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime, emittedBackend),
+            var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime),
                 static state => new Utf8SearchGuidedFallbackCompiledEngineRuntime(state));
             scope.Complete();
             return result;

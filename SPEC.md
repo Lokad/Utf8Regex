@@ -1242,6 +1242,13 @@ payloads and its complete strategy field state, and releases the prefilter's
 temporary reference vector. It prepares shared-anchor storage only when the
 SIMD prefilter declines. The scalar fallback remains available without intrinsics.
 Declines release speculative capacity/depth while work remains spent.
+Search-guided fallback has one canonical managed candidate-search and scalar-
+verification implementation. Its former optional emitted IsMatch/Count wrapper,
+capability/policy and retained field are removed. Public fallback discovery uses
+the owned scalar program before compiled-runtime dispatch; the internal search
+mode remains available. This retirement implies no public matching speedup.
+Live specialized emitters preserve the admission and interruption rules below.
+
 Owned dynamic-method construction shares the enclosing budget for serialized IL,
 labels, branch fixups, locals, method/type token caches, temporary dispatch vectors,
 stack-analysis queues and complete builder/wrapper descriptors. Structural class
