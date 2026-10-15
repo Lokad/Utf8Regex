@@ -5,12 +5,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal static partial class PythonReTranslator
 {
-    private const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
-    private const string AsciiNonWordBoundary = @"(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_]))";
-    // PLAN.md C04: Python-Unicode word boundaries over the same BCL-category
-    // class used for \w. Must stay in IsZeroWidthEscape below.
-    private const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
-    private const string UnicodeNonWordBoundary = @"(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
     private const string AnyUnicodeScalarPattern = PythonReParser.ManagedUnicodeScalarPattern;
     private const string NativeScalarPattern = "(?s:.)";
 
@@ -464,11 +458,9 @@ internal static partial class PythonReTranslator
 
     private static bool IsZeroWidthEscape(string text)
     {
-        return text is @"\A" or @"\Z" or @"\z" or @"\b" or @"\B" ||
-            text == AsciiWordBoundary ||
-            text == AsciiNonWordBoundary ||
-            text == UnicodeWordBoundary ||
-            text == UnicodeNonWordBoundary;
+        return text is @"\A" or @"\Z" or @"\z" or @"\b" or @"\B"
+            or PythonReParser.AsciiWordBoundary or PythonReParser.AsciiNonWordBoundary
+            or PythonReParser.UnicodeWordBoundary or PythonReParser.UnicodeNonWordBoundary;
     }
 
     private static bool IsPrefixFreeExactLiteralAlternation(PythonReAlternationNode alternation)

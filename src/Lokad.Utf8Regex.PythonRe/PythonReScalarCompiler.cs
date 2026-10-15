@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 // The Python parser resolves its own lexical scalar semantics. Lower that tree
 // to the shared VM rather than rediscovering folding from a .NET option flag.
-internal static class PythonReScalarCompiler
+internal static partial class PythonReScalarCompiler
 {
     // Lowering ends the top-level instruction array with one Accept; all jumps
     // use absolute indices. Replacing that terminal instruction leaves every
@@ -188,19 +188,13 @@ internal static class PythonReScalarCompiler
                             frame.Yes ?? throw new InvalidOperationException("Conditional yes branch is missing."), no);
                         break;
                     default:
-                        // Shared core leaf parsing still has separate parser/IR
-                        // object admission debt; its resource failures propagate.
-                        var fragment = PythonReTranslator.RenderNativeAtom(node);
                         var atomOptions = RegexOptions.CultureInvariant
                             | ((frame.Options & PythonReCompileOptions.Multiline) != 0 ? RegexOptions.Multiline : RegexOptions.None);
-                        var tree = Utf8OwnedTreeParser.TryParse(fragment, atomOptions);
-                        if (tree?.CaptureCatalog is not { } catalog)
-                            throw new InvalidOperationException("The validated Python atom has no owned scalar tree: " + fragment);
-                        var balancing = false;
-                        var lazyCaptures = false;
-                        if (Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures) is not { } atom)
-                            throw new InvalidOperationException("The validated Python atom has no owned scalar lowering: " + fragment);
-                        else nodes[node] = atom;
+                        nodes[node] = node is PythonReRawNode { Kind: PythonReRawKind.Escape } raw
+                            && ConvertPredefined(raw.Text, arena) is { } predefined ? predefined
+                            : node is PythonReCharacterClassNode characterClass
+                                && ConvertBracket(characterClass, atomOptions, arena) is { } bracket ? bracket
+                                : ParseLeaf(node, atomOptions, arena);
                         break;
                 }
             }
@@ -230,5 +224,17 @@ internal static class PythonReScalarCompiler
         arena.Complete();
         construction.Complete();
         return program;
+    }
+
+    private static Utf8SliceNode ParseLeaf(PythonReNode node, RegexOptions options, Utf8ConstructionArena arena)
+    {
+        var fragment = PythonReTranslator.RenderNativeAtom(node);
+        var tree = Utf8OwnedTreeParser.TryParse(fragment, options);
+        if (tree?.CaptureCatalog is not { } catalog)
+            throw new InvalidOperationException("The validated Python atom has no owned scalar tree: " + fragment);
+        var balancing = false;
+        var lazyCaptures = false;
+        return Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures)
+            ?? throw new InvalidOperationException("The validated Python atom has no owned scalar lowering: " + fragment);
     }
 }

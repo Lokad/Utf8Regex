@@ -57,6 +57,17 @@ internal static partial class PythonReTranslator
                 else if (kind == InspectionKind.Iteration)
                 {
                     if (current is PythonReConditionalNode) return false;
+                    // The core's host categories do not define this profile's
+                    // pinned classes. Their direct scalar lowering is authoritative.
+                    if (current is PythonReRawNode { Kind: PythonReRawKind.Escape } raw
+                        && PythonReParser.IsUnicodePredefinedFragment(raw.Text)) return false;
+                    if (current is PythonReCharacterClassNode characterClass)
+                        for (var classIndex = 0; classIndex < characterClass.Items.Count; classIndex++)
+                        {
+                            budget.ChargeWork(1);
+                            if (characterClass.Items[classIndex] is PythonReCharacterClassPredefinedItem predefined
+                                && PythonReParser.IsUnicodePredefinedFragment(predefined.RegexClassFragment)) return false;
+                        }
                     if (current is PythonReAlternationNode alternation)
                     {
                         if (!IsPrefixFreeExactLiteralAlternation(alternation)) return false;

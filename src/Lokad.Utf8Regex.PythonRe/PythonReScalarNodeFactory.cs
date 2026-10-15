@@ -43,6 +43,20 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.EmptyNode Empty() =>
         Create(Utf8SliceNodeKind.Empty, static _ => new Utf8SliceNode.EmptyNode());
 
+    internal static Utf8SliceNode.DotNode Dot() =>
+        Create((Utf8SliceNodeKind.Dot, true), static _ => new Utf8SliceNode.DotNode(true));
+
+    internal static Utf8SliceNode.AnchorNode Anchor(Utf8SliceAnchorKind kind) =>
+        Create((Utf8SliceNodeKind.Anchor, kind, false), static state => new Utf8SliceNode.AnchorNode(state.kind, false));
+
+    internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Func<int, bool> predicate, Utf8ConstructionArena arena)
+    {
+        var members = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
+        members[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarPredicate(predicate), false);
+        return Create((Utf8SliceNodeKind.CategorySet, ascii, negated, Array.Empty<Utf8SliceShorthand>(), members, false),
+            static state => new Utf8SliceNode.CategorySetNode(state.ascii, state.negated, state.Item4, state.members, false));
+    }
+
     private static TNode Create<TState, TNode>(TState state, Func<TState, TNode> factory) where TNode : class =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(state, factory);
 }

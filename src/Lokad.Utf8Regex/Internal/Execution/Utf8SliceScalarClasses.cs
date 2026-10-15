@@ -50,6 +50,7 @@ internal static class Utf8SliceScalarClasses
 
     internal static bool MatchesTable(Rune scalar, Utf8SliceCategoryTable table, bool fold, bool negated, Utf8ScalarCaseBehavior behavior)
     {
+        if (table.ScalarPredicate is { } predicate) return predicate(scalar.Value) != negated;
         var category = Rune.GetUnicodeCategory(scalar);
         var maskHit = fold && category is UnicodeCategory.LowercaseLetter or UnicodeCategory.UppercaseLetter or UnicodeCategory.TitlecaseLetter
             ? (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0

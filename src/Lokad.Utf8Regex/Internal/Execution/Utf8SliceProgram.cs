@@ -157,10 +157,10 @@ internal enum Utf8SliceInstructionKind : byte
 /// or one immutable class subtraction program.</summary>
 internal sealed class Utf8SliceCategoryTable
 {
-    private Utf8SliceCategoryTable(uint mask, int[] ranges, Utf8SliceClassProgram? classProgram)
-    { Mask = mask; Ranges = ranges; ClassProgram = classProgram; }
+    private Utf8SliceCategoryTable(uint mask, int[] ranges, Utf8SliceClassProgram? classProgram, Func<int, bool>? scalarPredicate)
+    { Mask = mask; Ranges = ranges; ClassProgram = classProgram; ScalarPredicate = scalarPredicate; }
 
-    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(uint, int[], Utf8SliceClassProgram?)>();
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(uint, int[], Utf8SliceClassProgram?, Func<int, bool>?)>();
 
     internal static Utf8SliceCategoryTable Create(uint mask, ushort[] ranges)
     {
@@ -169,30 +169,42 @@ internal sealed class Utf8SliceCategoryTable
         owner.Budget.ChargeWork((ulong)ranges.Length + (ulong)(ranges.Length & 1));
         for (var index = 0; index < ranges.Length; index++) copied[index] = ranges[index];
         if ((ranges.Length & 1) != 0) copied[^1] = 0x10000;
-        var result = owner.Budget.AllocateObject((mask, copied, ClassProgram: (Utf8SliceClassProgram?)null),
-            static state => new Utf8SliceCategoryTable(state.mask, state.copied, state.ClassProgram));
+        var result = owner.Budget.AllocateObject((mask, copied, ClassProgram: (Utf8SliceClassProgram?)null, Predicate: (Func<int, bool>?)null),
+            static state => new Utf8SliceCategoryTable(state.mask, state.copied, state.ClassProgram, state.Predicate));
         owner.Complete(); return result;
     }
 
     internal static Utf8SliceCategoryTable ForScalarRanges(int[] ranges)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = owner.Budget.AllocateObject((Mask: 0u, ranges, ClassProgram: (Utf8SliceClassProgram?)null),
-            static state => new Utf8SliceCategoryTable(state.Mask, state.ranges, state.ClassProgram));
+        var result = owner.Budget.AllocateObject((Mask: 0u, ranges, ClassProgram: (Utf8SliceClassProgram?)null, Predicate: (Func<int, bool>?)null),
+            static state => new Utf8SliceCategoryTable(state.Mask, state.ranges, state.ClassProgram, state.Predicate));
         owner.Complete(); return result;
     }
 
     internal static Utf8SliceCategoryTable Create(Utf8SliceClassProgram classProgram)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = owner.Budget.AllocateObject((Mask: 0u, Ranges: Array.Empty<int>(), classProgram),
-            static state => new Utf8SliceCategoryTable(state.Mask, state.Ranges, state.classProgram));
+        var result = owner.Budget.AllocateObject((Mask: 0u, Ranges: Array.Empty<int>(), classProgram, Predicate: (Func<int, bool>?)null),
+            static state => new Utf8SliceCategoryTable(state.Mask, state.Ranges, state.classProgram, state.Predicate));
+        owner.Complete(); return result;
+    }
+
+    // An owned profile can supply a fixed, bounded, invocation-free predicate.
+    // It includes its lexical case semantics; callers still charge the existing
+    // class instruction and retain the original cancellation/deadline authority.
+    internal static Utf8SliceCategoryTable ForScalarPredicate(Func<int, bool> predicate)
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        var result = owner.Budget.AllocateObject((Mask: 0u, Ranges: Array.Empty<int>(), ClassProgram: (Utf8SliceClassProgram?)null, predicate),
+            static state => new Utf8SliceCategoryTable(state.Mask, state.Ranges, state.ClassProgram, state.predicate));
         owner.Complete(); return result;
     }
 
     internal uint Mask { get; }
     internal int[] Ranges { get; }
     internal Utf8SliceClassProgram? ClassProgram { get; }
+    internal Func<int, bool>? ScalarPredicate { get; }
 }
 
 internal readonly struct Utf8SliceInstruction

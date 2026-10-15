@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive owned scalar case and identifier data from a pinned CPython oracle.
+"""Derive owned scalar case, identifier and class data from pinned CPython.
 
 Use --check for verification. --write regenerates data after an explicit
 Unicode/profile version decision; run it only with repository builds/tests/
@@ -125,8 +125,53 @@ for name, accepts in [('StartRanges', str.isidentifier),
     identifier_source += array(name, endpoints) + '\n'
 identifier_source += '}\n'
 
+class_source = '''namespace Lokad.Utf8Regex.PythonRe;
+
+// Fixed profile predicates from CPython 3.13.2 / Unicode 15.1.0. ASCII masks
+// and sorted disjoint non-ASCII intervals are shared immutable profile data.
+// Lookup allocates nothing and examines at most logarithmically many intervals.
+// Regenerate/check with tools/generate-pythonre-scalar-case-data.py.
+internal static class PythonReScalarClassData
+{
+'''
+for name, accepts, ascii_test in [
+        ('Word', lambda c: c.isalnum() or c == '_',
+         "scalar is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_'"),
+        ('Digit', str.isdecimal, "scalar is >= '0' and <= '9'"),
+        ('Space', str.isspace, "scalar is >= 9 and <= 13 or >= 0x1C and <= 0x20")]:
+    mask = [sum(1 << bit for bit in range(8) if accepts(chr(index * 8 + bit)))
+            for index in range(16)]
+    class_source += f'    internal static readonly byte[] {name}Ascii =\n    [' + ', '.join(str(v) for v in mask) + '];\n\n'
+    class_source += f'    internal static bool Is{name}(int scalar) => scalar < 128\n        ? {ascii_test}\n        : Contains({name}Ranges, scalar);\n\n'
+    endpoints = []
+    start = None
+    for scalar in range(128, 0x110001):
+        hit = scalar < 0x110000 and not 0xD800 <= scalar <= 0xDFFF and accepts(chr(scalar))
+        if hit and start is None:
+            start = scalar
+        elif not hit and start is not None:
+            endpoints.extend((start, scalar))
+            start = None
+    class_source += array(name + 'Ranges', endpoints) + '\n'
+class_source += '''    private static bool Contains(int[] ranges, int scalar)
+    {
+        var low = 0;
+        var high = ranges.Length / 2;
+        while (low < high)
+        {
+            var middle = low + (high - low) / 2;
+            if (scalar < ranges[2 * middle]) high = middle;
+            else if (scalar >= ranges[2 * middle + 1]) low = middle + 1;
+            else return true;
+        }
+        return false;
+    }
+}
+'''
+
 for filename, contents in [('PythonReScalarCaseData.cs', source),
-                           ('PythonReIdentifierData.cs', identifier_source)]:
+                           ('PythonReIdentifierData.cs', identifier_source),
+                           ('PythonReScalarClassData.cs', class_source)]:
     destination = py / filename
     if args.check:
         if destination.read_text(encoding='utf-8-sig') != contents:

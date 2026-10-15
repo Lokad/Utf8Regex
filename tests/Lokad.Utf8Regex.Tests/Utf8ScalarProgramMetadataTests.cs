@@ -43,7 +43,7 @@ public sealed class Utf8ScalarProgramMetadataTests
     }
 
     [Theory]
-    [InlineData("category")] [InlineData("member")] [InlineData("assertion")] [InlineData("program")]
+    [InlineData("category")] [InlineData("predicate")] [InlineData("member")] [InlineData("assertion")] [InlineData("program")]
     public void CompleteMetadataLoansHaveExactByteBoundariesAndRollback(string kind)
     {
         var body = Utf8SliceParser.TryParse("", System.Text.RegularExpressions.RegexOptions.None);
@@ -51,7 +51,7 @@ public sealed class Utf8ScalarProgramMetadataTests
         var category = Utf8SliceCategoryTable.ForScalarRanges([128, 256]);
         var loan = Math.Max(128ul, kind switch
         {
-            "category" => Utf8SliceCategoryTable.ObjectBytes,
+            "category" or "predicate" => Utf8SliceCategoryTable.ObjectBytes,
             "member" => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceCategoryTable, bool)>(),
             "assertion" => Utf8SliceAssertion.ObjectBytes,
             _ => Utf8SliceProgram.ObjectBytes,
@@ -73,7 +73,7 @@ public sealed class Utf8ScalarProgramMetadataTests
     }
 
     [Theory]
-    [InlineData("category")] [InlineData("member")] [InlineData("assertion")] [InlineData("program")]
+    [InlineData("category")] [InlineData("predicate")] [InlineData("member")] [InlineData("assertion")] [InlineData("program")]
     public void EveryMetadataWorkCutoffRestoresParentLoansAndKeepsSpentWork(string kind)
     {
         var body = Utf8SliceParser.TryParse("", System.Text.RegularExpressions.RegexOptions.None);
@@ -112,6 +112,7 @@ public sealed class Utf8ScalarProgramMetadataTests
     private static object Acquire(string kind, Utf8SliceProgram body, Utf8SliceCategoryTable category) => kind switch
     {
         "category" => Utf8SliceCategoryTable.ForScalarRanges(category.Ranges),
+        "predicate" => Utf8SliceCategoryTable.ForScalarPredicate(static scalar => scalar == 0x1F600),
         "member" => Utf8SliceNode.CategorySetMember.Create(category, true),
         "assertion" => Utf8SliceAssertion.Create(body, 0, 0, false),
         _ => Utf8SliceProgram.Create(body.Instructions, body.SetMasks, body.CategoryTables, body.CategorySetMembers,

@@ -2,6 +2,15 @@
 
 ## PythonRe development after scalar.52
 
+- Lower Python predefined classes/bracket unions/negation and word boundaries
+  directly with owned CPython 3.13.2 / Unicode 15.1 predicates. Reuse existing
+  class instructions and invocation controls; fixed masks/ranges avoid expanded
+  pattern preparation and linear scans over large data. Keep unproved
+  host-category native routes ineligible; Core category semantics stay unchanged.
+  One bounded overlapping public comparison shows no affected regression;
+  word Count improves about 9–16% and word construction about 9%, with fewer
+  preparation allocations. Controls/noise remain explicit; no general parity or
+  package designation follows this source correction.
 - Validate group names using owned CPython 3.13.2 / Unicode 15.1 identifier data,
   replacing host general-category checks. Fix invalid admission of U+037A/newer
   assignments and rejection of identifier-only start/continue characters.
@@ -11,8 +20,8 @@
 - Record the demonstrated host-category gap in predefined classes/boundaries.
   An expanded-range prototype passed a full scalar census but caused substantial
   public-operation and preparation regressions; restore it and retain evidence.
-  Keep this defect open without relabeling historical category qualification or
-  starting another timing round for the rejected representation.
+  The separate compact-predicate source correction addresses the gap; preserve
+  historical category qualification and do not repeat the rejected representation.
 
 ## Private scalar.54 Core/PCRE2 candidate
 

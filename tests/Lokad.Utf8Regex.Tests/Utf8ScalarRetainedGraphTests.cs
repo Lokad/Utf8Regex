@@ -297,7 +297,7 @@ public sealed class Utf8ScalarRetainedGraphTests
                 {
                     Utf8SliceProgram => (33, 144ul),
                     Utf8SliceAssertion => (5, 64ul), // Includes the numeric forward-lookbehind width.
-                    Utf8SliceCategoryTable => (3, 64ul),
+                    Utf8SliceCategoryTable => (4, 64ul), // Profile predicate fits the existing coarse charge.
                     Utf8SliceNode.CategorySetMember => (2, 48ul),
                     Utf8SliceClassProgram => (1, 48ul),
                     Utf8CaptureCatalog => (7, 80ul),

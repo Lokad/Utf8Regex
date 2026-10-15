@@ -99,7 +99,7 @@ This profile is still incomplete. In particular:
   existing scalar-decoding/construction work checks remain; no matching kernel,
   invocation limit or cursor/result lifetime changes. The generator's `--check`
   covers this data as well as scalar folding. This source correction is beyond
-  immutable scalar.52 and does not close the predefined-class gap below.
+  immutable scalar.52; predefined-class qualification is recorded separately below.
 * the execution classifier for `Utf8Regex` is conservative by design
 * admitted scalar programs use owned CPython 3.13.2 / Unicode 15.1.0 case data.
   Unicode literals and classes include simple-lower inverses and the extra
@@ -115,9 +115,19 @@ This profile is still incomplete. In particular:
   verifies the pinned data with CPython 3.13.2; no Python runtime is shipped.
 * native direct matching, detailed discovery and Count now classify supplementary
   word/digit members and scalar-adjacent boundaries through the owned core. The
-  existing CPython category spellings remain `[\p{L}\p{N}_]` for `\w`,
-  `[\s\x1c-\x1f]` for `\s`, and decimal digits for `\d`. Their complements
-  and bracketed forms retain the whole scalar domain. Admitted scalar programs
+  comparator spellings remain `[\p{L}\p{N}_]` for `\w`,
+  `[\s\x1c-\x1f]` for `\s`, and decimal digits for `\d`. Development lowers
+  predefined classes directly to owned CPython 3.13.2 / Unicode 15.1 predicates
+  in the existing class instructions. Fixed ASCII masks and sorted scalar ranges
+  avoid per-pattern data expansion; non-ASCII lookup is logarithmically bounded.
+  Bounded process-wide profile data and cached static predicates are shared,
+  rather than charged as a new copy in every invocation; major per-program and
+  invocation arrays retain their existing admission. This does not add a process
+  memory or arbitrary caller-retention guarantee.
+  Their complements, brackets and word boundaries retain the whole scalar domain.
+  Mixed classes reuse existing alternatives and scalar negation. Host-category
+  native paths require equivalence and are not selected for these predicates.
+  Admitted scalar programs
   now serve captured/global iteration, empty-capable result shaping, substitution
   and split with Python's same-position nonempty retry. Capture snapshots preserve
   Python numbering and scalar byte ranges, including lookbehind. Fixed-width
@@ -134,16 +144,15 @@ This profile is still incomplete. In particular:
   scalar program, with byte starts and the original assertion context. FullMatch
   adds an end assertion before discovery so alternatives can backtrack to a
   complete result. Production BCL matching and result shaping have been removed;
-  category-version reconciliation and the remaining common resource gates stay open.
-  This is a demonstrated version gap, not only an unverified target: on the
-  current .NET 10.0.13 host, U+1C89 and U+1E5D0 match `\w`, and U+1E5F1 matches
-  `\w` and `\d`; CPython 3.13.2 / Unicode 15.1 leaves all three unassigned and
-  rejects those memberships. Bracketed complements and word boundaries inherit
-  the same gap. Owned case-folding data does not pin class/category data. A
-  bounded expanded-range prototype corrected the scalar census but was restored
-  after substantial public-operation and preparation regressions; it is not a
-  shipped fix or a reason to claim new category acceptance. Evidence and the
-  rejected source are in `artifacts/python-category-version-20261016/`.
+  complete common resource gates remain open. Immutable scalar.52 predates the
+  class correction: with host Unicode 16 data it wrongly admits U+1C89/U+1E5D0
+  as word members and U+1E5F1 as a word/digit. The direct predicate source fixes
+  that demonstrated gap without changing Core's general-category contract.
+  The earlier expanded-pattern prototype remains rejected for its measured
+  public/preparation costs; its bytes and evidence are preserved separately in
+  `artifacts/python-category-version-20261016/`. Current direct-predicate evidence
+  is in `artifacts/python-pinned-predicates-20261016/`. Source acceptance does not
+  change a frozen candidate or qualify every remaining profile objective.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
   find the whole scalar. Search, Match, and FullMatch here stay mutually consistent

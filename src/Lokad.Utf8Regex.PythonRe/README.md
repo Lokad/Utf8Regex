@@ -30,13 +30,15 @@ remain explicit. This is selected public-workload evidence, not broad equivalenc
 Finite work/depth/working/result and cursor contracts are preserved. Lython's
 stricter SizeOf requirement still needs explicit reconciliation.
 
-Unicode category versions remain a known semantic limitation. With the current
-.NET 10.0.13 host data, `\w` admits U+1C89/U+1E5D0 and `\d` admits U+1E5F1;
-CPython 3.13.2 / Unicode 15.1 treats them as unassigned. Complements, brackets and
-boundaries share this gap. The owned case table does not resolve it. A fully
-expanded pinned-class prototype passed a scalar census but substantially slowed
-overlapping public workloads and construction, so it was restored. No new package
-or category qualification follows; see [the specification](../../SPEC-PYTHONRE.md).
+The frozen scalar.52 pair has a known class-version limitation: with host Unicode
+16 data, `\w` admits U+1C89/U+1E5D0 and `\d` admits U+1E5F1, while the pinned
+CPython oracle leaves them unassigned. Development fixes predefined classes,
+complements, brackets and word boundaries using compact owned predicates in the
+existing class instructions. ASCII masks and bounded scalar lookups avoid
+expanding data into patterns. Unproved host-category native paths are ineligible.
+The rejected expanded-pattern prototype remains historical evidence. See
+[the specification](../../SPEC-PYTHONRE.md) for current source scope; frozen
+packages do not acquire this correction automatically.
 
 Development separately fixes group-name admission using pinned CPython identifier
 data, shared by declarations, named references/conditionals and replacement
@@ -44,7 +46,7 @@ references. General categories incorrectly admitted U+037A/new host assignments
 and rejected valid identifier-only characters. Validation now follows the pinned
 identifier rules while preserving the exact name spelling. Matching kernels and
 invocation controls are unchanged. This source correction is beyond the frozen
-scalar.52 pair; it does not resolve predefined classes or designate a new package.
+scalar.52 pair; the separate class correction likewise needs future package acceptance.
 
 ## Support Scope
 
@@ -53,7 +55,7 @@ scalar.52 pair; it does not resolve predefined classes or designate a new packag
 - Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
 - Global operations: admitted scalar programs serve captured iteration, Python empty-match retry, substitution and split over the original UTF-8 bytes, with one operation deadline/token and owned capture snapshots.
 - Case folding: admitted Python ASTs lower to the shared UTF-8 scalar VM with owned CPython 3.13.2 / Unicode 15.1.0 data. Literal classes include extra fold partners; references use lexical simple lowercase, with ASCII scopes restricted to ASCII letters. The four formerly skipped case-folding regressions are active.
-- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes` select owned scalar execution. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Working bytes admit modeled major active arrays/output controls and growth overlap; exclusive scratch releases synchronously. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Incidental owner metadata and caller-retained results have separate working scope; category-version reconciliation remains unfinished.
+- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes` select owned scalar execution. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Working bytes admit modeled major active arrays/output controls and growth overlap; exclusive scratch releases synchronously. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Incidental owner metadata, shared fixed profile data and caller-retained results have separate working scope. Development predefined classes use the pinned profile data; remaining common resource gates remain unfinished.
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.

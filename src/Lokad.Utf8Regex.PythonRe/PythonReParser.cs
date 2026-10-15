@@ -12,22 +12,24 @@ internal sealed partial class PythonReParser
     private const string AsciiNonDigitClass = "(?:(?![0-9])" + ManagedUnicodeScalarPattern + ")";
     private const string AsciiSpaceClass = @"[\t\n\r\f\v ]";
     private const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + ManagedUnicodeScalarPattern + ")";
-    private const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
+    internal const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
     // PLAN.md C08: `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
-    private const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
-    // C04's category census was specific to its runtime Unicode version. These
-    // spellings inherit host category data, unlike the owned scalar case table.
-    // With Unicode 16 data, U+1C89/U+1E5D0 become word members and U+1E5F1 a
-    // decimal digit although CPython 3.13.2 / Unicode 15.1 leaves them unassigned.
-    // SPEC-PYTHONRE.md records the open class/boundary reconciliation. Do not
-    // treat the historical census as qualification for a different host version.
-    private const string UnicodeWordClass = @"[\p{L}\p{N}_]";
-    private const string UnicodeNonWordClass = @"(?:(?![\p{L}\p{N}_])" + ManagedUnicodeScalarPattern + ")";
-    private const string UnicodeSpaceClass = @"[\s\x1c-\x1f]";
-    private const string UnicodeNonSpaceClass = @"(?:(?![\s\x1c-\x1f])" + ManagedUnicodeScalarPattern + ")";
-    private const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
-    private const string UnicodeNonDigitComplement = @"(?:(?!\d)" + ManagedUnicodeScalarPattern + ")";
-    private const string UnicodeNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_])))";
+    internal const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
+    // Semantic fragments retained for comparator rendering and native planning.
+    // The scalar compiler lowers them directly with pinned profile predicates;
+    // host-category native routes are ineligible for these atoms/boundaries.
+    // C04's historical category census alone did not qualify new host versions.
+    internal const string UnicodeWordClass = @"[\p{L}\p{N}_]";
+    internal const string UnicodeNonWordClass = @"(?:(?![\p{L}\p{N}_])" + ManagedUnicodeScalarPattern + ")";
+    internal const string UnicodeSpaceClass = @"[\s\x1c-\x1f]";
+    internal const string UnicodeNonSpaceClass = @"(?:(?![\s\x1c-\x1f])" + ManagedUnicodeScalarPattern + ")";
+    internal const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
+    internal const string UnicodeNonDigitComplement = @"(?:(?!\d)" + ManagedUnicodeScalarPattern + ")";
+    internal const string UnicodeNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_])))";
+
+    internal static bool IsUnicodePredefinedFragment(string text) => text is UnicodeWordClass or UnicodeNonWordClass
+        or UnicodeSpaceClass or UnicodeNonSpaceClass or UnicodeWordBoundary or UnicodeNonWordBoundary
+        or UnicodeNonDigitComplement or @"\d";
     // Temporary managed-backend spelling retained for its live callers. The
     // owned renderer replaces this internal scalar atom before execution; UTF-16
     // pair classes cannot consume supplementary scalars in the core.
