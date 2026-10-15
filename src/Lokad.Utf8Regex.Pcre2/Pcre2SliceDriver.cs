@@ -143,6 +143,9 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         // Each MoveNext call is one scan: pin \\G to the entry position.
         _invocation.AnchorOriginByte = _position;
         var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        // Reuse admitted scratch across candidates in this scan. It never
+        // escapes the call, so copied or abandoned cursors retain no workspace.
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
         try
         {
             var bytes = _input.Bytes;
@@ -160,6 +163,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                         false,
                         true,
                         Pcre2SliceDriver.IsScalarAligned(bytes, _retryPosition),
+                        ref workspace,
                         ref _invocation);
                     Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
                     if (retry.IsMatch)
@@ -193,6 +197,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                         false,
                         false,
                         Pcre2SliceDriver.IsScalarAligned(bytes, _position),
+                        ref workspace,
                         ref _invocation);
                     Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
                     if (!outcome.IsMatch)
@@ -227,7 +232,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         }
         finally
         {
-            Utf8SliceRunner.ReleaseSlots(slots, ref _invocation);
+            try { workspace.Release(ref _invocation); }
+            finally { Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
         }
     }
 }

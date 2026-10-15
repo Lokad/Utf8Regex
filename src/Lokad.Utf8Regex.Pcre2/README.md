@@ -20,6 +20,17 @@ public-operation costs with all four finite limits. This is private producer
 acceptance; downstream adoption and publication remain separate. The qualified
 Core/PythonRe52 pair and all earlier immutable inputs remain unchanged.
 
+Development after scalar.53 reuses the existing admitted attempt workspace across
+candidate checks within one slice-cursor advance. Scratch is released before
+returning, failing or interrupting; no workspace survives between advances or
+escapes into copied cursors. Counts, captures, empty retries and original resource
+authority retain their semantics. Retaining capacity during a scan can cause
+conservative earlier heap denial; removed acquisitions spend less actual work.
+One bounded public comparison against scalar.53 reduced the selected email Count
+times by about 40–43%, including all-four-finite/live-token lanes; hit allocations
+fell from 4.98 MB to 458 KB per call. This source improvement does not change the
+immutable scalar.53 package or designate a new candidate.
+
 Construction validates the named factory's resource policy first, then timeout,
 option bits and compile settings, before decoding pattern bytes or spending
 construction allowance. Those argument errors take precedence over malformed

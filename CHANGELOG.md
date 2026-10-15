@@ -1,5 +1,19 @@
 # Changelog
 
+## PCRE2 development after scalar.53
+
+- Reuse the existing admitted attempt workspace across candidate checks within
+  one slice-cursor advance, then release it before returning or failing. Keep
+  PCRE2 empty retry/scalar progression, captures, copied cursor lifetimes and
+  original invocation controls. Held capacity can conservatively deny earlier;
+  removed acquisitions no longer spend allocation work. No new owner or pool.
+- Selected public email Count hit/miss comparisons against frozen scalar.53
+  improve about 40–43% with all-four-finite/live-token lanes. Hit allocations
+  fall from 4.98 MB to 458 KB; miss allocations fall from 12.74 MB to about 3.6 KB. Complete affected Release 5278
+  and focused Debug 165 pass. One capped harness run and one corrected bounded
+  comparison are recorded; noisy control tails are explicit. No repack or new
+  package/platform qualification follows this source change.
+
 ## Private scalar.53 Core/PCRE2 candidate
 
 - Qualify immutable Core/PCRE2 producer aba3e050 as 0.4.0-scalar.53: detached
