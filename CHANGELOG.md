@@ -1,5 +1,18 @@
 # Changelog
 
+## Private scalar.49 Core/PythonRe candidate
+
+- Freeze the accumulated bounded Count, construction-accounting and checked-read
+  changes under a distinct immutable identity. Exact detached Windows/Linux
+  consumers and CPython capture/digest controls pass; the producer CI is green.
+- Current package measurements include all four finite invocation controls:
+  selected small-family Count improves about3.5x versus scalar.48 and saves1872 B
+  per call. Finite costs and the structured Count gap remain material; the
+  handoff retains raw samples, baselines and host/noise provenance.
+- Lython's Core API gate and retained-storage host integration remain open.
+  No publication, consumer adoption or PCRE2 designation is implied. Development
+  continues at scalar.50-dev; scalar.49 and older package bytes stay unchanged.
+
 ## Unreleased checked folded short comparison (0.4.0-scalar.49-dev)
 
 - Replace four unchecked reads in the folded9–16-byte comparator with checked
