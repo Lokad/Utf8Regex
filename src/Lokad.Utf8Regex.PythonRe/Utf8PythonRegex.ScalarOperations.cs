@@ -55,7 +55,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
         finally { construction.Budget.CheckpointHook = previousCheckpoint; }
     }

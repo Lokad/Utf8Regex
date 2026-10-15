@@ -39,7 +39,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
         finally
         {
@@ -72,7 +72,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
         finally { ledger.Release(ref invocation); }
     }
@@ -119,7 +119,7 @@ public sealed partial class Utf8PythonRegex
         {
             ranges.Dispose();
             ranges = default;
-            throw CreateMatchTimeoutException(input);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
         catch
         {
@@ -160,7 +160,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
         finally { results.Release(ref invocation); }
     }
