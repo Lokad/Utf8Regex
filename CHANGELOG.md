@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Remove generated inline-array staging from dynamic-method parameters and
+  parser fold sets, using the existing admitted array and a fixed stack span.
+  Preserve construction charges and supplied-parameter validation. Cumulative
+  checked-batch costs and the remaining Core API gate are still unfinished.
 - Replace three diagnostic census SIMD loads with checked reads, preserving its
   candidate/match counts and leaving production Count instructions unchanged.
   Diagnostic replay overhead is an explicit tradeoff; the Core DLL still has

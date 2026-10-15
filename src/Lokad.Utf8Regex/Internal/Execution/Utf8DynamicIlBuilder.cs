@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -55,31 +54,20 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         _completed = state.Completed; _disposed = state.Disposed;
     }
 
-    [InlineArray(4)]
-    private struct ParameterTypes { private Type _first; }
-
     internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0)
-    {
-        ParameterTypes parameters = default; parameters[0] = p0;
-        return Create(name, result, owner, parameters[..1]);
-    }
-    internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0, Type p1)
-    {
-        ParameterTypes parameters = default; parameters[0] = p0; parameters[1] = p1;
-        return Create(name, result, owner, parameters[..2]);
-    }
-    internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0, Type p1, Type p2)
-    {
-        ParameterTypes parameters = default; parameters[0] = p0; parameters[1] = p1; parameters[2] = p2;
-        return Create(name, result, owner, parameters[..3]);
-    }
-    internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0, Type p1, Type p2, Type p3)
-    {
-        ParameterTypes parameters = default; parameters[0] = p0; parameters[1] = p1; parameters[2] = p2; parameters[3] = p3;
-        return Create(name, result, owner, parameters[..4]);
-    }
+        => Create(name, result, owner, 1, p0, p0, p0, p0);
 
-    private static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, ReadOnlySpan<Type> parameters)
+    internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0, Type p1)
+        => Create(name, result, owner, 2, p0, p1, p0, p0);
+
+    internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0, Type p1, Type p2)
+        => Create(name, result, owner, 3, p0, p1, p2, p0);
+
+    internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0, Type p1, Type p2, Type p3)
+        => Create(name, result, owner, 4, p0, p1, p2, p3);
+
+    private static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, int parameterCount,
+        Type p0, Type p1, Type p2, Type p3)
     {
         var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -87,10 +75,15 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         try
         {
             budget.EnterDepth(); entered = true;
-            var copied = budget.AllocateArray<Type>(parameters.Length, false);
+            var copied = budget.AllocateArray<Type>(parameterCount, false);
             try
             {
-                budget.ChargeWork((ulong)parameters.Length); parameters.CopyTo(copied);
+                budget.ChargeWork((ulong)parameterCount);
+                copied[0] = p0;
+                // Smaller arities reuse p0 in unused positions; only supplied slots are copied.
+                if (parameterCount > 1) copied[1] = p1;
+                if (parameterCount > 2) copied[2] = p2;
+                if (parameterCount > 3) copied[3] = p3;
                 AdmitRuntimeCopy<Type>(budget, copied.Length, false);
                 var method = new DynamicMethod(name, result, copied, owner, skipVisibility: false);
                 var info = method.GetDynamicILInfo();

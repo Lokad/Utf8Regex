@@ -54,7 +54,7 @@ revisit demonstrated defects or concrete source/JIT changes.
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. Checked shared-helper conversion exceeds10% on width8 public Count; retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
-| Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission; closed URI conversions regress at boundaries. |
+| Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission. Private boundary penalties were observed, but affected public coverage remains missing; unqualified. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 | Utf8LiteralCompiledEngineRuntime /3 | Production correlated offsets0/1/3 reserve a complete literal plus31 starts. The three diagnostic loads are now checked; these separate production loads remain. |
@@ -64,8 +64,10 @@ The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
 before access. This is an invariant, not a claim of checked replacement or a
 reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
-inline-array staging is prioritized for current-source qualification: its recorded
-small construction penalties were rejected under the superseded zero-regression rule.
+inline-array parameter/fold staging is now converted; its historical small
+construction penalties were rejected under the superseded zero-regression rule.
+Three generated helper calls remain in Utf8FallbackTreeQuery.TryShapeAtom; keep
+that inventory separate from the eighteen explicit Core source sites.
 
 The short-literal comparator is accepted under the revised 10% public-cost gate.
 Its complete candidate admission retains the scalar.48 end-guard repair. Checked
@@ -346,6 +348,34 @@ an unchanged control. Do not seek exact equivalence or treat private parser/buil
 timings as matching-workload regressions. PLAN.md records the finite implementation
 order, BCL/prefix-reuse candidates, fixed-width admitted-block hypothesis and one
 cumulative performance/package boundary; none is automatically accepted.
+
+The current-source staging follow-up removes all fourteen parameter and eight
+fold-set generated helper calls from the actual DLL. Parameter overloads fill the
+same admitted Type[] directly; unused positions reuse p0 and are never copied.
+Supplied nulls still reach CLR validation. The seven-int wire set uses a fixed
+stack span. Work, capacity, heap allocations, arity, disposal and delegate validity
+remain unchanged. Constructor-only probes reach both changed helpers, without a
+private replay or first-match call providing the route witness.
+
+One fixed-sixteen-instance public-constructor comparison and its single noise
+confirmation cover emitted family/fixed-width routes, ASCII/Greek/escaped/long
+folded patterns and an unchanged plain control. Confirmation affected medians
+range -2.0% to +4.2%, with equal allocations; control moves +6.4%. Short sample
+floors are0.6–1.9ms and some rows remain very noisy, so this is neither exact
+equivalence nor cumulative qualification. Dynamic construction was not calibrated
+into an unbounded loop. The confirmation forces GC outside each timed lane and
+excludes that collection time; the initial samples retain the ordinary GC costs.
+
+An initial source guard rejected three null-forgiving expressions. The final
+unused-argument repair removes them without weakening the guard or changing
+supplied-parameter validation. Its constructor argument setup was not retimed;
+final-source construction cost remains part of the cumulative delivery gate.
+The measured candidate's Linux builder body shrinks1457→1414 bytes and folded
+helper grows383→414; Windows1248→1179 and395→444. Final Windows helper sizes
+remain1179/444, without an instruction-equivalence claim. Final semantic/resource
+and source checks pass. These implementation changes advance the checked batch;
+they do not qualify the whole Core DLL or designate a package. Evidence:
+artifacts/core-staging-checked-20261015/. No further pilot timing follows.
 
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block

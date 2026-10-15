@@ -2742,7 +2742,8 @@ internal static class Utf8OwnedTreeParser
         static Utf8TreeNode FoldedSet(RegexOptions options, char lower, char upper)
         {
             using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
-            data.AddRange([0, 4, 0, lower, (int)lower + 1, upper, (int)upper + 1]);
+            Span<int> ranges = stackalloc int[7] { 0, 4, 0, lower, (int)lower + 1, upper, (int)upper + 1 };
+            data.AddRange(ranges);
             var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
             node.MatchCaseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
             return node;
