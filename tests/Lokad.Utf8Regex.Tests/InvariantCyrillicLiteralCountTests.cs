@@ -198,6 +198,32 @@ public sealed class InvariantCyrillicLiteralCountTests
         Assert.Equal(oracle.Count(input), compiled.Count(bytes));
     }
 
+    [Theory]
+    [InlineData("€")]
+    [InlineData("夏")]
+    [InlineData("😀")]
+    public void WiderScalarResumePreservesEveryBlockBoundaryAndBorrowedOffset(string scalar)
+    {
+        var ordinary = new Utf8Regex("Шерлок Холмс", Options);
+        var compiled = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
+        foreach (var borrowedOffset in new[] { 1, 17, 31 })
+        for (var padding = 0; padding < 64; padding++)
+        {
+            var text = new string('.', padding) + scalar + "ШЕРЛОК ХОЛМС" +
+                new string('.', 33) + scalar + "шерлок холмс" + scalar;
+            var bytes = Encoding.UTF8.GetBytes(text);
+            var storage = Enumerable.Repeat((byte)0xFF, borrowedOffset + bytes.Length + 1).ToArray();
+            bytes.CopyTo(storage, borrowedOffset);
+            var input = storage.AsSpan(borrowedOffset, bytes.Length);
+            Assert.Equal(2, ordinary.Count(input));
+            Assert.Equal(2, compiled.Count(input));
+            // The same byte outside the borrow is ignored; inside it is rejected,
+            // including after both vector restarts have already found matches.
+            Assert.Throws<ArgumentException>(() => ordinary.Count(storage.AsSpan(borrowedOffset, bytes.Length + 1)));
+            Assert.Throws<ArgumentException>(() => compiled.Count(storage.AsSpan(borrowedOffset, bytes.Length + 1)));
+        }
+    }
+
     [Fact]
     public void FusedSingleLiteralCountMatchesDotNetOnDeterministicValidSubjects()
     {

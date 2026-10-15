@@ -777,3 +777,20 @@ Release355/Debug60 pass, with borrowed offsets0/1/17/31 and invalid outside byte
 added to the public lane/tail witness. The fixed-original cumulative gate and
 remaining Core/downstream API acceptance remain open. Evidence:
 artifacts/emitted-vector-span-checked-20261015/.
+
+The Cyrillic mutable typed-block prototype removes its inner bounds check but
+fails public cost: ordinary/compiled ASCII miss+48.31/+47.50%, dense+5.45/+5.33%,
+mixed+9.78/+10.65%. Exact controls+0.70/+4.98%,finite+3.21%; allocations0/112B
+unchanged. One bounded unchanged-driver quiet pair, no confirmation or new variant.
+Windows2062->2185B/Linux1782->1872B; added view/origin loop state and register traffic
+matter despite removed guards. Original source/raw method IL restored. Candidate
+R351/D26 pass; retain the new public wider-scalar boundary/borrowed-offset and
+malformed suffix tests (restoredR3 passes). No package qualification. Evidence:
+artifacts/cyrillic-vector-span-checked-20261015/.
+
+The fixed-width forced-inline admitted-block prototype also stays closed: helper
+inlines, but the per-character width guard remains (TryCountIG23) and caller
+code674->1897B, versus674B+separate582B before. No matching timing/regression
+claim. Original source and both method IL restored and library rebuilt; no repeat
+package/source qualification. Evidence:
+artifacts/fixed-width-inlined-checked-20261015/.
