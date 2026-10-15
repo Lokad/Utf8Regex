@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2;
@@ -14,14 +13,14 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
 
     internal Pcre2CaptureProjectionBudget(ref Pcre2ResourceBudget budget)
     {
+        // The compiler defaults the inactive reference; only the selected owner
+        // is accessed. Do not copy or replace either invocation's authority.
         _vm = ref budget;
-        _slice = ref Unsafe.NullRef<Utf8SliceInvocation>();
         _isSlice = false;
     }
 
     internal Pcre2CaptureProjectionBudget(ref Utf8SliceInvocation invocation)
     {
-        _vm = ref Unsafe.NullRef<Pcre2ResourceBudget>();
         _slice = ref invocation;
         _isSlice = true;
     }

@@ -1,5 +1,14 @@
 # Changelog
 
+## PCRE2 development after the Core/PythonRe scalar.52 boundary
+
+- Remove two `Unsafe.NullRef` placeholders from the borrowed capture-budget view
+  using compiler-default inactive fields. Preserve original owner references,
+  selector, admission, interruption and result lifetimes. Focused projection and
+  authority checks pass; Release projection code generation is unchanged.
+  PCRE2's generated inline-array Unsafe references remain a separate item. This
+  does not designate a PCRE2 package or modify the immutable Core/PythonRe pair.
+
 ## Private scalar.52 Core/PythonRe candidate
 
 - Qualify immutable producer 5e50b7b1 on Windows/Linux using identical package

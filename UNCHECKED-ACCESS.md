@@ -5,7 +5,8 @@
 The checked-access batch is complete for Core/PythonRe. Exact immutable scalar.52
 DLLs have no explicit unchecked reads or generated inline-array helpers; Core's
 only Unsafe member reference is the permitted SizeOf, and PythonRe has none.
-Two independent PCRE2 NullRef placeholders remain outside this delivery.
+An independent later PCRE2 source follow-up removes its two NullRef placeholders;
+compiler-generated PCRE2 staging remains separate from this qualified pair.
 
 Same-byte detached Windows/Linux package suites and CPython controls pass;
 producer5e50b7b1/CI38793242629 and complete Debug Core also pass. Exact identities,
@@ -136,8 +137,10 @@ raw samples, delivery-receipt.json and repair/restored-identities.json.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is two independent PCRE2 null-reference placeholders.
-**Core and PythonRe have no explicit unchecked-access sites.** The current Core
+The current source inventory has no explicit unchecked-access sites in Core,
+PythonRe or PCRE2; permitted SizeOf queries remain. PCRE2's generated inline-array
+helpers still reference Unsafe.Add/As/AsRef and do not pass the whole-DLL gate.
+**The qualified Core/PythonRe pair has no such generated helpers.** Current Core
 DLL's only Unsafe member reference is the explicitly accepted Unsafe.SizeOf;
 it has no LoadUnsafe references or generated inline-array methods. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
@@ -163,10 +166,18 @@ still fails its gate; the producer's allowed-member gate passes. Neither result
 substitutes for cumulative cost or package qualification. The current delivery
 above records those gates; historical receipts below keep their original scope.
 
-The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
-stack-only borrowed projection authority. `_isSlice` selects the populated arm
-before access. This is an invariant, not a claim of checked replacement or a
-reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
+The two former PCRE2 `Unsafe.NullRef` sites denoted the inactive arm of a
+stack-only borrowed projection authority. The separate source follow-up removes
+both calls using C# automatic default-field initialization; `_isSlice` still
+selects the original populated owner before access. No new owner or invocation.
+Release101+119/Debug101 projection/authority checks pass. Windows FullOpts keeps
+both constructors14B; ten other methods and both projecting wrappers have
+identical instructions after address normalization. Constructor differences are
+register-zeroing syntax/store order, not additional work. No public timing or
+whole-PCRE2 API-pass claim follows. Exact DLL inventory removes NullRef but retains
+generated Add/As/AsRef plus allowed SizeOf. Evidence:
+artifacts/pcre2-projection-default-20261015/. No package designation or repeated
+Core/PythonRe qualification. Compiler-generated Core
 inline-array parameter/fold staging is now converted; its historical small
 construction penalties were rejected under the superseded zero-regression rule.
 No generated inline-array helper calls remain in the current Core DLL. The last
