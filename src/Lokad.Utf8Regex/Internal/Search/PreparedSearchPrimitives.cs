@@ -775,7 +775,6 @@ internal readonly struct PreparedSubstringSearch
             preferredCompareIndex = GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], lastIndex, null);
         }
 
-        ref var searchSpace = ref MemoryMarshal.GetReference(input);
         var firstFolded = foldedNeedle[0];
         var compareFolded = foldedNeedle[preferredCompareIndex];
         if (!CanUseCaseBitVectorAnchors(firstFolded, compareFolded))
@@ -798,10 +797,10 @@ internal readonly struct PreparedSubstringSearch
             {
                 var firstCompare = Vector256.Equals(
                     firstVector,
-                    Vector256.BitwiseOr(Vector256.LoadUnsafe(ref searchSpace, (nuint)offset), foldMask256));
+                    Vector256.BitwiseOr(MemoryMarshal.Read<Vector256<byte>>(input[(int)offset..]), foldMask256));
                 var preferredCompare = Vector256.Equals(
                     compareVector,
-                    Vector256.BitwiseOr(Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + preferredCompareIndex)), foldMask256));
+                    Vector256.BitwiseOr(MemoryMarshal.Read<Vector256<byte>>(input[((int)offset + preferredCompareIndex)..]), foldMask256));
                 var candidates = (firstCompare & preferredCompare).ExtractMostSignificantBits();
                 while (candidates != 0)
                 {
@@ -845,10 +844,10 @@ internal readonly struct PreparedSubstringSearch
             {
                 var firstCompare = Vector128.Equals(
                     firstVector,
-                    Vector128.BitwiseOr(Vector128.LoadUnsafe(ref searchSpace, (nuint)offset), foldMask128));
+                    Vector128.BitwiseOr(MemoryMarshal.Read<Vector128<byte>>(input[(int)offset..]), foldMask128));
                 var preferredCompare = Vector128.Equals(
                     compareVector,
-                    Vector128.BitwiseOr(Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + preferredCompareIndex)), foldMask128));
+                    Vector128.BitwiseOr(MemoryMarshal.Read<Vector128<byte>>(input[((int)offset + preferredCompareIndex)..]), foldMask128));
                 uint candidates = (firstCompare & preferredCompare).ExtractMostSignificantBits();
                 while (candidates != 0)
                 {

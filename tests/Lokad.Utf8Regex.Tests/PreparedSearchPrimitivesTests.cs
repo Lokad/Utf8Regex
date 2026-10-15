@@ -75,6 +75,32 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void FoldedVectorSearchPreservesBorrowedOffsetsFalseCandidatesAndClampedTails()
+    {
+        foreach (var literal in new[] { ".HttpName", "Http.Name!", "abcdefghjlmn", "abcdefghjlmnopqrstuvwxyz" })
+        {
+            var search = new PreparedSubstringSearch(Encoding.UTF8.GetBytes(literal), ignoreCase: true);
+            var middle = literal.Length / 2;
+            var nearMiss = literal[..middle] + "0" + literal[(middle + 1)..];
+            for (var prefix = 0; prefix < 64; prefix++)
+            {
+                var text = nearMiss + "-" + new string('x', prefix) + literal.ToUpperInvariant() + new string('x', prefix & 31);
+                var bytes = Encoding.UTF8.GetBytes(text);
+                var expected = text.IndexOf(literal, StringComparison.OrdinalIgnoreCase);
+                foreach (var offset in new[] { 0, 1, 17, 31 })
+                {
+                    var storage = Enumerable.Repeat((byte)'H', offset + bytes.Length + 33).ToArray();
+                    bytes.CopyTo(storage.AsSpan(offset));
+                    var input = storage.AsSpan(offset, bytes.Length);
+                    Assert.Equal(expected, search.IndexOf(input));
+                    Assert.Equal(expected, search.LastIndexOf(input));
+                    Assert.Equal(1, search.CountIgnoreCaseWithTier(input, search.IgnoreCaseTier, out _, out _));
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void PreparedMultiLiteralSearchSupportsExactAndIgnoreCaseFamilies()
     {
         var exactInput = Encoding.UTF8.GetBytes("scan:haystack;scan:needle;scan:zeta;");

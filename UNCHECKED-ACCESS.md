@@ -19,8 +19,8 @@ evidence; the revised allowance does not designate conversions automatically.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 29 sites across all shipped projects: **27 Core
-sites in 11 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 25 sites across all shipped projects: **23 Core
+sites in 10 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -42,7 +42,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
 | AsciiSearch /2 | General folded-loop callers pass equal-length admitted slices; each iteration reserves eight literal bytes. The checked long-loop prototype exceeded10% on an affected public workload. |
-| PreparedSearchPrimitives /4 | Correlated windows stop at length-compareOffset-width; candidate confirmation slices the full admitted literal. No new conversion qualified. |
 | PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. Checked shared-helper conversion exceeds10% on width8 public Count; retained. |
@@ -149,6 +148,26 @@ the immediate incremental restoration run had reused a stale DLL because the
 restored source kept its timestamp. Evidence: artifacts/fixed-width-checked-20261015/
 and artifacts/category-public-checked-20261015/restoration-audit.json. Scalar.50 remains
 immutable; there is no new package qualification for this pilot.
+
+The folded prepared-search conversion is accepted. Four checked suffix reads
+replace its128/256-bit LoadUnsafe calls and remove the ref origin. Correlated
+first/preferred masks, nint stepping, final overlapping clamp, full verification,
+folding fences and allocations remain. Linux Release FullOpts code grows
+1077→1149 bytes with some bounds checks retained.
+
+One bounded actual-public Count comparison covers a31B128-bit hit, a4096B256-bit
+miss and dense12/24-byte literals in ordinary/compiled modes. A separate untimed
+wide-miss-only audit confirms that row executes the vector helper. Affected
+medians change about-2.4% to+3.0%; allocations stay0B. Unchanged unlimited literal
+controls move about0%, and the finite control moves-1.5% with112B unchanged.
+Some short/control sample ranges reach16–25%, so exact parity is not claimed.
+All samples exceed40ms. The margins support the10% gate without a confirmation.
+Finite folded preflights retain their owned route and agree; they are not changed-
+kernel timing evidence. Independent offset/clamped-tail/false-candidate oracles,
+scalar/case-folding and original resource/interruption checks pass: CoreRelease433,
+Debug128 and PythonRe179 plus174 folding checks. Evidence:
+artifacts/folded-search-checked-20261015/. Full package/platform checks remain
+batched; no new package or benchmark Status is designated.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,

@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased checked category reduction (0.4.0-scalar.51-dev)
+## Unreleased checked category and folded searches (0.4.0-scalar.51-dev)
 
+- Replace four folded literal-search SIMD loads with checked suffix reads,
+  retaining correlated masks, verification, overlap, allocations and controls.
+  One public Count comparison shows about-2.4% to+3.0% execution-time change,
+  within the10% allowance; bounds checks and larger code remain explicit.
 - Replace two shared math-symbol SIMD reads with checked vector spans, preserving
   masks, scalar tails, consumed ranges, allocations and resource routing.
 - A bounded public PCRE2 Count comparison fits the10% allowance, with observed
