@@ -3,8 +3,11 @@
 ## Private scalar.50 Core/PythonRe candidate
 
 - Freeze the accepted scalar.50 source batch under a fresh immutable identity.
-  Package/platform, CPython and current-cost qualification belongs to its
-  delivery receipt. Preserve scalar.49 and all earlier package bytes.
+  Exact detached Windows/Linux package suites, CPython capture/digest controls
+  and producer CI pass. Current-package quiet-VM costs include finite limits;
+  the delivery receipt preserves raw samples, baselines and noisy controls.
+  Preserve scalar.49 and all earlier bytes. Development advances to scalar.51-dev;
+  no publication, consumer adoption or PCRE2 designation is implied.
 
 - Replace the fused ASCII exact-literal Count kernel's unchecked vector read
   with a checked span read. Retain SIMD, validation, candidate verification,
