@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 4 sites across all shipped projects: **2 Core
-sites in 2 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 3 sites across all shipped projects: **1 Core
+site in 1 file**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -50,7 +50,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
-| Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
@@ -794,3 +793,22 @@ code674->1897B, versus674B+separate582B before. No matching timing/regression
 claim. Original source and both method IL restored and library rebuilt; no repeat
 package/source qualification. Evidence:
 artifacts/fixed-width-inlined-checked-20261015/.
+
+Fixed-width Count now consumes one admitted31+width byte block with checked
+MemoryMarshal.Read and a one-byte advance. Borrow the immutable check by readonly
+reference; perform literal comparison and both mask updates in its first kind
+branch. Class predicates load only in the class branch. This removes the last
+unchecked read/ref in this executor and demonstrably redundant dispatch work.
+Preserve width admission, SIMD/class masks, overlap/nonoverlap, scalar fallback,
+allocations and original diagnostics/budget authority. No forced inlining, new
+mode, retained state or duplicate scan. Read-width guards remain; the successful
+read lets the JIT remove the following one-byte slice check.
+
+One unchanged-driver quiet public pair: width4 ordinary-14.63/compiled-16.85%,
+width8-23.45/-24.05%, exact controls-2.15/+0.62%,finite-0.83%, allocations0/112B
+unchanged. Floors>=54ms,affected spreads3.4..6.6%; no repeat/general-speedup claim.
+Windows helper582->614B/caller674->741B; Linuxhelper589->569B. R345/D54 pass,
+including existing vector widths, borrowed offsets/tails and resource/interruption
+checks. No package qualification. Earlier checked-window/inline-only failures
+remain historical, not this implementation. Evidence:
+artifacts/fixed-width-dispatch-checked-20261015/. One Core unchecked site remains.

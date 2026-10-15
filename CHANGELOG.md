@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Fuse fixed-width literal dispatch and mask updates while consuming a checked
+  block. Remove the remaining unchecked read in this executor, preserving SIMD,
+  overlap/tails, scalar fallback and resource admission. Focused public Count
+  costs15–24% less with unchanged allocations; cumulative qualification is open.
 - Scan complete emitted-family vector blocks through a bounds-checked typed
   span, preserving SIMD masks, scalar tails, validation and resource routing.
   Focused compiled sparse/near-miss Count costs about8–9% more, within the10%

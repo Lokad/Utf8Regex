@@ -46,14 +46,14 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
             return false;
         }
 
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
+        var blockLength = LaneCount - 1 + width;
         var vectorLimit = maxStart - (LaneCount - 1);
         var blockStart = 0;
         var nextStart = 0;
         var emptyLiteralBlocks = 0;
         while (blockStart <= vectorLimit)
         {
-            var matchMask = CreateMatchMask(ref inputRef, blockStart, checks, out var literalMask);
+            var matchMask = CreateMatchMask(input.Slice(blockStart, blockLength), checks, out var literalMask);
             if (blockStart == 0 &&
                 BitOperations.PopCount(literalMask) < MinimumInitialLiteralCandidates)
             {
@@ -81,7 +81,7 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
         if (blockStart <= maxStart)
         {
             var finalBlockStart = maxStart - (LaneCount - 1);
-            var matchMask = CreateMatchMask(ref inputRef, finalBlockStart, checks, out _);
+            var matchMask = CreateMatchMask(input.Slice(finalBlockStart, blockLength), checks, out _);
             CountNonOverlappingMatches(matchMask, finalBlockStart, blockStart, width, ref nextStart, ref count);
         }
 
@@ -134,8 +134,7 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
     }
 
     private static uint CreateMatchMask(
-        ref byte inputRef,
-        int blockStart,
+        ReadOnlySpan<byte> block,
         Utf8AsciiDeterministicFixedWidthCheck[] checks,
         out uint literalMask)
     {
@@ -143,20 +142,21 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
         var literalCandidates = candidates;
         for (var i = 0; i < checks.Length; i++)
         {
-            var values = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, blockStart + i));
-            var check = checks[i];
-            var matches = check.Kind switch
-            {
-                Utf8AsciiDeterministicFixedWidthCheckKind.Literal
-                    => Avx2.CompareEqual(values, Vector256.Create(check.Literal)),
-                Utf8AsciiDeterministicFixedWidthCheckKind.CharClass
-                    => MatchKnownClass(values, check.CharClass.KnownPredicateKind),
-                _ => Vector256<byte>.Zero,
-            };
-            candidates = Avx2.And(candidates, matches);
+            var values = MemoryMarshal.Read<Vector256<byte>>(block);
+            block = block[1..];
+            ref readonly var check = ref checks[i];
             if (check.Kind == Utf8AsciiDeterministicFixedWidthCheckKind.Literal)
             {
+                var matches = Avx2.CompareEqual(values, Vector256.Create(check.Literal));
+                candidates = Avx2.And(candidates, matches);
                 literalCandidates = Avx2.And(literalCandidates, matches);
+            }
+            else
+            {
+                var matches = check.Kind == Utf8AsciiDeterministicFixedWidthCheckKind.CharClass
+                    ? MatchKnownClass(values, check.CharClass.KnownPredicateKind)
+                    : Vector256<byte>.Zero;
+                candidates = Avx2.And(candidates, matches);
             }
         }
 
