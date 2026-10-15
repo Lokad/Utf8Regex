@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased checked byte-set vector reads (0.4.0-scalar.49-dev)
+
+- Replace both byte-set SIMD LoadUnsafe calls with checked span reads, retaining
+  the existing search algorithm, vector widths, final overlap and allocations.
+- Accept an observed roughly 2–4% slowdown on affected public literal-family
+  searches within the 10% allowance. Finite VM controls remain separate; larger
+  code and bounds branches are an accepted tradeoff. Full package/platform
+  qualification stays batched at the next coherent delivery milestone.
+
 ## Unreleased checked short-literal comparison (0.4.0-scalar.49-dev)
 
 - Replace the comparator's unchecked primitive reads with bounds-checked span

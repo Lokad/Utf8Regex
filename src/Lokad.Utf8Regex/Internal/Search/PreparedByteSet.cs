@@ -94,9 +94,8 @@ internal readonly struct PreparedByteSetState(
                 var mask = width == 32 ? Misses256(input, position) : Misses128(input, position);
                 if (!except) mask ^= all;
                 if (mask != 0) return position + (reverse ? BitOperations.Log2(mask) : BitOperations.TrailingZeroCount(mask));
-                // Misses128/256 keep unchecked loads under this loop's
-                // [0, input.Length - width] invariant. The .NET 10 checked-slice
-                // pilot retained per-vector branches and regressed throughput.
+                // Misses128/256 use checked reads under this loop's
+                // [0, input.Length - width] invariant.
                 // The final overlapping vector stays inside the span. Its
                 // overlap was already proved empty, so it cannot reorder a hit.
                 if (reverse ? position == 0 : position == last) return -1;
@@ -116,7 +115,7 @@ internal readonly struct PreparedByteSetState(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private uint Misses128(ReadOnlySpan<byte> input, int position)
     {
-        var values = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(input), (nuint)position);
+        var values = MemoryMarshal.Read<Vector128<byte>>(input[position..]);
         var low = Vector128.BitwiseAnd(values, Vector128.Create(AsciiOnly ? (byte)143 : (byte)15));
         var high = Vector128.BitwiseAnd(Vector128.ShiftRightLogical(values, 4), Vector128.Create((byte)15));
         var lower = Vector128.Shuffle(Lower, low);
@@ -133,7 +132,7 @@ internal readonly struct PreparedByteSetState(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private uint Misses256(ReadOnlySpan<byte> input, int position)
     {
-        var values = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(input), (nuint)position);
+        var values = MemoryMarshal.Read<Vector256<byte>>(input[position..]);
         // PSHUFB itself clears high-bit byte indices for the ASCII-only table.
         var low = AsciiOnly ? values : Avx2.And(values, Vector256.Create((byte)15));
         var high = Avx2.And(Avx2.ShiftRightLogical(values.AsUInt16(), 4).AsByte(), Vector256.Create((byte)15));

@@ -16,8 +16,11 @@ algorithms/SIMD where practical. Full platform/package qualification is batched 
 a coherent delivery milestone. Historical deferrals below retain their original
 evidence; the revised allowance does not designate conversions automatically.
 
-The current source inventory is 38 sites across all shipped projects: **36 Core
-sites in 14 files**, plus two PCRE2 null-reference placeholders in one file.
+Counts and decisions in the historical pilot records below describe those
+snapshots. The current inventory and explicit accepted follow-ups take precedence.
+
+The current source inventory is 36 sites across all shipped projects: **34 Core
+sites in 13 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -39,7 +42,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
 | AsciiSearch /6 | Serving callers pass equal-length checked slices; folded 9–16-byte dispatch supplies both 8-byte windows. This internal precondition remains necessary. |
-| PreparedByteSet /2 | Width chosen from subject length; positions clamped to0..length-width, including final overlap. Closed pilots regress at short boundaries. |
 | PreparedSearchPrimitives /4 | Correlated windows stop at length-compareOffset-width; candidate confirmation slices the full admitted literal. No new conversion qualified. |
 | PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
@@ -78,6 +80,23 @@ tail, known-prefix, malformed-input, cutoff and original-interruption checks pas
 Evidence: artifacts/short-literal-checked-10pct-20261014/. Full platform/package
 qualification is reserved for a coherent delivery batch; scalar.48 bytes stay fixed.
 
+The PreparedByteSet vector-search conversion is also accepted under the 10%
+public-cost gate. MemoryMarshal.Read on checked suffix spans replaces both
+LoadUnsafe calls. The existing forward/reverse loop, SIMD masks, clamped final
+overlap, scalar fallback and allocations remain unchanged. FullOpts public-route
+code grows1207→1314 bytes on Linux and retains bounds branches.
+
+Public IsMatch of a four-literal family demonstrably reaches the changed Find
+method. The one reversed-order noise confirmation covers hits/misses at31,33 and
+4096 bytes: affected medians increase about2–4%, with zero allocations in both
+versions. Unchanged literal controls move about-0.6% to+1.2% without limits.
+Finite controls retain their existing VM route and are not evidence for the
+changed vector loop. The initial broader run hit its110-second cap before the
+control; its noisy partial samples remain evidence, not acceptance. The single
+70-second confirmation completed; no further timing or full package matrix was
+run. Focused boundaries, offsets, tails, scalar/resource behavior and managed
+safety checks are retained. Evidence: artifacts/byteset-checked-10pct-20261015/.
+
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,
 but add entry/setup/index work. Linux FullOpts code grows454→533 bytes; long
@@ -105,9 +124,11 @@ Production is restored and boundary fixtures remain. Public Core Count selected
 another route, so its timings do not qualify this kernel. Evidence:
 `artifacts/category-checked-load-20261013/`. The 55-site inventory is unchanged.
 
-The original vector-search and short-literal pilots are closed. Checked vector
-loads retained branches and regressed 7–38%; short-literal variants retained tail
-checks or inconclusive/regressing 4–7% timings. Those hot paths remain deferred.
+The original vector-search and short-literal pilots were deferred under the
+former no-regression gate. Checked vector loads retained branches and regressed
+7–38%; short-literal variants retained tail checks or inconclusive/regressing
+4–7% timings. The short comparator is now accepted under the revised public-cost
+gate above; the original measurements remain historical evidence.
 Two fixed 16-byte construction-buffer reads were converted to
 `MemoryMarshal.Read<Vector128<byte>>` with identical FullOpts instructions on
 Windows and Linux. Evidence: `artifacts/unchecked-pilots-20261012/`.
@@ -249,8 +270,8 @@ or exact equivalence is claimed. The conversion is accepted on that bounded
 evidence. Raw observations/code/identities: artifacts/octal-fixed-arity-20261013/.
 
 The whole-pair artifact gate remains open because core hot paths retain unchecked
-references, including the user-approved SizeOf. Further work needs a concrete
-source/JIT reason; do not rerun the deferred loads or expand this benchmark pilot.
+references, including the user-approved SizeOf. Further work follows the revised
+bounded public-cost gate above; kernel timings alone do not establish acceptance.
 
 ## URI vector-load pilot — deferred
 
@@ -273,8 +294,14 @@ focused checks pass, including ordinary/compiled and finite-policy controls.
 The restored Release DLL is rebuilt and audited to contain the original URI
 LoadUnsafe call. The 55-site/16-file inventory and whole-pair gate are unchanged.
 Evidence and all three source/code-generation variants:
-artifacts/uri-checked-load-20261013/. Do not extend this closed pilot into another
-benchmark campaign without a concrete new reason.
+artifacts/uri-checked-load-20261013/.
+
+A bounded revisit under the 10% allowance is deferred for missing public-route
+coverage. Public Count selects the owned scalar VM before URI direct dispatch,
+even though its inspection descriptor identifies the URI family. Observed public
+medians within the allowance therefore do not qualify the changed vector loop.
+The candidate passes346 focused Release checks; exact original source is restored
+and all raw samples are preserved in artifacts/uri-checked-10pct-20261014/.
 
 ## Fixed literal-byte indices — deferred
 
@@ -286,5 +313,6 @@ Nevertheless, the Linux reverse-order repeat retains about 3.4–4.6% slower
 selected timings; unchanged lengths also move 4.4–8.9%. Windows samples contain
 large control noise. All kernel allocations remain zero. These observations do
 not establish the requested performance gate or a causal regression. Production
-is restored; no conversion or equivalence claim lands. The broader comparator
-loads remain deferred. Evidence: artifacts/literal-fixed-byte-index-20261014/.
+is restored in that historical trial; no equivalence claim follows from it.
+The complete short comparator was subsequently accepted under the revised
+public-cost gate above. Evidence: artifacts/literal-fixed-byte-index-20261014/.
