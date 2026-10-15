@@ -15,7 +15,7 @@ public enum Pcre2ErrorKind
     MissingCharacterClassTerminator,
     /// <summary>An escape is not valid inside a character class.</summary>
     EscapeInvalidInClass,
-    /// <summary>A character-class range is reversed.</summary>
+    /// <summary>A character-class range has invalid endpoints or is reversed.</summary>
     ClassRangeOrder,
     /// <summary>A quantifier does not follow a repeatable item.</summary>
     QuantifierInvalid,

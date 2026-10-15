@@ -2,6 +2,12 @@
 
 ## PCRE2 development after the Core/PythonRe scalar.52 boundary
 
+- Fix valid raw supplementary and escaped class ranges rejected by a duplicate
+  UTF-16 structural check. The existing scalar parser now owns endpoint order;
+  remove the redundant state/helper. Reject non-scalar predicate endpoints with
+  the existing ClassRangeOrder kind, preserving literal leading/trailing hyphens.
+  Native PCRE2 10.47 comparisons and capture/coordinate/finite-policy regressions
+  record the source correction separately from immutable package acceptance.
 - Remove two `Unsafe.NullRef` placeholders from the borrowed capture-budget view
   using compiler-default inactive fields. Preserve original owner references,
   selector, admission, interruption and result lifetimes. Focused projection and

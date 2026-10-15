@@ -26,6 +26,14 @@ supplies internal cancellation/deadline checks at admission points. This does no
 establish public construction interruption, prompt checks within every linear
 pass, or complete admission of validation stacks and other construction storage.
 
+Character-class ranges compare decoded Unicode-scalar endpoints. Raw
+`[😀-😃]` and escaped `[\x{1F600}-\x{1F603}]` have the same membership; UTF-16
+source characters and escape spellings do not define endpoint order. A range
+requires two scalar endpoints: a shorthand or POSIX predicate cannot be an
+endpoint. Invalid or reversed ranges throw `Pcre2CompileException` with the
+existing `ClassRangeOrder` kind. Leading and trailing literal hyphens retain
+their normal class meaning.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

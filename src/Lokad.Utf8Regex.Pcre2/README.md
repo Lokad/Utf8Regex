@@ -17,6 +17,13 @@ construction allowance. Those argument errors take precedence over malformed
 UTF-8 and construction denial. Valid arguments retain strict decoding and the
 existing admitted pattern-code checks. Public construction controls remain separate.
 
+Current source admits raw supplementary and escaped scalar ranges consistently:
+`[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
+parser owns endpoint validation; invalid predicate endpoints and reversed ranges
+use the existing `ClassRangeOrder` compile-error kind. This also rejects formerly
+admitted invalid forms such as `[\d-z]`. Earlier immutable package receipts retain
+their original coverage; this correction needs its own PCRE2 delivery boundary.
+
 The package does not bind to native PCRE2. Its only non-BCL implementation
 dependency is `Lokad.Utf8Regex`; there is no P/Invoke, native loader, RID
 payload, or external matcher executable.

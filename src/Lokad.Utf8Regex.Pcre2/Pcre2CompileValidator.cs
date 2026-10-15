@@ -126,8 +126,6 @@ internal static class Pcre2CompileValidator
         var groupDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
-        var previousClassScalar = -1;
-        var rangeLow = -1;
         var quoted = false;
         var previousWasZeroWidth = true; // No repeatable item at pattern entry.
         for (var offset = 0; offset < pattern.Length; offset++)
@@ -149,8 +147,6 @@ internal static class Pcre2CompileValidator
                 if (character == ']' && classHasAtom)
                 {
                     inCharacterClass = false;
-                    previousClassScalar = -1;
-                    rangeLow = -1;
                     previousWasZeroWidth = false;
                     continue;
                 }
@@ -163,18 +159,13 @@ internal static class Pcre2CompileValidator
                         throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
                     }
 
-                    CompleteClassAtom(escape, ref classHasAtom, ref previousClassScalar, ref rangeLow);
+                    classHasAtom = true;
                     continue;
                 }
 
-                if (character == '-' && previousClassScalar >= 0 && offset + 1 < pattern.Length && pattern[offset + 1] != ']')
-                {
-                    rangeLow = previousClassScalar;
-                    previousClassScalar = -1;
-                    continue;
-                }
-
-                CompleteClassAtom(character, ref classHasAtom, ref previousClassScalar, ref rangeLow);
+                // Endpoint ordering belongs to the scalar class parser. Raw
+                // UTF-16 characters and escape spellings are not endpoint values.
+                classHasAtom = true;
                 continue;
             }
 
@@ -199,8 +190,6 @@ internal static class Pcre2CompileValidator
             {
                 inCharacterClass = true;
                 classHasAtom = false;
-                previousClassScalar = -1;
-                rangeLow = -1;
                 previousWasZeroWidth = false;
                 continue;
             }
@@ -246,22 +235,6 @@ internal static class Pcre2CompileValidator
         {
             throw new Pcre2CompileException("Missing closing parenthesis.", Pcre2ErrorKind.MissingClosingParenthesis);
         }
-    }
-
-    private static void CompleteClassAtom(
-        char character,
-        ref bool classHasAtom,
-        ref int previousClassScalar,
-        ref int rangeLow)
-    {
-        classHasAtom = true;
-        if (rangeLow >= 0 && character < rangeLow)
-        {
-            throw new Pcre2CompileException("Range out of order in character class.", Pcre2ErrorKind.ClassRangeOrder);
-        }
-
-        previousClassScalar = character;
-        rangeLow = -1;
     }
 
     private static bool ContainsLookaroundBackslashK(string pattern)

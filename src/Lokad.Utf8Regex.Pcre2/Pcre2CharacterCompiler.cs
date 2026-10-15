@@ -788,13 +788,8 @@ internal sealed class Pcre2CharacterParser
             }
 
             first = false;
-            if (TryParsePosixTerm(out var posixTerm))
-            {
-                terms.Add(posixTerm);
-                continue;
-            }
-
-            if (!TryParseClassTerm(out var term, out var scalar))
+            Rune? scalar = null;
+            if (!TryParsePosixTerm(out var term) && !TryParseClassTerm(out term, out scalar))
             {
                 characterClass = Pcre2CharacterClass.Empty;
                 return false;
@@ -817,17 +812,26 @@ internal sealed class Pcre2CharacterParser
                 }
             }
 
-            if (scalar is { } low &&
-                _offset < _pattern.Length - 1 &&
+            if (_offset < _pattern.Length - 1 &&
                 _pattern[_offset] == '-' &&
                 rangeEndOffset < _pattern.Length &&
                 _pattern[rangeEndOffset] != ']')
             {
                 _offset = rangeEndOffset;
-                if (!TryParseClassTerm(out _, out var high) || high is null || high.Value.Value < low.Value)
+                Rune? high = null;
+                if (!TryParsePosixTerm(out _) && !TryParseClassTerm(out _, out high))
                 {
                     characterClass = Pcre2CharacterClass.Empty;
                     return false;
+                }
+
+                if (scalar is not { } low || high is null)
+                {
+                    throw new Pcre2CompileException("Invalid range in character class.", Pcre2ErrorKind.ClassRangeOrder);
+                }
+                if (high.Value.Value < low.Value)
+                {
+                    throw new Pcre2CompileException("Range out of order in character class.", Pcre2ErrorKind.ClassRangeOrder);
                 }
 
                 terms.Add(Pcre2CharacterClassTerm.CreateRange(low.Value, high.Value.Value));
