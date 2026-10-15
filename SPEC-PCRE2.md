@@ -58,6 +58,13 @@ Ignored text cannot trigger syntax restrictions, and real syntax after comments
 or classes remains checked. Comment scanning borrows the original construction
 work/deadline/cancellation owner at bounded checkpoints.
 
+Inline extended settings apply per directive: `(?x)` selects ordinary extended
+mode even after `(?xx)`, repeated `(?x)(?x)` does not enable `xx`, and `(?-x)`
+clears both modes. Scoped settings restore the inherited mode after their group.
+Under `xx`, unescaped class spaces/tabs are ignored; under `x`, they are literal.
+Owned profile execution must retain these rules through captures, coordinates,
+references and replacement instead of delegating incompatible class semantics.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

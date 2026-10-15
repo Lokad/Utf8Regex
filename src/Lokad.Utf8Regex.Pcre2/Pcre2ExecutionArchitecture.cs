@@ -54,13 +54,22 @@ internal static class Pcre2Compiler
         if (Pcre2BacktrackingCompiler.Compile(request) is Pcre2CompiledBacktrackingOutcome backtracking)
         {
             Pcre2CompiledProgram foundation;
-            try
+            if (backtracking.HasInlineExtendedOptions)
             {
-                foundation = foundationProgramFactory(request);
-            }
-            catch (RegexParseException)
-            {
+                // Inline x/xx need PCRE2 whitespace/class semantics. The owned
+                // profile already compiled them; omit incompatible Core preparation.
                 foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
+            }
+            else
+            {
+                try
+                {
+                    foundation = foundationProgramFactory(request);
+                }
+                catch (RegexParseException)
+                {
+                    foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
+                }
             }
 
             foundation = Pcre2CompiledProgramOverlay.WithBacktracking(

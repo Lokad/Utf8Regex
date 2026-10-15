@@ -23,15 +23,19 @@ internal sealed class Pcre2CompiledBacktrackingOutcome : IPcre2BacktrackingCompi
 {
     internal Pcre2CompiledBacktrackingOutcome(
         Pcre2BacktrackingSyntaxTree syntaxTree,
-        Pcre2BacktrackingProgram program)
+        Pcre2BacktrackingProgram program,
+        bool hasInlineExtendedOptions)
     {
         SyntaxTree = syntaxTree;
         Program = program;
+        HasInlineExtendedOptions = hasInlineExtendedOptions;
     }
 
     internal Pcre2BacktrackingSyntaxTree SyntaxTree { get; }
 
     internal Pcre2BacktrackingProgram Program { get; }
+
+    internal bool HasInlineExtendedOptions { get; }
 }
 
 internal static class Pcre2BacktrackingCompiler
@@ -55,7 +59,8 @@ internal static class Pcre2BacktrackingCompiler
         var program = lowerer.Lower(root);
         return new Pcre2CompiledBacktrackingOutcome(
             new Pcre2BacktrackingSyntaxTree(root),
-            program);
+            program,
+            parser.HasInlineExtendedOptions);
     }
 }
 

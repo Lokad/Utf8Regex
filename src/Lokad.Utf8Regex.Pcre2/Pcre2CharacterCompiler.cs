@@ -113,6 +113,18 @@ internal enum Pcre2CharacterOptions : byte
 
 internal static class Pcre2CharacterOptionsFactory
 {
+    // Apply one directive as a whole: one x clears inherited xx, two consecutive
+    // x enable xx, and -x clears both. Previous directives never supply the
+    // second x of a new directive.
+    internal static Pcre2CharacterOptions ApplyExtendedOptions(Pcre2CharacterOptions options,
+        bool enabledX, bool enabledMore, bool disabledX)
+    {
+        if (!enabledX && !disabledX) return options;
+        options &= ~(Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore);
+        if (!disabledX) options |= Pcre2CharacterOptions.Extended | (enabledMore ? Pcre2CharacterOptions.ExtendedMore : 0);
+        return options;
+    }
+
     internal static Pcre2CharacterOptions FromCompileOptions(Pcre2CompileOptions options)
     {
         var result = Pcre2CharacterOptions.None;
@@ -548,6 +560,9 @@ internal sealed class Pcre2CharacterParser
 
         var unset = false;
         var hyphenSeen = false;
+        var enabledX = false;
+        var enabledMore = false;
+        var disabledX = false;
         while (cursor < _pattern.Length && _pattern[cursor] != ')')
         {
             if (_pattern[cursor] == '-')
@@ -579,18 +594,10 @@ internal sealed class Pcre2CharacterParser
 
             if (option == Pcre2CharacterOptions.Extended)
             {
-                if (unset)
-                {
-                    _options &= ~(Pcre2CharacterOptions.Extended | Pcre2CharacterOptions.ExtendedMore);
-                }
-                else if ((_options & Pcre2CharacterOptions.Extended) != 0)
-                {
-                    _options |= Pcre2CharacterOptions.ExtendedMore;
-                }
-                else
-                {
-                    _options |= Pcre2CharacterOptions.Extended;
-                }
+                var doubled = cursor + 1 < _pattern.Length && _pattern[cursor + 1] == 'x';
+                if (unset) disabledX = true;
+                else { enabledX = true; enabledMore |= doubled; }
+                if (doubled) cursor++;
             }
             else
             {
@@ -605,6 +612,7 @@ internal sealed class Pcre2CharacterParser
             return false;
         }
 
+        _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(_options, enabledX, enabledMore, disabledX);
         _offset = cursor + 1;
         _requiresCharacterProgram = true;
         _nodes.Add(new Pcre2SyntaxNode(Pcre2SyntaxNodeKind.CharacterProgram, start, _offset - start));

@@ -2,6 +2,11 @@
 
 ## PCRE2 development after scalar.53
 
+- Apply inline x/xx settings per directive in the existing parsers. Fix scoped
+  class whitespace, switches from xx to x, repeated single-x directives and -x
+  clearing both modes. Keep inline extended capture shapes in the owned PCRE2
+  program before incompatible Core preparation. Preserve scope, captures, byte
+  coordinates, replacement and existing invocation controls; native probes agree.
 - Honor extended-mode comments consistently in syntax/declaration/structural
   guards and parsers. Share bounded comment, option-scope and POSIX-token logic;
   preserve global/scoped x/xx, configured newlines, literal hashes and real

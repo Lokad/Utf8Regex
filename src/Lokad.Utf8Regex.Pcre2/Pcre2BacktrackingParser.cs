@@ -34,6 +34,8 @@ internal sealed class Pcre2BacktrackingParser
 
     internal int CaptureCount => _captureCount;
 
+    internal bool HasInlineExtendedOptions { get; private set; }
+
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
 
     internal IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> CaptureDefinitions => _captureDefinitions;
@@ -1315,6 +1317,9 @@ internal sealed class Pcre2BacktrackingParser
         var cursor = _offset + 2;
         var enabling = true;
         var sawOption = false;
+        var enabledX = false;
+        var enabledMore = false;
+        var disabledX = false;
         while (cursor < _pattern.Length)
         {
             var ch = _pattern[cursor];
@@ -1332,10 +1337,21 @@ internal sealed class Pcre2BacktrackingParser
                     return false;
                 }
 
+                options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(options, enabledX, enabledMore, disabledX);
+                HasInlineExtendedOptions |= enabledX;
                 openingLength = cursor - _offset + 1;
                 return true;
             }
 
+            if (ch == 'x')
+            {
+                var doubled = cursor + 1 < _pattern.Length && _pattern[cursor + 1] == 'x';
+                if (enabling) { enabledX = true; enabledMore |= doubled; }
+                else disabledX = true;
+                sawOption = true;
+                cursor += doubled ? 2 : 1;
+                continue;
+            }
             if (!TryApplyOption(ref options, ref ungreedy, ref noAutoCapture, ch, enabling))
             {
                 return false;
@@ -1361,6 +1377,9 @@ internal sealed class Pcre2BacktrackingParser
         var noAutoCapture = _noAutoCapture;
         var allowDuplicateNames = _allowDuplicateNames;
         var sawOption = false;
+        var enabledX = false;
+        var enabledMore = false;
+        var disabledX = false;
         while (cursor < _pattern.Length)
         {
             var ch = _pattern[cursor];
@@ -1378,7 +1397,8 @@ internal sealed class Pcre2BacktrackingParser
                     return false;
                 }
 
-                _options = options;
+                _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(options, enabledX, enabledMore, disabledX);
+                HasInlineExtendedOptions |= enabledX;
                 _ungreedy = ungreedy;
                 _noAutoCapture = noAutoCapture;
                 _allowDuplicateNames = allowDuplicateNames;
@@ -1386,6 +1406,15 @@ internal sealed class Pcre2BacktrackingParser
                 return true;
             }
 
+            if (ch == 'x')
+            {
+                var doubled = cursor + 1 < _pattern.Length && _pattern[cursor + 1] == 'x';
+                if (enabling) { enabledX = true; enabledMore |= doubled; }
+                else disabledX = true;
+                sawOption = true;
+                cursor += doubled ? 2 : 1;
+                continue;
+            }
             if (!TryApplyOption(ref options, ref ungreedy, ref noAutoCapture, ch, enabling))
             {
                 if (ch == 'J')
@@ -1423,9 +1452,6 @@ internal sealed class Pcre2BacktrackingParser
                 break;
             case 's':
                 flag = Pcre2CharacterOptions.DotAll;
-                break;
-            case 'x':
-                flag = Pcre2CharacterOptions.Extended;
                 break;
             case 'n':
                 noAutoCapture = enabling;

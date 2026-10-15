@@ -55,6 +55,13 @@ captures after non-ASCII/NUL comment terminators. Scoped reset-option execution
 such as `(?^:...)` remains explicitly unserved; lexical recognition does not imply
 matching support. Existing construction authority and immutable packages remain.
 
+Development also fixes per-directive extended settings in execution: scoped `xx`
+ignores class spaces/tabs, one `x` clears inherited `xx`, and `-x` clears both.
+Repeated single-`x` directives stay in ordinary extended mode. Inline extended
+capture shapes keep the owned PCRE2 program, preserving their whitespace rules,
+byte ranges, captures and replacement output through the existing resource
+authority. Incompatible Core preparation is omitted. This is post53 source work.
+
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges
