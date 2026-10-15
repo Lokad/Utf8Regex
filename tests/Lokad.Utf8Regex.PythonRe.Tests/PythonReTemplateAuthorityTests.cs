@@ -113,64 +113,80 @@ public sealed class PythonReTemplateAuthorityTests
     }
 
     [Fact]
-    public async Task WaitingCallerCanCancelWithoutInvalidatingPendingPreparation()
+    public void WaitingCallerCanCancelWithoutInvalidatingPendingPreparation()
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
-        var preparing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var preparing = new ManualResetEventSlim();
+        using var waiting = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
-        // Pending preparation blocks this worker; avoid tying progress to the thread pool.
-        var owner = Task.Factory.StartNew(() =>
+        string? ownerResult = null;
+        Exception? ownerError = null;
+        Thread? waiter = null;
+        // Both workers and the barrier coordinator must progress without pool
+        // continuations: a saturated pool must not expire the owner's wait.
+        var owner = new Thread(() => ownerError = Record.Exception(() =>
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
             construction.Budget.CheckpointHook = _ =>
             {
                 if (++checkpoints != 8) return;
-                preparing.SetResult();
+                preparing.Set();
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)), "Release pending preparation.");
             };
-            return regex.ReplaceToString("😀a"u8, Template);
-        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            ownerResult = regex.ReplaceToString("😀a"u8, Template);
+        })) { IsBackground = true };
+        owner.Start();
         try
         {
-            await preparing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(preparing.Wait(TimeSpan.FromSeconds(10)), $"Preparation barrier: {ownerError}");
             Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
-            var waiter = Task.Factory.StartNew(() =>
+            Exception? waiterError = null;
+            waiter = new Thread(() => waiterError = Record.Exception(() =>
             {
                 var reads = 0;
                 using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
                 {
-                    if (++reads == 3) waiting.SetResult();
+                    if (++reads == 3) waiting.Set();
                     return 0;
                 });
-                return Record.Exception(() => Run(regex, 0, cancellation.Token));
-            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            await waiting.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                Run(regex, 0, cancellation.Token);
+            })) { IsBackground = true };
+            waiter.Start();
+            Assert.True(waiting.Wait(TimeSpan.FromSeconds(10)));
             cancellation.Cancel();
-            var error = Assert.IsType<OperationCanceledException>(await waiter.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.True(waiter.Join(TimeSpan.FromSeconds(10)));
+            var error = Assert.IsType<OperationCanceledException>(waiterError);
             Assert.Equal(cancellation.Token, error.CancellationToken);
-            Assert.False(owner.IsCompleted);
+            Assert.True(owner.IsAlive);
             Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
         }
-        finally { release.Set(); }
-        Assert.Equal("<😀><a>", await owner.WaitAsync(TimeSpan.FromSeconds(10)));
+        finally
+        {
+            release.Set();
+            Assert.True(owner.Join(TimeSpan.FromSeconds(10)));
+            if (waiter is not null) Assert.True(waiter.Join(TimeSpan.FromSeconds(10)));
+        }
+        Assert.Null(ownerError);
+        Assert.Equal("<😀><a>", ownerResult);
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, Template));
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public async Task PreparingCallerInterruptionDoesNotBecomeHealthyWaiterFailure(bool timeout)
+    public void PreparingCallerInterruptionDoesNotBecomeHealthyWaiterFailure(bool timeout)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
-        var preparing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var preparing = new ManualResetEventSlim();
+        using var waiting = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
         long ownerTicks = 0;
-        var owner = Task.Factory.StartNew(() =>
+        Exception? ownerError = null;
+        Thread? waiter = null;
+        var owner = new Thread(() => ownerError = Record.Exception(() =>
         {
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => Volatile.Read(ref ownerTicks));
             using var construction = Utf8ConstructionScope.Enter();
@@ -178,32 +194,42 @@ public sealed class PythonReTemplateAuthorityTests
             construction.Budget.CheckpointHook = _ =>
             {
                 if (++checkpoints != 8) return;
-                preparing.SetResult();
+                preparing.Set();
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
             };
-            return Record.Exception(() => Run(regex, 0, cancellation.Token));
-        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Run(regex, 0, cancellation.Token);
+        })) { IsBackground = true };
+        owner.Start();
         try
         {
-            await preparing.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            var waiter = Task.Factory.StartNew(() =>
+            Assert.True(preparing.Wait(TimeSpan.FromSeconds(10)), $"Preparation barrier: {ownerError}");
+            string? waiterResult = null;
+            Exception? waiterError = null;
+            waiter = new Thread(() => waiterError = Record.Exception(() =>
             {
                 var reads = 0;
                 using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
                 {
-                    if (++reads == 3) waiting.SetResult();
+                    if (++reads == 3) waiting.Set();
                     return 0;
                 });
-                return regex.ReplaceToString("😀a"u8, Template);
-            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            await waiting.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                waiterResult = regex.ReplaceToString("😀a"u8, Template);
+            })) { IsBackground = true };
+            waiter.Start();
+            Assert.True(waiting.Wait(TimeSpan.FromSeconds(10)));
             if (timeout) Volatile.Write(ref ownerTicks, 250);
             else cancellation.Cancel();
             release.Set();
-            Assert.Equal("<😀><a>", await waiter.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.True(waiter.Join(TimeSpan.FromSeconds(10)));
+            Assert.Null(waiterError);
+            Assert.Equal("<😀><a>", waiterResult);
         }
-        finally { release.Set(); }
-        var ownerError = await owner.WaitAsync(TimeSpan.FromSeconds(10));
+        finally
+        {
+            release.Set();
+            Assert.True(owner.Join(TimeSpan.FromSeconds(10)));
+            if (waiter is not null) Assert.True(waiter.Join(TimeSpan.FromSeconds(10)));
+        }
         if (timeout) Assert.IsType<RegexMatchTimeoutException>(ownerError);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(ownerError).CancellationToken);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
@@ -212,55 +238,63 @@ public sealed class PythonReTemplateAuthorityTests
     }
 
     [Fact]
-    public async Task UnlimitedWaiterDoesNotInheritAnotherCallersCancellation()
+    public void UnlimitedWaiterDoesNotInheritAnotherCallersCancellation()
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)");
-        var preparing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var preparing = new ManualResetEventSlim();
+        using var completed = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
         string? result = null;
         Exception? failure = null;
-        var owner = Task.Factory.StartNew(() =>
+        Exception? ownerError = null;
+        var owner = new Thread(() => ownerError = Record.Exception(() =>
         {
             using var construction = Utf8ConstructionScope.Enter();
             var checkpoints = 0;
             construction.Budget.CheckpointHook = _ =>
             {
                 if (++checkpoints != 8) return;
-                preparing.SetResult();
+                preparing.Set();
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
             };
-            return Record.Exception(() => Run(regex, 0, cancellation.Token));
-        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Run(regex, 0, cancellation.Token);
+        })) { IsBackground = true };
         var waiter = new Thread(() =>
         {
             try { result = regex.ReplaceToString("😀a"u8, Template); }
             catch (Exception error) { failure = error; }
-            finally { completed.SetResult(); }
+            finally { completed.Set(); }
         }) { IsBackground = true };
+        var waiterStarted = false;
+        owner.Start();
         try
         {
-            await preparing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(preparing.Wait(TimeSpan.FromSeconds(10)), $"Preparation barrier: {ownerError}");
             waiter.Start();
+            waiterStarted = true;
             var start = System.Diagnostics.Stopwatch.GetTimestamp();
-            // No finite deadline reads exist in this lane. The dedicated thread
-            // has only the cache's pending Monitor.Wait as a blocking operation.
+            // This unlimited lane blocks only in the pending cache Monitor.Wait.
             while ((waiter.ThreadState & ThreadState.WaitSleepJoin) == 0)
             {
-                Assert.False(completed.Task.IsCompleted);
+                Assert.False(completed.IsSet);
                 Assert.True(System.Diagnostics.Stopwatch.GetElapsedTime(start) < TimeSpan.FromSeconds(10));
-                await Task.Delay(5);
+                Thread.Sleep(5);
             }
             cancellation.Cancel();
             release.Set();
-            await completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.True(waiter.Join(TimeSpan.FromSeconds(10)));
+            Assert.True(completed.IsSet);
             Assert.Null(failure);
             Assert.Equal("<😀><a>", result);
         }
-        finally { release.Set(); }
-        var ownerError = Assert.IsType<OperationCanceledException>(await owner.WaitAsync(TimeSpan.FromSeconds(10)));
-        Assert.Equal(cancellation.Token, ownerError.CancellationToken);
+        finally
+        {
+            release.Set();
+            Assert.True(owner.Join(TimeSpan.FromSeconds(10)));
+            if (waiterStarted) Assert.True(waiter.Join(TimeSpan.FromSeconds(10)));
+        }
+        Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(ownerError).CancellationToken);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, Template));
     }
