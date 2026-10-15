@@ -1,6 +1,12 @@
 # Changelog
 
-## Development (0.4.0-scalar.52-dev)
+## Private scalar.52 Core/PythonRe candidate (qualification pending)
+
+- Prepare a fresh identity for the completed checked-access batch. Cumulative
+  original-baseline costs and exact package/consumer qualification are pending;
+  no publication, downstream adoption or PCRE2 designation is implied.
+- Library builds no longer pack implicitly. Explicit package qualification
+  remains responsible for the one producer build, pack and provenance checks.
 
 - Use checked TryRead admission for the Cyrillic SIMD loop, preserving masks,
   continuation carry, candidates and scalar tails. Focused public costs fit10%

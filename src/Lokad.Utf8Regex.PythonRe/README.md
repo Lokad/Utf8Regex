@@ -21,6 +21,11 @@ safe defaults, category-version reconciliation and broader profile acceptance
 remain unfinished. PCRE2 qualifies independently; prior candidate bytes stay
 unchanged. Development source beyond the candidate requires its own acceptance.
 
+The next private pair, **0.4.0-scalar.52**, is being prepared. Its Core source has
+completed the checked-access batch; the allowed SizeOf calls remain. Cumulative
+original-baseline costs and exact-package/consumer qualification are pending.
+Lython's stricter SizeOf requirement still needs explicit reconciliation.
+
 ## Support Scope
 
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.

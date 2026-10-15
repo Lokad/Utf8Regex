@@ -6,6 +6,12 @@ The immutable 0.4.0-scalar.51 core/PythonRe candidate uses Unicode-scalar matchi
 
 Use a qualified candidate's exact version and immutable feed/manifest for reproducible integration. [qualify-scalar-candidate.ps1](qualify-scalar-candidate.ps1) builds and packs core/PythonRe once, checks provenance, runs detached consumers and records package hashes; it does not publish to NuGet.org. PCRE2 is qualified independently with [test-packaged-pcre2.ps1](test-packaged-pcre2.ps1). Existing benchmark snapshots describe their recorded implementations; historical measurements do not qualify the current engine's performance.
 
+The next private Core/PythonRe candidate, **0.4.0-scalar.52**, is being prepared.
+Its source removes the remaining Core unchecked reads while retaining the allowed
+`Unsafe.SizeOf` sizing calls. Cumulative original-baseline costs and exact-package
+qualification are pending. Lython's stricter `SizeOf` restriction still needs
+explicit reconciliation. Library builds compile; qualification packs explicitly.
+
 [Host integration](HOST-INTEGRATION.md) describes conservative up-front reservations
 for the covered working/result payloads and the required lifetime of surviving
 results. Preparation, borrowed storage and the other exclusions remain separate;
