@@ -31,7 +31,7 @@ public sealed class Utf8AsciiSearchHeuristicsTests
             for (var position = 0; position < length; position++)
             {
                 var original = candidate[position];
-                for (var value = 0; value < 128; value++)
+                for (var value = 0; value < 256; value++)
                 {
                     candidate[position] = (byte)value;
                     var folded = value is >= 'A' and <= 'Z' ? value + 32 : value;
@@ -43,6 +43,26 @@ public sealed class Utf8AsciiSearchHeuristicsTests
                 }
                 candidate[position] = original;
             }
+        }
+    }
+
+    [Fact]
+    public void FoldedEqualityKeepsNonAsciiByteNeedlesAndPrefixExtent()
+    {
+        for (var value = 128; value < 256; value++)
+            Assert.True(AsciiSearch.MatchesFoldedIgnoreCase(new byte[] { (byte)value }, new byte[] { (byte)value }));
+
+        var literal = System.Text.Encoding.UTF8.GetBytes("éabcdefghijklmnopqrstuvwxyz");
+        var candidate = System.Text.Encoding.UTF8.GetBytes("éABCDEFGHIJKLMNOPQRSTUVWXYZ-trailer");
+        Assert.True(AsciiSearch.MatchesFoldedIgnoreCase(candidate, literal));
+        candidate[0] = 0xff;
+        Assert.False(AsciiSearch.MatchesFoldedIgnoreCase(candidate, literal));
+
+        for (var length = 0; length <= 40; length++)
+        {
+            var ascii = Enumerable.Repeat((byte)'a', length).ToArray();
+            var prefix = Enumerable.Repeat((byte)'A', length).Concat(new byte[] { 0xff }).ToArray();
+            Assert.True(AsciiSearch.MatchesFoldedIgnoreCase(prefix, ascii));
         }
     }
 

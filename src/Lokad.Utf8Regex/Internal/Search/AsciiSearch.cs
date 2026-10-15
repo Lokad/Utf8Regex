@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
@@ -176,34 +177,11 @@ internal static partial class AsciiSearch
             return MatchesFoldedIgnoreCaseLength9To16(candidate, foldedLiteral);
         }
 
-        var i = 0;
-        while (i <= foldedLiteral.Length - sizeof(ulong))
-        {
-            var candidateBlock = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(candidate), i));
-            var literalBlock = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(foldedLiteral), i));
-            if (candidateBlock != literalBlock)
-            {
-                for (var j = 0; j < sizeof(ulong); j++)
-                {
-                    if (FoldCase(candidate[i + j]) != foldedLiteral[i + j])
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            i += sizeof(ulong);
-        }
-
-        for (; i < foldedLiteral.Length; i++)
-        {
-            if (FoldCase(candidate[i]) != foldedLiteral[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
+        candidate = candidate[..foldedLiteral.Length];
+        // BCL equality rejects even equal non-ASCII bytes. Generic prepared
+        // needles retain byte folding; Unicode/Kelvin matching has its own routes.
+        return Ascii.EqualsIgnoreCase(candidate, foldedLiteral) ||
+            (!Ascii.IsValid(foldedLiteral) && MatchesIgnoreCase(candidate, foldedLiteral));
     }
 
     public static bool MatchesFoldedIgnoreCaseLength9To16(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> foldedLiteral)

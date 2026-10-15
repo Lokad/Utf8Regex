@@ -2,6 +2,11 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Replace the general folded word loop with checked BCL ASCII equality while
+  retaining checked byte folding for non-ASCII needles and the existing short
+  specialization. Remove Core's remaining Unsafe.ReadUnaligned references.
+  Accept a measured5–6% affected public Count cost under the10% allowance;
+  final cumulative performance and downstream qualification remain open.
 - Remove the last generated inline-array staging in Core query preparation.
   Check the already bounded case-pair mask directly; preserve grammar, charges
   and allocations. The Core DLL no longer references Unsafe.As or Unsafe.AsRef;

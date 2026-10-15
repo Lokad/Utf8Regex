@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 18 sites across all shipped projects: **16 Core
-sites in 9 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 16 sites across all shipped projects: **14 Core
+sites in 8 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -50,7 +50,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
-| AsciiSearch /2 | General folded-loop callers pass equal-length admitted slices; each iteration reserves eight literal bytes. The checked long-loop prototype exceeded10% on an affected public workload. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. Checked shared-helper conversion exceeds10% on width8 public Count; retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
@@ -84,6 +83,29 @@ larger code does not imply a public penalty. Existing independent query grammar,
 cutoff, capture, culture, cancellation and source checks pass in Release/Debug.
 No confirmation, package qualification or extra mode follows. Evidence:
 artifacts/query-pair-checked-20261015/.
+
+The BCL folded-equality follow-up removes the last two unaligned reads and the
+custom general word loop in AsciiSearch. It preserves the checked9–16-byte
+specialization. Other widths compare the admitted prefix through
+Ascii.EqualsIgnoreCase; non-ASCII needles retain existing byte-fold behavior via
+the checked comparison when BCL ASCII equality rejects them. Prepared generic
+needles are not restricted to ASCII, so an unconditional substitution would be
+incorrect. Public Unicode/Kelvin and strict subject-validation routes remain.
+
+Actual ordinary and compiled public Count-only probes reach the BCL call. One
+bounded quiet-VM FullOpts pair reuses the old12/24-byte lowercase/uppercase
+hit/near-miss workloads. The24-byte rows cost+5.35..+5.60%, accepted under the10%
+allowance;12-byte rows move-0.20..+0.94%. Exact controls move+0.44/+4.70%, and the
+all-four-finite control+4.55%. Affected allocations stay0B; finite112B. Sample
+floors exceed54ms; some12-byte/control noise remains, so no exact equivalence is
+claimed. No confirmation or further variant follows. The general helper shrinks
+Windows327→217 bytes/Linux261→150; trusted shared BCL code is excluded from these
+sizes. Boundary/offset/tail tests now include all256 candidate byte values,
+non-ASCII needles and admitted prefix extent. Release839/Debug143, sourceguards4
+and PythonRe75 pass. The actual DLL no longer references Unsafe.ReadUnaligned;
+Unsafe.Add, Vector128/256.LoadUnsafe and acceptable SizeOf remain. This is scoped
+acceptance; the fixed original cumulative gate and downstream contract are open.
+Evidence: artifacts/folded-equality-bcl-20261015/. No new package follows.
 
 The short-literal comparator is accepted under the revised 10% public-cost gate.
 Its complete candidate admission retains the scalar.48 end-guard repair. Checked
