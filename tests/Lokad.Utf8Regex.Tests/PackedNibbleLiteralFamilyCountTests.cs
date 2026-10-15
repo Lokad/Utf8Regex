@@ -1,12 +1,46 @@
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class PackedNibbleLiteralFamilyCountTests
 {
     private const string Pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CandidateBlocksRespectBorrowedOffsetsAndEveryTail(bool folded)
+    {
+        if (!(Sse2.IsSupported && Ssse3.IsSupported)) return;
+        var literals = (folded ? "abcdefghjlmn|qrstuvwxyzab|cdefghjklmno|pqrstuvwxyza" : Pattern)
+            .Split('|').Select(Encoding.UTF8.GetBytes).ToArray();
+        var prefilter = folded
+            ? PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals)
+            : new PreparedMultiLiteralPackedNibbleSimdPrefilter(literals);
+        foreach (var borrowedOffset in new[] { 0, 1, 17, 31 })
+        for (var prefix = 0; prefix < 64; prefix++)
+        for (var tail = 0; tail < 32; tail++)
+        {
+            var literal = folded ? Encoding.UTF8.GetBytes("ABCDEFGHJLMN") : literals[1];
+            var length = prefix + literal.Length + tail;
+            var storage = Enumerable.Repeat((byte)'x', borrowedOffset + length + 32).ToArray();
+            literal.CopyTo(storage.AsSpan(borrowedOffset + prefix));
+            var subject = storage.AsSpan(borrowedOffset, length);
+            var state = new PreparedMultiLiteralScanState(0, 0, 0);
+            var previous = -1;
+            var found = false;
+            while (prefilter.TryFindNextCandidate(subject, ref state, out var candidate))
+            {
+                Assert.InRange(candidate, previous + 1, length - prefilter.ShortestLength);
+                previous = candidate;
+                found |= candidate == prefix;
+            }
+            Assert.True(found);
+        }
+    }
 
     [Theory]
     [InlineData(RegexOptions.CultureInvariant)]
@@ -102,6 +136,25 @@ public sealed class PackedNibbleLiteralFamilyCountTests
 
         Assert.False(regex.Inspection.DebugHasPackedNibbleLiteralFamilyCountStrategy);
         Assert.Equal(2, regex.Count("夏洛克·福尔摩斯和阿德勒"u8));
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.CultureInvariant)]
+    [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
+    public void FiniteAndLiveTokenCallsKeepTheirScalarAuthority(RegexOptions options)
+    {
+        var regex = new Utf8Regex(Pattern, options, TimeSpan.FromSeconds(5), new()
+        {
+            MaxWorkSteps = 100_000, MaxDepth = 1024,
+            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576,
+        });
+        using var cancellation = new CancellationTokenSource();
+        Assert.Equal(2, regex.Count("夏洛克·福尔摩斯和阿德勒"u8, cancellation.Token));
+        cancellation.Cancel();
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            regex.Count("夏洛克·福尔摩斯和阿德勒"u8, cancellation.Token));
+        Assert.Equal(cancellation.Token, error.CancellationToken);
+        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { 0xFF }));
     }
 
     [Theory]

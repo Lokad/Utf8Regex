@@ -1091,8 +1091,6 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         var maxStart = input.Length - ShortestLength;
         var baseIndex = state.NextStart;
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
-
         if (Avx2.IsSupported)
         {
             var vectorLimit = maxStart - (AvxLaneCount - 1);
@@ -1106,19 +1104,19 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                 if (MaskLength == 3)
                 {
                     candidates = CreateAvxMask(
-                        ref inputRef,
+                        input,
                         baseIndex + MaskOffsets[0],
                         LowMaskVectors[0],
                         HighMaskVectors[0],
                         lowNibbleMask);
                     candidates = Avx2.And(candidates, CreateAvxMask(
-                        ref inputRef,
+                        input,
                         baseIndex + MaskOffsets[1],
                         LowMaskVectors[1],
                         HighMaskVectors[1],
                         lowNibbleMask));
                     candidates = Avx2.And(candidates, CreateAvxMask(
-                        ref inputRef,
+                        input,
                         baseIndex + MaskOffsets[2],
                         LowMaskVectors[2],
                         HighMaskVectors[2],
@@ -1130,7 +1128,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                     for (var offset = 0; offset < MaskLength; offset++)
                     {
                         candidates = Avx2.And(candidates, CreateAvxMask(
-                            ref inputRef,
+                            input,
                             baseIndex + MaskOffsets[offset],
                             LowMaskVectors[offset],
                             HighMaskVectors[offset],
@@ -1163,7 +1161,7 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             var candidates = Vector128.Create((byte)0xFF);
             for (var offset = 0; offset < MaskLength; offset++)
             {
-                var window = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + MaskOffsets[offset]));
+                var window = MemoryMarshal.Read<Vector128<byte>>(input[(baseIndex + MaskOffsets[offset])..]);
                 var low = Sse2.And(window, sseLowNibbleMask);
                 var high = Sse2.And(
                     Sse2.ShiftRightLogical(window.AsUInt16(), 4).AsByte(),
@@ -1234,13 +1232,13 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector256<byte> CreateAvxMask(
-        ref byte inputRef,
+        ReadOnlySpan<byte> input,
         int inputOffset,
         Vector256<byte> lowMaskVector,
         Vector256<byte> highMaskVector,
         Vector256<byte> lowNibbleMask)
     {
-        var window = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, inputOffset));
+        var window = MemoryMarshal.Read<Vector256<byte>>(input[inputOffset..]);
         var low = Avx2.And(window, lowNibbleMask);
         var high = Avx2.And(
             Avx2.ShiftRightLogical(window.AsUInt16(), 4).AsByte(),

@@ -2,6 +2,10 @@
 
 ## Unreleased checked category and folded searches (0.4.0-scalar.51-dev)
 
+- Replace two packed multi-literal search SIMD load sites with checked suffix
+  reads, preserving nibble masks, candidate order, tails and allocations. One
+  affected public Count comparison fits the10% allowance; bounds guards and
+  larger code remain explicit. Immutable scalar.50 is unchanged.
 - Derive PythonRe's lazy FullMatch program from existing scalar instructions,
   preserving its end-anchor/backtracking behavior and sharing immutable tables.
   Remove the second AST conversion and retained parse-tree closure. Keep cold

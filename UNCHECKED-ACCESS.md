@@ -19,8 +19,8 @@ evidence; the revised allowance does not designate conversions automatically.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 25 sites across all shipped projects: **23 Core
-sites in 10 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 23 sites across all shipped projects: **21 Core
+sites in 9 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -42,7 +42,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
 | AsciiSearch /2 | General folded-loop callers pass equal-length admitted slices; each iteration reserves eight literal bytes. The checked long-loop prototype exceeded10% on an affected public workload. |
-| PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. Checked shared-helper conversion exceeds10% on width8 public Count; retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
@@ -168,6 +167,23 @@ scalar/case-folding and original resource/interruption checks pass: CoreRelease4
 Debug128 and PythonRe179 plus174 folding checks. Evidence:
 artifacts/folded-search-checked-20261015/. Full package/platform checks remain
 batched; no new package or benchmark Status is designated.
+
+The packed multi-literal finder now uses checked suffix spans for its128/256-bit
+loads. Its AVX helper receives the subject span; mask offsets, nibble shuffles,
+pending candidates, verification, scalar tails and allocations remain. Public
+Count-only audits separately compile the finder for the38-byte SSE subject,
+wide Chinese hit/miss subjects and folded ASCII hit/miss families. Release FullOpts
+code grows1275→1420 bytes on Linux and retains bounds guards.
+
+One70-second-capped public before/after comparison completes with affected
+ordinary/compiled medians about-5.2% to+3.2%, within the10% allowance. Unchanged
+literal controls move-0.1% to+0.5%; the all-four-finite control moves+1.5%.
+Allocations remain0B and112B respectively. Samples exceed33ms; some compiled
+folded-hit samples spread36–45%, so no exact parity or general speedup is claimed.
+No confirmation or additional variant is needed. Candidate ordering, every
+vector lane/tail, borrowed offsets0/1/17/31, scalar/folding and resource checks
+pass. Evidence: artifacts/packed-search-checked-20261015/. Full package/platform
+qualification remains batched; immutable scalar.50 is unchanged.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,
