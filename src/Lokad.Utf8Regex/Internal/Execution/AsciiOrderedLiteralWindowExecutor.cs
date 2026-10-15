@@ -172,7 +172,6 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
         var minimumMatchStart = 0;
         var minimumTrailingStart = plan.LeadingLiteralUtf8.Length + plan.GapLeadingSeparatorMinCount;
         var offset = 0;
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
 
         // Candidate correlation and high-bit inspection share the first load. Keep
         // scanning after matches so a successful result also proves the whole input ASCII.
@@ -184,13 +183,13 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
             while (offset <= finalVectorStart)
             {
                 budget.Step();
-                var values = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                var values = MemoryMarshal.Read<Vector256<byte>>(input[offset..]);
                 if (values.ExtractMostSignificantBits() != 0)
                 {
                     return false;
                 }
 
-                var lastValues = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset + lastTrailingIndex));
+                var lastValues = MemoryMarshal.Read<Vector256<byte>>(input[(offset + lastTrailingIndex)..]);
                 var candidates = (Vector256.Equals(values, firstVector) & Vector256.Equals(lastValues, lastVector))
                     .ExtractMostSignificantBits();
                 CountSeparatorOnlySingleLiteralCandidates(
@@ -212,13 +211,13 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
             if (offset <= finalVectorStart)
             {
                 budget.Step();
-                var values = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                var values = MemoryMarshal.Read<Vector128<byte>>(input[offset..]);
                 if (values.ExtractMostSignificantBits() != 0)
                 {
                     return false;
                 }
 
-                var lastValues = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset + lastTrailingIndex));
+                var lastValues = MemoryMarshal.Read<Vector128<byte>>(input[(offset + lastTrailingIndex)..]);
                 var candidates = (Vector128.Equals(values, Vector128.Create(firstTrailing)) &
                                   Vector128.Equals(lastValues, Vector128.Create(lastTrailing)))
                     .ExtractMostSignificantBits();

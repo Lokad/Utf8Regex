@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 15 sites across all shipped projects: **13 Core
-sites in 7 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 11 sites across all shipped projects: **9 Core
+sites in 6 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -50,7 +50,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
-| AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission. Private boundary penalties were observed, but affected public coverage remains missing; unqualified. |
@@ -651,3 +650,24 @@ No new mode, variant, package or timing follows. The successful-match branch
 reloads the vector window after every match; mask reuse or whole BCL sequence
 counting is only a separately recorded, unmeasured future opportunity. Evidence:
 artifacts/correlated-count-block-checked-20261015/.
+
+The separator-only ordered-window Count conversion is accepted. Checked suffix
+MemoryMarshal.Read replaces both128-bit and both256-bit loads and removes the
+origin reference. Correlated first/last bytes, candidate ordering, scalar tails,
+full-input ASCII proof after successful matches, Unicode fallback and original
+budget.Step checkpoints remain. Public Count-only probes execute the helper;
+a31-byte subject excludes256-bit blocks and reaches the128-bit branch.
+
+One bounded quiet-VM pair covers dense hits, misses, near misses, the short SSE
+subject and Unicode fallback, ordinary/compiled, with unchanged literal and
+all-four-finite controls. Larger affected medians stay-0.67..+1.65%. A short
+compiled+16.27% row has roughly20%spread; the single targeted reversed-first
+confirmation gives short ordinary-1.80%/compiled-1.68%, with2–3%spreads. It does
+not reproduce the penalty. Confirmation controls move+4.38/+2.97% and remain
+noisy, so no exact equivalence or general speedup is claimed. Allocations stay
+0B/112B. All initial samples exceed36ms, confirmation88ms. Guards and larger
+code remain: Windows2060->2178B/Linux1760->1858B. CoreRelease709/Debug418 and
+sourceguards4 pass, including candidate lanes, Unicode whitespace, malformed
+suffix after an ASCII match, ranges, resource and original interruption checks.
+No additional variant, timing or package replay follows. Evidence:
+artifacts/ordered-window-checked-20261015/.

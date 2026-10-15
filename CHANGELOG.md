@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Check the four128/256-bit reads in separator-only ordered-window Count.
+  Preserve whole-input ASCII validation, candidate order, tails, Unicode fallback
+  and budget checkpoints. Focused public costs fit the10% allowance; the fixed
+  cumulative delivery gate remains unfinished.
 - Use a checked span read in the common UTF-8 validation drain, preserving SIMD,
   adaptive masks, continuation carry and buffer-work checkpoints. Focused public
   byte replacement and Count costs fit the10% allowance with unchanged allocations.
