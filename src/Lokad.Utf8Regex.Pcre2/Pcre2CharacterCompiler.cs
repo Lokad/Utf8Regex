@@ -1315,10 +1315,8 @@ internal sealed class Pcre2CharacterParser
             }
 
             moved = true;
-            while (_offset < _pattern.Length && _pattern[_offset] is not ('\r' or '\n'))
-            {
-                _offset++;
-            }
+            Pcre2PatternCodeScan.TrySkipExtendedComment(_pattern, ref _offset, true, _request.Settings.Newline);
+            _offset++;
         }
 
         return moved;

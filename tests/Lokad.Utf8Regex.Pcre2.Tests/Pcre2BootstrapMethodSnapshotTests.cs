@@ -21,7 +21,7 @@ public sealed class Pcre2BootstrapMethodSnapshotTests
     {
         var source = File.ReadAllText(FindRepositoryFile("src", "Lokad.Utf8Regex.Pcre2", "Pcre2CompileValidator.cs"));
 
-        Assert.Contains("ValidateStructure(pattern)", source, StringComparison.Ordinal);
+        Assert.Contains("ValidateStructure(pattern, options, compileSettings.Newline)", source, StringComparison.Ordinal);
         Assert.DoesNotContain("pattern ==", source, StringComparison.Ordinal);
         Assert.DoesNotContain("pattern is @", source, StringComparison.Ordinal);
     }

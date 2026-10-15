@@ -117,7 +117,8 @@ public sealed class Pcre2ValidationWorkTests
     [InlineData(false)] [InlineData(true)]
     public void EveryValidationPassAndRescanRetainsParentInterruption(bool timeout)
     {
-        foreach (var pattern in new[] { "(a)(?#ignored)[b]", "[" + string.Concat(Enumerable.Repeat("[:", 8)),
+        foreach (var pattern in new[] { "(a)(?#ignored)[b]", "(?x)#" + new string('x', 8192) + "(?C)\n(a)",
+            "[" + string.Concat(Enumerable.Repeat("[:", 8)),
             string.Concat(Enumerable.Repeat("(*X", 8)) })
         {
             var checkpoints = 0;
@@ -158,7 +159,7 @@ public sealed class Pcre2ValidationWorkTests
     {
         switch (entry)
         {
-            case 0: _ = Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C"); break;
+            case 0: _ = Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", Pcre2CompileOptions.None, Pcre2NewlineConvention.Default); break;
             case 1: Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf); break;
             default: Pcre2CompileValidator.ValidatePattern(pattern, Pcre2CompileOptions.None, default); break;
         }

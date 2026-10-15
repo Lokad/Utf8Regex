@@ -70,57 +70,57 @@ internal static class Pcre2CompileValidator
     // Pattern-dependent scans stay behind strict decoding/construction admission.
     internal static void ValidatePattern(string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings)
     {
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C"))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);
         }
 
-        if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false))
+        if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"Using \C is disabled by this library profile.", Pcre2ErrorKind.BackslashCDisabled);
         }
 
         if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Allow &&
-            ContainsBackslashC(pattern, true))
+            ContainsBackslashC(pattern, true, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"\C is not allowed in UTF lookbehind.", Pcre2ErrorKind.BackslashCInUtfLookbehind);
         }
 
-        if (!compileSettings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern))
+        if (!compileSettings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"\K is not allowed in lookarounds (but see PCRE2_EXTRA_ALLOW_LOOKAROUND_BSK)", Pcre2ErrorKind.LookaroundBackslashKDisabled);
         }
 
-        if (ContainsBackslashCInCharacterClass(pattern))
+        if (ContainsBackslashCInCharacterClass(pattern, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
         }
 
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?X)") || Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?z)"))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?X)", options, compileSettings.Newline) || Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?z)", options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("Invalid character after '(?'.", Pcre2ErrorKind.InvalidAfterParensQuery);
         }
 
-        if (Pcre2PatternCodeScan.ContainsNonClassCodeText(pattern, @"\idef"))
+        if (Pcre2PatternCodeScan.ContainsNonClassCodeText(pattern, @"\idef", options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"Unrecognized escape sequence '\i'.", Pcre2ErrorKind.UnrecognizedEscape);
         }
 
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{5,4}"))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{5,4}", options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("Numbers out of order in quantifier.", Pcre2ErrorKind.QuantifierNumbersOutOfOrder);
         }
 
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{65536}"))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{65536}", options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("Quantifier is too large.", Pcre2ErrorKind.QuantifierTooBig);
         }
 
         Pcre2CaptureNameValidator.Validate(pattern, options, compileSettings.Newline);
-        ValidateStructure(pattern);
+        ValidateStructure(pattern, options, compileSettings.Newline);
     }
 
-    private static void ValidateStructure(string pattern)
+    private static void ValidateStructure(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var groupDepth = 0;
@@ -128,6 +128,8 @@ internal static class Pcre2CompileValidator
         var classHasAtom = false;
         var classStart = false;
         var quoted = false;
+        byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
+        var extendedScopes = new Stack<byte>();
         var previousWasZeroWidth = true; // No repeatable item at pattern entry.
         for (var offset = 0; offset < pattern.Length; offset++)
         {
@@ -147,6 +149,7 @@ internal static class Pcre2CompileValidator
 
             if (inCharacterClass)
             {
+                if (extended == 2 && character is ' ' or '\t') continue;
                 if (classStart && character == '^') { classStart = false; continue; }
                 if (character == ']' && classHasAtom)
                 {
@@ -175,10 +178,13 @@ internal static class Pcre2CompileValidator
 
                 // Endpoint ordering belongs to the scalar class parser. Raw
                 // UTF-16 characters and escape spellings are not endpoint values.
+                if (character == '[') Pcre2PatternCodeScan.TrySkipPosixClassToken(pattern, ref offset);
                 classHasAtom = true;
                 classStart = false;
                 continue;
             }
+
+            if (!inCharacterClass && Pcre2PatternCodeScan.TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
 
             if (character == '\\')
             {
@@ -221,6 +227,7 @@ internal static class Pcre2CompileValidator
 
             if (character == '(')
             {
+                if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
                 groupDepth++;
                 previousWasZeroWidth = false;
                 continue;
@@ -228,6 +235,7 @@ internal static class Pcre2CompileValidator
 
             if (character == ')')
             {
+                if (extendedScopes.TryPop(out var previous)) extended = previous;
                 if (groupDepth > 0)
                 {
                     groupDepth--;
@@ -256,13 +264,17 @@ internal static class Pcre2CompileValidator
         }
     }
 
-    private static bool ContainsLookaroundBackslashK(string pattern)
+    private static bool ContainsLookaroundBackslashK(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var parentheses = new Stack<bool>();
         var lookaroundDepth = 0;
         var inCharacterClass = false;
+        var classHasAtom = false;
+        var classStart = false;
         var quoted = false;
+        byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
+        var extendedScopes = new Stack<byte>();
         for (var offset = 0; offset < pattern.Length; offset++)
         {
             var character = pattern[offset];
@@ -273,9 +285,12 @@ internal static class Pcre2CompileValidator
                     quoted = false;
                     offset++;
                 }
+                else if (inCharacterClass) { classHasAtom = true; classStart = false; }
 
                 continue;
             }
+
+            if (!inCharacterClass && Pcre2PatternCodeScan.TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
 
             if (character == '\\')
             {
@@ -289,6 +304,8 @@ internal static class Pcre2CompileValidator
                 {
                     quoted = true;
                 }
+                else if (inCharacterClass && offset + 1 < pattern.Length && pattern[offset + 1] != 'E')
+                { classHasAtom = true; classStart = false; }
 
                 offset++;
                 continue;
@@ -296,18 +313,26 @@ internal static class Pcre2CompileValidator
 
             if (inCharacterClass)
             {
-                inCharacterClass = character != ']';
+                if (extended == 2 && character is ' ' or '\t') continue;
+                if (classStart && character == '^') { classStart = false; continue; }
+                classStart = false;
+                if (character == ']' && classHasAtom) { inCharacterClass = false; continue; }
+                classHasAtom = true;
+                if (character == '[') Pcre2PatternCodeScan.TrySkipPosixClassToken(pattern, ref offset);
                 continue;
             }
 
             if (character == '[')
             {
                 inCharacterClass = true;
+                classHasAtom = false;
+                classStart = true;
                 continue;
             }
 
             if (character != '(')
             {
+                if (character == ')' && extendedScopes.TryPop(out var previous)) extended = previous;
                 if (character == ')' && parentheses.TryPop(out var wasLookaround) && wasLookaround)
                 {
                     lookaroundDepth--;
@@ -333,6 +358,7 @@ internal static class Pcre2CompileValidator
                 pattern.AsSpan(offset).StartsWith("(?!", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
+            if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
             parentheses.Push(isLookaround);
             if (isLookaround)
             {
@@ -343,13 +369,17 @@ internal static class Pcre2CompileValidator
         return false;
     }
 
-    private static bool ContainsBackslashC(string pattern, bool onlyInLookbehind)
+    private static bool ContainsBackslashC(string pattern, bool onlyInLookbehind, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var parentheses = new Stack<bool>();
         var lookbehindDepth = 0;
         var inCharacterClass = false;
+        var classHasAtom = false;
+        var classStart = false;
         var quoted = false;
+        byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
+        var extendedScopes = new Stack<byte>();
         for (var offset = 0; offset < pattern.Length; offset++)
         {
             var character = pattern[offset];
@@ -360,9 +390,12 @@ internal static class Pcre2CompileValidator
                     quoted = false;
                     offset++;
                 }
+                else if (inCharacterClass) { classHasAtom = true; classStart = false; }
 
                 continue;
             }
+
+            if (!inCharacterClass && Pcre2PatternCodeScan.TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
 
             if (character == '\\')
             {
@@ -383,23 +416,33 @@ internal static class Pcre2CompileValidator
                     return true;
                 }
 
+                if (inCharacterClass && escape != 'E') { classHasAtom = true; classStart = false; }
+
                 continue;
             }
 
             if (inCharacterClass)
             {
-                inCharacterClass = character != ']';
+                if (extended == 2 && character is ' ' or '\t') continue;
+                if (classStart && character == '^') { classStart = false; continue; }
+                classStart = false;
+                if (character == ']' && classHasAtom) { inCharacterClass = false; continue; }
+                classHasAtom = true;
+                if (character == '[') Pcre2PatternCodeScan.TrySkipPosixClassToken(pattern, ref offset);
                 continue;
             }
 
             if (character == '[')
             {
                 inCharacterClass = true;
+                classHasAtom = false;
+                classStart = true;
                 continue;
             }
 
             if (character == ')' && parentheses.TryPop(out var wasLookbehind))
             {
+                if (extendedScopes.TryPop(out var previous)) extended = previous;
                 if (wasLookbehind)
                 {
                     lookbehindDepth--;
@@ -429,6 +472,7 @@ internal static class Pcre2CompileValidator
 
             var isLookbehind = pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
+            if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
             parentheses.Push(isLookbehind);
             if (isLookbehind)
             {
@@ -439,11 +483,15 @@ internal static class Pcre2CompileValidator
         return false;
     }
 
-    private static bool ContainsBackslashCInCharacterClass(string pattern)
+    private static bool ContainsBackslashCInCharacterClass(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var inCharacterClass = false;
+        var classHasAtom = false;
+        var classStart = false;
         var quoted = false;
+        byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
+        var extendedScopes = new Stack<byte>();
         for (var offset = 0; offset < pattern.Length; offset++)
         {
             var character = pattern[offset];
@@ -454,9 +502,12 @@ internal static class Pcre2CompileValidator
                     quoted = false;
                     offset++;
                 }
+                else if (inCharacterClass) { classHasAtom = true; classStart = false; }
 
                 continue;
             }
+
+            if (!inCharacterClass && Pcre2PatternCodeScan.TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
 
             if (character == '\\')
             {
@@ -475,6 +526,8 @@ internal static class Pcre2CompileValidator
                     return true;
                 }
 
+                if (inCharacterClass && escape is not ('Q' or 'E')) { classHasAtom = true; classStart = false; }
+
                 continue;
             }
 
@@ -483,14 +536,25 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
-            if (character == '[')
+            if (!inCharacterClass && character == '(')
             {
-                inCharacterClass = true;
+                if (TrySkipParenthesizedComment(pattern, ref offset)) { offset--; continue; }
+                Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes);
+                continue;
             }
-            else if (character == ']')
+            if (!inCharacterClass && character == ')' && extendedScopes.TryPop(out var previous)) extended = previous;
+
+            if (inCharacterClass)
             {
-                inCharacterClass = false;
+                if (extended == 2 && character is ' ' or '\t') continue;
+                if (classStart && character == '^') { classStart = false; continue; }
+                classStart = false;
+                if (character == ']' && classHasAtom) { inCharacterClass = false; continue; }
+                classHasAtom = true;
+                if (character == '[') Pcre2PatternCodeScan.TrySkipPosixClassToken(pattern, ref offset);
+                continue;
             }
+            if (character == '[') { inCharacterClass = true; classHasAtom = false; classStart = true; }
         }
 
         return false;

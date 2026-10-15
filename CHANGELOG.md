@@ -2,6 +2,12 @@
 
 ## PCRE2 development after scalar.53
 
+- Honor extended-mode comments consistently in syntax/declaration/structural
+  guards and parsers. Share bounded comment, option-scope and POSIX-token logic;
+  preserve global/scoped x/xx, configured newlines, literal hashes and real
+  restrictions after class boundaries. Fix false rejection of commented syntax
+  and lost captures after Unicode/NUL terminators. Curated native UTF-8 comparisons
+  agree; scoped reset-option execution remains explicitly unserved.
 - Enforce the selected eight-bit profile's metadata limits before backend
   selection: capture names at most 128 UTF-8 bytes, verb labels at most 255.
   Fix over-admission through UTF-16 length checks and backend declines. Preserve

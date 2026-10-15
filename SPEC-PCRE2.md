@@ -49,6 +49,15 @@ not become pattern syntax. Regex-body constructs such as `(*atomic:...)` and
 syntax after a label remain subject to normal validation. Lexical passes share
 the recognized-label skip and its bounded construction-work/interruption checks.
 
+Extended-mode `#` comments are ignored by admission guards and parsers through
+their configured newline terminator, including CRLF, Unicode and NUL conventions.
+Global and scoped `x`/`xx` changes restore the inherited mode when their group
+ends; class whitespace under `xx` does not turn a literal hash into a comment.
+Escaped/quoted hashes, classes and control-verb labels retain literal meaning.
+Ignored text cannot trigger syntax restrictions, and real syntax after comments
+or classes remains checked. Comment scanning borrows the original construction
+work/deadline/cancellation owner at bounded checkpoints.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

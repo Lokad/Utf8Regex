@@ -46,6 +46,15 @@ references and MARK; quoted, class, comment and lookbehind bodies retain their
 meaning. Bounded checks share the existing construction-work/interruption owner.
 This is a post53 source correction; earlier immutable packages retain their scope.
 
+Development syntax guards now honor extended-mode comments and scoped `x`/`xx`
+changes, including configured CRLF, Unicode and NUL newline terminators. Ignored
+escapes, callouts, brackets and option text no longer cause false compilation
+errors. Literal hashes and actual syntax after classes/comments remain checked;
+the existing parsers share the same bounded comment skipper. This also preserves
+captures after non-ASCII/NUL comment terminators. Scoped reset-option execution
+such as `(?^:...)` remains explicitly unserved; lexical recognition does not imply
+matching support. Existing construction authority and immutable packages remain.
+
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges

@@ -11,8 +11,8 @@ internal static class Pcre2CaptureNameValidator
     internal static void Validate(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
-        var extended = (options & (Pcre2CompileOptions.Extended | Pcre2CompileOptions.ExtendedMore)) != 0;
-        var scopes = new Stack<bool>();
+        byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
+        var scopes = new Stack<byte>();
         var quoted = false;
         var inClass = false;
         var classHasAtom = false;
@@ -37,44 +37,16 @@ internal static class Pcre2CaptureNameValidator
             }
             if (inClass)
             {
+                if (extended == 2 && character is ' ' or '\t') continue;
                 if (classStart && character == '^') { classStart = false; continue; }
                 classStart = false;
                 if (character == ']' && classHasAtom) { inClass = false; continue; }
-                // A POSIX class/collation token's inner ] does not end the class.
-                if (character == '[' && offset + 1 < pattern.Length && pattern[offset + 1] is ':' or '.' or '=')
-                {
-                    var marker = pattern[offset + 1];
-                    for (var end = offset + 2; end + 1 < pattern.Length; end++)
-                    {
-                        // An unterminated token can make later '[' positions
-                        // revisit this suffix. Admit each bounded rescan block.
-                        if (((end - offset - 2) & 2047) == 0)
-                            Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, pattern.Length - end - 1));
-                        if (pattern[end] == marker && pattern[end + 1] == ']') { offset = end + 1; break; }
-                    }
-                }
+                if (character == '[') Pcre2PatternCodeScan.TrySkipPosixClassToken(pattern, ref offset);
                 classHasAtom = true;
                 continue;
             }
             if (character == '[') { inClass = true; classHasAtom = false; classStart = true; continue; }
-            if (extended && character == '#')
-            {
-                for (; offset < pattern.Length; offset++)
-                {
-                    character = pattern[offset];
-                    var atNewline = newline switch
-                    {
-                        Pcre2NewlineConvention.Cr => character == '\r',
-                        Pcre2NewlineConvention.Crlf => character == '\r' && offset + 1 < pattern.Length && pattern[offset + 1] == '\n',
-                        Pcre2NewlineConvention.Any => character is '\r' or '\n' or '\v' or '\f' or '\u0085' or '\u2028' or '\u2029',
-                        Pcre2NewlineConvention.AnyCrlf => character is '\r' or '\n',
-                        Pcre2NewlineConvention.Nul => character == '\0',
-                        _ => character == '\n',
-                    };
-                    if (atNewline) break;
-                }
-                continue;
-            }
+            if (Pcre2PatternCodeScan.TrySkipExtendedComment(pattern, ref offset, extended != 0, newline)) continue;
             if (character == ')') { if (scopes.Count != 0) extended = scopes.Pop(); continue; }
             if (character != '(') continue;
             var groupStart = offset;
@@ -112,32 +84,7 @@ internal static class Pcre2CaptureNameValidator
                         Pcre2ErrorKind.InvalidAfterParensQuery);
             }
 
-            // Track x/xx settings by group scope, including global directives.
-            // The real parser retains ownership of other options and syntax.
-            if (tail.StartsWith("(?", StringComparison.Ordinal))
-            {
-                var end = offset + 2;
-                var nextExtended = extended;
-                var enable = true;
-                var reset = end < pattern.Length && pattern[end] == '^';
-                if (reset) { nextExtended = false; end++; }
-                var optionStart = end;
-                for (; end < pattern.Length; end++)
-                {
-                    var flag = pattern[end];
-                    if (flag == '-') { enable = false; continue; }
-                    if (!char.IsAsciiLetter(flag)) break;
-                    if (flag == 'x') nextExtended = enable;
-                }
-                if ((end > optionStart || reset) && end < pattern.Length && pattern[end] is ':' or ')')
-                {
-                    if (pattern[end] == ':') scopes.Push(extended);
-                    extended = nextExtended;
-                    offset = end;
-                    continue;
-                }
-            }
-            scopes.Push(extended);
+            Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, scopes);
         }
     }
 
