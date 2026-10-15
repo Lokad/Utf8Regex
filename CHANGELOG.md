@@ -2,6 +2,9 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Use a checked span read in the common UTF-8 validation drain, preserving SIMD,
+  adaptive masks, continuation carry and buffer-work checkpoints. Focused public
+  byte replacement and Count costs fit the10% allowance with unchanged allocations.
 - Replace the general folded word loop with checked BCL ASCII equality while
   retaining checked byte folding for non-ASCII needles and the existing short
   specialization. Remove Core's remaining Unsafe.ReadUnaligned references.

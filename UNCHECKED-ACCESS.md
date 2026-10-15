@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 16 sites across all shipped projects: **14 Core
-sites in 8 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 15 sites across all shipped projects: **13 Core
+sites in 7 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -57,7 +57,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 | Utf8LiteralCompiledEngineRuntime /3 | Production correlated offsets0/1/3 reserve a complete literal plus31 starts. The three diagnostic loads are now checked; these separate production loads remain. |
-| Utf8ValidationCore /1 | The common UTF-8 drain admits full32-byte blocks from scalar-boundary offsets. The separate ASCII drain now uses checked BCL range search, removing its two loads and custom loop. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
 stack-only borrowed projection authority. `_isSlice` selects the populated arm
@@ -611,3 +610,23 @@ not establish the requested performance gate or a causal regression. Production
 is restored in that historical trial; no equivalence claim follows from it.
 The complete short comparator was subsequently accepted under the revised
 public-cost gate above. Evidence: artifacts/literal-fixed-byte-index-20261014/.
+
+The common UTF-8 drain's final unchecked load is now a checked suffix
+MemoryMarshal.Read<Vector256<byte>>, with its ref origin and unused compiler
+services import removed. Adaptive ASCII/two-/three-byte SIMD masks, carry,
+constrained/four-byte fallback, scalar/error boundaries, allocations and original
+invocation checkpoints/admission remain. Bounds guards remain; helper code grows
+Windows1396->1475 bytes and Linux1323->1354.
+
+Real public replacement-only and Count-only probes reach the changed helper.
+One bounded quiet-VM FullOpts pair covers ASCII, two-byte, CJK, mixed and late
+Unicode replacement output with unlimited and all-four-finite policies, retained
+results, native CJK/late-ASCII Count and an unchanged exact-literal control.
+Replacement medians move-0.83..+2.73%; native Count+3.98/+5.33%; control+2.10%.
+Allocations are identical in every lane. Samples exceed44ms and most spreads
+are below13%, without an exact-equivalence or broad-speedup claim. Release421,
+Debug130, output/source checks273 and PythonRe468 pass. No confirmation, additional
+variant or package replay follows. This removes one explicit site and finishes
+explicit unchecked reads in Utf8ValidationCore; other Core sites, SizeOf agreement
+and the fixed-original cumulative gate remain open. Evidence:
+artifacts/common-utf8-drain-checked-20261015/.

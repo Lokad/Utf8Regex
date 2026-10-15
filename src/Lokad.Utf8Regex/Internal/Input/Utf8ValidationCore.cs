@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
 
@@ -241,7 +240,6 @@ internal static class Utf8ValidationCore
     {
         if (Vector256.IsHardwareAccelerated)
         {
-            ref var inputRef = ref MemoryMarshal.GetReference(input);
             var lastVectorStart = input.Length - Vector256<byte>.Count;
             var expectedContinuationCarry = 0u;
             var includeSafeThreeByte = drainSafeThreeByte;
@@ -259,7 +257,7 @@ internal static class Utf8ValidationCore
 
             while (offset <= lastVectorStart)
             {
-                var current = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                var current = MemoryMarshal.Read<Vector256<byte>>(input[offset..]);
                 var nonAsciiBits = current.ExtractMostSignificantBits();
                 if (nonAsciiBits == 0 && expectedContinuationCarry == 0)
                 {
