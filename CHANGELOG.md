@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Remove the last generated inline-array staging in Core query preparation.
+  Check the already bounded case-pair mask directly; preserve grammar, charges
+  and allocations. The Core DLL no longer references Unsafe.As or Unsafe.AsRef;
+  other unchecked reads and final delivery qualification remain unfinished.
 - Reuse the discovered ASCII prefix during unmetered UTF-8 analysis, validating
   only the remaining suffix. Preserve whole-input byte/UTF-16 lengths, Unicode
   flags and original malformed-byte offsets without changing invocation controls.

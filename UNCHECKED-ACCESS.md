@@ -66,8 +66,24 @@ before access. This is an invariant, not a claim of checked replacement or a
 reason to delay the core/PythonRe delivery boundary. Compiler-generated Core
 inline-array parameter/fold staging is now converted; its historical small
 construction penalties were rejected under the superseded zero-regression rule.
-Three generated helper calls remain in Utf8FallbackTreeQuery.TryShapeAtom; keep
-that inventory separate from the sixteen explicit Core source sites.
+No generated inline-array helper calls remain in the current Core DLL. The last
+three calls in Utf8FallbackTreeQuery.TryShapeAtom are removed by testing both
+case variants in the already projected positive mask of at most two members.
+The same DLL has no Unsafe.As or Unsafe.AsRef references. Sixteen explicit Core
+source sites and the stricter downstream SizeOf acceptance issue remain separate.
+
+The query-mask simplification preserves exact-pair eligibility, construction work,
+admission, aliases and allocations without staging a temporary pair. Real public
+query constructors compile the changed helper. One bounded quiet-VM Release
+FullOpts comparison uses fixed sixteen-instance samples over digits/hex/scoped
+alias profiles and an unchanged plain control. Affected construction medians move
+-7.94%..-11.69%, control+0.02%, with identical allocations. Some samples are short
+(10–23ms) or noisy; no exact-equivalence/general-speedup claim follows. Matching
+algorithms are unchanged. Windows helper code1403→1430 bytes, Linux1374→1420;
+larger code does not imply a public penalty. Existing independent query grammar,
+cutoff, capture, culture, cancellation and source checks pass in Release/Debug.
+No confirmation, package qualification or extra mode follows. Evidence:
+artifacts/query-pair-checked-20261015/.
 
 The short-literal comparator is accepted under the revised 10% public-cost gate.
 Its complete candidate admission retains the scalar.48 end-guard repair. Checked

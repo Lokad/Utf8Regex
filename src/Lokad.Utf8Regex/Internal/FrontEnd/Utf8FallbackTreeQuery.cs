@@ -133,7 +133,10 @@ internal static class Utf8FallbackTreeQuery
         Utf8ConstructionScope.ChargeWork(1);
         value = (byte)(first >= 'A' && first <= 'Z' ? first | 32 : first);
         if ((uint)((value | 32) - 'a') <= 'z' - 'a')
-            return mask == AsciiCharClass.FromBytes([(byte)(value & ~32), (byte)(value | 32)]);
+        {
+            // At most two members remain, so both case variants identify the exact pair.
+            return mask.Contains((byte)(value & ~32)) && mask.Contains((byte)(value | 32));
+        }
         return first != '\n' && mask.Count == 1;
     }
 
