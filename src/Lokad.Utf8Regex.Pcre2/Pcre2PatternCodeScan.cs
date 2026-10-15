@@ -2,7 +2,9 @@ using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// PLAN.md C11: native PCRE2 reads patterns lexically, so raw substring scans must skip character classes, \Q...\E quotes, and (?#...) comments, plus escaped characters: [(?C], \Q(?C\E, (?#(?C)), and \(?C are literals, while only a code-position (?C is a callout. Extended (#) comments are not tracked here; that residual gap is shared with the lookaround and backslash-C scans.
+// Native PCRE2 reads patterns lexically. Guards skip classes, quotes, comments,
+// escapes and recognized literal verb labels. Regex-body constructs still need
+// validation. Extended (#) comments are not tracked by these code-text guards.
 internal static class Pcre2PatternCodeScan
 {
     public static bool ContainsCodeText(string pattern, string text)
@@ -111,6 +113,11 @@ internal static class Pcre2PatternCodeScan
                 continue;
             }
 
+            if (character == '(' && TrySkipControlVerbLabel(pattern, ref offset))
+            {
+                continue;
+            }
+
             if (pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
             {
                 return true;
@@ -118,5 +125,41 @@ internal static class Pcre2PatternCodeScan
         }
 
         return false;
+    }
+
+    // Offset enters at '(' and, on success, leaves at the closing ')'. The
+    // selected profile has no ALT_VERBNAMES: a label is unprocessed text. Do not
+    // skip regex-body spellings such as (*atomic:...), even if unserved elsewhere.
+    internal static bool TrySkipControlVerbLabel(string pattern, ref int offset)
+    {
+        if (!pattern.AsSpan(offset).StartsWith("(*", StringComparison.Ordinal)) return false;
+        var end = FindVerbEnd(pattern, offset + 2);
+        if (end < 0) return false;
+        var content = pattern.AsSpan(offset + 2, end - offset - 2);
+        Utf8ConstructionScope.ChargeWork((ulong)content.Length);
+        var colon = content.IndexOf(':');
+        var verb = colon < 0 ? content : content[..colon];
+        if (!verb.IsEmpty && !verb.Equals("MARK", StringComparison.OrdinalIgnoreCase) &&
+            !verb.Equals("PRUNE", StringComparison.OrdinalIgnoreCase) && !verb.Equals("THEN", StringComparison.OrdinalIgnoreCase) &&
+            !verb.Equals("SKIP", StringComparison.OrdinalIgnoreCase) && !verb.Equals("COMMIT", StringComparison.OrdinalIgnoreCase) &&
+            !verb.Equals("FAIL", StringComparison.OrdinalIgnoreCase) && !verb.Equals("F", StringComparison.OrdinalIgnoreCase) &&
+            !verb.Equals("ACCEPT", StringComparison.OrdinalIgnoreCase)) return false;
+        offset = end;
+        return true;
+    }
+
+    private static int FindVerbEnd(string pattern, int start)
+    {
+        // Unknown or unterminated verbs can revisit suffixes. Bound each search
+        // under the original construction owner while keeping SIMD IndexOf.
+        for (var offset = start; offset < pattern.Length;)
+        {
+            var count = Math.Min(2048, pattern.Length - offset);
+            Utf8ConstructionScope.ChargeWork((ulong)count);
+            var end = pattern.AsSpan(offset, count).IndexOf(')');
+            if (end >= 0) return offset + end;
+            offset += count;
+        }
+        return -1;
     }
 }

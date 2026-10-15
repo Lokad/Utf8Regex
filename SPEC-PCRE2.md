@@ -34,6 +34,13 @@ endpoint. Invalid or reversed ranges throw `Pcre2CompileException` with the
 existing `ClassRangeOrder` kind. Leading and trailing literal hyphens retain
 their normal class meaning.
 
+Recognized backtracking-control verb labels are literal text ending at the first
+closing parenthesis; this profile does not expose `ALT_VERBNAMES`. Parentheses,
+brackets, escape spellings and callout/quantifier-looking text inside a label do
+not become pattern syntax. Regex-body constructs such as `(*atomic:...)` and
+syntax after a label remain subject to normal validation. Lexical passes share
+the recognized-label skip and its bounded construction-work/interruption checks.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

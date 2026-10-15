@@ -2,6 +2,12 @@
 
 ## PCRE2 development after the Core/PythonRe scalar.52 boundary
 
+- Keep recognized control-verb labels literal across structural and syntax guards.
+  Share the existing bounded label scanner instead of interpreting parentheses,
+  brackets, escape or callout spellings in names. Preserve actual regex-body and
+  following syntax checks, original construction authority, captures and MARK.
+  Native10.47 controls, complete affected Release5227 and focused Debug140 pass;
+  no package designation or Core/PythonRe52 changes follow.
 - Fix valid raw supplementary and escaped class ranges rejected by a duplicate
   UTF-16 structural check. The existing scalar parser now owns endpoint order;
   remove the redundant state/helper. Reject non-scalar predicate endpoints with

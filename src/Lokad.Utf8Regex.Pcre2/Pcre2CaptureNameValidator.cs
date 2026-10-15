@@ -84,23 +84,9 @@ internal static class Pcre2CaptureNameValidator
                 offset = end;
                 continue;
             }
-            if (tail.StartsWith("(*", StringComparison.Ordinal))
+            if (Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset))
             {
-                var end = FindVerbEnd(pattern, offset + 2);
-                if (end >= 0)
-                {
-                    var content = pattern.AsSpan(offset + 2, end - offset - 2);
-                    Utf8ConstructionScope.ChargeWork((ulong)content.Length);
-                    var colon = content.IndexOf(':');
-                    var verb = colon < 0 ? content : content[..colon];
-                    // Named control-verb arguments are text, not regex bodies.
-                    if (verb.IsEmpty || verb.Equals("MARK", StringComparison.OrdinalIgnoreCase) ||
-                        verb.Equals("PRUNE", StringComparison.OrdinalIgnoreCase) || verb.Equals("THEN", StringComparison.OrdinalIgnoreCase) ||
-                        verb.Equals("SKIP", StringComparison.OrdinalIgnoreCase) || verb.Equals("COMMIT", StringComparison.OrdinalIgnoreCase) ||
-                        verb.Equals("FAIL", StringComparison.OrdinalIgnoreCase) || verb.Equals("F", StringComparison.OrdinalIgnoreCase) ||
-                        verb.Equals("ACCEPT", StringComparison.OrdinalIgnoreCase))
-                    { offset = end; continue; }
-                }
+                continue;
             }
             var nameStart = tail.StartsWith("(?P<", StringComparison.Ordinal) ? offset + 4
                 : tail.StartsWith("(?<", StringComparison.Ordinal) || tail.StartsWith("(?'", StringComparison.Ordinal) ? offset + 3 : -1;
@@ -134,20 +120,5 @@ internal static class Pcre2CaptureNameValidator
             }
             scopes.Push(extended);
         }
-    }
-
-    private static int FindVerbEnd(string pattern, int start)
-    {
-        // Unknown or unterminated verbs need not advance the outer scanner.
-        // Keep SIMD IndexOf, bounding each repeated search under the same owner.
-        for (var offset = start; offset < pattern.Length;)
-        {
-            var count = Math.Min(2048, pattern.Length - offset);
-            Utf8ConstructionScope.ChargeWork((ulong)count);
-            var end = pattern.AsSpan(offset, count).IndexOf(')');
-            if (end >= 0) return offset + end;
-            offset += count;
-        }
-        return -1;
     }
 }

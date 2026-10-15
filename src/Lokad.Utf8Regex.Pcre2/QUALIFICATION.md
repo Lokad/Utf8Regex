@@ -19,15 +19,18 @@ Detached coherent packed consumers are qualified with `test-packaged-pcre2.ps1`.
 Published 0.3.0 remains the reported affected release; local development packages
 with that same version need isolated caches and an explicit source identity.
 
-Additional native-valid probes found existing quoted-class matching and
-parenthesized MARK-label structural gaps. Admission tests preserve their lexical
-meaning without claiming those execution shapes work or pinning the gaps as the
-desired semantics. These remain separate profile work, not numeric-capture fixes.
+Additional native-valid probes found quoted-class matching and parenthesized
+MARK-label structural gaps. Current source corrects the latter: shared lexical
+validation treats recognized verb labels as literal text while preserving checks
+in actual regex bodies and after labels. Native10.47 controls and focused tests
+record that source correction separately from immutable package qualification.
+Quoted classes remain separate profile work, not a numeric-capture fix.
 
 ## Package provenance enforcement (development, 2026-10-07)
 
-All three `test-packaged-*.ps1` flows rebuild the selected project graph before
-packing. Before detached tests, they require the NuSpec commit, embedded assembly
+The `test-packaged-*.ps1` flows build the affected dependency closure incrementally
+before explicit packing, or reuse matching producer binaries with `-SkipBuild`.
+Before detached tests, they require the NuSpec commit, embedded assembly
 revision and portable-PDB SourceLink mappings to agree with the captured HEAD;
 the PDB identity must also match the assembly. Metadata inspection does not load
 or execute package assemblies. `package-provenance.json` records payload hashes

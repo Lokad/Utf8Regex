@@ -24,6 +24,12 @@ use the existing `ClassRangeOrder` compile-error kind. This also rejects formerl
 admitted invalid forms such as `[\d-z]`. Earlier immutable package receipts retain
 their original coverage; this correction needs its own PCRE2 delivery boundary.
 
+Control-verb labels remain literal through validation, including parentheses,
+brackets and backslash/callout-looking spellings. For example,
+`(*MARK:(?<100>a)a` reports the label `(?<100>a` without declaring a capture.
+Actual regex bodies and text after labels retain syntax/resource checks. The
+profile does not enable `ALT_VERBNAMES` or change matching/capture ownership.
+
 The package does not bind to native PCRE2. Its only non-BCL implementation
 dependency is `Lokad.Utf8Regex`; there is no P/Invoke, native loader, RID
 payload, or external matcher executable.

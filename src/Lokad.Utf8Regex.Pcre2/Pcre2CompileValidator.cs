@@ -200,6 +200,12 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
+            if (character == '(' && Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset))
+            {
+                previousWasZeroWidth = false;
+                continue;
+            }
+
             if (character == '(')
             {
                 groupDepth++;
@@ -308,6 +314,8 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
+            if (Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset)) continue;
+
             var isLookaround = pattern.AsSpan(offset).StartsWith("(?=", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?!", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
@@ -404,6 +412,8 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
+            if (Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset)) continue;
+
             var isLookbehind = pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
             parentheses.Push(isLookbehind);
@@ -452,6 +462,11 @@ internal static class Pcre2CompileValidator
                     return true;
                 }
 
+                continue;
+            }
+
+            if (!inCharacterClass && character == '(' && Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset))
+            {
                 continue;
             }
 
