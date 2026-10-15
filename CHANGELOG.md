@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased anchored scalar search (0.4.0-scalar.50-dev)
+## Private scalar.50 Core/PythonRe candidate
+
+- Freeze the accepted scalar.50 source batch under a fresh immutable identity.
+  Package/platform, CPython and current-cost qualification belongs to its
+  delivery receipt. Preserve scalar.49 and all earlier package bytes.
 
 - Replace the fused ASCII exact-literal Count kernel's unchecked vector read
   with a checked span read. Retain SIMD, validation, candidate verification,
@@ -17,8 +21,10 @@
   2.8x with unchanged allocations. All-hit anchored Count costs about1.5–4.3% more;
   the extra input probe is charged, while skipped VM work/capacity disappears.
   Keep the shared Count loop small; no new mode or per-pattern state is added.
-- This source change is outside the immutable scalar.49 pair. The handoff and
-  benchmark evidence retain their original scopes; no new package is designated.
+- These changes are outside the immutable scalar.49 pair. Its handoff and
+  benchmark evidence retain their original scopes. The shared-scan experiment
+  was restored after failing to establish a material public gain; added native
+  ordering and scalar-boundary checks remain.
 
 ## Private scalar.49 Core/PythonRe candidate
 

@@ -20,7 +20,7 @@ public sealed class Utf8NativeFamilyInvocationTests
 
     public static IEnumerable<object[]> OrderCases()
     {
-        foreach (var pattern in new[] { "a|ab", "ab|a", "abcde|d", "d|abcde", "ab|cab", "cab|ab", @"\b(?:a-b|b|niño)\b", @"\b(?:café|caféteria|niño)\b", @"(?:café|café noir|niño)(?=!)" })
+        foreach (var pattern in new[] { "a|ab", "ab|a", "a|ab|abcde", "abcde|ab|a", "abcde|d", "d|abcde", "ab|cab", "cab|ab", "😀|😀é|中", "😀é|😀|中", @"\b(?:a-b|b|niño)\b", @"\b(?:café|caféteria|niño)\b", @"(?:café|café noir|niño)(?=!)" })
         foreach (var reverse in new[] { false, true })
         foreach (var folded in new[] { false, true })
         {
@@ -36,11 +36,11 @@ public sealed class Utf8NativeFamilyInvocationTests
         var options = RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None) |
             (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
         // Exercise reverse discovery with the same immutable family facts. Some
-        // public RTL front ends deliberately retain their unit semantic route.
+        // public RTL front ends deliberately retain their owned scalar route.
         var regex = new Utf8Regex(pattern, options & ~RegexOptions.RightToLeft);
         var plan = Prepared(regex).SearchPlan;
         Assert.NotNull(plan.AlternateLiteralsUtf8);
-        const string text = "abcde cab AB caféteria café noir! xa-b a-b b niño";
+        const string text = "abcde cab AB caféteria café noir! xa-b a-b b niño 😀é 😀 中";
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
@@ -63,6 +63,26 @@ public sealed class Utf8NativeFamilyInvocationTests
             reverse, ref invocation, out _, out var terminal));
         Assert.False(terminal);
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false, 2)] [InlineData(true, 2)]
+    [InlineData(false, 3)] [InlineData(true, 3)]
+    public void RawCandidateSearchKeepsStartPriorityInsteadOfRtlEndPriority(bool reverse, int branches)
+    {
+        byte[][] literals = branches == 2
+            ? ["abcd"u8.ToArray(), "d"u8.ToArray()]
+            : ["abcd"u8.ToArray(), "d"u8.ToArray(), "bc"u8.ToArray()];
+        var input = "abcd x"u8;
+        var invocation = new Utf8SliceInvocation(new(1000, 0, 7), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+            literals, false, input, 0, input.Length, reverse, ref invocation, out var match, out var found));
+        Assert.True(found);
+        Assert.Equal(reverse ? 3 : 0, match.Index);
+        Assert.Equal(reverse ? 1 : 4, match.Length);
+        Assert.Equal(reverse ? 1 : 0, match.LiteralId);
+        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
     }
 
     [Theory]
