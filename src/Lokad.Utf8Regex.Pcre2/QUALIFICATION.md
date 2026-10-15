@@ -1,5 +1,80 @@
 # Managed PCRE2 profile qualification
 
+## Private scalar.53 candidate (2026-10-15)
+
+Immutable Core/PCRE2 **0.4.0-scalar.53**, producer
+`aba3e050249a44541bcd93a61c131086bdd481b6`, has scoped private producer acceptance.
+The archive is `artifacts/package-qualification/archive/aba3e050249a44541bcd93a61c131086bdd481b6/`;
+its manifest SHA256 is
+`7A4307511451E80BD7AAA3F3F4CB98F674F201B309171D32FDCC62F6312001B1`.
+The affected producer closure was built once and each package/symbol packed once.
+Existing archive verification checks all seven artifacts, clean source revision,
+NuSpec/assembly/SourceLink agreement and matching portable PDB/symbol identities.
+
+| Package | nupkg SHA256 | Loaded DLL SHA256 |
+| --- | --- | --- |
+| Core | A38187747C996E056471F8DD03CE6820D704ADF15D91B90E35D4DC51BC9FCFCD | 04D6394C2D1497025C216550B5FA3087112E8CE7ED0D03424B8BF4B3DF58167B |
+| PCRE2 | 35DE7C1BBE3D5C187965D21106BB879961EFC90EAF21117B70600F0BC88C89F2 | 2690F3E46C8F6198D6C1DEF356C4DCEC4F87F13738DC81C7DF365E7316F00C38 |
+
+Detached Windows passes 5270 checks against these packages, with zero
+ProjectReferences. Its original resolved assets, cache/feed and loaded DLLs match.
+The wrapper's attempted default lock parameters did not apply to the consumer
+helper; a separate exact-version locked restore replay reproduces every library
+SHA512 in the tested graph. The original archive is unchanged, and its test run
+is not described as lockfile-pinned.
+
+Linux consumes the same Windows-produced bytes with exact source-mapped package
+references/lock and zero ProjectReferences. Initially 5259 checks passed and 11
+source/snapshot-discovery checks failed because the test directory was outside
+the checkout ancestor path. Moving only that directory beneath the clean checkout
+and rerunning exactly those 11 with `--no-build --no-restore` passed all 11. Both
+TRXs and the recovery filter are retained: 5270 distinct passing checks after
+recovery, rather than one uninterrupted green run. No Linux producer build or
+repack occurred. Source Release 5270 and focused Debug 225 also pass;
+[producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38806242710) is green.
+
+The scoped contract includes strict UTF-8/scalars, byte ranges, captures/MARK,
+the selected profile, synchronous cancellation/deadlines and four finite
+invocation controls. It corrects scalar range endpoints, quoted classes and
+literal verb labels. Probe retains its curated admission boundary. Complete
+construction/default/live-retention policies, host containment and broader
+profile completion remain unfinished. Exact DLL inventories contain only allowed
+`Unsafe.SizeOf`, no generated inline-array helpers or native imports, and no BCL
+matcher/result members. Lython's stricter SizeOf gate remains unreconciled.
+
+One bounded current-cost run used the exact DLLs on the quiet VM, Release
+FullOpts/.NET 10.0.12/CPU2: five alternating samples, each at least 50.62 ms, after
+warmup/calibration. Finite lanes set work 50M, depth 1024, working 64 MiB and
+result 128 MiB together; a third lane adds a live uncancelled token. These are
+measurement allowances, not host defaults. Selected medians in microseconds:
+
+| Public operation | Unlimited | Finite | Finite+token |
+| --- | ---: | ---: | ---: |
+| Literal IsMatch,4104B | 0.70 | 0.70 | 0.72 |
+| Literal Count,4104B | 0.70 | 1.82 | 1.81 |
+| Captured Count,3000B/1000matches | 144.00 | 551.95 | 580.10 |
+| Captured MatchDetailed,first match | 1.05 | 1.33 | 1.35 |
+| Email Count,3840B/128matches | 1071.57 | 1082.88 | 1131.12 |
+| Scalar quoted-class/MARK Count,768B/64matches | 163.73 | 195.02 | 195.78 |
+| Scalar quoted-class/MARK MatchDetailed,first match | 4.23 | 4.72 | 4.87 |
+| Soft captured Probe,10B | 0.33 | 0.53 | 0.53 |
+
+ASCII-overlap rows include predecoded/decode-then-Regex controls. Captured Count
+controls 80.18/82.09 us and email Count 39.98/40.70 us expose concrete cost gaps.
+Email Count allocates about 4.98 MB per call even without finite limits; captured
+Count finite overhead is 3.83x. These remain improvement priorities; metering
+stays. Sample spreads reach 35% and pooled allocations vary. This is current
+operating-cost evidence, not unchecked-conversion regression qualification,
+general performance parity or a benchmark-snapshot Status refresh.
+
+Local evidence and exact restore guidance are in
+`artifacts/pcre2-scalar53-delivery-20261015/HANDOFF.md`, `delivery-receipt.json`,
+platform identities/TRXs, `exact-member-references.json`, `public-cost.jsonl`
+and `public-cost-summary.json`. Core/PythonRe52 remains independently qualified;
+there is no PythonRe53 designation, publication, consumer pin/default change
+or downstream adoption claim. Embedded package documentation retains its
+preparing53 state at producer freeze; immutable bytes are not repacked for docs.
+
 ## Capture admission correction (development, 2026-10-06)
 
 The published coherent 0.3.0 package pair admitted .NET-style `(?<1>a)` and

@@ -1,10 +1,18 @@
 # Changelog
 
-## PCRE2 development after the Core/PythonRe scalar.52 boundary
+## Private scalar.53 Core/PCRE2 candidate
 
-- Prepare distinct private Core/PCRE2 identity0.4.0-scalar.53 for one coherent
-  profile qualification boundary. Preserve immutable Core/PythonRe52; no new
-  PythonRe candidate, publication or broader-profile acceptance is implied.
+- Qualify immutable Core/PCRE2 producer aba3e050 as 0.4.0-scalar.53: detached
+  Windows 5270; same-byte Linux 5259 plus 11 source-discovery checks recovered
+  after correcting fixture ancestry, without rebuilding/repacking. Exact
+  feed/lock/loaded-DLL and source/symbol identities are recorded, including a
+  separate Windows lock replay of the tested graph. Producer CI 38806242710
+  passes. Preserve independently qualified Core/PythonRe52; no PythonRe53,
+  publication, downstream adoption or broader-profile acceptance is implied.
+- Record one bounded exact-package public cost run with all four finite controls
+  and live-token lanes. Captured Count costs 144/552 us unlimited/finite; email
+  Count about 1.07 ms and 4.98 MB per call remains a concrete improvement priority.
+  These measurements do not establish general parity or change snapshot Status.
 - Execute quoted scalar classes with the existing owned parser. Honor literal
   hyphens/brackets/backslashes, supplementary members, empty markers, scalar
   ranges across quote boundaries and extended-more whitespace. Remove duplicate
