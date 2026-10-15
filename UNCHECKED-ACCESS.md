@@ -28,8 +28,8 @@ Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 5 sites across all shipped projects: **3 Core
-sites in 3 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 4 sites across all shipped projects: **2 Core
+sites in 2 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -51,7 +51,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | Remaining Core file / sites | Bounds contract and reason retained |
 | --- | --- |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts. Both whole-subject and admitted-block checked prototypes exceed10% on width8 public Count; original retained. |
-| Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. Checked suffix read regresses compiled sparse public Count10.2–11.8%; original restored. |
 | Utf8InvariantCyrillicLiteralCountStrategy /1 | Full32-byte blocks, scalar/continuation fallback for tails. Checked suffix read regresses affected ASCII-miss public Count25–26%; original restored. |
 
 The two independent PCRE2 `Unsafe.NullRef` sites denote the inactive arm of a
@@ -753,3 +752,28 @@ Utf8LiteralCompiledEngineRuntime explicit unchecked reads are gone; the actual
 Core DLL still references Unsafe.Add/Vector256.LoadUnsafe and accepted SizeOf.
 Evidence: artifacts/correlated-mask-reuse-checked-20261015/. The earlier failed
 checked-window-only receipt remains historical, not the current implementation.
+
+The emitted candidate scan is now a checked typed-vector span over the admitted
+byte suffix. Index only complete Vector256<byte> elements under the same span's
+length; derive absolute hit/tail offsets from the block index. Remove one
+LoadUnsafe/Unsafe.Add, origin ref and byte-loop index. Preserve SIMD masks,
+earliest nonASCII/candidate ordering, vector coverage, scalar tails, allocation
+behavior and all eligibility/validation/invocation authority. The existing
+.NET10 CoreCLR hardware admission selects the xarchAVX2 lane, where unaligned
+access is supported; no platform gate is broadened. Pinned BCL/runtime sources
+and the alignment contract are linked in the proposal.
+
+Actual public Count probes compile the helper. Windows247->295B/Linux205->250B;
+inner element/width guards are eliminated, SIMD remains, scalar-tail checks
+remain. One unchanged-driver quiet pair plus its only targeted confirmation:
+compiled near-miss+8.73%,128KiB sparse miss+8.39%,2.2..4.0% sample spreads. Accept
+this explicit8–9% public cost under the10% allowance. Exact control+0.07% and
+finite+0.88%, with substantial control noise; no exact-equivalence/speedup claim.
+Initial other compiled rows: short-6.81%,dense-1.43%,8KiBmiss+5.18%; ordinary and
+mixed fallback rows largely unchanged, not proof that they use the fused helper.
+Allocations stay0B ASCII/exact,1872B mixed fallback,112B finite. Initial floors
+>=54ms,confirmation>=112ms. No further timing or package qualification.
+Release355/Debug60 pass, with borrowed offsets0/1/17/31 and invalid outside bytes
+added to the public lane/tail witness. The fixed-original cumulative gate and
+remaining Core/downstream API acceptance remain open. Evidence:
+artifacts/emitted-vector-span-checked-20261015/.

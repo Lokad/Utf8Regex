@@ -3,7 +3,6 @@ using Lokad.Utf8Regex.Internal.Search;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -341,12 +340,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return -1;
         }
 
-        var index = startIndex;
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
+        var blocks = MemoryMarshal.Cast<byte, Vector256<byte>>(input[startIndex..]);
         var firstByteVector = Vector256.Create(firstByte0);
-        while (index <= input.Length - Vector256<byte>.Count)
+        for (var blockIndex = 0; blockIndex < blocks.Length; blockIndex++)
         {
-            var values = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index));
+            var values = blocks[blockIndex];
             var candidateBits = Vector256.Equals(values, firstByteVector).ExtractMostSignificantBits();
             var nonAsciiBits = values.ExtractMostSignificantBits();
             if ((candidateBits | nonAsciiBits) != 0)
@@ -359,12 +357,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
                     : BitOperations.TrailingZeroCount(nonAsciiBits);
                 return nonAsciiOffset < candidateOffset
                     ? nonAscii
-                    : index + candidateOffset;
+                    : startIndex + blockIndex * Vector256<byte>.Count + candidateOffset;
             }
-
-            index += Vector256<byte>.Count;
         }
 
+        var index = startIndex + blocks.Length * Vector256<byte>.Count;
         for (; index < input.Length; index++)
         {
             var value = input[index];

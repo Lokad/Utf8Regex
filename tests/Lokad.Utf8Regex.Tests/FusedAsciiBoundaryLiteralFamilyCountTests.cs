@@ -38,10 +38,13 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled,
             Regex.InfiniteMatchTimeout);
 
+        foreach (var borrowedOffset in new[] { 0, 1, 17, 31 })
         for (var offset = 0; offset < 96; offset++)
         {
-            var input = Enumerable.Repeat((byte)'.', 128).ToArray();
-            "LogInformation"u8.CopyTo(input.AsSpan(offset));
+            var storage = Enumerable.Repeat((byte)0xFF, borrowedOffset + 128 + 11).ToArray();
+            var input = storage.AsSpan(borrowedOffset, 128);
+            input.Fill((byte)'.');
+            "LogInformation"u8.CopyTo(input[offset..]);
 
             Assert.Equal(expectedRegex.Count(Encoding.ASCII.GetString(input)), regex.Count(input));
         }

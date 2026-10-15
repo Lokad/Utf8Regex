@@ -2,6 +2,10 @@
 
 ## Development (0.4.0-scalar.52-dev)
 
+- Scan complete emitted-family vector blocks through a bounds-checked typed
+  span, preserving SIMD masks, scalar tails, validation and resource routing.
+  Focused compiled sparse/near-miss Count costs about8–9% more, within the10%
+  allowance; allocations are unchanged. Cumulative qualification remains open.
 - Reuse the remaining correlated candidate mask after each non-overlapping
   literal match and check all three vector reads. Preserve scalar tails,
   validation and resource routing. Focused dense Count is about2.45x faster;
