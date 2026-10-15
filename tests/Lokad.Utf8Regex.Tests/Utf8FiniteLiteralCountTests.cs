@@ -90,6 +90,7 @@ public sealed class Utf8FiniteLiteralCountTests
     [InlineData("(\\.)", "...", 3)]
     [InlineData("aaaa", "aaaaaaa", 1)]
     [InlineData("absent", "é😀", 0)]
+    [InlineData("CancellationToken", "é😀CancellationToken CancellationToken", 2)]
     public void ExactLiteralsAndOrdinaryCapturesNeedNoVmStorage(string pattern, string text, int expected)
     {
         var input = Encoding.UTF8.GetBytes(text);

@@ -2,6 +2,10 @@
 
 ## Unreleased anchored scalar search (0.4.0-scalar.50-dev)
 
+- Replace the fused ASCII exact-literal Count kernel's unchecked vector read
+  with a checked span read. Retain SIMD, validation, candidate verification,
+  allocations and resource routing. One bounded public comparison shows
+  roughly-0.6% to+4.0% execution-time change, within the10% allowance.
 - Retire the optional search-guided fallback emitter, its selector and retained
   state. Public fallback matching keeps the owned scalar program; internal
   candidate verification uses its canonical managed executor. Live emitters

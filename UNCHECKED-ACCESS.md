@@ -19,8 +19,8 @@ evidence; the revised allowance does not designate conversions automatically.
 Counts and decisions in the historical pilot records below describe those
 snapshots. The current inventory and explicit accepted follow-ups take precedence.
 
-The current source inventory is 32 sites across all shipped projects: **30 Core
-sites in 13 files**, plus two PCRE2 null-reference placeholders in one file.
+The current source inventory is 31 sites across all shipped projects: **29 Core
+sites in 12 files**, plus two PCRE2 null-reference placeholders in one file.
 PythonRe has no explicit sites. Earlier "Core55" shorthand included PCRE2;
 compiler-generated accesses and whole-DLL API gates remain separate observations.
 
@@ -46,7 +46,6 @@ revisit demonstrated defects or concrete source/JIT changes.
 | PreparedMultiLiteralSearch /2 | Constructor selects offsets below shortest literal length; block start≤length-shortest-(width-1), bounding every offset window. No new conversion qualified. |
 | AsciiOrderedLiteralWindowExecutor /4 | Final block start reserves both trailing-literal displacement and vector width; scalar remainder scans the rest. No new conversion qualified. |
 | Utf8AsciiDeterministicFixedWidthCountExecutor /1 | Checks length equals width3..8; vector limit reserves31 extra starts, bounding each check-offset load. No new conversion qualified. |
-| Utf8AsciiExactLiteralCountExecutor /1 | Each32-byte load has index≤length-32; candidate full literals are admitted separately. No new conversion qualified. |
 | Utf8AsciiLiteralBetweenNegatedRunsExecutor /2 | Full32/16-byte blocks only; neighbor reads have candidate lower/upper bounds. No new conversion qualified. |
 | Utf8AsciiUriTokenExecutor /1 | Checked suffix span and full32-byte admission; closed URI conversions regress at boundaries. |
 | Utf8EmittedLiteralFamilyCounter /1 | Nonnegative scan index≤length-32; separate candidate comparison/validation handles tails. No new conversion qualified. |
@@ -117,6 +116,23 @@ is not claimed. The short helper grows294→375 bytes on Linux. Focused ASCII-ca
 punctuation, offset, tail, Unicode-folding, resource and interruption checks pass.
 Evidence: artifacts/folded-comparator-checked-20261015/. Full platform/package
 qualification remains batched; the Core whole-DLL gate is still open.
+
+The fused ASCII exact-literal Count loop now uses a checked suffix span and
+MemoryMarshal.Read<Vector256<byte>> in place of its single LoadUnsafe. The same
+32-byte loop admission, anchor filtering, complete candidate verification,
+non-ASCII decline, scalar tail and zero-allocation behavior remain. Linux Release
+FullOpts code grows814→817 bytes and retains bounds checks.
+
+One bounded before/after public Count comparison covers64-byte and4096-byte
+sparse subjects and a4032-byte dense subject, ordinary and compiled options.
+Affected medians change about-0.6% to+4.0%, within the10% allowance. Unchanged
+short-literal controls move-0.9% to+0.1%; the finite control moves+0.2%, with a
+noisy20% sample spread. Allocations match in every lane. Public calls compile and
+execute the changed kernel; finite-policy calls retain their owned scalar route
+and are controls only. These are public-operation timings, not isolated kernel
+estimates. Borrowed offsets, every block tail, malformed/non-ASCII input and
+finite/interruption checks pass. No confirmation, additional variant or per-helper
+package matrix is needed. Evidence: artifacts/exact-count-checked-20261015/.
 
 The ASCII validation drain pilot is deferred. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,

@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Lokad.Utf8Regex.Internal.Search;
@@ -60,11 +59,10 @@ internal static class Utf8AsciiExactLiteralCountExecutor
         var nextMatchStart = 0;
         var foundCount = 0;
         var index = 0;
-        ref var inputRef = ref MemoryMarshal.GetReference(input);
 
         while (index <= input.Length - Vector256<byte>.Count)
         {
-            var values = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index));
+            var values = MemoryMarshal.Read<Vector256<byte>>(input[index..]);
             if (values.ExtractMostSignificantBits() != 0)
             {
                 // Valid non-ASCII input can still contain ASCII matches. Let the caller

@@ -95,6 +95,35 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
         }
     }
 
+    [Fact]
+    public void FusedCountCoversBorrowedOffsetsAndEveryBlockTail()
+    {
+        if (!Vector256.IsHardwareAccelerated) return;
+
+        var anchor = Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(LiteralUtf8);
+        foreach (var offset in new[] { 0, 1, 7, 17, 31 })
+        for (var length = 0; length <= 97; length++)
+        {
+            var bytes = Enumerable.Repeat((byte)'x', offset + length + 33).ToArray();
+            var input = bytes.AsSpan(offset, length);
+            var expected = length >= LiteralUtf8.Length ? 1 : 0;
+            if (expected != 0) LiteralUtf8.CopyTo(input[^LiteralUtf8.Length..]);
+
+            var handled = Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+                input, LiteralUtf8, anchor, out var count);
+            Assert.Equal(length >= Vector256<byte>.Count, handled);
+            Assert.Equal(handled ? expected : 0, count);
+
+            if (length >= Vector256<byte>.Count)
+            {
+                input[^1] = 0xFF;
+                Assert.False(Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+                    input, LiteralUtf8, anchor, out count));
+                Assert.Equal(0, count);
+            }
+        }
+    }
+
     [Theory]
     [InlineData(RegexOptions.CultureInvariant)]
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
