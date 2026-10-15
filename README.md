@@ -8,11 +8,11 @@ Use a qualified candidate's exact version and immutable feed/manifest for reprod
 
 The next private Core/PythonRe candidate, **0.4.0-scalar.52**, is being prepared.
 Its source removes the remaining Core unchecked reads while retaining the allowed
-`Unsafe.SizeOf` sizing calls. Exact-package qualification is pending because the
-first cumulative original-baseline comparison fails the 10% gate:
-24-byte folded Count is 13–14% slower and Cyrillic ASCII-miss Count is about65%
-slower against the fixed original DLL. A bounded repair also failed and was
-restored; scalar.52 is not package-qualified. See [the evidence](UNCHECKED-ACCESS.md).
+`Unsafe.SizeOf` sizing calls. A checked folded-comparison follow-up resolves its
+initial cumulative regression: measured public12–64-byte workloads stay within
+4.6% of the fixed original, with unchanged allocations. Cyrillic ASCII-miss Count
+remains about65% slower; bounded alternatives failed and were restored.
+Scalar.52 is not package-qualified. See [the evidence](UNCHECKED-ACCESS.md).
 Lython's stricter `SizeOf` restriction still needs
 explicit reconciliation. Library builds compile; qualification packs explicitly.
 

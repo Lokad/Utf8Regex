@@ -67,6 +67,55 @@ public sealed class Utf8AsciiSearchHeuristicsTests
     }
 
     [Theory]
+    [InlineData(17)]
+    [InlineData(24)]
+    [InlineData(33)]
+    public void PreparedFoldedSearchVerifiesWholeCandidatesAcrossBorrowedTails(int length)
+    {
+        var needleText = new string(Enumerable.Range(0, length)
+            .Select(index => (char)('a' + index % 26)).ToArray());
+        var needle = System.Text.Encoding.ASCII.GetBytes(needleText);
+        var prepared = new PreparedSubstringSearch(needle, ignoreCase: true);
+        var upper = needleText.ToUpperInvariant();
+        var nearMiss = upper.ToCharArray();
+        nearMiss[length / 2] = '0';
+        var ordinary = new Utf8Regex(needleText,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(needleText,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant |
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        foreach (var padding in new[] { 0, 15, 31, 32, 33 })
+        foreach (var storageOffset in new[] { 1, 17, 31 })
+        {
+            var prefix = new string('.', padding) + new string(nearMiss) + " ";
+            var input = System.Text.Encoding.ASCII.GetBytes(prefix + upper);
+            var storage = Enumerable.Repeat((byte)0xff, storageOffset + input.Length + 1).ToArray();
+            input.CopyTo(storage, storageOffset);
+            var borrowed = storage.AsSpan(storageOffset, input.Length);
+            Assert.Equal(prefix.Length, prepared.IndexOf(borrowed));
+            Assert.Equal(1, ordinary.Count(borrowed));
+            Assert.Equal(1, compiled.Count(borrowed));
+            Assert.Equal(1, ordinary.Count(System.Text.Encoding.UTF8.GetBytes("😀夏 " + prefix + upper)));
+        }
+
+        var candidate = System.Text.Encoding.ASCII.GetBytes(upper);
+        for (var position = 0; position < length; position++)
+        {
+            var original = candidate[position];
+            for (var value = 0; value < 256; value++)
+            {
+                candidate[position] = (byte)value;
+                var folded = value is >= 'A' and <= 'Z' ? value + 32 : value;
+                Assert.Equal(folded == needle[position] ? 0 : -1, prepared.IndexOf(candidate));
+            }
+            candidate[position] = original;
+        }
+    }
+
+    [Theory]
     [InlineData('q', 10)]
     [InlineData('V', 8)]
     [InlineData('m', 6)]

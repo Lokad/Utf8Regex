@@ -2,12 +2,17 @@
 
 ## Private scalar.52 Core/PythonRe candidate (qualification pending)
 
-- Prepare a fresh identity for the completed checked-access batch. Cumulative
-  original-baseline qualification fails: folded24 public Count is13–14% slower,
-  Cyrillic ASCII-miss Count about65% slower, with unchanged Core allocations.
+- Prepare a fresh identity for the completed checked-access batch. The folded
+  follow-up resolves its initial cumulative regression; Cyrillic ASCII-miss
+  Count remains about65% slower, with unchanged Core allocations.
   A bounded repair failed and was restored exactly. Exact package/consumer
   qualification has not run; these remain delivery blockers.
   No publication, downstream adoption or PCRE2 designation is implied.
+- Admit folded comparison prefixes and checked word extents explicitly; inline
+  only the short comparer and restore the original generic word/byte algorithm.
+  Remove BCL equality/validity dispatch without restoring unchecked reads.
+  Public12–64-byte costs remain within4.6% of the fixed original, allocations
+  unchanged. Keep SIMD discovery, scalar semantics and resource controls.
 - Library builds no longer pack implicitly. Explicit package qualification
   remains responsible for the one producer build, pack and provenance checks.
 

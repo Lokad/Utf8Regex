@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
@@ -172,18 +171,43 @@ internal static partial class AsciiSearch
 
     public static bool MatchesFoldedIgnoreCase(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> foldedLiteral)
     {
+        candidate = candidate[..foldedLiteral.Length];
         if (foldedLiteral.Length is >= 9 and <= 16)
         {
             return MatchesFoldedIgnoreCaseLength9To16(candidate, foldedLiteral);
         }
 
-        candidate = candidate[..foldedLiteral.Length];
-        // BCL equality rejects even equal non-ASCII bytes. Generic prepared
-        // needles retain byte folding; Unicode/Kelvin matching has its own routes.
-        return Ascii.EqualsIgnoreCase(candidate, foldedLiteral) ||
-            (!Ascii.IsValid(foldedLiteral) && MatchesIgnoreCase(candidate, foldedLiteral));
+        var index = 0;
+        // Match Slice's widened end admission exactly. Both complete prefixes
+        // have the same length, so each admitted word owns both checked reads.
+        for (; (ulong)(uint)index + sizeof(ulong) <= (uint)foldedLiteral.Length; index += sizeof(ulong))
+        {
+            var candidateWord = candidate.Slice(index, sizeof(ulong));
+            var literalWord = foldedLiteral.Slice(index, sizeof(ulong));
+            if (MemoryMarshal.Read<ulong>(candidateWord) != MemoryMarshal.Read<ulong>(literalWord))
+            {
+                for (var within = 0; within < sizeof(ulong); within++)
+                {
+                    if (FoldCase(candidateWord[within]) != literalWord[within])
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        for (; index < foldedLiteral.Length; index++)
+        {
+            if (FoldCase(candidate[index]) != foldedLiteral[index])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool MatchesFoldedIgnoreCaseLength9To16(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> foldedLiteral)
     {
         var secondReadOffset = foldedLiteral.Length - sizeof(ulong);
@@ -191,8 +215,8 @@ internal static partial class AsciiSearch
                    MemoryMarshal.Read<ulong>(candidate),
                    MemoryMarshal.Read<ulong>(foldedLiteral)) &&
                UInt64OrdinalIgnoreCaseAscii(
-                   MemoryMarshal.Read<ulong>(candidate[secondReadOffset..]),
-                   MemoryMarshal.Read<ulong>(foldedLiteral[secondReadOffset..]));
+                   MemoryMarshal.Read<ulong>(candidate.Slice(secondReadOffset, sizeof(ulong))),
+                   MemoryMarshal.Read<ulong>(foldedLiteral.Slice(secondReadOffset, sizeof(ulong))));
     }
 
     public static byte FoldCase(byte value)

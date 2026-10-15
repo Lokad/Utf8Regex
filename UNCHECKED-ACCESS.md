@@ -28,6 +28,35 @@ Core allocations are unchanged. These are public-operation costs, not kernel
 figures. Keep SizeOf separate: it performs no unchecked memory access;
 Lython's blanket rejection requires explicit acceptance-contract reconciliation.
 
+The checked folded follow-up now resolves that part of the first failure. An
+actual public24-byte Count witness records511 calls each for13/9-byte fragments
+and one full-width tail call. Preserve split candidate discovery/verification;
+admit the complete comparison prefix once, inline only the short comparer, and
+use checked eight-byte words with a loop extent matching Slice's widened admission.
+The generic comparer again uses the original word/byte algorithm, removing BCL
+ASCII equality/validity dispatch. Non-ASCII byte needles keep canonical byte folding;
+Unicode/Kelvin matching and original authority remain on their existing routes.
+
+One fixed-original public pair covers12–64-byte folded literals, ordinary/compiled,
+dense/miss/near-miss and all-four-finite controls. Affected medians are -1.23..+4.58%,
+including24-byte Count +4.53% ordinary/+3.41% compiled; unchanged BCL control +0.85%.
+Allocations remain0/112B. Sample floors/spreads are recorded; no confirmation or
+general equivalence claim follows. Release421/Debug100 prototype checks, final
+source Release421 and PythonRe95 pass. New17/24/33-byte qualification checks borrowed
+tails/offsets, scalar noise and all256 candidate byte values. The actual final
+Core DLL still references only accepted SizeOf; PythonRe none. No package follows.
+
+The same last bounded pair rejects the separate Cyrillic extent-loop proposal:
+its duplicate slice guard is gone, but Unicode-first costs +15.5/+16.7%, Unicode-last
++11.4/+11.8%, and ordinary ASCII-miss +11.3%. That source is restored exactly.
+Earlier whole-ASCII proof, prefix-admission and whole-candidate BCL proposals
+also fail; their source is restored. Broad inlining closes at code generation,
+without timing. These are closed experiments, not retained alternate paths.
+Cyrillic's original TryRead source remains cumulatively unaccepted. Full package
+and consumer qualification stays deferred. Evidence:
+artifacts/checked-extent-loops-20261015/ and folded-route-witness-20261015/;
+closed proposal receipts remain in their separately named artifact directories.
+
 The frozen candidate is source11a99f14, Core SHA256
 2377238ECB9A3C9CA5687F66329606773D546F67DC6462437B8E49A4BD19844C.
 The exact predeclared set covers40 affected Core public rows and an unchanged
