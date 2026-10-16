@@ -1,84 +1,58 @@
 # Lokad.Utf8Regex
 
-This source prepares the private **Core/PythonRe 0.4.0-scalar.65** candidate,
-batching metered literal-family bulk and Count improvements. Its separate
-`artifacts/scalar-candidates/0.4.0-scalar.65/candidate.json` records package
-identity and qualification when complete; source acceptance alone does not.
-The preceding qualified64 input and its evidence below remain immutable.
-
 `Lokad.Utf8Regex` is a managed `net10.0` regex library matching complete Unicode
-scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
-😀 once, across its four bytes. UTF-16 coordinates and strings are derived conveniences.
+scalars over strict UTF-8 spans,with primary byte offsets and lengths. Dot matches
+😀 once across its four bytes. UTF16 coordinates/strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.64** pair is produced by
-`c35e2f50066ac86f285d7e245101a25bc2c8806f`. Final detached Windows/Linux consumers,
-exact dependencies/locks/DLLs/symbols/SourceLink, capture/catalog controls and
-[producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38932808638) pass.
-The actual PythonRe nuspec requires Core `[0.4.0-scalar.64]`.
-[Handoff and exact scope](artifacts/core-python-scalar64-20261016/HANDOFF.md),
-[consumption instructions](artifacts/core-python-scalar64-20261016/CONSUMING.md).
+The qualified private **Core/PythonRe0.4.0-scalar.65** pair is produced by
+`eceb60dafa25c1de8a8b5a0803c1b9df7ab6c1e7`. Complete detached Windows/Linux
+package suites,exact dependencies/locks/DLLs/symbols/SourceLink,capture/catalog
+controls and [producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38944814708)
+pass. Actual PythonRe nuspec requires Core `[0.4.0-scalar.65]`.
+[Handoff and exact scope](artifacts/core-python-scalar65-20261016/HANDOFF.md),
+[consumption instructions](artifacts/core-python-scalar65-20261016/CONSUMING.md).
 
-Scalar.64 corrects oversized replacement indices to Python syntax errors, omits
-rejected groupless projection preparation, retires unused literal factories/decode
-scratch, and preserves one deadline through native bulk validation, byte-floor
-projection, discovery and shaping. Native entry omits an unnecessary coordinate
-map. Authoritative captures, explicit cursor lifetimes, strict whole-input
-validation and four finite invocation controls remain. Core supplementary casing
-uses owned Unicode16 pairs; PythonRe remains pinned15.1 and keeps its corrected
-mandatory-empty repeat behavior. No shipped BCL matcher/results or UTF16 engine.
-Core only references permitted Unsafe.SizeOf, accepted by Lython; PythonRe has none.
+Scalar.65 reuses existing metered literal-family cursors/counters under the
+original Python invocation. It preserves strict whole-input validation,captures,
+byte floors,original cancellation/absolute deadline and four finite invocation
+controls. Standard range/result staging and public failures replace unlimited-only
+assumptions. Pure Count needs no modeled result payload or VM frames; tighter
+policies can admit earlier,while bulk staging can increase result traffic.
+Captured,empty,folded and lexical-sensitive shapes retain their Python routes.
 
-Development beyond immutable64 reuses the existing metered literal-family
-cursor for eligible finite bulk results. One public UTF8 source pair observes
-late4KB466.7us ->5.6us (about84x) and dense256-result139.6us ->112.1us,with all
-four controls/live tokens preserved. Dense finite allocation grows about2.2KB;
-unlimited dense is5.4% slower. Other shapes are correctness-qualified,not timed.
-Five secondary-control samples were below50ms; the unchanged Count control stays
-within0.8%. This is source evidence for the next coherent boundary; it does not
-change64's measured costs or package bytes. See
-`artifacts/python-finite-bulk-native-20261016/RESULT.md` for raw scope/tradeoffs.
+One selective exact65 ordinary observation includes full validation,required
+outputs/retention,all4finite caps and live tokens.130samples exceed50ms. The4KB
+late Python bulk case takes5.44us with unlimited caps/5.53us finite;family Count
+0.750/0.765us. Both use30-second deadlines in ALL lanes.1000 captured UTF8 tuples
+cost0.675/0.726ms;first-result cursor disposal1.45/1.63us. Core family Count still
+has material finite overhead:62.5/329us on its selected27KB subject. Raw allocations,
+BCL overlap/exclusions and noisy controls remain in the handoff. These are current
+operating costs,not broad parity,CPython performance or a checked-access regression
+gate. Closed source before/after evidence remains separate from exact-package costs.
 
-A subsequent bounded source pair reuses the same invocation for eligible family
-Count: the selected 4 KB late finite case falls471.9us ->0.77us, dense68.6us
-->27.8us, and allocations about2032B ->160B. All lanes use a30-second deadline;
-all180 samples exceed50ms and unchanged controls stay within1.8%. This does not
-change64 or establish default-infinite/CPython/broad parity. Scope and raw evidence:
-`artifacts/python-family-count-invocation-20261016/RESULT.md`.
+Core supplementary casing uses owned Unicode16 pairs;Python data remain pinned15.1
+with the owned nullable-repeat correction. No shipped BCL matcher/results or dormant
+UTF16 engine. Core only references permitted Unsafe.SizeOf,accepted by Lython;
+PythonRe has no unchecked API references or generated inline-array helpers.
 
-One current exact-package public observation includes full validation, required
-output/retention, all four finite caps and live tokens. All160 samples exceed50ms;
-raw allocations, BCL overlap/exclusions and noisy controls remain explicit. Family
-Count is63.9us unlimited/324us finite;1000 Python UTF8 tuples0.659/0.705ms. A4KB
-bulk operation with a30s timeout takes5.5us without invocation caps/480us finite,
-about88x: the owned finite route remains a substantial operating-cost gap.
-These are selective ordinary-route costs, not broad parity or a regression gate.
+Defaults/static cached APIs remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
+composes covered capacity with existing owners;complete construction,lazy,default,
+live-retention,RSS/host containment and full SPEC remain unfinished. This scoped
+input does not imply publication,consumer pins/defaults/adoption or POSIX-longest
+selection. Published0.3 packages retain their former UTF16 contract. Previous64
+and earlier candidates remain immutable;PCRE2 qualifies independently.
 
-The Linux Core inventory initially lacked staged DLLs; existing matching producer
-bytes were supplied and only Core reran with --no-build. The failed receipt and
-final complete passing suite are both preserved. Diff/Python ran once. There was
-no Linux producer build, repack or new profile-data census. Thirty-six exact data
-witnesses and two separately reviewed consumer deltas support scoped evidence reuse;
-benchmark/oracle host bytes are reused with the exact new package DLLs.
-
-Defaults/static cached calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
-composes covered W+R capacity with existing owners; complete construction, lazy,
-default, live-retention, RSS/host containment and full SPEC remain unfinished.
-Qualified scope does not imply publication, consumer pins/defaults/adoption or
-POSIX-longest behavior. Published0.3 packages keep the former UTF16 contract.
-Previous63/62/61/60/55 and independent Core/PCRE59 bytes remain unchanged; PCRE2
-qualification is separate and does not block Core/Python delivery.
-
-Use a candidate's exact versions and immutable feed/manifest. The existing
+Use exact versions and the immutable feed/manifest. The existing
 [qualifier](qualify-scalar-candidate.ps1) builds/packs Core/Python once and records
-detached consumers/provenance; it never publishes. PCRE2 uses its separate tools.
-[SPEC.md](SPEC.md) defines target semantics, not proof of all implementation coverage.
+detached consumers/provenance;it never publishes. Package README preparation wording
+is frozen at packing;the handoff and original manifest record completed qualification.
+[SPEC.md](SPEC.md) defines targets,not proof of all implementation coverage.
 
-Published benchmark tables retain their recorded source/environment; they do not
-qualify scalar.64. README.Benchmarks.json and README.Parity.json remain their
-sources of truth. The dated [.NET10/.NET11 comparison](RUNTIME-COMPARISON.md),
-curated folded rows and completed checked-access campaign retain their original
-scope. Current-package costs and limitations are in the handoff, with no historical
-relabeling, full-catalog refresh or reopened source experiment.
+Published benchmark tables retain their recorded source/environment;they do not
+qualify65. README.Benchmarks.json/README.Parity.json remain their sources of truth.
+The dated [.NET10/.NET11 comparison](RUNTIME-COMPARISON.md),curated folded rows and
+completed checked-access campaign keep their original scope. No historical relabeling,
+full-catalog refresh or repeated source campaign is used for this delivery.
 
 ## Support Scope
 

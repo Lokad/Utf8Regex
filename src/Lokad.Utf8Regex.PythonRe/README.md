@@ -1,67 +1,41 @@
 # Lokad.Utf8Regex.PythonRe
 
-This source prepares the private **Core/PythonRe 0.4.0-scalar.65** candidate,
-batching metered literal-family bulk and Count improvements. Its separate
-`artifacts/scalar-candidates/0.4.0-scalar.65/candidate.json` records package
-identity and qualification when complete; source acceptance alone does not.
-The preceding qualified64 input and its evidence below remain immutable.
-
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
-strict UTF-8 scalars, with primary byte coordinates and derived UTF16 projections.
+strict UTF8 scalars,with primary byte coordinates and derived UTF16 projections.
 
-The qualified private **Core/PythonRe0.4.0-scalar.64** pair is produced by
-`c35e2f50066ac86f285d7e245101a25bc2c8806f`. Actual PythonRe nuspec requires Core
-`[0.4.0-scalar.64]`. Final same-byte Windows/Linux consumers, captures/CPython
-catalog, exact refs/locks/DLL/symbol/SourceLink and producer CI pass.
-[Handoff](../../artifacts/core-python-scalar64-20261016/HANDOFF.md) and
-[consumption notes](../../artifacts/core-python-scalar64-20261016/CONSUMING.md)
-record identities, tested scope, Linux inventory-setup recovery and exclusions.
-Earlier63 and other packages remain immutable; PCRE2 qualifies independently.
+Qualified private **Core/PythonRe0.4.0-scalar.65** is produced by
+`eceb60dafa25c1de8a8b5a0803c1b9df7ab6c1e7`. Actual PythonRe nuspec requires Core
+`[0.4.0-scalar.65]`. Final same-byte Windows/Linux consumers,captures/CPython
+catalog,exact refs/locks/DLL/symbol/SourceLink and producer CI pass.
+[Handoff](../../artifacts/core-python-scalar65-20261016/HANDOFF.md) and
+[consumption notes](../../artifacts/core-python-scalar65-20261016/CONSUMING.md)
+record scope,identities,current costs and exclusions. Earlier64/other packages
+remain immutable;PCRE2 qualifies independently.
 
-Scalar.64 fixes oversized replacement group numbers to PythonRePatternException
-and carries one original deadline before finite-timeout bulk validation and
-byte-floor projection through native discovery/required shaping. It retains the
-native algorithms and omits an unnecessary full coordinate map. Existing owned
-finite/token and canonical-counted-string routes remain. Shared Core preparation
-also omits groupless projection work and obsolete literal factories/decode scratch.
-Tighter construction admission can change where the removed work previously cost
-capacity; no new owner, GC lease, execution mode or precision accounting is added.
+Eligible nonempty,capture-free/profile-safe exact families reuse existing Core
+cursors/counters under the original invocation,with complete subject validation,
+byte floors,all4limits,token/deadline,public denial kinds and deterministic cleanup.
+Standard bulk staging admits capacity before acquisition;pure native Count needs
+no modeled result payload or VM frames. Cutoffs can change with actual work/storage.
+Captured,empty,folded and lexical-sensitive shapes retain their Python routes.
+Authoritative captures,nullable-repeat behavior,retained snapshots and cursor aliases
+remain valid. Python data stay pinnedUnicode15.1;Core only retains accepted SizeOf,
+PythonRe no unchecked references. No BCL matcher/results or UTF16 progression.
 
-Python case/class/identifier data remain pinned Unicode15.1; Core owns separate
-Unicode16 supplementary casing. Thirty-six source blobs remain exact; two changed
-facade/replacement consumers are reviewed/tested separately, not called unchanged.
-The existing nullable-repeat correction preserves consuming iterations enabled by
-mandatory empty captures. Authoritative captures/completion, retained results,
-reference-cursor aliases/disposal and four finite invocation controls remain.
-Core retains only accepted Unsafe.SizeOf; PythonRe has no unchecked references.
-
-Development beyond immutable64 reuses the existing metered literal-family
-cursor for eligible finite bulk results. One public UTF8 source pair observes
-late4KB466.7us ->5.6us (about84x) and dense256-result139.6us ->112.1us,with all
-four controls/live tokens preserved. Dense finite allocation grows about2.2KB;
-unlimited dense is5.4% slower. Other shapes are correctness-qualified,not timed.
-Five secondary-control samples were below50ms; the unchanged Count control stays
-within0.8%. This is source evidence for the next coherent boundary; it does not
-change64's measured costs or package bytes. See
-`artifacts/python-finite-bulk-native-20261016/RESULT.md` for raw scope/tradeoffs.
-
-A subsequent bounded source pair reuses the same invocation for eligible family
-Count: the selected 4 KB late finite case falls471.9us ->0.77us, dense68.6us
-->27.8us, and allocations about2032B ->160B. All lanes use a30-second deadline;
-all180 samples exceed50ms and unchanged controls stay within1.8%. This does not
-change64 or establish default-infinite/CPython/broad parity. Scope and raw evidence:
-`artifacts/python-family-count-invocation-20261016/RESULT.md`.
-
-Current exact-package ordinary costs include1000 UTF8 tuples0.659ms unlimited/
-0.705ms finite. A4KB bulk value operation with30s timeout takes5.5us with unlimited
-invocation caps/480us finite, about88x: finite execution still selects the owned
-scalar route. All160 samples exceed50ms; raw allocations, overlap controls and
-limitations are retained. This is not broad parity, Status or a regression claim.
+Exact65 public ordinary costs:4KB late bulk5.44us unlimited caps/5.53us finite,
+family Count0.750/0.765us,both with30-second deadlines in ALL lanes.1000captured
+UTF8 tuples0.675/0.726ms and first-result cursor disposal1.45/1.63us. All130samples
+exceed50ms;raw allocations,noisy BCL controls and shape exclusions are retained.
+These are selective current costs,not CPython/broad parity,Status or regression
+qualification. Closed source experiments and immutable64's former finite bulk
+cost remain separately recorded. No full benchmark refresh or repeated campaign.
 
 Defaults/static cached APIs remain unlimited. Complete construction/lazy/default/
-live-retention/RSS and host integration remain unfinished; use existing owners per
-[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md). No publication, consumer pin/default
-change, adoption or whole-profile completion follows this scoped producer input.
+live-retention/RSS and host integration remain unfinished;use existing owners per
+[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md). No publication,consumer pin/default
+change,adoption or whole-profile completion follows this scoped producer input.
+Package README preparation wording is frozen at packing;the handoff and original
+manifest define completed qualification without repacking.
 
 ## Support Scope
 
@@ -70,7 +44,7 @@ change, adoption or whole-profile completion follows this scoped producer input.
 - Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
 - Global operations: admitted scalar programs serve captured iteration, Python empty-match retry, substitution and split over the original UTF-8 bytes, with one operation deadline/token and owned capture snapshots.
 - Case folding: admitted Python ASTs lower to the shared UTF-8 scalar VM with owned CPython 3.13.2 / Unicode 15.1.0 data. Literal classes include extra fold partners; references use lexical simple lowercase, with ASCII scopes restricted to ASCII letters. The four formerly skipped case-folding regressions are active.
-- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes` select owned scalar execution. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Working bytes admit modeled major active arrays/output controls and growth overlap; exclusive scratch releases synchronously. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Incidental owner metadata, shared fixed profile data and caller-retained results have separate working scope. Development predefined classes use the pinned profile data; remaining common resource gates remain unfinished.
+- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering remains for benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes` select owned metered execution, including qualified prepared literal-family routes. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Working bytes admit modeled major active arrays/output controls and growth overlap; exclusive scratch releases synchronously. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Incidental owner metadata, shared fixed profile data and caller-retained results have separate working scope. Development predefined classes use the pinned profile data; remaining common resource gates remain unfinished.
 - Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
 - Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
 - Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.

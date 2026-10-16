@@ -270,6 +270,11 @@ so very small working/result/depth caps can succeed. Work, original cancellation
 the absolute deadline and byte-bounded diagnostics still apply. Captured, empty,
 folded and lexical-sensitive shapes retain their existing Python routes.
 These source corrections preserve the original immutable63/64 receipts.
+They are included in the separately qualified private Core/PythonRe scalar.65
+pair at eceb60da: same-byte Windows/Linux consumers,capture/catalog controls,
+exact dependencies/provenance and current end-to-end costs. See
+artifacts/core-python-scalar65-20261016/HANDOFF.md for scope and remaining limits;
+this does not imply full profile or host-containment completion.
 
 Template Replace/Subn byte and string operations also create their invocation
 before replacement-cache access. Existing cache checkpoints observe the call's

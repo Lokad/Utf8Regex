@@ -1,5 +1,18 @@
 # Changelog
 
+## Core/PythonRe scalar.65 qualified dependency
+
+- Exact eceb60da Core/Python packages pass detached Windows/Linux consumers,
+  provenance/locks/loaded DLLs,104 capture fixtures and91 semantic digests per
+  platform; producer CI is green. The final-feed public restore also passes.
+- Eligible literal families share the original metered invocation for bulk and
+  Count. Exact-package finite4KB bulk5.53us and Count0.765us,1000tuples0.726ms;
+ 130samples exceed50ms. Core family finite overhead remains material. Preserve
+  raw allocations,noisy controls,resource exclusions and independent PCRE scope.
+- Core retains only accepted Unsafe.SizeOf;Python no unchecked API references.
+  No publication,consumer pin/default change,full SPEC/containment or adoption claim.
+
+
 ## Core/PythonRe scalar.65 candidate preparation
 
 - Batch the accepted metered literal-family bulk and Count changes into one new
