@@ -1,42 +1,34 @@
 # Lokad.Utf8Regex
 
 `Lokad.Utf8Regex` is a managed `net10.0` regex library matching complete Unicode
-scalars over strict UTF-8 spans,with primary byte offsets and lengths. Dot matches
-😀 once across its four bytes. UTF16 coordinates/strings are derived conveniences.
+scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
+😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe0.4.0-scalar.68** pair is produced by
-`530c2af6e160dcabd02477bbd53aa5657051e10c`. Complete detached Windows/Linux
-consumers,exact dependencies/locks/DLLs/symbols/SourceLink,captures/CPython catalog
-and [producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38957533591) pass.
-Actual PythonRe nuspec pins Core `[0.4.0-scalar.68]`.
-[Handoff and exact scope](artifacts/core-python-scalar68-20261016/HANDOFF.md),
-[consumption instructions](artifacts/core-python-scalar68-20261016/CONSUMING.md).
+The qualified private **Core/PythonRe 0.4.0-scalar.69** pair is produced by
+`98c4b20a910ac86f6c5d2d9122679d34d9e5f65b`. The same immutable packages pass
+detached Windows/Linux consumers, exact dependency/lock/DLL/symbol/SourceLink
+checks, capture fixtures and the CPython semantic catalog.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38967691650) is green.
+PythonRe pins Core `[0.4.0-scalar.69]`.
+[Handoff and exact scope](artifacts/core-python-scalar69-20261016/HANDOFF.md),
+[consumption instructions](artifacts/core-python-scalar69-20261016/CONSUMING.md).
 
-The next private Core/PythonRe scalar.69 candidate batches the terminal scalar-
-class VM and unused-vector removal with bounded literal construction polling.
-The same class semantics, basic metering, original interruption and result/alias
-contracts remain; fewer actual frames/work/storage revise admission intentionally.
-Package/platform/oracle/current-cost qualification is in progress. Qualified68
-stays immutable; no69 qualification, publication or consumer adoption is claimed.
+This delivery batches bounded literal construction polling, terminal scalar-class
+repeat execution in the existing VM, and omission of unused repeat vectors.
+The same scalar/class semantics, basic metering, original interruption and result
+lifetimes remain. Captured/general/assertion contexts retain required VM state.
+Fewer actual frames, work and allocations intentionally revise resource cutoffs;
+the captured-control performance tradeoff is recorded in the handoff. The prior
+ASCII-leading filter and admitted bulk/native Count changes remain included.
 
-Scalar.68 includes the accepted necessary-ASCII-leading filter: bounded checked
-search skips impossible starts,then the same Python scalar VM verifies survivors.
-Captures,strict whole-input validation,byte floors,pinned predicates,original
-cancellation/absolute deadline and four finite invocation controls remain.
-Anchored Match/FullMatch keep their starts. Less impossible-candidate work/storage
-can change numeric cutoffs. Prior65 admitted bulk/native Count simplifications
-and their explicit staging tradeoffs remain; no additional matcher or public mode.
-
-One selective exact68 ordinary observation includes full validation,required
-outputs/retention,all4finite caps/live tokens:165samples,minimum60.526ms. The4KB
-late Python Count takes1.473us unlimited/1.581us finite;miss0.377/0.483us,dense128
-matches42.5/43.4us.1000captured UTF8 tuples cost0.633/0.676ms. Native-family4KB
-Count takes0.753/0.759us with30-second deadlines in ALL lanes;other timed rows use
-infinite timeouts. Core family Count still has material finite overhead:60.7/326us
-on its27KB subject. Python Unicode word Count298.6/307.9us remains well above its
-59.5us overlapping predecoded BCL control. Raw allocations,shape exclusions and
-noisy BCL controls stay in the handoff. No CPython timing,broad parity,Status or
-new checked-access gate;closed c49 source pairs remain separately recorded.
+One selective exact-package observation includes full validation, required output
+materialization and retention, all four finite limits and live tokens. Mixed
+Unicode word Count takes 208 µs with finite limits; word values take 332 µs and
+1,000 captured UTF-8 tuples take 675 µs. Plain word Count allocates about 112 bytes
+with finite limits. Core family Count still costs 308 µs finite versus 60 µs
+unlimited. All 165 samples exceed 70 ms; allocations, overlapping BCL controls,
+noise and timeout policy are in the handoff. These current costs are separate
+from closed source comparisons; no CPython timing or broad parity claim is made.
 
 Core supplementary casing uses owned Unicode16 pairs;Python data remain pinned15.1
 with the nullable-repeat correction. No shipped BCL matcher/results or dormant

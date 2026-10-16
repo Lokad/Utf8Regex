@@ -1,5 +1,22 @@
 # Changelog
 
+## Core/PythonRe scalar.69 qualified dependency
+
+- Qualify the immutable pair from `98c4b20a` on Windows/Linux: exact dependency,
+  package/lock/DLL/symbol/SourceLink identities, complete detached consumers,
+  capture/semantic oracles and fresh final-feed public restore pass. Producer CI
+  is green. One affected producer build and pack per package; no Linux library
+  build, successful-suite replay or repacking of README assets.
+- Deliver bounded literal construction polling, terminal scalar-class repeat
+  execution and unused-vector omission. Preserve basic metering, interruption,
+  captures and result/alias lifetimes; reduced actual work/storage revises numeric
+  admission. Tiny plain Count and captured/result denial controls pass.
+- Record current exact-package finite costs: Unicode word Count 208 µs, word
+  values 332 µs, 1,000 captured tuples 675 µs; Core family remains 308 µs versus
+  60 µs unlimited. Preserve earlier source comparisons and noisy controls.
+- Keep independent PCRE67 and earlier inputs immutable. Full protection/SPEC and
+  actual host adoption remain open; no publication or consumer promotion.
+
 ## Core/PythonRe scalar.69 candidate preparation
 
 - Batch bounded construction polling,terminal class-repeat VM fusion and unused

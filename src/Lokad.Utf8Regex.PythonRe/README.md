@@ -1,50 +1,39 @@
 # Lokad.Utf8Regex.PythonRe
 
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
-strict UTF8 scalars,with primary byte coordinates and derived UTF16 projections.
+strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Qualified private **Core/PythonRe0.4.0-scalar.68** is produced by
-`530c2af6e160dcabd02477bbd53aa5657051e10c`. Actual PythonRe nuspec pins Core
-`[0.4.0-scalar.68]`. Same-byte Windows/Linux consumers,captures/CPython catalog,
-exact refs/locks/DLLs/symbols/SourceLink,final-feed public restore and
-[producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38957533591) pass.
-[Handoff](../../artifacts/core-python-scalar68-20261016/HANDOFF.md) and
-[consumption notes](../../artifacts/core-python-scalar68-20261016/CONSUMING.md)
-record identities,current costs and exclusions. Qualified65/earlier inputs stay
-immutable;PCRE2 qualifies independently.
+Qualified private **Core/PythonRe 0.4.0-scalar.69** is produced by
+`98c4b20a910ac86f6c5d2d9122679d34d9e5f65b`. PythonRe pins Core
+`[0.4.0-scalar.69]`. The same immutable packages pass Windows/Linux detached
+consumers, captures/CPython catalog, provenance and final-feed public restore.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38967691650) is green.
+[Handoff](../../artifacts/core-python-scalar69-20261016/HANDOFF.md) and
+[consumption notes](../../artifacts/core-python-scalar69-20261016/CONSUMING.md)
+record exact identities, current costs and exclusions. Earlier inputs remain
+immutable; PCRE2 qualifies independently.
 
-The next private Core/PythonRe scalar.69 candidate batches the terminal scalar-
-class VM and unused-vector removal with bounded literal construction polling.
-The same class semantics, basic metering, original interruption and result/alias
-contracts remain; fewer actual frames/work/storage revise admission intentionally.
-Package/platform/oracle/current-cost qualification is in progress. Qualified68
-stays immutable; no69 qualification, publication or consumer adoption is claimed.
+Eligible plain terminal scalar-class repeats execute in the same owned VM without
+unused rewind state or repeat vectors. Captures/general/assertion contexts retain
+required state. The existing leading filter, strict whole-subject validation,
+scalar byte floors, pinned predicates, original token/deadline and four finite
+invocation caps remain. Fewer actual work and allocations intentionally change
+numeric admission. Retained snapshots and cursor aliases remain valid. Python
+data remain pinned 15.1; no BCL matcher/results or UTF-16 matching progression.
+Core only retains permitted Unsafe.SizeOf, accepted by Lython; Python has no
+unchecked references or generated inline-array helpers.
 
-The mandatory first-ASCII-literal filter skips impossible starts with bounded
-checked spans;the same Python VM verifies every survivor. Match/FullMatch remain
-anchored to their requested start. Whole UTF8 validation,captures,scalar byte
-floors,pinned predicates,four finite invocation caps and original token/deadline
-remain. Less impossible-candidate work/storage can change numeric cutoffs.
-Prior admitted bulk/native Count reuse and explicit staging tradeoffs remain.
-Captured,empty,folded and lexical-sensitive shapes retain owned Python routes.
-Retained snapshots/cursor aliases stay valid. Python data remain pinned15.1;
-Core only retains accepted SizeOf,Python no unchecked references or generated
-helpers. No BCL matcher/results or UTF16 matching progression.
+Current exact-package finite costs: mixed Unicode word Count 208 µs, UTF-8 word
+values 332 µs, captured word Count 368 µs, and 1,000 captured tuples 675 µs.
+All 165 samples exceed 70 ms. Full validation/materialization/retention, finite
+limits and live tokens are included; raw samples, allocations, BCL controls,
+noise and timeouts stay in the handoff. No CPython timing or broad parity claim.
 
-Exact68 current ordinary costs,unlimited/finite:4KB prefix late Count1.473/1.581us,
-miss0.377/0.483us,dense128Count42.5/43.4us;1000captured UTF8 tuples0.633/0.676ms.
-Native-family4KB Count0.753/0.759us uses30-second deadlines in ALL lanes;other
-timed rows infinite. All165samples exceed60ms. Original allocations,raw samples,
-noisy BCL controls and exclusions remain. Unicode word Count still costs~308us
-finite versus~60us for the deliberately overlapping predecoded BCL control.
-No CPython timing,Status,broad parity or regression qualification is implied;
-closed source before/after evidence stays separate.
-
-Defaults/static cached APIs remain unlimited. Complete construction/lazy/default/
-live-retention/RSS and host integration remain unfinished;use existing owners per
-[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md). No publication,consumer pin/default
-change,adoption or full-profile claim. Package README preparation wording is frozen;
-the handoff and original manifest define completed qualification without repacking.
+Defaults/static caches remain unlimited. Complete construction/lazy/default/
+live-retention/RSS and host containment remain unfinished; compose explicit
+policies with existing [host owners](../../HOST-INTEGRATION.md). No publication,
+external pins/defaults or adoption change. Original package README preparation
+assets remain frozen; the handoff records qualification without repacking.
 
 ## Support Scope
 
