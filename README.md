@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex
 
+The **0.4.0-scalar.64 Core/PythonRe candidate** bundles the replacement-index
+error correction, simpler groupless/literal preparation and the original deadline
+through native bulk validation, byte-floor projection and output shaping.
+Its immutable candidate manifest and handoff define qualification status and exact
+identities. Earlier scalar.63 evidence remains scoped to those earlier bytes;
+PCRE2 delivery remains independent. No publication or downstream adoption is implied.
+
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
 The immutable **0.4.0-scalar.63** Core/PythonRe pair is qualified at clean producer

@@ -1,5 +1,15 @@
 # Changelog
 
+## Core/PythonRe scalar.64 candidate
+
+- Batch the accepted oversized replacement-index error correction, omitted
+  groupless projection preparation, literal decoder/factory cleanup and native
+  bulk deadline transfer into one fresh Core/PythonRe identity.
+- Qualification uses the existing same-byte consumer/provenance workflow and a
+  selective current-package cost observation. Its manifest/handoff records actual
+  completion; scalar.63 and earlier packages remain unchanged. Shared source
+  metadata does not designate a new PCRE2 package or downstream adoption.
+
 ## Preserve bulk PythonRe deadlines without scalar routing
 
 - Finite-timeout bulk collection borrows one invocation before validation and

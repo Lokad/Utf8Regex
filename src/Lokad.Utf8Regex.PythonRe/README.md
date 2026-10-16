@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex.PythonRe
 
+The **0.4.0-scalar.64 Core/PythonRe candidate** bundles the replacement-index
+error correction, simpler groupless/literal preparation and the original deadline
+through native bulk validation, byte-floor projection and output shaping.
+Its immutable candidate manifest and handoff define qualification status and exact
+identities. Earlier scalar.63 evidence remains scoped to those earlier bytes;
+PCRE2 delivery remains independent. No publication or downstream adoption is implied.
+
 `Lokad.Utf8Regex.PythonRe` is a `net10.0` side extension for `Lokad.Utf8Regex` that exposes a UTF-8-first Python `re` flavored API through `Utf8PythonRegex`.
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
