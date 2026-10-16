@@ -1,5 +1,16 @@
 # Changelog
 
+## Selected scalar.60 publication measurements
+
+- Refresh only literal/sherlock-en and structural/method-family-call, ordinary
+  and compiled, using exact scalar.60 bytes and frozen source03553ea5. All other
+  174 rows retain historical provenance. Preserve the compiled literal near tie
+  and compiled structural gap, with no broad current parity claim.
+- Keep the folded-alternation row historical after its bounded120s refresh
+  timeout. No repeat, raised cap or lane attribution. Incremental snapshot checks
+  require clean per-row provenance and matching pairs, allowing actual differing
+  environments. Generated parity and focused snapshot checks pass.
+
 ## Benchmark report preparation
 
 - Enumerate catalog IDs and operation tags without loading subjects or creating

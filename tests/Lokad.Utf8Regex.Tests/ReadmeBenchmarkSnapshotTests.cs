@@ -21,14 +21,9 @@ public sealed class ReadmeBenchmarkSnapshotTests
         AssertPairedSections(sections, "dotnet-performance", "dotnet-performance-compiled");
         AssertPairedSections(sections, "lokad", "lokad-compiled");
 
-        var environments = sections.EnumerateObject()
-            .SelectMany(static section => section.Value.GetProperty("Cases").EnumerateObject())
-            .Select(static benchmarkCase => benchmarkCase.Value.GetProperty("Environment"))
-            .ToArray();
-        Assert.Single(environments.Select(static environment => environment.GetProperty("Runtime").GetString()).Distinct());
-        Assert.Single(environments.Select(static environment => environment.GetProperty("OperatingSystem").GetString()).Distinct());
-        Assert.Single(environments.Select(static environment => environment.GetProperty("Processor").GetString()).Distinct());
-        Assert.Single(environments.Select(static environment => environment.GetProperty("TieredPgo").GetString()).Distinct());
+        // Incremental refreshes retain each row's real environment. AssertSection
+        // checks that provenance is present and clean; AssertPairedSections keeps
+        // ordinary/compiled lanes on the same measurement and environment.
     }
 
     [Fact]

@@ -25,7 +25,12 @@ and all four controls remain. The exact-package observation gives fixed Count
 about7.9us unlimited/19.8us finite and optional-prefix Count1.82ms/1.36ms, including
 required validation. The handoff retains raw samples, allocation costs and noisy
 or below-floor rows. Earlier source comparisons and historical benchmark tables
-remain dated evidence for their original implementations.
+remain dated evidence for their original implementations. The current refresh covers
+only `literal/sherlock-en` and `structural/method-family-call` (four ordinary/
+compiled rows); the other174 rows remain historical. The selected folded-family
+refresh exceeded its bounded window and supplies no new timing. Per-row source
+and environment in the JSON snapshot determine each observation's scope; a stored
+Status does not make an older row current.
 
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
@@ -140,7 +145,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---:|---:|---:|
-| `literal/sherlock-en` | 58.350 us | 84.315 us | 523.080 us |
+| `literal/sherlock-en` | 69.909 us | 83.324 us | 858.715 us |
 | `literal/sherlock-casei-en` | 88.400 us | 185.005 us | 628.530 us |
 | `literal/sherlock-ru` | 219.465 us | 94.520 us | 4,917.695 us |
 | `literal/sherlock-casei-ru` | 238.545 us | 396.730 us | 5,303.930 us |
@@ -221,7 +226,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---:|---:|---:|
-| `literal/sherlock-en` | 59.285 us | 75.240 us | 502.085 us |
+| `literal/sherlock-en` | 69.767 us | 70.919 us | 824.710 us |
 | `literal/sherlock-casei-en` | 90.770 us | 75.365 us | 514.820 us |
 | `literal/sherlock-ru` | 220.690 us | 86.570 us | 4,923.715 us |
 | `literal/sherlock-casei-ru` | 240.415 us | 195.615 us | 5,114.395 us |
@@ -306,7 +311,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal-family/method-token-family` | 8.827 us | 8.966 us | 19.876 us |
 | `structural/keyword-to-generic-type` | 4.066 us | 3.841 us | 14.840 us |
 | `structural/keyword-family-to-capitalized-identifier` | 76.970 us | 213.901 us | 228.874 us |
-| `structural/method-family-call` | 4.235 us | 7.683 us | 18.751 us |
+| `structural/method-family-call` | 6.121 us | 8.011 us | 23.773 us |
 | `structural/ordered-keyword-pair` | 4.186 us | 5.293 us | 16.094 us |
 | `structural/ordered-identifier-window` | 4.897 us | 29.340 us | 39.482 us |
 | `structural/modifier-family-to-type-window` | 25.148 us | 263.031 us | 276.133 us |
@@ -356,7 +361,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal-family/method-token-family` | 2.904 us | 5.112 us | 15.852 us |
 | `structural/keyword-to-generic-type` | 4.062 us | 3.310 us | 13.884 us |
 | `structural/keyword-family-to-capitalized-identifier` | 77.363 us | 86.135 us | 97.485 us |
-| `structural/method-family-call` | 4.248 us | 4.804 us | 15.704 us |
+| `structural/method-family-call` | 6.159 us | 5.019 us | 20.728 us |
 | `structural/ordered-keyword-pair` | 4.200 us | 3.917 us | 14.230 us |
 | `structural/ordered-identifier-window` | 4.828 us | 10.298 us | 20.605 us |
 | `structural/modifier-family-to-type-window` | 25.057 us | 104.715 us | 117.020 us |
