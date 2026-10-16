@@ -2,6 +2,10 @@
 
 ## Development after scalar.55
 
+- Restore inherited PCRE2 options after `DEFINE` groups. Keep definition-local
+  settings for subroutine bodies, declaration-order capture slots and outer
+  backreference case sensitivity. Existing invocation authority and scalar
+  results remain; immutable candidate bytes are unchanged.
 - Reject multiple hyphens in PCRE2 inline option directives and accept the empty
   `(?)` no-op before captures. Preserve single-hyphen precedence, lexical text,
   scalar empty advancement and existing resource admission.

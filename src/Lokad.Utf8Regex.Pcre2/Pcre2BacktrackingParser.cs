@@ -1003,6 +1003,9 @@ internal sealed class Pcre2BacktrackingParser
         if (_pattern.AsSpan(_offset).StartsWith("DEFINE)", StringComparison.Ordinal))
         {
             _offset += 7;
+            var definitionOptions = _options;
+            var definitionUngreedy = _ungreedy;
+            var definitionNoAutoCapture = _noAutoCapture;
             var definitionAllowDuplicateNames = _allowDuplicateNames;
             if (!TryParseAlternation(true, out _) || _offset >= _pattern.Length || _pattern[_offset] != ')')
             {
@@ -1010,6 +1013,9 @@ internal sealed class Pcre2BacktrackingParser
             }
 
             _offset++;
+            _options = definitionOptions;
+            _ungreedy = definitionUngreedy;
+            _noAutoCapture = definitionNoAutoCapture;
             _allowDuplicateNames = definitionAllowDuplicateNames;
             return true;
         }

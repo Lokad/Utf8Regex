@@ -91,6 +91,12 @@ with `InvalidAfterParensQuery` and accepts the valid empty `(?)` no-op before
 captures. Single-hyphen enable/disable precedence and literal/comment text keep
 their existing meanings; empty-match iteration still advances by complete scalars.
 
+`DEFINE` groups likewise restore inherited options on exit. Definition-local
+settings still govern their subroutine bodies; they cannot change the case,
+greediness, whitespace or capture policy of following pattern code. Definition
+capture slots retain their declaration order. This source correction preserves
+scalar references/results and the existing invocation limits and interruption.
+
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges

@@ -87,6 +87,12 @@ appearing on both sides of the single hyphen is disabled. Empty `(?)` is a valid
 no-op, including before captures, and contributes neither an atom nor a slot.
 Quoted, class, comment and control-verb-label text retains its lexical meaning.
 
+`(?(DEFINE)...)` is also an option scope. Its definitions retain their lexical
+case, line, dot, extended, greediness and capture settings for subroutine calls;
+closing the definition group restores the inherited settings for following code.
+Definition capture slots remain part of the pattern's declaration-order table,
+including when the definition is not called.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.
