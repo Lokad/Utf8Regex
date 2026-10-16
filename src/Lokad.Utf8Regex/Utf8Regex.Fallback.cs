@@ -633,26 +633,7 @@ public sealed partial class Utf8Regex
                NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
 
     private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
-    {
-        while (input.Length >= 3)
-        {
-            var index = input.IndexOf((byte)0xE2);
-            if (index < 0)
-            {
-                return false;
-            }
-
-            input = input[index..];
-            if (input[1] == 0x84 && input[2] == 0xAA)
-            {
-                return true;
-            }
-
-            input = input[1..];
-        }
-
-        return false;
-    }
+        => input.IndexOf("K"u8) >= 0;
 
     private static bool RequiresKelvinSignFallback(Utf8PreparedRegex preparedRegex)
     {

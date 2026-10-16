@@ -32,6 +32,14 @@ refresh exceeded its bounded window and supplies no new timing. Per-row source
 and environment in the JSON snapshot determine each observation's scope; a stored
 Status does not make an older row current.
 
+Subsequent development source also reuses the metered literal counter for
+eligible invariant, left-to-right, nonempty folded literals/families without
+captures or search constraints. Strict validation, bounded Kelvin screening and
+search share the original invocation. Relevant Kelvin retains scalar execution.
+Native Count needs no VM depth/working/result scratch, so tighter policies may
+succeed. This source change is outside immutable scalar.60; its bounded public
+comparison and limitations are recorded in the changelog and experiment receipt.
+
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
 proposals. Core costs combine source comparisons and focused final follow-ups;

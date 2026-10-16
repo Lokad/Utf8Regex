@@ -1201,6 +1201,46 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Native literal count breached the invocation budget.");
             return count;
         }
+        // Borrow the same validated invocation for invariant folded literals.
+        // Their only non-ASCII alias is Kelvin; keep that case on the scalar VM.
+        if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
+            _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
+            (Options & RegexOptions.CultureInvariant) != 0 && !_hasCaptures &&
+            !program.RightToLeft && !program.CanMatchEmpty && !program.HasBalancing &&
+            !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+            !program.UsesInterpretedLazyLoopSemantics && !program.HasContiguousAnchor &&
+            !program.SawLookaround && !program.HasConditionalTest &&
+            (Options & RegexOptions.NonBacktracking) == 0 &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
+        {
+            var containsKelvin = false;
+            if (_requiresKelvinSignFallback)
+            {
+                for (var offset = 0; offset < input.Length;)
+                {
+                    var scanBreach = invocation.TryChargeInputStep();
+                    if (scanBreach != Utf8ExecutionLimitKind.None)
+                        throw new InvalidOperationException("Folded literal screening exceeded the invocation budget.");
+                    var length = Math.Min(2048, input.Length - offset);
+                    // Two lookahead bytes preserve a three-byte scalar crossing
+                    // the admitted window. Every search remains bounded.
+                    if (ContainsKelvinSign(input.Slice(offset, Math.Min(length + 2, input.Length - offset))))
+                    {
+                        containsKelvin = true;
+                        break;
+                    }
+                    offset += length;
+                }
+            }
+            if (!containsKelvin)
+            {
+                var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
+                    _preparedRegex.SearchPlan, input, false, ref invocation, out var count);
+                if (breach != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException("Folded literal count exceeded the invocation budget.");
+                return count;
+            }
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

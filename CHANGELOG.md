@@ -1,5 +1,19 @@
 # Changelog
 
+## Invariant folded-literal Count source improvement
+
+- Reuse the existing metered literal executor for eligible invariant, left-to-right,
+  capture-free folded Count after strict validation. Validation, bounded Kelvin
+  screening and search share the original work/token/deadline authority. Relevant
+  Kelvin, captures and other excluded features retain scalar VM execution.
+- The route needs no VM depth/working/result scratch and can admit tighter finite
+  limits. Use checked span search for Kelvin to handle incomplete window tails.
+- One bounded public pair against scalar.60 reduces the 899 KB folded family from
+  about210–215ms to21ms with unlimited, finite and live-token policies, and drops
+  its Count allocations from1872/1984B to0/112B. Unchanged unlimited exact-literal
+  controls stay within1%; retain raw samples and the rejected earlier prototype.
+  This is source evidence, outside the immutable scalar.60 package.
+
 ## Selected scalar.60 publication measurements
 
 - Refresh only literal/sherlock-en and structural/method-family-call, ordinary
