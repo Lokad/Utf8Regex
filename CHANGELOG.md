@@ -1,5 +1,13 @@
 # Changelog
 
+## Core/PythonRe scalar.65 candidate preparation
+
+- Batch the accepted metered literal-family bulk and Count changes into one new
+  private Core/PythonRe version. Exact dependencies, package provenance, platform
+  consumers and current costs qualify separately through the existing workflow.
+- Earlier candidates remain immutable. Shared source metadata also advances the
+  PCRE2 project version; no PCRE2 scalar.65 package is qualified by this boundary.
+
 ## Reuse metered literal families for Python bulk results
 
 - Capture-free nonempty exact families reuse the existing native invocation

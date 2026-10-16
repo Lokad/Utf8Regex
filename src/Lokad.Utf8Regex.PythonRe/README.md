@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex.PythonRe
 
+This source prepares the private **Core/PythonRe 0.4.0-scalar.65** candidate,
+batching metered literal-family bulk and Count improvements. Its separate
+`artifacts/scalar-candidates/0.4.0-scalar.65/candidate.json` records package
+identity and qualification when complete; source acceptance alone does not.
+The preceding qualified64 input and its evidence below remain immutable.
+
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF16 projections.
 

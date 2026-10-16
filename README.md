@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex
 
+This source prepares the private **Core/PythonRe 0.4.0-scalar.65** candidate,
+batching metered literal-family bulk and Count improvements. Its separate
+`artifacts/scalar-candidates/0.4.0-scalar.65/candidate.json` records package
+identity and qualification when complete; source acceptance alone does not.
+The preceding qualified64 input and its evidence below remain immutable.
+
 `Lokad.Utf8Regex` is a managed `net10.0` regex library matching complete Unicode
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once, across its four bytes. UTF-16 coordinates and strings are derived conveniences.
