@@ -37,6 +37,14 @@ execution and admission. Both original detached platforms and full scalar
 predicate checks pass; its exact-package current costs and scope are in
 [the scalar.55 handoff](artifacts/core-python-scalar55-20261016/HANDOFF.md).
 Those operating costs do not replace scalar.52's fixed-original conversion gate.
+The subsequent immutable scalar.60 Core/PythonRe pair also retains that inventory:
+Core only permitted SizeOf, PythonRe none; no generated helpers, native imports or
+BCL matcher/result dependencies. Exact original detached Windows/Linux checks,
+identities and current package costs are in the
+[scalar.60 handoff](artifacts/core-python-scalar60-20261016/HANDOFF.md).
+This new operating-cost observation does not replace scalar.52's fixed-original
+conversion gate or settle Lython's unmodified SizeOf rejection.
+
 ## Acceptance rule and chronological evidence
 
 The core matches strict UTF-8 scalars. Checked-access conversions must preserve

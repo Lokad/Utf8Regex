@@ -4,19 +4,20 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.55**,
-producer `eeb74d146b8682e023bbbe9fdee2df4042df18af`. It covers strict UTF-8 scalar
+The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.60**,
+producer `ff4e16b38cc80ea5fe57de21759ead30798d8279`. It covers strict UTF-8 scalar
 matching, authoritative capture completion, an explicitly owned persistent cursor,
 finite invocation work/depth/working/result limits and covered eager construction
 controls. Exact detached Windows/Linux consumers and CPython capture/digest checks
-pass. Use `artifacts/scalar-candidates/0.4.0-scalar.55/candidate.json`, its immutable
-feed/config and `artifacts/core-python-scalar55-20261016/HANDOFF.md`; the delivery
+pass. Use `artifacts/scalar-candidates/0.4.0-scalar.60/candidate.json`, its immutable
+feed/config and `artifacts/core-python-scalar60-20261016/HANDOFF.md`; the delivery
 receipt records exact identities, coverage and the scope of cost evidence.
 
-Scalar.55 includes the identifier/class/boundary corrections below. Same-byte
+Scalar.60 retains scalar.55's identifier/class/boundary corrections and includes
+the accumulated Core Count improvements. Same-byte
 detached Windows/Linux checks, exact restore/provenance and all-scalar class/
 identifier comparisons pass; current finite-limit public costs are recorded.
-Existing scalar.52 and separate PCRE2 inputs remain unchanged. No publication,
+Existing scalar.55 and independent Core/PCRE2 59 inputs remain unchanged. No publication,
 consumer pin/default change or adoption is implied.
 
 This pair is not published or accepted downstream automatically. Lython's Core DLL

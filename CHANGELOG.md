@@ -1,10 +1,18 @@
 # Changelog
 
-## Private scalar.60 Core/PythonRe candidate preparation
+## Private scalar.60 Core/PythonRe input
 
-- Reserve a fresh immutable identity for the accumulated Core Count changes.
-  Qualification and exact-package operating costs are pending; Core/PythonRe55
-  remains the designated input. PCRE2 qualifies independently and retains59.
+- Qualify a fresh immutable pair from clean producerff4e16b3 for the accumulated
+  Core Count changes. Original detached Windows/Linux runs test identical bytes,
+  exact mapped references/locks/provenance/symbols and scalar/capture/resource
+  coverage. CPython capture/catalog and full scalar class/identifier checks pass;
+  producer CI38872244383 is green on both platforms.
+- Record one current exact-package public-cost observation, including finite/token
+  controls, required materialization and early cursor disposal. Preserve noisy
+  detailed-result and below-floor family rows; no causal comparison with prior
+  packages or broad performance equivalence claim. SizeOf acceptance and complete
+  host containment remain separate. Original55/independent PCRE259 stay immutable;
+  no publication, consumer pin/default/adoption or PCRE260 designation.
 
 ## Optional-prefix Count search-data lifetime
 
