@@ -1,5 +1,17 @@
 # Changelog
 
+## Core/PythonRe scalar.68 qualified dependency
+
+- Accepted necessary-ASCII-leading filtering is included in one immutable pair.
+  Same-byte Windows/Linux consumers,104 capture fixtures/91 semantic digests,
+  exact provenance/locks/DLLs/symbols/SourceLink and producer CI pass.
+- One selective165-sample current-cost observation includes all4finite controls
+  and live tokens:4KB prefix late Count1.58us finite,miss0.48us,1000tuples0.676ms.
+  Core family/Unicode word gaps,allocations and noisy overlapping controls remain
+  explicit. No closed source pair replay or broad performance/Status claim.
+- Preserve65/earlier bytes,independent PCRE67/failed66 and source-staged frame reuse.
+  SizeOf acceptance is settled;no publication,consumer switch or full SPEC claim.
+
 ## Core/PythonRe scalar.68 candidate preparation
 
 - Prepare one distinct immutable Core/PythonRe input for accepted c49ab7a2's

@@ -4,50 +4,46 @@
 scalars over strict UTF-8 spans,with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF16 coordinates/strings are derived conveniences.
 
-The qualified private **Core/PythonRe0.4.0-scalar.65** pair is produced by
-`eceb60dafa25c1de8a8b5a0803c1b9df7ab6c1e7`. Complete detached Windows/Linux
-package suites,exact dependencies/locks/DLLs/symbols/SourceLink,capture/catalog
-controls and [producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38944814708)
-pass. Actual PythonRe nuspec requires Core `[0.4.0-scalar.65]`.
-[Handoff and exact scope](artifacts/core-python-scalar65-20261016/HANDOFF.md),
-[consumption instructions](artifacts/core-python-scalar65-20261016/CONSUMING.md).
+The qualified private **Core/PythonRe0.4.0-scalar.68** pair is produced by
+`530c2af6e160dcabd02477bbd53aa5657051e10c`. Complete detached Windows/Linux
+consumers,exact dependencies/locks/DLLs/symbols/SourceLink,captures/CPython catalog
+and [producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38957533591) pass.
+Actual PythonRe nuspec pins Core `[0.4.0-scalar.68]`.
+[Handoff and exact scope](artifacts/core-python-scalar68-20261016/HANDOFF.md),
+[consumption instructions](artifacts/core-python-scalar68-20261016/CONSUMING.md).
 
-The next private Core/PythonRe scalar.68 candidate is in preparation. It batches
-accepted source c49ab7a2's mandatory-ASCII-leading filter while retaining the same
-Python scalar verifier, captures, strict whole-input validation and original
-resource/interruption authority. New package/platform/oracle/current-cost evidence
-is still required. Qualified65 stays immutable and PCRE2 remains independent;
-no68 qualification, publication or downstream adoption is claimed here.
+Scalar.68 includes the accepted necessary-ASCII-leading filter: bounded checked
+search skips impossible starts,then the same Python scalar VM verifies survivors.
+Captures,strict whole-input validation,byte floors,pinned predicates,original
+cancellation/absolute deadline and four finite invocation controls remain.
+Anchored Match/FullMatch keep their starts. Less impossible-candidate work/storage
+can change numeric cutoffs. Prior65 admitted bulk/native Count simplifications
+and their explicit staging tradeoffs remain; no additional matcher or public mode.
 
-Scalar.65 reuses existing metered literal-family cursors/counters under the
-original Python invocation. It preserves strict whole-input validation,captures,
-byte floors,original cancellation/absolute deadline and four finite invocation
-controls. Standard range/result staging and public failures replace unlimited-only
-assumptions. Pure Count needs no modeled result payload or VM frames; tighter
-policies can admit earlier,while bulk staging can increase result traffic.
-Captured,empty,folded and lexical-sensitive shapes retain their Python routes.
-
-One selective exact65 ordinary observation includes full validation,required
-outputs/retention,all4finite caps and live tokens.130samples exceed50ms. The4KB
-late Python bulk case takes5.44us with unlimited caps/5.53us finite;family Count
-0.750/0.765us. Both use30-second deadlines in ALL lanes.1000 captured UTF8 tuples
-cost0.675/0.726ms;first-result cursor disposal1.45/1.63us. Core family Count still
-has material finite overhead:62.5/329us on its selected27KB subject. Raw allocations,
-BCL overlap/exclusions and noisy controls remain in the handoff. These are current
-operating costs,not broad parity,CPython performance or a checked-access regression
-gate. Closed source before/after evidence remains separate from exact-package costs.
+One selective exact68 ordinary observation includes full validation,required
+outputs/retention,all4finite caps/live tokens:165samples,minimum60.526ms. The4KB
+late Python Count takes1.473us unlimited/1.581us finite;miss0.377/0.483us,dense128
+matches42.5/43.4us.1000captured UTF8 tuples cost0.633/0.676ms. Native-family4KB
+Count takes0.753/0.759us with30-second deadlines in ALL lanes;other timed rows use
+infinite timeouts. Core family Count still has material finite overhead:60.7/326us
+on its27KB subject. Python Unicode word Count298.6/307.9us remains well above its
+59.5us overlapping predecoded BCL control. Raw allocations,shape exclusions and
+noisy BCL controls stay in the handoff. No CPython timing,broad parity,Status or
+new checked-access gate;closed c49 source pairs remain separately recorded.
 
 Core supplementary casing uses owned Unicode16 pairs;Python data remain pinned15.1
-with the owned nullable-repeat correction. No shipped BCL matcher/results or dormant
-UTF16 engine. Core only references permitted Unsafe.SizeOf,accepted by Lython;
-PythonRe has no unchecked API references or generated inline-array helpers.
+with the nullable-repeat correction. No shipped BCL matcher/results or dormant
+UTF16 engine. Core only retains permitted Unsafe.SizeOf,accepted by Lython;
+PythonRe has no unchecked references or generated inline-array helpers.
 
 Defaults/static cached APIs remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 composes covered capacity with existing owners;complete construction,lazy,default,
 live-retention,RSS/host containment and full SPEC remain unfinished. This scoped
 input does not imply publication,consumer pins/defaults/adoption or POSIX-longest
-selection. Published0.3 packages retain their former UTF16 contract. Previous64
-and earlier candidates remain immutable;PCRE2 qualifies independently.
+selection. Published0.3 packages retain their former UTF16 contract. Qualified65
+and earlier inputs remain immutable;PCRE67 qualifies independently. Later PCRE
+frame reuse remains source-staged. Package preparation README assets stay frozen;
+the handoff and original manifest record completed qualification without repacking.
 
 Use exact versions and the immutable feed/manifest. The existing
 [qualifier](qualify-scalar-candidate.ps1) builds/packs Core/Python once and records
