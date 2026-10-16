@@ -13,6 +13,7 @@ public sealed class Utf8FacadeRetainedGraphTests
 {
     [Theory]
     [InlineData("(?<n>abc)", false)] [InlineData("(?<n>abc)", true)]
+    [InlineData("(?<a>cat)|(?<b>horse)", false)] [InlineData("(?<a>cat)|(?<b>horse)", true)]
     [InlineData("(?<a>ab)c(?<b>d)?", false)] [InlineData("(?<a>ab)c(?<b>d)?", true)]
     [InlineData("(ab(c)|x(yz))", false)] [InlineData("(ab(c)|x(yz))", true)]
     [InlineData("(?i:Шерлок Холмс|Джон Уотсон|Ирен Адлер)", false)]
@@ -47,7 +48,8 @@ public sealed class Utf8FacadeRetainedGraphTests
     {
         var types = new HashSet<Type>();
         foreach (var (pattern, options) in new[] {
-            ("(?<n>abc)", RegexOptions.None), ("(?<a>ab)c(?<b>d)?", RegexOptions.None),
+            ("(?<n>abc)", RegexOptions.None), ("(?<a>cat)|(?<b>horse)", RegexOptions.None),
+            ("(?<a>ab)c(?<b>d)?", RegexOptions.None),
             ("(ab(c)|x(yz))", RegexOptions.None), ("^(?<n>😀abc)", RegexOptions.None),
             ("Шерлок Холмс|Джон Уотсон|Ирен Адлер", RegexOptions.IgnoreCase),
             ("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", RegexOptions.None) })

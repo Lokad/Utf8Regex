@@ -10,6 +10,11 @@ empty metadata, group-zero text and four fixed-size frontend arrays; dynamic maj
 storage keeps its existing admission. Dead helper charges and shared storage can
 be counted again, causing earlier eviction. Production publication does not walk
 object graphs, deduplicate identities or retain manifests/reference counts.
+Literal-family capture maps are retained only for their existing detailed LTR
+multi-group literal-family projection route. Other constructors omit unused map
+preparation; diagnostic summaries construct equivalent temporary views on demand.
+Lower actual preparation can admit tighter construction policies while covered
+cache/construction bounds remain conservative.
 Generation/pending coordination, failed preparation rollback and externally held
 program/result validity remain required. Covered delegate managed copies are
 included; opaque CLR method/resolver/JIT storage, caller retention and process RSS

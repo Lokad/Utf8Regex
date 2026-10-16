@@ -153,7 +153,13 @@ public sealed partial class Utf8Regex
         var ownedSliceProgram = preparedRegex.ScalarProgram
             ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
         _ownedSliceProgram = ownedSliceProgram;
-        _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
+        // Only detailed LTR multi-group literal families consume this map.
+        // Other shapes retain scalar capture execution without unused metadata.
+        _literalFamilyCaptureMap =
+            preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
+            _groupNumbers.Length > 2 && !UsesRightToLeft()
+                ? Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree)
+                : null;
         _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
         _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
@@ -1709,7 +1715,7 @@ public sealed partial class Utf8Regex
         }
 
 
-        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
+        if (_literalFamilyCaptureMap is { } branchMap &&
             TryMatchDetailedBranchedLiteralFamily(input, analysis.BoundaryMap, branchMap, 0, out var branched))
         {
             return branched;
@@ -2212,24 +2218,6 @@ public sealed partial class Utf8Regex
             default:
                 return false;
         }
-    }
-
-    private bool TryGetBranchedLiteralFamilyMap(out Utf8LiteralFamilyCaptureMap? map)
-    {
-        // R03: multi-group top-level literal alternations with a branch-to-group map discover
-        // through the family cursor and shape from owned spans. The cursor scans left to right,
-        // so right-to-left shapes keep scalar capture execution.
-        map = null;
-        if (_literalFamilyCaptureMap is null ||
-            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
-            _groupNumbers.Length <= 2 ||
-            UsesRightToLeft())
-        {
-            return false;
-        }
-
-        map = _literalFamilyCaptureMap;
-        return true;
     }
 
     // Returns true when native branch discovery owns the result; false selects scalar discovery.

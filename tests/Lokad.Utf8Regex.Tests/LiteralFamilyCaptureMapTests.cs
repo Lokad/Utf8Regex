@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
 /// R03 branch-to-group capture maps: pins which literal-alternation shapes map to owned
-/// per-branch group spans and which keep declining to the BCL routes.
+/// per-branch group spans and which retain scalar capture execution.
 /// </summary>
 public sealed class LiteralFamilyCaptureMapTests
 {

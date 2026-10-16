@@ -429,7 +429,10 @@ public sealed partial class Utf8Regex
 
     private string DebugLiteralFamilyCaptureMapSummary()
     {
-        if (_literalFamilyCaptureMap is not { } map)
+        // Diagnostics can inspect shapes that production never projects here.
+        // Build that temporary view only when requested, without retaining it.
+        var map = _literalFamilyCaptureMap ?? Utf8LiteralFamilyCaptureMap.TryCreate(_preparedRegex.ExecutionTree);
+        if (map is null)
         {
             return "declined";
         }

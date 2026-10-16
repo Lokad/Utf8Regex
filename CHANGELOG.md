@@ -1,5 +1,16 @@
 # Changelog
 
+## Prepare capture maps only for active projection
+
+- Retain literal capture maps only for their existing detailed LTR multi-group
+  family route; remove the redundant runtime selector. Diagnostic summaries build
+  unused views on demand, preserving their output. No matching or public API change.
+- Existing construction/capture/cache checks pass with active-map graph coverage
+  retained. A bounded allocation observation shows416–488B less per ordinary
+  constructor in three inactive-map examples, with unchanged active-map control.
+  Lower preparation can admit tighter construction limits. No timing, package or
+  broad performance claim; immutable scalar.61 stays unchanged.
+
 ## Bound adapter package dependencies to the tested Core
 
 - Subsequent PythonRe/PCRE2 packaging emits an exact Core version range using the
