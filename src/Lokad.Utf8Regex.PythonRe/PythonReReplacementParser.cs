@@ -81,7 +81,9 @@ internal static class PythonReReplacementParser
         }
         if (numeric)
         {
-            var number = int.Parse(name, CultureInfo.InvariantCulture);
+            if (!int.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var number))
+                throw new PythonRePatternException(storage.Text().Append("invalid group reference ")
+                    .Append(name.TrimStart('0')).ToText());
             ValidateGroupReference(storage, number, captureGroupCount);
             return PythonReReplacementToken.ForGroupNumber(number);
         }

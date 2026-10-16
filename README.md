@@ -24,6 +24,14 @@ Higher minima, lazy/possessive and supplementary controls are covered. Core/PCRE
 keep their previous repeat rule. Its source comparison's 34–37% same-result Count
 cost remains explicit, independent of the completed 10% checked-access gate.
 
+Development corrects one replacement-error classification beyond immutable63:
+oversized decimal group references such as `\g<2147483648>` now raise
+`PythonRePatternException`, rather than `OverflowException`. Valid references and
+construction/interruption controls remain; the existing admitted error builder
+can report a resource denial before publishing its error under tighter limits.
+[Original63 limitation and source proof](artifacts/python-replacement-index-audit-20261016/SCALAR63-ERRATUM.md).
+This source correction does not mutate the qualified package or designate a new one.
+
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
 Core/PythonRe 63 is a scoped private producer input, independent of PCRE2.

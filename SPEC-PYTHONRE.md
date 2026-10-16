@@ -112,6 +112,12 @@ Supported feature families in the current profile:
 * atomic groups
 * leading and scoped inline flags for `i`, `m`, `s`, `x`, `u` on `str` patterns
 * Python replacement references `\\1` and `\\g<name>`
+  Oversized decimal indices are syntax errors, not arithmetic overflow. Valid
+  leading-zero group numbers retain their value; error formatting uses admitted
+  construction text like other parser failures. The source correction is outside
+  immutable scalar.63; numeric-error positions retain their existing unknown
+  sentinel where no position was supplied.
+
 * Python escape parsing for `\x..`, `\u....`, `\U........`, and octal escapes on `str` patterns
 * ASCII-mode semantics for `\w`, `\W`, `\d`, `\D`, `\s`, `\S`, `\b`, `\B`
 

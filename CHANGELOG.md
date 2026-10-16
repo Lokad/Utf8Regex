@@ -1,5 +1,15 @@
 # Changelog
 
+## Correct oversized Python replacement indices
+
+- Oversized decimal group references now raise PythonRePatternException rather
+  than OverflowException. Preserve valid/leading-zero references, unknown-name
+  errors, original interruption and parent/cache cleanup. Existing admitted error
+  text may deny tighter construction capacity before syntax-error publication.
+- Pinned public controls and focused parser/resource/capture checks pass; no
+  matching algorithm, ownership mode or performance-equivalence claim. Immutable
+  scalar.63 retains its old behavior; the source correction is staged separately.
+
 ## Core/PythonRe scalar.63 delivery
 
 - Immutable pair at a24a3983 includes owned Unicode 16 supplementary casing and

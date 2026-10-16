@@ -172,6 +172,9 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     [InlineData(@"\g<>", "missing group name", 3)]
     [InlineData(@"\g<a b>", "bad character in group name 'a b'", 3)]
     [InlineData(@"\13", "invalid group reference 13", -1)]
+    [InlineData(@"\g<2147483648>", "invalid group reference 2147483648", -1)]
+    [InlineData(@"\g<0002147483648>", "invalid group reference 2147483648", -1)]
+    [InlineData(@"\g<999999999999999999>", "invalid group reference 999999999999999999", -1)]
     [InlineData(@"\777", @"octal escape value \777 outside of range 0-0o377", -1)]
     public void GrammarErrorsKeepTheirMessagePositionAndParentState(string template, string message, int position)
     {
@@ -188,10 +191,37 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     }
 
     [Fact]
-    public void UnknownAndOverflowingReferencesKeepTheirExceptionTypes()
+    public void UnknownNamesKeepTheirExceptionType()
     {
         Assert.Equal("unknown group name 'absent'", Assert.Throws<IndexOutOfRangeException>(() => Parse(@"\g<absent>")).Message);
-        Assert.Throws<OverflowException>(() => Parse(@"\g<2147483648>"));
+    }
+
+    [Theory]
+    [InlineData(@"\g<2147483648>")]
+    [InlineData(@"\g<0002147483648>")]
+    [InlineData(@"\g<999999999999999999>")]
+    public void OversizedPublicReferencesAreSyntaxErrorsAndNeverRetainFailedPlans(string template)
+    {
+        foreach (var finite in new[] { false, true })
+        {
+            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
+                MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
+            var regex = new Utf8PythonRegex("(😀)a", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            var input = "😀a"u8.ToArray();
+            var retained = regex.SearchDetailedData(input);
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                Assert.Throws<PythonRePatternException>(() => regex.Replace(input, template));
+                Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString(input, template));
+                Assert.Throws<PythonRePatternException>(() => regex.SubnToString(input, template));
+                Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
+            }
+            Assert.Equal("😀a", retained.Value.ValueText);
+            Assert.Equal("😀", retained.Groups[1].ValueText);
+            Assert.Equal("😀", regex.ReplaceToString(input, @"\g<00000000000000000000001>"));
+            Assert.Equal("😀a", regex.ReplaceToString(input, @"\g<00000000000000000000000>"));
+            Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);
+        }
     }
 
     [Theory]

@@ -13,7 +13,7 @@ green. The actual nuspec requires Core `[0.4.0-scalar.63]`. See
 `artifacts/scalar-candidates/0.4.0-scalar.63/candidate.json` and
 `artifacts/core-python-scalar63-20261016/HANDOFF.md` for exact identities and scope.
 
-PythonRe implementation and pinned Unicode 15.1 class/case/identifier data are unchanged;
+Within immutable63, PythonRe implementation and pinned Unicode 15.1 class/case/identifier data are unchanged;
 38 source/blob witnesses reuse prior full scalar-data evidence. Core's owned
 supplementary Unicode 16.0 case lookup and simpler metered family verification are qualified
 separately from that unchanged-code claim. Scalar.62's Python mandatory-empty-
@@ -32,6 +32,13 @@ qualification without repacking. No publication, consumer pin/default change or
 adoption is implied. Defaults/static cached calls remain unlimited; complete
 construction/lazy/default/live-retention and broader profile gates are unfinished.
 PCRE2 qualifies independently.
+
+Development additionally corrects oversized decimal replacement references:
+`\g<2147483648>` reports `PythonRePatternException` through the existing admitted
+error builder, rather than leaking `OverflowException`. Unknown names/valid
+leading-zero references and original construction/token/deadline controls remain.
+Immutable63 retains its old failure classification; the separate source receipt
+and erratum do not repack or qualify new bytes as that same candidate.
 
 The earlier scalar.52 pair completed the Core/PythonRe checked-access batch. Selected Core costs
 against the fixed original fit10%, with unchanged allocations and a narrow
