@@ -174,18 +174,52 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         // Count/validate before allocating the output. Parsing starts only after
         // the decoded string has been admitted into the enclosing owner.
         ChargeWork((ulong)input.Length);
-        var bytes = StringBytes(encoding.GetCharCount(input));
+        var charCount = 0;
+        for (var offset = 0; offset < input.Length;)
+        {
+            if (offset != 0) ChargeWork(0);
+            var count = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
+            try { charCount = checked(charCount + encoding.GetCharCount(input.Slice(offset, count))); }
+            catch (DecoderFallbackException failure) when (offset != 0)
+            {
+                // Codec spans report chunk-relative indices. Keep the original
+                // input coordinate and offending bytes for pattern diagnostics.
+                var index = checked(offset + failure.Index);
+                throw new DecoderFallbackException($"Invalid UTF-8 data at byte index {index}.", failure.BytesUnknown, index);
+            }
+            offset += count;
+        }
+        var bytes = StringBytes(charCount);
         ReserveBytes(bytes);
         try
         {
             ChargeWork((ulong)input.Length);
-            return encoding.GetString(input);
+            return string.Create(charCount, new ConstructionDecodeState(input, this, encoding), static (destination, state) =>
+            {
+                var written = 0;
+                for (var offset = 0; offset < state.Input.Length;)
+                {
+                    if (offset != 0) state.Budget.ChargeWork(0);
+                    var count = Utf8SliceBufferWork.Utf8BlockLength(state.Input[offset..]);
+                    written += state.Encoding.GetChars(state.Input.Slice(offset, count), destination[written..]);
+                    offset += count;
+                }
+            });
         }
         catch
         {
             ReleaseBytes(bytes);
             throw;
         }
+    }
+
+    // Synchronous string.Create state borrows the existing owner and bytes;
+    // no intermediate buffer, retained owner or independent allowance.
+    private readonly ref struct ConstructionDecodeState(ReadOnlySpan<byte> input, Utf8ConstructionBudget budget, Encoding encoding)
+    {
+        internal ReadOnlySpan<byte> Input { get; } = input;
+        internal Utf8ConstructionBudget Budget { get; } = budget;
+        internal Encoding Encoding { get; } = encoding;
     }
 
     internal int AvailableArrayCapacity<T>()

@@ -6,6 +6,34 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonRePublicConstructionTests
 {
     [Theory]
+    [InlineData(4093)] [InlineData(4094)] [InlineData(4095)] [InlineData(4096)]
+    public void ByteFactoryPreservesScalarsAcrossDecodeBlocks(int prefix)
+    {
+        var pattern = new string('a', prefix) + "😀é";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(pattern);
+        var regex = Utf8PythonRegex.Compile(bytes, PythonReCompileOptions.None,
+            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
+            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        Assert.Equal(pattern, regex.Pattern);
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
+        Assert.True(regex.FullMatch(bytes).Success);
+        Assert.Equal(1, regex.Count(bytes));
+        Assert.False(Utf8ConstructionScope.IsActive);
+    }
+
+    [Fact]
+    public void ByteFactoryRetainsAbsoluteMalformedOffsetAfterDecodeBlock()
+    {
+        var bytes = Enumerable.Repeat((byte)'a', 8193).Append((byte)0xff).ToArray();
+        var failure = Assert.Throws<ArgumentException>(() => Utf8PythonRegex.Compile(bytes,
+            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited,
+            Utf8ConstructionPolicy.Default, Timeout.InfiniteTimeSpan, CancellationToken.None));
+        Assert.Equal("patternUtf8", failure.ParamName);
+        Assert.Equal(8193, Assert.IsType<System.Text.DecoderFallbackException>(failure.InnerException).Index);
+        Assert.False(Utf8ConstructionScope.IsActive);
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void ExplicitCompileNeedsNoLaterFullMatchConstruction(bool bytes)
     {

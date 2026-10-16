@@ -1458,6 +1458,15 @@ so the bounded interval is at most2049 units; matching remains over UTF8 scalars
 These checkpoints charge no additional numeric work and add no allocation.
 Short spans require no extra poll. Interruption can precede a later malformed
 tail or byte acquisition; failure during encoding releases unpublished capacity.
+Development after scalar.71 also bounds construction UTF8 decoding's count and
+fill passes with the existing scalar-aligned4096-byte block helper and checked
+codec span operations. Strict versus repairing fallback, absolute malformed-byte
+indices/offending bytes, two whole-pass numeric work charges and one admitted
+string remain. Chunk checkpoints borrow the same owner and charge zero additional
+work; short inputs keep their checkpoints. Interruption can precede a later
+malformed tail, and failed fill releases only unpublished string capacity. Later
+chunk decoder diagnostic text is owned; its error index remains input-relative.
+No temporary array, retained owner, new scanner or policy mode is introduced.
 Other text/encoding producers retain separate coverage.
 The owned in-place heap sort admits each comparison/swap and propagates resource
 failures directly. Core/PythonRe parsers and preparation walkers share live

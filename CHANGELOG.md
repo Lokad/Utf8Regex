@@ -1,5 +1,20 @@
 # Changelog
 
+## Development: bounded UTF8 construction decoding
+
+- Count and decode caller-sized UTF8 pattern bytes with checked codec spans in
+  existing scalar-aligned4096-byte blocks. Borrow the same construction authority;
+  keep both whole-pass numeric work charges and one admitted string, with no
+  intermediate array, scanner, independent owner or policy mode.
+- Preserve strict/repairing fallback and absolute malformed indices/offending
+  bytes. Later-block inner decoder wording is owned. Original token/deadline can
+  interrupt before a malformed tail or text acquisition; failed fill releases
+  only its unpublished loan. Parent capacity and spent work survive.
+- Focused Core/Python/PCRE and Debug checks cover boundaries, denial and cleanup.
+  One public Python Compile comparison records small/noisy timing differences,
+  rather than a speedup claim. Immutable69/71 packages remain unchanged; no
+  full construction/default/retention/host guarantee or new package qualification.
+
 ## Independent Core/PCRE2 scalar.71 qualified dependency
 
 - Qualify immutable2328451d: same-byte Windows/Linux5766discovered PCRE tests,

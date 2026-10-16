@@ -79,6 +79,14 @@ acquisitions and process memory remain outside this partial construction bound.
 Construction authority ends before expression publication; execution policy and
 the token supplied to each operation remain independent.
 
+Development after scalar.71 checks that same construction authority between
+scalar-aligned4096-byte count/decode blocks for UTF8 patterns. Strict decoding,
+absolute malformed-byte offsets, original numeric charges and one admitted string
+remain. Failed decoding releases unpublished text capacity; interruption may win
+before a later malformed suffix. Inner decoder wording can differ for later
+blocks. This source change is outside immutable Core/Python69 and PCRE71 packages;
+it does not complete construction/default/live-retention or host containment.
+
 This candidate additionally preserves the original call deadline through
 cold scalar FullMatch and template substitution preparation. Construction/cache
 checkpoints observe call interruption; interrupted preparation is retryable and

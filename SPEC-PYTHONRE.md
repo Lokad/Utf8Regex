@@ -243,6 +243,13 @@ unbounded diagnostic decode. Construction authority ends before publication;
 the expression's invocation policy/token/timeout remain independent. Replacement
 preparation, CLR/JIT metadata, incidental acquisitions
 and caller retention retain separate scope. Static caches are not consulted.
+Development after scalar.71 counts and decodes UTF8 pattern bytes in scalar-aligned
+blocks of at most4096bytes under that same construction owner. The two original
+numeric work charges and single admitted string remain; no intermediate text/byte
+buffer is acquired. Strict malformed-byte indices/offending bytes stay relative
+to the whole input, although inner decoder diagnostic wording can differ for a
+later block. Cancellation/deadline can precede a later malformed suffix; failed
+fill releases unpublished string capacity and preserves parent reservations.
 Constructors still defer FullMatch preparation. For scalar FullMatch
 value/context/data/string calls, invocation authority is created before accessing
 that lazy program; explicitly compiled instances already have it. Preparation copies the existing
