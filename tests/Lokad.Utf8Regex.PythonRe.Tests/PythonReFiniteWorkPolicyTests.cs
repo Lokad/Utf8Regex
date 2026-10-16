@@ -150,7 +150,20 @@ public sealed class PythonReFiniteWorkPolicyTests
         var malformed = "cat"u8.ToArray().Concat(new byte[] { 255 }).ToArray();
         Assert.Throws<ArgumentException>(() => Run(RegexWith("cat", 10000), malformed, operation));
         var miss = Encoding.UTF8.GetBytes(new string('x', 16384));
-        Exhausted(() => Run(RegexWith("cat", 100), miss, operation), 100);
+        var expected = Run(new("cat"), miss, operation);
+        Assert.Equal(expected, Run(RegexWith("cat", 10000), miss, operation));
+        // Bounded prefix seeking can skip impossible starts, so the old
+        // per-position cutoff of100 is no longer an admission contract.
+        // Find the complete public cutoff and retain the exact denial boundary.
+        ulong low = 1, high = 10000;
+        while (high - low > 1)
+        {
+            var middle = (low + high) / 2;
+            try { Assert.Equal(expected, Run(RegexWith("cat", middle), miss, operation)); high = middle; }
+            catch (Utf8ResourceLimitExceededException) { low = middle; }
+        }
+        Exhausted(() => Run(RegexWith("cat", low), miss, operation), low);
+        Assert.Equal(expected, Run(RegexWith("cat", high), miss, operation));
     }
 
     [Fact]
