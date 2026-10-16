@@ -1,5 +1,11 @@
 # Changelog
 
+## Private scalar.60 Core/PythonRe candidate preparation
+
+- Reserve a fresh immutable identity for the accumulated Core Count changes.
+  Qualification and exact-package operating costs are pending; Core/PythonRe55
+  remains the designated input. PCRE2 qualifies independently and retains59.
+
 ## Optional-prefix Count search-data lifetime
 
 - Reuse the existing fallback literal-search payload once per Count and across
