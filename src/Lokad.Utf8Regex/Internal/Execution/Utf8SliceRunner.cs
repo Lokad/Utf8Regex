@@ -1059,45 +1059,10 @@ internal static partial class Utf8SliceRunner
                             break;
                         }
 
-                        bool classHit;
-                        if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
-                        {
-                            classHit = Utf8SliceScalarClasses.MatchesShorthand(classScalar, (Utf8SliceShorthand)instruction.A);
-                        }
-                        else if (instruction.Kind == Utf8SliceInstructionKind.Category)
-                        {
-                            classHit = Utf8SliceScalarClasses.MatchesTable(classScalar, program.CategoryTables[instruction.A],
-                                (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior);
-                        }
-                        else
-                        {
-                            var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
-                            var classMembers = categorySet ? program.CategorySetMembers[instruction.D] : null;
-                            if (classMembers is { Length: 1 } && classMembers[0].Table.ClassProgram is { } classProgram)
-                            {
-                                classHit = classProgram.TryMatch(classScalar, program.CaseBehavior, ref invocation, out var classBreach);
-                                if (classBreach != Utf8ExecutionLimitKind.None)
-                                    return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
-                            }
-                            else
-                            {
-                                var fold = categorySet ? (instruction.B & 2) != 0 : instruction.D != 0;
-                                var memberHit = Utf8SliceScalarClasses.MatchesMask(classScalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
-                                    Utf8SliceScalarClasses.MatchesMembers(classScalar, instruction.C);
-                                if (!memberHit && classMembers is not null)
-                                {
-                                    foreach (var member in classMembers)
-                                    {
-                                        if (Utf8SliceScalarClasses.MatchesTable(classScalar, member.Table, fold, member.Negated, program.CaseBehavior))
-                                        {
-                                            memberHit = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                classHit = memberHit != ((instruction.B & 1) != 0);
-                            }
-                        }
+                        var classBreach = TryMatchScalarClass(program, instruction, classScalar,
+                            ref invocation, out var classHit);
+                        if (classBreach != Utf8ExecutionLimitKind.None)
+                            return new Utf8SliceMatchOutcome(false, -1, classBreach, null, null);
 
                         if (classHit)
                         {

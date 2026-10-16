@@ -128,6 +128,18 @@ an acceptance gate, distinct from the qualified development slices below.
 
 The public UTF-8 APIs accept **well-formed UTF-8 only**. Invalid UTF-8 must not be silently repaired or replacement-decoded on the main API. The low-level .NET UTF-8 transcoder exposes invalid-data signaling when replacement is disabled; `Lokad.Utf8Regex` should follow that spirit and reject malformed input. Public failure mode: throw `ArgumentException` with a precise message and the offending byte offset when the input is ill-formed. ([Microsoft Learn][7])
 
+Development fuses a complete capture-free LTR greedy scalar-class repeat when
+its exact five-instruction root ends immediately in Accept and its minimum is
+positive. It uses the same Rune reader/class semantics and original invocation,
+with a base charge per attempted scalar and terminal authority check. No rewind
+or repeat journal entries are needed; fewer actual frames/work change numeric
+cutoffs intentionally. Existing workspace ownership, whole validation, class
+program metering, publication/history and result admission remain. Captures,
+lazy/nullable/RTL/tails and assertion segments retain their general paths; nested
+RequiredEnd/resume choices are not discarded. No new instruction or public mode.
+Independent CategorySet membership fanout is bounded at one for this route.
+This source improvement does not alter immutable scalar.68.
+
 ### 3.6 Scalar boundaries and coordinates
 
 Every successful core match and capture on valid input has a representable UTF-8 byte range. For `😀`, dot returns one match at byte offset 0 with byte length 4; `^.$` succeeds and `^..$` fails. Dot on `a😀b` returns ranges (0,1), (1,4) and (5,1). `^(.)\1$` matches `😀😀`, retaining the complete first scalar in group 1. Dot on `e` followed by U+0301 returns two scalar matches.

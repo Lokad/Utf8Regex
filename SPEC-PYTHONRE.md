@@ -203,6 +203,16 @@ This profile is still incomplete. In particular:
 
 Unsupported or incomplete cases should fail explicitly rather than silently approximating Python semantics.
 
+Source beyond immutable scalar.68 may execute a bare positive greedy class run
+inside the existing shared VM without per-scalar rewind/journal state. Exact
+capture-free terminal-root eligibility uses the same pinned class predicates;
+no Python class expansion or second matcher is introduced. Original scalar work
+charges, token/deadline and working/result admission remain, while fewer actual
+frames/work can admit tighter caps. Captured/lazy/nullable/tail/assertion/full-end
+contexts retain their general paths. The measured tradeoff includes a small
+captured-class Count cost from sharing class matching; current source evidence
+is separate from package qualification and broad profile performance claims.
+
 ## Cancellation and resource contract
 
 Constructors validate an explicit resource policy first, then compile flags and

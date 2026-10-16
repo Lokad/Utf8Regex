@@ -44,6 +44,9 @@ internal static partial class Utf8SliceRunner
         bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
         ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation)
     {
+        // Only the complete root program may discard terminal rewind choices.
+        // Assertion segments can still need them to satisfy RequiredEnd.
+        var terminalClassRepeat = CanRunTerminalClassRepeat(program);
         var current = new AssertionCursor(program, start, counts, positions,
             requireNonEmpty, startIsScalarBoundary, stacks.FrameCount);
         var continuations = new Utf8InvocationStateBuffer<AssertionContinuation>();
@@ -52,8 +55,11 @@ internal static partial class Utf8SliceRunner
         {
             while (true)
             {
-                var outcome = RunSegment(input, captureStarts, captureEnds, balanceHeads,
-                    ref current, resumeFailure, ref stacks, ref invocation, out var suspended);
+                var suspended = false;
+                var outcome = terminalClassRepeat
+                    ? RunTerminalClassRepeat(program, input, start, ref invocation)
+                    : RunSegment(input, captureStarts, captureEnds, balanceHeads,
+                        ref current, resumeFailure, ref stacks, ref invocation, out suspended);
                 resumeFailure = false;
                 if (!suspended && outcome.IsMatch && current.RequiredEnd is int requiredEnd && outcome.EndIndex != requiredEnd)
                 {

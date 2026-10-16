@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: terminal scalar-class repeat in the owned VM
+
+- Execute eligible capture-free positive greedy terminal class runs without
+  per-scalar rewind/journal state. Reuse the standard Rune/class semantics,
+  invocation metering, publication and lifetime; general contexts keep the VM.
+- One public pair observes finite Python mixed word Count26%faster/94%less
+  allocation,ASCII39%faster and UTF8 word values19%faster. Captured-class Count
+  costs4-6% with unchanged allocation; raw noise and remaining BCL gaps stay
+  explicit. Full affected semantic/resource checks pass;no new package,
+  snapshot/Status refresh or unchecked52 performance qualification.
+
 ## Development: bounded literal construction checkpoints
 
 - Poll original cancellation/deadline between bounded chunks of the existing
