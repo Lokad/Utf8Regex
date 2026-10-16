@@ -30,6 +30,11 @@ former member-gate disagreement; actual unchecked accesses remain excluded. No p
 pin/default/promotion or host containment is implied. The independent PCRE2
 boundary does not alter Core/PythonRe52 acceptance.
 
+Current immutable Core/PythonRe scalar.69 preserves the same inventory in its
+exact packaged DLLs. Its [handoff](artifacts/core-python-scalar69-20261016/HANDOFF.md)
+records the new engine delivery; it does not replace the closed scalar.52
+fixed-original checked-access evidence or reopen the SizeOf acceptance question.
+
 The subsequent immutable scalar.55 Core/PythonRe pair preserves that inventory:
 Core only SizeOf, PythonRe none, no generated inline-array helpers or native
 imports. Pinned identifier/class/boundary corrections use existing owned
@@ -93,7 +98,8 @@ comparison **fails**: 24-byte folded Count is +13.33% ordinary/+14.17% compiled,
 and Cyrillic ASCII-miss Count is +64.76%. The unchanged BCL control is -0.35%;
 Core allocations are unchanged. These are public-operation costs, not kernel
 figures. Keep SizeOf separate: it performs no unchecked memory access;
-Lython's blanket rejection requires explicit acceptance-contract reconciliation.
+Lython's blanket rejection required acceptance-contract reconciliation at that
+stage; the user resolved it on 2026-10-16 by confirming that SizeOf is accepted.
 
 The later Core follow-up resolves both initial failures within the selected
 fixed-original workload set. Count dispatches its prepared Cyrillic strategy
@@ -1012,6 +1018,7 @@ No further timing/equivalence/general-speedup claim. Windows2062->2308B/
 Linux1782->1865B; one width admission and no duplicate32Badvance guard, extra
 register moves remain. R351/D26 pass. The actual Core DLL now references only
 accepted Unsafe.SizeOf, with no generated inline-array methods. The producer's
-unchecked-read gate passes; Lython's blanket SizeOf gate still fails separately.
+unchecked-read gate passed; Lython's former blanket SizeOf gate still failed at
+that stage. The user resolved the separate acceptance issue on 2026-10-16.
 Fixed-original cumulative costs and coherent package/consumer qualification are
 unfinished. Evidence: artifacts/cyrillic-tryread-checked-20261015/.
