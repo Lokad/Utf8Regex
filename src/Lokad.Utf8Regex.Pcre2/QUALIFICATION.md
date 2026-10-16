@@ -1,16 +1,62 @@
 # Managed PCRE2 profile qualification
 
-## Preparing scalar.57 independent PCRE2 input
+## Private scalar.57 correction-batch candidate (2026-10-16)
 
-Core/PCRE2 **0.4.0-scalar.57** is a fresh private identity for the accumulated
-post56 source batch. Existing source checks and native receipts below establish
-the scoped fixes, not qualification of these new package bytes. One affected
-producer build and pack/archive, original same-byte Windows/Linux detached tests,
-exact-payload capture/folding/r comparisons, inventory/symbol/provenance and one
-bounded current public-cost observation are pending. Reuse the existing scripts;
-no new qualification framework or unchanged55 requalification. Core/PythonRe55
-stays primary; there is no PythonRe57, standalone Core57 consumer qualification,
-publication, downstream pin/default change or adoption claim.
+Immutable Core/PCRE2 **0.4.0-scalar.57**, producer
+`49c2fcdc6ac908dd9439b53dd20495d2d6601450`, batches the post56 capture-undo,
+caller-capture-return, BMP folding, inline-r and POSIX corrections below.
+One affected producer build and one pack per package including symbols; existing
+archive verifier passes seven artifacts, clean tracked source, NuSpec/assembly/
+SourceLink/portable-PDB/symbol identities. Both original detached Windows/Linux
+runs pass5,637 against identical Windows-produced bytes, exact refs/source maps,
+tested locks/TRXs and matching feed/cache/package SHA512/loaded-DLL identities.
+No source test/restore replay, fixture recovery, Linux producer build or repack.
+Core/PythonRe55 remains primary. There is no PythonRe57, standalone Core57 consumer
+qualification, publication, downstream pin/default change or adoption claim.
+
+Manifest SHA256: `218E3618B4D5E1113F0E2ADB4777A662D43964B6DBA5052EEDED4FFF0BD61D08`.
+Core package SHA256: `DA953D84E0C52DD48ACD51BB1024F95D31D7FA2AE8D3234158CCE49471B3C863`.
+PCRE2 package SHA256: `CD26DF8C084142D9159596725F48786B99BEC7E24C0A9A86C136AA72B3DBDD57`.
+Producer [CI38842854805](https://github.com/Lokad/Utf8Regex/actions/runs/38842854805)
+is green on both platforms. Exact handoff/receipt/identities and original results:
+`artifacts/pcre2-scalar57-delivery-20261016/`.
+
+Exact packaged-DLL native10.47 comparisons agree across1,611 pairs:261 J scope,
+57 admission,108 DEFINE,50 detailed options,541 r/folding with UCP,541 without,
+and53 capture returns. Old native string-probe byte sentinels(-1) are excluded;
+new r/return probes compare every successful capture byte range. All63,488 BMP
+scalar fold mappings agree with Unicode16 C/S data. Former r exclusions now
+agree; earlier immutable56 exclusions remain historical. Full supplementary,
+category/culture, other options and .NET11 qualification are not inferred.
+Core/PCRE2 inventory has only permitted SizeOf, no generated inline-array helpers,
+native import or BCL matcher/result dependency. Regex timeout constants/Escape
+are allowed members. Lython's stricter Core SizeOf gate still rejects it; no
+consumer agreement, gate bypass or manual size replacement is implied.
+
+One exact-package current-cost observation is complete: quiet VM CPU2,
+.NET10.0.12 Release FullOpts/ReadyToRun off, five alternating warm samples, all
+four finite controls and live token. Finite controls are work50M/depth1024/
+working64MiB/result128MiB, not host defaults. Token-free Span IsMatch/Count and
+live-token overload costs are explicit; scalar56 used another overload path,
+and environment settings, so its timings do not establish before/after gains here.
+Both Count entry points forward to CountCore; no causal attribution is made. Constructors are outside
+timing; detailed checksum traversal is included. ASCII-overlap BCL decode and
+predecoded controls accompany relevant rows; other dialect/scalar rows exclude them.
+
+Current median unlimited/finite costs: captured Count1,000 matches12.03/597.23us
+(0/112B), numeric-reference Count13.12/969.41us(0/176KB), DEFINE Count2.812/2.967ms
+(about21B/4.18MB), symbol-class Count1,536 matches40.22/211.48us(0/112B), and
+restricted captured Count2.033/2.761ms(about15B/2.74MB). Captured Count finite is
+49.65x versus its fast unlimited route; basic metering remains. BCL captured
+Count predecoded/decode controls74.31/75.09us. These are scoped operating costs,
+not broad performance/Status, unchecked-access gate or host-containment claims.
+
+All290 raw samples remain. Five DEFINE detailed finite samples45.49–46.74ms miss
+50ms target; worst spread16.42% is an unchanged literal decode BCL control. No
+repeat/confirmation, benchmark snapshot mutation, VM build/shutdown/evidence
+cleanup or renewed fixed-original conversion gate. Embedded preparing documents
+are not repacked after this completed qualification. Historical source evidence
+below records its earlier scope; scalar57 qualifies only the stated batch.
 
 ## Source development after scalar.56
 

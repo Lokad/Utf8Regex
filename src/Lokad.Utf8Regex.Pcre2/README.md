@@ -11,14 +11,17 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
-Private Core/PCRE2 **0.4.0-scalar.57** is being prepared for the accumulated
-post56 batch: capture undo simplification, caller capture restoration, pinned
-BMP simple folding, inline r and POSIX category corrections. Package/platform,
-exact-payload native and current-cost qualification are pending; this preparation
-is not qualified delivery. Core/PythonRe55 remains primary, and no PythonRe57,
-publication, consumer pin/default change or adoption is implied.
+The latest qualified private Core/PCRE2 input is **0.4.0-scalar.57**, producer
+`49c2fcdc`, containing the accumulated post56 capture, folding and inline-r fixes.
+Both original detached Windows/Linux runs pass against identical package bytes,
+exact refs/locks/TRXs and verified symbols/provenance/inventory. Exact-package
+native comparisons and one bounded current public-cost observation are complete.
+[Qualification](QUALIFICATION.md) records scope and remaining costs: finite
+captured Count still has substantial overhead. Core/PythonRe55 stays primary;
+no PythonRe57, standalone Core57 consumer qualification, publication, downstream
+pin/default change or adoption is implied. Earlier immutable inputs are unchanged.
 
-The latest qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
+The earlier qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
 `5ad447f5`, containing the completed option-scope/admission/capture-order batch.
 Both original detached Windows/Linux runs pass against identical package bytes,
 exact source-mapped refs/locks/TRXs and verified symbols/provenance/inventory.
@@ -40,7 +43,7 @@ subroutine or recursive call, including unset slots and `(*ACCEPT)` returns.
 The erroneous propagation flag/table and control-verb scan are removed. Native
 PCRE2 10.47 witnesses cover references, conditionals, recursive backtracking and
 scalar captures. Immutable scalar.56 retains the previously disclosed capture
-return defect; this source correction requires a later package boundary.
+return defect; scalar.57 includes this correction.
 [Qualification](QUALIFICATION.md) records the evidence and scope.
 
 Development also corrects BMP caseless classes such as `(?i)[K]` against `K/k`
@@ -56,8 +59,8 @@ sign. Scopes, `-r`, reset directives, lexical subroutine settings and references
 use the existing token flags. Explicit class members remain included, and
 ordinary non-ASCII folding is preserved. UCP POSIX lower/upper also retain their
 native categories under caseless matching. All four finite invocation controls,
-cancellation, deadlines and retained captures remain. These source changes are
-outside immutable56 and add no public compile-option surface.
+cancellation, deadlines and retained captures remain. These changes are included in scalar.57
+and add no public compile-option surface; immutable56 stays unchanged.
 
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and

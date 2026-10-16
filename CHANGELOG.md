@@ -1,11 +1,18 @@
 # Changelog
 
-## Preparing private scalar.57 Core/PCRE2 input
+## Private scalar.57 Core/PCRE2 correction-batch input
 
-- Prepare a distinct private identity for the accumulated capture-undo,
-  capture-return, BMP folding, inline r and POSIX corrections below. Exact
-  package/platform/native/current-cost qualification is pending; Core/PythonRe55
-  remains primary. No PythonRe57, publication, pin/default or adoption claim.
+- Qualify immutable Core/PCRE20.4.0-scalar.57, producer49c2fcdc, for the accumulated
+  capture-undo/return, BMP folding, inline-r and POSIX corrections. Both original
+  detached platforms pass against identical packages, exact tested locks/refs,
+  provenance/symbols and managed member inventory; exact-payload native checks
+  agree. Producer CI is green. Core/PythonRe55 remains primary; no PythonRe57,
+  standalone Core57 consumer qualification, publication, pin/default or adoption.
+- Record one current public-cost observation with finite controls, live token and
+  overlapping decode/predecoded BCL controls. Captured Count remains12/597us
+  unlimited/finite for1,000 matches; numeric references and DEFINE remain costly.
+  Retain raw floors/noise, scope and overload differences; no regression/Status
+  claim, metering removal or repeated checked-access campaign.
 
 ## Development after scalar.56
 
