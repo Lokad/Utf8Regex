@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -9,6 +10,11 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>UTF-8 backend engines for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
+    // Optional Core owns the equivalent prepared exact family, while the caller's
+    // invocation supplies every limit. Other controlled bulk paths remain scalar.
+    private bool CanCollectControlledLiteralFamily =>
+        _utf8Regex?.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals;
+
     private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken, out Utf8PythonMatchData[] matches)
     {
         if (!TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))

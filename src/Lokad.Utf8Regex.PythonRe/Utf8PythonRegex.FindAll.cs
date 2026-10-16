@@ -12,11 +12,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>Find-all entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
-    // Optional Core owns the equivalent prepared exact family, while the caller's
-    // invocation supplies every limit. Other controlled bulk paths remain scalar.
-    private bool CanCollectControlledLiteralFamily =>
-        _utf8Regex?.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals;
-
     /// <summary>Materializes all non-overlapping matches.</summary>
     public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input) => FindAll(input, 0);
 
