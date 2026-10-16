@@ -59,6 +59,12 @@ Original detached Windows/Linux consumers and current selective operating costs
 are in the [63 handoff](artifacts/core-python-scalar63-20261016/HANDOFF.md).
 Its casing/verification changes do not reopen the completed fixed-original gate.
 
+The immutable scalar.64 Core/PythonRe pair keeps that inventory and the accepted
+SizeOf rule. Its exact identities, final Windows/Linux consumers (with explicit
+Linux inventory-staging recovery) and selective current costs are in the
+[64 handoff](artifacts/core-python-scalar64-20261016/HANDOFF.md). Deadline/native
+collection and preparation corrections do not reopen the completed checked gate.
+
 ## Acceptance rule and chronological evidence
 
 The core matches strict UTF-8 scalars. Checked-access conversions must preserve

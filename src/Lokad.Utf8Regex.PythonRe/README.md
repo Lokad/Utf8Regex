@@ -1,85 +1,44 @@
 # Lokad.Utf8Regex.PythonRe
 
-The **0.4.0-scalar.64 Core/PythonRe candidate** bundles the replacement-index
-error correction, simpler groupless/literal preparation and the original deadline
-through native bulk validation, byte-floor projection and output shaping.
-Its immutable candidate manifest and handoff define qualification status and exact
-identities. Earlier scalar.63 evidence remains scoped to those earlier bytes;
-PCRE2 delivery remains independent. No publication or downstream adoption is implied.
+`Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
+strict UTF-8 scalars, with primary byte coordinates and derived UTF16 projections.
 
-`Lokad.Utf8Regex.PythonRe` is a `net10.0` side extension for `Lokad.Utf8Regex` that exposes a UTF-8-first Python `re` flavored API through `Utf8PythonRegex`.
+The qualified private **Core/PythonRe0.4.0-scalar.64** pair is produced by
+`c35e2f50066ac86f285d7e245101a25bc2c8806f`. Actual PythonRe nuspec requires Core
+`[0.4.0-scalar.64]`. Final same-byte Windows/Linux consumers, captures/CPython
+catalog, exact refs/locks/DLL/symbol/SourceLink and producer CI pass.
+[Handoff](../../artifacts/core-python-scalar64-20261016/HANDOFF.md) and
+[consumption notes](../../artifacts/core-python-scalar64-20261016/CONSUMING.md)
+record identities, tested scope, Linux inventory-setup recovery and exclusions.
+Earlier63 and other packages remain immutable; PCRE2 qualifies independently.
 
-It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
+Scalar.64 fixes oversized replacement group numbers to PythonRePatternException
+and carries one original deadline before finite-timeout bulk validation and
+byte-floor projection through native discovery/required shaping. It retains the
+native algorithms and omits an unnecessary full coordinate map. Existing owned
+finite/token and canonical-counted-string routes remain. Shared Core preparation
+also omits groupless projection work and obsolete literal factories/decode scratch.
+Tighter construction admission can change where the removed work previously cost
+capacity; no new owner, GC lease, execution mode or precision accounting is added.
 
-The qualified private Core/PythonRe pair **0.4.0-scalar.63**, producer
-`a24a39837df63f73383276d860dc0f24ef880ba1`, covers strict UTF-8 scalars,
-authoritative captures, explicit cursors, four finite invocation controls and
-covered eager construction. Original same-byte detached Windows/Linux consumers,
-104 capture fixtures and 91 catalog/supplementary digests pass; producer CI is
-green. The actual nuspec requires Core `[0.4.0-scalar.63]`. See
-`artifacts/scalar-candidates/0.4.0-scalar.63/candidate.json` and
-`artifacts/core-python-scalar63-20261016/HANDOFF.md` for exact identities and scope.
+Python case/class/identifier data remain pinned Unicode15.1; Core owns separate
+Unicode16 supplementary casing. Thirty-six source blobs remain exact; two changed
+facade/replacement consumers are reviewed/tested separately, not called unchanged.
+The existing nullable-repeat correction preserves consuming iterations enabled by
+mandatory empty captures. Authoritative captures/completion, retained results,
+reference-cursor aliases/disposal and four finite invocation controls remain.
+Core retains only accepted Unsafe.SizeOf; PythonRe has no unchecked references.
 
-Within immutable63, PythonRe implementation and pinned Unicode 15.1 class/case/identifier data are unchanged;
-38 source/blob witnesses reuse prior full scalar-data evidence. Core's owned
-supplementary Unicode 16.0 case lookup and simpler metered family verification are qualified
-separately from that unchanged-code claim. Scalar.62's Python mandatory-empty-
-iteration correction remains; its 34–37% same-result nullable Count source cost
-is explicit and does not revise the completed checked-access 10% gate.
+Current exact-package ordinary costs include1000 UTF8 tuples0.659ms unlimited/
+0.705ms finite. A4KB bulk value operation with30s timeout takes5.5us with unlimited
+invocation caps/480us finite, about88x: finite execution still selects the owned
+scalar route. All160 samples exceed50ms; raw allocations, overlap controls and
+limitations are retained. This is not broad parity, Status or a regression claim.
 
-One selective current-package observation covers finite/public Count, UTF8 tuples
-and cursor early disposal. All 135 samples exceed 50 ms; raw timings/allocations and
-BCL exclusions are retained. No broad performance/containment claim or historical
-snapshot relabeling. Previous 62/61/60/55 and independent PCRE2/Core 59 stay immutable.
-
-Core only retains accepted `Unsafe.SizeOf`; PythonRe has no unchecked references.
-Lython accepts SizeOf, per the user's 2026-10-16 confirmation. Frozen 63 README assets
-record producer-stage readiness; its original manifest/handoff report completed
-qualification without repacking. No publication, consumer pin/default change or
-adoption is implied. Defaults/static cached calls remain unlimited; complete
-construction/lazy/default/live-retention and broader profile gates are unfinished.
-PCRE2 qualifies independently.
-
-Development additionally corrects oversized decimal replacement references:
-`\g<2147483648>` reports `PythonRePatternException` through the existing admitted
-error builder, rather than leaking `OverflowException`. Unknown names/valid
-leading-zero references and original construction/token/deadline controls remain.
-Immutable63 retains its old failure classification; the separate source receipt
-and erratum do not repack or qualify new bytes as that same candidate.
-
-Development also establishes the original deadline before bulk subject validation
-and byte-floor projection for finite-timeout calls without finite budgets/tokens.
-Native discovery and required shaping share it; native entry omits an unnecessary
-full coordinate map. Existing finite/token and infinite routes remain. This fixes
-a source-proved scalar.63 limitation without changing its immutable bytes; see
-`artifacts/python-findall-offset-deadline-20261016/SCALAR63-ERRATUM.md`.
-No new package or whole-profile/performance-equivalence claim follows this fix.
-
-The earlier scalar.52 pair completed the Core/PythonRe checked-access batch. Selected Core costs
-against the fixed original fit10%, with unchanged allocations and a narrow
-9.91% emitted-search row. Python's exact-package 17-pair confirmation has per-row
-median changes -6.89..+2.16%; some large tails and materialization pool variation
-remain explicit. This is selected public-workload evidence, not broad equivalence.
-Finite work/depth/working/result and cursor contracts are preserved. Lython's
-former SizeOf disagreement is resolved by the user's acceptance confirmation.
-
-The frozen scalar.52 pair has a known class-version limitation: with host Unicode
-16 data, `\w` admits U+1C89/U+1E5D0 and `\d` admits U+1E5F1, while the pinned
-CPython oracle leaves them unassigned. Development fixes predefined classes,
-complements, brackets and word boundaries using compact owned predicates in the
-existing class instructions. ASCII masks and bounded scalar lookups avoid
-expanding data into patterns. Unproved host-category native paths are ineligible.
-The rejected expanded-pattern prototype remains historical evidence. See
-[the specification](../../SPEC-PYTHONRE.md) for current source scope; frozen
-packages do not acquire this correction automatically.
-
-Development separately fixes group-name admission using pinned CPython identifier
-data, shared by declarations, named references/conditionals and replacement
-references. General categories incorrectly admitted U+037A/new host assignments
-and rejected valid identifier-only characters. Validation now follows the pinned
-identifier rules while preserving the exact name spelling. Matching kernels and
-invocation controls are unchanged. This source correction is beyond the frozen
-scalar.52 pair and is included in the qualified scalar.55 input.
+Defaults/static cached APIs remain unlimited. Complete construction/lazy/default/
+live-retention/RSS and host integration remain unfinished; use existing owners per
+[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md). No publication, consumer pin/default
+change, adoption or whole-profile completion follows this scoped producer input.
 
 ## Support Scope
 

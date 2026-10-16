@@ -1,5 +1,21 @@
 # Changelog
 
+## Core/PythonRe scalar.64 qualified dependency
+
+- Producer c35e2f50 packages the accumulated syntax-error, deadline/native bulk
+  and preparation simplifications. Exact Core dependency, symbols/SourceLink,
+  final same-byte Windows/Linux consumers and CPython controls pass; CI green.
+- Preserve the initial Linux inventory-staging failure and full --no-build Core
+  recovery; other consumers ran once. Reuse the matching oracle host and36 exact
+  data witnesses with two separately reviewed deltas; no Linux producer rebuild
+  or new Unicode census. Fresh final-feed restore/public controls pass.
+- Current exact-package costs:160 samples above50ms, finite/live-token and owned
+  output. Family Count63.9/324us and tuples0.659/0.705ms unlimited/finite. Finite
+  bulk remains480us versus5.5us without invocation caps, about88x; preserve all
+  controls while addressing that gap. Raw BCL noise/exclusions remain explicit.
+- Original packages stay immutable. No publication, PCRE candidate, actual
+  downstream adoption or complete construction/default/live-retention claim.
+
 ## Core/PythonRe scalar.64 candidate
 
 - Batch the accepted oversized replacement-index error correction, omitted
