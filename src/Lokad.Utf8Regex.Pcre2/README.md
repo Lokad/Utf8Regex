@@ -11,41 +11,28 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
-The latest qualified private Core/PCRE2 input is **0.4.0-scalar.58**, producer
-`a2f63a69`, containing the accumulated finite Count improvements. Both original
-detached Windows/Linux runs pass identical packages with exact identities,
-refs/locks/provenance/symbols/inventory; scoped native counts/ranges agree. A
-test-only work-cutoff correction has green Windows/Linux CI; original fixture
-failures remain explicit. [Qualification](QUALIFICATION.md) records that history,
-exact bytes, scope and one current exact-package cost observation.
-
-The accumulated scratch-scope and anchored-iteration source changes are preparing
-as **0.4.0-scalar.59**. Exact-package qualification is pending; this metadata does
-not designate59 or a PythonRe59 input.
+The latest qualified private Core/PCRE2 input is **0.4.0-scalar.59**, producer
+`b67b9233`, containing the Count scratch-scope and anchored-iteration fixes.
+Both original detached Windows/Linux runs pass identical packages with exact
+identities/refs/locks/provenance/symbols/inventory; scoped native controls agree.
+Producer CI is green. [Qualification](QUALIFICATION.md) records exact bytes,
+coverage and a current-cost observation. Older inputs retain their original caveats.
 
 Controlled Count reuses one scratch scope for proved finite literal languages;
 leading single literals use existing bounded metered seeking before verification.
 The original invocation, cancellation/deadline and resource controls remain.
-Current64KiB hit/miss costs are about4us with finite controls; captured1000-hit
-Count is about118us finite versus11us unlimited. Allocations and broader remaining
-costs are recorded without claiming general parity or removing basic metering.
-Literal-family seeking remains deferred after a demonstrated dense regression.
+Scalar.59 extends scratch reuse to admitted nonempty scalar Count and stops an
+anchored search after its empty retry fails. Successful retries and frozen reset
+exclusions remain. Current1000-hit unbounded captured Count costs about363us
+finite/360us unlimited with5.9KB allocated. Its64KiB miss still costs7.46ms;
+the closed source pair measured a12–14% miss penalty alongside large dense gains.
+Finite-language Count remains about127us finite/12us unlimited. These costs and
+remaining gaps are explicit; basic metering stays enforced. Literal-family
+seeking remains deferred after a demonstrated dense regression.
 
-Development after58 extends the existing scratch scope to admitted nonempty
-slice Count programs. One public pair reduces selected dense time49–66% and
-allocations from about5.8MB to5.9KB per1000 hits. A64KiB miss is12–14% slower;
-that measured tradeoff remains explicit. Resource/interruption semantics stay
-enforced. This source change is outside immutable58; see
-[qualification](QUALIFICATION.md) for its scope and evidence.
-
-Source development also stops an anchored global search after its empty retry
-fails, preserving successful retries and existing reset/profile exclusions.
-This corrects extra Count/enumeration/replacement results outside immutable58;
-[qualification](QUALIFICATION.md) records the scoped native and resource checks.
-
-Core/PythonRe55 stays primary; no PythonRe58, standalone Core58 consumer
+Core/PythonRe55 stays primary; no PythonRe59, standalone Core59 consumer
 qualification, publication, downstream pin/default change or adoption is implied.
-Earlier immutable inputs stay unchanged, including qualified Core/PCRE2 scalar57;
+Earlier immutable inputs stay unchanged, including qualified Core/PCRE2 scalar58/57;
 [qualification](QUALIFICATION.md) preserves their original evidence and caveats.
 
 The earlier qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer

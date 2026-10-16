@@ -1,14 +1,62 @@
 # Managed PCRE2 profile qualification
 
-## scalar.59 preparation
+## Private scalar.59 Count/anchoring input
 
-Version0.4.0-scalar.59 reserves a fresh identity for the accumulated Count scratch
-scope and anchored empty-iteration correction. Exact-package/platform/native and
-current-cost qualification is pending. Preserve the measured miss-cost tradeoff
-and frozen reset profile; immutable58 and primary Core/PythonRe55 stay unchanged.
-No PythonRe59, publication, consumer pins/defaults or adoption claim.
+Immutable0.4.0-scalar.59, producerb67b9233ba21e0130e00fb5e312f26f18dd0fae0,
+contains the Count scratch-scope and anchored empty-iteration changes below.
+Core/PythonRe55 remains primary. No PythonRe59, standalone Core59 consumer
+qualification, publication, downstream pins/defaults or adoption is implied.
 
-## Source development after scalar.58
+Manifest SHA256:
+9B1533085E3F255E51DB733B078C588F5CDE503B5C2A2E3380C75223D4CD05E0.
+The immutable archive is
+`artifacts/package-qualification/archive/b67b9233ba21e0130e00fb5e312f26f18dd0fae0/`;
+`artifacts/pcre2-scalar59-delivery-20261016/HANDOFF.md` and delivery-receipt.json
+record exact identities and scope. One affected dependency build3.02s/five existing
+warnings; matching-SkipBuild qualifier, one pack per package/symbol. Seven archive
+artifacts verify clean producer/NuSpec/assembly/SourceLink/portable-PDB/symbol
+identity. Both original detached Windows/Linux runs pass5,691 with exact refs/
+source mapping/tested locks/TRXs, zero source project refs and equal feed/cache
+SHA512/package/loaded DLL bytes. No Linux producer build, repack, fixture recovery
+or qualification replay. Producer CI38856150461 passes Windows/Linux, observed
+2026-10-16T07:36:01+02: https://github.com/Lokad/Utf8Regex/actions/runs/38856150461.
+
+Exact Core/PCRE2 inventory: permitted SizeOf only, no generated inline-array
+helpers, native imports or BCL matcher/result members. Lython's stricter SizeOf
+rejection remains an unresolved consumer acceptance issue. Native UTF8 PCRE2
+10.47 overlap checks cover512 anchored and552 Count cases: counts/live-token
+counts/every whole-match byte range agree; anchored suite also compares template
+replacement. Shared cases are not distinct patterns. Frozen reset exclusions
+remain; rejected1632 native-parity prototype results are not qualification proof.
+Broader profile/host/.NET11 coverage remains incomplete. Older inputs retain
+their original scope and caveats.
+
+One current exact-package public Count observation uses quiet VMCPU2,
+.NET10.0.12 FullOpts/ReadyToRun off, five alternating warm samples, all four finite
+controls plus live token. Constructors excluded; ASCII-overlap decode/predecoded
+BCL controls accompany rows. Supplementary quantifiers exclude BCL's code-unit
+semantics. These are experiment limits, not host safe defaults.
+
+| Case | Unlimited us | Finite us | Finite + token us | Finite allocated B |
+| --- | ---: | ---: | ---: | ---: |
+| Captured,1000 hits |359.545|362.757|359.417|5888|
+| Finite language,1000 hits |11.905|127.237|125.850|112|
+| Conditional,2000 hits |940.987|956.717|951.961|5888|
+| Unicode,500 hits |269.689|270.846|271.144|5888|
+| Unbounded64KiB miss |7415.756|7462.468|7363.432|4016|
+| Non-slice control,1000 hits |1603.852|1746.981|1734.234|1783793|
+
+All140 samples exceed50ms(min61.70); worst spread50.2% is finite-language/
+predecoded BCL and that managed token row spreads38.3%. Retain noise; no repeat,
+regression/Status/snapshot or old-snapshot causal claim. Dense unbounded finite
+overhead is small; finite-language remains10.7x its unlimited lane. Sparse
+unbounded Count7.46ms versus39.66us decode/predecoded1.90us remains a concrete
+operating-cost gap. Preserve basic metering; do not repeat the closed source pair.
+Its accepted11.68–13.85% long-miss tradeoff is still explicit. Embedded preparing
+documentation keeps its producer identity; this later record qualifies the
+immutable bytes without rebuilding packages.
+
+## Changes included in scalar.59 (source evidence)
 
 Anchored empty iteration now stops after an unsuccessful same-position retry.
 The existing movement helper receives the original compile request and match

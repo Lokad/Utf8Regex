@@ -1,14 +1,17 @@
 # Changelog
 
-## Private scalar.59 Core/PCRE2 Count/anchoring input — preparation
+## Private scalar.59 Core/PCRE2 Count/anchoring input
 
-- Prepare a fresh identity for the accumulated Count scratch-scope improvement
-  and anchored empty-iteration correction. Exact-package qualification is pending;
-  immutable58 and primary Core/PythonRe55 retain their acceptance. Preserve the
-  documented long-miss cost and operation-specific reset exclusions. No PythonRe59,
-  publication, downstream pins/defaults or adoption is implied.
+- Qualify immutable0.4.0-scalar.59, producerb67b9233, for the accumulated Count
+  scratch-scope and anchored empty-iteration corrections. Both original detached
+  platforms pass identical bytes, exact identities/locks/provenance/symbols and
+  inventory; scoped native512+552 cases agree. Producer CI is green and one
+  current exact-package cost observation is complete. No repack or platform replay.
+- Preserve the source pair's explicit long-miss cost and frozen reset exclusions.
+  Core/PythonRe55 stays primary; no PythonRe59, standalone Core59 consumer
+  designation, publication, downstream pins/defaults or adoption is implied.
 
-## Development after scalar.58
+### Included changes
 
 - Stop global matching after an unsuccessful empty retry when compile or
   per-call anchoring forbids advancing. Successful retries at the same position,
