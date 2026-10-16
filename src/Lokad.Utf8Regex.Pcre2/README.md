@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex.Pcre2
 
+This source prepares private **Core/PCRE2 0.4.0-scalar.66**, batching the accepted
+leading-set Count and supplementary-case corrections. Qualification is recorded
+separately in the immutable archive manifest and the delivery handoff when complete.
+Core/PythonRe scalar.65 remains its independent qualified input; no PythonRe66
+package or downstream pin/default change is implied.
+
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.

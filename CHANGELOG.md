@@ -1,5 +1,14 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.66 candidate preparation
+
+- Batch necessary-leading-set Count and owned supplementary Unicode16 case fixes
+  into one new private Core/profile pair. Exact package provenance, same-byte
+  platform consumers, existing native-overlap probes and current costs qualify
+  separately. Preserve the known BMP transform and frozen profile exclusions.
+- Core source is unchanged from65. Shared version metadata also advances PythonRe;
+  no PythonRe66 package is qualified, and Core/PythonRe65 remains unchanged.
+
 ## Development: skip impossible Python search starts
 
 - Reuse a mandatory first exact ASCII literal from the owned program to filter
