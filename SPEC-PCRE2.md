@@ -582,8 +582,10 @@ symbol variants and titlecase partners. A class negates the complete positive
 set; folding neither normalizes text nor expands one scalar into multiple scalars.
 Dotted/dotless I are distinct in the default profile. Current development pins
 BMP fold equivalence to Unicode 16 using shared owned data and PCRE2-specific
-partners. Supplementary casing still uses its existing Rune route; full
-supplementary/version qualification remains separate.
+partners. Supplementary matching and extended-replacement simple casing reuse
+the owned Unicode 16 pairs, including Garay, without host casing dependencies.
+BMP replacement transforms retain their existing Rune route. This does not pin
+all Unicode properties or establish complete Unicode-version compatibility.
 
 Inline `r` restricts caseless matching across the ASCII/non-ASCII boundary.
 `(?ir)k` matches `K` but not Kelvin sign; `(?ir)[kK]` still includes both

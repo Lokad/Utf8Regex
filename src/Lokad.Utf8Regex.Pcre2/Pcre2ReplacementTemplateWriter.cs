@@ -353,8 +353,14 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private void AppendScalar(Rune value, ref Pcre2ReplacementCaseState state, bool syntaxOnly)
     {
         var transform = state.Next != Pcre2ReplacementCaseTransformMode.None ? state.Next : state.Continuous;
-        value = transform switch { Pcre2ReplacementCaseTransformMode.Upper => Rune.ToUpperInvariant(value),
-            Pcre2ReplacementCaseTransformMode.Lower => Rune.ToLowerInvariant(value), _ => value };
+        value = transform switch
+        {
+            Pcre2ReplacementCaseTransformMode.Upper => value.IsBmp
+                ? Rune.ToUpperInvariant(value) : new Rune(Utf8SupplementaryCase.Upper(value.Value)),
+            Pcre2ReplacementCaseTransformMode.Lower => value.IsBmp
+                ? Rune.ToLowerInvariant(value) : new Rune(Utf8SupplementaryCase.Lower(value.Value)),
+            _ => value,
+        };
         if (!syntaxOnly)
         {
             Span<byte> bytes = stackalloc byte[4];

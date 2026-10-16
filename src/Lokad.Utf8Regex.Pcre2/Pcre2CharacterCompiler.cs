@@ -336,8 +336,8 @@ internal sealed class Pcre2CharacterClass
             return false;
         }
 
-        return range.Contains(Rune.ToLowerInvariant(scalar).Value) ||
-            range.Contains(Rune.ToUpperInvariant(scalar).Value);
+        return range.Contains(Utf8SupplementaryCase.Lower(scalar.Value)) ||
+            range.Contains(Utf8SupplementaryCase.Upper(scalar.Value));
     }
 }
 
@@ -1896,8 +1896,9 @@ internal static class Pcre2CharacterSemantics
             return false;
         if (left.IsBmp && right.IsBmp)
             return GetBmpCaseEquivalents((char)left.Value).Contains((char)right.Value);
-        return Rune.ToLowerInvariant(left) == Rune.ToLowerInvariant(right) ||
-            Rune.ToUpperInvariant(left) == Rune.ToUpperInvariant(right);
+        // Pinned supplementary pairs are one-to-one and never cross the BMP boundary.
+        return left.IsBmp == right.IsBmp &&
+            Utf8SupplementaryCase.Lower(left.Value) == Utf8SupplementaryCase.Lower(right.Value);
     }
 
     internal static bool IsDigit(Rune scalar, bool ucp) =>

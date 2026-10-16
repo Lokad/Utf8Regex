@@ -1,5 +1,27 @@
 # Managed PCRE2 profile qualification
 
+## Source after scalar.59: owned supplementary simple casing
+
+Caseless supplementary literals/classes/references and extended replacement
+transforms reuse Core's pinned Unicode16 pairs. This corrects Garay independently
+of host casing, without new data, owners, modes, buffers or shipped dependencies.
+BMP fibers/transforms, inline r, scalar/capture offsets, per-scalar metering,
+original interruption and all four finite invocation controls remain. Frozen
+consumed-range retry/reset semantics and property queries are unchanged.
+
+A bounded native10.47/Unicode16 replay fixes168 Garay observations among576 rows:
+120 matching across character/VM and48 next/continuous literal/capture transforms.
+Core bytes and native expectations match before/after; the same probe host is
+reused. Twelve existing BMP final-sigma uppercase replacement differences remain
+explicit and unchanged. Native matching uses UTF8 byte ranges; native16 Substitute
+compares valid-scalar output only. No whole-profile/version equivalence is inferred.
+Release focused126 plus authority/preparation699 and Debug126 pass. Boundary/gap,
+borrowed-offset, capture, cancellation, resource and output checks are covered.
+No timing claim, new package or repeated package/platform matrix.
+Evidence: artifacts/pcre2-supplementary-case-20261016/RESULT.md and raw native rows.
+Core/PythonRe63 remains primary; PCRE2-59 stays immutable. Lython now accepts
+Unsafe.SizeOf; actual downstream pins/defaults/adoption remain separate.
+
 ## Source after scalar.59: necessary leading-set Count
 
 Existing ASCII leading-set analysis now admits nonempty singleton sets and
@@ -28,14 +50,14 @@ expensive. Construction was not timed; no general required-literal solution.
 
 Evidence: artifacts/pcre2-leading-set-count-20261016/RESULT.md, native-summary.json,
 cost-summary.json, raw lanes/codegen/preflights and captured source. Source only;
-immutable59/primary55 and their scopes stay unchanged. No package/platform matrix
+immutable59 and its scope stay unchanged; Core/PythonRe63 is now the primary pair. No package/platform matrix
 or consumer adoption implied. CI is recorded separately after source push.
 
 ## Private scalar.59 Count/anchoring input
 
 Immutable0.4.0-scalar.59, producerb67b9233ba21e0130e00fb5e312f26f18dd0fae0,
 contains the Count scratch-scope and anchored empty-iteration changes below.
-Core/PythonRe55 remains primary. No PythonRe59, standalone Core59 consumer
+Core/PythonRe55 was primary at this boundary; the current primary pair is63. No PythonRe59, standalone Core59 consumer
 qualification, publication, downstream pins/defaults or adoption is implied.
 
 Manifest SHA256:
@@ -53,8 +75,8 @@ or qualification replay. Producer CI38856150461 passes Windows/Linux, observed
 2026-10-16T07:36:01+02: https://github.com/Lokad/Utf8Regex/actions/runs/38856150461.
 
 Exact Core/PCRE2 inventory: permitted SizeOf only, no generated inline-array
-helpers, native imports or BCL matcher/result members. Lython's stricter SizeOf
-rejection remains an unresolved consumer acceptance issue. Native UTF8 PCRE2
+helpers, native imports or BCL matcher/result members. The historical SizeOf
+acceptance disagreement is resolved: Lython now accepts this member. Native UTF8 PCRE2
 10.47 overlap checks cover512 anchored and552 Count cases: counts/live-token
 counts/every whole-match byte range agree; anchored suite also compares template
 replacement. Shared cases are not distinct patterns. Frozen reset exclusions
@@ -152,7 +174,7 @@ qualification, snapshot/Status update or broad performance claim.
 
 Immutable0.4.0-scalar.58, producera2f63a69250098bba701e01ced0f3ee60a827cab,
 contains the accumulated post57 scalar-counter reuse and single-literal seeking
-changes below. Core/PythonRe55 remains primary. No PythonRe58, standalone Core58
+changes below. Core/PythonRe55 was primary at this boundary; the current primary pair is63. No PythonRe58, standalone Core58
 consumer qualification, publication, downstream pin/default change or adoption.
 
 Manifest SHA256:
@@ -170,8 +192,8 @@ runs pass5,662 with exact source-mapped refs/tested locks/TRXs, zero source proj
 references and equal feed/cache SHA512/package/loaded DLL hashes. No Linux producer
 build, repack, fixture recovery or qualification replay. Exact packaged Core/PCRE2
 inventory references only permitted SizeOf, with no generated inline-array helpers,
-native imports or BCL matcher/result members. Lython's blanket SizeOf rejection
-remains an external acceptance disagreement, not a reason to estimate sizes.
+native imports or BCL matcher/result members. Lython now accepts SizeOf; the
+historical acceptance disagreement is resolved, without manual size estimates.
 
 Exact packages agree with native UTF8 PCRE2 10.47 on134 finite/unlimited cases:
 global counts, live-token counts and all enumerated whole-match byte ranges.
@@ -302,7 +324,7 @@ SourceLink/portable-PDB/symbol identities. Both original detached Windows/Linux
 runs pass5,637 against identical Windows-produced bytes, exact refs/source maps,
 tested locks/TRXs and matching feed/cache/package SHA512/loaded-DLL identities.
 No source test/restore replay, fixture recovery, Linux producer build or repack.
-Core/PythonRe55 remains primary. There is no PythonRe57, standalone Core57 consumer
+Core/PythonRe55 was primary at this boundary; the current primary pair is63. There is no PythonRe57, standalone Core57 consumer
 qualification, publication, downstream pin/default change or adoption claim.
 
 Manifest SHA256: `218E3618B4D5E1113F0E2ADB4777A662D43964B6DBA5052EEDED4FFF0BD61D08`.
@@ -321,8 +343,8 @@ agree; earlier immutable56 exclusions remain historical. Full supplementary,
 category/culture, other options and .NET11 qualification are not inferred.
 Core/PCRE2 inventory has only permitted SizeOf, no generated inline-array helpers,
 native import or BCL matcher/result dependency. Regex timeout constants/Escape
-are allowed members. Lython's stricter Core SizeOf gate still rejects it; no
-consumer agreement, gate bypass or manual size replacement is implied.
+are allowed members. Lython now accepts SizeOf; the historical disagreement is
+resolved. This does not establish downstream pins, defaults or adoption.
 
 One exact-package current-cost observation is complete: quiet VM CPU2,
 .NET10.0.12 Release FullOpts/ReadyToRun off, five alternating warm samples, all
@@ -506,7 +528,7 @@ explicitly unserved),108 DEFINE and50 capture-aware cases. The last corpus check
 every numeric capture. Private host traces confirm copied package DLL paths.
 Exact shipped inventories contain only permitted Unsafe.SizeOf, no unchecked
 reads, generated inline-array helpers, native imports or BCL matcher/result
-members. Lython's stricter SizeOf acceptance remains unresolved.
+members. Lython now accepts SizeOf; the historical disagreement is resolved.
 
 One bounded current public-cost observation used exact packages, quiet VM CPU2,
 Release FullOpts/.NET10.0.12 and five alternating samples. Finite lanes set work50M,
@@ -585,8 +607,8 @@ and configured newlines, per-directive x/xx execution and supported scoped/
 captured reset forms. Curated native source comparisons cover 35 comment,
 48 mode and 80 reset cases; they do not establish complete upstream parity.
 Exact DLLs contain only allowed `Unsafe.SizeOf`, no unchecked reads, generated
-inline-array helpers, native imports or BCL matcher/result members. Lython's
-stricter SizeOf acceptance remains unresolved. Complete public construction,
+inline-array helpers, native imports or BCL matcher/result members. Lython now
+accepts SizeOf. Complete public construction,
 safe defaults, live retention, host containment and broader profile completion
 remain separate objectives.
 
@@ -665,7 +687,7 @@ literal verb labels. Probe retains its curated admission boundary. Complete
 construction/default/live-retention policies, host containment and broader
 profile completion remain unfinished. Exact DLL inventories contain only allowed
 `Unsafe.SizeOf`, no generated inline-array helpers or native imports, and no BCL
-matcher/result members. Lython's stricter SizeOf gate remains unreconciled.
+matcher/result members. Lython now accepts SizeOf; no consumer adoption is inferred.
 
 One bounded current-cost run used the exact DLLs on the quiet VM, Release
 FullOpts/.NET 10.0.12/CPU2: five alternating samples, each at least 50.62 ms, after

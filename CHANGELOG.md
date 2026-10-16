@@ -1,5 +1,18 @@
 # Changelog
 
+## Pin supplementary PCRE2 simple casing
+
+- Reuse Core's owned Unicode 16 supplementary pairs for caseless matching and
+  extended replacement transforms. Garay partners now agree across character/VM,
+  class/reference and next/continuous case routes. Preserve BMP folding, scalar
+  offsets/captures, interruption and four finite invocation controls; no new
+  table, owner, mode or shipped implementation dependency.
+- A bounded native10.47/Unicode16 replay corrects168 Garay observations. Twelve
+  existing BMP final-sigma replacement differences remain explicit and unchanged;
+  no whole-profile equivalence or performance claim. Source only, no new package.
+- Lython now accepts Unsafe.SizeOf. The historical acceptance disagreement is
+  resolved; actual downstream adoption remains separate.
+
 ## Retire unused literal-construction paths
 
 - Remove two test-only standalone replacement-literal factories. Production keeps
@@ -523,7 +536,7 @@
   bytes: detached Core39017/Diff 1,504/PythonRe2989, exact feed/lock/loaded-DLL and
   source/symbol identities. CPython captures91/digests91 on both platforms;
   complete Debug Core39017 and producer CI38793242629 pass. Earlier bytes stay
-  immutable. Lython's strict Core member gate still rejects permitted SizeOf;
+  immutable. Lython's historical rejection of permitted SizeOf is now resolved;
   PythonRe passes. No downstream promotion is claimed.
 - Complete the checked-access batch. Selected Core public
   cumulative medians now fit10% of the fixed original, allocations unchanged;
