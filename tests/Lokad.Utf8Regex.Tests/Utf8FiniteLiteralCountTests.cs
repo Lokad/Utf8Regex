@@ -67,6 +67,27 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     [Theory]
+    [InlineData("abcdefgh|xyzzz|ztzzz", "abcde xyzzz ztzzz abcdefgh", 3)]
+    [InlineData("abcde|abcd|abcz", "abcde abcd abcz", 3)]
+    [InlineData("😀😀|😀|中", "😀😀😀中", 3)]
+    public void SmallFamilyWindowsKeepPriorityAndCompleteScalarVerification(string pattern, string hits, int expected)
+    {
+        foreach (var prefixLength in new[] { 2047, 2048, 2049, 4097 })
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var text = new string('a', prefixLength) + "é😃" + hits + "😃x";
+            var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+            var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
+            var baseline = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+            var limited = Create(pattern, 1_000_000, options);
+            Assert.Equal(expected, baseline.Count(input));
+            Assert.Equal(expected, limited.Count(input));
+            using var source = new CancellationTokenSource();
+            Assert.Equal(expected, limited.Count(input, source.Token));
+        }
+    }
+
+    [Theory]
     [InlineData(1)] [InlineData(2)] [InlineData(31)] [InlineData(2047)]
     [InlineData(2048)] [InlineData(2049)] [InlineData(4097)]
     public void BoundedLiteralCountPreservesFalseCandidatesChunkEdgesAndBorrowedSlices(int length)

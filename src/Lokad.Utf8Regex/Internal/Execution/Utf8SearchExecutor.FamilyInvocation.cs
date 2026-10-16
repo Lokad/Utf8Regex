@@ -58,6 +58,14 @@ internal static partial class Utf8SearchExecutor
                     var relative = foldedSearch.FirstByteSearch.IndexOf(block);
                     if (relative >= 0) candidateByte = blockStart + relative;
                 }
+                else if (!folded && !reverse && plan.AlternateLiteralSearch is
+                    { SearchData.ShortestLength: > 0 and < int.MaxValue } exactSearch)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    var relative = exactSearch.SearchData.FirstByteSearch.IndexOf(block);
+                    if (relative >= 0) candidateByte = blockStart + relative;
+                }
                 else
                 {
                     for (var id = 0; id < literals.Length; id++)

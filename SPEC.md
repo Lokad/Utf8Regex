@@ -223,9 +223,12 @@ Kelvin screening and search borrow the same invocation, including finite control
 caller token and original absolute deadline. Eligible forward folded family
 candidate discovery borrows the prepared first-byte union for one bounded search
 instead of separate branch scans; original ordinal verification and confirmation
-remain. Reverse, candidate-only and unprepared discovery retain their existing
-paths. The removed repeated scans can lower work requirements without changing
-matches or the meaning of the resource policy. Kelvin screening charges before
+remain. Subsequent source extends that same bounded reuse to prepared exact LTR
+families. Each candidate window still charges the original invocation before
+searching at most 2048 bytes; full comparison/confirmation and terminal checks
+remain. Removed branch scans can lower required work, without new scratch,
+owners or an unmetered route. This exact-family extension is outside scalar.61.
+Reverse, candidate-only and unprepared discovery retain their existing paths. Kelvin screening charges before
 windows of at most2050 bytes (2048 starts plus two lookahead bytes). Relevant
 Kelvin retains spent work and uses scalar execution; other construction cultures,
 RTL, empty/captured/anchored/assertion-dependent and NonBacktracking routes retain

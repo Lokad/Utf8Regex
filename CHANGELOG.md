@@ -1,5 +1,16 @@
 # Changelog
 
+## Reuse the prepared exact-family candidate union
+
+- Metered forward exact-family discovery borrows its existing first-byte union
+  for each charged 2048-byte window. Ordered full verification, UTF-8/scalar
+  semantics, original cancellation/deadline and resource admission stay intact.
+  Removed repeated branch scans can admit tighter work limits; no new storage.
+- One bounded current-source public Count pair observes 18–27% lower finite costs
+  across four affected families, unchanged allocations, controls from -6.8% to +3.5%
+  and explicit compiled outliers. No broad parity or new package claim; immutable
+  scalar.61 stays unchanged.
+
 ## Prepare capture maps only for active projection
 
 - Retain literal capture maps only for their existing detailed LTR multi-group
