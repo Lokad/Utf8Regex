@@ -1,15 +1,53 @@
 # Managed PCRE2 profile qualification
 
-## Independent scalar.71 preparation
+## Qualified independent scalar.71 Count/storage input
 
-Batch accepted81ae89f5 bounded literal Count and0d56ebf9 lexical repeat-journal
-reuse. Existing qualification workflow builds the affected closure and packs
-Core/Pcre once, then the SAME bytes run detached Windows/Linux consumers. Reuse
-existing native probes and one selective exact-package current-cost observation;
-do not replay closed source pairs or their control confirmation. Core C# matches
-qualified69; Core71 is PCRE dependency only, not standalone/Core-Python acceptance.
-Exact identities, finite control/retained result scope and explicit work/capacity
-tradeoffs remain required. Preserve69/70/67/failed66. Qualification in progress.
+Clean producer `2328451d46bac3055422b8a288d29cff425198bb`, Release/net10.0.
+Original archive: `artifacts/package-qualification/archive/2328451d46bac3055422b8a288d29cff425198bb/`.
+Manifest SHA256 `263A2F5A9E027CDF52B8E300A64993BAE24525DBD0E0C637253A4DB19D8BB780`.
+[Handoff](../../artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md) and
+[restore instructions](../../artifacts/pcre2-scalar71-delivery-20261017/CONSUMING.md)
+record exact package/DLL hashes, contracts, receipts and current costs. Actual
+PCRE nuspec pins Core[71]. Core/Python C# matches qualified69; Core71 is tested
+only as the PCRE dependency. Primary Core/Python69 and prior70/67/failed66 remain
+immutable; no Python71, standalone Core71 acceptance or consumer promotion.
+
+Same bytes pass5766discovered tests on each Windows/Linux, including16frame,
+20literal-bridge and12repeat-journal cases. Zero failed/TRX-skipped; original
+duplicate-ID warnings remain. One4.84s affected build/pack-symbol each; no Linux
+library build or successful-suite replay. Exact symbols/SourceLink/refs/locks/
+feed/cache/loaded DLLs pass; existing archive verifier checks7artifacts. Both
+inventories contain only permitted SizeOf, accepted by Lython; no generated
+inline-array helper, native import or shipped BCL matcher/results.
+
+Reused native probes:688leading observations0differences;576case rows exactly
+match70 with the same12known BMP final-sigma uppercase replacement differences.
+Public API and frozen clauses unchanged; only two resource-contract paragraphs
+added. A fresh final-feed public restore proves scalar/capture/retention/token/
+work behavior and tiny-budget literal Count, while required output and scalar
+fallback still deny. [Producer CI38978689791](https://github.com/Lokad/Utf8Regex/actions/runs/38978689791)
+is green Windows/Linux. Original package README assets remain frozen.
+
+Accepted81ae89f5 uses the existing Core bounded literal counter under the original
+invocation for eligible exact single/two/three literals. Accepted0d56ebf9 reuses
+the repeat rollback stack alongside frames lexically; nested stacks remain
+separate, attempts truncate, finally releases actual cursor-admitted capacity.
+No public cursor scratch owner, new matcher, registry, mode or precision layer.
+Other six stacks/fixed vectors remain. Held capacity can increase later working
+overlap; actual work/storage changes intentionally revise numerical admission.
+All scalar/capture/retained-result/basic metering/interruption guarantees remain.
+
+One exact-package current-cost observation:155samples,minimum72.6366ms,all above
+50ms. Full validation/required Count, constructors excluded, all four finite
+controls/live token and INFINITE timeouts for every lane. Finite literal1000hits
+38.591us/112B,caseless1000hits1137.066us/177394B,Garay512hits563.202us/91605B,
+captured1000hits344.833us/5888B. Managed max spread13.02%unlimited captures and
+11.48%finite Garay; BCL max5.32%. Supplementary quantifier/case rows excluded from
+BCL overlap. Raw samples/fractional allocations remain; no cross-run causal,
+Status or checked10% claim. Closed source pairs/control confirmation are not
+replayed: repeat affected finite time~19-20%better/allocation~71%lower, with
+accepted1.5-3.1% unchanged-control cost. Remaining costs/known defects and complete
+construction/default/live-retention/RSS/host/SPEC exclusions stay explicit.
 
 ## Qualified independent scalar.70 frame-reuse input
 

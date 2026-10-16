@@ -1,5 +1,22 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.71 qualified dependency
+
+- Qualify immutable2328451d: same-byte Windows/Linux5766discovered PCRE tests,
+  exact identities/symbols/locks, native688leading/576case controls and final-feed
+  public restore pass. Producer CI is green. Inventories retain only accepted
+  SizeOf; no native imports, generated inline-array helpers or shipped BCL matcher.
+- Deliver metered exact-literal Count and lexical repeat rollback reuse with
+  original scalar/capture/result/interruption/resource guarantees. Tiny Count
+  caps can admit reduced actual work; required output/scalar fallback still deny.
+  Held high-water capacity can increase later working overlap. No new owner/mode.
+- Record current finite Count38.6us/112B for1000literal hits and1.137ms/177KB for
+  1000caseless hits;155samples exceed72ms. Remaining costs/noise and accepted
+  source-control1.5-3.1% cost are explicit; no source-pair replay or Status change.
+- Core71 is the PCRE dependency only. Preserve primary Core/Python69, prior70/67
+  and failed66 bytes. Complete SPEC/protection/host goals and actual downstream
+  adoption remain open; no Python71, standalone Core71 acceptance or publication.
+
 ## Independent Core/PCRE2 scalar.71 preparation
 
 - Batch the accepted existing-Core literal Count bridge and lexical repeat

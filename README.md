@@ -40,8 +40,11 @@ composes covered capacity with existing owners;complete construction,lazy,defaul
 live-retention,RSS/host containment and full SPEC remain unfinished. This scoped
 input does not imply publication,consumer pins/defaults/adoption or POSIX-longest
 selection. Published0.3 packages retain their former UTF16 contract. Qualified65
-and earlier inputs remain immutable. Independent [PCRE70](artifacts/pcre2-scalar70-delivery-20261016/HANDOFF.md)
-qualifies frame reuse with its own exact Core70 pin; keep it separate from Python69.
+and earlier inputs remain immutable. Independent [PCRE71](artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md)
+qualifies metered literal Count and lexical repeat-storage reuse with its exact
+Core71 pin; keep it separate from Python69. Its same-byte Windows/Linux consumers
+and producer CI pass. Current finite literal Count takes38.6us/112B; caseless1000
+hits take1.137ms/177KB. Full cost, noise and control tradeoffs remain in the handoff.
 Package preparation README assets stay frozen;
 the handoff and original manifest record completed qualification without repacking.
 

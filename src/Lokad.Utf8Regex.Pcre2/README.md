@@ -1,67 +1,39 @@
 # Lokad.Utf8Regex.Pcre2
 
-Qualified private **Core/PCRE2 0.4.0-scalar.70** is produced by
-`1ed45f011d1a2f6ce07ed15b8336c2dfee4036f4`. The same immutable packages pass
+Qualified private **Core/PCRE2 0.4.0-scalar.71** is produced by
+`2328451d46bac3055422b8a288d29cff425198bb`. The same immutable packages pass
 Windows/Linux detached consumers, exact provenance/pins/locks/DLLs/symbols,
 native-overlap probes and a fresh public consumer restore.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38970723252) is green.
-PCRE2 pins Core `[0.4.0-scalar.70]`.
-[Handoff](../../artifacts/pcre2-scalar70-delivery-20261016/HANDOFF.md) and
-[consumption notes](../../artifacts/pcre2-scalar70-delivery-20261016/CONSUMING.md).
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38978689791) is green.
+PCRE2 pins Core `[0.4.0-scalar.71]`.
+[Handoff](../../artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md) and
+[consumption notes](../../artifacts/pcre2-scalar71-delivery-20261017/CONSUMING.md).
 Core/PythonRe69 remains independent; do not mix its exact Core69 pin with this
-pair. Core70 is tested as the PCRE dependency, not a standalone/Core-Python release.
-Earlier67/69 and failed66 bytes stay immutable; no publication or consumer switch.
+pair. Core71 is the PCRE dependency only. Earlier70/67/69 and failed66 stay immutable.
+Actual consumer adoption, complete SPEC and host containment remain open.
 
-This input delivers lexical reuse of the existing backtracking frame stack.
-Attempts truncate logical state; nested assertions retain separate stacks.
-Actual capacity stays admitted until finally-release; held high-water capacity
-can increase later working overlap while repeated acquisition work falls.
-Other stacks/vectors, scalar semantics, captures, retained results, original
-interruption and all four finite controls remain. No new cursor owner or GC lease.
+This batch reuses Core's existing metered literal Count for eligible exact single/
+two/three-literal plans under the original invocation, and reuses the existing
+repeat rollback stack alongside backtracking frames in lexical Count/search.
+Nested stacks stay separate; attempts truncate logical state; finally releases
+actual capacity. Other six stacks/fixed vectors remain. No new matcher, cursor
+owner, GC lease, mode or accounting layer. Strict UTF-8/scalars, captures, retained
+results, original cancellation/deadline and all four finite controls remain.
+Reduced work/storage intentionally revises numeric admission; held high-water
+capacity can increase later working overlap. Required output still needs admission.
 
-Current exact-package finite Count: caseless1,000hits1.366ms/609KB, Garay512hits
-687us/313KB, captured1,000hits339us, finite-language119us and64KiB missing-leading-
-byte miss4.40us.155warm samples, minimum69.499ms; all timeouts infinite. Allocations,
-BCL overlap/exclusions and noise remain in the handoff. Remaining per-attempt
-allocation and performance gaps are explicit; basic metering stays enabled.
-These observations do not replay or replace the closed source comparison.
+Current exact-package finite Count: literal1000hits38.6us/112B, caseless1000hits
+1.137ms/177KB, Garay512hits563us/92KB, captured1000hits345us and64KiB missing-leading
+miss4.28us.155warm samples,minimum72.637ms,all timeouts infinite. Remaining costs,
+BCL overlap/exclusions, noise and allocations are explicit in the handoff. These
+observations are separate from closed source comparisons. The repeat source's
+1.5-3.1% unchanged-control time cost is accepted and recorded. Basic metering stays.
 
-Both assemblies retain only permitted Unsafe.SizeOf, accepted by Lython; no
-native dependency or BCL matcher/results are shipped. Frozen reset/consumed-range
-exclusions and12known BMP replacement differences remain. Properties are not
-pinned wholesale to Unicode16. Original package README preparation assets stay
-frozen; the handoff records completed qualification without repacking.
-
-Subsequent source work reuses Core's existing bounded literal Count backend for
-eligible finite literal-language plans under the original invocation. No new
-matcher, owner or public mode. Nullable, folded, reset-projected, contextual and
-other ineligible plans retain their current route. Reduced actual VM work and
-scratch intentionally revise numerical admission; basic metering remains.
-One paired public source comparison measured finite1,000-hit `(a)(b)` Count at
-123->44us, three alternatives242->56us and overlapping alternatives103->69us.
-Multi-literal allocation fell1984->112B; unchanged slice control+1.9%. Native184
-observations and focused resource/interruption checks pass. Noise/raw samples and
-the [source decision](../../artifacts/pcre2-literal-count-bridge-20261017/RESULT.md)
-remain explicit. This is staged source, not a change to qualified70 bytes or a
-new package qualification, broad benchmark Status or unchecked-access gate.
-
-Later source also reuses the existing repeat rollback stack in the lexical scope
-that owns backtracking frames. Attempts truncate logical state, nested assertions
-keep separate stacks, and finally releases actual admitted capacity through the
-cursor budget. Other stacks/vectors and all basic metering remain. Held capacity
-can increase later working overlap; actual rental work decreases. No public cursor
-field, new owner, finalizer, pool or mode. One paired public comparison reduced
-finite caseless1,000-hit Count1.392->1.127ms and allocation609->177KB. Failed-start
-Count/IsMatch and Garay Count improve similarly. A single control-only confirmation
-measured1.5-3.1% execution-time cost with unchanged allocation; that cost is accepted
-and remains explicit. [Source decision](../../artifacts/pcre2-repeat-journal-20261017/RESULT.md).
-This source stays separate from immutable70 qualification and its original costs.
-
-The next private **Core/PCRE2 scalar.71** boundary batches both accepted source
-changes with the existing package/platform/native/current-cost workflow. It is
-under qualification. Its exact Core dependency is71; primary Core/Python69 remains
-independent. Core71 is the PCRE dependency only. Earlier69/70/67 and failed66 stay
-immutable; no new qualification, publication or downstream promotion is claimed yet.
+Both exact assemblies retain only permitted Unsafe.SizeOf, accepted by Lython;
+no native dependency, generated inline-array helper or BCL matcher/results ship.
+Frozen reset/consumed-range/retry exclusions and12known BMP replacement differences
+remain. Properties are not pinned wholesale to Unicode16. Original package README
+preparation assets stay frozen; the handoff records completion without repacking.
 
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
