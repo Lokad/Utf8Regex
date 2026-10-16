@@ -26,25 +26,6 @@ internal readonly struct Utf8ReplacementInstruction
 
     public bool IsBraceEnclosed { get; }
 
-    public static Utf8ReplacementInstruction Literal(byte[] literalUtf8)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        var result = new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.Literal, literalUtf8,
-            DecodeLiteral(storage, literalUtf8), -1, false);
-        storage.Complete(); owner.Complete();
-        return result;
-    }
-
-    public static Utf8ReplacementInstruction Literal(string literalText)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        var result = Literal(storage, literalText);
-        storage.Complete(); owner.Complete();
-        return result;
-    }
-
     internal static Utf8ReplacementInstruction Literal(Utf8ConstructionSession storage, string literalText)
     {
         // Each literal fragment is an independent scalar encoding boundary.
@@ -67,13 +48,7 @@ internal readonly struct Utf8ReplacementInstruction
     }
 
     private static string DecodeLiteral(Utf8ConstructionSession storage, byte[] bytes)
-    {
-        storage.Budget.ChargeWork((ulong)bytes.Length);
-        var characters = storage.Allocate<char>(Encoding.UTF8.GetCharCount(bytes), false);
-        storage.Budget.ChargeWork((ulong)bytes.Length + (ulong)characters.Length);
-        Encoding.UTF8.GetChars(bytes.AsSpan(), characters);
-        return storage.Budget.CopyText(characters);
-    }
+        => storage.Budget.DecodeUtf8(bytes, Encoding.UTF8);
 
     public static Utf8ReplacementInstruction Group(int groupNumber, bool isBraceEnclosed) =>
         new(Utf8ReplacementInstructionKind.Group, [], string.Empty, groupNumber, isBraceEnclosed);

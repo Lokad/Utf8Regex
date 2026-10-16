@@ -1,5 +1,14 @@
 # Changelog
 
+## Retire unused literal-construction paths
+
+- Remove two test-only standalone replacement-literal factories. Production keeps
+  the existing session-based API, scalar-fragment repair and strict byte templates.
+- Reuse the admitted direct string decoder instead of a temporary char array and
+  copy. Removed preparation can admit tighter construction limits; no new owner
+  or accounting mechanism. Public rejection, output, cutoff and cache checks pass.
+  No timing claim or new package; existing scalar.63 bytes remain unchanged.
+
 ## Skip rejected groupless capture projection preparation
 
 - Reuse the existing capture predicate before grouped/alternate projection

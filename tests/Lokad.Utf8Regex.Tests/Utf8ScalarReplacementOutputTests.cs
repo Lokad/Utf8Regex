@@ -7,6 +7,32 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarReplacementOutputTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MalformedByteTemplatesFailBeforeOutputAndDoNotPreventReuse(bool finite)
+    {
+        var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 128,
+            MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
+        using var source = new CancellationTokenSource();
+        byte[][] templates = [[0x61, 0xff, 0xf0, 0x9f, 0x98, 0x80], [0xf0, 0x9f], [0xed, 0xa0, 0x80]];
+        foreach (var compiled in new[] { false, true })
+        {
+            var regex = new Utf8Regex("a", Options(compiled, false), Regex.InfiniteMatchTimeout, policy);
+            foreach (var text in new[] { "a😀a", "miss" })
+            foreach (var template in templates)
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                Assert.Throws<ArgumentException>(() => regex.Replace(input, template, source.Token));
+                var destination = new byte[32];
+                Array.Fill(destination, (byte)0xa5);
+                Assert.Throws<ArgumentException>(() => regex.TryReplace(input, template, destination, out _, source.Token));
+                Assert.All(destination, value => Assert.Equal((byte)0xa5, value));
+            }
+            Assert.Equal("q😀q", regex.ReplaceToString("a😀a"u8, "q", source.Token));
+        }
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

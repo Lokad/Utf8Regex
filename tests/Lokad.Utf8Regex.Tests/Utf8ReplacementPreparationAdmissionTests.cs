@@ -249,7 +249,6 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     [InlineData("literal-extract")]
     [InlineData("lower-named")]
     [InlineData("literal-text")]
-    [InlineData("literal-bytes")]
     [InlineData("rewrite-simple")]
     [InlineData("rewrite-tree")]
     [InlineData("rewrite-borrowed")]
@@ -347,10 +346,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
                 Assert.True(pattern.TryGetLiteralText([], [], out var value)); return value;
             };
             case "lower-named": return () => Utf8ReplacementPlanLowerer.Lower(pattern, [0, 1, 7], ["zero", "one", "x"]);
-            case "literal-text": return () => Utf8ReplacementInstruction.Literal("é\ud83d$literal\ude00");
-            case "literal-bytes":
-                byte[] bytes = [0x61, 0xff, 0xf0, 0x9f, 0x98, 0x80];
-                return () => Utf8ReplacementInstruction.Literal(bytes);
+            case "literal-text": return () => Utf8FrontEndReplacementAnalyzer.Analyze("é\ud83d$literal\ude00");
             default:
                 var regex = new Utf8Regex(stage == "rewrite-simple" ? "(abc)" : stage == "rewrite-tree" ? "((?:ab|cd))" : "(a+)b");
                 var plan = Utf8FrontEndReplacementAnalyzer.Analyze("x$1$1z", [0, 1], ["zero", "one"]).Plan;
