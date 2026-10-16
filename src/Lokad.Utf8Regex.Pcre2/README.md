@@ -32,6 +32,19 @@ exclusions and12known BMP replacement differences remain. Properties are not
 pinned wholesale to Unicode16. Original package README preparation assets stay
 frozen; the handoff records completed qualification without repacking.
 
+Subsequent source work reuses Core's existing bounded literal Count backend for
+eligible finite literal-language plans under the original invocation. No new
+matcher, owner or public mode. Nullable, folded, reset-projected, contextual and
+other ineligible plans retain their current route. Reduced actual VM work and
+scratch intentionally revise numerical admission; basic metering remains.
+One paired public source comparison measured finite1,000-hit `(a)(b)` Count at
+123->44us, three alternatives242->56us and overlapping alternatives103->69us.
+Multi-literal allocation fell1984->112B; unchanged slice control+1.9%. Native184
+observations and focused resource/interruption checks pass. Noise/raw samples and
+the [source decision](../../artifacts/pcre2-literal-count-bridge-20261017/RESULT.md)
+remain explicit. This is staged source, not a change to qualified70 bytes or a
+new package qualification, broad benchmark Status or unchecked-access gate.
+
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.

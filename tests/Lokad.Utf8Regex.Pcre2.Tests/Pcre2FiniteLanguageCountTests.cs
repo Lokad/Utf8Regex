@@ -71,7 +71,8 @@ public sealed class Pcre2FiniteLanguageCountTests
     {
         foreach (var allowance in new[] { 1UL << 20, 1UL })
         {
-            var regex = Create("((ab)|(a))", new() { HeapLimitInBytes = allowance });
+            // Four alternatives retain the scalar VM and its real rewind frames.
+            var regex = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = allowance });
             var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate("ab a"u8,
                 ref invocation, out var input));
@@ -111,7 +112,9 @@ public sealed class Pcre2FiniteLanguageCountTests
         Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.Count(malformed)).Message);
         var tinyLiteral = Create("(a)(b)", new() { HeapLimitInBytes = 1 });
         Assert.Equal(1, tinyLiteral.Count("ab"u8)); // No major scratch is acquired.
-        var tiny = Create("((ab)|(a))", new() { HeapLimitInBytes = 1 });
+        var tinyAlternatives = Create("((ab)|(a))", new() { HeapLimitInBytes = 1 });
+        Assert.Equal(2, tinyAlternatives.Count("ab a"u8)); // Native Count needs no rewind frames.
+        var tiny = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = 1 });
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
             Assert.Throws<Pcre2MatchException>(() => tiny.Count("ab a"u8)).ErrorKind);
         var depth = Create("(?:(a|aa)+)b", new() { DepthLimit = 1 });

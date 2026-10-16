@@ -685,6 +685,16 @@ Count publishes no owned result payload. Eliminating capture state can admit
 smaller working/depth/work allowances than the former VM route; units and acquired
 capacity are algorithm-dependent, not exact native-PCRE2 counter equivalence.
 
+Development after scalar.70 reuses Core's bounded metered literal Count backend
+for an already compiled finite literal language with no boundary/reset projection:
+one exact nonempty literal, or two/three ordered exact alternatives, with no
+folding or search boundary/trailing requirement. Whole-subject validation and
+the original invocation, byte floor, cancellation, absolute deadline and profile
+failure vocabulary remain. Other languages/options keep their existing route.
+Count needs no projected result or VM rewind frames on this path; smaller
+work/depth/working allowances may therefore admit it. Required captures/results
+and remaining scalar VM storage retain their own pre-acquisition admission.
+
 When the admitted search fact proves a leading single literal, the scalar counter
 can seek its next occurrence through the existing bounded metered search before
 VM verification. Interior anchors, empty, RTL, folding and unproved start plans

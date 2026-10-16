@@ -1,5 +1,21 @@
 # Changelog
 
+## Development: shared metered literal Count for PCRE2
+
+- Reuse Core's existing bounded native Count for already proved finite literal
+  languages: exact nonempty literal or two/three ordered alternatives, without
+  folding, search context or reset projection. Retain whole UTF8 validation,
+  original invocation, scalar byte floors and PCRE failure/interruption authority.
+  Other plans and explicit options keep their current route; no new matcher,
+  Core hook, owner, public switch or unchecked API.
+- Less actual VM work/storage revises numerical admission. Tiny pure Count can
+  succeed while required capture/result storage and scalar fallback frames still
+  deny. Retarget frame-admission checks to the four-alternative VM route.
+- One paired public source run: finite1000literal hits123->44us, three alternatives
+  242->56us, overlap103->69us; multi-literal allocation1984->112B, unchanged slice
+  control+1.9%. Native184 observations and focused Release/Debug/authority/safety
+  checks pass. Preserve noise and raw samples; no new package or Status claim.
+
 ## Test coordination: preparation-cache ownership
 
 - Run deliberately blocking cache-test workers on dedicated threads, matching

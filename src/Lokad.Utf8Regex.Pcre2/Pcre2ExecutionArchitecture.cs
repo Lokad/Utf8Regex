@@ -2803,16 +2803,27 @@ internal static class Pcre2GlobalOperationDriver
                 return true;
             }
 
-            // This program already proves the capture-independent literal language.
-            // Count its owned non-empty scalar program under the original authority;
-            // CountPrepared would create a separate budget, and the VM keeps captures
-            // that this operation cannot observe.
-            var scalarProgram = literalFamilyProgram.Regex.Inspection.AvailableOwnedSliceProgram;
+            // The finite-language compiler already owns escaped, ordered literals.
+            // Reuse their bounded native Count under the original authority; neither
+            // this value operation nor its scalar fallback needs projected captures.
+            // CountPrepared would start a separate budget.
+            var inspection = literalFamilyProgram.Regex.Inspection;
+            var scalarProgram = inspection.AvailableOwnedSliceProgram;
             if (!scalarProgram.CanMatchEmpty && !scalarProgram.RightToLeft)
             {
-                result = Pcre2SliceDriver.CountNonEmpty(scalarProgram,
-                    literalFamilyProgram.Regex.Inspection.SearchPlan,
-                    ref input, start, ref invocation);
+                var searchPlan = inspection.SearchPlan;
+                if (literalFamilyProgram is Pcre2FiniteLiteralLanguageDirectProgram { BoundaryProjection: null } &&
+                    (inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal ||
+                     inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+                     searchPlan.AlternateLiteralsUtf8 is { Length: 2 or 3 }) &&
+                    !searchPlan.HasBoundaryRequirements && !searchPlan.HasTrailingLiteralRequirement)
+                {
+                    var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(searchPlan,
+                        input.Bytes[start.Value..], false, ref invocation, out result);
+                    Pcre2SliceDriver.ThrowIfSliceBreached(breach);
+                    return true;
+                }
+                result = Pcre2SliceDriver.CountNonEmpty(scalarProgram, searchPlan, ref input, start, ref invocation);
                 return true;
             }
         }
