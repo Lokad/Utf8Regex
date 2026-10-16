@@ -11,11 +11,14 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
-Source metadata is preparing **0.4.0-scalar.56** for the complete PCRE2 option
-batch described below. It is not yet a qualified package input. The latest
-qualified Core/PCRE2 input remains scalar.54 until a completed immutable56
-handoff is recorded in [qualification](QUALIFICATION.md). Core/PythonRe55 stays
-the qualified primary pair; no PythonRe56 qualification or publication is implied.
+The latest qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
+`5ad447f5`, containing the completed option-scope/admission/capture-order batch.
+Both original detached Windows/Linux runs pass against identical package bytes,
+exact source-mapped refs/locks/TRXs and verified symbols/provenance/inventory.
+[Qualification](QUALIFICATION.md) records scope and one current public-cost run:
+finite captured/reference Count retains substantial overhead and basic metering.
+Core/PythonRe55 stays the qualified primary pair; earlier bytes remain unchanged.
+No PythonRe56, publication, consumer pin/default change or adoption is implied.
 
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and
@@ -26,7 +29,7 @@ public-operation costs with all four finite limits. This is private producer
 acceptance; downstream adoption and publication remain separate. The qualified
 Core/PythonRe52 pair and all earlier immutable inputs remain unchanged.
 
-The current private Core/PCRE2 candidate is **0.4.0-scalar.54**, producer
+The earlier private Core/PCRE2 candidate is **0.4.0-scalar.54**, producer
 `66328362`. Identical immutable packages pass 5,428 detached checks on each of
 Windows and Linux. Both original runs use exact source-mapped references,
 lockfiles and TRX results, with no fixture recovery or restore replay. It includes
@@ -109,8 +112,8 @@ Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges
 use the existing `ClassRangeOrder` compile-error kind. This also rejects formerly
-admitted invalid forms such as `[\d-z]`. Earlier immutable package receipts retain
-their original coverage; this correction needs its own PCRE2 delivery boundary.
+admitted invalid forms such as `[\d-z]`. This behavior is included in scalar.56;
+earlier immutable package receipts retain their original coverage.
 
 Quoted classes execute in the owned scalar parser. `[\Qa-z\E]` contains `a`,
 `-` and `z`; `[a-\Qz\E]` spans `a` through `z`. Quotes also protect brackets,

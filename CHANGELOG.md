@@ -1,14 +1,20 @@
 # Changelog
 
-## Preparing private scalar.56 Core/PCRE2 candidate
+## Private scalar.56 Core/PCRE2 candidate
 
-- Reserve a distinct immutable producer input for the completed PCRE2 option
-  batch. Qualification and current packaged cost evidence are pending; use a
-  completed handoff rather than the preparing source version. Preserve all
-  earlier package bytes and the qualified Core/PythonRe55 input. No PythonRe56,
-  publication, consumer pin/default change or adoption is implied.
+- Qualify immutable Core/PCRE2 input0.4.0-scalar.56, producer5ad447f5, for the
+  complete option-scope/admission/capture-order batch. Both original detached
+  Windows/Linux runs pass against identical packages and exact refs/locks/TRXs;
+  provenance, symbols, permitted-member inventory and curated native checks pass.
+  Producer CI is green. No repack, publication, consumer pin/default/adoption or
+  PythonRe56 designation. Preserve the qualified Core/PythonRe55 pair.
+- Record one exact-package current-cost observation with all-four-finite/live-token
+  lanes. Captured Count153/585us unlimited/finite retains3.82x overhead; numeric-
+  reference Count155/1269us retains8.21x and about992KB allocated. DEFINE finite
+  Count allocates4.43MB. Basic metering stays; noisy tails and exclusions remain
+  explicit. No repeated campaign, broad parity or unpaired speedup claim.
 
-## Development after scalar.55
+## Option corrections included in scalar.56
 
 - Keep empty single-hyphen PCRE2 directives in the profile parser, preserving
   declaration-order captures and numeric references across mixed named/unnamed

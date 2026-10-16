@@ -1,21 +1,83 @@
 # Managed PCRE2 profile qualification
 
-## Preparing the scalar.56 option-batch candidate (2026-10-16)
+## Private scalar.56 option-batch candidate (2026-10-16)
 
-Source metadata reserves **0.4.0-scalar.56** for one independent Core/PCRE2
-qualification of the completed option batch: J/DEFINE scope restoration,
-inline delimiter/no-op admission and mixed capture/reference numbering.
-Functional source6b478095 passes Windows/Linux CI. Curated native comparisons
-agree; inline caseless-restrict r remains explicitly unserved. Source Release
-confirmation and focused Debug pass. One unchanged literal-allocation fixture
-failed once before isolated/full confirmation passed; original evidence and
-the unresolved cause remain recorded.
+Immutable Core/PCRE2 **0.4.0-scalar.56**, producer
+`5ad447f568c877ab5339c3eb803a4aef3f74ea9f`, qualifies the completed option batch.
+J/DEFINE settings restore on group exit, repeated hyphens fail construction,
+valid no-op directives execute, and mixed capture slots/references retain PCRE2
+order. Scalar byte ranges, captures/MARK, interruption, four finite invocation
+controls and documented cursor/result lifetimes remain. Inline r is explicitly
+unserved; this does not establish complete upstream profile parity.
 
-This preparing state is not package qualification. Use only a completed immutable
-archive, exact references/locks and handoff after producer, symbols, inventory,
-detached platform and current-cost checks. Existing scalar.54/55 bytes remain
-unchanged; Core/PythonRe scalar.55 remains the qualified primary input. There is
-no PythonRe56 designation, publication, pin/default change or adoption claim.
+Archive: `artifacts/package-qualification/archive/5ad447f568c877ab5339c3eb803a4aef3f74ea9f/`.
+Manifest SHA256:
+`8CA0A8CE9F832D990602DD77D061D027C559153715F89E7458AB057A4FACEC88`.
+
+| Package | nupkg SHA256 | Loaded DLL SHA256 |
+| --- | --- | --- |
+| Core | 58E9AD2215AE8DE27F7C47B922BC1D473F2810B3CE049A4DD4A728B5CFD8B39D | 1F815C29639F3D8C28947EE69343DA07EC71FF1664CBB950D2150E5A25D54BE3 |
+| PCRE2 | 45173487CFD23FF863D69DA35184FB8F902D4298746E3AC655F661206B380F16 | D9A3386D9C467F600DB49724CD6F3FA19E9E881F604054486065AC8475571745 |
+
+One affected library dependency build and one pack per package/symbol. Existing
+archive verification passes seven artifacts, clean tracked revision, NuSpec,
+assembly, SourceLink and portable-PDB/symbol identities. Both original detached
+Windows/Linux runs pass5,523 against identical Windows-produced packages, exact
+source-mapped references, tested locks/TRXs and zero ProjectReferences. Feed/cache,
+SHA512 and loaded DLLs match. No fixture recovery, test/restore replay, Linux
+producer build or repack. Producer CI is green on both platforms:
+[run38831255560](https://github.com/Lokad/Utf8Regex/actions/runs/38831255560).
+
+Package-DLL native comparisons agree across261 J-scope,57 admission (12 r cases
+explicitly unserved),108 DEFINE and50 capture-aware cases. The last corpus checks
+every numeric capture. Private host traces confirm copied package DLL paths.
+Exact shipped inventories contain only permitted Unsafe.SizeOf, no unchecked
+reads, generated inline-array helpers, native imports or BCL matcher/result
+members. Lython's stricter SizeOf acceptance remains unresolved.
+
+One bounded current public-cost observation used exact packages, quiet VM CPU2,
+Release FullOpts/.NET10.0.12 and five alternating samples. Finite lanes set work50M,
+depth1024, working64MiB and result128MiB together; a third adds a live token.
+These are measurement allowances, not host defaults. Construction is excluded;
+validation/discovery/required projection are included. Medians, microseconds:
+
+| Public operation | Unlimited | Finite | Finite+token |
+| --- | ---: | ---: | ---: |
+| Literal Count,4104B | 0.730 | 1.860 | 1.869 |
+| Captured Count,3000B/1000matches | 153.104 | 584.678 | 605.407 |
+| Captured MatchDetailed,first result | 1.128 | 1.381 | 1.425 |
+| Email Count,3840B/128matches | 677.673 | 686.426 | 701.538 |
+| Empty-option/reference Count,4000B/1000matches | 154.565 | 1268.594 | 1290.359 |
+| DEFINE/reference Count,5000B/1000matches | 2866.404 | 2908.354 | 2870.953 |
+| DEFINE MatchDetailed,first result | 2.219 | 2.530 | 2.562 |
+| Soft captured Probe,10B | 0.366 | 0.551 | 0.552 |
+
+Captured Count finite overhead remains3.82x; empty-option/reference Count8.21x
+with about992KB allocated, DEFINE finite about4.43MB. Basic metering stays.
+ASCII predecoded/decode-then-Regex Count controls cost83.00/84.63us for captures
+and41.79/43.51us for email. Incompatible scalar/control-label, partial and profile
+option/subroutine comparisons are explicitly excluded. All230 samples exceed50ms
+(minimum52.724ms); worst spread83.2% is empty-options MatchDetailed finite+token,
+with36.6% for its finite lane and30.4% for DEFINE unlimited Count. Pool variation
+and noisy tails stay explicit. No repeat, Status/snapshot mutation, broad parity
+or unpaired speedup claim. This does not reopen the checked-access conversion gate.
+
+A private identity collector's obsolete5428 expected count was corrected to5523
+after successful original tests, without replay. A private driver escaping error
+failed correctness preflight before timing; corrected source/output are retained.
+Neither changed producer bytes. Earlier source validation had one unchanged
+literal-allocation fixture6544B failure before isolated/sole full confirmation
+passed; cause is unestablished. No fixture/threshold was changed. Both original
+package suites and producer CI pass; original evidence remains available.
+
+`artifacts/pcre2-scalar56-delivery-20261016/HANDOFF.md` and `delivery-receipt.json`
+retain identities, original platform proof, symbols/inventory, native outcomes,
+raw current costs and exclusions. Embedded docs retain their preparing56 state;
+no repack follows documentation. Core/PythonRe55 remains the qualified primary
+pair; there is no PythonRe56 or standalone Core56 consumer qualification claim.
+Preserve54/55 and53's historical caveats. Publication, pins/defaults, adoption,
+full construction/default/live-retention/host containment and broader profile/
+.NET11 acceptance remain separate.
 
 ## Private scalar.54 candidate (2026-10-16)
 
