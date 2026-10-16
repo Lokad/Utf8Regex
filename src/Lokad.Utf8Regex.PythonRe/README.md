@@ -40,6 +40,14 @@ leading-zero references and original construction/token/deadline controls remain
 Immutable63 retains its old failure classification; the separate source receipt
 and erratum do not repack or qualify new bytes as that same candidate.
 
+Development also establishes the original deadline before bulk subject validation
+and byte-floor projection for finite-timeout calls without finite budgets/tokens.
+Native discovery and required shaping share it; native entry omits an unnecessary
+full coordinate map. Existing finite/token and infinite routes remain. This fixes
+a source-proved scalar.63 limitation without changing its immutable bytes; see
+`artifacts/python-findall-offset-deadline-20261016/SCALAR63-ERRATUM.md`.
+No new package or whole-profile/performance-equivalence claim follows this fix.
+
 The earlier scalar.52 pair completed the Core/PythonRe checked-access batch. Selected Core costs
 against the fixed original fit10%, with unchanged allocations and a narrow
 9.91% emitted-search row. Python's exact-package 17-pair confirmation has per-row

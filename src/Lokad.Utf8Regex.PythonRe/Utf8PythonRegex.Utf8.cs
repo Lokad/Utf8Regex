@@ -91,9 +91,16 @@ public sealed partial class Utf8PythonRegex
         ranges = default;
         try
         {
-            var enumerator = startOffsetInBytes == 0
-                ? _utf8Regex.EnumerateMatches(input)
-                : _utf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            Utf8ValueMatchEnumerator enumerator;
+            if (MatchTimeout == Timeout.InfiniteTimeSpan)
+                enumerator = startOffsetInBytes == 0
+                    ? _utf8Regex.EnumerateMatches(input)
+                    : _utf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            else
+            {
+                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+                enumerator = _utf8Regex.EnumerateMatchesForResult(input, startOffsetInBytes, ref invocation);
+            }
 
             ranges = new PythonReUtf8MatchRangeBuffer(enumerator.ExportWorkingInvocation());
             while (enumerator.MoveNext())

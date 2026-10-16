@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Retains one invocation through owned UTF-16-offset entry and enumeration.</summary>
+/// <summary>Retains one invocation through owned offset entry and enumeration.</summary>
 public sealed partial class Utf8Regex
 {
     private static Utf8BoundaryMap PrepareOffsetInput(ReadOnlySpan<byte> input, int utf16Offset,
@@ -31,17 +31,8 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out reservation);
-            var eligible = !HasFiniteExecutionLimits && !UsesRightToLeft() &&
-                (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
-                !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
-                !program.HasContiguousAnchor;
-            var anchored = eligible && _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
-                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
-                    Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd;
-            var native = eligible && !program.IgnoreCase &&
-                Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
             Utf8OperationMatchCursor cursor;
-            if (anchored || native)
+            if (CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
             {
                 map = default;
                 invocation.Ledger.Release(reservation);
@@ -56,6 +47,60 @@ public sealed partial class Utf8Regex
                 var ownedReservation = reservation;
                 reservation = 0;
                 cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, utf16Offset);
+            }
+            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            throw CreateExecutionResourceFailure(ref invocation);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        finally { if (reservation != 0) invocation.Ledger.Release(reservation); }
+    }
+
+    private bool CanUseNativeOffsetCursor(Utf8ValidationResult validation,
+        ref Utf8SliceInvocation invocation, out bool anchored)
+    {
+        var program = _ownedSliceProgram;
+        var eligible = !HasFiniteExecutionLimits && !UsesRightToLeft() &&
+            (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
+            !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+            !program.HasContiguousAnchor;
+        anchored = eligible && _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
+                Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd;
+        var native = eligible && !program.IgnoreCase &&
+            Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
+        return anchored || native;
+    }
+
+    // Python bulk collection borrows this invocation through validation, byte-floor
+    // projection, discovery and shaping. Native search keeps its existing algorithm.
+    internal Utf8ValueMatchEnumerator EnumerateMatchesForResult(ReadOnlySpan<byte> input,
+        int startOffsetInBytes, scoped ref Utf8SliceInvocation invocation)
+    {
+        ulong reservation = 0;
+        try
+        {
+            var validation = Utf8Validation.Validate(input, ref invocation);
+            _ = Utf8BytePosition.CreateChecked(validation, startOffsetInBytes, nameof(startOffsetInBytes));
+            if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
+                throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
+            var startUnit = validation.IsAscii ? startOffsetInBytes : startOffsetInBytes == 0 ? 0 :
+                Utf8Validation.Validate(input[..startOffsetInBytes], ref invocation).Utf16Length;
+            Utf8OperationMatchCursor cursor;
+            if (CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
+                cursor = anchored
+                    ? new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."),
+                        _fallbackDirectFamily.Kind, validation, invocation).WithStartFloor(startOffsetInBytes, startUnit)
+                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes, startUnit);
+            else
+            {
+                var map = Utf8BoundaryMap.Create(input, validation, ref invocation, out reservation);
+                var ownedReservation = reservation;
+                reservation = 0;
+                cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(_ownedSliceProgram, input,
+                    ref map, ref invocation, ownedReservation, startUnit);
             }
             return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
         }

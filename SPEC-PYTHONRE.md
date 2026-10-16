@@ -248,6 +248,15 @@ each compile under their own bounded construction scope; one immutable program
 is published and reused. Successfully published code survives later call
 interruption. Warm calls retain their existing execution checkpoints.
 
+Finite-timeout bulk `FindAll`, `FindAllToStrings` and `FindAllToUtf8` create
+invocation authority before subject validation or byte-floor projection. Eligible
+native collection borrows that invocation through discovery and required shaping;
+it does not start a second deadline after validating a prefix. Native byte entry
+needs no full coordinate map; derived UTF-16 offsets still follow scalar boundaries.
+The canonical counted string-literal route already shares its invocation. Infinite
+collection and finite-budget/live-token scalar routes retain their existing scope.
+This source correction follows immutable scalar.63; its original receipts are unchanged.
+
 Template Replace/Subn byte and string operations also create their invocation
 before replacement-cache access. Existing cache checkpoints observe the call's
 token/deadline during lookup, pending-entry waits and publication; cold parsing

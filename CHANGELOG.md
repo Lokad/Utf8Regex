@@ -1,5 +1,19 @@
 # Changelog
 
+## Preserve bulk PythonRe deadlines without scalar routing
+
+- Finite-timeout bulk collection borrows one invocation before validation and
+  byte-floor projection, through native discovery and required output shaping.
+  Retain the existing native algorithms and scalar fallback, original offsets,
+  interruption and resource controls. Native byte entry omits the full coordinate
+  map; derived UTF-16 compatibility and canonical counted strings remain.
+- Reject the simpler scalar-routing candidate after its measured80x late-search
+  cost. The final bounded pair retains ASCII/dense allocation costs; a selected
+  Unicode-prefix case falls about22us ->5.6us and removes17KB per call. No fine
+  speed claim follows noisy30%/20% lanes or unchanged controls shifting up to3.7%.
+- Focused bulk/offset/resource checks pass. Source only, no package qualification
+  per edit; immutable63 has a separate scoped erratum and remains unchanged.
+
 ## Pin supplementary PCRE2 simple casing
 
 - Reuse Core's owned Unicode 16 supplementary pairs for caseless matching and
