@@ -1,5 +1,13 @@
 # Changelog
 
+## Preparing private scalar.56 Core/PCRE2 candidate
+
+- Reserve a distinct immutable producer input for the completed PCRE2 option
+  batch. Qualification and current packaged cost evidence are pending; use a
+  completed handoff rather than the preparing source version. Preserve all
+  earlier package bytes and the qualified Core/PythonRe55 input. No PythonRe56,
+  publication, consumer pin/default change or adoption is implied.
+
 ## Development after scalar.55
 
 - Keep empty single-hyphen PCRE2 directives in the profile parser, preserving

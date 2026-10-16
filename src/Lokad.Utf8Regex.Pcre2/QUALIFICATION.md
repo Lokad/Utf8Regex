@@ -1,5 +1,22 @@
 # Managed PCRE2 profile qualification
 
+## Preparing the scalar.56 option-batch candidate (2026-10-16)
+
+Source metadata reserves **0.4.0-scalar.56** for one independent Core/PCRE2
+qualification of the completed option batch: J/DEFINE scope restoration,
+inline delimiter/no-op admission and mixed capture/reference numbering.
+Functional source6b478095 passes Windows/Linux CI. Curated native comparisons
+agree; inline caseless-restrict r remains explicitly unserved. Source Release
+confirmation and focused Debug pass. One unchanged literal-allocation fixture
+failed once before isolated/full confirmation passed; original evidence and
+the unresolved cause remain recorded.
+
+This preparing state is not package qualification. Use only a completed immutable
+archive, exact references/locks and handoff after producer, symbols, inventory,
+detached platform and current-cost checks. Existing scalar.54/55 bytes remain
+unchanged; Core/PythonRe scalar.55 remains the qualified primary input. There is
+no PythonRe56 designation, publication, pin/default change or adoption claim.
+
 ## Private scalar.54 candidate (2026-10-16)
 
 Immutable Core/PCRE2 **0.4.0-scalar.54**, producer

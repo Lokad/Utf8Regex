@@ -11,6 +11,12 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
+Source metadata is preparing **0.4.0-scalar.56** for the complete PCRE2 option
+batch described below. It is not yet a qualified package input. The latest
+qualified Core/PCRE2 input remains scalar.54 until a completed immutable56
+handoff is recorded in [qualification](QUALIFICATION.md). Core/PythonRe55 stays
+the qualified primary pair; no PythonRe56 qualification or publication is implied.
+
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and
 Linux checks after a documented fixture-location recovery. It includes the
