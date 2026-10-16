@@ -21,6 +21,15 @@ captured Count still has substantial overhead. Core/PythonRe55 stays primary;
 no PythonRe57, standalone Core57 consumer qualification, publication, downstream
 pin/default change or adoption is implied. Earlier immutable inputs are unchanged.
 
+Development after scalar.57 reuses the owned scalar counter for proved non-empty
+literal languages under finite limits and live tokens, retaining the original
+invocation and basic metering. Selected finite Count workloads improve57–78% in
+one public comparison against frozen57; constant-reference/overlap allocations
+also fall. This source change is outside immutable57. Less required state can
+admit tighter caps; detailed captures and fallback cases retain their contract.
+[Qualification](QUALIFICATION.md) records the unchanged control's noisy tails,
+resource/semantic checks and remaining overhead.
+
 The earlier qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
 `5ad447f5`, containing the completed option-scope/admission/capture-order batch.
 Both original detached Windows/Linux runs pass against identical package bytes,

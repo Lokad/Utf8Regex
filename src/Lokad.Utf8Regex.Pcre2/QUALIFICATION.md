@@ -1,5 +1,50 @@
 # Managed PCRE2 profile qualification
 
+## Source development after scalar.57
+
+Controlled Count for an existing proved non-empty literal language now uses the
+owned scalar program and search plan under the original invocation. It retains
+one scratch scope across the whole count and avoids capture/VM state that Count
+cannot observe. The unmetered prepared path is unchanged; no new budget, public
+option, owner, engine or Core hook is introduced. Empty/RTL programs and non-None
+match options keep their fallback. Core source and immutable55/57 bytes stay fixed.
+Work units/state needs can decrease: a constant literal count can fit a1B working
+cap without acquiring a major payload, while detailed capture matching still
+denies it. Alternative frames and unproved-depth cases keep real finite denials.
+No resource test is disabled; old heap/depth fixtures now check the detailed
+operation that still acquires those states, alongside newly admitted Count.
+
+Native PCRE2 counts agree on130 finite/unlimited cases before and after, including
+live-token counts, ordered overlaps, resolved references, supplementary literals,
+reset boundaries and fallback empty/assertion/unbounded/casefold shapes. Both
+lanes use identical frozen57 Core DLL bytes. All5,656 affected Release checks and
+119 focused Debug checks pass. New regressions check cumulative validation plus
+matching allowance, working release, structured denial, offsets, malformed tails,
+original cancellation/deadline and retained detailed captures. One new assertion
+initially expected base ArgumentException rather than its exact aligned-offset
+subtype; that failed log is retained. Existing count-only heap/depth expectations
+were retargeted to the actual remaining acquisition, with the admission revision
+explicit above.
+
+One bounded public Count pair against exact scalar57, quiet VM CPU2,
+.NET10.0.12 Release FullOpts/ReadyToRun off, nine alternating samples, finite
+work50M/depth1024/working64MiB/result128MiB plus live token. Selected finite
+captured Count falls558.9->170.2us(-69.5%); constant reference640.4->173.8us
+(-72.9%,176KB->112B); ordered overlap1046.1->228.0us(-78.2%,2.35MB->about2KB);
+64KiB miss12420->5337us(-57.0%). Live-token gains are similar. The unchanged
+unbounded-capture control moves+3.9..+5.8%, allocations unchanged; its worst
+spread78.3% is retained. Affected unlimited lanes change-3.5..+3.0%. All288 raw
+samples exceed50ms (minimum52.25ms). No confirmation is needed to resolve the
+large selected gains, and no broad parity/Status/snapshot claim is made.
+This paired comparison is separate from scalar57's earlier current-cost run.
+
+Evidence: `artifacts/pcre2-finite-language-count-20261016/` retains frozen DLLs,
+predeclared protocol, raw samples, native outputs, source/tests, original failed
+fixtures and the corrected private-driver staging error. This source change gets
+no new package/platform matrix or reopened checked-access gate. Finite overhead
+is still substantial; preserve metering and inspect further distinct mechanisms
+only from concrete workloads. Existing closed family-scan/inlining results stay.
+
 ## Private scalar.57 correction-batch candidate (2026-10-16)
 
 Immutable Core/PCRE2 **0.4.0-scalar.57**, producer

@@ -4,6 +4,7 @@ using System.Threading;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -288,6 +289,27 @@ internal static class Pcre2SliceDriver
         }
 
         return count;
+    }
+
+    // The caller proves a non-empty left-to-right language, so no PCRE2 empty
+    // retry is needed. Keep one scratch rental and one original invocation for
+    // the entire count; the shared runner meters search and verification.
+    internal static int CountNonEmpty(
+        Utf8SliceProgram program,
+        in Utf8SearchPlan searchPlan,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        var slots = RentProgramSlots(program, ref invocation);
+        try
+        {
+            var outcome = Utf8SliceRunner.CountFromBytes(program, input.Bytes, start.Value,
+                slots.Starts, slots.Ends, ref invocation, searchPlan);
+            ThrowIfSliceBreached(outcome.Breach);
+            return outcome.Count;
+        }
+        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
     internal static bool TryMatchDetailed(

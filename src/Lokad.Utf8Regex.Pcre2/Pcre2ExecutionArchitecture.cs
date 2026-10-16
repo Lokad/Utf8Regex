@@ -2794,11 +2794,26 @@ internal static class Pcre2GlobalOperationDriver
         }
 
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
-            matchOptions == Pcre2MatchOptions.None &&
-            (invocation.IsUnmetered && invocation.CheckpointHook is null))
+            matchOptions == Pcre2MatchOptions.None)
         {
-            result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
-            return true;
+            if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+            {
+                result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
+                return true;
+            }
+
+            // This program already proves the capture-independent literal language.
+            // Count its owned non-empty scalar program under the original authority;
+            // CountPrepared would create a separate budget, and the VM keeps captures
+            // that this operation cannot observe.
+            var scalarProgram = literalFamilyProgram.Regex.Inspection.AvailableOwnedSliceProgram;
+            if (!scalarProgram.CanMatchEmpty && !scalarProgram.RightToLeft)
+            {
+                result = Pcre2SliceDriver.CountNonEmpty(scalarProgram,
+                    literalFamilyProgram.Regex.Inspection.SearchPlan,
+                    ref input, start, ref invocation);
+                return true;
+            }
         }
 
         if (program is Pcre2LiteralDirectProgram literalProgram &&

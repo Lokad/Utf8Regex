@@ -668,6 +668,18 @@ Supported-profile boundary for completion is also explicit:
 
 ### Cancellation, timeouts, and resource limits
 
+Development after scalar.57 can count an already proved non-empty, left-to-right
+literal language with the owned scalar runner under the original invocation.
+It rents scratch once for the whole Count and retains validation, candidate search,
+verification, token, absolute deadline and structured failure authority. Empty
+languages and non-default match options keep their existing profile progression.
+Capture-dependent matching/shaping still uses the full program; the count language
+can resolve constant captures/references only through its existing compiler proof.
+Count publishes no owned result payload. Eliminating capture state can admit
+smaller working/depth/work allowances than the former VM route; units and acquired
+capacity are algorithm-dependent, not exact native-PCRE2 counter equivalence.
+
+
 Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 
 `MatchLimit` enforcement depends on the selected managed route; work units are not

@@ -1,5 +1,16 @@
 # Changelog
 
+## Development after scalar.57
+
+- Count proved non-empty literal languages with the owned scalar program/search
+  plan under the original finite invocation. Reuse one scratch scope, preserving
+  basic metering, cancellation, deadlines, structured denials and fallback cases.
+  Less required state can admit smaller work/depth/working caps; detailed capture
+  operations still acquire and enforce their state. No new owner/public option.
+- One bounded public pair against frozen57 improves selected finite Count57–78%
+  and reduces reference/overlap allocations. Preserve unchanged-control noise,
+  raw sample floors and remaining overhead; no new package or broad Status claim.
+
 ## Private scalar.57 Core/PCRE2 correction-batch input
 
 - Qualify immutable Core/PCRE20.4.0-scalar.57, producer49c2fcdc, for the accumulated

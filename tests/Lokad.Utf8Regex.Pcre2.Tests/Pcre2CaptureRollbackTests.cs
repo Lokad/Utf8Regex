@@ -38,7 +38,7 @@ public sealed class Pcre2CaptureRollbackTests
     }
 
     [Fact]
-    public void LinearReferencesFitWithoutAnUnusedUndoArrayAndStillEnforceLimits()
+    public void LinearReferencesUseOnlyRequiredStateAndStillEnforceLimits()
     {
         const string pattern = @"(?-)(?<n>a)(b)\1";
         var small = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
@@ -48,8 +48,9 @@ public sealed class Pcre2CaptureRollbackTests
 
         var insufficient = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
             new() { HeapLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        Assert.Equal(1, insufficient.Count("aba"u8)); // The proved count needs no capture vectors.
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => insufficient.Count("aba"u8)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => insufficient.MatchDetailed("aba"u8)).ErrorKind);
         var work = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
             new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
@@ -60,8 +61,9 @@ public sealed class Pcre2CaptureRollbackTests
             Assert.Throws<Pcre2MatchException>(() => result.MatchDetailed("aba"u8)).ErrorKind);
         var depth = new Utf8Pcre2Regex(@"(?:(?<x>a|ab)c|d)\k<x>",
             Pcre2CompileOptions.None, default, new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
+        Assert.Equal(1, depth.Count("abcab"u8)); // The flattened count uses less depth.
         Assert.Equal(Pcre2ErrorKind.DepthLimit,
-            Assert.Throws<Pcre2MatchException>(() => depth.Count("abcab"u8)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => depth.MatchDetailed("abcab"u8)).ErrorKind);
     }
 
     [Theory]
