@@ -79,12 +79,16 @@ public sealed class Utf8PreparationCachePayloadTests
         var cache = Create(2, 4096);
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
-        var worker = Task.Run(() => cache.GetOrAdd("pending", 0, (_, _) =>
+        // The test thread blocks on the handshake. A dedicated worker avoids
+        // depending on ThreadPool injection while other tests occupy its workers.
+        var worker = Task.Factory.StartNew(() => cache.GetOrAdd("pending", 0, (_, _) =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
             return new byte[100];
-        }, default(Utf8ConstructionTextNoControl), default(ByteStorage)));
+        }, default(Utf8ConstructionTextNoControl), default(ByteStorage)),
+            CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        byte[] completed;
         try
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
@@ -92,8 +96,12 @@ public sealed class Utf8PreparationCachePayloadTests
             if (shrink) cache.Capacity = 0; else cache.Clear();
             Assert.Equal(0ul, cache.PayloadBytes);
         }
-        finally { release.Set(); }
-        Assert.Equal(100, (await worker).Length);
+        finally
+        {
+            release.Set();
+            completed = await worker;
+        }
+        Assert.Equal(100, completed.Length);
         Assert.Equal(0, cache.Count); Assert.Equal(0ul, cache.PayloadBytes);
     }
 
