@@ -1,5 +1,17 @@
 # Managed PCRE2 profile qualification
 
+## Preparing scalar.57 independent PCRE2 input
+
+Core/PCRE2 **0.4.0-scalar.57** is a fresh private identity for the accumulated
+post56 source batch. Existing source checks and native receipts below establish
+the scoped fixes, not qualification of these new package bytes. One affected
+producer build and pack/archive, original same-byte Windows/Linux detached tests,
+exact-payload capture/folding/r comparisons, inventory/symbol/provenance and one
+bounded current public-cost observation are pending. Reuse the existing scripts;
+no new qualification framework or unchanged55 requalification. Core/PythonRe55
+stays primary; there is no PythonRe57, standalone Core57 consumer qualification,
+publication, downstream pin/default change or adoption claim.
+
 ## Source development after scalar.56
 
 CaptureStart/End omit undo records only when both live backtracking and subroutine

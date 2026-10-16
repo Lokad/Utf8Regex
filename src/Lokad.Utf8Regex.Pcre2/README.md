@@ -11,6 +11,13 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
+Private Core/PCRE2 **0.4.0-scalar.57** is being prepared for the accumulated
+post56 batch: capture undo simplification, caller capture restoration, pinned
+BMP simple folding, inline r and POSIX category corrections. Package/platform,
+exact-payload native and current-cost qualification are pending; this preparation
+is not qualified delivery. Core/PythonRe55 remains primary, and no PythonRe57,
+publication, consumer pin/default change or adoption is implied.
+
 The latest qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
 `5ad447f5`, containing the completed option-scope/admission/capture-order batch.
 Both original detached Windows/Linux runs pass against identical package bytes,

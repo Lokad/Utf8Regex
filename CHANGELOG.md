@@ -1,5 +1,12 @@
 # Changelog
 
+## Preparing private scalar.57 Core/PCRE2 input
+
+- Prepare a distinct private identity for the accumulated capture-undo,
+  capture-return, BMP folding, inline r and POSIX corrections below. Exact
+  package/platform/native/current-cost qualification is pending; Core/PythonRe55
+  remains primary. No PythonRe57, publication, pin/default or adoption claim.
+
 ## Development after scalar.56
 
 - Skip capture undo records when no live frame/call can restore old values.
