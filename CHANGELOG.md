@@ -1,5 +1,17 @@
 # Changelog
 
+## Folded-family publication measurement
+
+- Refresh only literal-alternate/sherlock-casei-en at clean source c154d6de,
+  ordinary/compiled,20 iterations/five samples. Core14.212/13.830ms retains gaps
+  against the corresponding predecoded .NET11.444/0.160ms controls. Fast compiled
+  controls have short samples; medians are not distribution/confidence evidence.
+  Other176 rows are unchanged, including four scalar.60 rows and172 historical.
+- Preserve the invalid first result with TrackedDirty=true. Rebuild the transferred
+  sparse checkout's Git index, verify clean status and exact source/DLL/corpus
+  identities, then recover once. Never edit the flag or promote dirty numbers.
+  Snapshot/parity generation and focused source checks pass their stated scope.
+
 ## Invariant folded-literal Count source improvement
 
 - Reuse the existing metered literal executor for eligible invariant, left-to-right,
@@ -20,8 +32,9 @@
   and compiled, using exact scalar.60 bytes and frozen source03553ea5. All other
   174 rows retain historical provenance. Preserve the compiled literal near tie
   and compiled structural gap, with no broad current parity claim.
-- Keep the folded-alternation row historical after its bounded120s refresh
-  timeout. No repeat, raised cap or lane attribution. Incremental snapshot checks
+- At this earlier checkpoint, the folded-alternation row remained historical
+  after its bounded120s refresh timeout. The later source-qualified measurement
+  above has its own provenance. Incremental snapshot checks
   require clean per-row provenance and matching pairs, allowing actual differing
   environments. Generated parity and focused snapshot checks pass.
 

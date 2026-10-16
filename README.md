@@ -26,11 +26,14 @@ about7.9us unlimited/19.8us finite and optional-prefix Count1.82ms/1.36ms, inclu
 required validation. The handoff retains raw samples, allocation costs and noisy
 or below-floor rows. Earlier source comparisons and historical benchmark tables
 remain dated evidence for their original implementations. The current refresh covers
-only `literal/sherlock-en` and `structural/method-family-call` (four ordinary/
-compiled rows); the other174 rows remain historical. The selected folded-family
-refresh exceeded its bounded window and supplies no new timing. Per-row source
-and environment in the JSON snapshot determine each observation's scope; a stored
-Status does not make an older row current.
+`literal/sherlock-en` and `structural/method-family-call` at scalar.60 (four
+ordinary/compiled rows), plus `literal-alternate/sherlock-casei-en` at clean
+source c154d6de (two rows). The other172 rows remain historical. The folded
+refresh uses20 iterations/five samples after the source improvement: ordinary
+14.212ms versus predecoded .NET11.444ms; compiled13.830ms versus compiled .NET
+0.160ms. Both remain gaps. Fast compiled comparator samples are short; the CLI
+stores medians, not raw distributions. Per-row source/environment determine each
+observation's scope; a stored Status does not make an older row current.
 
 Subsequent development source also reuses the metered literal counter for
 eligible invariant, left-to-right, nonempty folded literals/families without
@@ -39,6 +42,8 @@ search share the original invocation. Relevant Kelvin retains scalar execution.
 Native Count needs no VM depth/working/result scratch, so tighter policies may
 succeed. This source change is outside immutable scalar.60; its bounded public
 comparison and limitations are recorded in the changelog and experiment receipt.
+The14ms publication observation uses runtime-default tiering; the earlier21ms
+finite/unlimited pair uses FullOpts. Their ratios are not interchangeable.
 
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
@@ -161,7 +166,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal-alternate/sherlock-en` | 323.090 us | 1,514.050 us | 1,998.180 us |
 | `literal-alternate/sherlock-en-nomatch` | 149.005 us | 662.220 us | 1,142.080 us |
 | `literal-alternate/sherlock-en-mixed` | 188.850 us | 647.115 us | 1,104.515 us |
-| `literal-alternate/sherlock-casei-en` | 168.235 us | 11,280.650 us | 11,823.090 us |
+| `literal-alternate/sherlock-casei-en` | 14,211.540 us | 11,444.205 us | 12,695.240 us |
 | `literal-alternate/sherlock-ru` | 1,493.130 us | 5,070.395 us | 9,990.875 us |
 | `literal-alternate/sherlock-casei-ru` | 1,008.120 us | 25,009.200 us | 29,936.545 us |
 | `literal-alternate/sherlock-zh` | 211.965 us | 70.140 us | 2,001.000 us |
@@ -242,7 +247,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal-alternate/sherlock-en` | 319.335 us | 334.160 us | 803.360 us |
 | `literal-alternate/sherlock-en-nomatch` | 151.835 us | 201.625 us | 700.615 us |
 | `literal-alternate/sherlock-en-mixed` | 191.415 us | 172.000 us | 632.995 us |
-| `literal-alternate/sherlock-casei-en` | 178.610 us | 156.895 us | 640.135 us |
+| `literal-alternate/sherlock-casei-en` | 13,829.925 us | 159.855 us | 1,034.115 us |
 | `literal-alternate/sherlock-ru` | 1,492.070 us | 2,262.510 us | 7,102.000 us |
 | `literal-alternate/sherlock-casei-ru` | 1,000.535 us | 1,886.800 us | 6,727.750 us |
 | `literal-alternate/sherlock-zh` | 209.700 us | 39.880 us | 1,978.890 us |

@@ -197,7 +197,7 @@ Core Count may reuse the existing bounded native counter for a prepared nonempty
 exact LTR literal, including ordinary ASCII literal captures. It shares the
 validated invocation and requires no capture/continuation scratch, depth or result
 capacity. Route-dependent admission can therefore succeed below the former VM
-scratch requirement. Folded, boundary/trailing assertions, contiguous anchors,
+scratch requirement. Boundary/trailing assertions, contiguous anchors,
 shared/explicit numbering and balancing retain their qualified routes; captured
 Unicode and NonBacktracking patterns without a native plan also retain the VM.
 Offset interoperability maps keep their separate working/result admission.
@@ -211,6 +211,16 @@ remove per-window/predicate metering or the terminal interruption check. Larger,
 empty and excluded families retain their existing routes. This is included in
 the private scalar.49 pair; scalar.48 predates it. It is not a CPU-time equivalence
 claim.
+Subsequent development source extends the existing metered counter to root,
+zero-offset, invariant, nonempty LTR ASCII-folded literals/families without
+captures or other stateful/search constraints. Full strict validation, bounded
+Kelvin screening and search borrow the same invocation, including finite controls,
+caller token and original absolute deadline. Kelvin screening charges before
+windows of at most2050 bytes (2048 starts plus two lookahead bytes). Relevant
+Kelvin retains spent work and uses scalar execution; other construction cultures,
+RTL, empty/captured/anchored/assertion-dependent and NonBacktracking routes retain
+their existing handling. Native success requires no VM depth/working/result
+scratch and may admit tighter limits. This source change is outside scalar.60.
 Controlled Count for one exact forward literal without boundary/trailing
 conditions invokes the same bounded candidate/comparison kernels directly. It
 omits generic match construction and unconditional boundary confirmation,
