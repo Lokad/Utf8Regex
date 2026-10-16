@@ -2,6 +2,14 @@
 
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
+This source prepares the private **0.4.0-scalar.63** Core/PythonRe candidate,
+combining owned Unicode16 supplementary casing with simpler metered literal-family
+verification. PythonRe retains its pinned15.1 semantics and the exact paired Core
+dependency. Completed qualification, exact identities and current package costs
+must be read from `artifacts/core-python-scalar63-20261016/HANDOFF.md` and
+`artifacts/scalar-candidates/0.4.0-scalar.63/candidate.json` once available; this
+producer-stage text does not designate untested bytes or imply publication.
+
 The immutable **0.4.0-scalar.62** Core/PythonRe pair is qualified at clean producer `3a67a6db05ee7a49b20a046a66ecaae2465815b0`. Identical package bytes pass original detached Windows/Linux consumers, exact references/locks/symbols/SourceLink/member checks, and pinned capture/catalog controls; producer CI is green. It provides Unicode-scalar matching, captures, synchronous cancellation, four enforceable finite invocation controls and covered eager construction. PythonRe requires the exact paired Core version. [Handoff and current costs](artifacts/core-python-scalar62-20261016/HANDOFF.md), [immutable manifest](artifacts/scalar-candidates/0.4.0-scalar.62/candidate.json).
 
 Scalar.62 corrects a PythonRe defect retained by scalar.61:
@@ -19,7 +27,8 @@ Garay pairs follow the owned Unicode 16 model through a small fixed lookup inste
 of the runtime casing version. The qualified62 bytes retain that limitation.
 PythonRe keeps its separate pinned Unicode 15.1 rules. Source correctness/cost
 receipts are in `artifacts/core-supplementary-case-audit-20261016/`; no new
-candidate is designated for this small source change.
+candidate was designated for that isolated source change; the combined63
+boundary qualifies the accepted changes together.
 
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 

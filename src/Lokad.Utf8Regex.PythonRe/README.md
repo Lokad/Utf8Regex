@@ -4,6 +4,14 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
+This source prepares private **0.4.0-scalar.63**, requiring Core
+`[0.4.0-scalar.63]`. PythonRe implementation and pinned15.1 data are unchanged;
+Core owns supplementary16.0 casing and reduces redundant metered family work.
+The new pair needs its own original detached-platform/provenance/current-cost
+qualification; the63 manifest/handoff report that completion once available.
+No publication, downstream adoption or full-containment claim follows from this
+producer-stage README. Historical62 evidence below retains its original scope.
+
 The qualified private Core/PythonRe pair **0.4.0-scalar.62**, producer
 `3a67a6db05ee7a49b20a046a66ecaae2465815b0`, covers strict UTF-8 scalars,
 authoritative captures, explicit cursors, four finite invocation controls and

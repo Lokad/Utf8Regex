@@ -1,5 +1,14 @@
 # Changelog
 
+## Prepare Core/PythonRe scalar.63
+
+- Give the accepted owned supplementary casing and metered family-verification
+  changes a fresh immutable identity. PythonRe stays pinned to Unicode15.1 and
+  requires the exact paired Core. Existing candidate bytes stay unchanged.
+- Original detached platforms, package identities and current operating costs
+  qualify this combined boundary; producer-stage metadata alone is not readiness.
+  PCRE2, publication, consumer adoption and full containment remain separate.
+
 ## Remove redundant metered family verification
 
 - Reject exact branches with a different first byte and skip absent boundary/
