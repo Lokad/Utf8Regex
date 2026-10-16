@@ -1,5 +1,19 @@
 # Changelog
 
+## Core/PythonRe scalar.61 delivery
+
+- Qualify one immutable pair for the combined original-invocation folded Count
+  routing and prepared first-byte-union batch. Original same-byte Windows/Linux
+  detached consumers, exact identities/locks/symbols, capture/catalog oracles and
+  producer CI pass. Preserve scalar.60/55 and independent PCRE259 bytes.
+- Record185 exact-package public cost samples with all-four finite/live-token
+  policies and retained result shaping. Minimum56.99ms; finite exact-family Count
+  remains expensive, and cursor-ten rows have wide spreads. Reuse prior full
+  scalar censuses only for unchanged pinned implementation/data. No broad parity
+  or complete host/profile claim, publication or downstream adoption.
+- Correct the obsolete PythonRe SizeOf warning in current source docs; frozen61
+  package README readiness text is superseded by the explicit handoff erratum.
+
 ## Folded candidate window scanning
 
 - Borrow the prepared folded first-byte union for one bounded candidate-window

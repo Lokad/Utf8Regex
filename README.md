@@ -2,12 +2,12 @@
 
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
-The immutable **0.4.0-scalar.60** Core/PythonRe candidate provides Unicode-scalar matching, finite invocation work/depth/working/result limits and covered eager-construction controls. It retains pinned CPython identifier/class data and corrected word-boundary lookbehind, and includes the accumulated Count improvements. Identical package bytes pass original detached Windows/Linux suites, capture/catalog checks and complete scalar class/identifier censuses; producer CI is green. Core retains only permitted `Unsafe.SizeOf`; PythonRe has no unchecked API references. Exact identities, scoped contracts and current public costs are in the [private handoff](artifacts/core-python-scalar60-20261016/HANDOFF.md) and [candidate manifest](artifacts/scalar-candidates/0.4.0-scalar.60/candidate.json). Finite family Count overhead remains; basic metering stays. Lython accepts `Unsafe.SizeOf`; producer qualification does not imply downstream adoption.
+The immutable **0.4.0-scalar.61** Core/PythonRe candidate provides Unicode-scalar matching, finite invocation work/depth/working/result limits and covered eager-construction controls. It retains pinned CPython identifier/class data and corrected word-boundary lookbehind, and includes the accumulated Count improvements. Identical package bytes pass original detached Windows/Linux suites and capture/catalog checks; unchanged pinned data retains prior full scalar-census evidence, and producer CI is green. Core retains only permitted `Unsafe.SizeOf`; PythonRe has no unchecked API references. Exact identities, scoped contracts and current public costs are in the [private handoff](artifacts/core-python-scalar61-20261016/HANDOFF.md) and [candidate manifest](artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json). Finite family Count overhead remains; basic metering stays. Lython accepts `Unsafe.SizeOf`; producer qualification does not imply downstream adoption.
 
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
-Core/PythonRe60 is a scoped private producer input, independent of PCRE2.
-Existing immutable Core/PythonRe55 and independent Core/PCRE2 59 inputs retain
+Core/PythonRe61 is a scoped private producer input, independent of PCRE2.
+Existing immutable Core/PythonRe60/55 and independent Core/PCRE2 59 inputs retain
 their exact bytes and recorded scope. No publication, consumer pin/default change or
 complete host/resource/profile acceptance is implied.
 
@@ -35,19 +35,27 @@ refresh uses20 iterations/five samples after the source improvement: ordinary
 stores medians, not raw distributions. Per-row source/environment determine each
 observation's scope; a stored Status does not make an older row current.
 
-Subsequent development source also reuses the metered literal counter for
+Scalar.61 also reuses the metered literal counter for
 eligible invariant, left-to-right, nonempty folded literals/families without
 captures or search constraints. Strict validation, bounded Kelvin screening and
 search share the original invocation. Relevant Kelvin retains scalar execution.
 Native Count needs no VM depth/working/result scratch, so tighter policies may
-succeed. This source change is outside immutable scalar.60; its bounded public
+succeed. Scalar.60 predates this change; its bounded public
 comparison and limitations are recorded in the changelog and experiment receipt.
 The14ms publication observation uses runtime-default tiering; the earlier21ms
-finite/unlimited pair uses FullOpts. Newer source also reuses the prepared folded
+finite/unlimited pair uses FullOpts. Scalar.61 also reuses the prepared folded
 first-byte union: a separate FullOpts pair observes21ms ->12ms, including finite
 policies, with unchanged allocations and explicit3–5% single-literal control
 costs. This does not refresh the dated c154 snapshot or qualify general parity.
 Ratios across these different protocols are not interchangeable.
+
+Scalar.61's exact-package observation includes all-four finite/live-token controls
+and retained captures/tuples/cursors: folded Count about12.3ms unlimited/finite,
+fixed Count7.9/20.0us, and1000 detailed PythonRe results878/990us. Finite exact-family
+Count remains roughly9x unlimited; cursor-ten rows have wide sample spreads. The
+handoff retains raw samples and exclusions. Frozen package README readiness text
+is dated; its obsolete PythonRe SizeOf warning is superseded by the user's acceptance
+and the current handoff.
 
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
@@ -93,7 +101,7 @@ Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 - Resource scope: core instances accept finite `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes`. Work covers strict UTF-8 validation, scalar matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames or pending linear alternatives before acquisition/copy; the selected route determines its depth requirement, and a stack-free linear replay uses no depth allowance. Result bytes conservatively charge major array/text and output-control capacity before acquisition, including staging/growth; charges are not refunded and can count shared storage again. Finite calls select owned metered execution. Core Count can reuse the bounded native counter for prepared nonempty exact LTR literals, including ordinary ASCII literal captures; scalar.49 and later qualified pairs extend this to eligible exact two/three-literal families. That route needs no VM capture/depth/result scratch, and removing verification/workspace lowers its charged requirements. Scalar.48 predates the family extension; larger or semantically excluded families retain the VM. Offset maps retain their own admission. Working bytes bound modeled major active storage/output controls and growth overlap. Exclusive scratch releases synchronously; published copied-cursor maps/tables stay charged for the invocation. Incidental owner metadata and caller-retained results have separate scope. Defaults and static cached calls remain unlimited. Construction/replacement preparation, caller callback execution/allocations, borrowed subjects, fixed value results and later standalone getters have separate scope. These are operation controls, not wall-time, live-retention or process-memory guarantees.
 - Cancellation and deadlines: caller cancellation is checked synchronously during validation, search, backtracking and required result shaping. A match deadline is absolute across an invocation, including waits between persistent cursor advances. Caller callback execution has its own lifetime; copying/encoding its returned output remains controlled.
 - PythonRe delivery: Python-order captures/backreferences and nullable last-closed `LastIndex`/`LastGroup` are authoritative backend metadata. The persistent memory-based cursor has explicit disposal and owned snapshots that survive advance/disposal; aliases share its position and lifetime. See the [PythonRe contract](src/Lokad.Utf8Regex.PythonRe/README.md) for subject lifetime, supported syntax and exclusions.
-- Stability: 0.4.0-scalar.60 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
+- Stability: 0.4.0-scalar.61 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
 
 PythonRe reuses its private VM workspace across cursor moves.
 Scratch stays charged while positioned and overlaps projection; EOF/failure/Dispose

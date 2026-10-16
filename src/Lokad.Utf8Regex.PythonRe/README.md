@@ -4,30 +4,27 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.60**,
-producer `ff4e16b38cc80ea5fe57de21759ead30798d8279`. It covers strict UTF-8 scalar
-matching, authoritative capture completion, an explicitly owned persistent cursor,
-finite invocation work/depth/working/result limits and covered eager construction
-controls. Exact detached Windows/Linux consumers and CPython capture/digest checks
-pass. Use `artifacts/scalar-candidates/0.4.0-scalar.60/candidate.json`, its immutable
-feed/config and `artifacts/core-python-scalar60-20261016/HANDOFF.md`; the delivery
-receipt records exact identities, coverage and the scope of cost evidence.
+The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.61**,
+producer `f29e3dab0069a4e2b8f013d4328900cc8c76534d`. It covers strict UTF-8 scalar
+matching, authoritative capture completion, explicitly owned persistent cursors,
+four finite invocation controls and covered eager construction. Original same-byte
+detached Windows/Linux consumers and capture/catalog CPython checks pass. Use
+`artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json`, its immutable feed/config
+and `artifacts/core-python-scalar61-20261016/HANDOFF.md` for exact identities/scope.
 
-Scalar.60 retains scalar.55's identifier/class/boundary corrections and includes
-the accumulated Core Count improvements. Same-byte
-detached Windows/Linux checks, exact restore/provenance and all-scalar class/
-identifier comparisons pass; current finite-limit public costs are recorded.
-Existing scalar.55 and independent Core/PCRE2 59 inputs remain unchanged. No publication,
-consumer pin/default change or adoption is implied.
+Scalar.61 retains the pinned identifier/class/boundary corrections, with unchanged
+implementation/data witnesses reusing prior full scalar censuses, and adds the
+combined folded Core Count improvements. Current package costs include finite
+limits, captured results, UTF-8 tuples and early cursor disposal; noisy rows remain
+explicit. Scalar.60/55 and independent Core/PCRE259 bytes remain unchanged.
 
-This pair is not published or accepted downstream automatically. Lython's Core DLL
-unchecked-API gate rejects Core's sole remaining reference, the producer-permitted
-`Unsafe.SizeOf`; PythonRe has no such references. Defaults and static cached calls
-remain unlimited; embedders select finite policies explicitly. Complete
-construction/lazy/live-retention controls,
-safe defaults and broader profile acceptance
-remain unfinished. PCRE2 qualifies independently; prior candidate bytes stay
-unchanged. Development source beyond the candidate requires its own acceptance.
+Core retains only accepted `Unsafe.SizeOf`; PythonRe has no unchecked API references.
+The user confirmed Lython accepts SizeOf on2026-10-16. Frozen61 package README assets
+retain older readiness text and its obsolete rejection warning; this current
+source page and the handoff supersede it. No publication, consumer pin/default
+change or adoption is implied. Defaults/static cached calls remain unlimited;
+complete construction/lazy/default/live-retention and broader profile gates remain
+unfinished. PCRE2 qualifies independently.
 
 The earlier scalar.52 pair completed the Core/PythonRe checked-access batch. Selected Core costs
 against the fixed original fit10%, with unchanged allocations and a narrow
@@ -35,7 +32,7 @@ against the fixed original fit10%, with unchanged allocations and a narrow
 median changes -6.89..+2.16%; some large tails and materialization pool variation
 remain explicit. This is selected public-workload evidence, not broad equivalence.
 Finite work/depth/working/result and cursor contracts are preserved. Lython's
-stricter SizeOf requirement still needs explicit reconciliation.
+former SizeOf disagreement is resolved by the user's acceptance confirmation.
 
 The frozen scalar.52 pair has a known class-version limitation: with host Unicode
 16 data, `\w` admits U+1C89/U+1E5D0 and `\d` admits U+1E5F1, while the pinned

@@ -46,6 +46,13 @@ This new operating-cost observation does not replace scalar.52's fixed-original
 conversion gate. Lython's former SizeOf rejection was separately resolved by
 the user's 2026-10-16 acceptance confirmation.
 
+The immutable scalar.61 Core/PythonRe pair retains this inventory and the accepted
+SizeOf exception. Both original detached platforms, exact identities/locks/symbols
+and current package costs are recorded in the
+[scalar.61 handoff](artifacts/core-python-scalar61-20261016/HANDOFF.md).
+Its operating-cost observation and unchanged-data witnesses do not replace or
+reopen the completed fixed-original conversion gate.
+
 ## Acceptance rule and chronological evidence
 
 The core matches strict UTF-8 scalars. Checked-access conversions must preserve
