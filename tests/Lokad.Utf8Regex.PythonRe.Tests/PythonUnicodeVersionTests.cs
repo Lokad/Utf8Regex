@@ -9,6 +9,32 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 // the host runtime assigns them Unicode 16 letter/decimal categories.
 public sealed class PythonUnicodeVersionTests
 {
+    [Theory]
+    [InlineData(0x10D50, 0x10D70)]
+    [InlineData(0x10D65, 0x10D85)]
+    public void CoreUnicodeSixteenCasePairsDoNotBroadenPinnedPythonFolding(int upper, int lower)
+    {
+        var capital = char.ConvertFromUtf32(upper);
+        var small = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(lower));
+        using var source = new CancellationTokenSource();
+        foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited,
+            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
+                MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } })
+        {
+            foreach (var pattern in new[] { capital, "[" + capital + "]" })
+            {
+                var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase,
+                    Regex.InfiniteMatchTimeout, policy);
+                Assert.False(regex.IsMatch(small, 0, source.Token));
+                Assert.Equal(0, regex.Count(small, 0, source.Token));
+                Assert.True(regex.FullMatch(Encoding.UTF8.GetBytes(capital), 0, source.Token).Success);
+            }
+            var reference = new Utf8PythonRegex(@"^(.)\1$", PythonReCompileOptions.IgnoreCase,
+                Regex.InfiniteMatchTimeout, policy);
+            Assert.False(reference.IsMatch(Encoding.UTF8.GetBytes(capital + char.ConvertFromUtf32(lower)), 0, source.Token));
+        }
+    }
+
     public static IEnumerable<object[]> CategoryCases()
     {
         foreach (var scalar in new[] { 0x1C89, 0x1E5D0, 0x1E5F1 })

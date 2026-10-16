@@ -35,7 +35,7 @@ internal static class Utf8SliceCaseEquivalences
             (behavior != Utf8ScalarCaseBehavior.Turkic || (left.Value | 0x20) != 'i' && (right.Value | 0x20) != 'i'))
             return Internal.Search.AsciiSearch.FoldCase((byte)left.Value) == Internal.Search.AsciiSearch.FoldCase((byte)right.Value);
         if (!left.IsBmp || !right.IsBmp)
-            return Rune.ToUpperInvariant(left) == Rune.ToUpperInvariant(right);
+            return Utf8SupplementaryCase.Lower(left.Value) == Utf8SupplementaryCase.Lower(right.Value);
         return GetEquivalents((char)left.Value, behavior).Contains((char)right.Value);
     }
 
@@ -4342,8 +4342,8 @@ internal static class Utf8SliceCaseEquivalences
     {
         if (!scalar.IsBmp)
         {
-            return RangesHit(ranges, Rune.ToUpperInvariant(scalar).Value) != miss ||
-                RangesHit(ranges, Rune.ToLowerInvariant(scalar).Value) != miss;
+            return RangesHit(ranges, Utf8SupplementaryCase.Upper(scalar.Value)) != miss ||
+                RangesHit(ranges, Utf8SupplementaryCase.Lower(scalar.Value)) != miss;
         }
         foreach (var equivalent in GetEquivalents((char)scalar.Value, behavior))
             if (RangesHit(ranges, equivalent) != miss) return true;

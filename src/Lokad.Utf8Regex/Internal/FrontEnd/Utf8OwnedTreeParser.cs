@@ -992,9 +992,8 @@ internal static class Utf8OwnedTreeParser
                         }
                         else
                         {
-                            var scalar = new Rune(value);
-                            var lower = Rune.ToLowerInvariant(scalar).Value;
-                            var upper = Rune.ToUpperInvariant(scalar).Value;
+                            var lower = Utf8SupplementaryCase.Lower(value);
+                            var upper = Utf8SupplementaryCase.Upper(value);
                             if (lower != value) ranges.Add((lower, lower + 1));
                             if (upper != value) ranges.Add((upper, upper + 1));
                         }

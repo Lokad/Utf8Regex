@@ -14,6 +14,13 @@ the separate 10% checked-access allowance. Core retains only permitted
 `Unsafe.SizeOf`; PythonRe has no unchecked API references. Lython accepts SizeOf;
 producer qualification does not imply downstream adoption.
 
+Development also fixes supplementary Core casing beyond immutable scalar.62:
+Garay pairs follow the owned Unicode 16 model through a small fixed lookup instead
+of the runtime casing version. The qualified62 bytes retain that limitation.
+PythonRe keeps its separate pinned Unicode 15.1 rules. Source correctness/cost
+receipts are in `artifacts/core-supplementary-case-audit-20261016/`; no new
+candidate is designated for this small source change.
+
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
 Core/PythonRe62 is a scoped private producer input, independent of PCRE2.

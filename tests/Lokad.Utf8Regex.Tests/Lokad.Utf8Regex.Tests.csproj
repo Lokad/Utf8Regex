@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj" />
+    <None Update="TestData\supplementary-simple-case-16.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

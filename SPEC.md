@@ -80,6 +80,14 @@ distinct; Turkic folding pairs `I` with `ı` and `İ` with `i`. The owned progra
 retains this construction-time choice through classes, assertions and references,
 including scoped options. Changing the ambient culture during matching cannot
 change its case behavior. Supplementary comparisons operate on complete Runes.
+Development pins supplementary simple-case mappings to Unicode 16.0, matching the
+owned model rather than the host runtime's casing version. All 282 pairs are
+one-to-one within the supplementary planes, stored in 11 fixed read-only runs;
+literal/class construction and scalar/reference comparison use the same lookup.
+BMP/I-cluster rules and original invocation/construction controls remain. This
+correction is outside immutable scalar.62, whose Garay case pairs still miss.
+The source attribution and Unicode license accompany the derived data; no Python
+profile-version change or broader package qualification is implied.
 
 ### 3.4 Timeout behavior
 

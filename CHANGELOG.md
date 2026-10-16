@@ -1,5 +1,19 @@
 # Changelog
 
+## Pin supplementary Core simple casing
+
+- Replace five runtime casing calls with the owned Unicode 16 supplementary case
+  pairs: 282 one-to-one mappings in 11 constant runs. Garay literals/classes and
+  references now match their case partners. Preserve BMP/culture behavior,
+  scalar boundaries, allocation behavior, cancellation and resource admission;
+  PythonRe remains pinned separately to Unicode 15.1.
+- Complete normative mapping/gap and focused public scalar/RTL/finite checks pass.
+  One bounded public pair observes 15–20% lower literal/reference Count costs,
+  unchanged allocations, noisy class medians and controls from -1.0% to +9.0%.
+  No broad parity or new package; immutable62 retains the demonstrated limitation.
+- Include Unicode source attribution and license for the derived data.
+
+
 ## Core/PythonRe scalar.62 delivery
 
 - Corrected immutable pair at 3a67a6db: original same-byte Windows/Linux consumers,
