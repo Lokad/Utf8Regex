@@ -3600,8 +3600,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                 {
                     if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
                             ref _input,
-                            _request.Settings,
-                            new Utf8BytePosition(match.ConsumedEndOffsetInBytes),
+                            _request, _matchOptions, new Utf8BytePosition(match.ConsumedEndOffsetInBytes),
                             out _restartPosition))
                     {
                         _retryState = Pcre2GlobalRetryState.Finished;
@@ -3646,8 +3645,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             if (!retryingEmptyAtSamePosition ||
                 !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
                     ref _input,
-                    _request.Settings,
-                    _restartPosition,
+                    _request, _matchOptions, _restartPosition,
                     out _restartPosition))
             {
                 _retryState = Pcre2GlobalRetryState.Finished;
@@ -3829,7 +3827,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
             }
 
             if (!retryingEmptyAtSamePosition ||
-                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
+                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request, _matchOptions, _restartPosition, out _restartPosition))
             {
                 _retryState = Pcre2GlobalRetryState.Finished;
                 Current = default;
@@ -3899,10 +3897,20 @@ internal static class Pcre2GlobalCursorMovement
 {
     internal static bool TryAdvanceAfterEmpty(
         ref Utf8ValidatedInput input,
-        Utf8Pcre2CompileSettings settings,
+        in Pcre2CompileRequest request,
+        Pcre2MatchOptions matchOptions,
         Utf8BytePosition position,
         out Utf8BytePosition next)
     {
+        // An anchored search cannot bump to another starting position after
+        // an empty retry fails or an unreset empty result is suppressed.
+        if ((request.Options & Pcre2CompileOptions.Anchored) != 0 ||
+            (matchOptions & Pcre2MatchOptions.Anchored) != 0)
+        {
+            next = position;
+            return false;
+        }
+        var settings = request.Settings;
         var bytes = input.Bytes;
         if (!input.IsScalarBoundary(position))
         {

@@ -2,6 +2,29 @@
 
 ## Source development after scalar.58
 
+Anchored empty iteration now stops after an unsuccessful same-position retry.
+The existing movement helper receives the original compile request and match
+options and declines bumping when either supplies Anchored. Successful retries
+still run; ordinary scalar/CRLF advancement and the operation-specific reset
+disposition in SPEC-PCRE2 remain unchanged. No new iterator, flag or owner.
+
+One native10.47 before/after overlap probe covers512 compile/per-call flag,
+byte-offset, finite/unlimited/live-token cases for Count, all enumerated ranges
+and template replacement:252 differences before, zero after. Source regression
+tests also check callbacks, retained results and interruption cleanup. Full
+affected Release5,691 and focused Debug116 pass. No throughput/package/platform
+campaign for this correctness fix. Immutable58 retains the disclosed anchored
+empty defect outside its134-case qualification scope; its bytes are unchanged.
+
+The investigation also compared broader reset cases with native iteration and
+tried dropping suppression state/report-based retries. Those edits were rejected:
+SPEC-PCRE2 explicitly freezes consumed-range retry and operation-specific reset
+disposition, with corpus vectors and benchmark exclusions. Required reset state,
+lookaround analysis and existing fixtures are restored; no corpus is rewritten or
+test disabled. Original failed builds, broad-edit recovery, rejected native/raw
+source and final scoped evidence remain in
+`artifacts/pcre2-anchored-empty-20261016/`. These exclusions are not native passes.
+
 Already admitted nonempty/LTR scalar Count programs, including Core-grammar
 delegation, reuse CountNonEmpty's existing scratch scope instead of renting/releasing slots and growing workspace per
 successful MoveNext. No new program/search/owner/public option is introduced.

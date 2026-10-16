@@ -34,6 +34,11 @@ that measured tradeoff remains explicit. Resource/interruption semantics stay
 enforced. This source change is outside immutable58; see
 [qualification](QUALIFICATION.md) for its scope and evidence.
 
+Source development also stops an anchored global search after its empty retry
+fails, preserving successful retries and existing reset/profile exclusions.
+This corrects extra Count/enumeration/replacement results outside immutable58;
+[qualification](QUALIFICATION.md) records the scoped native and resource checks.
+
 Core/PythonRe55 stays primary; no PythonRe58, standalone Core58 consumer
 qualification, publication, downstream pin/default change or adoption is implied.
 Earlier immutable inputs stay unchanged, including qualified Core/PCRE2 scalar57;

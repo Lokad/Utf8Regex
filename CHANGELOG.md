@@ -2,6 +2,11 @@
 
 ## Development after scalar.58
 
+- Stop global matching after an unsuccessful empty retry when compile or
+  per-call anchoring forbids advancing. Successful retries at the same position,
+  scalar/CRLF advancement and the frozen operation-specific reset disposition
+  remain. Native overlap checks cover counts, ranges and replacement; existing
+  resource/interruption checks remain enforced. No new package or iterator.
 - Reuse the existing Count scratch scope for already admitted nonempty,
   left-to-right slice programs. Empty-match and explicit-option progression stays
   on its cursor. Original metering, cancellation/deadline, capture/reference

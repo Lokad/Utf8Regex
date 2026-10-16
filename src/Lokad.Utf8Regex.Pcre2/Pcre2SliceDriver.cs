@@ -177,8 +177,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
                     if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
                             ref _input,
-                            _request.Settings,
-                            new Utf8BytePosition(_retryPosition),
+                            _request, Pcre2MatchOptions.None, new Utf8BytePosition(_retryPosition),
                             out var advanced))
                     {
                         return false;
