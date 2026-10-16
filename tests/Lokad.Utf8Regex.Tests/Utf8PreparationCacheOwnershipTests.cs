@@ -12,7 +12,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var value = new object();
-        var worker = Task.Run(() => cache.GetOrAdd("old", _ =>
+        var worker = RunBlocking(() => cache.GetOrAdd("old", _ =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
@@ -35,7 +35,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         var cache = Utf8BoundedPreparationCache<string, object>.Create(1);
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
-        var worker = Task.Run(() => cache.GetOrAdd("pending", _ =>
+        var worker = RunBlocking(() => cache.GetOrAdd("pending", _ =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
@@ -72,7 +72,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var value = new object();
-        var worker = Task.Run(() => cache.GetOrAdd("new", _ =>
+        var worker = RunBlocking(() => cache.GetOrAdd("new", _ =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
@@ -92,7 +92,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var error = new InvalidOperationException("original");
-        var worker = Task.Run(() => Record.Exception(() => cache.GetOrAdd("key", _ =>
+        var worker = RunBlocking(() => Record.Exception(() => cache.GetOrAdd("key", _ =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
@@ -119,7 +119,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         using var waiting = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
         var value = new object();
-        var owner = Task.Run(() => cache.GetOrAdd("key", _ =>
+        var owner = RunBlocking(() => cache.GetOrAdd("key", _ =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
@@ -129,7 +129,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
             var probe = new WaitProbe(waiting);
-            var follower = Task.Run(() => Record.Exception(() => cache.GetOrAdd("key", 0,
+            var follower = RunBlocking(() => Record.Exception(() => cache.GetOrAdd("key", 0,
                 static (_, _) => throw new InvalidOperationException("recomputed"), new WaitControl(cancellation.Token, probe))));
             Assert.True(waiting.Wait(TimeSpan.FromSeconds(10)));
             cancellation.Cancel();
@@ -149,7 +149,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         using var release = new ManualResetEventSlim();
         using var waiting = new ManualResetEventSlim();
         var error = new InvalidOperationException("identity");
-        var owner = Task.Run(() => Record.Exception(() => cache.GetOrAdd("key", _ =>
+        var owner = RunBlocking(() => Record.Exception(() => cache.GetOrAdd("key", _ =>
         {
             entered.Set();
             if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException();
@@ -159,7 +159,7 @@ public sealed class Utf8PreparationCacheOwnershipTests
         try
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
-            follower = Task.Run(() => Record.Exception(() => cache.GetOrAdd("key", 0,
+            follower = RunBlocking(() => Record.Exception(() => cache.GetOrAdd("key", 0,
                 static (_, _) => throw new InvalidOperationException("recomputed"), new WaitControl(default, new WaitProbe(waiting)))));
             Assert.True(waiting.Wait(TimeSpan.FromSeconds(10)));
         }
@@ -187,6 +187,11 @@ public sealed class Utf8PreparationCacheOwnershipTests
         Assert.Null(cache.GetOrAdd("key", static _ => null));
         Assert.Null(cache.GetOrAdd("key", static _ => throw new InvalidOperationException()));
     }
+
+    // These workers deliberately block on test handshakes. Do not depend on
+    // ThreadPool injection while the test or other fixtures occupy its workers.
+    private static Task<T> RunBlocking<T>(Func<T> work) => Task.Factory.StartNew(work,
+        CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
     private sealed class WaitProbe(ManualResetEventSlim waiting)
     {

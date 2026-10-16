@@ -1,5 +1,12 @@
 # Changelog
 
+## Test coordination: preparation-cache ownership
+
+- Run deliberately blocking cache-test workers on dedicated threads, matching
+  the adjacent payload tests. Preserve shared preparation, cancellation/failure
+  identity and cleanup assertions without depending on ThreadPool injection.
+  Production code and qualified package bytes remain unchanged.
+
 ## Independent Core/PCRE2 scalar.70 qualified dependency
 
 - Qualify the immutable pair from `1ed45f01`: same-byte Windows/Linux5734
