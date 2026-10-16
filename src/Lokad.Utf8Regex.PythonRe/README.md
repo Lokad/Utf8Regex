@@ -39,6 +39,13 @@ within0.8%. This is source evidence for the next coherent boundary; it does not
 change64's measured costs or package bytes. See
 `artifacts/python-finite-bulk-native-20261016/RESULT.md` for raw scope/tradeoffs.
 
+A subsequent bounded source pair reuses the same invocation for eligible family
+Count: the selected 4 KB late finite case falls471.9us ->0.77us, dense68.6us
+->27.8us, and allocations about2032B ->160B. All lanes use a30-second deadline;
+all180 samples exceed50ms and unchanged controls stay within1.8%. This does not
+change64 or establish default-infinite/CPython/broad parity. Scope and raw evidence:
+`artifacts/python-family-count-invocation-20261016/RESULT.md`.
+
 Current exact-package ordinary costs include1000 UTF8 tuples0.659ms unlimited/
 0.705ms finite. A4KB bulk value operation with30s timeout takes5.5us with unlimited
 invocation caps/480us finite, about88x: finite execution still selects the owned

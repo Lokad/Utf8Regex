@@ -262,6 +262,13 @@ helper failures report the original public resource kind; timeout diagnostics us
 caller byte limits. Less VM scratch/depth can admit tighter policies,while extra
 range staging may consume more result traffic. Other controlled/canonical/captured
 routes retain their guards. No new public policy switch or ownership model.
+The same profile-safe, nonempty capture-free family guard also permits Count
+to borrow the caller's invocation. Eligible two/three-literal plans reuse the
+existing metered native counter after whole-subject validation; other plans
+retain owned counting. This pure counter needs no result payload or VM frames,
+so very small working/result/depth caps can succeed. Work, original cancellation,
+the absolute deadline and byte-bounded diagnostics still apply. Captured, empty,
+folded and lexical-sensitive shapes retain their existing Python routes.
 These source corrections preserve the original immutable63/64 receipts.
 
 Template Replace/Subn byte and string operations also create their invocation

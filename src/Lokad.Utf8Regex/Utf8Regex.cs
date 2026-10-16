@@ -1189,17 +1189,7 @@ public sealed partial class Utf8Regex
         // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
         // into the VM solely because they selected an enforceable policy.
-        if (HasFiniteExecutionLimits && !program.RightToLeft && !program.IgnoreCase &&
-            !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
-            !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
-            !program.SawLookaround && !program.HasConditionalTest &&
-            !_requiresKelvinSignFallback &&
-            !program.CanMatchEmpty &&
-            (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
-                _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
-             _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-                _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: 2 or 3 }) &&
-            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
+        if (HasFiniteExecutionLimits && CanCountNativeLiterals(program))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
                 _preparedRegex.SearchPlan, input[startByte..], false, ref invocation, out var count);

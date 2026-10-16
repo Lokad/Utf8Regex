@@ -149,8 +149,11 @@ public sealed partial class Utf8PythonRegex
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        // The native rendering intentionally has exact references. Only the
-        // proven exact-literal control can bypass lexical profile comparison.
+        if (HasPreparedExactLiteralFamily && !_canMatchEmpty &&
+            _translation.CaptureGroupCount == 0 && _canUseUtf8IterationFastPath)
+            return CountLiteralFamily(input, startOffsetInBytes, cancellationToken);
+        // The native rendering intentionally has exact references. Other shapes
+        // keep lexical profile comparison, apart from the proven exact literal.
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.Count(input, cancellationToken);

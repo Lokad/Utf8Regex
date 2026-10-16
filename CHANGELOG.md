@@ -14,6 +14,18 @@
   No basic metering,API ownership or new accounting framework. Source only;
   immutable64 stays unchanged,with no package qualification per isolated edit.
 
+## Development: borrowed literal-family Count
+
+- Profile-safe capture-free Count now borrows the existing Core counter with the
+  Python invocation, preserving whole-subject validation, all four controls and
+  original interruption. Its semantic guard is shared with the existing Core
+  finite counter; no new policy, matcher, allocation scheme or accounting layer.
+- A bounded public source pair with 30-second deadlines observes late 4 KB finite
+  Count 471.9us ->0.77us and dense 68.6us ->27.8us; modeled working/result payload
+  is absent, and measured allocation falls about2032B ->160B. Captured Count and
+  bulk controls remain within1.8%; all180 samples exceed50ms. No default-infinite,
+  CPython or broad performance-parity claim. Immutable scalar.64 is unchanged.
+
 ## Core/PythonRe scalar.64 qualified dependency
 
 - Producer c35e2f50 packages the accumulated syntax-error, deadline/native bulk

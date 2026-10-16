@@ -37,14 +37,13 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    // The adapter's canonical-literal result root shares this invocation with
+    // The adapter's literal result/count root shares this invocation with
     // validation and counting, instead of starting a second budget at shaping.
     internal int CountForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,
         ref Utf8SliceInvocation invocation)
     {
         _ = Utf8Validation.Validate(input, ref invocation);
-        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
-            _preparedRegex.LiteralUtf8 is not { Length: > 0 } || UsesRightToLeft())
+        if (!CanCountNativeLiterals(_ownedSliceProgram))
             return OwnedSliceCountFromByte(input, _ownedSliceProgram, startOffsetInBytes, ref invocation);
         var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
             input[startOffsetInBytes..], false, ref invocation, out var count);
@@ -52,6 +51,20 @@ public sealed partial class Utf8Regex
             throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
         return count;
     }
+
+    // Shared semantic eligibility, independent of the optional Core owner's
+    // policy. An adapter can supply finite limits through its borrowed invocation.
+    private bool CanCountNativeLiterals(Utf8SliceProgram program) =>
+        !program.RightToLeft && !program.IgnoreCase &&
+        !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
+        !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
+        !program.SawLookaround && !program.HasConditionalTest &&
+        !_requiresKelvinSignFallback && !program.CanMatchEmpty &&
+        (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
+            _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
+         _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: 2 or 3 }) &&
+        !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement;
 
     // Metered literal value operations start their one deadline before validation.
     // Unlimited operations keep the established specialized kernels. Semantic

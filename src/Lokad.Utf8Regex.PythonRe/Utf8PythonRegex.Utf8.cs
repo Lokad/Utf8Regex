@@ -12,8 +12,28 @@ public sealed partial class Utf8PythonRegex
 {
     // Optional Core owns the equivalent prepared exact family, while the caller's
     // invocation supplies every limit. Other controlled bulk paths remain scalar.
-    private bool CanCollectControlledLiteralFamily =>
+    private bool HasPreparedExactLiteralFamily =>
         _utf8Regex?.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals;
+
+    private int CountLiteralFamily(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        try
+        {
+            var count = _utf8Regex!.CountForResult(input, startOffsetInBytes, ref invocation);
+            Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+            return count;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            throw invocation.Budget.CreateResourceFailure();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input, Pattern);
+        }
+    }
 
     private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken, out Utf8PythonMatchData[] matches)
     {
