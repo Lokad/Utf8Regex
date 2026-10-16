@@ -576,6 +576,15 @@ Those defaults are deliberate. PCRE2 allows duplicate names only when requested,
 
 The detailed PCRE2 group model exposes **only the final value of each capture slot**. There is no `.NET`-style `CaptureCount` / `GetCapture(i)` surface on PCRE2 detailed results. This is intentional and must not be approximated, because `.NET` exposes full capture history for repeated captures while PCRE2 standard matching returns only the last portion matched by a repeated group. ([Microsoft Learn][1])
 
+A subroutine or recursive call restores the caller's capture state when it
+returns, including previously unset captures. Captures set only in the callee
+are not published as caller captures. Previously set caller values and their
+byte ranges survive; captures enclosing the call can still capture its consumed
+subject. This applies to ordinary and `(*ACCEPT)` returns and does not make
+subroutine calls atomic. References and capture conditions observe the restored
+state. Development source coverage is recorded separately in the PCRE2
+qualification document; immutable scalar.56 retains a disclosed return defect.
+
 By-name metadata is **name-table-first**. `CopyNameEntries(...)` and `CopyNumbersForName(...)` are the primary APIs. `TryGetFirstSetGroup(name, ...)` is allowed only as a convenience and must follow PCRE2’s by-name convenience behavior: when duplicate names exist, it returns the first set group for that name. ([PCRE][3])
 
 Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMatches`, `Replace`, `MatchMany`) do **not** expose partial-match behavior. Partial matching is available only through `Probe(...)`. A partial probe result exposes only substring 0 plus `Mark`; it does not expose numbered or named capture groups. This matches PCRE2’s documented partial-match contract, where partial is a distinct outcome and the rest of the ovector is undefined. ([PCRE][4])

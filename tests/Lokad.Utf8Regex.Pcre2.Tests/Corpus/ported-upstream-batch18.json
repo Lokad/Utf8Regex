@@ -697,8 +697,8 @@
         {
           "Number": 1,
           "Success": true,
-          "StartOffsetInBytes": 0,
-          "EndOffsetInBytes": 1,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 5,
           "ValueText": "a"
         }
       ],

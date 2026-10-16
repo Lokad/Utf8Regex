@@ -24,17 +24,38 @@ No confirmation, broad parity, Status or snapshot claim. These are paired public
 costs; do not infer gains from the separate56 current-cost observation or kernel
 timings. Evidence: `artifacts/pcre2-capture-undo-20261016/`.
 
-## Known recursive capture gap
+## Capture-return correction in development source
 
-The native capture-aware source comparison also exposes a pre-existing scalar.56
-gap. For `(?(DEFINE)(?<x>a(?&x)?b))(?<w>(?&x))\k<w>` on `abab` or `aabbaabb`,
-native PCRE2 10.47 leaves group1 (`x`) unset after the call; scalar.56 and current
-source retain `ab` or `aabb`. The full match and group2 (`w`) agree. This requires
-a separate semantic correction before claiming those recursive capture results;
-it does not change the completed, narrower option-batch qualification below.
-The130-pair before/after capture comparison preserves every managed outcome;
-128 agree with native, two retain this existing gap. Original native mismatch
-and baseline replay are retained, not classified as passes or removed.
+PCRE2 restores caller capture state on subroutine return, including previously
+unset slots. The source now applies the existing restoration consistently for
+ordinary and `(*ACCEPT)` returns. It removes the propagation bool table,
+control-verb traversal, call-frame flag and second capture write; repeat state,
+non-atomic re-entry mutations and invocation authority remain. No public API,
+execution mode, pool policy or accounting framework is added.
+
+The original 49-case native PCRE2 10.47 corpus exposes 25 differences across
+14 patterns before this correction and none after it. Comparisons include
+admission, match outcome, every capture's success/value and byte coordinates.
+Four further witnesses check the three retargeted legacy fixtures: multiple
+forward definitions, `(*ACCEPT)` and a forward-call capture range. All 53 final
+witnesses are admitted by both engines and agree. The offset for `(a)` in
+`^(?1)\d{3}(a)` on `a123a` is 4..5, not the earlier call's 0..1.
+
+All 5,564 Release checks and 334 focused Debug checks pass, including finite
+limits, scalar empty advancement, retained captures and alias cancellation/
+deadline authority. Earlier failed expectation runs and native outputs are
+preserved in `artifacts/pcre2-subroutine-capture-return-20261016/`.
+This is a source semantic correction: no new timing, package or platform matrix,
+and no performance claim for the changed return body.
+
+Immutable scalar.56 retains this defect. For
+`(?(DEFINE)(?<x>a(?&x)?b))(?<w>(?&x))\k<w>` on `abab` or `aabbaabb`, native
+leaves `x` unset while scalar.56 retains `ab` or `aabb`. Its original curated
+option-batch qualification below remains scoped to those original results.
+The earlier 130-pair undo comparison preserves all managed outcomes, but only
+128 agree with native; those two historical differences remain explicit.
+Core/PythonRe55 is unaffected. A later PCRE2 input must include this correction
+before claiming these capture-return results.
 
 ## Private scalar.56 option-batch candidate (2026-10-16)
 

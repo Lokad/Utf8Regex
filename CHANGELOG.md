@@ -7,9 +7,11 @@
   A bounded public pair reduces selected finite reference Count time17–20% and
   allocated bytes about82%; DEFINE is5–6% slower with unchanged allocations.
   Preserve raw floors/noisy tails; no package or broad equivalence claim.
-- Record a pre-existing recursive-definition capture-return gap against native
-  PCRE2: a previously unset definition slot can remain set. Both scalar.56 and
-  current source reproduce it; preserve the witness for a separate semantic fix.
+- Restore caller captures, including unset slots and byte ranges, after PCRE2
+  subroutine/recursive and `(*ACCEPT)` returns. Remove the propagation table,
+  call-frame flag and control-verb traversal. References and conditions now see
+  caller state; non-atomic re-entry, scalar boundaries and resource authority
+  remain. Native 10.47 witnesses agree; immutable scalar.56 retains the defect.
 
 ## Private scalar.56 Core/PCRE2 candidate
 

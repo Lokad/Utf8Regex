@@ -70,7 +70,8 @@ public sealed class Pcre2BacktrackingControlCompilerTests
 
         Assert.Equal("a", topLevel.GetValueString());
         Assert.True(subroutine.Success);
-        Assert.Equal("a", subroutine.GetGroup(1).GetValueString());
+        Assert.Equal("ac", subroutine.GetValueString());
+        Assert.False(subroutine.GetGroup(1).Success);
     }
 
     [Fact]

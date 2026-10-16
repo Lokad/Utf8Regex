@@ -55,8 +55,7 @@ internal readonly record struct Pcre2SubroutineCallFrame(
     int CaptureCheckpoint,
     int BacktrackingCheckpoint,
     int AtomicCheckpoint,
-    int MarkTrailCheckpoint,
-    bool PreserveUnsetCaptures);
+    int MarkTrailCheckpoint);
 
 internal readonly record struct Pcre2SubroutineCaptureSnapshot(
     int Start,
@@ -1143,8 +1142,7 @@ internal static class Pcre2BacktrackingRunner
                                 captureMutations.Count,
                                 frames.Count,
                                 atomicCheckpoints.Count,
-                                markTrail.Count,
-                                program.SubroutinePreservesUnsetCaptures[subroutineSlot]),
+                                markTrail.Count),
                             ref subroutineCalls,
                             ref subroutineCallMutations,
                             depthBase + frames.Count,
@@ -1175,7 +1173,6 @@ internal static class Pcre2BacktrackingRunner
                         var returnCall = subroutineCalls[subroutineCalls.Count - 1];
                         RestoreSubroutineState(
                             returnCall,
-                            subroutineCalls.Count,
                             counts,
                             positions,
                             captureStarts,
@@ -1334,7 +1331,6 @@ internal static class Pcre2BacktrackingRunner
                             markTrail.Truncate(acceptedCall.MarkTrailCheckpoint);
                             RestoreSubroutineState(
                                 acceptedCall,
-                                subroutineCalls.Count,
                                 counts,
                                 positions,
                                 captureStarts,
@@ -2036,7 +2032,6 @@ internal static class Pcre2BacktrackingRunner
 
     private static void RestoreSubroutineState(
         Pcre2SubroutineCallFrame call,
-        int callDepth,
         Span<int> counts,
         Span<int> positions,
         Span<int> captureStarts,
@@ -2116,12 +2111,11 @@ internal static class Pcre2BacktrackingRunner
                 mutation.PreviousOpenOwner);
         }
 
+        // PCRE2 restores caller capture state on return, including unset slots.
+        // Non-atomic re-entry still needs the mutation trail below.
         for (var index = 0; index < captureRestoreCount; index++)
         {
             var slot = captureRestoreSlots[index];
-            var finalStart = captureStarts[slot];
-            var finalEnd = captureEnds[slot];
-            var finalOwner = captureOwners[slot];
             var snapshot = captureRestoreSnapshots[slot];
             SetCapture(
                 slot,
@@ -2137,25 +2131,6 @@ internal static class Pcre2BacktrackingRunner
                 captureOpenOwners,
                 ref captureMutations,
                 ref budget, recordRollback: true);
-            if (call.PreserveUnsetCaptures &&
-                snapshot.Start < 0 && snapshot.OpenStart < 0 &&
-                finalStart >= 0 && finalEnd >= finalStart)
-            {
-                SetCapture(
-                    slot,
-                    finalStart,
-                    finalEnd,
-                    -1,
-                    Math.Max(finalOwner, callDepth),
-                    -1,
-                    captureStarts,
-                    captureEnds,
-                    captureOpenStarts,
-                    captureOwners,
-                    captureOpenOwners,
-                    ref captureMutations,
-                    ref budget, recordRollback: true);
-            }
         }
     }
 

@@ -57,20 +57,16 @@ internal sealed class Pcre2BacktrackingLowerer
         EmitNode(root, null);
         _instructions.Add(Pcre2BacktrackingInstruction.CreateAccept());
         var subroutineTargets = Array.Empty<int>();
-        var subroutinePreservesUnsetCaptures = Array.Empty<bool>();
         if (_hasSubroutineCalls)
         {
             subroutineTargets = new int[_captureCount + 1];
-            subroutinePreservesUnsetCaptures = new bool[_captureCount + 1];
             subroutineTargets.AsSpan().Fill(-1);
             subroutineTargets[0] = _instructions.Count;
-            subroutinePreservesUnsetCaptures[0] = !ContainsDeferredControlVerb(root);
             EmitNode(root, null);
             _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             foreach (var definition in _captureDefinitions.OrderBy(static pair => pair.Key))
             {
                 subroutineTargets[definition.Key] = _instructions.Count;
-                subroutinePreservesUnsetCaptures[definition.Key] = !ContainsDeferredControlVerb(definition.Value);
                 EmitNode(definition.Value, null);
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             }
@@ -94,7 +90,6 @@ internal sealed class Pcre2BacktrackingLowerer
             [.. _backreferenceSlotSets],
             [.. _conditions],
             subroutineTargets,
-            subroutinePreservesUnsetCaptures,
             [.. _markNames],
             _groupNames,
             _nameEntries,
@@ -613,26 +608,6 @@ internal sealed class Pcre2BacktrackingLowerer
 
         return slot;
     }
-
-    private static bool ContainsDeferredControlVerb(IPcre2BacktrackingNode node) => node switch
-    {
-        Pcre2ControlVerbBacktrackingNode control => control.VerbKind is
-            Pcre2ControlVerbKind.Commit or
-            Pcre2ControlVerbKind.Prune or
-            Pcre2ControlVerbKind.Skip or
-            Pcre2ControlVerbKind.Then,
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsDeferredControlVerb),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsDeferredControlVerb),
-        Pcre2RepeatBacktrackingNode repeat => ContainsDeferredControlVerb(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => ContainsDeferredControlVerb(capture.Body),
-        Pcre2AssertionBacktrackingNode assertion => ContainsDeferredControlVerb(assertion.Body),
-        Pcre2ConditionalBacktrackingNode conditional =>
-            conditional.Assertion is not null && ContainsDeferredControlVerb(conditional.Assertion.Body) ||
-            ContainsDeferredControlVerb(conditional.YesBranch) ||
-            ContainsDeferredControlVerb(conditional.NoBranch),
-        Pcre2AtomicBacktrackingNode atomic => ContainsDeferredControlVerb(atomic.Body),
-        _ => false,
-    };
 
     private static bool ContainsMatchBoundaryReset(IPcre2BacktrackingNode node) => node switch
     {

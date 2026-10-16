@@ -46,8 +46,10 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
         var match = regex.MatchDetailed("ab"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("a", match.GetGroup(1).GetValueString());
-        Assert.Equal("b", match.GetGroup(2).GetValueString());
+        // A returned subroutine restores caller captures, including unset slots.
+        Assert.False(match.GetGroup(1).Success);
+        Assert.False(match.GetGroup(2).Success);
+        Assert.Equal("ab", match.GetValueString());
         Assert.False(regex.IsMatch("ax"u8));
     }
 

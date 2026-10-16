@@ -28,11 +28,13 @@ contracts are unchanged. A bounded public comparison reduces selected finite
 reference Count costs17–20% and allocations about82%; DEFINE Count is5–6% slower
 with unchanged allocations. This source improvement is outside immutable56.
 
-Scalar.56 and current source have a known recursive-capture gap: after a named
-call to a recursive definition, a previously unset definition capture can remain
-set, while native PCRE2 leaves it unset. The surrounding match/capture can agree
-while that slot differs. [Qualification](QUALIFICATION.md) records the witness;
-correcting it is required before claiming those recursive capture results.
+Development also restores caller capture values and byte ranges after a
+subroutine or recursive call, including unset slots and `(*ACCEPT)` returns.
+The erroneous propagation flag/table and control-verb scan are removed. Native
+PCRE2 10.47 witnesses cover references, conditionals, recursive backtracking and
+scalar captures. Immutable scalar.56 retains the previously disclosed capture
+return defect; this source correction requires a later package boundary.
+[Qualification](QUALIFICATION.md) records the evidence and scope.
 
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and

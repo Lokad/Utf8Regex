@@ -346,7 +346,6 @@ internal sealed class Pcre2BacktrackingProgram
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
         Pcre2BacktrackingCondition[] conditions,
         int[] subroutineTargets,
-        bool[] subroutinePreservesUnsetCaptures,
         string[] markNames,
         string[] groupNames,
         Pcre2NameEntry[] nameEntries,
@@ -377,7 +376,6 @@ internal sealed class Pcre2BacktrackingProgram
         BackreferenceSlotSets = backreferenceSlotSets;
         Conditions = conditions;
         SubroutineTargets = subroutineTargets;
-        SubroutinePreservesUnsetCaptures = subroutinePreservesUnsetCaptures;
         MarkNames = markNames;
         GroupNames = groupNames;
         NameEntries = nameEntries;
@@ -423,8 +421,6 @@ internal sealed class Pcre2BacktrackingProgram
     internal Pcre2BacktrackingCondition[] Conditions { get; }
 
     internal int[] SubroutineTargets { get; }
-
-    internal bool[] SubroutinePreservesUnsetCaptures { get; }
 
     internal string[] MarkNames { get; }
 
