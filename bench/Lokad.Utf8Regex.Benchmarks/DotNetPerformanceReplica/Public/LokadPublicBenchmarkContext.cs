@@ -25,48 +25,51 @@ internal sealed class LokadPublicBenchmarkContext
         RegexOptions Options,
         LokadPublicBenchmarkOperation Operation);
 
-    private static readonly string[] s_caseIds =
+    private static readonly (string Id, LokadPublicBenchmarkOperation Operation)[] s_cases =
     [
-        "common/email-match",
-        "common/email-miss",
-        "common/date-match",
-        "common/date-miss",
-        "common/ip-match",
-        "common/ip-miss",
-        "common/uri-match",
-        "common/uri-miss",
-        "common/matches-set",
-        "common/matches-boundary",
-        "common/matches-word",
-        "common/matches-words",
-        "common/match-word",
-        "common/replace-words",
-        "common/split-words",
-        "common/backtracking",
-        "common/one-node-backtracking",
-        "industry/mariomka-email-count",
-        "industry/mariomka-uri-count",
-        "industry/mariomka-ip-count",
-        "industry/rust-sherlock-letter-count",
-        "industry/rust-sherlock-holmes-window-count",
-        "industry/rust-sherlock-ing-count",
-        "industry/rust-sherlock-word-holmes-count",
-        "industry/rust-sherlock-nonnewline-count",
-        "industry/leipzig-twain-count",
-        "industry/leipzig-name-family-count",
-        "industry/leipzig-river-window-count",
-        "industry/leipzig-symbol-count",
-        "industry/boostdocs-ftp-line-match",
-        "industry/boostdocs-credit-card-match",
-        "industry/boostdocs-postcode-match",
-        "industry/boostdocs-date-match",
-        "industry/boostdocs-float-match",
+        ("common/email-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/email-miss", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/date-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/date-miss", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/ip-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/ip-miss", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/uri-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/uri-miss", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/matches-set", LokadPublicBenchmarkOperation.Count),
+        ("common/matches-boundary", LokadPublicBenchmarkOperation.Count),
+        ("common/matches-word", LokadPublicBenchmarkOperation.Count),
+        ("common/matches-words", LokadPublicBenchmarkOperation.Count),
+        ("common/match-word", LokadPublicBenchmarkOperation.Match),
+        ("common/replace-words", LokadPublicBenchmarkOperation.Replace),
+        ("common/split-words", LokadPublicBenchmarkOperation.Split),
+        ("common/backtracking", LokadPublicBenchmarkOperation.IsMatch),
+        ("common/one-node-backtracking", LokadPublicBenchmarkOperation.IsMatch),
+        ("industry/mariomka-email-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/mariomka-uri-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/mariomka-ip-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/rust-sherlock-letter-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/rust-sherlock-holmes-window-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/rust-sherlock-ing-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/rust-sherlock-word-holmes-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/rust-sherlock-nonnewline-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/leipzig-twain-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/leipzig-name-family-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/leipzig-river-window-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/leipzig-symbol-count", LokadPublicBenchmarkOperation.Count),
+        ("industry/boostdocs-ftp-line-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("industry/boostdocs-credit-card-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("industry/boostdocs-postcode-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("industry/boostdocs-date-match", LokadPublicBenchmarkOperation.IsMatch),
+        ("industry/boostdocs-float-match", LokadPublicBenchmarkOperation.IsMatch),
     ];
+
+    private static readonly string[] s_caseIds = s_cases.Select(static c => c.Id).ToArray();
 
     public LokadPublicBenchmarkContext(string caseId)
     {
         CaseId = caseId;
-        (InputString, Replacement, Pattern, Options, Operation) = Resolve(caseId);
+        (InputString, Replacement, Pattern, Options) = Resolve(caseId);
+        Operation = GetOperation(caseId);
         InputBytes = Encoding.UTF8.GetBytes(InputString);
         Utf8Regex = new Utf8Regex(Pattern, Options);
         CompiledUtf8Regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled);
@@ -103,10 +106,17 @@ internal sealed class LokadPublicBenchmarkContext
 
     public static IReadOnlyList<string> GetAllCaseIds() => s_caseIds;
 
+    public static LokadPublicBenchmarkOperation GetOperation(string caseId)
+    {
+        foreach (var item in s_cases)
+            if (item.Id == caseId) return item.Operation;
+        throw new ArgumentOutOfRangeException(nameof(caseId));
+    }
+
     internal static Definition GetDefinition(string caseId)
     {
-        var (input, replacement, pattern, options, operation) = Resolve(caseId);
-        return new Definition(input, replacement, pattern, options, operation);
+        var (input, replacement, pattern, options) = Resolve(caseId);
+        return new Definition(input, replacement, pattern, options, GetOperation(caseId));
     }
 
     public int ExecuteUtf8Regex() => Execute(Utf8Regex);
@@ -429,52 +439,52 @@ internal sealed class LokadPublicBenchmarkContext
         return count;
     }
 
-    private static (string Input, string Replacement, string Pattern, RegexOptions Options, LokadPublicBenchmarkOperation Operation) Resolve(string caseId)
+    private static (string Input, string Replacement, string Pattern, RegexOptions Options) Resolve(string caseId)
     {
         return caseId switch
         {
-            "common/email-match" => ("ops.dispatch@northwind-control.net", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/email-miss" => ("ops.dispatch@northwind-control.net#", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/date-match" => ("Today is 11/18/2019 and tomorrow is 11/19/2019.", string.Empty, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/date-miss" => ResolveSharedSubject("common/date-miss", LokadPublicBenchmarkOperation.IsMatch),
-            "common/ip-match" => ResolveSharedSubject("common/ip-match", LokadPublicBenchmarkOperation.IsMatch),
-            "common/ip-miss" => ("012.200.033.19A", string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/uri-match" => ("https://atlas.example.org/reports/export?id=42", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/uri-miss" => ("https://a https://b", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/matches-set" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"\w{10,}", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "common/matches-boundary" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"\b\w{10,}\b", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "common/matches-word" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "common/matches-words" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "common/match-word" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None, LokadPublicBenchmarkOperation.Match),
-            "common/replace-words" => (DotNetPerformanceRegexData.CommonSearchText, "amoveatur", @"tempus|magna|semper", RegexOptions.None, LokadPublicBenchmarkOperation.Replace),
-            "common/split-words" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None, LokadPublicBenchmarkOperation.Split),
-            "common/backtracking" => ("Essential services are provided by regular exprs.", string.Empty, ".*(ss)", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/one-node-backtracking" => ("This regex has the potential to be optimized further", string.Empty, @"[^a]+\.[^z]+", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "industry/mariomka-email-count" => ResolveSharedSubject("industry/mariomka-email-count", LokadPublicBenchmarkOperation.Count),
-            "industry/mariomka-uri-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/mariomka-ip-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/rust-sherlock-letter-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\p{L}", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/rust-sherlock-holmes-window-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/rust-sherlock-ing-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\s[a-zA-Z]{0,12}ing\s", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/rust-sherlock-word-holmes-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\w+\s+Holmes", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/rust-sherlock-nonnewline-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"[^\n]*", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/leipzig-twain-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, "Twain", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/leipzig-name-family-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, "Tom|Sawyer|Huckleberry|Finn", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/leipzig-river-window-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, "Tom.{10,25}river|river.{10,25}Tom", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/leipzig-symbol-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, @"\p{Sm}", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
-            "industry/boostdocs-ftp-line-match" => ("100- this is a line of ftp response which contains a message string", string.Empty, @"^([0-9]+)(\-| |$)(.*)$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "industry/boostdocs-credit-card-match" => ("1234-5678-1234-456", string.Empty, @"(\d{4}[- ]){3}\d{3,4}", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "industry/boostdocs-postcode-match" => ("SW1 1ZZ", string.Empty, @"^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "industry/boostdocs-date-match" => ("12/12/2001", string.Empty, @"^\d{1,2}/\d{1,2}/\d{4}$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "industry/boostdocs-float-match" => ("-3.14159", string.Empty, @"^[-+]?\d*\.?\d*$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
+            "common/email-match" => ("ops.dispatch@northwind-control.net", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$", RegexOptions.None),
+            "common/email-miss" => ("ops.dispatch@northwind-control.net#", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$", RegexOptions.None),
+            "common/date-match" => ("Today is 11/18/2019 and tomorrow is 11/19/2019.", string.Empty, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None),
+            "common/date-miss" => ResolveSharedSubject("common/date-miss"),
+            "common/ip-match" => ResolveSharedSubject("common/ip-match"),
+            "common/ip-miss" => ("012.200.033.19A", string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None),
+            "common/uri-match" => ("https://atlas.example.org/reports/export?id=42", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None),
+            "common/uri-miss" => ("https://a https://b", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None),
+            "common/matches-set" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"\w{10,}", RegexOptions.None),
+            "common/matches-boundary" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"\b\w{10,}\b", RegexOptions.None),
+            "common/matches-word" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus", RegexOptions.None),
+            "common/matches-words" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None),
+            "common/match-word" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None),
+            "common/replace-words" => (DotNetPerformanceRegexData.CommonSearchText, "amoveatur", @"tempus|magna|semper", RegexOptions.None),
+            "common/split-words" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None),
+            "common/backtracking" => ("Essential services are provided by regular exprs.", string.Empty, ".*(ss)", RegexOptions.None),
+            "common/one-node-backtracking" => ("This regex has the potential to be optimized further", string.Empty, @"[^a]+\.[^z]+", RegexOptions.None),
+            "industry/mariomka-email-count" => ResolveSharedSubject("industry/mariomka-email-count"),
+            "industry/mariomka-uri-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None),
+            "industry/mariomka-ip-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None),
+            "industry/rust-sherlock-letter-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\p{L}", RegexOptions.None),
+            "industry/rust-sherlock-holmes-window-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None),
+            "industry/rust-sherlock-ing-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\s[a-zA-Z]{0,12}ing\s", RegexOptions.None),
+            "industry/rust-sherlock-word-holmes-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\w+\s+Holmes", RegexOptions.None),
+            "industry/rust-sherlock-nonnewline-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"[^\n]*", RegexOptions.None),
+            "industry/leipzig-twain-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, "Twain", RegexOptions.None),
+            "industry/leipzig-name-family-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, "Tom|Sawyer|Huckleberry|Finn", RegexOptions.None),
+            "industry/leipzig-river-window-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, "Tom.{10,25}river|river.{10,25}Tom", RegexOptions.None),
+            "industry/leipzig-symbol-count" => (DotNetPerformanceRegexData.RiverCorpus, string.Empty, @"\p{Sm}", RegexOptions.None),
+            "industry/boostdocs-ftp-line-match" => ("100- this is a line of ftp response which contains a message string", string.Empty, @"^([0-9]+)(\-| |$)(.*)$", RegexOptions.None),
+            "industry/boostdocs-credit-card-match" => ("1234-5678-1234-456", string.Empty, @"(\d{4}[- ]){3}\d{3,4}", RegexOptions.None),
+            "industry/boostdocs-postcode-match" => ("SW1 1ZZ", string.Empty, @"^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", RegexOptions.None),
+            "industry/boostdocs-date-match" => ("12/12/2001", string.Empty, @"^\d{1,2}/\d{1,2}/\d{4}$", RegexOptions.None),
+            "industry/boostdocs-float-match" => ("-3.14159", string.Empty, @"^[-+]?\d*\.?\d*$", RegexOptions.None),
             _ => throw new ArgumentOutOfRangeException(nameof(caseId)),
         };
     }
 
-    private static (string Input, string Replacement, string Pattern, RegexOptions Options, LokadPublicBenchmarkOperation Operation)
-        ResolveSharedSubject(string id, LokadPublicBenchmarkOperation operation)
+    private static (string Input, string Replacement, string Pattern, RegexOptions Options)
+        ResolveSharedSubject(string id)
     {
         var subject = BenchmarkSubjectDefinitions.Get(id);
-        return (subject.Input, string.Empty, subject.Pattern, RegexOptions.None, operation);
+        return (subject.Input, string.Empty, subject.Pattern, RegexOptions.None);
     }
 }

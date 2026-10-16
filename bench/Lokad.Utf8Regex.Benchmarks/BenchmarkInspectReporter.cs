@@ -1618,9 +1618,9 @@ internal static partial class BenchmarkInspectReporter
         {
             case ReadmeBenchmarkSection.DotNetPerformance:
             case ReadmeBenchmarkSection.DotNetPerformanceCompiled:
-                foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
+                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
                 {
-                    MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
+                    MeasureAndRecord("--measure-readme-case", caseId);
                 }
 
                 foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
@@ -1631,9 +1631,9 @@ internal static partial class BenchmarkInspectReporter
 
             case ReadmeBenchmarkSection.Lokad:
             case ReadmeBenchmarkSection.LokadCompiled:
-                foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
+                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
                 {
-                    MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
+                    MeasureAndRecord("--measure-readme-case", caseId);
                 }
                 break;
 
@@ -1685,9 +1685,9 @@ internal static partial class BenchmarkInspectReporter
 
         if (firstSection == ReadmeBenchmarkSection.DotNetPerformance)
         {
-            foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
+            foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
             {
-                MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
+                MeasureAndRecord("--measure-readme-case", caseId);
             }
 
             foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
@@ -1697,9 +1697,9 @@ internal static partial class BenchmarkInspectReporter
         }
         else if (firstSection == ReadmeBenchmarkSection.Lokad)
         {
-            foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
+            foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
             {
-                MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
+                MeasureAndRecord("--measure-readme-case", caseId);
             }
         }
         else
@@ -1928,9 +1928,9 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("### Stress Count Workloads");
                 writer.WriteLine();
                 WriteReadmeDefaultTableHeader(writer);
-                foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
+                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
                 {
-                    WriteReadmePlainDefaultCaseRow(writer, benchmarkCase.Id, GetRequiredSnapshotMeasurement(sectionSnapshot, benchmarkCase.Id).ToMeasurement());
+                    WriteReadmePlainDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
 
                 writer.WriteLine();
@@ -1941,7 +1941,7 @@ internal static partial class BenchmarkInspectReporter
                 WriteReadmePublicDefaultTableHeader(writer);
                 foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
                 {
-                    WriteReadmePlainPublicDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement(), new LokadPublicBenchmarkContext(caseId).Operation);
+                    WriteReadmePlainPublicDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement(), LokadPublicBenchmarkContext.GetOperation(caseId));
                 }
                 break;
 
@@ -1960,9 +1960,9 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("### Stress Count Workloads");
                 writer.WriteLine();
                 WriteReadmeCompiledTableHeader(writer);
-                foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
+                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
                 {
-                    WriteReadmePlainCompiledCaseRow(writer, benchmarkCase.Id, GetRequiredSnapshotMeasurement(sectionSnapshot, benchmarkCase.Id).ToMeasurement());
+                    WriteReadmePlainCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
 
                 writer.WriteLine();
@@ -1973,7 +1973,7 @@ internal static partial class BenchmarkInspectReporter
                 WriteReadmePublicCompiledTableHeader(writer);
                 foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
                 {
-                    WriteReadmePlainPublicCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement(), new LokadPublicBenchmarkContext(caseId).Operation);
+                    WriteReadmePlainPublicCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement(), LokadPublicBenchmarkContext.GetOperation(caseId));
                 }
                 break;
 
@@ -1989,9 +1989,9 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.");
                 writer.WriteLine();
                 WriteReadmeDefaultTableHeader(writer);
-                foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
+                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
                 {
-                    WriteReadmePlainDefaultCaseRow(writer, benchmarkCase.Id, GetRequiredSnapshotMeasurement(sectionSnapshot, benchmarkCase.Id).ToMeasurement());
+                    WriteReadmePlainDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
                 break;
 
@@ -2007,9 +2007,9 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.");
                 writer.WriteLine();
                 WriteReadmeCompiledTableHeader(writer);
-                foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
+                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
                 {
-                    WriteReadmePlainCompiledCaseRow(writer, benchmarkCase.Id, GetRequiredSnapshotMeasurement(sectionSnapshot, benchmarkCase.Id).ToMeasurement());
+                    WriteReadmePlainCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
                 break;
 

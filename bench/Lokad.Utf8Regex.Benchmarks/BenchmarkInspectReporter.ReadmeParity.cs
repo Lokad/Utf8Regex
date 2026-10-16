@@ -98,9 +98,9 @@ internal static partial class BenchmarkInspectReporter
     {
         if (section is ReadmeBenchmarkSection.DotNetPerformance or ReadmeBenchmarkSection.DotNetPerformanceCompiled)
         {
-            foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
+            foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
             {
-                yield return benchmarkCase.Id;
+                yield return caseId;
             }
 
             foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
@@ -111,9 +111,9 @@ internal static partial class BenchmarkInspectReporter
             yield break;
         }
 
-        foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
+        foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
         {
-            yield return benchmarkCase.Id;
+            yield return caseId;
         }
     }
 
@@ -178,7 +178,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static string GetReadmeOperation(string caseId)
         => LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal)
-            ? new LokadPublicBenchmarkContext(caseId).Operation.ToString()
+            ? LokadPublicBenchmarkContext.GetOperation(caseId).ToString()
             : "Count";
 
     private sealed class ReadmeParityReport

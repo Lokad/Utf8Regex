@@ -123,20 +123,19 @@ internal sealed class ReplicaCountBenchmarkCase
         return benchmarkCase is not null;
     }
 
-    public static IEnumerable<ReplicaCountBenchmarkCase> GetAll(ReplicaBenchmarkSource source)
-    {
-        return source switch
+    // Reporting and refresh selection need identities, not subjects or matchers.
+    public static IEnumerable<string> GetAllIds(ReplicaBenchmarkSource source)
+        => source switch
         {
             ReplicaBenchmarkSource.DotNetPerformance => DotNetPerformanceReplicaBenchmarkCatalog.GetAllCases()
                 .Where(static c => c.Model == DotNetPerformanceReplicaBenchmarkModel.Count && !c.IsDevelopmentSlice)
-                .Select(static c => FromDotNetPerformance(c)),
+                .Select(static c => c.Id),
             ReplicaBenchmarkSource.Lokad => LokadReplicaCodeBenchmarkCatalog.GetAllCases()
                 .Where(static c => c.Model == LokadReplicaCodeBenchmarkModel.Count)
-                .Select(static c => FromLokadCode(c))
-                .Concat(LokadReplicaScriptBenchmarkCatalog.GetAllCases().Select(static c => FromLokadScript(c))),
+                .Select(static c => c.Id)
+                .Concat(LokadReplicaScriptBenchmarkCatalog.GetAllCases().Select(static c => c.Id)),
             _ => throw new ArgumentOutOfRangeException(nameof(source)),
         };
-    }
 
     private static ReplicaCountBenchmarkCase? TryGetDotNetPerformance(string caseId)
     {

@@ -1,5 +1,13 @@
 # Changelog
 
+## Benchmark report preparation
+
+- Enumerate catalog IDs and operation tags without loading subjects or creating
+  matchers when selecting refresh cases or generating README/parity reports.
+  Remove the unused context enumeration and keep operation tags in one catalog.
+  Isolated corpus-free verification/regeneration preserves all178 output rows;
+  execution and measurement code are unchanged.
+
 ## Private scalar.60 Core/PythonRe input
 
 - Qualify a fresh immutable pair from clean producerff4e16b3 for the accumulated
