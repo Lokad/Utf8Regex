@@ -1,5 +1,15 @@
 # Changelog
 
+## Skip rejected groupless capture projection preparation
+
+- Reuse the existing capture predicate before grouped/alternate projection
+  construction. Groupless programs keep the same null tables and matching routes
+  without rejected scratch sessions/walks. Active capture preparation, admission
+  and original interruption remain; less work can admit tighter construction caps.
+- One fixed-instance public constructor allocation observation removes 1.3–5.9 KB
+  across five groupless shapes, ordinary/compiled, with unchanged captured/shared/
+  sparse controls and output/table flags. No execution-time claim or new package.
+
 ## Correct oversized Python replacement indices
 
 - Oversized decimal group references now raise PythonRePatternException rather

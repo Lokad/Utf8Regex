@@ -15,6 +15,10 @@ multi-group literal-family projection route. Other constructors omit unused map
 preparation; diagnostic summaries construct equivalent temporary views on demand.
 Lower actual preparation can admit tighter construction policies while covered
 cache/construction bounds remain conservative.
+Grouped-literal and alternate-branch projection factories also use the existing
+active-capture predicate before preparation. Groupless programs retain the same
+null tables and execution routes while omitting rejected sessions and tree walks.
+Captured programs keep their existing preparation and admission.
 Generation/pending coordination, failed preparation rollback and externally held
 program/result validity remain required. Covered delegate managed copies are
 included; opaque CLR method/resolver/JIT storage, caller retention and process RSS

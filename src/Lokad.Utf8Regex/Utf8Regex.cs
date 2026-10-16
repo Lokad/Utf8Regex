@@ -161,9 +161,9 @@ public sealed partial class Utf8Regex
                 ? Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree)
                 : null;
         _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
-        _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
+        _groupedLiteralSpanTable = !_hasCaptures || UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
         _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
-        _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
+        _alternationBranchSpanMap = !_hasCaptures || UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
             Utf8PreparedRegex preparedRegex,
