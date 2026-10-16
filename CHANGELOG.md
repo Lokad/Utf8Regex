@@ -1,11 +1,16 @@
 # Changelog
 
-## PythonRe development after scalar.52
+## Private scalar.55 Core/PythonRe candidate
 
-- Prepare distinct private Core/PythonRe input 0.4.0-scalar.55 for the coherent
-  identifier/class/boundary batch. Existing qualifier supplies exact source-mapped
-  references, locks and detached results; preserve prior immutable inputs.
-  Qualification, publication and downstream adoption remain separate.
+- Qualify immutable Core/PythonRe 0.4.0-scalar.55, producer eeb74d14, for the
+  identifier/class/boundary batch. Both original detached Windows/Linux runs pass
+  Core39019/Diff1504/PythonRe3066 against identical packages, exact source-mapped
+  refs/locks/TRXs. Capture/catalog checks and full scalar predicate censuses pass.
+  Producer CI is green; preserve prior inputs. Publication/adoption are separate.
+- Record one bounded exact-package current-cost run with all four finite limits
+  and live-token lanes. Detailed1000-result costs761/832us unlimited/finite;
+  UTF8tuples589/614us. Core family Count59/536us retains a9.08x finite cost;
+  basic metering stays. Raw samples/allocations and limits remain explicit.
 - Lower Python predefined classes/bracket unions/negation and word boundaries
   directly with owned CPython 3.13.2 / Unicode 15.1 predicates. Reuse existing
   class instructions and invocation controls; fixed masks/ranges avoid expanded

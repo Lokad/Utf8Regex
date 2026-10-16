@@ -1,6 +1,6 @@
 # Bounded checked-access work
 
-## Current delivery: scalar.52
+## Checked-access batch: scalar.52
 
 The checked-access batch is complete for Core/PythonRe. Exact immutable scalar.52
 DLLs have no explicit unchecked reads or generated inline-array helpers; Core's
@@ -30,6 +30,13 @@ qualification does not settle that consumer contract. No publication, consumer
 pin/default/promotion or host containment is implied. The independent PCRE2
 boundary does not alter Core/PythonRe52 acceptance.
 
+The subsequent immutable scalar.55 Core/PythonRe pair preserves that inventory:
+Core only SizeOf, PythonRe none, no generated inline-array helpers or native
+imports. Pinned identifier/class/boundary corrections use existing owned
+execution and admission. Both original detached platforms and full scalar
+predicate checks pass; its exact-package current costs and scope are in
+[the scalar.55 handoff](artifacts/core-python-scalar55-20261016/HANDOFF.md).
+Those operating costs do not replace scalar.52's fixed-original conversion gate.
 ## Acceptance rule and chronological evidence
 
 The core matches strict UTF-8 scalars. Checked-access conversions must preserve

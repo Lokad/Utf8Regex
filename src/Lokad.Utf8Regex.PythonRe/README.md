@@ -4,30 +4,31 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.52**,
-producer `5e50b7b1370fa0b88513bda3701cad27855cd2c7`. It covers strict UTF-8 scalar
+The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.55**,
+producer `eeb74d146b8682e023bbbe9fdee2df4042df18af`. It covers strict UTF-8 scalar
 matching, authoritative capture completion, an explicitly owned persistent cursor,
 finite invocation work/depth/working/result limits and covered eager construction
 controls. Exact detached Windows/Linux consumers and CPython capture/digest checks
-pass. Use `artifacts/scalar-candidates/0.4.0-scalar.52/candidate.json`, its immutable
-feed/config and `artifacts/core-python-scalar52-20261015/HANDOFF.md`; the delivery
+pass. Use `artifacts/scalar-candidates/0.4.0-scalar.55/candidate.json`, its immutable
+feed/config and `artifacts/core-python-scalar55-20261016/HANDOFF.md`; the delivery
 receipt records exact identities, coverage and the scope of cost evidence.
 
-The next private Core/PythonRe input is **0.4.0-scalar.55**, preparing a single
-immutable delivery boundary for the identifier/class/boundary corrections below.
-It is not yet qualified. Existing scalar.52 and separate PCRE2 inputs remain
-unchanged; no publication, consumer pin/default change or adoption is implied.
+Scalar.55 includes the identifier/class/boundary corrections below. Same-byte
+detached Windows/Linux checks, exact restore/provenance and all-scalar class/
+identifier comparisons pass; current finite-limit public costs are recorded.
+Existing scalar.52 and separate PCRE2 inputs remain unchanged. No publication,
+consumer pin/default change or adoption is implied.
 
 This pair is not published or accepted downstream automatically. Lython's Core DLL
 unchecked-API gate rejects Core's sole remaining reference, the producer-permitted
 `Unsafe.SizeOf`; PythonRe has no such references. Defaults and static cached calls
 remain unlimited; embedders select finite policies explicitly. Complete
 construction/lazy/live-retention controls,
-safe defaults, category-version reconciliation and broader profile acceptance
+safe defaults and broader profile acceptance
 remain unfinished. PCRE2 qualifies independently; prior candidate bytes stay
 unchanged. Development source beyond the candidate requires its own acceptance.
 
-This pair completes the Core/PythonRe checked-access batch. Selected Core costs
+The earlier scalar.52 pair completed the Core/PythonRe checked-access batch. Selected Core costs
 against the fixed original fit10%, with unchanged allocations and a narrow
 9.91% emitted-search row. Python's exact-package 17-pair confirmation has per-row
 median changes -6.89..+2.16%; some large tails and materialization pool variation
@@ -51,7 +52,7 @@ references. General categories incorrectly admitted U+037A/new host assignments
 and rejected valid identifier-only characters. Validation now follows the pinned
 identifier rules while preserving the exact name spelling. Matching kernels and
 invocation controls are unchanged. This source correction is beyond the frozen
-scalar.52 pair; the separate class correction likewise needs future package acceptance.
+scalar.52 pair and is included in the qualified scalar.55 input.
 
 ## Support Scope
 
