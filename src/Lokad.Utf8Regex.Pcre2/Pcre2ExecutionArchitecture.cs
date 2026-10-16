@@ -2880,13 +2880,14 @@ internal static class Pcre2GlobalOperationDriver
                 // Count has one lexical owner. Copied public value cursors never
                 // acquire owned scratch, and release uses the cursor's budget.
                 var frames = Pcre2BacktrackingRunner.CreateFrames(ref budget, 0);
+                var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
                 try
                 {
                     result = 0;
-                    while (cursor.MoveNext(ref frames)) result = checked(result + 1);
+                    while (cursor.MoveNext(ref frames, ref repeatMutations)) result = checked(result + 1);
                     return true;
                 }
-                finally { cursor.ReleaseFrames(ref frames); }
+                finally { cursor.ReleaseBacktrackingStacks(ref frames, ref repeatMutations); }
             }
             result = 0;
             while (cursor.MoveNext())
@@ -3261,18 +3262,20 @@ internal ref struct Pcre2GlobalMatchCursor
         return moved;
     }
 
-    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
     {
         if (_kind != Pcre2GlobalCursorKind.Direct) return MoveNext();
         var control = WorkingBufferControl;
         Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
-        var moved = _direct.MoveNext(ref frames);
+        var moved = _direct.MoveNext(ref frames, ref repeatMutations);
         Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
         return moved;
     }
 
-    internal void ReleaseFrames(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
-        => _direct.ReleaseFrames(ref frames);
+    internal void ReleaseBacktrackingStacks(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+        => _direct.ReleaseBacktrackingStacks(ref frames, ref repeatMutations);
 
     private enum Pcre2GlobalCursorKind : byte
     {
@@ -3514,17 +3517,23 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             request,
             budget);
 
-    internal void ReleaseFrames(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
-        => frames.Dispose(ref _budget);
+    internal void ReleaseBacktrackingStacks(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+    {
+        repeatMutations.Dispose(ref _budget);
+        frames.Dispose(ref _budget);
+    }
 
     internal bool MoveNext()
     {
         var frames = Pcre2BacktrackingRunner.CreateFrames(ref _budget, 0);
-        try { return MoveNext(ref frames); }
-        finally { frames.Dispose(ref _budget); }
+        var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, _budget.CollectsDiagnostics);
+        try { return MoveNext(ref frames, ref repeatMutations); }
+        finally { ReleaseBacktrackingStacks(ref frames, ref repeatMutations); }
     }
 
-    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
     {
         while (_retryState != Pcre2GlobalRetryState.Finished)
         {
@@ -3636,7 +3645,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             _restartPosition,
                             _firstMatchingPosition,
                             options,
-                            ref _budget, ref frames);
+                            ref _budget, ref frames, ref repeatMutations);
                         match = new Pcre2DirectGlobalMatch(
                             backtrackingMatch.Success,
                             backtrackingMatch.StartOffsetInBytes,

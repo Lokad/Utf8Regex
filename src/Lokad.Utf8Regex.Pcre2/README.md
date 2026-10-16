@@ -45,6 +45,18 @@ the [source decision](../../artifacts/pcre2-literal-count-bridge-20261017/RESULT
 remain explicit. This is staged source, not a change to qualified70 bytes or a
 new package qualification, broad benchmark Status or unchecked-access gate.
 
+Later source also reuses the existing repeat rollback stack in the lexical scope
+that owns backtracking frames. Attempts truncate logical state, nested assertions
+keep separate stacks, and finally releases actual admitted capacity through the
+cursor budget. Other stacks/vectors and all basic metering remain. Held capacity
+can increase later working overlap; actual rental work decreases. No public cursor
+field, new owner, finalizer, pool or mode. One paired public comparison reduced
+finite caseless1,000-hit Count1.392->1.127ms and allocation609->177KB. Failed-start
+Count/IsMatch and Garay Count improve similarly. A single control-only confirmation
+measured1.5-3.1% execution-time cost with unchanged allocation; that cost is accepted
+and remains explicit. [Source decision](../../artifacts/pcre2-repeat-journal-20261017/RESULT.md).
+This source stays separate from immutable70 qualification and its original costs.
+
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.

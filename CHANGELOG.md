@@ -1,5 +1,20 @@
 # Changelog
 
+## Development: reuse PCRE2 repeat rollback storage lexically
+
+- Reuse the existing repeat mutation stack alongside frames in Count/search,
+  truncate logical state per attempt and finally release actual capacity with
+  the cursor budget. Nested assertions keep separate stacks; public copied
+  cursors gain no scratch fields. Other six stacks/fixed vectors remain unchanged.
+  Diagnostic rental counters record actual per-attempt acquisition deltas.
+- Preserve mutation/rollback algorithms, scalar/capture/result semantics,
+  interruption and all resource controls. Held high-water capacity can increase
+  later working overlap; actual rental work falls. No new owner, mode or GC lease.
+- One paired public run reduces finite caseless1000hits1.392->1.127ms and609->177KB;
+  other affected Count/IsMatch rows improve18.5-20%. One control-only confirmation
+  measures1.5-3.1% execution-time cost with unchanged allocation; accept that tradeoff
+  explicitly. Release/Debug/resource/native checks pass. No new package or Status.
+
 ## Development: shared metered literal Count for PCRE2
 
 - Reuse Core's existing bounded native Count for already proved finite literal

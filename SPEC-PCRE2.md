@@ -695,6 +695,15 @@ Count needs no projected result or VM rewind frames on this path; smaller
 work/depth/working allowances may therefore admit it. Required captures/results
 and remaining scalar VM storage retain their own pre-acquisition admission.
 
+Subsequent source reuses the existing repeat rollback stack alongside frames in
+one lexical Count/search scope. Each attempt truncates logical rollback state;
+nested assertions own separate stacks. Actual growth remains admitted and charged,
+and the actual cursor budget releases both capacities in finally. Public copied
+cursors acquire no owned scratch field. Other stacks/fixed vectors are unchanged.
+Held high-water capacity can increase later/nested working overlap; fewer actual
+rentals reduce work. These intentional numeric-cutoff changes do not refund spent
+work, weaken capacity bounds or add a GC-dependent lifetime.
+
 When the admitted search fact proves a leading single literal, the scalar counter
 can seek its next occurrence through the existing bounded metered search before
 VM verification. Interior anchors, empty, RTL, folding and unproved start plans
