@@ -280,9 +280,9 @@ function Assert-PackageShape {
                 $reader.Dispose()
             }
 
-            $requiredDeclaration = "id=`"$RequiredDependency`" version=`"$RequiredVersion`""
+            $requiredDeclaration = "id=`"$RequiredDependency`" version=`"[$RequiredVersion]`""
             if (!$nuspec.Contains($requiredDeclaration, [StringComparison]::Ordinal)) {
-                throw "$PackagePath does not declare the required $RequiredDependency $RequiredVersion dependency."
+                throw "$PackagePath does not declare the exact $RequiredDependency [$RequiredVersion] dependency."
             }
         }
     }

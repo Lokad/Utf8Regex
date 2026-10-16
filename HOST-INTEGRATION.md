@@ -73,6 +73,14 @@ consumer adoption or complete construction/lazy/default/live-retention policies
 and host ownership integration. This recipe composes already qualified scope;
 it introduces no shared engine meter or new package designation.
 
+The qualified input is the exact Core/adapter pair recorded by its manifest,
+feed and locks. Scalar.61's adapter nuspec has a minimum Core version; pin both
+direct references to preserve that tested input. Subsequent source packing uses
+an exact Core dependency because adapters consume Core internals. Future adapter
+and Core updates therefore move together; applications combining adapters need
+versions qualified with the same Core. This does not alter immutable61 or prove
+compatibility with deliberate dependency overrides.
+
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.
 `PythonReFiniteResultPolicyTests.CursorTrafficSurvivesPublicationAndAliasesShareFailureCleanup`

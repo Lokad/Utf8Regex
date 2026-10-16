@@ -1,5 +1,14 @@
 # Changelog
 
+## Bound adapter package dependencies to the tested Core
+
+- Subsequent PythonRe/PCRE2 packaging emits an exact Core version range using the
+  existing SDK metadata, and the existing package-shape guard checks it. Adapters
+  use Core internals; updates intentionally move the paired versions together.
+- Offline adapter-only restores select the required Core and reject a feed with
+  only a later version for both profiles. Unique unqualified metadata probes
+  exercise this rule; runtime behavior and immutable scalar.61 stay unchanged.
+
 ## Retire unused adapter split bridge
 
 - Remove the unreferenced internal split-cursor bridge that created an independent
