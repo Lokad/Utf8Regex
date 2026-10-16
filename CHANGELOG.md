@@ -17,8 +17,14 @@
   equivalence and PCRE2 partners, including reverse Kelvin/long-S matches.
   Keep negation, scalar coordinates, finite admission and interruption; no text
   normalization or multi-scalar expansion. Admit parsed profile-option programs
-  without requiring a control-flow node. Inline r remains unserved; supplementary
-  casing and immutable scalar.56 retain their explicitly separate scope.
+  without requiring a control-flow node. Supplementary casing and immutable
+  scalar.56 retain their explicitly separate scope.
+
+- Support PCRE2 inline r with existing token flags: restrict ASCII/non-ASCII
+  fold partners while preserving scopes/reset, lexical subroutine settings,
+  reference-site options, explicit class members, captures and finite controls.
+  Correct UCP POSIX lower/upper caseless categories; keep non-UCP ASCII behavior.
+  No new public option or package identity. Native UCP/non-UCP witnesses agree.
 
 ## Private scalar.56 Core/PCRE2 candidate
 

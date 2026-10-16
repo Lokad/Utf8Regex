@@ -123,14 +123,13 @@ internal sealed class Pcre2BacktrackingLowerer
             }
 
             var following = followingLiteral.Literal;
-            var caseless = (repeated.Token.Options & Pcre2CharacterOptions.Caseless) != 0;
             var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
             return repeated.Token.Kind switch
             {
                 Pcre2CharacterTokenKind.Literal =>
-                    !Pcre2CharacterSemantics.Equals(repeated.Token.Literal, following, caseless),
+                    !Pcre2CharacterSemantics.Equals(repeated.Token.Literal, following, repeated.Token.Options),
                 Pcre2CharacterTokenKind.CharacterClass =>
-                    !repeated.Token.CharacterClass.Matches(following, ucp, caseless),
+                    !repeated.Token.CharacterClass.Matches(following, ucp, repeated.Token.Options),
                 _ => false,
             };
         }

@@ -40,9 +40,17 @@ Development also corrects BMP caseless classes such as `(?i)[K]` against `K/k`
 and `(?i)[ſ]` against `S/s`. Classes, literals and references share complete
 Unicode16 default simple-fold equivalence using existing owned data plus PCRE2
 partners. Negation, scalar byte coordinates and finite admission remain; no
-normalization or multi-scalar expansion is added. Inline `r` remains unserved,
-and supplementary casing retains separate qualification. These corrections are
+normalization or multi-scalar expansion is added. Supplementary casing retains
+separate qualification. These corrections are
 outside immutable56; [qualification](QUALIFICATION.md) records their scope.
+
+Development now supports inline `r`: `(?ir)k` matches `K` and rejects Kelvin
+sign. Scopes, `-r`, reset directives, lexical subroutine settings and references
+use the existing token flags. Explicit class members remain included, and
+ordinary non-ASCII folding is preserved. UCP POSIX lower/upper also retain their
+native categories under caseless matching. All four finite invocation controls,
+cancellation, deadlines and retained captures remain. These source changes are
+outside immutable56 and add no public compile-option surface.
 
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and

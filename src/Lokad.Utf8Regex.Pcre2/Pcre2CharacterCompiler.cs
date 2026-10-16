@@ -109,6 +109,7 @@ internal enum Pcre2CharacterOptions : byte
     DotAll = 4,
     Extended = 8,
     ExtendedMore = 16,
+    RestrictCaseless = 32,
 }
 
 internal static class Pcre2CharacterOptionsFactory
@@ -273,29 +274,30 @@ internal sealed class Pcre2CharacterClass
         }
     }
 
-    internal bool Matches(Rune scalar, bool ucp, bool caseless)
+    internal bool Matches(Rune scalar, bool ucp, Pcre2CharacterOptions options)
     {
-        if (scalar.IsAscii && !caseless)
+        if (scalar.IsAscii && (options & Pcre2CharacterOptions.Caseless) == 0)
         {
             return AsciiSet.Contains((byte)scalar.Value);
         }
 
-        return MatchesSemantic(scalar, ucp, caseless);
+        return MatchesSemantic(scalar, ucp, options);
     }
 
-    internal bool MatchesSemantic(Rune scalar, bool ucp, bool caseless)
+    internal bool MatchesSemantic(Rune scalar, bool ucp, Pcre2CharacterOptions options)
     {
-        var matched = MatchesPositive(scalar, ucp, caseless);
+        var matched = MatchesPositive(scalar, ucp, options);
         return Negated ? !matched : matched;
     }
 
-    private bool MatchesPositive(Rune scalar, bool ucp, bool caseless)
+    private bool MatchesPositive(Rune scalar, bool ucp, Pcre2CharacterOptions options)
     {
+        var caseless = (options & Pcre2CharacterOptions.Caseless) != 0;
         foreach (var term in Terms)
         {
             var matched = term.Kind switch
             {
-                Pcre2CharacterClassTermKind.Range => MatchesRange(term.Range, scalar, caseless),
+                Pcre2CharacterClassTermKind.Range => MatchesRange(term.Range, scalar, options),
                 Pcre2CharacterClassTermKind.Digit => Pcre2CharacterSemantics.IsDigit(scalar, ucp),
                 Pcre2CharacterClassTermKind.Space => Pcre2CharacterSemantics.IsSpace(scalar, ucp),
                 Pcre2CharacterClassTermKind.Word => Pcre2CharacterSemantics.IsWord(scalar, ucp),
@@ -314,14 +316,14 @@ internal sealed class Pcre2CharacterClass
         return false;
     }
 
-    private static bool MatchesRange(Pcre2ScalarRange range, Rune scalar, bool caseless)
+    private static bool MatchesRange(Pcre2ScalarRange range, Rune scalar, Pcre2CharacterOptions options)
     {
         if (range.Contains(scalar.Value))
         {
             return true;
         }
 
-        if (!caseless)
+        if ((options & Pcre2CharacterOptions.Caseless) == 0)
         {
             return false;
         }
@@ -329,7 +331,8 @@ internal sealed class Pcre2CharacterClass
         if (scalar.IsBmp)
         {
             foreach (var equivalent in Pcre2CharacterSemantics.GetBmpCaseEquivalents((char)scalar.Value))
-                if (range.Contains(equivalent)) return true;
+                if (((options & Pcre2CharacterOptions.RestrictCaseless) == 0 ||
+                    (equivalent < 128) == scalar.IsAscii) && range.Contains(equivalent)) return true;
             return false;
         }
 
@@ -588,6 +591,7 @@ internal sealed class Pcre2CharacterParser
             var option = _pattern[cursor] switch
             {
                 'i' => Pcre2CharacterOptions.Caseless,
+                'r' => Pcre2CharacterOptions.RestrictCaseless,
                 'm' => Pcre2CharacterOptions.Multiline,
                 's' => Pcre2CharacterOptions.DotAll,
                 'x' => Pcre2CharacterOptions.Extended,
@@ -1065,7 +1069,7 @@ internal sealed class Pcre2CharacterParser
         var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
         var semanticClass = new Pcre2CharacterClass(positiveTerms, negated, AsciiCharClass.Empty);
         var ascii = Pcre2AsciiByteSetFactory.CreatePredicate(
-            value => semanticClass.MatchesSemantic(new Rune(value), ucp, caseless: false),
+            value => semanticClass.MatchesSemantic(new Rune(value), ucp, Pcre2CharacterOptions.None),
             negated: false);
         return new Pcre2CharacterClass(positiveTerms, negated, ascii);
     }
@@ -1392,12 +1396,11 @@ internal static class Pcre2CharacterRunner
     {
         var token = program.Tokens[0];
         var ucp = (program.Request.Options & Pcre2CompileOptions.Ucp) != 0;
-        var caseless = (token.Options & Pcre2CharacterOptions.Caseless) != 0;
         var count = 0;
         var index = start.Value;
         while (TryDecode(input, index, out var scalar, out var width))
         {
-            if (token.CharacterClass.Matches(scalar, ucp, caseless))
+            if (token.CharacterClass.Matches(scalar, ucp, token.Options))
             {
                 count++;
             }
@@ -1488,7 +1491,7 @@ internal static class Pcre2CharacterRunner
         {
             case Pcre2CharacterTokenKind.Literal:
                 if (!TryDecode(input, index, out var literalSubject, out var literalWidth) ||
-                    !Pcre2CharacterSemantics.Equals(token.Literal, literalSubject, (token.Options & Pcre2CharacterOptions.Caseless) != 0))
+                    !Pcre2CharacterSemantics.Equals(token.Literal, literalSubject, token.Options))
                 {
                     return false;
                 }
@@ -1501,7 +1504,7 @@ internal static class Pcre2CharacterRunner
                     !token.CharacterClass.Matches(
                         classSubject,
                         (request.Options & Pcre2CompileOptions.Ucp) != 0,
-                        (token.Options & Pcre2CharacterOptions.Caseless) != 0))
+                        token.Options))
                 {
                     return false;
                 }
@@ -1881,14 +1884,16 @@ internal static class Pcre2CharacterSemantics
         _ => Utf8SliceCaseEquivalences.GetEquivalents(value, Utf8ScalarCaseBehavior.Invariant),
     };
 
-    internal static bool Equals(Rune left, Rune right, bool caseless)
+    internal static bool Equals(Rune left, Rune right, Pcre2CharacterOptions options)
     {
         if (left == right)
         {
             return true;
         }
 
-        if (!caseless) return false;
+        if ((options & Pcre2CharacterOptions.Caseless) == 0 ||
+            (options & Pcre2CharacterOptions.RestrictCaseless) != 0 && left.IsAscii != right.IsAscii)
+            return false;
         if (left.IsBmp && right.IsBmp)
             return GetBmpCaseEquivalents((char)left.Value).Contains((char)right.Value);
         return Rune.ToLowerInvariant(left) == Rune.ToLowerInvariant(right) ||
@@ -2028,13 +2033,13 @@ internal static class Pcre2CharacterSemantics
             "DIGIT" => IsDigit(scalar, ucp),
             "GRAPH" => ucp ? IsPosixGraph(scalar, category) : value is >= 0x21 and <= 0x7E,
             "LOWER" => ucp
-                ? MatchesProperty(scalar, "LL", caseless)
+                ? MatchesProperty(scalar, "LL", caseless: false)
                 : Utf8AsciiBytePredicates.IsLetter((byte)value) && (caseless || value is >= 'a' and <= 'z'),
             "PRINT" => ucp ? IsPosixGraph(scalar, category) || category == UnicodeCategory.SpaceSeparator : value is >= 0x20 and <= 0x7E,
             "PUNCT" => ucp ? IsPunctuation(category) || value < 256 && IsSymbol(category) : value is >= 0x21 and <= 0x7E && !Utf8AsciiBytePredicates.IsLetterOrDigit((byte)value),
             "SPACE" => ucp ? MatchesProperty(scalar, "XPS", caseless: false) : IsSpace(scalar, ucp: false),
             "UPPER" => ucp
-                ? MatchesProperty(scalar, "LU", caseless)
+                ? MatchesProperty(scalar, "LU", caseless: false)
                 : Utf8AsciiBytePredicates.IsLetter((byte)value) && (caseless || value is >= 'A' and <= 'Z'),
             "WORD" => IsWord(scalar, ucp),
             "XDIGIT" => scalar.IsAscii && Utf8AsciiBytePredicates.IsHexDigit((byte)value) ||

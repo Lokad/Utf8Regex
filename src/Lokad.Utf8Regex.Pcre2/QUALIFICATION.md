@@ -24,6 +24,39 @@ No confirmation, broad parity, Status or snapshot claim. These are paired public
 costs; do not infer gains from the separate56 current-cost observation or kernel
 timings. Evidence: `artifacts/pcre2-capture-undo-20261016/`.
 
+## Inline r in development source
+
+Inline `r` uses one existing token-option bit throughout the character and
+backtracking parsers, literals, class ranges, references and disjointness proofs.
+It suppresses ASCII/non-ASCII case partners, preserving explicit class members,
+non-ASCII folding, negation and primary scalar byte coordinates. Scoping, `-r`,
+reset and lexical definition settings retain existing parser state. Profile
+options bypass incompatible Core preparation using the existing flag. No public
+option, new owner, comparator mode or per-program flag array is introduced.
+
+Native PCRE2 10.47 comparisons cover541 cases each with and without UCP. All
+native and managed cases admit after the correction and agree on match outcome,
+every capture value/success and byte range. Before, UCP has128 differences and
+non-UCP122, including122 unserved-r admissions. The original451-case prototype
+agreed; expanded witnesses exposed UCP POSIX lower/upper being incorrectly
+broadened by i. That pre-existing branch now uses exact categories; non-UCP
+ASCII caseless behavior and explicit Lu/Ll property behavior remain separate.
+
+All5,637 affected Release checks and217 focused Debug checks pass. Focused
+public cases run finite/unlimited and live-token lanes with both UCP choices;
+they also check empty scalar advancement, quoting/comments, all four structured
+finite denials, retained captures and original alias cancellation/deadline.
+One private expansion had four duplicate case keys and a repeated-hyphen typo;
+its driver/outputs are preserved. Accepted witnesses deduplicate input cases
+ordinally and require exactly one native/managed row; invalid/native-declined
+cases are not counted passing. Evidence: `artifacts/pcre2-inline-r-20261016/`.
+
+No throughput or package/platform campaign follows this source semantic change.
+Immutable55/56 remain unchanged; their earlier inline-r exclusions are historical
+facts. The earlier source comparison's60 unserved witnesses below are likewise
+retained evidence, superseded for current source by this comparison. This does
+not qualify full supplementary/version coverage or other PCRE2 extra options.
+
 ## BMP caseless equivalence correction in development source
 
 Native PCRE2 10.47 probing of the unserved inline `r` option exposed an existing
@@ -55,7 +88,8 @@ and interruption coverage. Evidence: `artifacts/pcre2-caseless-restrict-20261016
 
 This semantic correction has no new performance, platform/package qualification
 or broad Unicode-profile claim. Existing scalar55/56 bytes are unchanged;
-immutable56 retains these defects. Inline r remains an explicit later milestone.
+immutable56 retains these defects. The later inline-r source correction above
+supersedes this comparison's unserved status without rewriting its evidence.
 
 ## Capture-return correction in development source
 

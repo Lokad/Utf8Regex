@@ -1036,7 +1036,7 @@ internal static class Pcre2BacktrackingRunner
                                 captureStarts[captureSlot],
                                 captureEnds[captureSlot],
                                 inputIndex,
-                                (instruction.BackreferenceOptions & Pcre2CharacterOptions.Caseless) != 0,
+                                instruction.BackreferenceOptions,
                                 out inputIndex))
                         {
                             instructionIndex++;
@@ -1061,7 +1061,7 @@ internal static class Pcre2BacktrackingRunner
                                 captureStarts[selectedSlot],
                                 captureEnds[selectedSlot],
                                 inputIndex,
-                                (instruction.BackreferenceOptions & Pcre2CharacterOptions.Caseless) != 0,
+                                instruction.BackreferenceOptions,
                                 out inputIndex))
                         {
                             instructionIndex++;
@@ -2327,11 +2327,11 @@ internal static class Pcre2BacktrackingRunner
         int captureStart,
         int captureEnd,
         int subjectStart,
-        bool caseless,
+        Pcre2CharacterOptions options,
         out int subjectEnd)
     {
         var capture = input[captureStart..captureEnd];
-        if (!caseless)
+        if ((options & Pcre2CharacterOptions.Caseless) == 0)
         {
             if (subjectStart <= input.Length - capture.Length &&
                 input.Slice(subjectStart, capture.Length).SequenceEqual(capture))
@@ -2351,7 +2351,7 @@ internal static class Pcre2BacktrackingRunner
             if (subjectIndex >= input.Length ||
                 Rune.DecodeFromUtf8(input[captureIndex..captureEnd], out var capturedRune, out var capturedWidth) != OperationStatus.Done ||
                 Rune.DecodeFromUtf8(input[subjectIndex..], out var subjectRune, out var subjectWidth) != OperationStatus.Done ||
-                !Pcre2CharacterSemantics.Equals(capturedRune, subjectRune, true))
+                !Pcre2CharacterSemantics.Equals(capturedRune, subjectRune, options))
             {
                 subjectEnd = subjectStart;
                 return false;

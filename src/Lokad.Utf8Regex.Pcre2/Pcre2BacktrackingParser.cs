@@ -1507,7 +1507,7 @@ internal sealed class Pcre2BacktrackingParser
         return false;
     }
 
-    private static bool TryApplyOption(
+    private bool TryApplyOption(
         ref Pcre2CharacterOptions options,
         ref bool ungreedy,
         ref bool noAutoCapture,
@@ -1519,6 +1519,10 @@ internal sealed class Pcre2BacktrackingParser
         {
             case 'i':
                 flag = Pcre2CharacterOptions.Caseless;
+                break;
+            case 'r':
+                flag = Pcre2CharacterOptions.RestrictCaseless;
+                RequiresProfileOptions = true;
                 break;
             case 'm':
                 flag = Pcre2CharacterOptions.Multiline;

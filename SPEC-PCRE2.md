@@ -583,7 +583,19 @@ set; folding neither normalizes text nor expands one scalar into multiple scalar
 Dotted/dotless I are distinct in the default profile. Current development pins
 BMP fold equivalence to Unicode 16 using shared owned data and PCRE2-specific
 partners. Supplementary casing still uses its existing Rune route; full
-supplementary/version qualification and inline r restrictions remain separate.
+supplementary/version qualification remains separate.
+
+Inline `r` restricts caseless matching across the ASCII/non-ASCII boundary.
+`(?ir)k` matches `K` but not Kelvin sign; `(?ir)[kK]` still includes both
+explicit members. Non-ASCII pairs such as é/É and supplementary scalar pairs
+retain ordinary folding. The setting can be scoped or disabled with `-r`,
+is cleared by `(?^)`, and is captured lexically by subroutine definitions.
+References use the setting at the reference site. It has no folding effect when
+i is off. No new public compile option or execution mode is introduced.
+
+POSIX lower/upper with UCP retain their respective Unicode categories under
+caseless options; without UCP they keep ASCII caseless behavior. This differs
+from the caseless handling of explicit Unicode Lu/Ll property escapes.
 
 A subroutine or recursive call restores the caller's capture state when it
 returns, including previously unset captures. Captures set only in the callee

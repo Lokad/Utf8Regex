@@ -128,7 +128,7 @@ internal static class Pcre2SeparatedRunsIsMatchAnalyzer
         {
             return right.Kind == Pcre2CharacterTokenKind.Literal
                 ? left.Literal == right.Literal
-                : right.CharacterClass.Matches(left.Literal, ucp: false, caseless: false);
+                : right.CharacterClass.Matches(left.Literal, ucp: false, Pcre2CharacterOptions.None);
         }
 
         if (left.Kind != Pcre2CharacterTokenKind.CharacterClass ||

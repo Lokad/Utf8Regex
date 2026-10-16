@@ -2010,7 +2010,7 @@ internal static class Pcre2CandidateSearchAnalyzer
         Pcre2CharacterTokenKind.CharacterClass => token.CharacterClass.Matches(
             value,
             (request.Options & Pcre2CompileOptions.Ucp) != 0,
-            caseless: false),
+            Pcre2CharacterOptions.None),
         _ => false,
     };
 
