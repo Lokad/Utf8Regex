@@ -25,8 +25,8 @@ and paired medians -3.26..+2.28%; large tails/pool variation stay explicit.
 This is neither broad equivalence nor an all-row same-snapshot Core package run.
 No further timing campaign follows this batch.
 
-Lython's unmodified member gate still rejects Core solely for SizeOf. Producer
-qualification does not settle that consumer contract. No publication, consumer
+The user confirmed on 2026-10-16 that Lython accepts SizeOf. This resolves the
+former member-gate disagreement; actual unchecked accesses remain excluded. No publication, consumer
 pin/default/promotion or host containment is implied. The independent PCRE2
 boundary does not alter Core/PythonRe52 acceptance.
 
@@ -43,7 +43,8 @@ BCL matcher/result dependencies. Exact original detached Windows/Linux checks,
 identities and current package costs are in the
 [scalar.60 handoff](artifacts/core-python-scalar60-20261016/HANDOFF.md).
 This new operating-cost observation does not replace scalar.52's fixed-original
-conversion gate or settle Lython's unmodified SizeOf rejection.
+conversion gate. Lython's former SizeOf rejection was separately resolved by
+the user's 2026-10-16 acceptance confirmation.
 
 ## Acceptance rule and chronological evidence
 
@@ -183,9 +184,9 @@ proofs. Keep remaining loads while their conversions lack acceptable evidence;
 revisit demonstrated defects or concrete source/JIT changes.
 
 There are no retained unchecked Core reads. Earlier failed prototypes below are
-historical, not the current implementation. Lython's stricter SizeOf rejection
-still fails its gate; the producer's allowed-member gate passes. Neither result
-substitutes for cumulative cost or package qualification. The current delivery
+historical, not the current implementation. Lython now accepts SizeOf, per the
+user's 2026-10-16 confirmation. Historical receipts below retain the former gate
+state; neither acceptance nor inventory substitutes for cumulative costs or package qualification. The current delivery
 above records those gates; historical receipts below keep their original scope.
 
 The two former PCRE2 `Unsafe.NullRef` sites denoted the inactive arm of a

@@ -62,21 +62,16 @@ snapshots stay valid; they do not make a failed bulk operation successful or
 authorize silently truncated output. Reusing an expression for another call does
 not extend the previous invocation's allowance.
 
-The producer keeps `Unsafe.SizeOf<T>()` as an accepted managed-size primitive;
-Lython's stricter Core DLL API gate still rejects the current artifact. Complete
-construction/lazy/default/live-retention policies and actual consumer ownership
-integration remain open. This recipe is a conditional composition of already
-qualified scope, with no consumer adoption, new shared engine meter or package
-designation implied.
-
-The proposed consumer reconciliation is an explicit member exception for
-`System.Runtime.CompilerServices.Unsafe.SizeOf<T>()` only. It queries a managed
+`System.Runtime.CompilerServices.Unsafe.SizeOf<T>()` is accepted by both the
+producer and Lython, as confirmed by the user on 2026-10-16. It queries a managed
 type's size and performs no unchecked read, pointer arithmetic or reference
-reinterpretation. Keep rejecting the other Unsafe members and SIMD LoadUnsafe;
-do not replace SizeOf with manual estimates. This is a producer proposal, not
-downstream agreement: the unmodified strict gate still fails. Scalar.52 has passed
-private producer package/platform qualification and the selected cumulative cost
-gate; neither grants consumer acceptance or completes host containment.
+reinterpretation. Keep excluding actual unchecked APIs, including other Unsafe
+members and SIMD LoadUnsafe; do not replace SizeOf with manual estimates.
+
+This resolves the former SizeOf acceptance disagreement. It does not establish
+consumer adoption or complete construction/lazy/default/live-retention policies
+and host ownership integration. This recipe composes already qualified scope;
+it introduces no shared engine meter or new package designation.
 
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.
