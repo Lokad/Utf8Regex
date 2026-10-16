@@ -99,12 +99,15 @@ internal static partial class Utf8SearchExecutor
                     var literal = literals[id];
                     var candidate = reverse && confirm ? candidateByte + 1 - literal.Length : candidateByte;
                     if (candidate < start || candidate > end - literal.Length) continue;
+                    // The branch charge covers this rejection; a different
+                    // first byte needs no bounded full-literal comparison.
+                    if (!folded && input[candidate] != literal[0]) continue;
                     breach = TryCompareLiteral(input.Slice(candidate, literal.Length), literal, folded,
                         ref invocation, out var equal);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!equal) continue;
                     var accepted = true;
-                    if (confirm)
+                    if (confirm && (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
                         breach = TryConfirmLiteral(plan, input, candidate, literal.Length,
                             ref invocation, out accepted);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;

@@ -249,6 +249,12 @@ reducing charged work while retaining per-block/comparison metering, diagnostic
 candidates and a terminal interruption check before publication. Other shapes
 keep the existing counter. This is a route-specific work change, not a CPU-time
 equivalence guarantee.
+Family verification rejects exact branches with a different first byte under
+their existing branch charge, and invokes confirmation only when a boundary or
+trailing predicate exists. Full comparisons remain bounded and charged, including
+same-first-byte false candidates; accepted and terminal interruption checks remain.
+Removed operations can lower required work. Ordinal priority, reverse end priority,
+original-subject predicates and scalar coordinates are unchanged.
 Scalar.4 filters LTR scalar-VM searches only when their initial
 instruction is a mandatory beginning anchor. Absolute origin or LF line starts
 are candidates; checked scans cover at most 2048 bytes per invocation checkpoint.

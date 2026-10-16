@@ -123,6 +123,39 @@ public sealed class Utf8NativeFamilyInvocationTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LongBranchesWithDifferentFirstBytesStillVerifyWholeCandidateInBothDirections(bool reverse)
+    {
+        var tail = new string('a', 8193) + "z";
+        var hit = "b" + tail;
+        var falseHit = "b" + new string('a', 4096) + "c" + new string('a', 4096) + "z";
+        var plan = Plan([Encoding.UTF8.GetBytes("x" + tail), Encoding.UTF8.GetBytes("y" + tail), Encoding.UTF8.GetBytes(hit)]);
+        var text = "é😀" + hit + " " + falseHit + " " + hit;
+        var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+        var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        var low = 0;
+        var high = input.Length;
+        for (var ordinal = 0; ordinal < 2; ordinal++)
+        {
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, low, high,
+                reverse, ref invocation, out var match, out var found));
+            Assert.True(found);
+            Assert.Equal(reverse == (ordinal == 0) ? input.Length - hit.Length : 6, match.Index);
+            Assert.Equal(hit.Length, match.Length);
+            Assert.Equal(2, match.LiteralId);
+            if (reverse) high = match.Index;
+            else low = match.Index + match.Length;
+        }
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, low, high,
+            reverse, ref invocation, out _, out var terminal));
+        Assert.False(terminal);
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]

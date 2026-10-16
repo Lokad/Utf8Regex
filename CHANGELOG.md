@@ -1,5 +1,17 @@
 # Changelog
 
+## Remove redundant metered family verification
+
+- Reject exact branches with a different first byte and skip absent boundary/
+  trailing confirmation in the existing finder. Keep bounded comparisons, branch
+  priority, scalar offsets, original interruption and cumulative resource limits.
+  Removed operations can admit tighter work budgets; allocations are unchanged.
+- One bounded public Count pair observes 24–26% lower dense/false-candidate finite
+  costs, 12–13% lower supplementary-family costs and about 5% lower shared-prefix
+  costs. Unchanged single-literal finite controls rise 3–4%, limiting attribution.
+  Dense finite cost remains about 5.5 times unlimited. No broad parity or new
+  package claim; immutable scalar.62 stays unchanged.
+
 ## Pin supplementary Core simple casing
 
 - Replace five runtime casing calls with the owned Unicode 16 supplementary case
