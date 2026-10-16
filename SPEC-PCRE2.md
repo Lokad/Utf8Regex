@@ -93,7 +93,12 @@ Quoted, class, comment and control-verb-label text retains its lexical meaning.
 
 ### 2. Core design rules
 
-Semantics are chosen by **type**, not by a runtime mode flag. `Utf8Regex` remains the `.NET` profile. `Utf8Pcre2Regex` is the PCRE2 profile. Shared implementation is allowed below the public surface, but semantic front-ends, option models, detailed result models, and replacement grammars remain flavor-specific. ([Microsoft Learn][1])
+Semantics are chosen by **type**, not by a runtime mode flag. `Utf8Regex` supplies
+the core strict UTF-8 Unicode-scalar contract. `Utf8Pcre2Regex` supplies the
+selected PCRE2 profile. Shared implementation is allowed below the public
+surface, while grammars, option models, capture results and replacement rules
+retain their profile-specific contracts. .NET code-unit behavior is an
+overlapping comparator, not the core matching contract.
 
 For PCRE2, the detailed public result model must be **numeric-slot-first**, with explicit access to the **name table**. Singular by-name lookup may exist only as a convenience and must be clearly documented as “first set group for that name,” not as the primary truth. This follows PCRE2’s own behavior: with duplicate names, `pcre2_substring_number_from_name()` can report “not unique,” while the convenience by-name extractors scan the groups for that name and return the first one that is set. ([PCRE][3])
 
@@ -224,6 +229,7 @@ public readonly struct Utf8Pcre2ExecutionLimits
     public uint MatchLimit { get; init; }
     public uint DepthLimit { get; init; }
     public ulong HeapLimitInBytes { get; init; }
+    public ulong ResultLimitInBytes { get; init; }
 }
 
 public sealed class Utf8Pcre2Regex
