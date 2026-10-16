@@ -1,5 +1,16 @@
 # Changelog
 
+## Bounded .NET 11 comparator evidence
+
+- Record four public Count workloads using identical Core59 bytes on .NET10
+  and .NET11, with ordinary/compiled/generated/NonBacktracking BCL controls and
+  all four finite Core limits. Fresh SDK11 generation is compared separately
+  from the SDK10 binary hosted on runtime11; counts and byte-range digests agree.
+- Preserve the dated source fixture, raw samples, exact runtime/generator
+  identities and outliers. No demonstrated fresh-generator Count gain or
+  universal runtime speedup is claimed. The measured controlled fixed-width gap
+  becomes the next operating-cost investigation; shipped targets stay net10.0.
+
 ## PCRE2 source development after scalar.59
 
 - Reuse necessary ASCII leading sets, including nonempty singleton sets, to

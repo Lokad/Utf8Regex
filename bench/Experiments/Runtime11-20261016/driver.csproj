@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <UseAppHost>false</UseAppHost><GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)$(Configuration)/$(TargetFramework)/generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Lokad.Utf8Regex"><HintPath>../product/Lokad.Utf8Regex.dll</HintPath></Reference>
+    <AssemblyMetadata Include="SdkVersion" Value="$(NETCoreSdkVersion)" />
+    <AssemblyMetadata Include="GeneratorSha256" Value="$(GeneratorSha256)" />
+  </ItemGroup>
+</Project>

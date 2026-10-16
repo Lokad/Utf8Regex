@@ -13,6 +13,11 @@ complete host/resource/profile acceptance is implied.
 
 Use a qualified candidate's exact version and immutable feed/manifest for reproducible integration. [qualify-scalar-candidate.ps1](qualify-scalar-candidate.ps1) builds and packs core/PythonRe once, checks provenance, runs detached consumers and records package hashes; it does not publish to NuGet.org. PCRE2 is qualified independently with [test-packaged-pcre2.ps1](test-packaged-pcre2.ps1). Existing benchmark snapshots describe their recorded implementations; historical measurements do not qualify the current engine's performance.
 
+The dated [.NET 10 / .NET 11 comparison](RUNTIME-COMPARISON.md) records four
+current Count workloads with fresh SDK-specific generated comparators, finite
+limits, decode/predecoded controls and raw samples. It identifies substantial
+controlled fixed-width costs without claiming a universal runtime speedup.
+
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
 proposals. Core costs combine source comparisons and focused final follow-ups;
