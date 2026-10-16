@@ -86,6 +86,9 @@ construction with `Pcre2CompileException` / `InvalidAfterParensQuery`; a setting
 appearing on both sides of the single hyphen is disabled. Empty `(?)` is a valid
 no-op, including before captures, and contributes neither an atom nor a slot.
 Quoted, class, comment and control-verb-label text retains its lexical meaning.
+The empty single-hyphen forms `(?-)` and `(?-:...)` likewise leave inherited
+options unchanged. They preserve PCRE2 declaration-order capture slots and
+numeric-reference meaning when named and unnamed groups are mixed.
 
 `(?(DEFINE)...)` is also an option scope. Its definitions retain their lexical
 case, line, dot, extended, greediness and capture settings for subroutine calls;

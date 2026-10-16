@@ -2,6 +2,9 @@
 
 ## Development after scalar.55
 
+- Keep empty single-hyphen PCRE2 directives in the profile parser, preserving
+  declaration-order captures and numeric references across mixed named/unnamed
+  groups. Retain inherited flags, finite invocation controls and scalar results.
 - Restore inherited PCRE2 options after `DEFINE` groups. Keep definition-local
   settings for subroutine bodies, declaration-order capture slots and outer
   backreference case sensitivity. Existing invocation authority and scalar

@@ -90,6 +90,8 @@ The same source batch rejects a repeated hyphen in inline option directives
 with `InvalidAfterParensQuery` and accepts the valid empty `(?)` no-op before
 captures. Single-hyphen enable/disable precedence and literal/comment text keep
 their existing meanings; empty-match iteration still advances by complete scalars.
+The empty single-hyphen forms `(?-)` and `(?-:...)` also retain inherited flags,
+PCRE2 capture declaration order and numeric-reference semantics.
 
 `DEFINE` groups likewise restore inherited options on exit. Definition-local
 settings still govern their subroutine bodies; they cannot change the case,

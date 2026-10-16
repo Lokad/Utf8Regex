@@ -1372,6 +1372,7 @@ internal sealed class Pcre2BacktrackingParser
                     throw new Pcre2CompileException("Only one hyphen is allowed in an option directive.",
                         Pcre2ErrorKind.InvalidAfterParensQuery);
                 enabling = false;
+                sawOption = true;
                 cursor++;
                 continue;
             }
@@ -1449,6 +1450,7 @@ internal sealed class Pcre2BacktrackingParser
                     throw new Pcre2CompileException("Only one hyphen is allowed in an option directive.",
                         Pcre2ErrorKind.InvalidAfterParensQuery);
                 enabling = false;
+                sawOption = true;
                 cursor++;
                 continue;
             }
