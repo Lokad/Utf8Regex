@@ -443,6 +443,9 @@ internal static class Utf8FrontEndSearchAnalyzer
                    searchKind,
                    new Utf8SearchFactData
                    {
+                       // This is the complete leading literal, not an interior anchor.
+                       CanGuideFallbackStarts = literalUtf8.Length > 0 &&
+                           executionKind != NativeExecutionKind.AsciiLiteralIgnoreCase,
                        LiteralUtf8 = literalUtf8,
                         TrailingLiteralUtf8 = trailingLiteralUtf8,
                        LeadingBoundary = leadingBoundary,

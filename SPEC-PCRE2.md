@@ -679,6 +679,13 @@ Count publishes no owned result payload. Eliminating capture state can admit
 smaller working/depth/work allowances than the former VM route; units and acquired
 capacity are algorithm-dependent, not exact native-PCRE2 counter equivalence.
 
+When the admitted search fact proves a leading single literal, the scalar counter
+can seek its next occurrence through the existing bounded metered search before
+VM verification. Interior anchors, empty, RTL, folding and unproved start plans
+do not acquire this eligibility. The original invocation still owns validation,
+seeking, verification and publication; skipped impossible starts can reduce work
+requirements. Literal-family seeking remains on its prior eligibility rules.
+
 
 Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 

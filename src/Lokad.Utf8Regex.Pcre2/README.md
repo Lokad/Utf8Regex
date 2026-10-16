@@ -30,6 +30,14 @@ admit tighter caps; detailed captures and fallback cases retain their contract.
 [Qualification](QUALIFICATION.md) records the unchanged control's noisy tails,
 resource/semantic checks and remaining overhead.
 
+A subsequent source change enables existing metered prefix seeking for proved
+leading single literals. One bounded public pair improves selected finite dense
+captured/reference/Unicode Count27–29%; 64KiB sparse cases fall from about5ms to4us,
+with unchanged allocations and original resource/interruption authority. A
+literal-family variant regresses dense overlap57–59% and is restored. These
+source results do not change immutable57 or its qualification scope; see
+[qualification](QUALIFICATION.md) for controls, floors and remaining costs.
+
 The earlier qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
 `5ad447f5`, containing the completed option-scope/admission/capture-order batch.
 Both original detached Windows/Linux runs pass against identical package bytes,

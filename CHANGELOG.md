@@ -2,6 +2,12 @@
 
 ## Development after scalar.57
 
+- Mark proved leading single literals as eligible for the existing metered
+  scalar Count seek. Selected finite captured/reference/Unicode dense costs fall
+  27–29%; a 64 KiB sparse Count falls from about 5 ms to 4 us in one bounded pair.
+  Preserve allocations, VM verification and original interruption/resource
+  authority. Literal-family seeking is deferred after a 57–59% dense-overlap
+  regression; no new package or broad performance claim.
 - Count proved non-empty literal languages with the owned scalar program/search
   plan under the original finite invocation. Reuse one scratch scope, preserving
   basic metering, cancellation, deadlines, structured denials and fallback cases.

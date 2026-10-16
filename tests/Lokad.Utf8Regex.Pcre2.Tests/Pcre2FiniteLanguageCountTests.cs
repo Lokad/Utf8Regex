@@ -146,6 +146,65 @@ public sealed class Pcre2FiniteLanguageCountTests
         Assert.Equal(1, regex.Count("ab"u8));
     }
 
+    [Theory]
+    [InlineData("(a)(b)", "ab")]
+    [InlineData(@"(a)\1", "aa")]
+    [InlineData("(?<x>😀)(é)", "😀é")]
+    [InlineData(@"(?<x>a)\Kb", "ab")]
+    public void SparseFiniteCountsKeepBoundedSeekingAndScalarOffsets(string pattern, string hit)
+    {
+        var regex = Create(pattern, new() { MatchLimit = 1000, DepthLimit = 256,
+            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(new string('x', 65536))));
+        foreach (var prefix in new[] { 2047, 2048, 2049 })
+        {
+            var text = "😀" + new string('x', prefix) + hit + new string('x', 2048) + hit;
+            var input = Encoding.UTF8.GetBytes("pad" + text + "pad");
+            var length = Encoding.UTF8.GetByteCount(text);
+            Assert.Equal(2, regex.Count(input.AsSpan(3, length)));
+            Assert.Equal(2, regex.Count(input.AsSpan(3, length), 4,
+                Pcre2MatchOptions.None, token.Token));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void SparseSeekingChecksTheOriginalAuthorityAfterValidation(bool cancel)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var token = new CancellationTokenSource();
+        var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
+            new() { MatchLimit = 1000000, HeapLimitInBytes = 1 << 20 },
+            TimeSpan.FromMilliseconds(20));
+        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 192 * 1024));
+        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes,
+            ref invocation, out var input));
+        var validatedSteps = invocation.Budget.Steps;
+        int checkpoints = 0;
+        invocation.CheckpointHook = _ =>
+        {
+            checkpoints++;
+            if (cancel) token.Cancel(); else ticks = 25;
+        };
+        Exception? failure = null;
+        try
+        {
+            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+                new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
+        }
+        catch (Exception error) { failure = error; }
+        Assert.True(checkpoints > 0 && invocation.Budget.Steps > validatedSteps);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        if (cancel)
+            Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        else
+            // This direct driver probe is below the public timeout translation.
+            Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+    }
+
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits limits) =>
         new(pattern, Pcre2CompileOptions.None, default, limits, Timeout.InfiniteTimeSpan);
 }

@@ -2,12 +2,50 @@
 
 ## Source development after scalar.57
 
+The subsequent single-literal prefix change sets the existing guide flag only
+where Core's literal producer proves the literal begins at the match position.
+It reuses the bounded metered candidate search and VM verification, retaining
+the original invocation and no extra state/owner/mode. Actual work can decrease;
+structured denials, cancellation/deadlines and scratch release remain enforced.
+
+One quiet-VM CPU2 public Count pair against frozen ac338 source binaries uses
+.NET10.0.12 FullOpts/ReadyToRun off, nine alternating samples, all four finite
+controls and live token. Dense captured/reference/Unicode finite costs fall
+27–29%, near-miss73–74%;64KiB sparse hit/miss costs about5ms->4us. Allocations are
+unchanged. Affected unlimited medians move-1.6..+1.5%; unchanged unbounded control
+moves+0.8..+1.7%. Dense overlapping literal families regress57–59%, with3–4%
+spreads: their producer flags are restored and the single-literal flag alone is
+retained. No confirmation, second tuning round or new selector follows.
+
+The pair contains504 samples;27 are below50ms, minimum38.85ms. Raw floors and
+tails remain explicit; no broad equivalence/Status claim is made. The retained
+single-literal routes use the same measured fact and counter body after the
+independent family flags are restored. The final whole DLL is not claimed
+identical to the measured combined prototype. Before/after FullOpts scalar Count
+bodies are1858B and address-normalized identical. Native global counts/live-token
+counts and all enumerated whole-match byte ranges agree on134 cases per revision,
+including final source. New sparse tests cover borrowed offsets/chunk edges and
+interruption injected after validation under the original allowance. The first
+direct-driver timeout assertion expected the public exception wrapper; the
+corrected test asserts its internal exception below that wrapper, while existing
+public tests retain the structured timeout assertion.
+
+Final source passes Core Release39,019/PCRE2 Release5,662 and focused
+Core Debug426/PCRE2 Debug77. No package/platform matrix is repeated here.
+
+Evidence: `artifacts/pcre2-finite-prefix-20261016/` preserves predeclaration,
+combined/final sources, frozen binaries, native outcomes, raw samples, codegen
+and original failed private-probe/test logs. Immutable55/57 remain unchanged.
+Core source now changes only the single-literal fact; the earlier source change
+and its distinct scalar57 comparison are recorded below.
+
 Controlled Count for an existing proved non-empty literal language now uses the
 owned scalar program and search plan under the original invocation. It retains
 one scratch scope across the whole count and avoids capture/VM state that Count
 cannot observe. The unmetered prepared path is unchanged; no new budget, public
 option, owner, engine or Core hook is introduced. Empty/RTL programs and non-None
-match options keep their fallback. Core source and immutable55/57 bytes stay fixed.
+match options keep their fallback. That change leaves Core source fixed;
+immutable55/57 bytes stay fixed throughout both source experiments.
 Work units/state needs can decrease: a constant literal count can fit a1B working
 cap without acquiring a major payload, while detailed capture matching still
 denies it. Alternative frames and unproved-depth cases keep real finite denials.
