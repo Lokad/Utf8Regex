@@ -280,7 +280,8 @@ public sealed class Pcre2InvocationWorkspaceTests
     }
 
     [Theory]
-    [InlineData("(a)\\1", "aa", 128)]
+    // Linear captures omit unused undo storage; the fixed vector still includes its header.
+    [InlineData("(a)\\1", "aa", 80)]
     [InlineData("(*MARK:tag)(a+)\\1", "aa", 512)]
     public void PublicVmHeapLimitIncludesPhysicalHeadersAndAllFixedVectors(string pattern, string subject, ulong limit)
     {

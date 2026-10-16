@@ -1,5 +1,16 @@
 # Changelog
 
+## Development after scalar.56
+
+- Skip capture undo records when no live frame/call can restore old values.
+  Keep capture state, instruction metering, finite admission and cursor lifetimes.
+  A bounded public pair reduces selected finite reference Count time17–20% and
+  allocated bytes about82%; DEFINE is5–6% slower with unchanged allocations.
+  Preserve raw floors/noisy tails; no package or broad equivalence claim.
+- Record a pre-existing recursive-definition capture-return gap against native
+  PCRE2: a previously unset definition slot can remain set. Both scalar.56 and
+  current source reproduce it; preserve the witness for a separate semantic fix.
+
 ## Private scalar.56 Core/PCRE2 candidate
 
 - Qualify immutable Core/PCRE2 input0.4.0-scalar.56, producer5ad447f5, for the

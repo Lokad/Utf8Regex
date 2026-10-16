@@ -20,6 +20,20 @@ finite captured/reference Count retains substantial overhead and basic metering.
 Core/PythonRe55 stays the qualified primary pair; earlier bytes remain unchanged.
 No PythonRe56, publication, consumer pin/default change or adoption is implied.
 
+Development after scalar.56 avoids recording old capture values when no live
+backtracking frame or subroutine call can restore them. Capture state and
+instruction metering remain; actual storage/work reductions let some operations
+fit smaller finite allowances. The cross-invocation pool and cursor lifetime
+contracts are unchanged. A bounded public comparison reduces selected finite
+reference Count costs17–20% and allocations about82%; DEFINE Count is5–6% slower
+with unchanged allocations. This source improvement is outside immutable56.
+
+Scalar.56 and current source have a known recursive-capture gap: after a named
+call to a recursive definition, a previously unset definition capture can remain
+set, while native PCRE2 leaves it unset. The surrounding match/capture can agree
+while that slot differs. [Qualification](QUALIFICATION.md) records the witness;
+correcting it is required before claiming those recursive capture results.
+
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and
 Linux checks after a documented fixture-location recovery. It includes the

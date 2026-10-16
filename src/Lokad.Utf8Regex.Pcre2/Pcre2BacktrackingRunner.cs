@@ -991,7 +991,8 @@ internal static class Pcre2BacktrackingRunner
                             captureOwners,
                             captureOpenOwners,
                             ref captureMutations,
-                            ref budget);
+                            ref budget,
+                            recordRollback: frames.Count != 0 || subroutineCalls.Count != 0);
                         instructionIndex++;
                         continue;
 
@@ -1023,7 +1024,8 @@ internal static class Pcre2BacktrackingRunner
                             captureOwners,
                             captureOpenOwners,
                             ref captureMutations,
-                            ref budget);
+                            ref budget,
+                            recordRollback: frames.Count != 0 || subroutineCalls.Count != 0);
                         instructionIndex++;
                         continue;
 
@@ -1778,7 +1780,7 @@ internal static class Pcre2BacktrackingRunner
                 captureOwners,
                 captureOpenOwners,
                 ref captureMutations,
-                ref budget);
+                ref budget, recordRollback: true);
         }
     }
 
@@ -1842,7 +1844,7 @@ internal static class Pcre2BacktrackingRunner
                 captureOwners,
                 captureOpenOwners,
                 ref captureMutations,
-                ref budget);
+                ref budget, recordRollback: true);
         }
     }
 
@@ -2134,7 +2136,7 @@ internal static class Pcre2BacktrackingRunner
                 captureOwners,
                 captureOpenOwners,
                 ref captureMutations,
-                ref budget);
+                ref budget, recordRollback: true);
             if (call.PreserveUnsetCaptures &&
                 snapshot.Start < 0 && snapshot.OpenStart < 0 &&
                 finalStart >= 0 && finalEnd >= finalStart)
@@ -2152,7 +2154,7 @@ internal static class Pcre2BacktrackingRunner
                     captureOwners,
                     captureOpenOwners,
                     ref captureMutations,
-                    ref budget);
+                    ref budget, recordRollback: true);
             }
         }
     }
@@ -2302,9 +2304,12 @@ internal static class Pcre2BacktrackingRunner
         Span<int> owners,
         Span<int> openOwners,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations,
-        ref Pcre2ResourceBudget budget)
+        ref Pcre2ResourceBudget budget,
+        bool recordRollback)
     {
-        if (!mutations.TryPush(new Pcre2CaptureMutation(
+        // Future frames checkpoint the current capture values. Only existing
+        // backtracking frames or subroutine returns need an earlier value.
+        if (recordRollback && !mutations.TryPush(new Pcre2CaptureMutation(
                 slot,
                 starts[slot],
                 ends[slot],

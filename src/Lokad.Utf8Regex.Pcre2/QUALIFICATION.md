@@ -1,5 +1,41 @@
 # Managed PCRE2 profile qualification
 
+## Source development after scalar.56
+
+CaptureStart/End omit undo records only when both live backtracking and subroutine
+call stacks are empty. Actual captures and per-instruction work remain; merge and
+return helpers retain mandatory logging. There is no new state, owner, pool policy
+or public switch. Some calls fit smaller finite allowances because unused undo
+storage/work is absent. A physical-header denial fixture now uses a smaller
+allowance to exercise the remaining fixed vector; resource admission is preserved.
+All5,537 Release checks and focused101 Debug pass. No package matrix or new
+candidate follows this small source change; immutable56 stays unchanged.
+
+One bounded public Count comparison against exact56 uses the existing nine-sample
+alternating ALC protocol, quiet VM CPU2, Release FullOpts/.NET10.0.12, all four
+finite controls and live-token lanes. Selected ASCII/Unicode linear-reference
+finite lanes improve17–20%, allocations about992KB to176KB per1000-match call.
+Branch finite lanes improve4–6%, allocations3.34MB to2.93MB. DEFINE finite lanes
+are5–6% slower with unchanged4.43MB allocation; unlimited lanes change-0.74..+0.68%.
+Unchanged captured-Count controls change+0.26..+1.43%, with unchanged allocations.
+Raw samples/control tails remain explicit: nine before/linear/finite samples are
+42–44ms (below the50ms target); worst spread88.6% is an unchanged unlimited control.
+No confirmation, broad parity, Status or snapshot claim. These are paired public
+costs; do not infer gains from the separate56 current-cost observation or kernel
+timings. Evidence: `artifacts/pcre2-capture-undo-20261016/`.
+
+## Known recursive capture gap
+
+The native capture-aware source comparison also exposes a pre-existing scalar.56
+gap. For `(?(DEFINE)(?<x>a(?&x)?b))(?<w>(?&x))\k<w>` on `abab` or `aabbaabb`,
+native PCRE2 10.47 leaves group1 (`x`) unset after the call; scalar.56 and current
+source retain `ab` or `aabb`. The full match and group2 (`w`) agree. This requires
+a separate semantic correction before claiming those recursive capture results;
+it does not change the completed, narrower option-batch qualification below.
+The130-pair before/after capture comparison preserves every managed outcome;
+128 agree with native, two retain this existing gap. Original native mismatch
+and baseline replay are retained, not classified as passes or removed.
+
 ## Private scalar.56 option-batch candidate (2026-10-16)
 
 Immutable Core/PCRE2 **0.4.0-scalar.56**, producer
