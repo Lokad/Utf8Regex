@@ -36,6 +36,14 @@ scalar captures. Immutable scalar.56 retains the previously disclosed capture
 return defect; this source correction requires a later package boundary.
 [Qualification](QUALIFICATION.md) records the evidence and scope.
 
+Development also corrects BMP caseless classes such as `(?i)[K]` against `K/k`
+and `(?i)[ſ]` against `S/s`. Classes, literals and references share complete
+Unicode16 default simple-fold equivalence using existing owned data plus PCRE2
+partners. Negation, scalar byte coordinates and finite admission remain; no
+normalization or multi-scalar expansion is added. Inline `r` remains unserved,
+and supplementary casing retains separate qualification. These corrections are
+outside immutable56; [qualification](QUALIFICATION.md) records their scope.
+
 The private Core/PCRE2 candidate **0.4.0-scalar.53** is qualified from immutable
 producer `aba3e050`: identical package bytes pass detached Windows checks and
 Linux checks after a documented fixture-location recovery. It includes the

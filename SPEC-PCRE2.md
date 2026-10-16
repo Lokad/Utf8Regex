@@ -576,6 +576,15 @@ Those defaults are deliberate. PCRE2 allows duplicate names only when requested,
 
 The detailed PCRE2 group model exposes **only the final value of each capture slot**. There is no `.NET`-style `CaptureCount` / `GetCapture(i)` surface on PCRE2 detailed results. This is intentional and must not be approximated, because `.NET` exposes full capture history for repeated captures while PCRE2 standard matching returns only the last portion matched by a repeated group. ([Microsoft Learn][1])
 
+Caseless literals, class ranges and references use default simple-fold scalar
+equivalence: all partners are symmetric, including Kelvin sign, long S, Greek
+symbol variants and titlecase partners. A class negates the complete positive
+set; folding neither normalizes text nor expands one scalar into multiple scalars.
+Dotted/dotless I are distinct in the default profile. Current development pins
+BMP fold equivalence to Unicode 16 using shared owned data and PCRE2-specific
+partners. Supplementary casing still uses its existing Rune route; full
+supplementary/version qualification and inline r restrictions remain separate.
+
 A subroutine or recursive call restores the caller's capture state when it
 returns, including previously unset captures. Captures set only in the callee
 are not published as caller captures. Previously set caller values and their

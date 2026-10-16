@@ -61,7 +61,8 @@ internal sealed class Pcre2BacktrackingParser
 
     internal bool TryParse(out IPcre2BacktrackingNode root)
     {
-        if (!TryParseAlternation(false, out root) || _offset != _pattern.Length || !_sawControlFlow)
+        if (!TryParseAlternation(false, out root) || _offset != _pattern.Length ||
+            (!_sawControlFlow && !RequiresProfileOptions))
         {
             root = Pcre2EmptyBacktrackingNode.Instance;
             return false;

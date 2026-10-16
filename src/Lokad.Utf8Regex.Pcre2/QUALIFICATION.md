@@ -24,6 +24,39 @@ No confirmation, broad parity, Status or snapshot claim. These are paired public
 costs; do not infer gains from the separate56 current-cost observation or kernel
 timings. Evidence: `artifacts/pcre2-capture-undo-20261016/`.
 
+## BMP caseless equivalence correction in development source
+
+Native PCRE2 10.47 probing of the unserved inline `r` option exposed an existing
+served-class defect: `(?i)[K]` missed `K/k`, and `(?i)[ſ]` missed `S/s`.
+Directional Rune lower/upper tests miss inverse partners. The source now reuses
+Core's pinned Unicode16 BMP lower fibers, augmented by23 necessary simple-fold groups
+(including three two-scalar S mappings) in the existing PCRE2 character helper.
+Literal and reference comparisons use the same BMP equivalence. There is no
+expanded pattern, new owner, public option, execution mode or per-call allocation.
+Supplementary casing retains its previous Rune route and separate coverage limits.
+
+A direct comparison covers all63,488 BMP scalars against Unicode16 CaseFolding
+C/S data with zero differences. The first prototype missed six mappings (three
+pairs); its output is preserved. The expanded native public-result check has451
+pairs:391 served witnesses change from106 differences to zero, including match
+outcome, every capture and byte coordinates. The60 inline-r witnesses remain
+unserved and are not counted passing. Initial77-pair and expanded before/after
+outputs retain exact managed DLL identities and native version. Native development
+dependency is private to the probe; shipped dependencies are unchanged.
+
+`(?J)(?i)i` also exposed an existing parser admission gap: a successfully parsed
+profile-option program was declined without a control-flow node. The parser now
+admits that existing profile-option flag. Its public regression is retained;
+no alternate execution mode is introduced. All5,596 affected Release checks and
+195 focused Debug checks pass. Finite and live-token public regressions cover
+ranges/negation, Unicode symbols, I behavior, references, scalar byte coordinates,
+non-normalization and non-expansion. The full suite preserves resource admission
+and interruption coverage. Evidence: `artifacts/pcre2-caseless-restrict-20261016/`.
+
+This semantic correction has no new performance, platform/package qualification
+or broad Unicode-profile claim. Existing scalar55/56 bytes are unchanged;
+immutable56 retains these defects. Inline r remains an explicit later milestone.
+
 ## Capture-return correction in development source
 
 PCRE2 restores caller capture state on subroutine return, including previously

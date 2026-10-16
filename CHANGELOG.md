@@ -13,6 +13,13 @@
   caller state; non-atomic re-entry, scalar boundaries and resource authority
   remain. Native 10.47 witnesses agree; immutable scalar.56 retains the defect.
 
+- Correct PCRE2 BMP class/literal/reference simple folding with pinned owned
+  equivalence and PCRE2 partners, including reverse Kelvin/long-S matches.
+  Keep negation, scalar coordinates, finite admission and interruption; no text
+  normalization or multi-scalar expansion. Admit parsed profile-option programs
+  without requiring a control-flow node. Inline r remains unserved; supplementary
+  casing and immutable scalar.56 retain their explicitly separate scope.
+
 ## Private scalar.56 Core/PCRE2 candidate
 
 - Qualify immutable Core/PCRE2 input0.4.0-scalar.56, producer5ad447f5, for the

@@ -326,6 +326,13 @@ internal sealed class Pcre2CharacterClass
             return false;
         }
 
+        if (scalar.IsBmp)
+        {
+            foreach (var equivalent in Pcre2CharacterSemantics.GetBmpCaseEquivalents((char)scalar.Value))
+                if (range.Contains(equivalent)) return true;
+            return false;
+        }
+
         return range.Contains(Rune.ToLowerInvariant(scalar).Value) ||
             range.Contains(Rune.ToUpperInvariant(scalar).Value);
     }
@@ -1843,6 +1850,37 @@ internal static class Pcre2GraphemeClusterSemantics
 
 internal static class Pcre2CharacterSemantics
 {
+    // PCRE2-INTEGRATION-POINT: reuse Core's pinned Unicode16 BMP lower fibers,
+    // then include the additional default simple-fold partners from PCRE2's
+    // Unicode16 CaseFolding C/S data. No culture policy or pattern expansion.
+    internal static ReadOnlySpan<char> GetBmpCaseEquivalents(char value) => value switch
+    {
+        '\u0053' or '\u0073' or '\u017F' => "\u0053\u0073\u017F",
+        '\u00B5' or '\u039C' or '\u03BC' => "\u00B5\u039C\u03BC",
+        '\u0345' or '\u0399' or '\u03B9' or '\u1FBE' => "\u0345\u0399\u03B9\u1FBE",
+        '\u0390' or '\u1FD3' => "\u0390\u1FD3",
+        '\u0392' or '\u03B2' or '\u03D0' => "\u0392\u03B2\u03D0",
+        '\u0395' or '\u03B5' or '\u03F5' => "\u0395\u03B5\u03F5",
+        '\u0398' or '\u03B8' or '\u03D1' or '\u03F4' => "\u0398\u03B8\u03D1\u03F4",
+        '\u039A' or '\u03BA' or '\u03F0' => "\u039A\u03BA\u03F0",
+        '\u03A0' or '\u03C0' or '\u03D6' => "\u03A0\u03C0\u03D6",
+        '\u03A1' or '\u03C1' or '\u03F1' => "\u03A1\u03C1\u03F1",
+        '\u03A3' or '\u03C2' or '\u03C3' => "\u03A3\u03C2\u03C3",
+        '\u03A6' or '\u03C6' or '\u03D5' => "\u03A6\u03C6\u03D5",
+        '\u03B0' or '\u1FE3' => "\u03B0\u1FE3",
+        '\u0412' or '\u0432' or '\u1C80' => "\u0412\u0432\u1C80",
+        '\u0414' or '\u0434' or '\u1C81' => "\u0414\u0434\u1C81",
+        '\u041E' or '\u043E' or '\u1C82' => "\u041E\u043E\u1C82",
+        '\u0421' or '\u0441' or '\u1C83' => "\u0421\u0441\u1C83",
+        '\u0422' or '\u0442' or '\u1C84' or '\u1C85' => "\u0422\u0442\u1C84\u1C85",
+        '\u042A' or '\u044A' or '\u1C86' => "\u042A\u044A\u1C86",
+        '\u0462' or '\u0463' or '\u1C87' => "\u0462\u0463\u1C87",
+        '\u1C88' or '\uA64A' or '\uA64B' => "\u1C88\uA64A\uA64B",
+        '\u1E60' or '\u1E61' or '\u1E9B' => "\u1E60\u1E61\u1E9B",
+        '\uFB05' or '\uFB06' => "\uFB05\uFB06",
+        _ => Utf8SliceCaseEquivalences.GetEquivalents(value, Utf8ScalarCaseBehavior.Invariant),
+    };
+
     internal static bool Equals(Rune left, Rune right, bool caseless)
     {
         if (left == right)
@@ -1850,9 +1888,11 @@ internal static class Pcre2CharacterSemantics
             return true;
         }
 
-        return caseless &&
-            (Rune.ToLowerInvariant(left) == Rune.ToLowerInvariant(right) ||
-             Rune.ToUpperInvariant(left) == Rune.ToUpperInvariant(right));
+        if (!caseless) return false;
+        if (left.IsBmp && right.IsBmp)
+            return GetBmpCaseEquivalents((char)left.Value).Contains((char)right.Value);
+        return Rune.ToLowerInvariant(left) == Rune.ToLowerInvariant(right) ||
+            Rune.ToUpperInvariant(left) == Rune.ToUpperInvariant(right);
     }
 
     internal static bool IsDigit(Rune scalar, bool ucp) =>
