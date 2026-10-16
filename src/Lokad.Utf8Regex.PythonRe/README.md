@@ -12,6 +12,13 @@ catalog,exact refs/locks/DLL/symbol/SourceLink and producer CI pass.
 record scope,identities,current costs and exclusions. Earlier64/other packages
 remain immutable;PCRE2 qualifies independently.
 
+The next private Core/PythonRe scalar.68 candidate is in preparation. It batches
+accepted source c49ab7a2's mandatory-ASCII-leading filter while retaining the same
+Python scalar verifier, captures, strict whole-input validation and original
+resource/interruption authority. New package/platform/oracle/current-cost evidence
+is still required. Qualified65 stays immutable and PCRE2 remains independent;
+no68 qualification, publication or downstream adoption is claimed here.
+
 Eligible nonempty,capture-free/profile-safe exact families reuse existing Core
 cursors/counters under the original invocation,with complete subject validation,
 byte floors,all4limits,token/deadline,public denial kinds and deterministic cleanup.

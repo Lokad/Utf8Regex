@@ -12,6 +12,13 @@ pass. Actual PythonRe nuspec requires Core `[0.4.0-scalar.65]`.
 [Handoff and exact scope](artifacts/core-python-scalar65-20261016/HANDOFF.md),
 [consumption instructions](artifacts/core-python-scalar65-20261016/CONSUMING.md).
 
+The next private Core/PythonRe scalar.68 candidate is in preparation. It batches
+accepted source c49ab7a2's mandatory-ASCII-leading filter while retaining the same
+Python scalar verifier, captures, strict whole-input validation and original
+resource/interruption authority. New package/platform/oracle/current-cost evidence
+is still required. Qualified65 stays immutable and PCRE2 remains independent;
+no68 qualification, publication or downstream adoption is claimed here.
+
 Scalar.65 reuses existing metered literal-family cursors/counters under the
 original Python invocation. It preserves strict whole-input validation,captures,
 byte floors,original cancellation/absolute deadline and four finite invocation

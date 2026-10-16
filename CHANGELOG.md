@@ -1,5 +1,14 @@
 # Changelog
 
+## Core/PythonRe scalar.68 candidate preparation
+
+- Prepare one distinct immutable Core/PythonRe input for accepted c49ab7a2's
+  mandatory-ASCII-leading filter. Preserve scalar verification, captures, whole
+  UTF8 validation, four finite invocation caps and original interruption.
+- Existing package/provenance/portable consumer/oracle/current-cost tools qualify
+  this boundary once. Core C# source is unchanged from65; independent PCRE frame
+  reuse stays source-staged. No68 qualification or consumer promotion yet.
+
 ## Independent Core/PCRE2 scalar.67 qualified dependency
 
 - Exact Core/profile packages pass original Windows/Linux consumers, provenance/
