@@ -1,5 +1,16 @@
 # Changelog
 
+## Development after scalar.58
+
+- Reuse the existing Count scratch scope for already admitted nonempty,
+  left-to-right slice programs. Empty-match and explicit-option progression stays
+  on its cursor. Original metering, cancellation/deadline, capture/reference
+  semantics and finite storage/denial/cleanup contracts remain.
+- One bounded public pair reduces selected dense Count time49–66% and allocated
+  bytes from about5.8MB to5.9KB per1000 hits. Accept the measured64KiB miss cost
+  increase12–14% as an explicit scratch-lifetime tradeoff; no equivalence claim,
+  additional tuning round, new package or reopened checked-access gate.
+
 ## Private scalar.58 Core/PCRE2 finite-Count input
 
 - Qualify immutable0.4.0-scalar.58, producera2f63a69, for the accumulated post57

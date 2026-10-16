@@ -27,6 +27,13 @@ Count is about118us finite versus11us unlimited. Allocations and broader remaini
 costs are recorded without claiming general parity or removing basic metering.
 Literal-family seeking remains deferred after a demonstrated dense regression.
 
+Development after58 extends the existing scratch scope to admitted nonempty
+slice Count programs. One public pair reduces selected dense time49–66% and
+allocations from about5.8MB to5.9KB per1000 hits. A64KiB miss is12–14% slower;
+that measured tradeoff remains explicit. Resource/interruption semantics stay
+enforced. This source change is outside immutable58; see
+[qualification](QUALIFICATION.md) for its scope and evidence.
+
 Core/PythonRe55 stays primary; no PythonRe58, standalone Core58 consumer
 qualification, publication, downstream pin/default change or adoption is implied.
 Earlier immutable inputs stay unchanged, including qualified Core/PCRE2 scalar57;

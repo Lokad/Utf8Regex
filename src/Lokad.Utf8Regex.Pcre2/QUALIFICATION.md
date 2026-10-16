@@ -1,5 +1,43 @@
 # Managed PCRE2 profile qualification
 
+## Source development after scalar.58
+
+Already admitted nonempty/LTR scalar Count programs, including Core-grammar
+delegation, reuse CountNonEmpty's existing scratch scope instead of renting/releasing slots and growing workspace per
+successful MoveNext. No new program/search/owner/public option is introduced.
+Empty programs and caller-specific option routing keep existing progression; original work,
+depth, working/result admission, token/deadline and synchronous cleanup remain.
+Actual units/capacities can change; historical numeric cutoffs are not an API.
+
+Native before/after scope:552 finite/unlimited/offset/options/cursor-range cases,
+zero managed count/range drift; all206 changed nonempty/None cases agree with
+native10.47. Core-grammar extensions have separate focused/full resource checks;
+no native syntax parity is inferred for them. Twelve baseline differences affect only anchored
+empty controls, outside this change; before/after outcomes stay identical and
+remain recorded for a separate global-contract investigation. This is not a
+claim of552 native passes. Full affected Release5,678 and focused Debug93 pass,
+including real working admission/release/sticky denial, cumulative validation
+plus matching work, postvalidation cancellation/deadline and retained captures.
+
+One quiet-VM CPU2/.NET10.0.12 FullOpts/ReadyToRun-off public Count pair against
+exact58, identical frozen Core DLLs, nine alternating samples, all four finite
+controls and live token. Selected dense captured/reference/conditional/Unicode
+rows improve49–66%; captured/reference allocations fall5.78MB->about5.9KB per1000
+hits, conditional11.56MB->5.9KB per2000 and Unicode2.89MB->5.9KB per500. The64KiB
+miss regresses11.68–13.85%, with stable1.2–3.1% spreads and unchanged allocations.
+Unchanged non-slice caseless control moves-0.85..-1.27%, allocations unchanged.
+Accept the miss cost as an explicit tradeoff for avoiding repeated major scratch
+allocation; do not describe it as equivalent or within10%. This is a scratch
+lifetime change, not a checked-access conversion; the completed conversion gate
+and original baseline remain unchanged. No second variant or confirmation follows.
+
+All342 raw samples exceed50ms(min60.31); worst before/reference/token spread37.2%
+stays explicit. FullOpts Count code grows334->454B; only the existing scope path
+is selected. `artifacts/pcre2-nonempty-count-scope-20261016/` retains predeclaration,
+native/control outcomes, frozen identities, codegen, tests and raw costs. The
+candidate is source only, with dirty/precommit metadata; no new package/platform
+qualification, snapshot/Status update or broad performance claim.
+
 ## Private scalar.58 finite-Count input
 
 Immutable0.4.0-scalar.58, producera2f63a69250098bba701e01ced0f3ee60a827cab,

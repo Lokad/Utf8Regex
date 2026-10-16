@@ -686,6 +686,15 @@ do not acquire this eligibility. The original invocation still owns validation,
 seeking, verification and publication; skipped impossible starts can reduce work
 requirements. Literal-family seeking remains on its prior eligibility rules.
 
+Development after scalar.58 also reuses that whole-Count scratch scope when the
+already admitted shared slice program proves nonempty left-to-right matching.
+No new language proof or search plan is inferred. Empty programs retain their
+retry/advancement cursor, and explicit match options retain the existing fallback.
+Scratch stays admitted until Count finishes or fails, then releases synchronously;
+capture/reference state and the original invocation remain authoritative. Work
+units and major state needs can change with this lifetime, so historical numeric
+cutoffs are not preserved as artificial denials. This source change is outside58.
+
 
 Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 

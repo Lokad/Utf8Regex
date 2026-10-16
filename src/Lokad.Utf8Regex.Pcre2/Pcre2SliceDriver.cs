@@ -280,6 +280,11 @@ internal static class Pcre2SliceDriver
         Pcre2CompileRequest request,
         scoped ref Utf8SliceInvocation invocation)
     {
+        // A non-empty program needs no PCRE2 empty retry. Keep admitted scratch
+        // across matches instead of renting/releasing it on every MoveNext.
+        if (!program.CanMatchEmpty && !program.RightToLeft)
+            return CountNonEmpty(program, default, ref input, start, ref invocation);
+
         var cursor = new Pcre2SliceGlobalMatchCursor(
             program, invocation, input, start, request);
         var count = 0;
