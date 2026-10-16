@@ -2,6 +2,9 @@
 
 ## Development after scalar.55
 
+- Reject multiple hyphens in PCRE2 inline option directives and accept the empty
+  `(?)` no-op before captures. Preserve single-hyphen precedence, lexical text,
+  scalar empty advancement and existing resource admission.
 - Fix PCRE2 duplicate-name permission leaking out of groups and execute scoped
   `(?J:...)` / `(?-J:...)` forms in the existing owned parser. Restore inherited
   permission across captures, assertions, atomics, branch resets, conditionals

@@ -86,6 +86,11 @@ remain pattern-wide, and a forbidden duplicate fails construction with
 results and existing invocation controls remain. This is a source correction,
 separate from the immutable scalar.54 Core/PCRE2 package qualification.
 
+The same source batch rejects a repeated hyphen in inline option directives
+with `InvalidAfterParensQuery` and accepts the valid empty `(?)` no-op before
+captures. Single-hyphen enable/disable precedence and literal/comment text keep
+their existing meanings; empty-match iteration still advances by complete scalars.
+
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges

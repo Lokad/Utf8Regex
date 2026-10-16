@@ -1362,6 +1362,9 @@ internal sealed class Pcre2BacktrackingParser
             if (ch == '-')
             {
                 if (reset) return false;
+                if (!enabling)
+                    throw new Pcre2CompileException("Only one hyphen is allowed in an option directive.",
+                        Pcre2ErrorKind.InvalidAfterParensQuery);
                 enabling = false;
                 cursor++;
                 continue;
@@ -1418,7 +1421,7 @@ internal sealed class Pcre2BacktrackingParser
         var ungreedy = _ungreedy;
         var noAutoCapture = _noAutoCapture;
         var allowDuplicateNames = _allowDuplicateNames;
-        var sawOption = false;
+        var sawOption = cursor < _pattern.Length && _pattern[cursor] == ')';
         var enabledX = false;
         var enabledMore = false;
         var disabledX = false;
@@ -1436,6 +1439,9 @@ internal sealed class Pcre2BacktrackingParser
             if (ch == '-')
             {
                 if (reset) return false;
+                if (!enabling)
+                    throw new Pcre2CompileException("Only one hyphen is allowed in an option directive.",
+                        Pcre2ErrorKind.InvalidAfterParensQuery);
                 enabling = false;
                 cursor++;
                 continue;
@@ -1448,6 +1454,12 @@ internal sealed class Pcre2BacktrackingParser
                     return false;
                 }
 
+                // PCRE2 permits an empty option directive; Core grammar does not.
+                if (cursor == _offset + 2)
+                {
+                    _sawControlFlow = true;
+                    RequiresProfileOptions = true;
+                }
                 _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(options, enabledX, enabledMore, disabledX);
                 RequiresProfileOptions |= enabledX || reset;
                 _ungreedy = ungreedy;
