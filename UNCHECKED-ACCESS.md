@@ -53,6 +53,12 @@ and current package costs are recorded in the
 Its operating-cost observation and unchanged-data witnesses do not replace or
 reopen the completed fixed-original conversion gate.
 
+The immutable scalar.63 pair preserves this inventory: Core only permitted SizeOf,
+PythonRe none, no generated helpers or native/shipped BCL matcher/result execution.
+Original detached Windows/Linux consumers and current selective operating costs
+are in the [63 handoff](artifacts/core-python-scalar63-20261016/HANDOFF.md).
+Its casing/verification changes do not reopen the completed fixed-original gate.
+
 ## Acceptance rule and chronological evidence
 
 The core matches strict UTF-8 scalars. Checked-access conversions must preserve

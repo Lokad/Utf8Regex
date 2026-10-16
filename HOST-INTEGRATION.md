@@ -81,6 +81,12 @@ and Core updates therefore move together; applications combining adapters need
 versions qualified with the same Core. This does not alter immutable61 or prove
 compatibility with deliberate dependency overrides.
 
+Qualified Core/PythonRe scalar.63 now carries the actual exact Core dependency,
+original same-byte Windows/Linux consumer evidence and current selective public
+costs. Its [handoff](artifacts/core-python-scalar63-20261016/HANDOFF.md) records the
+covered input and remaining exclusions. The version update does not expand this
+host envelope or establish actual consumer ownership integration/adoption.
+
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.
 `PythonReFiniteResultPolicyTests.CursorTrafficSurvivesPublicationAndAliasesShareFailureCleanup`

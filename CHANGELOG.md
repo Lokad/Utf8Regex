@@ -1,13 +1,20 @@
 # Changelog
 
-## Prepare Core/PythonRe scalar.63
+## Core/PythonRe scalar.63 delivery
 
-- Give the accepted owned supplementary casing and metered family-verification
-  changes a fresh immutable identity. PythonRe stays pinned to Unicode15.1 and
-  requires the exact paired Core. Existing candidate bytes stay unchanged.
-- Original detached platforms, package identities and current operating costs
-  qualify this combined boundary; producer-stage metadata alone is not readiness.
-  PCRE2, publication, consumer adoption and full containment remain separate.
+- Immutable pair at a24a3983 includes owned Unicode 16 supplementary casing and
+  simpler metered family verification; PythonRe stays pinned Unicode 15.1 and requires the
+  exact paired Core. Original same-byte detached Windows/Linux consumers,
+  provenance/symbol/member inventory and capture/catalog controls pass; CI green.
+- One affected producer build/pack per package, reused matching oracle host and
+  unchanged profile-data witnesses. No repeated source experiments or old-package
+  qualification. The Core package includes the derived data's Unicode license.
+- Current selective public costs:135 samples above 50 ms, full validation/required
+  shaping, finite controls/live token. Family Count 65.4 µs unlimited/340 µs finite,
+  about 5.2× remains; Python tuples 0.690/0.738 ms. Preserve raw controls/allocations,
+  ordinary-only timing scope and BCL exclusions; no broad parity/Status claim.
+- Prior packages stay immutable. PCRE2, publication, actual consumer adoption and
+  complete construction/default/live-retention containment remain separate.
 
 ## Remove redundant metered family verification
 
@@ -362,7 +369,7 @@
 
 - Qualify immutable Core/PythonRe 0.4.0-scalar.55, producer eeb74d14, for the
   identifier/class/boundary batch. Both original detached Windows/Linux runs pass
-  Core39019/Diff1504/PythonRe3066 against identical packages, exact source-mapped
+  Core39019/Diff 1,504/PythonRe3066 against identical packages, exact source-mapped
   refs/locks/TRXs. Capture/catalog checks and full scalar predicate censuses pass.
   Producer CI is green; preserve prior inputs. Publication/adoption are separate.
 - Record one bounded exact-package current-cost run with all four finite limits
@@ -484,7 +491,7 @@
 ## Private scalar.52 Core/PythonRe candidate
 
 - Qualify immutable producer 5e50b7b1 on Windows/Linux using identical package
-  bytes: detached Core39017/Diff1504/PythonRe2989, exact feed/lock/loaded-DLL and
+  bytes: detached Core39017/Diff 1,504/PythonRe2989, exact feed/lock/loaded-DLL and
   source/symbol identities. CPython captures91/digests91 on both platforms;
   complete Debug Core39017 and producer CI38793242629 pass. Earlier bytes stay
   immutable. Lython's strict Core member gate still rejects permitted SizeOf;

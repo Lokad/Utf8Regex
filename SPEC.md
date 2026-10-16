@@ -88,6 +88,10 @@ BMP/I-cluster rules and original invocation/construction controls remain. This
 correction is outside immutable scalar.62, whose Garay case pairs still miss.
 The source attribution and Unicode license accompany the derived data; no Python
 profile-version change or broader package qualification is implied.
+The corrected lookup is included in qualified Core/PythonRe scalar.63. This pins
+simple-case data, not every Core property table: general categories/shorthands
+currently use runtime scalar property queries. PythonRe owns its separate pinned
+15.1 property rules. These data-source scopes do not change scalar matching width.
 
 ### 3.4 Timeout behavior
 

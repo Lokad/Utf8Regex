@@ -51,6 +51,11 @@ digests. Exact identities and remaining exclusions are in
 artifacts/core-python-scalar62-20261016/HANDOFF.md. The separate source cost pair
 records 34–37% higher nullable Count cost; correctness does not imply performance
 equivalence or revision of the checked-access 10% gate.
+The subsequent qualified scalar.63 pair at a24a3983 preserves this correction and
+PythonRe's pinned Unicode 15.1 implementation/data. Core supplementary casing and metered
+family verification change; original detached Windows/Linux consumers, capture/
+catalog controls and selective current exact-package costs qualify that boundary.
+
 
 ## Current scope
 

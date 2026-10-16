@@ -2,57 +2,51 @@
 
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
-This source prepares the private **0.4.0-scalar.63** Core/PythonRe candidate,
-combining owned Unicode16 supplementary casing with simpler metered literal-family
-verification. PythonRe retains its pinned15.1 semantics and the exact paired Core
-dependency. Completed qualification, exact identities and current package costs
-must be read from `artifacts/core-python-scalar63-20261016/HANDOFF.md` and
-`artifacts/scalar-candidates/0.4.0-scalar.63/candidate.json` once available; this
-producer-stage text does not designate untested bytes or imply publication.
+The immutable **0.4.0-scalar.63** Core/PythonRe pair is qualified at clean producer
+`a24a39837df63f73383276d860dc0f24ef880ba1`. Identical package bytes pass original
+detached Windows/Linux consumers, exact references/locks/symbols/SourceLink/member
+checks and pinned capture/catalog controls; producer CI is green. It provides
+Unicode-scalar matching, authoritative captures, synchronous cancellation, four
+enforceable finite invocation controls and covered eager construction. PythonRe
+requires the exact paired Core. [Handoff and current costs](artifacts/core-python-scalar63-20261016/HANDOFF.md),
+[immutable manifest](artifacts/scalar-candidates/0.4.0-scalar.63/candidate.json).
 
-The immutable **0.4.0-scalar.62** Core/PythonRe pair is qualified at clean producer `3a67a6db05ee7a49b20a046a66ecaae2465815b0`. Identical package bytes pass original detached Windows/Linux consumers, exact references/locks/symbols/SourceLink/member checks, and pinned capture/catalog controls; producer CI is green. It provides Unicode-scalar matching, captures, synchronous cancellation, four enforceable finite invocation controls and covered eager construction. PythonRe requires the exact paired Core version. [Handoff and current costs](artifacts/core-python-scalar62-20261016/HANDOFF.md), [immutable manifest](artifacts/scalar-candidates/0.4.0-scalar.62/candidate.json).
+Scalar.63 fixes Core Garay casing retained by 62: supplementary literals/classes/
+references use owned Unicode 16 simple-case pairs. PythonRe keeps its separately
+pinned Unicode 15.1 rules. The existing metered family verifier also omits impossible
+comparisons and absent confirmation; original interruption/admission remains.
+Core retains only permitted `Unsafe.SizeOf`, accepted by Lython; PythonRe has no
+unchecked API references. Producer qualification does not imply downstream adoption.
 
-Scalar.62 corrects a PythonRe defect retained by scalar.61:
-`(?:(?(2)(a)|()))+` consumes `a` after a required empty iteration enables the
-next conditional. Higher minima, lazy/possessive forms and supplementary scalars
-are covered. Core/PCRE2 keep their previous repeat rule. The source comparison
-records 34–37% higher same-result nullable Count cost, unchanged allocations and
-controls from -0.7% to +4.1%. This correctness cost is explicit and does not revise
-the separate 10% checked-access allowance. Core retains only permitted
-`Unsafe.SizeOf`; PythonRe has no unchecked API references. Lython accepts SizeOf;
-producer qualification does not imply downstream adoption.
-
-Development also fixes supplementary Core casing beyond immutable scalar.62:
-Garay pairs follow the owned Unicode 16 model through a small fixed lookup instead
-of the runtime casing version. The qualified62 bytes retain that limitation.
-PythonRe keeps its separate pinned Unicode 15.1 rules. Source correctness/cost
-receipts are in `artifacts/core-supplementary-case-audit-20261016/`; no new
-candidate was designated for that isolated source change; the combined63
-boundary qualifies the accepted changes together.
+The inherited 62 Python nullable-repeat correction remains: `(?:(?(2)(a)|()))+`
+consumes `a` after its required empty iteration enables the next conditional.
+Higher minima, lazy/possessive and supplementary controls are covered. Core/PCRE2
+keep their previous repeat rule. Its source comparison's 34–37% same-result Count
+cost remains explicit, independent of the completed 10% checked-access gate.
 
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
-Core/PythonRe62 is a scoped private producer input, independent of PCRE2.
-Existing immutable Core/PythonRe61/60/55 and independent Core/PCRE2 59 inputs retain
+Core/PythonRe 63 is a scoped private producer input, independent of PCRE2.
+Existing immutable Core/PythonRe 62/61/60/55 and independent Core/PCRE2 59 inputs retain
 their exact bytes and recorded scope. No publication, consumer pin/default change or
 complete host/resource/profile acceptance is implied.
 
 Use a qualified candidate's exact version and immutable feed/manifest for reproducible integration. [qualify-scalar-candidate.ps1](qualify-scalar-candidate.ps1) builds and packs core/PythonRe once, checks provenance, runs detached consumers and records package hashes; it does not publish to NuGet.org. PCRE2 is qualified independently with [test-packaged-pcre2.ps1](test-packaged-pcre2.ps1). Existing benchmark snapshots describe their recorded implementations; historical measurements do not qualify the current engine's performance.
 
 The dated [.NET 10 / .NET 11 comparison](RUNTIME-COMPARISON.md) records four
-current Count workloads with fresh SDK-specific generated comparators, finite
+Count workloads at its frozen revision with fresh SDK-specific generated comparators, finite
 limits, decode/predecoded controls and raw samples. It identifies substantial
 controlled fixed-width costs without claiming a universal runtime speedup.
 
-Scalar.62 retains the admitted checked AVX2 fixed-width counter, whole-operation
-fallback search data and prepared exact-family union, sharing original invocation
-controls. Its current package observation includes full validation and required
-result shaping: exact-family Count is about 66.7us unlimited/481us finite;
-1000 captured Python matches take about 0.88/0.99ms. Finite family overhead remains
-about 7.2x. Ten fixed Count samples fall below the 50ms sample target, and some
-result-heavy ranges reach 13%; these are operating-cost observations, not fine
-parity/overhead qualification. The handoff retains raw samples, allocations and
-limits. Earlier source comparisons and historical benchmark tables remain dated
+Scalar.63 retains the admitted checked AVX2 fixed-width counter, whole-operation
+fallback search data and prepared family searches with original invocation
+controls. Its selective current-package observation includes full validation and
+required shaping: exact-family Count is 65.4 µs unlimited/340 µs finite, about 5.2×;
+1000 Python UTF8 capture tuples take 0.690/0.738 ms. All 135 raw samples all exceed 50 ms,
+with managed ranges up to 3% and explicit BCL decode variation. These are operating
+costs, not broad parity, regression qualification or Status. The handoff retains
+raw samples, allocations, supplementary/reference/cursor controls and exclusions.
+Earlier source comparisons and historical benchmark tables remain dated
 evidence for their original implementations. The current refresh covers
 `literal/sherlock-en` and `structural/method-family-call` at scalar.60 (four
 ordinary/compiled rows), plus `literal-alternate/sherlock-casei-en` at clean
