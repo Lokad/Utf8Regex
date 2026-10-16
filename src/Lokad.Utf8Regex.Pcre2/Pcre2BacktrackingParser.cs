@@ -217,6 +217,7 @@ internal sealed class Pcre2BacktrackingParser
                 var outerOptions = _options;
                 var outerUngreedy = _ungreedy;
                 var outerNoAutoCapture = _noAutoCapture;
+                var outerAllowDuplicateNames = _allowDuplicateNames;
                 if (!TryParseAlternation(true, out var assertionBody) ||
                     _offset >= _pattern.Length ||
                     _pattern[_offset] != ')')
@@ -224,6 +225,7 @@ internal sealed class Pcre2BacktrackingParser
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
+                    _allowDuplicateNames = outerAllowDuplicateNames;
                     node = Pcre2EmptyBacktrackingNode.Instance;
                     return false;
                 }
@@ -232,6 +234,7 @@ internal sealed class Pcre2BacktrackingParser
                 _options = outerOptions;
                 _ungreedy = outerUngreedy;
                 _noAutoCapture = outerNoAutoCapture;
+                _allowDuplicateNames = outerAllowDuplicateNames;
                 node = new Pcre2AssertionBacktrackingNode(assertionKind, assertionBody);
                 return true;
             }
@@ -240,15 +243,18 @@ internal sealed class Pcre2BacktrackingParser
                     out var scopedOptions,
                     out var scopedUngreedy,
                     out var scopedNoAutoCapture,
+                    out var scopedAllowDuplicateNames,
                     out var scopedOpeningLength))
             {
                 _sawControlFlow = true;
                 var outerOptions = _options;
                 var outerUngreedy = _ungreedy;
                 var outerNoAutoCapture = _noAutoCapture;
+                var outerAllowDuplicateNames = _allowDuplicateNames;
                 _options = scopedOptions;
                 _ungreedy = scopedUngreedy;
                 _noAutoCapture = scopedNoAutoCapture;
+                _allowDuplicateNames = scopedAllowDuplicateNames;
                 _offset += scopedOpeningLength;
                 if (!TryParseAlternation(true, out node) ||
                     _offset >= _pattern.Length ||
@@ -257,6 +263,7 @@ internal sealed class Pcre2BacktrackingParser
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
+                    _allowDuplicateNames = outerAllowDuplicateNames;
                     return false;
                 }
 
@@ -264,6 +271,7 @@ internal sealed class Pcre2BacktrackingParser
                 _options = outerOptions;
                 _ungreedy = outerUngreedy;
                 _noAutoCapture = outerNoAutoCapture;
+                _allowDuplicateNames = outerAllowDuplicateNames;
                 return true;
             }
 
@@ -275,11 +283,13 @@ internal sealed class Pcre2BacktrackingParser
                 var outerOptions = _options;
                 var outerUngreedy = _ungreedy;
                 var outerNoAutoCapture = _noAutoCapture;
+                var outerAllowDuplicateNames = _allowDuplicateNames;
                 if (!TryParseAlternation(true, out node) || _offset >= _pattern.Length || _pattern[_offset] != ')')
                 {
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
+                    _allowDuplicateNames = outerAllowDuplicateNames;
                     return false;
                 }
 
@@ -287,6 +297,7 @@ internal sealed class Pcre2BacktrackingParser
                 _options = outerOptions;
                 _ungreedy = outerUngreedy;
                 _noAutoCapture = outerNoAutoCapture;
+                _allowDuplicateNames = outerAllowDuplicateNames;
                 return true;
             }
 
@@ -307,11 +318,13 @@ internal sealed class Pcre2BacktrackingParser
                 var outerOptions = _options;
                 var outerUngreedy = _ungreedy;
                 var outerNoAutoCapture = _noAutoCapture;
+                var outerAllowDuplicateNames = _allowDuplicateNames;
                 if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
                 {
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
+                    _allowDuplicateNames = outerAllowDuplicateNames;
                     node = Pcre2EmptyBacktrackingNode.Instance;
                     return false;
                 }
@@ -320,6 +333,7 @@ internal sealed class Pcre2BacktrackingParser
                 _options = outerOptions;
                 _ungreedy = outerUngreedy;
                 _noAutoCapture = outerNoAutoCapture;
+                _allowDuplicateNames = outerAllowDuplicateNames;
                 node = new Pcre2CaptureBacktrackingNode(slot, captureName, body);
                 _captureDefinitions.TryAdd(slot, (Pcre2CaptureBacktrackingNode)node);
                 return true;
@@ -769,11 +783,13 @@ internal sealed class Pcre2BacktrackingParser
         var outerOptions = _options;
         var outerUngreedy = _ungreedy;
         var outerNoAutoCapture = _noAutoCapture;
+        var outerAllowDuplicateNames = _allowDuplicateNames;
         if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
         {
             _options = outerOptions;
             _ungreedy = outerUngreedy;
             _noAutoCapture = outerNoAutoCapture;
+            _allowDuplicateNames = outerAllowDuplicateNames;
             node = Pcre2EmptyBacktrackingNode.Instance;
             return false;
         }
@@ -782,6 +798,7 @@ internal sealed class Pcre2BacktrackingParser
         _options = outerOptions;
         _ungreedy = outerUngreedy;
         _noAutoCapture = outerNoAutoCapture;
+        _allowDuplicateNames = outerAllowDuplicateNames;
         node = new Pcre2AtomicBacktrackingNode(body);
         return true;
     }
@@ -986,12 +1003,14 @@ internal sealed class Pcre2BacktrackingParser
         if (_pattern.AsSpan(_offset).StartsWith("DEFINE)", StringComparison.Ordinal))
         {
             _offset += 7;
+            var definitionAllowDuplicateNames = _allowDuplicateNames;
             if (!TryParseAlternation(true, out _) || _offset >= _pattern.Length || _pattern[_offset] != ')')
             {
                 return false;
             }
 
             _offset++;
+            _allowDuplicateNames = definitionAllowDuplicateNames;
             return true;
         }
 
@@ -1010,6 +1029,7 @@ internal sealed class Pcre2BacktrackingParser
         var outerOptions = _options;
         var outerUngreedy = _ungreedy;
         var outerNoAutoCapture = _noAutoCapture;
+        var outerAllowDuplicateNames = _allowDuplicateNames;
         if (!TryParseSequence(true, out var yesBranch))
         {
             return false;
@@ -1034,6 +1054,7 @@ internal sealed class Pcre2BacktrackingParser
         _options = outerOptions;
         _ungreedy = outerUngreedy;
         _noAutoCapture = outerNoAutoCapture;
+        _allowDuplicateNames = outerAllowDuplicateNames;
         node = new Pcre2ConditionalBacktrackingNode(
             conditionKind,
             target,
@@ -1076,12 +1097,14 @@ internal sealed class Pcre2BacktrackingParser
         var outerOptions = _options;
         var outerUngreedy = _ungreedy;
         var outerNoAutoCapture = _noAutoCapture;
+        var outerAllowDuplicateNames = _allowDuplicateNames;
         _offset += openingLength;
         if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
         {
             _options = outerOptions;
             _ungreedy = outerUngreedy;
             _noAutoCapture = outerNoAutoCapture;
+            _allowDuplicateNames = outerAllowDuplicateNames;
             return false;
         }
 
@@ -1089,6 +1112,7 @@ internal sealed class Pcre2BacktrackingParser
         _options = outerOptions;
         _ungreedy = outerUngreedy;
         _noAutoCapture = outerNoAutoCapture;
+        _allowDuplicateNames = outerAllowDuplicateNames;
         assertion = new Pcre2AssertionBacktrackingNode(kind, body);
         return true;
     }
@@ -1189,6 +1213,7 @@ internal sealed class Pcre2BacktrackingParser
         var outerOptions = _options;
         var outerUngreedy = _ungreedy;
         var outerNoAutoCapture = _noAutoCapture;
+        var outerAllowDuplicateNames = _allowDuplicateNames;
         while (true)
         {
             _captureCount = captureBase;
@@ -1213,6 +1238,7 @@ internal sealed class Pcre2BacktrackingParser
                 _options = outerOptions;
                 _ungreedy = outerUngreedy;
                 _noAutoCapture = outerNoAutoCapture;
+                _allowDuplicateNames = outerAllowDuplicateNames;
                 node = alternatives.Count == 1
                     ? alternatives[0]
                     : new Pcre2AlternationBacktrackingNode([.. alternatives]);
@@ -1303,11 +1329,13 @@ internal sealed class Pcre2BacktrackingParser
         out Pcre2CharacterOptions options,
         out bool ungreedy,
         out bool noAutoCapture,
+        out bool allowDuplicateNames,
         out int openingLength)
     {
         options = _options;
         ungreedy = _ungreedy;
         noAutoCapture = _noAutoCapture;
+        allowDuplicateNames = _allowDuplicateNames;
         openingLength = 0;
         if (_offset + 3 > _pattern.Length || !_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal))
         {
@@ -1361,7 +1389,12 @@ internal sealed class Pcre2BacktrackingParser
                 cursor += doubled ? 2 : 1;
                 continue;
             }
-            if (!TryApplyOption(ref options, ref ungreedy, ref noAutoCapture, ch, enabling))
+            if (ch == 'J')
+            {
+                allowDuplicateNames = enabling;
+                RequiresProfileOptions = true;
+            }
+            else if (!TryApplyOption(ref options, ref ungreedy, ref noAutoCapture, ch, enabling))
             {
                 return false;
             }
@@ -1438,6 +1471,7 @@ internal sealed class Pcre2BacktrackingParser
                 if (ch == 'J')
                 {
                     allowDuplicateNames = enabling;
+                    RequiresProfileOptions = true;
                     sawOption = true;
                     cursor++;
                     continue;

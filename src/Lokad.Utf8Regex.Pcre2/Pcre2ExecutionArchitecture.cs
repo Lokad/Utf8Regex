@@ -56,7 +56,7 @@ internal static class Pcre2Compiler
             Pcre2CompiledProgram foundation;
             if (backtracking.RequiresProfileOptions)
             {
-                // Inline x/xx and reset directives need PCRE2 option semantics. The owned
+                // Inline x/xx, J and reset directives need PCRE2 option semantics. The owned
                 // profile already compiled them; omit incompatible Core preparation.
                 foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
             }

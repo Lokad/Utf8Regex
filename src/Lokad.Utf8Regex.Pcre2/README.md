@@ -76,6 +76,16 @@ Ungreedy and existing duplicate-name settings remain. Outer settings restore whe
 the scope closes; capture numbering, scalar references and empty advancement stay
 valid. The invalid combination of reset and `-` fails at construction.
 
+Source development after scalar.55 also handles scoped duplicate-name permission:
+`(?J:...)` enables it locally, `(?-J:...)` disables it, and inline directives
+remain effective through later alternatives in the same group. Every closing
+group restores the inherited permission; reset retains it. This fixes permission
+leaking from a nested group into later declarations. Slots and the name table
+remain pattern-wide, and a forbidden duplicate fails construction with
+`InvalidAfterParensQuery`. Scalar captures/references, first-set lookup, retained
+results and existing invocation controls remain. This is a source correction,
+separate from the immutable scalar.54 Core/PCRE2 package qualification.
+
 Current source admits raw supplementary and escaped scalar ranges consistently:
 `[😀-😃]` and `[\x{1F600}-\x{1F603}]` match the same scalars. The scalar class
 parser owns endpoint validation; invalid predicate endpoints and reversed ranges

@@ -71,6 +71,16 @@ ungreedy (`U`) and duplicate-name (`J`) state. Scoped settings restore on exit;
 global directives apply to the current scope. `-` cannot appear in a reset
 directive and must fail construction with `InvalidAfterParensQuery`.
 
+Duplicate-name permission also follows lexical option scope. `(?J:...)` enables
+it for that group, and `(?-J:...)` disables it there; `(?J)` and `(?-J)` apply
+through the remainder of their containing group, including later alternatives.
+Closing any group restores its inherited permission. Reset preserves `J`.
+Turning permission off rejects subsequent duplicate declarations without removing
+previously admitted slots or names. A disallowed duplicate throws
+`Pcre2CompileException` with `InvalidAfterParensQuery` before backend selection.
+Capture slots retain declaration order and by-name lookup selects the first set
+slot; option scope does not localize the pattern's name table.
+
 `Utf8Pcre2Regex` targets the **PCRE2 standard matcher** only. The alternative DFA matcher is explicitly **out of scope** for this API family because PCRE2 documents it as a different, non-Perl-compatible algorithm with different behavior. ([PCRE][2])
 
 `Utf8Pcre2Regex` is a **strictly managed .NET profile layer**. It must not bind to upstream native PCRE2 through P/Invoke, `NativeLibrary`, external executables, RID-specific native assets, or any other non-managed dependency. The only acceptable non-BCL implementation dependency is the existing `Lokad.Utf8Regex` library itself.

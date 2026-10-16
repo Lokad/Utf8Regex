@@ -1,5 +1,14 @@
 # Changelog
 
+## Development after scalar.55
+
+- Fix PCRE2 duplicate-name permission leaking out of groups and execute scoped
+  `(?J:...)` / `(?-J:...)` forms in the existing owned parser. Restore inherited
+  permission across captures, assertions, atomics, branch resets, conditionals
+  and definitions; retain declaration-order slots and scalar references.
+  Existing finite controls, cancellation/deadlines and retained results remain.
+  This source correction does not alter immutable scalar.54 or scalar.55 inputs.
+
 ## Private scalar.55 Core/PythonRe candidate
 
 - Qualify immutable Core/PythonRe 0.4.0-scalar.55, producer eeb74d14, for the
