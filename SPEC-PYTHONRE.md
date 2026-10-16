@@ -250,6 +250,17 @@ buffer is acquired. Strict malformed-byte indices/offending bytes stay relative
 to the whole input, although inner decoder diagnostic wording can differ for a
 later block. Cancellation/deadline can precede a later malformed suffix; failed
 fill releases unpublished string capacity and preserves parent reservations.
+Subsequent source acquires non-surrogate semantic BMP literal nodes directly
+through the existing admitted scalar-node factory, rather than rendering and
+reparsing each atom through the Core frontend. Python parsing has already expanded
+case partners; the old leaf conversion and direct node both use FoldCase=false.
+Uncased literals under IgnoreCase therefore need no extra option switch. Classes,
+raw/astral fragments and isolated surrogate rejection retain their required routes.
+The same scalar lowerer, VM, captures, references and pinned Python case data remain.
+Less actual parser work/storage/depth intentionally changes numeric construction
+cutoffs: long patterns can fit the fixed backstop that formerly denied them.
+Explicit finite construction caps, original interruption and pre-acquisition major
+admission remain; no new Core hook, engine, owner, mode or accounting layer.
 Constructors still defer FullMatch preparation. For scalar FullMatch
 value/context/data/string calls, invocation authority is created before accessing
 that lazy program; explicitly compiled instances already have it. Preparation copies the existing

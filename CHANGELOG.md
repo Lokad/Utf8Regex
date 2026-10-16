@@ -1,5 +1,29 @@
 # Changelog
 
+## Core/PythonRe scalar.72 preparation
+
+- Batch bounded UTF8 construction decoding with direct semantic BMP literal
+  conversion into a distinct immutable input. Use the existing affected build/
+  pack/provenance, same-byte platform/consumer/oracle and selective current-cost
+  workflow once. Core/Python69 and independent PCRE71 remain unchanged.
+- Qualification is pending. Preserve scalar/capture/retained-result/interruption
+  contracts and basic metering; no publication, consumer switch or full protection
+  claim. PCRE72 is not part of this independent Core/Python boundary.
+
+## Development: omit per-literal Python scalar parser scaffolding
+
+- Acquire existing non-surrogate semantic BMP literal nodes via the admitted
+  factory, rather than rendering/reparsing them through Core. Python parsing has
+  already expanded case partners. Keep other atom routes, surrogate rejection,
+  pinned case data, scalar lowering/VM, captures and references.
+- Preserve the original owner and pre-acquisition node/array admission. Less
+  actual work/storage/depth intentionally lowers numeric requirements; explicit
+  finite caps and cancellation/deadlines remain. Long-scan checks now retain64KiB
+  fragments while an explicit1MiB construction policy still denies them.
+- One public source pair measures8KiB byte Compile48.7->19.4ms and33.0->11.9MB;
+  class-only control+0.04% with unchanged allocation. Small captured timing is
+  noisy; no broad parity/Status/unchecked gate claim or repeated campaign.
+
 ## Development: bounded UTF8 construction decoding
 
 - Count and decode caller-sized UTF8 pattern bytes with checked codec spans in

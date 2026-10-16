@@ -87,6 +87,16 @@ before a later malformed suffix. Inner decoder wording can differ for later
 blocks. This source change is outside immutable Core/Python69 and PCRE71 packages;
 it does not complete construction/default/live-retention or host containment.
 
+Later source also constructs existing semantic BMP literal nodes directly through
+the admitted scalar-node factory, omitting per-atom Core parsing. Python case
+expansion, surrogate rejection, scalar VM, captures and original construction
+authority remain. Less actual preparation lowers numeric work/depth/byte needs;
+explicit caps still deny. One public source comparison reduces8KiB byte-pattern
+Compile48.7->19.4ms and33.0->11.9MB; the class-only control is unchanged within
+noise. Remaining cost and raw observations are explicit. The next private
+Core/PythonRe scalar.72 input batches this with bounded UTF8 construction decoding;
+it is under preparation, not yet qualified. Immutable69/71 bytes remain unchanged.
+
 This candidate additionally preserves the original call deadline through
 cold scalar FullMatch and template substitution preparation. Construction/cache
 checkpoints observe call interruption; interrupted preparation is retryable and

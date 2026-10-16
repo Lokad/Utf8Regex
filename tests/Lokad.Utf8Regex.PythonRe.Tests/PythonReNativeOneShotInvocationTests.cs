@@ -177,12 +177,14 @@ public sealed class PythonReNativeOneShotInvocationTests
         var fragment = new string('a', 65536);
         if (family != 0)
         {
-            // Keep the original large-pattern capacity observation. Long scan
-            // polling must be tested on a pattern admitted by the unchanged cap.
+            // Less literal preparation now admits this size under the fixed
+            // backstop. An explicit small construction cap must still deny;
+            // keep the original long fragment for the scan-interruption check.
             var rejected = family == 1 ? fragment + ".*z" : "z.*" + fragment;
-            var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(rejected, PythonReCompileOptions.DotAll));
+            var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(rejected,
+                PythonReCompileOptions.DotAll, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited,
+                new Utf8ConstructionPolicy { MaxBytes = 1UL << 20 }, Regex.InfiniteMatchTimeout, CancellationToken.None));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, denied.ResourceKind);
-            fragment = new string('a', 16384);
         }
         var pattern = family switch { 0 => "a[0-9]+", 1 => fragment + ".*z", _ => "z.*" + fragment };
         var input = Encoding.UTF8.GetBytes(family switch

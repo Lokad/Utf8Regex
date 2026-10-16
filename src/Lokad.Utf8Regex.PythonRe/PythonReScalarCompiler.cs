@@ -74,6 +74,12 @@ internal static partial class PythonReScalarCompiler
             {
                 switch (node)
                 {
+                    case PythonReLiteralNode literal when !char.IsSurrogate(literal.Value):
+                        // Python parsing has already expanded case partners.
+                        // This semantic scalar needs no fragment/tree
+                        // parser; isolated surrogates retain the impossible atom.
+                        nodes[node] = PythonReScalarNodeFactory.Literal(literal.Value);
+                        break;
                     case PythonReSequenceNode sequence:
                     {
                         if (frame.Stage == 0) frame.Children = arena.Allocate<Utf8SliceNode>(sequence.Elements.Count, false);

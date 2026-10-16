@@ -9,6 +9,10 @@ namespace Lokad.Utf8Regex.PythonRe;
 // and other IR producers still require their own admission review.
 internal static class PythonReScalarNodeFactory
 {
+    internal static Utf8SliceNode.LiteralNode Literal(int scalar) =>
+        Create((Utf8SliceNodeKind.Literal, scalar, FoldCase: false), static state =>
+            new Utf8SliceNode.LiteralNode(state.scalar, state.FoldCase));
+
     internal static Utf8SliceNode.ConcatNode Concat(Utf8SliceNode[] children) =>
         Create((Utf8SliceNodeKind.Concat, children), static state => new Utf8SliceNode.ConcatNode(state.children));
 

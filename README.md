@@ -48,6 +48,13 @@ hits take1.137ms/177KB. Full cost, noise and control tradeoffs remain in the han
 Package preparation README assets stay frozen;
 the handoff and original manifest record completed qualification without repacking.
 
+The next private **Core/PythonRe scalar.72** input is under preparation. It batches
+bounded UTF8 construction decoding and direct semantic literal-node construction.
+The controlled public source comparison reduces8KiB Python byte-pattern Compile
+48.7->19.4ms and33.0->11.9MB, with an unchanged class-only control. This source
+evidence does not qualify new packages; original69 and independent PCRE71 remain
+immutable. Scalar semantics, captures, interruption and resource admission stay.
+
 Use exact versions and the immutable feed/manifest. The existing
 [qualifier](qualify-scalar-candidate.ps1) builds/packs Core/Python once and records
 detached consumers/provenance;it never publishes. Package README preparation wording
