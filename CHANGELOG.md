@@ -1,5 +1,16 @@
 # Changelog
 
+## PCRE2 source development after scalar.59
+
+- Reuse necessary ASCII leading sets, including nonempty singleton sets, to
+  reject impossible scalar Count subjects before renting VM scratch. Strict
+  validation, original metering/four controls, cancellation/deadline, capture
+  verification and option/empty/reset semantics remain.
+- One bounded public pair reduces a 64 KiB missing-leading-byte finite Count
+  from about 7.35 ms to 4.76 us and about 4 KB to 112 B. Selected hit medians
+  move -1.8..+1.7% across policies with unchanged allocations; controls and sample
+  floors remain explicit. Source only: immutable59/primary55 stay unchanged.
+
 ## Private scalar.59 Core/PCRE2 Count/anchoring input
 
 - Qualify immutable0.4.0-scalar.59, producerb67b9233, for the accumulated Count

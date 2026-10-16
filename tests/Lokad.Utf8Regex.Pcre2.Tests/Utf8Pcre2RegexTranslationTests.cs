@@ -502,13 +502,23 @@ public sealed class Utf8Pcre2RegexTranslationTests
     [Theory]
     [InlineData(@"(?<=x)foo")]
     [InlineData(@"foo\Kbar")]
-    [InlineData(@"(foo)\1")]
+    [InlineData(@"\1(foo)")]
     [InlineData(@"(?R)|foo")]
     public void UnsafeStartSemanticsStayOffTheCandidateSearchPath(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);
 
         Assert.Equal(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
+    }
+
+    [Fact]
+    public void NecessarySingletonPrefixStillVerifiesTheFollowingBackreference()
+    {
+        var regex = new Utf8Pcre2Regex(@"(foo)\1");
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(2, regex.Count("foofoo foo bar foofoo"u8));
+        Assert.False(regex.IsMatch("foo"u8));
+        Assert.Equal("foo", regex.MatchDetailed("xx foofoo"u8).GetGroup(1).GetValueString());
     }
 
     [Theory]

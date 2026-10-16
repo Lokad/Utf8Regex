@@ -18,6 +18,17 @@ identities/refs/locks/provenance/symbols/inventory; scoped native controls agree
 Producer CI is green. [Qualification](QUALIFICATION.md) records exact bytes,
 coverage and a current-cost observation. Older inputs retain their original caveats.
 
+Source development after scalar.59 adds one metered impossibility scan for
+admitted nonempty scalar Count. A necessary ASCII leading set, including a
+singleton, rejects suffixes missing every possible leading byte before VM scratch.
+Hits keep the existing verifier; nullable/explicit-option paths retain their
+progression. Strict validation, original four controls, cancellation/deadline and
+retained-result rules remain. A source pair reduces the 64 KiB `(a+)(b)` miss from
+7.35 ms to 4.76 us finite, with 112 B rather than about 4 KB allocated. Selected
+hits move -1.8..+1.7% with unchanged allocations; controls/floors are recorded in
+[qualification](QUALIFICATION.md). This is outside immutable59 and does not solve
+misses containing a possible leading byte or general candidate/construction work.
+
 Controlled Count reuses one scratch scope for proved finite literal languages;
 leading single literals use existing bounded metered seeking before verification.
 The original invocation, cancellation/deadline and resource controls remain.

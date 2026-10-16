@@ -1735,7 +1735,8 @@ internal static class Pcre2CandidateSearchAnalyzer
         out Pcre2CandidateSearchProgram plan)
     {
         var values = new HashSet<byte>();
-        if (!TryCollectLeadingAsciiBytes(root, request, values) || values.Count is < 2 or > 64)
+        if (Pcre2BacktrackingAnalysis.GetMinimumByteLength(root) == 0 ||
+            !TryCollectLeadingAsciiBytes(root, request, values) || values.Count is < 1 or > 64)
         {
             plan = default;
             return false;
@@ -2891,6 +2892,23 @@ internal static class Pcre2GlobalOperationDriver
                 }
 
                 return true;
+            }
+
+            // A necessary leading-byte set can prove the entire suffix impossible.
+            // Borrow its existing searcher and original authority before renting VM
+            // scratch; finding a byte leaves ordering and verification to Count.
+            var candidates = compiledProgram.CandidateSearch;
+            if (!sliceProgram.SliceProgram.CanMatchEmpty && !sliceProgram.SliceProgram.RightToLeft &&
+                candidates.Kind == Pcre2CandidateSearchKind.LeadingAsciiSet)
+            {
+                var breach = candidates.Searcher.TryFindMatch(input.Bytes, start.Value, input.ByteLength,
+                    false, ref invocation, out _, out var found);
+                Pcre2SliceDriver.ThrowIfSliceBreached(breach);
+                if (!found)
+                {
+                    result = 0;
+                    return true;
+                }
             }
 
             result = Pcre2SliceDriver.Count(

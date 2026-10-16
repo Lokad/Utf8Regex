@@ -1,5 +1,36 @@
 # Managed PCRE2 profile qualification
 
+## Source after scalar.59: necessary leading-set Count
+
+Existing ASCII leading-set analysis now admits nonempty singleton sets and
+excludes nullable roots. Nonempty/LTR slice Count without match options uses one
+existing metered PreparedSearcher scan before VM scratch; only an impossible
+suffix returns zero. A hit continues existing verification. Original invocation,
+four controls, interruption, scalar offsets/captures and reset/option exclusions
+remain. No new payload type, owner, mode, precision accounting or unchecked API.
+
+Full affected Release 5,704 and focused Debug 164 pass. Native PCRE2 10.47
+before/after comparisons cover 688 rows/684 distinct configurations, with zero
+count/live-token/range differences or managed drift. Repeated configurations are
+not distinct coverage. An obsolete singleton routing assertion is replaced by
+explicit prefix/reference-verification coverage; true start exclusions remain.
+
+One quiet-VM Release public pair shares exact Core59 in both contexts. Finite
+64 KiB `(a+)(b)` missing-leading-byte Count falls 7350.13 -> 4.76 us and about
+4 KB -> 112 B; the multi-set miss falls 7531.88 -> 5.45 us. Across policies,
+affected hit medians move -1.77..+1.67%, allocations unchanged. Unchanged controls
+shift up to +3.67%. Of 250 samples, five before/unlimited caseless-control samples
+are 32.09..32.69 ms below the 50 ms target; others exceed it. Worst spread is 7.1%.
+No repeat, Status/snapshot update, broad equivalence or checked-gate claim.
+FullOpts TryCount grows 4136 -> 4437 B, with the checked search/breach/zero branch
+before VM scratch. Late hits/misses containing a possible leading byte remain
+expensive. Construction was not timed; no general required-literal solution.
+
+Evidence: artifacts/pcre2-leading-set-count-20261016/RESULT.md, native-summary.json,
+cost-summary.json, raw lanes/codegen/preflights and captured source. Source only;
+immutable59/primary55 and their scopes stay unchanged. No package/platform matrix
+or consumer adoption implied. CI is recorded separately after source push.
+
 ## Private scalar.59 Count/anchoring input
 
 Immutable0.4.0-scalar.59, producerb67b9233ba21e0130e00fb5e312f26f18dd0fae0,
