@@ -1,9 +1,19 @@
 # Changelog
 
+## Core/PythonRe scalar.62 delivery
+
+- Corrected immutable pair at 3a67a6db: original same-byte Windows/Linux consumers,
+  exact dependency/locks/identities/symbols/SourceLink, capture/catalog controls and
+  green producer CI. Core only permitted SizeOf; PythonRe no unchecked references.
+- Current exact-package public costs include finite limits and captured/cursor
+  results, with noisy and below-target observations explicit. Reuse prior full
+  scalar-data evidence only for unchanged source. Previous packages stay intact;
+  no publication, PCRE2 designation or downstream adoption is implied.
+
 ## Correct Python nullable repeats after their minimum
 
 - `(?:(?(2)(a)|()))+` now consumes `a` after the required empty iteration enables
-  capture2's conditional. Correct higher minima, lazy/possessive forms, capture
+  capture 2's conditional. Correct higher minima, lazy/possessive forms, capture
   rollback and supplementary-scalar results through existing scalar execution.
   Core/PCRE2 retain their previous rule; no repeated-body expansion or new owner.
 - Pinned CPython fixtures and finite denial/interruption/cursor checks cover the

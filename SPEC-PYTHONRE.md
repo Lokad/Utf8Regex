@@ -45,6 +45,12 @@ This correction is outside immutable scalar.61, which retains the demonstrated
 conditional/empty-repeat defect. The existing pinned CPython capture fixture
 corpus includes the new states and controls; source qualification does not rewrite
 that package's historical evidence or designate a new candidate by itself.
+The corrected Core/PythonRe scalar.62 pair at 3a67a6db is now qualified with
+original same-byte Windows/Linux consumers, 104 capture fixtures and 91 semantic
+digests. Exact identities and remaining exclusions are in
+artifacts/core-python-scalar62-20261016/HANDOFF.md. The separate source cost pair
+records 34–37% higher nullable Count cost; correctness does not imply performance
+equivalence or revision of the checked-access 10% gate.
 
 ## Current scope
 

@@ -2,23 +2,22 @@
 
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
-The previously qualified immutable **0.4.0-scalar.61** Core/PythonRe candidate provides Unicode-scalar matching, finite invocation work/depth/working/result limits and covered eager-construction controls. It retains pinned CPython identifier/class data and corrected word-boundary lookbehind, and includes the accumulated Count improvements. Identical package bytes pass original detached Windows/Linux suites and capture/catalog checks; unchanged pinned data retains prior full scalar-census evidence, and producer CI is green. Core retains only permitted `Unsafe.SizeOf`; PythonRe has no unchecked API references. Exact identities, scoped contracts and current public costs are in the [private handoff](artifacts/core-python-scalar61-20261016/HANDOFF.md) and [candidate manifest](artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json). Finite family Count overhead remains; basic metering stays. Lython accepts `Unsafe.SizeOf`; producer qualification does not imply downstream adoption.
+The immutable **0.4.0-scalar.62** Core/PythonRe pair is qualified at clean producer `3a67a6db05ee7a49b20a046a66ecaae2465815b0`. Identical package bytes pass original detached Windows/Linux consumers, exact references/locks/symbols/SourceLink/member checks, and pinned capture/catalog controls; producer CI is green. It provides Unicode-scalar matching, captures, synchronous cancellation, four enforceable finite invocation controls and covered eager construction. PythonRe requires the exact paired Core version. [Handoff and current costs](artifacts/core-python-scalar62-20261016/HANDOFF.md), [immutable manifest](artifacts/scalar-candidates/0.4.0-scalar.62/candidate.json).
 
-Current source corrects a PythonRe nullable-repeat defect retained by scalar.61:
-`(?:(?(2)(a)|()))+` must consume `a` after a required empty iteration enables the
-next conditional. Higher minima and supplementary variants are covered too.
-Development version scalar.62 is reserved for the corrected candidate; it is not
-qualified until its own immutable manifest and receipts exist. Core/PCRE2 keep
-their previous repeat rule. One bounded public comparison records 34–37% higher
-cost for a same-result nullable workload, unchanged allocations and controls
-from -0.7% to +4.1%. Correctness requires the extra iterations; the separate
-checked-access 10% allowance remains unchanged. Scalar.61 references below are
-dated evidence and do not qualify later bytes.
+Scalar.62 corrects a PythonRe defect retained by scalar.61:
+`(?:(?(2)(a)|()))+` consumes `a` after a required empty iteration enables the
+next conditional. Higher minima, lazy/possessive forms and supplementary scalars
+are covered. Core/PCRE2 keep their previous repeat rule. The source comparison
+records 34–37% higher same-result nullable Count cost, unchanged allocations and
+controls from -0.7% to +4.1%. This correctness cost is explicit and does not revise
+the separate 10% checked-access allowance. Core retains only permitted
+`Unsafe.SizeOf`; PythonRe has no unchecked API references. Lython accepts SizeOf;
+producer qualification does not imply downstream adoption.
 
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
-Core/PythonRe61 is a scoped private producer input, independent of PCRE2.
-Existing immutable Core/PythonRe60/55 and independent Core/PCRE2 59 inputs retain
+Core/PythonRe62 is a scoped private producer input, independent of PCRE2.
+Existing immutable Core/PythonRe61/60/55 and independent Core/PCRE2 59 inputs retain
 their exact bytes and recorded scope. No publication, consumer pin/default change or
 complete host/resource/profile acceptance is implied.
 
@@ -29,14 +28,16 @@ current Count workloads with fresh SDK-specific generated comparators, finite
 limits, decode/predecoded controls and raw samples. It identifies substantial
 controlled fixed-width costs without claiming a universal runtime speedup.
 
-Scalar.60 reuses the admitted checked AVX2 fixed-width counter under the original
-finite invocation and retains fallback literal-search data for a whole Count.
-Validation, candidate/branch verification, per-block work, cancellation/deadlines
-and all four controls remain. The exact-package observation gives fixed Count
-about7.9us unlimited/19.8us finite and optional-prefix Count1.82ms/1.36ms, including
-required validation. The handoff retains raw samples, allocation costs and noisy
-or below-floor rows. Earlier source comparisons and historical benchmark tables
-remain dated evidence for their original implementations. The current refresh covers
+Scalar.62 retains the admitted checked AVX2 fixed-width counter, whole-operation
+fallback search data and prepared exact-family union, sharing original invocation
+controls. Its current package observation includes full validation and required
+result shaping: exact-family Count is about 66.7us unlimited/481us finite;
+1000 captured Python matches take about 0.88/0.99ms. Finite family overhead remains
+about 7.2x. Ten fixed Count samples fall below the 50ms sample target, and some
+result-heavy ranges reach 13%; these are operating-cost observations, not fine
+parity/overhead qualification. The handoff retains raw samples, allocations and
+limits. Earlier source comparisons and historical benchmark tables remain dated
+evidence for their original implementations. The current refresh covers
 `literal/sherlock-en` and `structural/method-family-call` at scalar.60 (four
 ordinary/compiled rows), plus `literal-alternate/sherlock-casei-en` at clean
 source c154d6de (two rows). The other172 rows remain historical. The folded

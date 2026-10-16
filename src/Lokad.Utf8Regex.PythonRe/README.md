@@ -4,36 +4,37 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The recorded qualified private Core/PythonRe pair **0.4.0-scalar.61**,
-producer `f29e3dab0069a4e2b8f013d4328900cc8c76534d`, covers strict UTF-8 scalar
-matching, authoritative capture completion, explicitly owned persistent cursors,
-four finite invocation controls and covered eager construction. Original same-byte
-detached Windows/Linux consumers and capture/catalog CPython checks pass. Use
-`artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json`, its immutable feed/config
-and `artifacts/core-python-scalar61-20261016/HANDOFF.md` for exact identities/scope.
+The qualified private Core/PythonRe pair **0.4.0-scalar.62**, producer
+`3a67a6db05ee7a49b20a046a66ecaae2465815b0`, covers strict UTF-8 scalars,
+authoritative captures, explicit cursors, four finite invocation controls and
+covered eager construction. Original same-byte detached Windows/Linux consumers,
+104 pinned capture fixtures and 91 catalog/supplementary digests pass; producer CI
+is green. The actual nuspec requires Core `[0.4.0-scalar.62]`. See
+`artifacts/scalar-candidates/0.4.0-scalar.62/candidate.json` and
+`artifacts/core-python-scalar62-20261016/HANDOFF.md` for exact identities and scope.
 
-Development fixes a nullable-repeat edge case outside scalar.61:
-`(?:(?(2)(a)|()))+` must consume `a` after its first required empty iteration
-sets capture2. The frozen package stops early. Higher minima and supplementary
-variants are affected too. The source uses the existing scalar VM with explicit
-repeat semantics; Core/PCRE2's rule stays unchanged. Keep this known package
-limitation until a newly qualified immutable pair is supplied. Development
-scalar.62 is reserved for that correction; qualification requires its own
-immutable manifest, not the older references in this page.
+Scalar.62 corrects the nullable-repeat defect retained by61:
+`(?:(?(2)(a)|()))+` consumes `a` after its first required empty iteration sets
+capture 2. Higher minima, lazy/possessive forms, supplementary and capture-alternative
+controls agree with pinned CPython. The existing scalar VM retains its layout and
+workspace; Core/PCRE2 keep their rule. Correct additional iterations can use more
+of the selected work/depth/working/result caps. One source cost pair records
+34–37% higher same-result nullable Count cost, unchanged allocations and controls
+from -0.7% to +4.1%; no broader parity or revision of the checked-access 10% gate.
 
-Scalar.61 retains the pinned identifier/class/boundary corrections, with unchanged
-implementation/data witnesses reusing prior full scalar censuses, and adds the
-combined folded Core Count improvements. Current package costs include finite
-limits, captured results, UTF-8 tuples and early cursor disposal; noisy rows remain
-explicit. Scalar.60/55 and independent Core/PCRE259 bytes remain unchanged.
+Pinned identifier/class/case datasets and 37 unchanged source files reuse prior full
+scalar-data evidence. The repeat factory/execution changed and are excluded from
+unchanged-implementation claims. Current exact-package costs cover Count, captured
+results, tuples and cursor disposal; noisy and below-target rows remain explicit.
+Previous61/60/55 and independent Core/PCRE2 scalar.59 bytes remain unchanged.
 
-Core retains only accepted `Unsafe.SizeOf`; PythonRe has no unchecked API references.
-The user confirmed Lython accepts SizeOf on2026-10-16. Frozen61 package README assets
-retain older readiness text and its obsolete rejection warning; this current
-source page and the handoff supersede it. No publication, consumer pin/default
-change or adoption is implied. Defaults/static cached calls remain unlimited;
-complete construction/lazy/default/live-retention and broader profile gates remain
-unfinished. PCRE2 qualifies independently.
+Core retains only accepted `Unsafe.SizeOf`; PythonRe has no unchecked references.
+Lython's former SizeOf disagreement is resolved by the user's 2026-10-16 acceptance.
+Frozen62 README wording records producer-stage readiness; its immutable manifest
+and handoff provide completed qualification. Do not repack to edit those assets.
+No publication, consumer pin/default change or adoption is implied. Defaults and
+static cached calls remain unlimited; complete construction/lazy/default/live-
+retention and broader profile gates remain unfinished. PCRE2 qualifies separately.
 
 The earlier scalar.52 pair completed the Core/PythonRe checked-access batch. Selected Core costs
 against the fixed original fit10%, with unchanged allocations and a narrow
