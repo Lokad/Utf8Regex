@@ -249,6 +249,10 @@ public sealed class Pcre2InvocationWorkspaceTests
             var regex = new Utf8Pcre2Regex("(*MARK:tag)(a+)\\1");
             Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
             for (var i = 0; i < 64; i++) Assert.True(regex.IsMatch("xaaaa"u8));
+            // Warm one complete measurement batch as well as the initial calls,
+            // as in WarmedOneShotBacktrackingDoesNotAllocate. Otherwise runtime
+            // tier transitions can enter the supposed steady-state sample.
+            for (var i = 0; i < 256; i++) Assert.True(regex.IsMatch("xaaaa"u8));
             var correct = true;
             var before = GC.GetAllocatedBytesForCurrentThread();
             for (var i = 0; i < 256; i++) correct &= regex.IsMatch("xaaaa"u8);
