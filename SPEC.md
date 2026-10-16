@@ -1434,6 +1434,14 @@ counting or decode pass; an element per admitted array initialization/copy; an
 iteration per covered core/PythonRe parser and owned tree-conversion loop; and
 one unit per map probe/rehash, sort comparison/swap or preparation resume.
 Core parser bulk delimiter scans and literal copies admit conservative extents.
+Native-literal validation/counting and UTF8 encoding retain their whole-pass
+work admission and Rune algorithms, polling the same construction authority
+between2048 UTF16 pattern units. A scalar crossing the chunk end is completed,
+so the bounded interval is at most2049 units; matching remains over UTF8 scalars.
+These checkpoints charge no additional numeric work and add no allocation.
+Short spans require no extra poll. Interruption can precede a later malformed
+tail or byte acquisition; failure during encoding releases unpublished capacity.
+Other text/encoding producers retain separate coverage.
 The owned in-place heap sort admits each comparison/swap and propagates resource
 failures directly. Core/PythonRe parsers and preparation walkers share live
 explicit-frame depth; denied pushes restore their parent and release admitted

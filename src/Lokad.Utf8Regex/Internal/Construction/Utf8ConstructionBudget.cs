@@ -136,10 +136,17 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         var byteCount = 0;
         for (var offset = 0; offset < input.Length;)
         {
-            if (Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width) != System.Buffers.OperationStatus.Done)
-                throw new ArgumentException("A native literal must contain complete Unicode scalars.", nameof(input));
-            byteCount = checked(byteCount + scalar.Utf8SequenceLength);
-            offset += width;
+            var end = offset + Math.Min(2048, input.Length - offset);
+            if (offset != 0) ChargeWork(0);
+            // A pair may cross the chunk end: finish its scalar before polling.
+            // The pass was admitted above; checkpoints add no numeric work.
+            do
+            {
+                if (Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width) != System.Buffers.OperationStatus.Done)
+                    throw new ArgumentException("A native literal must contain complete Unicode scalars.", nameof(input));
+                byteCount = checked(byteCount + scalar.Utf8SequenceLength);
+                offset += width;
+            } while (offset < end);
         }
         var result = AllocateArray<byte>(byteCount, false);
         try
@@ -148,9 +155,14 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
             var position = 0;
             for (var offset = 0; offset < input.Length;)
             {
-                _ = Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width);
-                position += scalar.EncodeToUtf8(result.AsSpan(position));
-                offset += width;
+                var end = offset + Math.Min(2048, input.Length - offset);
+                if (offset != 0) ChargeWork(0);
+                do
+                {
+                    _ = Rune.DecodeFromUtf16(input[offset..], out var scalar, out var width);
+                    position += scalar.EncodeToUtf8(result.AsSpan(position));
+                    offset += width;
+                } while (offset < end);
             }
             return result;
         }

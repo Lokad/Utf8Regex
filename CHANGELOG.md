@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: bounded literal construction checkpoints
+
+- Poll original cancellation/deadline between bounded chunks of the existing
+  native-literal scalar validation/encoding loops. Preserve paired scalars,
+  two passes, byte acquisition and successful work charges; shorter literals
+  gain no extra polls. Interrupted encoding releases unpublished capacity.
+- Focused construction/resource/scalar checks and one public ordinary Compile
+  pair support the change; affected medians range -0.2..+0.8%, with noisy control
+  retained. No matching-speed claim, new package or unchanged68 requalification.
+
 ## Core/PythonRe scalar.68 qualified dependency
 
 - Accepted necessary-ASCII-leading filtering is included in one immutable pair.
