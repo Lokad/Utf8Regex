@@ -1,5 +1,15 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.71 preparation
+
+- Batch the accepted existing-Core literal Count bridge and lexical repeat
+  rollback stack reuse into one fresh immutable input. Keep original invocation,
+  scalar/capture/retained-result semantics and basic resource admission. Reduced
+  actual work/storage and held capacity intentionally revise numerical cutoffs.
+- Use existing affected build/pack/platform/native/current-cost checks once.
+  Core71 is PCRE dependency only; primary Core/Python69 and prior70/67/failed66
+  stay immutable. No publication, consumer switch or qualification claim yet.
+
 ## Development: reuse PCRE2 repeat rollback storage lexically
 
 - Reuse the existing repeat mutation stack alongside frames in Count/search,

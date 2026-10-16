@@ -57,6 +57,12 @@ measured1.5-3.1% execution-time cost with unchanged allocation; that cost is acc
 and remains explicit. [Source decision](../../artifacts/pcre2-repeat-journal-20261017/RESULT.md).
 This source stays separate from immutable70 qualification and its original costs.
 
+The next private **Core/PCRE2 scalar.71** boundary batches both accepted source
+changes with the existing package/platform/native/current-cost workflow. It is
+under qualification. Its exact Core dependency is71; primary Core/Python69 remains
+independent. Core71 is the PCRE dependency only. Earlier69/70/67 and failed66 stay
+immutable; no new qualification, publication or downstream promotion is claimed yet.
+
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.

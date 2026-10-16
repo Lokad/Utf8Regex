@@ -1,5 +1,16 @@
 # Managed PCRE2 profile qualification
 
+## Independent scalar.71 preparation
+
+Batch accepted81ae89f5 bounded literal Count and0d56ebf9 lexical repeat-journal
+reuse. Existing qualification workflow builds the affected closure and packs
+Core/Pcre once, then the SAME bytes run detached Windows/Linux consumers. Reuse
+existing native probes and one selective exact-package current-cost observation;
+do not replay closed source pairs or their control confirmation. Core C# matches
+qualified69; Core71 is PCRE dependency only, not standalone/Core-Python acceptance.
+Exact identities, finite control/retained result scope and explicit work/capacity
+tradeoffs remain required. Preserve69/70/67/failed66. Qualification in progress.
+
 ## Qualified independent scalar.70 frame-reuse input
 
 Clean producer `1ed45f011d1a2f6ce07ed15b8336c2dfee4036f4`, Release/net10.0. Original archive:
