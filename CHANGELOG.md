@@ -1,5 +1,17 @@
 # Changelog
 
+## Optional-prefix Count search-data lifetime
+
+- Reuse the existing fallback literal-search payload once per Count and across
+  failed candidates in a single search. Preserve candidate/branch selection,
+  verification, strict scalar validation and the original deadline/policy routes;
+  no new cached plan, execution mode or accounting owner.
+- One bounded source pair reduces affected compact/dense/miss Count about40–43%
+  and allocation from1.8–5.4MB to1,792B. Finite/token and optimized controls retain
+  their allocations and move by low single digits. Final nullable-flow cleanup
+  and package costs are identified separately in the experiment receipt; existing
+  immutable inputs and published benchmark snapshots remain unchanged.
+
 ## Controlled fixed-width Count source improvement
 
 - Reuse existing checked AVX2 masks for eligible ASCII fixed-width Count under

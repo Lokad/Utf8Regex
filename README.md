@@ -25,6 +25,13 @@ route needs no VM scratch. Sparse or semantically excluded shapes retain owned
 verification and spent work. This source improvement has its own bounded cost
 receipt and is outside the immutable package inputs above.
 
+Optional-prefix Count also reuses its fallback literal-search data for the whole
+operation, avoiding per-search map construction while retaining candidate order,
+verification and interruption. A bounded source comparison removes megabytes of
+temporary allocation and improves affected dense/miss Count about40–43%; finite
+and mixed-scalar routes remain owned. This is subsequent source work, not a new
+package qualification or a refresh of the historical benchmark tables.
+
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
 proposals. Core costs combine source comparisons and focused final follow-ups;

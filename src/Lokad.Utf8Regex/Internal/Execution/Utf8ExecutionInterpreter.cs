@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 
@@ -41,6 +42,9 @@ internal static partial class Utf8ExecutionInterpreter
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
         var count = 0;
         var index = startIndex;
+        // The fallback prefix family is immutable for the whole Count. Prepare
+        // it lazily once, rather than rebuilding its maps for every match.
+        PreparedLiteralSetSearch? literalSearch = null;
         while (index <= input.Length)
         {
             var found = FindNextSimplePattern(
@@ -50,6 +54,7 @@ internal static partial class Utf8ExecutionInterpreter
                 plan,
                 index,
                 budget,
+                ref literalSearch,
                 out var matchedLength);
             if (found < 0)
             {
@@ -70,6 +75,21 @@ internal static partial class Utf8ExecutionInterpreter
         in AsciiSimplePatternPlan plan,
         int startIndex,
         Utf8ExecutionDeadline budget,
+        out int matchedLength)
+    {
+        PreparedLiteralSetSearch? literalSearch = null;
+        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex,
+            budget, ref literalSearch, out matchedLength);
+    }
+
+    private static int FindNextSimplePattern(
+        ReadOnlySpan<byte> input,
+        Utf8ExecutionProgram? program,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
+        int startIndex,
+        Utf8ExecutionDeadline budget,
+        ref PreparedLiteralSetSearch? literalSearch,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -121,7 +141,8 @@ internal static partial class Utf8ExecutionInterpreter
                     ? (plan.IgnoreCase
                         ? Internal.Search.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], plan.SearchLiterals[0])
                         : Internal.Search.AsciiSearch.IndexOfExact(input[searchFrom..], plan.SearchLiterals[0]))
-                    : Internal.Search.AsciiSearch.IndexOfAnyExact(input[searchFrom..], plan.SearchLiterals);
+                    : (literalSearch ??= new PreparedLiteralSetSearch(
+                        AsciiSearch.CreateExactLiteralSearchData(plan.SearchLiterals))).IndexOf(input[searchFrom..]);
                 if (relative < 0)
                 {
                     matchedLength = 0;
