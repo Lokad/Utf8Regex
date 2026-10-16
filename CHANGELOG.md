@@ -1,5 +1,19 @@
 # Changelog
 
+## Reuse metered literal families for Python bulk results
+
+- Capture-free nonempty exact families reuse the existing native invocation
+  cursor with the original four limits,token and deadline. Standard result-buffer
+  staging replaces raw range pushes; collection/shaping failures use the existing
+  public failure factory. Caller byte caps govern early timeout diagnostics.
+- Selected public UTF8 bulk costs fall466.7us ->5.6us late and139.6us ->112.1us
+  dense. Dense finite allocates about2.2KB more; unlimited dense rises5.4%.
+  Count controls remain within0.8%; five secondary samples are below50ms.
+- Strict scalars,priority,byte floors,retained outputs and admission/cleanup pass
+  focused checks. Smaller VM requirements and extra staged traffic change cutoffs.
+  No basic metering,API ownership or new accounting framework. Source only;
+  immutable64 stays unchanged,with no package qualification per isolated edit.
+
 ## Core/PythonRe scalar.64 qualified dependency
 
 - Producer c35e2f50 packages the accumulated syntax-error, deadline/native bulk

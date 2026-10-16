@@ -108,7 +108,10 @@ public sealed partial class Utf8Regex
         {
             throw CreateExecutionResourceFailure(ref invocation);
         }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input, Pattern, MatchTimeout, invocation.Budget.Limits);
+        }
         finally { if (reservation != 0) invocation.Ledger.Release(reservation); }
     }
 }

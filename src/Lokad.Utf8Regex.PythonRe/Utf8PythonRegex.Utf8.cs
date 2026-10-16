@@ -9,9 +9,9 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>UTF-8 backend engines for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
-    private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, out Utf8PythonMatchData[] matches)
+    private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken, out Utf8PythonMatchData[] matches)
     {
-        if (!TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+        if (!TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))
         {
             matches = [];
             return false;
@@ -36,6 +36,10 @@ public sealed partial class Utf8PythonRegex
             ranges.Checkpoint();
             matches = completed;
             return true;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
+        {
+            throw ranges.ResourceFailure();
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -80,6 +84,7 @@ public sealed partial class Utf8PythonRegex
     private bool TryCollectUtf8MatchRanges(
         ReadOnlySpan<byte> input,
         int startOffsetInBytes,
+        CancellationToken cancellationToken,
         out PythonReUtf8MatchRangeBuffer ranges)
     {
         if (_utf8Regex is null)
@@ -92,13 +97,13 @@ public sealed partial class Utf8PythonRegex
         try
         {
             Utf8ValueMatchEnumerator enumerator;
-            if (MatchTimeout == Timeout.InfiniteTimeSpan)
+            if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
                 enumerator = startOffsetInBytes == 0
                     ? _utf8Regex.EnumerateMatches(input)
                     : _utf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
             else
             {
-                var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+                var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
                 enumerator = _utf8Regex.EnumerateMatchesForResult(input, startOffsetInBytes, ref invocation);
             }
 
@@ -121,6 +126,13 @@ public sealed partial class Utf8PythonRegex
             }
 
             return true;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
+        {
+            var failure = ranges.ResourceFailure();
+            ranges.Dispose();
+            ranges = default;
+            throw failure;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {

@@ -21,7 +21,7 @@ public sealed partial class Utf8PythonRegex
 
     private ref struct PythonReUtf8MatchRangeBuffer
     {
-        private Utf8InvocationStateBuffer<PythonReUtf8MatchRange> _ranges;
+        private Utf8InvocationResultBuffer<PythonReUtf8MatchRange> _ranges;
         private Utf8SliceInvocation _invocation;
         private Utf8InvocationResultLedger _results;
 
@@ -38,9 +38,8 @@ public sealed partial class Utf8PythonRegex
         internal void Add(PythonReUtf8MatchRange range)
         {
             var breach = _invocation.TryChargeInputStep();
-            if (breach == Utf8ExecutionLimitKind.None) breach = _ranges.TryPush(range, ref _invocation);
-            if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException($"Python range storage exceeded {breach}.");
+            if (breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
+            _ranges.Add(range, ref _invocation);
         }
 
         internal T[] AllocateResultArray<T>(int count)
@@ -56,6 +55,9 @@ public sealed partial class Utf8PythonRegex
                 new Utf8InvocationBufferControl(ref _invocation));
             return bytes;
         }
+
+        internal bool HasResourceFailure => _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None;
+        internal Utf8ResourceLimitExceededException ResourceFailure() => _invocation.Budget.CreateResourceFailure();
 
         internal void Checkpoint() => Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref _invocation));
 

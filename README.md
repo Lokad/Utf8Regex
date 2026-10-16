@@ -22,6 +22,16 @@ uses owned Unicode16 pairs; PythonRe remains pinned15.1 and keeps its corrected
 mandatory-empty repeat behavior. No shipped BCL matcher/results or UTF16 engine.
 Core only references permitted Unsafe.SizeOf, accepted by Lython; PythonRe has none.
 
+Development beyond immutable64 reuses the existing metered literal-family
+cursor for eligible finite bulk results. One public UTF8 source pair observes
+late4KB466.7us ->5.6us (about84x) and dense256-result139.6us ->112.1us,with all
+four controls/live tokens preserved. Dense finite allocation grows about2.2KB;
+unlimited dense is5.4% slower. Other shapes are correctness-qualified,not timed.
+Five secondary-control samples were below50ms; the unchanged Count control stays
+within0.8%. This is source evidence for the next coherent boundary; it does not
+change64's measured costs or package bytes. See
+`artifacts/python-finite-bulk-native-20261016/RESULT.md` for raw scope/tradeoffs.
+
 One current exact-package public observation includes full validation, required
 output/retention, all four finite caps and live tokens. All160 samples exceed50ms;
 raw allocations, BCL overlap/exclusions and noisy controls remain explicit. Family

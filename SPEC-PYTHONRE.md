@@ -253,9 +253,16 @@ invocation authority before subject validation or byte-floor projection. Eligibl
 native collection borrows that invocation through discovery and required shaping;
 it does not start a second deadline after validating a prefix. Native byte entry
 needs no full coordinate map; derived UTF-16 offsets still follow scalar boundaries.
-The canonical counted string-literal route already shares its invocation. Infinite
-collection and finite-budget/live-token scalar routes retain their existing scope.
-This source correction follows immutable scalar.63; its original receipts are unchanged.
+The canonical counted string-literal route already shares its invocation. Source
+beyond immutable scalar.64 also permits nonempty,capture-free exact literal families
+to use the existing prepared cursor with finite invocation limits and live tokens.
+Range staging uses the standard result buffer: work,working/result capacity and
+growth overlap are admitted before acquisition,shared with final shaping. Neutral
+helper failures report the original public resource kind; timeout diagnostics use
+caller byte limits. Less VM scratch/depth can admit tighter policies,while extra
+range staging may consume more result traffic. Other controlled/canonical/captured
+routes retain their guards. No new public policy switch or ownership model.
+These source corrections preserve the original immutable63/64 receipts.
 
 Template Replace/Subn byte and string operations also create their invocation
 before replacement-cache access. Existing cache checkpoints observe the call's

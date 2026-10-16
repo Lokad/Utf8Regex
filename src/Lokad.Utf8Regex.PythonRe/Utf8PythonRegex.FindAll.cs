@@ -12,6 +12,11 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>Find-all entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
+    // Optional Core owns the equivalent prepared exact family, while the caller's
+    // invocation supplies every limit. Other controlled bulk paths remain scalar.
+    private bool CanCollectControlledLiteralFamily =>
+        _utf8Regex?.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals;
+
     /// <summary>Materializes all non-overlapping matches.</summary>
     public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input) => FindAll(input, 0);
 
@@ -20,13 +25,14 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchData[] FindAllCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || _canMatchEmpty || _translation.CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
+        if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !CanCollectControlledLiteralFamily) ||
+            _canMatchEmpty || _translation.CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
             FindAllScalar(input, startOffsetInBytes, cancellationToken, out var scalarResult);
             return scalarResult;
         }
         ValidateStartOffset(input, startOffsetInBytes);
-        if (TryFindAllViaUtf8Regex(input, startOffsetInBytes, out var utf8Matches))
+        if (TryFindAllViaUtf8Regex(input, startOffsetInBytes, cancellationToken, out var utf8Matches))
         {
             return utf8Matches;
         }
@@ -54,14 +60,15 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonFindAllResult FindAllToStringsCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || _canMatchEmpty || _translation.CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
+        if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !CanCollectControlledLiteralFamily) ||
+            _canMatchEmpty || _translation.CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
             FindAllScalarStrings(input, startOffsetInBytes, cancellationToken, out var scalarResult);
             return scalarResult;
         }
         ValidateStartOffset(input, startOffsetInBytes);
         if (TryFindAllCanonicalLiteral(input, startOffsetInBytes, out var canonicalResult)) return canonicalResult;
-        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))
         {
             try
             {
@@ -76,6 +83,10 @@ public sealed partial class Utf8PythonRegex
                 {
                     Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [],
                 };
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
+            {
+                throw ranges.ResourceFailure();
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
@@ -106,13 +117,14 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonFindAllUtf8Result FindAllToUtf8Core(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        if (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || _canMatchEmpty || _translation.CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
+        if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !CanCollectControlledLiteralFamily) ||
+            _canMatchEmpty || _translation.CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
             FindAllScalarUtf8(input, startOffsetInBytes, cancellationToken, out var scalarResult);
             return scalarResult;
         }
         ValidateStartOffset(input, startOffsetInBytes);
-        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+        if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))
         {
             try
             {
@@ -123,6 +135,10 @@ public sealed partial class Utf8PythonRegex
                 {
                     Shape = Utf8PythonFindAllShape.FullMatch, ScalarValues = values, TupleValues = [],
                 };
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && ranges.HasResourceFailure)
+            {
+                throw ranges.ResourceFailure();
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {

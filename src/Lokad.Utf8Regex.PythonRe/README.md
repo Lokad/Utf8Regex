@@ -29,6 +29,16 @@ mandatory empty captures. Authoritative captures/completion, retained results,
 reference-cursor aliases/disposal and four finite invocation controls remain.
 Core retains only accepted Unsafe.SizeOf; PythonRe has no unchecked references.
 
+Development beyond immutable64 reuses the existing metered literal-family
+cursor for eligible finite bulk results. One public UTF8 source pair observes
+late4KB466.7us ->5.6us (about84x) and dense256-result139.6us ->112.1us,with all
+four controls/live tokens preserved. Dense finite allocation grows about2.2KB;
+unlimited dense is5.4% slower. Other shapes are correctness-qualified,not timed.
+Five secondary-control samples were below50ms; the unchanged Count control stays
+within0.8%. This is source evidence for the next coherent boundary; it does not
+change64's measured costs or package bytes. See
+`artifacts/python-finite-bulk-native-20261016/RESULT.md` for raw scope/tradeoffs.
+
 Current exact-package ordinary costs include1000 UTF8 tuples0.659ms unlimited/
 0.705ms finite. A4KB bulk value operation with30s timeout takes5.5us with unlimited
 invocation caps/480us finite, about88x: finite execution still selects the owned
