@@ -7,7 +7,7 @@ Windows/Linux detached package suites, native-overlap probes, current costs and
 the stated scope. Actual PCRE2 nuspec pins Core `[0.4.0-scalar.67]`.
 [Handoff](../../artifacts/pcre2-scalar67-delivery-20261016/HANDOFF.md) and
 [consumption notes](../../artifacts/pcre2-scalar67-delivery-20261016/CONSUMING.md).
-Core/PythonRe65 remains independent; no PythonRe67 or standalone Core67 package
+Core/PythonRe69 remains independent; no PythonRe67 or standalone Core67 package
 acceptance, publication, downstream pin/default switch or adoption is implied.
 
 The batch includes necessary-leading-set Count and owned supplementary Unicode16
@@ -29,10 +29,17 @@ the handoff/original archive record completed qualification without repacking.
 
 Subsequent source work reuses the existing backtracking frame stack within one
 Count/search scope. A bounded public comparison against immutable67 reduced finite
-caseless Count allocation by about66% and execution time by13–14%; the unchanged
+caseless Count allocation by about66% and execution time by13-14%; the unchanged
 slice control ranged from -3.2% to +0.8%. Remaining per-attempt buffers still
 allocate. This source change is staged for a later package boundary; it does not
 change the qualified67 bytes. [Experiment](../../artifacts/pcre2-count-frames-20261016/RESULT.md).
+
+The next independent private **Core/PCRE2 scalar.70** boundary qualifies that
+frame reuse with existing package, portable consumer, native-overlap and current-
+cost checks. Qualification is in progress. Its exact Core dependency will be
+scalar.70; do not mix it with PythonRe69's exact Core69 pin. Core70 is tested here
+as the PCRE dependency, not a new standalone Core/Python release. Qualified67/69
+and failed66 bytes remain unchanged. No publication or consumer promotion.
 
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2

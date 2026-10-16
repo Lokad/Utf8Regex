@@ -1,5 +1,16 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.70 preparation
+
+- Batch the accepted lexical backtracking-frame reuse into a distinct immutable
+  Core/PCRE2 input. Preserve scalar semantics, captures, original invocation,
+  interruption and all four finite controls; held high-water capacity changes
+  working overlap intentionally. No new cursor owner or GC lifetime mechanism.
+- Use the existing scoped package/platform/native/current-cost workflow once.
+  Core source matches qualified69; Core70 is the PCRE dependency only. Keep
+  Core/PythonRe69, PCRE67 and failed66 unchanged. No qualification, publication
+  or downstream promotion is claimed during preparation.
+
 ## Core/PythonRe scalar.69 qualified dependency
 
 - Qualify the immutable pair from `98c4b20a` on Windows/Linux: exact dependency,

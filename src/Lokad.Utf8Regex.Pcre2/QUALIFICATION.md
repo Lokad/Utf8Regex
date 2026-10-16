@@ -1,5 +1,21 @@
 # Managed PCRE2 profile qualification
 
+## Independent scalar.70 preparation
+
+This boundary qualifies the accepted dc22258c lexical backtracking-frame reuse.
+One existing producer dependency build and pack/symbol pair, detached Windows
+then SAME bytes on Linux, existing exact-identity/member/native-overlap checks,
+and one selective current-cost observation. Core C# matches qualified69; Core70
+is tested as the PCRE dependency, not a standalone Core/Python qualification.
+Preserve67/69 and original failed66. No qualification or adoption claim yet.
+
+Frames retain their existing lexical owner, actual capacity admission and
+finally-release path. Attempts truncate logical state; nested assertions retain
+separate stacks. Held high-water capacity can increase later working overlap;
+repeated acquisition work falls. Other stacks/vectors and all basic metering,
+interruption, scalar/capture/result contracts remain. Frozen reset/consumed-range
+clauses and twelve known BMP final-sigma replacement differences stay explicit.
+
 ## Private scalar.67 leading-set and supplementary-case input
 
 Clean producer `db9526f3a90fef2c9f2369e952ef6bafbec59e5a`, Release/net10.0.
