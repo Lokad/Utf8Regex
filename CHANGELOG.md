@@ -1,5 +1,13 @@
 # Changelog
 
+## Retire unused adapter split bridge
+
+- Remove the unreferenced internal split-cursor bridge that created an independent
+  budget and described obsolete BCL fallback. Preserve active scalar/capture-map
+  execution and the public API. Existing split/findall/resource/API checks pass.
+- Captured PythonRe UTF-8 findall already publishes byte ranges directly; no new
+  projection route or capture-layout machinery is added. Scalar.61 stays immutable.
+
 ## Core/PythonRe scalar.61 delivery
 
 - Qualify one immutable pair for the combined original-invocation folded Count

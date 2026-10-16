@@ -2218,7 +2218,7 @@ public sealed partial class Utf8Regex
     {
         // R03: multi-group top-level literal alternations with a branch-to-group map discover
         // through the family cursor and shape from owned spans. The cursor scans left to right,
-        // so right-to-left shapes keep the BCL routes.
+        // so right-to-left shapes keep scalar capture execution.
         map = null;
         if (_literalFamilyCaptureMap is null ||
             _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
@@ -2228,33 +2228,6 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        map = _literalFamilyCaptureMap;
-        return true;
-    }
-
-    // Adapter-owned split discovery: literal shapes (singular or family, grouped or not) share
-    // one branch-indexed cursor over the construction-time capture map. False declines to the
-    // adapter BCL routes; the caller validates branch identity on its first hit.
-    internal bool TryCreateOwnedSplitCursor(ReadOnlySpan<byte> input, out Utf8OperationMatchCursor cursor, out Utf8LiteralFamilyCaptureMap? map)
-    {
-        cursor = default;
-        map = null;
-        if (_literalFamilyCaptureMap is null ||
-            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
-            UsesRightToLeft() ||
-            ShouldUseKelvinSignFallback(input))
-        {
-            return false;
-        }
-
-        var validation = TryUseAsciiInputValidationShortcut(input)
-            ? default
-            : Utf8Validation.Validate(input);
-        cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-            _preparedRegex,
-            input,
-            validation,
-            CreateExecutionBudget());
         map = _literalFamilyCaptureMap;
         return true;
     }
