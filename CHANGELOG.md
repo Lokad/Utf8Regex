@@ -1,5 +1,20 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.70 qualified dependency
+
+- Qualify the immutable pair from `1ed45f01`: same-byte Windows/Linux5734
+  discovered PCRE tests,16frame cases each, exact identities and fresh public
+  restore pass. Reused native688leading/576case rows retain only12known BMP
+  replacement differences. Producer CI is green; Core70 is PCRE dependency only.
+- Deliver lexical frame reuse with original admission/interruption/capture/result
+  contracts. Held high-water capacity can increase later working overlap; repeated
+  acquisition work falls. Other stacks remain unchanged.
+- Record exact current finite costs: caseless1000hits1.366ms/609KB,Garay512hits
+  687us/313KB,captured1000hits339us,finite-language119us.155samples exceed69ms;
+  remaining gaps/noise explicit. No closed source-pair replay or Status change.
+- Preserve primary Core/Python69, independent67 and failed66; no publication,
+  external pins/defaults/adoption, Python70 or standalone Core70 qualification.
+
 ## Independent Core/PCRE2 scalar.70 preparation
 
 - Batch the accepted lexical backtracking-frame reuse into a distinct immutable

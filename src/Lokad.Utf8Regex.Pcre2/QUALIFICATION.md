@@ -1,20 +1,38 @@
 # Managed PCRE2 profile qualification
 
-## Independent scalar.70 preparation
+## Qualified independent scalar.70 frame-reuse input
 
-This boundary qualifies the accepted dc22258c lexical backtracking-frame reuse.
-One existing producer dependency build and pack/symbol pair, detached Windows
-then SAME bytes on Linux, existing exact-identity/member/native-overlap checks,
-and one selective current-cost observation. Core C# matches qualified69; Core70
-is tested as the PCRE dependency, not a standalone Core/Python qualification.
-Preserve67/69 and original failed66. No qualification or adoption claim yet.
+Clean producer `1ed45f011d1a2f6ce07ed15b8336c2dfee4036f4`, Release/net10.0. Original archive:
+`artifacts/package-qualification/archive/1ed45f011d1a2f6ce07ed15b8336c2dfee4036f4/`.
+Manifest SHA256 `64A98A964E35957AB24C4D6C2BC6D6EF5B3DEEA65EDBF4644C44E4B2D326A269`.
+[Handoff](../../artifacts/pcre2-scalar70-delivery-20261016/HANDOFF.md) and
+[restore instructions](../../artifacts/pcre2-scalar70-delivery-20261016/CONSUMING.md)
+record exact identities, contracts and current costs. Actual PCRE nuspec pins
+Core[70]. Core C# matches qualified69; Core70 is tested as PCRE dependency only.
+Primary Core/Python69 and independent67/failed66 remain immutable; no Python70.
 
-Frames retain their existing lexical owner, actual capacity admission and
-finally-release path. Attempts truncate logical state; nested assertions retain
-separate stacks. Held high-water capacity can increase later working overlap;
-repeated acquisition work falls. Other stacks/vectors and all basic metering,
-interruption, scalar/capture/result contracts remain. Frozen reset/consumed-range
-clauses and twelve known BMP final-sigma replacement differences stay explicit.
+Original same-byte Windows/Linux5734discovered tests pass, including16frame
+fixture cases per platform, with existing duplicate-ID warnings preserved.
+One4.85s dependency build/pack-symbol each; no Linux library producer or suite
+replay. Exact identities/refs/locks/feed/cache/DLLs/PDB/SourceLink pass; existing
+archive verifier checks7artifacts. Both inventories retain only accepted SizeOf.
+Reused native hosts:688leading observations0differences;576case rows exactly
+match67, retaining only the12known BMP final-sigma replacement differences.
+Public API/frozen normative spec unchanged; only historical evidence pointer added.
+
+Frames retain lexical owner/admission/finally release, attempts truncate, nested
+assertions retain separate stacks. Held high-water capacity can increase later
+working overlap; repeated acquisition work falls. Other stacks/vectors and all
+basic metering, interruption, scalar/capture/result contracts remain. Fresh
+final-archive public consumer and producerCI38970723252 pass. No consumer switch.
+
+One current exact-package observation:155samples,min69.499ms,all above50ms,all
+timeouts infinite,all4finite/live-token. Finite caseless1000hits1.366ms/609KB;
+Garay512hits687us/313KB;captured1000hits339us/5888B;finite-language119us versus
+10.7us unlimited;64KiB missing-leading miss4.40us. Remaining gaps and noise explicit:
+managed max12.13% on unlimited captures,BCL max4.65%. No repeated source pair,
+Status/broad parity/new checked gate. Package README preparation assets stay frozen.
+Broader profile/construction/default/live-retention/host/adoption objectives remain open.
 
 ## Private scalar.67 leading-set and supplementary-case input
 

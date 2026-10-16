@@ -40,8 +40,9 @@ composes covered capacity with existing owners;complete construction,lazy,defaul
 live-retention,RSS/host containment and full SPEC remain unfinished. This scoped
 input does not imply publication,consumer pins/defaults/adoption or POSIX-longest
 selection. Published0.3 packages retain their former UTF16 contract. Qualified65
-and earlier inputs remain immutable;PCRE67 qualifies independently. Later PCRE
-frame reuse remains source-staged. Package preparation README assets stay frozen;
+and earlier inputs remain immutable. Independent [PCRE70](artifacts/pcre2-scalar70-delivery-20261016/HANDOFF.md)
+qualifies frame reuse with its own exact Core70 pin; keep it separate from Python69.
+Package preparation README assets stay frozen;
 the handoff and original manifest record completed qualification without repacking.
 
 Use exact versions and the immutable feed/manifest. The existing
