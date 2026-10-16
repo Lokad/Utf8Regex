@@ -1,5 +1,16 @@
 # Changelog
 
+## Core/PythonRe scalar.69 candidate preparation
+
+- Batch bounded construction polling,terminal class-repeat VM fusion and unused
+  repeat-vector omission into one distinct immutable input. Existing scalar/class
+  semantics, basic metering, original interruption and result lifetime remain.
+  Numeric admission changes reflect less actual work/storage; captured-control
+  performance tradeoffs stay explicit.
+- Existing package/provenance/portable consumer/oracle/current-cost tools qualify
+  this coherent boundary once. Preserve68 and independent PCRE67/failed66;
+  no69 qualification,publication or consumer switch yet.
+
 ## Development: omit unused terminal-root repeat vectors
 
 - Reuse the same complete VM eligibility predicate to omit two unused repeat

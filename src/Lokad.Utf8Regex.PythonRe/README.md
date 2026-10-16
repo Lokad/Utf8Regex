@@ -13,6 +13,13 @@ exact refs/locks/DLLs/symbols/SourceLink,final-feed public restore and
 record identities,current costs and exclusions. Qualified65/earlier inputs stay
 immutable;PCRE2 qualifies independently.
 
+The next private Core/PythonRe scalar.69 candidate batches the terminal scalar-
+class VM and unused-vector removal with bounded literal construction polling.
+The same class semantics, basic metering, original interruption and result/alias
+contracts remain; fewer actual frames/work/storage revise admission intentionally.
+Package/platform/oracle/current-cost qualification is in progress. Qualified68
+stays immutable; no69 qualification, publication or consumer adoption is claimed.
+
 The mandatory first-ASCII-literal filter skips impossible starts with bounded
 checked spans;the same Python VM verifies every survivor. Match/FullMatch remain
 anchored to their requested start. Whole UTF8 validation,captures,scalar byte

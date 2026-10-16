@@ -12,6 +12,13 @@ Actual PythonRe nuspec pins Core `[0.4.0-scalar.68]`.
 [Handoff and exact scope](artifacts/core-python-scalar68-20261016/HANDOFF.md),
 [consumption instructions](artifacts/core-python-scalar68-20261016/CONSUMING.md).
 
+The next private Core/PythonRe scalar.69 candidate batches the terminal scalar-
+class VM and unused-vector removal with bounded literal construction polling.
+The same class semantics, basic metering, original interruption and result/alias
+contracts remain; fewer actual frames/work/storage revise admission intentionally.
+Package/platform/oracle/current-cost qualification is in progress. Qualified68
+stays immutable; no69 qualification, publication or consumer adoption is claimed.
+
 Scalar.68 includes the accepted necessary-ASCII-leading filter: bounded checked
 search skips impossible starts,then the same Python scalar VM verifies survivors.
 Captures,strict whole-input validation,byte floors,pinned predicates,original
