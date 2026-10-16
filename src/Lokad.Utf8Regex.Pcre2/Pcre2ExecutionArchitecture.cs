@@ -2864,6 +2864,19 @@ internal static class Pcre2GlobalOperationDriver
         var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor, budget))
         {
+            if (program is Pcre2BacktrackingDirectProgram)
+            {
+                // Count has one lexical owner. Copied public value cursors never
+                // acquire owned scratch, and release uses the cursor's budget.
+                var frames = Pcre2BacktrackingRunner.CreateFrames(ref budget, 0);
+                try
+                {
+                    result = 0;
+                    while (cursor.MoveNext(ref frames)) result = checked(result + 1);
+                    return true;
+                }
+                finally { cursor.ReleaseFrames(ref frames); }
+            }
             result = 0;
             while (cursor.MoveNext())
             {
@@ -3237,6 +3250,19 @@ internal ref struct Pcre2GlobalMatchCursor
         return moved;
     }
 
+    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+    {
+        if (_kind != Pcre2GlobalCursorKind.Direct) return MoveNext();
+        var control = WorkingBufferControl;
+        Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
+        var moved = _direct.MoveNext(ref frames);
+        Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
+        return moved;
+    }
+
+    internal void ReleaseFrames(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+        => _direct.ReleaseFrames(ref frames);
+
     private enum Pcre2GlobalCursorKind : byte
     {
         None = 0,
@@ -3477,7 +3503,17 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             request,
             budget);
 
+    internal void ReleaseFrames(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+        => frames.Dispose(ref _budget);
+
     internal bool MoveNext()
+    {
+        var frames = Pcre2BacktrackingRunner.CreateFrames(ref _budget, 0);
+        try { return MoveNext(ref frames); }
+        finally { frames.Dispose(ref _budget); }
+    }
+
+    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
     {
         while (_retryState != Pcre2GlobalRetryState.Finished)
         {
@@ -3589,7 +3625,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             _restartPosition,
                             _firstMatchingPosition,
                             options,
-                            ref _budget);
+                            ref _budget, ref frames);
                         match = new Pcre2DirectGlobalMatch(
                             backtrackingMatch.Success,
                             backtrackingMatch.StartOffsetInBytes,

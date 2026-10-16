@@ -27,6 +27,13 @@ metadata and scope corrections are preserved; no before/after replay, snapshot/
 Status or broad-parity claim. Package README preparation wording is frozen;
 the handoff/original archive record completed qualification without repacking.
 
+Subsequent source work reuses the existing backtracking frame stack within one
+Count/search scope. A bounded public comparison against immutable67 reduced finite
+caseless Count allocation by about66% and execution time by13–14%; the unchanged
+slice control ranged from -3.2% to +0.8%. Remaining per-attempt buffers still
+allocate. This source change is staged for a later package boundary; it does not
+change the qualified67 bytes. [Experiment](../../artifacts/pcre2-count-frames-20261016/RESULT.md).
+
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
 10.47 standard-matcher profile over `ReadOnlySpan<byte>` and `Span<byte>`.
@@ -439,6 +446,15 @@ resource denial stays sticky with its PCRE2 kind. Exclusive scratch releases and
 can reuse capacity; spent work is not refunded. Native step units, polling cadence,
 diagnostics and bounded state stacks remain, with scalar-slice diagnostic hooks
 excluded from native steps. Fixed enforcement metadata has separate scope.
+
+Backtracking frames retain high-water capacity across failed starts in one search,
+and across matches in one Count call. Capacity stays charged until that lexical
+scope exits; attempts reset logical frame state, and nested assertions keep
+separate stacks. A later attempt can therefore require a larger simultaneous
+working allowance, while reused capacity avoids repeated acquisition work.
+Depth still measures live logical frames. All exits release exclusive capacity;
+copied public cursors acquire no new scratch owner. Other per-attempt buffers and
+the restriction against finite calls growing shared pool retention remain.
 
 Scalar.6 development corrects native literal deadline polling at entry, the
 existing bounded search chunks and return, including short hits/misses and empty

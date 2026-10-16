@@ -187,6 +187,21 @@ internal static class Pcre2BacktrackingRunner
             Pcre2CaptureMaterialization.None,
             ref budget).ToCharacterMatch();
 
+    internal static Pcre2InvocationStateStack<Pcre2BacktrackingFrame> CreateFrames(
+        scoped ref Pcre2ResourceBudget budget, int depthBase)
+    {
+        var limit = budget.Limits.DepthLimit == 0 ? int.MaxValue : (int)Math.Min(budget.Limits.DepthLimit, int.MaxValue);
+        return new(limit == int.MaxValue ? limit : Math.Max(0, limit - depthBase), budget.CollectsDiagnostics);
+    }
+
+    internal static Pcre2CharacterMatch Match(
+        Pcre2BacktrackingProgram program, Pcre2CandidateSearchProgram candidateSearch,
+        ref Utf8ValidatedInput input, Utf8BytePosition searchStart, Utf8BytePosition firstMatchingPosition,
+        Pcre2MatchOptions matchOptions, ref Pcre2ResourceBudget budget,
+        scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+        => MatchCore(program, candidateSearch, ref input, searchStart, firstMatchingPosition,
+            matchOptions, Pcre2CaptureMaterialization.None, ref budget, ref frames).ToCharacterMatch();
+
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchProgram candidateSearch,
@@ -231,6 +246,26 @@ internal static class Pcre2BacktrackingRunner
         Pcre2MatchOptions matchOptions,
         Pcre2CaptureMaterialization captureMaterialization,
         ref Pcre2ResourceBudget budget)
+    {
+        var frames = CreateFrames(ref budget, 0);
+        try
+        {
+            return MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
+                matchOptions, captureMaterialization, ref budget, ref frames);
+        }
+        finally { frames.Dispose(ref budget); }
+    }
+
+    private static Pcre2BacktrackingMatch MatchCore(
+        Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Utf8BytePosition firstMatchingPosition,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CaptureMaterialization captureMaterialization,
+        ref Pcre2ResourceBudget budget,
+        scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
     {
         var bytes = input.Bytes;
         var anchored = program.RestrictsSearchToInitialCandidate ||
@@ -285,6 +320,7 @@ internal static class Pcre2BacktrackingRunner
                     0,
                     false,
                     ref budget,
+                    ref frames,
                     out var match,
                     out var failure))
             {
@@ -562,13 +598,40 @@ internal static class Pcre2BacktrackingRunner
         out Pcre2BacktrackingMatch match,
         out Pcre2BacktrackingFailure failure)
     {
+        var frames = CreateFrames(ref budget, depthBase);
+        try
+        {
+            return TryMatchAt(program, input, ref projectionInput, candidate, firstMatchingPosition,
+                matchOptions, captureMaterialization, initialCaptureStarts, initialCaptureEnds,
+                depthBase, isAssertion, ref budget, ref frames, out match, out failure);
+        }
+        finally { frames.Dispose(ref budget); }
+    }
+
+    private static bool TryMatchAt(
+        Pcre2BacktrackingProgram program,
+        ReadOnlySpan<byte> input,
+        ref Utf8ValidatedInput projectionInput,
+        int candidate,
+        int firstMatchingPosition,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CaptureMaterialization captureMaterialization,
+        ReadOnlySpan<int> initialCaptureStarts,
+        ReadOnlySpan<int> initialCaptureEnds,
+        int depthBase,
+        bool isAssertion,
+        ref Pcre2ResourceBudget budget,
+        scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        out Pcre2BacktrackingMatch match,
+        out Pcre2BacktrackingFailure failure)
+    {
         var configuredFrameLimit = budget.Limits.DepthLimit == 0
             ? int.MaxValue
             : (int)Math.Min(budget.Limits.DepthLimit, int.MaxValue);
         var frameLimit = configuredFrameLimit == int.MaxValue
             ? int.MaxValue
             : Math.Max(0, configuredFrameLimit - depthBase);
-        var frames = new Pcre2InvocationStateStack<Pcre2BacktrackingFrame>(frameLimit, budget.CollectsDiagnostics);
+        var initialFrameRents = frames.RentCount;
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var subroutineCalls = new Pcre2InvocationStateStack<Pcre2SubroutineCallFrame>(frameLimit, budget.CollectsDiagnostics);
@@ -1533,7 +1596,9 @@ internal static class Pcre2BacktrackingRunner
         }
         finally
         {
-            var stackRents = frames.RentCount +
+            var frameRents = frames.RentCount - initialFrameRents;
+            var frameGrowths = initialFrameRents == 0 ? Math.Max(0, frameRents - 1) : frameRents;
+            var stackRents = frameRents +
                 repeatMutations.RentCount +
                 captureMutations.RentCount +
                 subroutineCalls.RentCount +
@@ -1541,7 +1606,7 @@ internal static class Pcre2BacktrackingRunner
                 atomicCheckpoints.RentCount +
                 markMutations.RentCount +
                 markTrail.RentCount;
-            var stackGrowths = Math.Max(0, frames.RentCount - 1) +
+            var stackGrowths = frameGrowths +
                 Math.Max(0, repeatMutations.RentCount - 1) +
                 Math.Max(0, captureMutations.RentCount - 1) +
                 Math.Max(0, subroutineCalls.RentCount - 1) +
@@ -1559,10 +1624,10 @@ internal static class Pcre2BacktrackingRunner
                 (rentedRepeatRestoreSnapshots is null ? 0 : 1);
             budget.RecordWorkspacePoolTraffic(
                 (ulong)fixedRents,
-                (ulong)frames.RentCount,
+                (ulong)frameRents,
                 (ulong)repeatMutations.RentCount,
                 (ulong)captureMutations.RentCount,
-                (ulong)(stackRents - frames.RentCount - repeatMutations.RentCount - captureMutations.RentCount),
+                (ulong)(stackRents - frameRents - repeatMutations.RentCount - captureMutations.RentCount),
                 (ulong)stackGrowths);
             markTrail.Dispose(ref budget);
             markMutations.Dispose(ref budget);
@@ -1571,7 +1636,9 @@ internal static class Pcre2BacktrackingRunner
             subroutineCalls.Dispose(ref budget);
             captureMutations.Dispose(ref budget);
             repeatMutations.Dispose(ref budget);
-            frames.Dispose(ref budget);
+            // The caller owns capacity across top-level attempts. No live frame
+            // may survive an attempt; nested assertions borrow a separate stack.
+            frames.Truncate(0);
 
         }
     }
@@ -1858,7 +1925,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static void PushFrame(
-        ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         Pcre2BacktrackingFrame frame,
         int depthBase,
         int callCount,
@@ -1873,7 +1940,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static bool TryResume(
-        ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
