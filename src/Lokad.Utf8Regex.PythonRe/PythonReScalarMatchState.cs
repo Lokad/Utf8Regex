@@ -15,6 +15,7 @@ internal struct PythonReScalarMatchState
 {
     private readonly Utf8SliceProgram _program;
     private readonly Utf8Regex? _candidateRegex;
+    private readonly int _leadingAsciiLiteral;
     private readonly int[] _numbersByPython;
     private readonly string _pattern;
     private readonly TimeSpan _timeout;
@@ -56,6 +57,12 @@ internal struct PythonReScalarMatchState
         {
             _candidateRegex = candidateRegex;
         }
+        // The owned first instruction proves this byte is mandatory, without
+        // borrowing the optional Core plan's character-class semantics.
+        _leadingAsciiLiteral = _candidateRegex is null && !program.CanMatchEmpty &&
+            !program.HasContiguousAnchor && !program.RightToLeft && !program.IgnoreCase &&
+            program.Instructions is [{ Kind: Utf8SliceInstructionKind.Literal, B: 0 } first, ..] &&
+            (uint)first.A < 0x80 ? first.A : -1;
         _numbersByPython = numbersByPython;
         _pattern = pattern;
         _timeout = timeout;
@@ -161,7 +168,7 @@ internal struct PythonReScalarMatchState
             while (!_finished)
             {
                 Checkpoint(input);
-                if (search && _candidateRegex is not null &&
+                if (search && (_candidateRegex is not null || _leadingAsciiLiteral >= 0) &&
                     !SeekCandidate(input)) { _finished = true; return false; }
                 _invocation.AnchorOriginByte = _position;
                 Utf8SliceMatchOutcome outcome;
@@ -223,7 +230,21 @@ internal struct PythonReScalarMatchState
         try
         {
             Utf8ExecutionLimitKind breach;
-            if (_candidateRegex is not { } candidateRegex) return true;
+            if (_candidateRegex is not { } candidateRegex)
+            {
+                if (_leadingAsciiLiteral < 0) return true;
+                if (_position < input.Length && input[_position] == (byte)_leadingAsciiLiteral) return true;
+                while (_position < input.Length)
+                {
+                    if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                    var length = Math.Min(2048, input.Length - _position);
+                    var offset = input.Slice(_position, length).IndexOf((byte)_leadingAsciiLiteral);
+                    if (offset >= 0) { _position += offset; return true; }
+                    _position += length;
+                }
+                Checkpoint(input);
+                return false;
+            }
             var plan = candidateRegex.Inspection.SearchPlan;
             if (plan.LiteralSearch is { } literal)
             {

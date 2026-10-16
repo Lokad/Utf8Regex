@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: skip impossible Python search starts
+
+- Reuse a mandatory first exact ASCII literal from the owned program to filter
+  starts with bounded checked span searches. Every survivor runs the Python VM;
+  pinned predicates, full UTF-8 validation, captures, limits and original
+  interruption remain. Match/FullMatch keep their requested start position.
+- One selected public Count pair observes finite 4 KB late hits 343us ->1.86us,
+  misses 349us ->0.58us and dense matches 48.8us ->45.9us. Word/control costs and
+  raw allocations are recorded separately; all190 samples exceed50ms. Source
+  acceptance does not change scalar.65 or trigger another package qualification.
+
 ## Core/PythonRe scalar.65 qualified dependency
 
 - Exact eceb60da Core/Python packages pass detached Windows/Linux consumers,

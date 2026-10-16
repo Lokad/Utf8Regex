@@ -276,6 +276,15 @@ exact dependencies/provenance and current end-to-end costs. See
 artifacts/core-python-scalar65-20261016/HANDOFF.md for scope and remaining limits;
 this does not imply full profile or host-containment completion.
 
+Development beyond scalar.65 can also skip impossible search starts when the
+owned program begins with a mandatory exact ASCII literal. Checked span searches
+use bounded, metered windows; every candidate still runs the same Python VM with
+its pinned and lexical predicates. Match/FullMatch remain anchored. Whole-subject
+validation, original cancellation/deadline and storage admission remain in force.
+A miss can avoid VM workspace and therefore succeed under smaller working/depth
+caps. This does not enable Core's broader fixed-distance character-class plan or
+alter result ownership. Current source costs are separate from immutable65.
+
 Template Replace/Subn byte and string operations also create their invocation
 before replacement-cache access. Existing cache checkpoints observe the call's
 token/deadline during lookup, pending-entry waits and publication; cold parsing
