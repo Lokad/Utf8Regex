@@ -19,6 +19,10 @@ test-only work-cutoff correction has green Windows/Linux CI; original fixture
 failures remain explicit. [Qualification](QUALIFICATION.md) records that history,
 exact bytes, scope and one current exact-package cost observation.
 
+The accumulated scratch-scope and anchored-iteration source changes are preparing
+as **0.4.0-scalar.59**. Exact-package qualification is pending; this metadata does
+not designate59 or a PythonRe59 input.
+
 Controlled Count reuses one scratch scope for proved finite literal languages;
 leading single literals use existing bounded metered seeking before verification.
 The original invocation, cancellation/deadline and resource controls remain.

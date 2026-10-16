@@ -1,5 +1,13 @@
 # Managed PCRE2 profile qualification
 
+## scalar.59 preparation
+
+Version0.4.0-scalar.59 reserves a fresh identity for the accumulated Count scratch
+scope and anchored empty-iteration correction. Exact-package/platform/native and
+current-cost qualification is pending. Preserve the measured miss-cost tradeoff
+and frozen reset profile; immutable58 and primary Core/PythonRe55 stay unchanged.
+No PythonRe59, publication, consumer pins/defaults or adoption claim.
+
 ## Source development after scalar.58
 
 Anchored empty iteration now stops after an unsuccessful same-position retry.
