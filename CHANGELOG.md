@@ -1,11 +1,16 @@
 # Changelog
 
-## Private scalar.58 Core/PCRE2 finite-Count input — preparation
+## Private scalar.58 Core/PCRE2 finite-Count input
 
-- Prepare a fresh immutable identity for the accumulated post57 metered scalar
-  Count and leading-single-literal seek changes. Qualification is pending;
-  scalar.57 and primary Core/PythonRe55 remain the qualified inputs. No PythonRe58,
-  publication, downstream pin/default change or adoption is implied.
+- Qualify immutable0.4.0-scalar.58, producera2f63a69, for the accumulated post57
+  finite Count changes. Both original detached platforms pass identical bytes,
+  exact identities/locks/provenance/symbols/inventory and scoped native controls;
+  one current exact-package cost observation is complete. Original source/producer
+  CI failed five obsolete Python work-cutoff fixtures; test-onlyd64cf347 retains
+  explicit actual-cutoff denials and passes Windows/Linux CI without production
+  changes. Original failures remain recorded; no repack or platform replay.
+- Core/PythonRe55 remains primary. No PythonRe58, standalone Core58 consumer
+  designation, publication, downstream pin/default change or adoption is implied.
 
 ## Development after scalar.57
 

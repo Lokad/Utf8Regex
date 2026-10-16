@@ -1,11 +1,64 @@
 # Managed PCRE2 profile qualification
 
-## scalar.58 preparation
+## Private scalar.58 finite-Count input
 
-Version0.4.0-scalar.58 reserves a new identity for the accumulated post57 finite
-Count changes below. Exact-package/platform/native qualification is pending.
-Existing immutable57 and primary Core/PythonRe55 retain their stated acceptance;
-no PythonRe58, publication, consumer pin/default change or adoption is implied.
+Immutable0.4.0-scalar.58, producera2f63a69250098bba701e01ced0f3ee60a827cab,
+contains the accumulated post57 scalar-counter reuse and single-literal seeking
+changes below. Core/PythonRe55 remains primary. No PythonRe58, standalone Core58
+consumer qualification, publication, downstream pin/default change or adoption.
+
+Manifest SHA256:
+F01DDC99BAD7F35B1CD32C64832484391F5D3E617D4F925F1444677097475C14.
+The immutable archive is
+`artifacts/package-qualification/archive/a2f63a69250098bba701e01ced0f3ee60a827cab/`;
+`artifacts/pcre2-scalar58-delivery-20261016/HANDOFF.md` and delivery-receipt.json
+record exact package/DLL identities, scope and completion caveats.
+
+One affected dependency build3.12s/five existing warnings, one pack per package
+including symbols; matching-SkipBuild qualification reuses producer binaries.
+Archive verifier checks seven artifacts and clean producer/NuSpec/assembly/
+SourceLink/portable-PDB/symbol identity. Both original detached Windows/Linux
+runs pass5,662 with exact source-mapped refs/tested locks/TRXs, zero source project
+references and equal feed/cache SHA512/package/loaded DLL hashes. No Linux producer
+build, repack, fixture recovery or qualification replay. Exact packaged Core/PCRE2
+inventory references only permitted SizeOf, with no generated inline-array helpers,
+native imports or BCL matcher/result members. Lython's blanket SizeOf rejection
+remains an external acceptance disagreement, not a reason to estimate sizes.
+
+Exact packages agree with native UTF8 PCRE2 10.47 on134 finite/unlimited cases:
+global counts, live-token counts and all enumerated whole-match byte ranges.
+Changed literal-language routes and fallback controls are covered. Scalar57's
+broader native1611/BMP census remains historical evidence, not relabeled58 proof.
+Supplementary/category/culture/options, host containment and .NET11 remain open.
+
+Original source/producer CI38849295830/38849393884 failed the same five old Python
+late-miss work expectations on both platforms: bounded seeking now fits100 steps.
+Test-onlyd64cf347 measures each complete public cutoff and preserves exact denial
+kind/limit/request assertions; no production source changes. Full PythonRe3,066
+passes while loading exact58 Core bytes; focused Release/Debug137 also pass.
+Follow-up CI38850266643 passes Windows/Linux, observed2026-10-16T06:28:47+02:
+https://github.com/Lokad/Utf8Regex/actions/runs/38850266643.
+This explicit follow-up completes the scoped input; original failures are retained,
+not called green. Embedded preparing documentation keeps its producer identity;
+subsequent documentation records qualification without changing packages.
+
+One quiet-VM CPU2/.NET10.0.12 FullOpts/ReadyToRun-off current public Count observation
+uses five alternating warm samples, all four finite controls plus live token and
+ASCII-overlap decode/predecoded BCL controls. Constructors are excluded.
+
+| Count case | Unlimited us | Finite us | Finite + token us | Finite allocated B |
+| --- | ---: | ---: | ---: | ---: |
+| Captured single,1000 hits |11.162|117.828|113.695|112|
+|64KiB late hit |3.528|4.363|4.411|112|
+|64KiB miss |2.963|3.845|3.908|112|
+| Ordered overlap,1500 hits |61.396|233.575|227.923|1984|
+| Unbounded captured control,1000 hits |856.392|883.980|874.295|5780016|
+
+All125 samples exceed50ms(min57.93); worst spread17.8% is control/live-token.
+Finite captured Count still costs10.6x unlimited and the control allocates5.78MB;
+keep those costs and basic metering visible. No repeat, Status/snapshot mutation,
+old-snapshot causal comparison or reopened checked-access campaign. Raw samples,
+exact payload identities and current-cost source/protocol stay in the handoff root.
 
 ## Source development after scalar.57
 

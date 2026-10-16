@@ -11,36 +11,26 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
-The latest qualified private Core/PCRE2 input is **0.4.0-scalar.57**, producer
-`49c2fcdc`, containing the accumulated post56 capture, folding and inline-r fixes.
-Both original detached Windows/Linux runs pass against identical package bytes,
-exact refs/locks/TRXs and verified symbols/provenance/inventory. Exact-package
-native comparisons and one bounded current public-cost observation are complete.
-[Qualification](QUALIFICATION.md) records scope and remaining costs: finite
-captured Count still has substantial overhead. Core/PythonRe55 stays primary;
-no PythonRe57, standalone Core57 consumer qualification, publication, downstream
-pin/default change or adoption is implied. Earlier immutable inputs are unchanged.
+The latest qualified private Core/PCRE2 input is **0.4.0-scalar.58**, producer
+`a2f63a69`, containing the accumulated finite Count improvements. Both original
+detached Windows/Linux runs pass identical packages with exact identities,
+refs/locks/provenance/symbols/inventory; scoped native counts/ranges agree. A
+test-only work-cutoff correction has green Windows/Linux CI; original fixture
+failures remain explicit. [Qualification](QUALIFICATION.md) records that history,
+exact bytes, scope and one current exact-package cost observation.
 
-The accumulated finite-Count source changes are being prepared as a separate
-**0.4.0-scalar.58** input. Exact package qualification is pending; this metadata
-does not qualify58 or designate a PythonRe58 package.
+Controlled Count reuses one scratch scope for proved finite literal languages;
+leading single literals use existing bounded metered seeking before verification.
+The original invocation, cancellation/deadline and resource controls remain.
+Current64KiB hit/miss costs are about4us with finite controls; captured1000-hit
+Count is about118us finite versus11us unlimited. Allocations and broader remaining
+costs are recorded without claiming general parity or removing basic metering.
+Literal-family seeking remains deferred after a demonstrated dense regression.
 
-Development after scalar.57 reuses the owned scalar counter for proved non-empty
-literal languages under finite limits and live tokens, retaining the original
-invocation and basic metering. Selected finite Count workloads improve57–78% in
-one public comparison against frozen57; constant-reference/overlap allocations
-also fall. This source change is outside immutable57. Less required state can
-admit tighter caps; detailed captures and fallback cases retain their contract.
-[Qualification](QUALIFICATION.md) records the unchanged control's noisy tails,
-resource/semantic checks and remaining overhead.
-
-A subsequent source change enables existing metered prefix seeking for proved
-leading single literals. One bounded public pair improves selected finite dense
-captured/reference/Unicode Count27–29%; 64KiB sparse cases fall from about5ms to4us,
-with unchanged allocations and original resource/interruption authority. A
-literal-family variant regresses dense overlap57–59% and is restored. These
-source results do not change immutable57 or its qualification scope; see
-[qualification](QUALIFICATION.md) for controls, floors and remaining costs.
+Core/PythonRe55 stays primary; no PythonRe58, standalone Core58 consumer
+qualification, publication, downstream pin/default change or adoption is implied.
+Earlier immutable inputs stay unchanged, including qualified Core/PCRE2 scalar57;
+[qualification](QUALIFICATION.md) preserves their original evidence and caveats.
 
 The earlier qualified private Core/PCRE2 input is **0.4.0-scalar.56**, producer
 `5ad447f5`, containing the completed option-scope/admission/capture-order batch.
