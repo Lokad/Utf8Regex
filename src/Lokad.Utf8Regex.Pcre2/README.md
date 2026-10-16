@@ -21,6 +21,10 @@ captured Count still has substantial overhead. Core/PythonRe55 stays primary;
 no PythonRe57, standalone Core57 consumer qualification, publication, downstream
 pin/default change or adoption is implied. Earlier immutable inputs are unchanged.
 
+The accumulated finite-Count source changes are being prepared as a separate
+**0.4.0-scalar.58** input. Exact package qualification is pending; this metadata
+does not qualify58 or designate a PythonRe58 package.
+
 Development after scalar.57 reuses the owned scalar counter for proved non-empty
 literal languages under finite limits and live tokens, retaining the original
 invocation and basic metering. Selected finite Count workloads improve57–78% in

@@ -1,5 +1,12 @@
 # Changelog
 
+## Private scalar.58 Core/PCRE2 finite-Count input — preparation
+
+- Prepare a fresh immutable identity for the accumulated post57 metered scalar
+  Count and leading-single-literal seek changes. Qualification is pending;
+  scalar.57 and primary Core/PythonRe55 remain the qualified inputs. No PythonRe58,
+  publication, downstream pin/default change or adoption is implied.
+
 ## Development after scalar.57
 
 - Mark proved leading single literals as eligible for the existing metered

@@ -1,5 +1,12 @@
 # Managed PCRE2 profile qualification
 
+## scalar.58 preparation
+
+Version0.4.0-scalar.58 reserves a new identity for the accumulated post57 finite
+Count changes below. Exact-package/platform/native qualification is pending.
+Existing immutable57 and primary Core/PythonRe55 retain their stated acceptance;
+no PythonRe58, publication, consumer pin/default change or adoption is implied.
+
 ## Source development after scalar.57
 
 The subsequent single-literal prefix change sets the existing guide flag only
