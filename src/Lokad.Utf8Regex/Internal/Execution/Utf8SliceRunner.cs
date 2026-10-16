@@ -760,6 +760,8 @@ internal static partial class Utf8SliceRunner
                     break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
                 case Utf8SliceInstructionKind.RepeatLazy:
+                case Utf8SliceInstructionKind.RepeatGreedyAfterMinimum:
+                case Utf8SliceInstructionKind.RepeatLazyAfterMinimum:
                     {
                         var repeatId = instruction.B;
                         var count = counts[repeatId];
@@ -776,7 +778,7 @@ internal static partial class Utf8SliceRunner
                         var madeNoProgress = count > 0 && positions[repeatId] == inputIndex;
                         var minimum = instruction.C;
                         var maximum = instruction.D;
-                        var greedy = instruction.Kind != Utf8SliceInstructionKind.RepeatLazy;
+                        var greedy = instruction.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatGreedyAfterMinimum;
                         // Repetition counts atom iterations, independently of UTF-8 or UTF-16 width.
                         if (count < minimum)
                         {
@@ -789,7 +791,8 @@ internal static partial class Utf8SliceRunner
                             break;
                         }
 
-                        if (count >= maximum || madeNoProgress)
+                        if (count >= maximum || madeNoProgress && (count > minimum ||
+                            instruction.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy))
                         {
                             programIndex = instruction.A;
                             break;

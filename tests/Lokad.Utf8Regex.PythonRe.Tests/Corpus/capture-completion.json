@@ -10547,6 +10547,2438 @@
           ]
         }
       ]
+    },
+    {
+      "id": 91,
+      "pattern": "(?:(?(2)(a)|()))+",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "pattern": "(?:(?(2)(a)|()))+?",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "pattern": "(?:(?(2)(a)|()))++",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "pattern": "(?:(?(3)(?(2)(a)|())|())){2,4}",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "pattern": "(?:(?(3)(?(2)(a)|())|())){2,4}?",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "pattern": "(?:(?(3)(?(2)(a)|())|())){2,4}+",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "pattern": "(?:(?(2)(😀)|()))+",
+      "input": "😀😀",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 8,
+              "endByte": 8,
+              "startUtf16": 4,
+              "endUtf16": 4
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 8,
+              "endByte": 8,
+              "startUtf16": 4,
+              "endUtf16": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "pattern": "(?:(?(3)(?(2)(😀)|())|())){2,4}",
+      "input": "😀😀",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "😀😀",
+              "startByte": 0,
+              "endByte": 8,
+              "startUtf16": 0,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 4,
+              "endByte": 8,
+              "startUtf16": 2,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 8,
+              "endByte": 8,
+              "startUtf16": 4,
+              "endUtf16": 4
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 8,
+              "endByte": 8,
+              "startUtf16": 4,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 8,
+              "endByte": 8,
+              "startUtf16": 4,
+              "endUtf16": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "pattern": "(?:(?(2)(a)|()))*",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "pattern": "(?:(?(2)(a)|()))*\\1",
+      "input": "aa",
+      "single": [
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": []
+    },
+    {
+      "id": 101,
+      "pattern": "(?:(?(3)(?(2)(a)|())|())){2}",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 2,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 2,
+              "endByte": 2,
+              "startUtf16": 2,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "pattern": "(a?)*?a\\1",
+      "input": "aa",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "pattern": "((a?)|(b))+",
+      "input": "b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "",
+              "startByte": 1,
+              "endByte": 1,
+              "startUtf16": 1,
+              "endUtf16": 1
+            },
+            {
+              "success": false,
+              "text": "",
+              "startByte": 0,
+              "endByte": 0,
+              "startUtf16": 0,
+              "endUtf16": 0
+            }
+          ]
+        }
+      ]
     }
   ]
 }

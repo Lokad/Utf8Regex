@@ -202,6 +202,8 @@ public sealed class Utf8SliceConditionalOperationTests
         yield return new object?[] { "(?(?=a)b|c)", "abc", 1 };
         yield return new object?[] { "(a)(?(1)b|c)(d)", "abdabd", 2 };
         yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", 1 };
+        yield return new object?[] { "(?:(?(2)(a)|()))+", "aa", 3 };
+        yield return new object?[] { "(?:(?(3)(?(2)(a)|())|())){2,4}", "aa", 3 };
     }
 
     [Theory]
@@ -231,6 +233,8 @@ public sealed class Utf8SliceConditionalOperationTests
         yield return new object?[] { "(?(?=a)b|c)", "xc", 1, 1 };
         yield return new object?[] { "(?<n>a)?(?(n)b|c)", "ab", 0, 2 };
         yield return new object?[] { "(?(?=a)a|b)+", "xaab\U0001F600", 1, 3 };
+        yield return new object?[] { "(?:(?(2)(a)|()))+", "aa", 0, 0 };
+        yield return new object?[] { "(?:(?(3)(?(2)(a)|())|())){2,4}", "aa", 0, 0 };
     }
 
     [Theory]

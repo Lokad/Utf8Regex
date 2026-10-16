@@ -99,6 +99,7 @@ public sealed class PythonReCaptureCompletionTests
         var expected = row.GetProperty("global");
         var array = regex.FindIterDetailed(input);
         Assert.Equal(expected.GetArrayLength(), array.Length);
+        Assert.Equal(expected.GetArrayLength(), regex.Count(input));
         var retained = new List<Utf8PythonDetailedMatchData>();
         using (var cursor = regex.CreateMatchCursor(input))
         {
@@ -127,6 +128,8 @@ public sealed class PythonReCaptureCompletionTests
     [InlineData("(?<=(?P<last>.){2})", "😀é")]
     [InlineData("(?:(a)b|(?P<ok>a))", "a")]
     [InlineData("(?P<empty>)(?P<maybe>a)?", "a")]
+    [InlineData("(?:(?(2)(a)|()))+", "aa")]
+    [InlineData("(?:(?(3)(?(2)(😀)|())|())){2,4}", "😀😀")]
     public void CompletionPublicationHasEnforceableWorkAndResultCutoffs(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -152,23 +155,26 @@ public sealed class PythonReCaptureCompletionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void MetadataPublicationRetainsOriginalTokenAndDeadline(bool expire)
+    [InlineData(false, "(?<=(?P<outer>(😀)))é", "😀é", "outer")]
+    [InlineData(true, "(?<=(?P<outer>(😀)))é", "😀é", "outer")]
+    [InlineData(false, "(?:(?(2)(😀)|()))+", "😀😀", null)]
+    [InlineData(true, "(?:(?(2)(😀)|()))+", "😀😀", null)]
+    public void MetadataPublicationRetainsOriginalTokenAndDeadline(bool expire, string pattern, string text, string? lastGroup)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex("(?<=(?P<outer>(😀)))é", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
-        using var cursor = regex.CreateMatchCursor("😀é"u8.ToArray(), 0, source.Token);
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, source.Token);
         var invocation = cursor.WorkingInvocation;
         ticks = 15; Assert.True(cursor.MoveNext()); var retained = cursor.Current;
-        Assert.Equal(1, retained.LastIndex); Assert.Equal("outer", retained.LastGroup);
+        Assert.Equal(1, retained.LastIndex); Assert.Equal(lastGroup, retained.LastGroup);
         if (expire)
         { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext()); }
         else
         { source.Cancel(); var error = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext()); Assert.Equal(source.Token, error.CancellationToken); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal("😀", retained.Groups[1].ValueText); Assert.Equal("outer", retained.LastGroup);
+        Assert.Equal("😀", retained.Groups[1].ValueText); Assert.Equal(lastGroup, retained.LastGroup);
     }
 
     [Fact]

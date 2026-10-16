@@ -75,6 +75,21 @@ CASES = [
     (r"(?P<x>😀é)|(?P<y>😀)", "😀é😀 x😀"),
     (r"mark(?P<x>𐐀)(?i:(?P=x))", "mark𐐀𐐨 mark𐐀𐐀"),
     (r"mark(?P<x>𐐀)(?ai:(?P=x))", "mark𐐀𐐨 mark𐐀𐐀"),
+    # Required empty iterations must not stop Python's optional repeat phase.
+    # Capture state can enable a consuming branch only after the minimum.
+    (r"(?:(?(2)(a)|()))+", "aa"),
+    (r"(?:(?(2)(a)|()))+?", "aa"),
+    (r"(?:(?(2)(a)|()))++", "aa"),
+    (r"(?:(?(3)(?(2)(a)|())|())){2,4}", "aa"),
+    (r"(?:(?(3)(?(2)(a)|())|())){2,4}?", "aa"),
+    (r"(?:(?(3)(?(2)(a)|())|())){2,4}+", "aa"),
+    (r"(?:(?(2)(😀)|()))+", "😀😀"),
+    (r"(?:(?(3)(?(2)(😀)|())|())){2,4}", "😀😀"),
+    (r"(?:(?(2)(a)|()))*", "aa"),
+    (r"(?:(?(2)(a)|()))*\1", "aa"),
+    (r"(?:(?(3)(?(2)(a)|())|())){2}", "aa"),
+    (r"(a?)*?a\1", "aa"),
+    (r"((a?)|(b))+", "b"),
 ]
 
 def snapshot(match, text):

@@ -23,6 +23,29 @@ The implementation is parser-first:
 
 The native rendering consumes complete scalars. Supplementary class members and ranges use numeric scalar endpoints, rather than separate surrogate classes. Python's separate `\uD800`/`\uDC00` escapes denote separate surrogate atoms and cannot combine into a scalar; they cannot match strict UTF-8. A raw supplementary character or `\U00010000` escape denotes one scalar. A surrogate-only class contains no valid scalar, and its negation admits valid scalars. Captures retain primary byte ranges and derived UTF-16 coordinates. Owned execution does not establish complete grammar coverage, public construction containment or retained-storage limits; qualify those separately from the current invocation controls.
 
+## Nullable repetition and capture state
+
+Python's mandatory repetitions precede the optional phase's empty-progress guard.
+An empty required iteration can set a capture used by the next conditional:
+`(?:(?(2)(a)|()))+` consumes `a` rather than stopping at its first empty iteration.
+The same rule applies to higher positive minima, lazy and possessive repeats,
+and complete supplementary scalars. Zero-minimum and fixed-count controls keep
+their own limits. Captures, lastindex/lastgroup and global progression follow the
+successful path, including required empty captures retained by later iterations.
+
+The development compiler marks this repeat semantic in the existing scalar IR.
+Only nullable bodies with a positive variable minimum select the two explicit
+repeat instruction variants. The shared instruction layout/count, capture journal,
+workspace and original invocation remain; no body duplication, new runner or
+global profile mode. Core/PCRE2 retain their previous repeat rule. Correct extra
+iterations may require more metered work, depth or working/result capacity than
+the formerly incorrect result. All selected caps remain authoritative.
+
+This correction is outside immutable scalar.61, which retains the demonstrated
+conditional/empty-repeat defect. The existing pinned CPython capture fixture
+corpus includes the new states and controls; source qualification does not rewrite
+that package's historical evidence or designate a new candidate by itself.
+
 ## Current scope
 
 Supported public operations:

@@ -4,13 +4,22 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need Python-style regular expression semantics on top of the base `Lokad.Utf8Regex` library.
 
-The latest locally qualified private Core/PythonRe pair is **0.4.0-scalar.61**,
-producer `f29e3dab0069a4e2b8f013d4328900cc8c76534d`. It covers strict UTF-8 scalar
+The recorded qualified private Core/PythonRe pair **0.4.0-scalar.61**,
+producer `f29e3dab0069a4e2b8f013d4328900cc8c76534d`, covers strict UTF-8 scalar
 matching, authoritative capture completion, explicitly owned persistent cursors,
 four finite invocation controls and covered eager construction. Original same-byte
 detached Windows/Linux consumers and capture/catalog CPython checks pass. Use
 `artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json`, its immutable feed/config
 and `artifacts/core-python-scalar61-20261016/HANDOFF.md` for exact identities/scope.
+
+Development fixes a nullable-repeat edge case outside scalar.61:
+`(?:(?(2)(a)|()))+` must consume `a` after its first required empty iteration
+sets capture2. The frozen package stops early. Higher minima and supplementary
+variants are affected too. The source uses the existing scalar VM with explicit
+repeat semantics; Core/PCRE2's rule stays unchanged. Keep this known package
+limitation until a newly qualified immutable pair is supplied. Development
+scalar.62 is reserved for that correction; qualification requires its own
+immutable manifest, not the older references in this page.
 
 Scalar.61 retains the pinned identifier/class/boundary corrections, with unchanged
 implementation/data witnesses reusing prior full scalar censuses, and adds the

@@ -1,5 +1,20 @@
 # Changelog
 
+## Correct Python nullable repeats after their minimum
+
+- `(?:(?(2)(a)|()))+` now consumes `a` after the required empty iteration enables
+  capture2's conditional. Correct higher minima, lazy/possessive forms, capture
+  rollback and supplementary-scalar results through existing scalar execution.
+  Core/PCRE2 retain their previous rule; no repeated-body expansion or new owner.
+- Pinned CPython fixtures and finite denial/interruption/cursor checks cover the
+  correction. Correct extra iterations can spend more of the selected limits.
+- One bounded same-result Count comparison observes 34–37% higher cost for a
+  nullable-repeat workload, unchanged allocations and controls from -0.7% to +4.1%.
+  This is an explicit correctness cost, independent of the unchanged 10%
+  checked-access allowance. Immutable scalar.61 retains the demonstrated defect;
+  the next corrected delivery requires a new qualified pair.
+
+
 ## Reuse the prepared exact-family candidate union
 
 - Metered forward exact-family discovery borrows its existing first-byte union

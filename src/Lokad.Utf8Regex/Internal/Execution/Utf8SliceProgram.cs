@@ -73,7 +73,12 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record AlternationNode(Utf8SliceNode[][] Branches) : Utf8SliceNode(Utf8SliceNodeKind.Alternation);
 
-    internal sealed record RepeatNode(Utf8SliceNode Body, int Minimum, int Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat);
+    internal sealed record RepeatNode(Utf8SliceNode Body, int Minimum, int Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat)
+    {
+        // Mandatory iterations need not participate in the optional loop's
+        // zero-progress guard. Python's REPEAT/UNTIL distinction requires this.
+        internal bool GuardEmptyAfterMinimum { get; init; }
+    }
 
     internal sealed record CaptureNode(int Slot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
 
@@ -149,6 +154,8 @@ internal enum Utf8SliceInstructionKind : byte
     Category = 24,
     CategorySet = 25,
     BalanceStart = 27,
+    RepeatGreedyAfterMinimum = 28,
+    RepeatLazyAfterMinimum = 29,
 }
 
 /// <summary>Unicode property table for one owned category atom: a
@@ -485,6 +492,8 @@ internal sealed class Utf8SliceProgram
                         break;
                     case Utf8SliceInstructionKind.RepeatGreedy:
                     case Utf8SliceInstructionKind.RepeatLazy:
+                    case Utf8SliceInstructionKind.RepeatGreedyAfterMinimum:
+                    case Utf8SliceInstructionKind.RepeatLazyAfterMinimum:
                         loop = true;
                         break;
                     default:
@@ -1210,7 +1219,11 @@ internal static class Utf8SliceLowerer
                     Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, 0, 0, 0));
                     var repeatExit = Instructions.Count;
                     Emit(new(Utf8SliceInstructionKind.RepeatExit, frame.RepeatId, 0, 0, 0));
-                    Instructions[frame.Mark] = new(repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy,
+                    var repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy;
+                    if (repeat.GuardEmptyAfterMinimum && repeat.Minimum > 0 && repeat.Minimum < repeat.Maximum &&
+                        Facts[repeat.Body].CanMatchEmpty)
+                        repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazyAfterMinimum : Utf8SliceInstructionKind.RepeatGreedyAfterMinimum;
+                    Instructions[frame.Mark] = new(repeatKind,
                         repeatExit, frame.RepeatId, repeat.Minimum, repeat.Maximum);
                     break;
                 case Utf8SliceNode.DotNode dot:

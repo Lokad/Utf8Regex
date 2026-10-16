@@ -2,7 +2,18 @@
 
 `Lokad.Utf8Regex` is a `net10.0` regular expression library with UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` as its primary I/O surface. The development target is Unicode-scalar matching with primary byte coordinates: a supplementary character such as 😀 is one dot match.
 
-The immutable **0.4.0-scalar.61** Core/PythonRe candidate provides Unicode-scalar matching, finite invocation work/depth/working/result limits and covered eager-construction controls. It retains pinned CPython identifier/class data and corrected word-boundary lookbehind, and includes the accumulated Count improvements. Identical package bytes pass original detached Windows/Linux suites and capture/catalog checks; unchanged pinned data retains prior full scalar-census evidence, and producer CI is green. Core retains only permitted `Unsafe.SizeOf`; PythonRe has no unchecked API references. Exact identities, scoped contracts and current public costs are in the [private handoff](artifacts/core-python-scalar61-20261016/HANDOFF.md) and [candidate manifest](artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json). Finite family Count overhead remains; basic metering stays. Lython accepts `Unsafe.SizeOf`; producer qualification does not imply downstream adoption.
+The previously qualified immutable **0.4.0-scalar.61** Core/PythonRe candidate provides Unicode-scalar matching, finite invocation work/depth/working/result limits and covered eager-construction controls. It retains pinned CPython identifier/class data and corrected word-boundary lookbehind, and includes the accumulated Count improvements. Identical package bytes pass original detached Windows/Linux suites and capture/catalog checks; unchanged pinned data retains prior full scalar-census evidence, and producer CI is green. Core retains only permitted `Unsafe.SizeOf`; PythonRe has no unchecked API references. Exact identities, scoped contracts and current public costs are in the [private handoff](artifacts/core-python-scalar61-20261016/HANDOFF.md) and [candidate manifest](artifacts/scalar-candidates/0.4.0-scalar.61/candidate.json). Finite family Count overhead remains; basic metering stays. Lython accepts `Unsafe.SizeOf`; producer qualification does not imply downstream adoption.
+
+Current source corrects a PythonRe nullable-repeat defect retained by scalar.61:
+`(?:(?(2)(a)|()))+` must consume `a` after a required empty iteration enables the
+next conditional. Higher minima and supplementary variants are covered too.
+Development version scalar.62 is reserved for the corrected candidate; it is not
+qualified until its own immutable manifest and receipts exist. Core/PCRE2 keep
+their previous repeat rule. One bounded public comparison records 34–37% higher
+cost for a same-result nullable workload, unchanged allocations and controls
+from -0.7% to +4.1%. Correctness requires the extra iterations; the separate
+checked-access 10% allowance remains unchanged. Scalar.61 references below are
+dated evidence and do not qualify later bytes.
 
 Published 0.3.0 packages retain the former .NET UTF-16 contract. Production BCL matching/results and the private UTF-16-unit engine are removed from scalar candidates. [SPEC.md](SPEC.md) defines the target contract. Complete construction/live-retention controls, safe defaults and broader profile acceptance remain unfinished; PCRE2 qualifies separately.
 
