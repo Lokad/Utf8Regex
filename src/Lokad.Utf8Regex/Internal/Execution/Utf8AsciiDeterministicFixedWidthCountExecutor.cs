@@ -87,28 +87,6 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
 
         return true;
 
-        static bool AreVectorizable(Utf8AsciiDeterministicFixedWidthCheck[] checks)
-        {
-            var literalCount = 0;
-            for (var i = 0; i < checks.Length; i++)
-            {
-                var check = checks[i];
-                if (check.Kind == Utf8AsciiDeterministicFixedWidthCheckKind.Literal)
-                {
-                    literalCount++;
-                    continue;
-                }
-
-                if (check.Kind != Utf8AsciiDeterministicFixedWidthCheckKind.CharClass ||
-                    !check.CharClass.TryGetKnownPredicateKind(out _))
-                {
-                    return false;
-                }
-            }
-
-            return literalCount >= 2;
-        }
-
         static int CountScalarSuffix(
             in Utf8StructuralLinearProgram program,
             ReadOnlySpan<byte> input,
@@ -131,6 +109,83 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
 
             return count;
         }
+    }
+
+    // The caller supplies the original invocation after complete ASCII validation.
+    // Charge each vector check and its bounded mask reduction before a block.
+    // A declined attempt keeps its spent work; the caller resumes its owned VM
+    // under that same authority instead of rolling the budget back.
+    internal static bool TryCountValidatedAscii(
+        in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int count, out Utf8ExecutionLimitKind breach)
+    {
+        count = 0;
+        breach = Utf8ExecutionLimitKind.None;
+        var deterministic = program.DeterministicProgram;
+        var checks = deterministic.FixedWidthChecks;
+        var width = deterministic.FixedWidthLength;
+        if (!Avx2.IsSupported || Utf8SearchDiagnosticsSession.Current is not null ||
+            !program.AllowsUtf8ByteSafe || !deterministic.HasValue || deterministic.IgnoreCase ||
+            deterministic.IsEndAnchored || program.InstructionProgram.IsStartAnchored ||
+            width is < MinimumWidth or > MaximumWidth || checks.Length != width || !AreVectorizable(checks))
+            return false;
+        var maxStart = input.Length - width;
+        if (maxStart < LaneCount - 1) return false;
+        var blockLength = LaneCount - 1 + width;
+        var vectorLimit = maxStart - (LaneCount - 1);
+        var blockStart = 0;
+        var nextStart = 0;
+        var emptyLiteralBlocks = 0;
+        while (blockStart <= vectorLimit)
+        {
+            breach = ChargeBlock(width, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None) return true;
+            var mask = CreateMatchMask(input.Slice(blockStart, blockLength), checks, out var literalMask);
+            if (blockStart == 0 && BitOperations.PopCount(literalMask) < MinimumInitialLiteralCandidates)
+                return false;
+            emptyLiteralBlocks = literalMask == 0 ? emptyLiteralBlocks + 1 : 0;
+            if (emptyLiteralBlocks >= EmptyLiteralBlockFallbackThreshold)
+            {
+                // The existing scalar suffix scanner has no invocation meter.
+                // Decline to the owned runner, retaining all attempted work.
+                count = 0;
+                return false;
+            }
+            CountNonOverlappingMatches(mask, blockStart, blockStart, width, ref nextStart, ref count);
+            blockStart += LaneCount;
+        }
+        if (blockStart <= maxStart)
+        {
+            breach = ChargeBlock(width, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None) return true;
+            var finalStart = maxStart - (LaneCount - 1);
+            var mask = CreateMatchMask(input.Slice(finalStart, blockLength), checks, out _);
+            CountNonOverlappingMatches(mask, finalStart, blockStart, width, ref nextStart, ref count);
+        }
+        invocation.Budget.ThrowIfCancellationRequested();
+        return true;
+    }
+
+    private static Utf8ExecutionLimitKind ChargeBlock(int width, ref Utf8SliceInvocation invocation)
+    {
+        for (var i = 0; i <= width; i++)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static bool AreVectorizable(Utf8AsciiDeterministicFixedWidthCheck[] checks)
+    {
+        var literals = 0;
+        foreach (var check in checks)
+        {
+            if (check.Kind == Utf8AsciiDeterministicFixedWidthCheckKind.Literal) { literals++; continue; }
+            if (check.Kind != Utf8AsciiDeterministicFixedWidthCheckKind.CharClass ||
+                !check.CharClass.TryGetKnownPredicateKind(out _)) return false;
+        }
+        return literals >= 2;
     }
 
     private static uint CreateMatchMask(

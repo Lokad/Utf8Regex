@@ -1,5 +1,16 @@
 # Changelog
 
+## Controlled fixed-width Count source improvement
+
+- Reuse existing checked AVX2 masks for eligible ASCII fixed-width Count under
+  the original finite invocation. Full validation, basic per-block work,
+  cancellation/deadlines and four resource controls remain. A successful route
+  needs no VM scratch; declined attempts retain spent work before fallback.
+- One bounded public pair reduces dense finite Count about97.8% and allocations
+  1792 ->112B. Tail cases improve93.6–96.8%; measured unlimited/fallback/control
+  costs stay within about4%, with outliers retained. No new package or expanded
+  profile/overload claim; immutable inputs retain their original scope.
+
 ## Bounded .NET 11 comparator evidence
 
 - Record four public Count workloads using identical Core59 bytes on .NET10

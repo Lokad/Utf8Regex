@@ -18,6 +18,13 @@ current Count workloads with fresh SDK-specific generated comparators, finite
 limits, decode/predecoded controls and raw samples. It identifies substantial
 controlled fixed-width costs without claiming a universal runtime speedup.
 
+Subsequent source development reuses the admitted checked AVX2 fixed-width
+counter for eligible controlled ASCII Count. Full validation and per-block
+work/token/deadline checkpoints share the original invocation; the successful
+route needs no VM scratch. Sparse or semantically excluded shapes retain owned
+verification and spent work. This source improvement has its own bounded cost
+receipt and is outside the immutable package inputs above.
+
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected
 proposals. Core costs combine source comparisons and focused final follow-ups;

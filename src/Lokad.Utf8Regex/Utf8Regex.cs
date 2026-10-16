@@ -1153,7 +1153,22 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            _ = Utf8Validation.Validate(input, ref invocation);
+            var validation = Utf8Validation.Validate(input, ref invocation);
+            if (HasFiniteExecutionLimits && startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
+                validation.IsAscii && !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
+                !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+                !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
+                !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
+                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+                !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                Utf8AsciiInstructionLinearExecutor.SupportsInput(_preparedRegex.StructuralLinearProgram, validation) &&
+                Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
+                    _preparedRegex.StructuralLinearProgram, input, ref invocation, out var nativeCount, out var breach))
+            {
+                if (breach != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException("Native fixed-width count breached the invocation budget.");
+                return nativeCount;
+            }
             return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)

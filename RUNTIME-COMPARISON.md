@@ -113,3 +113,8 @@ qualify other operations/profiles, establish host containment, or replace any
 immutable package/platform handoff. Next investigate controlled fixed-width Count
 using its existing prepared SIMD program under the original invocation; preserve
 all controls and prove eligibility before choosing an implementation.
+
+The subsequent bounded source pilot reuses the admitted checked AVX2 counter
+under the original finite invocation; its separate before/after receipt is
+artifacts/finite-fixedwidth-count-20261016/RESULT.md. The rows above remain the
+original frozen Core59 measurements and do not qualify that later source.
