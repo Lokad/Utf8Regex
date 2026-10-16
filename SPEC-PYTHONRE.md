@@ -206,7 +206,11 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 Source beyond immutable scalar.68 may execute a bare positive greedy class run
 inside the existing shared VM without per-scalar rewind/journal state. Exact
 capture-free terminal-root eligibility uses the same pinned class predicates;
-no Python class expansion or second matcher is introduced. Original scalar work
+no Python class expansion or second matcher is introduced. The same complete
+predicate omits unused repeat vectors through the existing workspace owner;
+bare simple Count may admit working/result/depth1, while actual class-program/
+capture/result storage remains admitted. Removed acquisition work changes numeric
+cutoffs without a replacement charge or new ownership flag. Original scalar work
 charges, token/deadline and working/result admission remain, while fewer actual
 frames/work can admit tighter caps. Captured/lazy/nullable/tail/assertion/full-end
 contexts retain their general paths. The measured tradeoff includes a small

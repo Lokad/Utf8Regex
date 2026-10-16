@@ -48,8 +48,11 @@ public sealed class PythonReTerminalClassRepeatTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"\w+", 1, 1).FindAllToUtf8("abc ééé"u8)).ResourceKind);
         var tiny = new Utf8PythonRegex(@"\w+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        Assert.Equal(2, tiny.Count("abc ééé"u8));
+        var captured = new Utf8PythonRegex(@"(\w+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count("abc"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Count("abc"u8)).ResourceKind);
     }
 
     [Fact]

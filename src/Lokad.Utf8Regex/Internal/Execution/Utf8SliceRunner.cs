@@ -1539,19 +1539,22 @@ internal static partial class Utf8SliceRunner
 
         internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
         {
-            var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(program.RepeatCount) * 2
+            // The terminal root uses scalar locals, never repeat vectors. Keep
+            // the exact same gate as execution and the existing owner/release.
+            var repeats = CanRunTerminalClassRepeat(program) ? 0 : program.RepeatCount;
+            var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(repeats) * 2
                 + Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
             var breach = invocation.TryReserveWorking(bytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             _reservation = bytes;
-            if (program.RepeatCount != 0)
+            if (repeats != 0)
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                Counts = new int[program.RepeatCount];
+                Counts = new int[repeats];
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                Positions = new int[program.RepeatCount];
+                Positions = new int[repeats];
             }
             if (program.GroupCount != 0)
             {

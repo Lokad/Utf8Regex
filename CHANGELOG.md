@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: omit unused terminal-root repeat vectors
+
+- Reuse the same complete VM eligibility predicate to omit two unused repeat
+  arrays through the existing workspace owner. No new state flag or mechanism.
+- Bare simple word Count can admit working/result/depth1; captured/general
+  scratch and required results retain their limits. Focused interruption,
+  cleanup, borrowed loans and scalar/profile checks pass. An untimed public
+  allocation batch removes exactly64B/call;captured controls stay unchanged.
+  No throughput claim, new package or repeated qualification campaign.
+
 ## Development: terminal scalar-class repeat in the owned VM
 
 - Execute eligible capture-free positive greedy terminal class runs without

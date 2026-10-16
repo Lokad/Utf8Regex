@@ -138,6 +138,11 @@ program metering, publication/history and result admission remain. Captures,
 lazy/nullable/RTL/tails and assertion segments retain their general paths; nested
 RequiredEnd/resume choices are not discarded. No new instruction or public mode.
 Independent CategorySet membership fanout is bounded at one for this route.
+The same complete predicate also omits unused repeat count/position vectors
+through the existing workspace owner. A bare simple class Count can therefore
+admit working/result/depth1; general/captured/class-program scratch and required
+result capacity retain admission. Actual acquisition work/storage requirements
+fall; no replacement charge, new state flag or retention policy is introduced.
 This source improvement does not alter immutable scalar.68.
 
 ### 3.6 Scalar boundaries and coordinates

@@ -70,6 +70,26 @@ public sealed class Utf8TerminalClassRepeatTests
         }
     }
 
+    [Fact]
+    public void APlainRunBorrowsNoWorkingCapacityFromItsParent()
+    {
+        var regex = new Utf8Regex(@"\p{L}+");
+        var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
+        var invocation = new Utf8SliceInvocation(new(100000, 1, 13, 1), Timeout.InfiniteTimeSpan, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var result = Utf8SliceRunner.CountFromBytes(program, "éé A𐐀!"u8, 0, [], [], ref invocation);
+        Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        var plain = new Utf8Regex(@"\w+", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        Assert.Equal(2, plain.Count("abc ééé"u8));
+        var captured = new Utf8Regex(@"(\w+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Count("abc ééé"u8)).ResourceKind);
+    }
+
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void OriginalInterruptionDuringTheRunReleasesScratch(bool timeout)
