@@ -211,6 +211,15 @@ public sealed class Pcre2LiteralGlobalOperationTests
             _ = warm.Current.StartOffsetInBytes;
         }
 
+        // Warm complete batches before the steady-state allocation sample;
+        // a single Count leaves this fixture dependent on test ordering/tiering.
+        for (var iteration = 0; iteration < 256; iteration++)
+        {
+            _ = regex.Count(input);
+            var enumerator = regex.EnumerateMatches(input);
+            while (enumerator.MoveNext()) _ = enumerator.Current.StartOffsetInBytes;
+        }
+
         var sum = 0;
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var iteration = 0; iteration < 100; iteration++)

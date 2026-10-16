@@ -1,5 +1,12 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.67 candidate preparation
+
+- Preserve the failed scalar.66 package attempt and its warmed-allocation test
+  receipt. The fixture now warms complete batches before asserting zero allocation;
+  the assertion and production code remain unchanged. Use a distinct version for
+  the corrected clean-source qualification; no earlier bytes are overwritten.
+
 ## Independent Core/PCRE2 scalar.66 candidate preparation
 
 - Batch necessary-leading-set Count and owned supplementary Unicode16 case fixes
