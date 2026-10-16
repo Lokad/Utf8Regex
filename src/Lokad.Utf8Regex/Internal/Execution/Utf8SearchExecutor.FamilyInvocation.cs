@@ -48,21 +48,34 @@ internal static partial class Utf8SearchExecutor
                 var blockStart = reverse ? high - count + 1 : low;
                 var block = input.Slice(blockStart, count);
                 var candidateByte = -1;
-                for (var id = 0; id < literals.Length; id++)
+                if (folded && !reverse && plan.AlternateIgnoreCaseLiteralSearch is
+                    { ShortestLength: > 0 and < int.MaxValue } foldedSearch)
                 {
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    var literal = literals[id];
-                    if (literal.Length == 0)
-                        throw new InvalidOperationException("Native literal families require nonempty branches.");
-                    // Regex RTL literal execution prioritizes the latest end.
-                    // Raw prepared candidate searches prioritize latest starts.
-                    var value = reverse && confirm ? literal[^1] : literal[0];
-                    var other = folded && (uint)((value | 0x20) - 'a') <= 'z' - 'a' ? (byte)(value ^ 0x20) : value;
-                    var relative = reverse ? block.LastIndexOfAny(value, other) : block.IndexOfAny(value, other);
-                    if (relative >= 0 && (candidateByte < 0 || (reverse
-                            ? blockStart + relative > candidateByte : blockStart + relative < candidateByte)))
-                        candidateByte = blockStart + relative;
+                    // Borrow the prepared union instead of rescanning this
+                    // bounded window once per branch at every false candidate.
+                    var relative = foldedSearch.FirstByteSearch.IndexOf(block);
+                    if (relative >= 0) candidateByte = blockStart + relative;
+                }
+                else
+                {
+                    for (var id = 0; id < literals.Length; id++)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        var literal = literals[id];
+                        if (literal.Length == 0)
+                            throw new InvalidOperationException("Native literal families require nonempty branches.");
+                        // Regex RTL literal execution prioritizes the latest end.
+                        // Raw prepared candidate searches prioritize latest starts.
+                        var value = reverse && confirm ? literal[^1] : literal[0];
+                        var other = folded && (uint)((value | 0x20) - 'a') <= 'z' - 'a' ? (byte)(value ^ 0x20) : value;
+                        var relative = reverse ? block.LastIndexOfAny(value, other) : block.IndexOfAny(value, other);
+                        if (relative >= 0 && (candidateByte < 0 || (reverse
+                                ? blockStart + relative > candidateByte : blockStart + relative < candidateByte)))
+                            candidateByte = blockStart + relative;
+                    }
                 }
                 if (candidateByte < 0)
                 {

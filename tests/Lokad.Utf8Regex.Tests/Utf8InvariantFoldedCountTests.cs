@@ -160,4 +160,31 @@ public sealed class Utf8InvariantFoldedCountTests
         }
         finally { session.Complete(); }
     }
+
+    [Theory]
+    [InlineData("John|Jack|Irene|Inspector|Professor", 2047)]
+    [InlineData("John|Jack|Irene|Inspector|Professor", 2048)]
+    [InlineData(@"ab|abc|B|!|\?|@", 2047)]
+    [InlineData(@"ab|abc|B|!|\?|@", 2048)]
+    public void FoldedFamiliesKeepBranchPriorityAcrossCandidateWindows(string pattern, int padding)
+    {
+        var text = new string('j', padding) + "é JOHN ABC ! ? @ 😀 inspector ab B professor";
+        var expected = new Regex(pattern, Invariant).Count(text);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024,
+            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = Invariant | (compiled ? RegexOptions.Compiled : 0);
+            var ordinary = new Utf8Regex(pattern, options);
+            var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+            for (var offset = 0; offset < 3; offset++)
+            {
+                var padded = new byte[offset + bytes.Length + 2];
+                bytes.CopyTo(padded, offset);
+                Assert.Equal(expected, ordinary.Count(padded.AsSpan(offset, bytes.Length)));
+                Assert.Equal(expected, finite.Count(padded.AsSpan(offset, bytes.Length)));
+            }
+        }
+    }
 }

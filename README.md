@@ -43,7 +43,11 @@ Native Count needs no VM depth/working/result scratch, so tighter policies may
 succeed. This source change is outside immutable scalar.60; its bounded public
 comparison and limitations are recorded in the changelog and experiment receipt.
 The14ms publication observation uses runtime-default tiering; the earlier21ms
-finite/unlimited pair uses FullOpts. Their ratios are not interchangeable.
+finite/unlimited pair uses FullOpts. Newer source also reuses the prepared folded
+first-byte union: a separate FullOpts pair observes21ms ->12ms, including finite
+policies, with unchanged allocations and explicit3–5% single-literal control
+costs. This does not refresh the dated c154 snapshot or qualify general parity.
+Ratios across these different protocols are not interchangeable.
 
 The [checked-access ledger](UNCHECKED-ACCESS.md) preserves focused correctness,
 Release code generation and fixed-original public costs, including rejected

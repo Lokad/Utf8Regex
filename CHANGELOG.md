@@ -1,5 +1,16 @@
 # Changelog
 
+## Folded candidate window scanning
+
+- Borrow the prepared folded first-byte union for one bounded candidate-window
+  scan; retain original ordinal verification, reverse/unprepared fallback and
+  original resource/token/deadline authority. No new storage or unchecked API.
+- One public pair observes43–45% lower subtitle Count cost and17–20% lower dense
+  family cost with unchanged allocations, including finite/live-token calls.
+  Single-literal controls cost3–5% more; unlimited exact controls improve16–17%,
+  limiting attribution. Focused Release/Debug, differential and PythonRe checks
+  pass. This source change is outside scalar.60 and the dated c154 snapshot.
+
 ## Folded-family publication measurement
 
 - Refresh only literal-alternate/sherlock-casei-en at clean source c154d6de,

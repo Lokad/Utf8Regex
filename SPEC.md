@@ -215,7 +215,12 @@ Subsequent development source extends the existing metered counter to root,
 zero-offset, invariant, nonempty LTR ASCII-folded literals/families without
 captures or other stateful/search constraints. Full strict validation, bounded
 Kelvin screening and search borrow the same invocation, including finite controls,
-caller token and original absolute deadline. Kelvin screening charges before
+caller token and original absolute deadline. Eligible forward folded family
+candidate discovery borrows the prepared first-byte union for one bounded search
+instead of separate branch scans; original ordinal verification and confirmation
+remain. Reverse, candidate-only and unprepared discovery retain their existing
+paths. The removed repeated scans can lower work requirements without changing
+matches or the meaning of the resource policy. Kelvin screening charges before
 windows of at most2050 bytes (2048 starts plus two lookahead bytes). Relevant
 Kelvin retains spent work and uses scalar execution; other construction cultures,
 RTL, empty/captured/anchored/assertion-dependent and NonBacktracking routes retain
