@@ -15,12 +15,12 @@ public sealed partial class Utf8PythonRegex
     private bool HasPreparedExactLiteralFamily =>
         _utf8Regex?.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals;
 
-    private int CountLiteralFamily(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    private int CountLiteralFamily(Utf8Regex familyRegex, ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         try
         {
-            var count = _utf8Regex!.CountForResult(input, startOffsetInBytes, ref invocation);
+            var count = familyRegex.CountForResult(input, startOffsetInBytes, ref invocation);
             Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
             return count;
         }
