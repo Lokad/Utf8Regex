@@ -586,6 +586,10 @@ partners. Supplementary matching and extended-replacement simple casing reuse
 the owned Unicode 16 pairs, including Garay, without host casing dependencies.
 BMP replacement transforms retain their existing Rune route. This does not pin
 all Unicode properties or establish complete Unicode-version compatibility.
+The supplementary and necessary-leading-set changes are included in the scoped
+private Core/PCRE2 scalar.67 input at db9526f3. The exact handoff records platform/
+native/resource evidence and known BMP replacement differences separately from
+this target contract; full profile/containment coverage is not implied.
 
 Inline `r` restricts caseless matching across the ASCII/non-ASCII boundary.
 `(?ir)k` matches `K` but not Kelvin sign; `(?ir)[kK]` still includes both

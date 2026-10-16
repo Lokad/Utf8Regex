@@ -1,10 +1,31 @@
 # Lokad.Utf8Regex.Pcre2
 
-This source prepares private **Core/PCRE2 0.4.0-scalar.67**, batching the accepted
-leading-set Count and supplementary-case corrections. Qualification is recorded
-separately in the immutable archive manifest and the delivery handoff when complete.
-Core/PythonRe scalar.65 remains its independent qualified input; no PythonRe67
-package or downstream pin/default change is implied.
+Qualified private **Core/PCRE2 0.4.0-scalar.67** is produced by
+`db9526f3a90fef2c9f2369e952ef6bafbec59e5a`. Exact archive provenance,
+Windows/Linux detached package suites, native-overlap probes, current costs and
+[producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38952269776) qualify
+the stated scope. Actual PCRE2 nuspec pins Core `[0.4.0-scalar.67]`.
+[Handoff](../../artifacts/pcre2-scalar67-delivery-20261016/HANDOFF.md) and
+[consumption notes](../../artifacts/pcre2-scalar67-delivery-20261016/CONSUMING.md).
+Core/PythonRe65 remains independent; no PythonRe67 or standalone Core67 package
+acceptance, publication, downstream pin/default switch or adoption is implied.
+
+The batch includes necessary-leading-set Count and owned supplementary Unicode16
+case corrections. No native implementation dependency or BCL matcher is shipped.
+Four finite invocation controls and original interruption remain. Both packages
+retain only permitted Unsafe.SizeOf, accepted by the user/Lython. Frozen reset/
+consumed-range exclusions and12known BMP replacement differences remain explicit;
+category/property queries are not pinned wholesale to16. See the qualification
+record for the failed66 attempt and unchanged zero-allocation assertion.
+
+Current exact67 finite Count observations: selected64KiB missing-leading-byte miss
+4.50us/112B; captured1000hits344us/5888B; finite-language1000hits125us versus11.4us
+unlimited. Caseless1000hits still allocates about1.78MB finite versus~29B unlimited;
+this remains a concrete operating-cost gap, not justification to remove metering.
+All155samples exceed50ms. Raw noise, BCL overlap, stale copied harness header
+metadata and scope corrections are preserved; no before/after replay, snapshot/
+Status or broad-parity claim. Package README preparation wording is frozen;
+the handoff/original archive record completed qualification without repacking.
 
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to
 `Lokad.Utf8Regex`. `Utf8Pcre2Regex` implements the repository's selected PCRE2
@@ -17,14 +38,14 @@ package acceptance; broader profile coverage and public preparation/construction
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
-The latest qualified private Core/PCRE2 input is **0.4.0-scalar.59**, producer
+The preceding qualified private Core/PCRE2 input is **0.4.0-scalar.59**, producer
 `b67b9233`, containing the Count scratch-scope and anchored-iteration fixes.
 Both original detached Windows/Linux runs pass identical packages with exact
 identities/refs/locks/provenance/symbols/inventory; scoped native controls agree.
 Producer CI is green. [Qualification](QUALIFICATION.md) records exact bytes,
 coverage and a current-cost observation. Older inputs retain their original caveats.
 
-Source development after scalar.59 adds one metered impossibility scan for
+Scalar.67 includes the source change adding one metered impossibility scan for
 admitted nonempty scalar Count. A necessary ASCII leading set, including a
 singleton, rejects suffixes missing every possible leading byte before VM scratch.
 Hits keep the existing verifier; nullable/explicit-option paths retain their
@@ -40,14 +61,14 @@ leading single literals use existing bounded metered seeking before verification
 The original invocation, cancellation/deadline and resource controls remain.
 Scalar.59 extends scratch reuse to admitted nonempty scalar Count and stops an
 anchored search after its empty retry fails. Successful retries and frozen reset
-exclusions remain. Current1000-hit unbounded captured Count costs about363us
+exclusions remain. In the exact59 observation,1000-hit unbounded captured Count costs about363us
 finite/360us unlimited with5.9KB allocated. Its64KiB miss still costs7.46ms;
 the closed source pair measured a12–14% miss penalty alongside large dense gains.
 Finite-language Count remains about127us finite/12us unlimited. These costs and
 remaining gaps are explicit; basic metering stays enforced. Literal-family
 seeking remains deferred after a demonstrated dense regression.
 
-Core/PythonRe55 stays primary; no PythonRe59, standalone Core59 consumer
+Core/PythonRe65 stays independent; no PythonRe67, standalone Core67 consumer
 qualification, publication, downstream pin/default change or adoption is implied.
 Earlier immutable inputs stay unchanged, including qualified Core/PCRE2 scalar58/57;
 [qualification](QUALIFICATION.md) preserves their original evidence and caveats.

@@ -1,5 +1,47 @@
 # Managed PCRE2 profile qualification
 
+## Private scalar.67 leading-set and supplementary-case input
+
+Clean producer `db9526f3a90fef2c9f2369e952ef6bafbec59e5a`, Release/net10.0.
+Original immutable archive is
+`artifacts/package-qualification/archive/db9526f3a90fef2c9f2369e952ef6bafbec59e5a/`.
+Manifest SHA256 `76A797A124A61F2D07EC321712FDB34A282A1230B7157E80D26BBBA7497D38CB`.
+Actual PCRE2 nuspec pins Core[67]. [Handoff](../../artifacts/pcre2-scalar67-delivery-20261016/HANDOFF.md)
+and [restore instructions](../../artifacts/pcre2-scalar67-delivery-20261016/CONSUMING.md)
+record package/DLL/symbol identities, known exclusions and current costs.
+
+Original detached Windows/Linux each pass5718discovered tests, with exact mapped
+refs/locks/loaded DLLs and no project references. One6.23s producer dependency
+build/one pack per package and symbol; no Linux library build or same-byte replay.
+Existing archive verifier checks7artifacts. Reused native10.47 probe hosts supply
+688leading observations with0differences and576case observations with only the
+same12BMP final-sigma replacement differences. No new differing row or corpus edit.
+Core code matches qualified65; Core67 is tested as the PCRE dependency, not a
+standalone package consumer. Core/Python65 remains independent, no Python67.
+
+Original66 archive89a3f066 stays unqualified/frozen:5717pass+1literal allocation
+assertion(actual1552B,expected0) after one Count warm call.67 warms256whole batches
+while retaining0B. No proved production allocation cause is claimed; original
+packages/provenance/failed TRX and18focused recovery checks remain. Nothing was
+repacked to replace those bytes. Producer CI38952269776 is green Windows/Linux.
+
+One exact67 Count observation:155samples min67.47ms,all>=50ms. Finite64KiB missing-
+leading-byte miss4.50us,1000captured hits344us/5888B,finite-language125us versus
+11.4us unlimited. Finite caseless1000hits still allocates~1.78MB; finite Garay512
+hits~0.91MB. Preserve basic metering and this concrete allocation lead. BCL captured-
+decode spread17.0%,managed max5.5%; no repeat,Status or broad performance claim.
+Raw descriptive header strings copied from59 were stale; actual67 DLL identities,
+7preflight cases and80ms calibration source are preserved with a correction note.
+No raw measurement relabeling or rerun. This is separate from closed source pairs.
+
+SizeOf is accepted by the user/Lython. Both exact assemblies have no other Unsafe
+member, generated inline-array helper or native import; constants/Escape/timeout
+exceptions remain allowed. Earlier strict-gate calculations are historical, not
+current rejection or actual downstream adoption. Broader profile/construction/
+default/live-retention/RSS/host objectives and frozen reset/consumed-range clauses
+remain open. No publication, consumer edit or pin/default promotion occurred.
+
+
 ## Source after scalar.59: owned supplementary simple casing
 
 Caseless supplementary literals/classes/references and extended replacement

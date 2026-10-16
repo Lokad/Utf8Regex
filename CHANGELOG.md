@@ -1,5 +1,19 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.67 qualified dependency
+
+- Exact Core/profile packages pass original Windows/Linux consumers, provenance/
+  symbols/locks/loaded DLLs, existing native-overlap probes and green producer CI.
+  Necessary-leading-set Count and owned supplementary casing are included; known
+  BMP replacement and frozen profile exclusions remain explicit.
+- One current155-sample observation includes all4finite controls/live token:
+  selected64KiB miss4.50us,1000captured Count344us. Finite-language/caseless costs
+  remain substantial. Raw allocations/noise and stale descriptive harness-header
+  corrections are preserved; no closed before/after campaign or snapshot replay.
+- Preserve the failed66 bytes/receipt and zero-allocation assertion. Core/Python65
+  remains independent; no Python67, publication, consumer switch or full SPEC claim.
+
+
 ## Independent Core/PCRE2 scalar.67 candidate preparation
 
 - Preserve the failed scalar.66 package attempt and its warmed-allocation test
