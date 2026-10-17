@@ -97,6 +97,8 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         writer.WriteLine("This page is the self-contained performance regression snapshot for the optional Python `re` adapter. It is not a second regex-engine scoreboard: compatible patterns intentionally reuse the managed `Utf8Regex` core, while this catalog measures the Python-facing operation and its required result shaping. The source of truth is [`PythonRe.Benchmarks.json`](../../PythonRe.Benchmarks.json); `--refresh-pythonre-benchmarks` and `--refresh-pythonre-benchmark-case` update the JSON and regenerate this page.");
         writer.WriteLine();
+        writer.WriteLine("Each recorded Status applies only to its measured source, runtime, interpreter and result contract. This snapshot can contain several source generations; updating one row does not qualify the others. Measurements predating the strict UTF-8/scalar migration remain historical evidence and cannot establish current-engine semantics or performance. Current immutable dependency and finite-limit observations are linked from the [adapter README](README.md).");
+        writer.WriteLine();
         writer.WriteLine("The comparison is deliberately limited to cases where the requested work has equivalent managed semantics:");
         writer.WriteLine();
         writer.WriteLine("- `PythonRe`: `Utf8PythonRegex` over UTF-8 input.");
@@ -136,12 +138,21 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine($"- Lifecycle families: `{snapshot.Lifecycle.Count}`");
         writer.WriteLine($"- Scaling families: `{snapshot.ScalingFamilies.Count}`");
         writer.WriteLine(
-            $"- Public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
+            $"- Recorded public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
             $"`{GetStatusCount("Equivalent")}` equivalent, " +
             $"`{GetStatusCount("CpythonFaster")}` CPython faster, " +
             $"`{GetStatusCount("Inconclusive")}` inconclusive, " +
             $"`{GetStatusCount("Unqualified")}` unqualified");
         writer.WriteLine($"- Historical point measurement environments represented: `{environments.Length}`");
+        foreach (var source in rows
+            .Select(static row => row.Value.Qualification?.PairedEvidence?.SourceCommit)
+            .OfType<string>()
+            .Where(static source => source.Length != 0)
+            .GroupBy(static source => source, StringComparer.Ordinal)
+            .OrderBy(static group => group.Key, StringComparer.Ordinal))
+        {
+            writer.WriteLine($"- Paired evidence from source `{source.Key}`: `{source.Count()}` rows");
+        }
         writer.WriteLine($"- Corpus: [`{snapshot.Corpus.SourceFile}`](../../{snapshot.Corpus.SourceFile}) (`{snapshot.Corpus.VectorCount}` vectors, SHA-256 `{snapshot.Corpus.Sha256}`)");
         writer.WriteLine($"- Corpus provenance limitation: {snapshot.Corpus.Limitation}");
         if (hasCompleteCpythonBaseline)

@@ -4,6 +4,8 @@
 
 This page is the self-contained performance regression snapshot for the optional Python `re` adapter. It is not a second regex-engine scoreboard: compatible patterns intentionally reuse the managed `Utf8Regex` core, while this catalog measures the Python-facing operation and its required result shaping. The source of truth is [`PythonRe.Benchmarks.json`](../../PythonRe.Benchmarks.json); `--refresh-pythonre-benchmarks` and `--refresh-pythonre-benchmark-case` update the JSON and regenerate this page.
 
+Each recorded Status applies only to its measured source, runtime, interpreter and result contract. This snapshot can contain several source generations; updating one row does not qualify the others. Measurements predating the strict UTF-8/scalar migration remain historical evidence and cannot establish current-engine semantics or performance. Current immutable dependency and finite-limit observations are linked from the [adapter README](README.md).
+
 The comparison is deliberately limited to cases where the requested work has equivalent managed semantics:
 
 - `PythonRe`: `Utf8PythonRegex` over UTF-8 input.
@@ -29,8 +31,30 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `58` managed faster, `0` equivalent, `5` CPython faster, `27` inconclusive, `0` unqualified
+- Recorded public Status: `58` managed faster, `0` equivalent, `5` CPython faster, `27` inconclusive, `0` unqualified
 - Historical point measurement environments represented: `1`
+- Paired evidence from source `101975b4ce6a`: `4` rows
+- Paired evidence from source `185a07de3077`: `4` rows
+- Paired evidence from source `227771fc0ef7`: `4` rows
+- Paired evidence from source `30f9b58c44cc`: `4` rows
+- Paired evidence from source `37661064ec3a`: `4` rows
+- Paired evidence from source `4127a964c29e`: `4` rows
+- Paired evidence from source `48de72c5cf47`: `4` rows
+- Paired evidence from source `5b32ab77b03e`: `4` rows
+- Paired evidence from source `653161a993b9`: `4` rows
+- Paired evidence from source `675cda546679`: `4` rows
+- Paired evidence from source `69723e1684a5`: `6` rows
+- Paired evidence from source `6ab8f21ace15`: `4` rows
+- Paired evidence from source `8bc66679fb5a`: `4` rows
+- Paired evidence from source `9fff67981ce7`: `4` rows
+- Paired evidence from source `b2df56e6e3fb`: `4` rows
+- Paired evidence from source `b7228bd026e1`: `4` rows
+- Paired evidence from source `b8a54d632b28`: `4` rows
+- Paired evidence from source `d91449df7a20`: `4` rows
+- Paired evidence from source `e19304ef1f66`: `4` rows
+- Paired evidence from source `f0af29a25688`: `4` rows
+- Paired evidence from source `f79efd349de6`: `4` rows
+- Paired evidence from source `fffeb0e7f25a`: `4` rows
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
