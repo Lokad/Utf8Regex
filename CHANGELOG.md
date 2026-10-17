@@ -14,6 +14,10 @@
   counts and34x faster too-short-run misses, with stable control and unchanged
   principal allocations. No confirmation, tuning variant or package replay.
   The next immutable dependency qualification remains a separate delivery gate.
+- Skip the six fixed shorthand-bit tests when the bitset is zero. One additional
+  bounded public comparison records12-19% faster subtraction Count and about5%
+  faster late Match/missing IsMatch; the nonzero space miss costs3.7%, with
+  unchanged allocations/work units. No confirmation or extra timing variant.
 
 ## Core/PythonRe scalar.74 qualified private dependency
 

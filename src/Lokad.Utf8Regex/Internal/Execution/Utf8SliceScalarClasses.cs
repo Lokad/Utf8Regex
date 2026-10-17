@@ -97,6 +97,7 @@ internal static class Utf8SliceScalarClasses
 
     internal static bool MatchesMembers(Rune scalar, int shorthandBits)
     {
+        if (shorthandBits == 0) return false;
         for (var bit = 0; bit < 6; bit++)
             if ((shorthandBits & (1 << bit)) != 0 && MatchesShorthand(scalar, (Utf8SliceShorthand)bit)) return true;
         return false;
