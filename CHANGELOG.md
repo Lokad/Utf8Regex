@@ -11,6 +11,13 @@
   decrease; overlapping, folded-literal, lazy, RTL and complex tails keep their
   existing execution. No new allocation, owner, mode or instruction encoding.
 - Immutable scalar.77 predates this source change; qualification remains scoped.
+- One bounded Windows public comparison records about 11% lower eager capture-
+  string time for unlimited/finite lanes, with less than 1% movement in the
+  unaffected managed control and no material allocation increase. Noisy token
+  lanes and the failed VM attempt remain explicit in the
+  [evidence](artifacts/disjoint-class-repeat-20261017/RESULT.md).
+  [Source CI](https://github.com/Lokad/Utf8Regex/actions/runs/39007308245) is green
+  on Windows and Linux. No intermediate package qualification.
 
 ## Core/PythonRe scalar.77 qualified private dependency
 

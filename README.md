@@ -39,6 +39,14 @@ PCRE76 requires its own exact Core76 pin. Published 0.3 packages retain their
 former contract. The existing [qualifier](qualify-scalar-candidate.ps1) records
 private candidate acceptance without publishing.
 
+Development source after scalar.77 avoids useless repeat alternatives before a
+disjoint exact literal, such as `([a-z]+)-`. One bounded Windows public comparison
+records about 11% less time for eager capture-string tuples, including finite
+limits, with less than 1% movement in the unaffected managed control. See the
+[evidence and scope](artifacts/disjoint-class-repeat-20261017/RESULT.md).
+[Source CI](https://github.com/Lokad/Utf8Regex/actions/runs/39007308245) is green on
+Windows/Linux. The immutable scalar.77 packages predate this change.
+
 ## Support Scope
 
 - Development semantics: Unicode-scalar matching over strict UTF-8. Dot, classes, quantifiers, capture boundaries, references and RTL traversal operate on complete scalars.
