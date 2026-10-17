@@ -1,5 +1,13 @@
 # Changelog
 
+## Development after scalar.88
+
+- Fix overlapping separator/suffix matching by declining the non-rewinding
+  structural-family optimization when a greedy separator consumes the suffix's
+  first byte. Existing owned matching preserves backtracking and scalar ranges
+  across Count, IsMatch, Match and enumeration. Scalar.88 remains immutable and
+  retains the demonstrated Count mismatch for this shape.
+
 ## Qualified private Core/PythonRe scalar.88
 
 - Batch the Python brace/verbose grammar repair with scalar URI Count and finite

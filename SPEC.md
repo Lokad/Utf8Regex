@@ -326,6 +326,14 @@ continuation or result storage. Tight depth/working/result caps can therefore
 admit these calls below the former VM scratch requirement; numerical work needs
 can fall. Other programs and operations retain their qualified routes. This does
 not extend construction, retained-storage or default guarantees.
+Development source after scalar.88 declines structural-family lowering when a
+greedy separator overlaps the first literal suffix byte and no identifier
+separates them. The non-rewinding specialized verifier cannot prove this shape;
+existing owned matching must preserve its backtracking. Immutable scalar.88
+miscounts the pattern \b(?:foo|bar)\s* followed by a literal space over
+"foo   bar   " as six unlimited or zero finite instead of two. Correct execution
+can require different state/work admission than the former incorrect result;
+selected limits remain authoritative.
 Development source after scalar.87 also lets finite Core Count borrow the
 existing invocation-aware ASCII structural-family search and verifier. The
 original zero-offset LTR program must be nonempty, nonfolded and free of stateful
