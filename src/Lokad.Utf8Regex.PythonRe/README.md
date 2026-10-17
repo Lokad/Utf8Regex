@@ -21,6 +21,16 @@ work/storage can lower numerical requirements. Prior direct capture slots,
 explicit cursor lifetime and prepared native finite literal routes remain.
 The semantic target stays CPython3.13.2/Unicode15.1; API snapshots are unchanged.
 
+Development source after scalar.82 reuses complete native literal/family matches
+for capture-free, nonempty cursor search under the same validated invocation.
+Full-result eligibility is distinct from a necessary start hint. Match and
+FullMatch retain their position/end constraints; captures and excluded semantics
+keep the VM. Group-zero coordinates, original interruption and major admission
+remain; removed work/scratch can admit tighter numerical policies.
+[One bounded source pair](../../artifacts/python-native-cursor-20261017/RESULT.md)
+improves finite dense Split by12.6% and removes late-family Search VM attempts.
+It is FullOpts evidence outside immutable scalar.82, not new CPython Status.
+
 [Current exact-package costs](../../artifacts/core-python-scalar82-20261017/vm-cost/RESULT.md)
 include finite/live-token overhead, required tuples/Split values and both .NET
 controls under default tiering/PGO. Stable rows and noisy/short lanes are distinct;

@@ -52,6 +52,30 @@ public sealed partial class Utf8Regex
         return count;
     }
 
+    internal bool CanFindNativeLiteralForResult => CanUseNativeLiteralSearch(_ownedSliceProgram);
+
+    // Borrow the adapter's already validated subject and invocation. Returning
+    // false declines the route without searching; found describes an accepted
+    // complete match, not a necessary start hint. The caller owns projection.
+    internal bool TryFindNativeLiteralForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        ref Utf8SliceInvocation invocation, out bool found, out int start, out int end)
+    {
+        found = false;
+        start = end = -1;
+        if (!CanFindNativeLiteralForResult) return false;
+        var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
+            input, startOffsetInBytes, input.Length, false, ref invocation, out var match, out found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal result discovery exceeded {breach}.");
+        Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+        if (found)
+        {
+            start = match.Index;
+            end = match.Index + match.Length;
+        }
+        return true;
+    }
+
     // Shared semantic eligibility, independent of the optional Core owner's
     // policy. An adapter can supply finite limits through its borrowed invocation.
     private bool CanUseNativeLiteralSearch(Utf8SliceProgram program) =>

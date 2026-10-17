@@ -1,5 +1,17 @@
 # Changelog
 
+## Development after scalar.82
+
+- Reuse Core's complete metered literal/family discovery for capture-free Python
+  cursor search. Admit full native eligibility separately from start hints;
+  remove redundant VM attempts/scratch while keeping original validation,
+  invocation limits/interruption, scalar ranges and group-zero metadata.
+  Match/FullMatch and semantic exclusions retain their routes.
+- One bounded source pair improves finite dense Split by12.6% and late literal-
+  family Search from2.20ms to1.41us, with scratch allocations removed. Captured
+  VM/Core Count controls stay within0.6%. This is FullOpts source evidence;
+  immutable scalar.82 and default-runtime/CPython qualifications are unchanged.
+
 ## Qualified private Core/PythonRe scalar.82
 
 - Batch boolean validation-only reuse, conservative construction-descriptor

@@ -425,6 +425,15 @@ share scalar discovery, full validation, original token/deadline and result/
 working admission. Reduced actual staging may lower numerical work/byte needs;
 no spent-work refund or caller-retention guarantee is introduced.
 
+Source after scalar.82 allows capture-free nonempty Python cursor search to
+borrow an existing Core complete literal/family matcher under the original
+validated invocation. Complete-result eligibility is separate from fallback-start
+guidance. It omits redundant VM attempts/storage, without resetting controls or
+changing group-zero/scalar ranges. Current-position Match and derived FullMatch
+retain their position/end constraints; stateful/empty/excluded patterns retain
+their existing routes. Numerical work/working needs can decrease with removed
+work/storage; output and retained-result contracts remain unchanged.
+
 PythonRe scalar.5 reuses one existing exclusive VM workspace for each
 scalar cursor. It stays charged while positioned, including host waits and result
 projection; EOF, failure and disposal release it synchronously. Private repeat,

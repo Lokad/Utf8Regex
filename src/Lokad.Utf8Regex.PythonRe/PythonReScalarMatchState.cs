@@ -53,9 +53,13 @@ internal struct PythonReScalarMatchState
         this = default;
         _program = program;
         var candidatePlan = candidateRegex?.Inspection.SearchPlan ?? default;
+        // Exact families can supply a whole match even when they are not
+        // classified as a fallback-start hint. No captures need that VM state.
+        var nativeResult = program.GroupCount == 0 && candidateRegex?.CanFindNativeLiteralForResult == true;
         if (!program.CanMatchEmpty && !program.HasContiguousAnchor && !program.RightToLeft &&
-            !program.IgnoreCase && candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
-            candidatePlan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals)
+            !program.IgnoreCase && (nativeResult ||
+                candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
+                candidatePlan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals))
         {
             _candidateRegex = candidateRegex;
         }
@@ -202,18 +206,33 @@ internal struct PythonReScalarMatchState
             while (!_finished)
             {
                 Checkpoint(input);
-                // Avoid the exception-handling search helper when the current byte
-                // already satisfies the hint. The VM still checks the exact class.
-                if (search && (_candidateRegex is not null ||
-                    _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
-                        (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
-                    !SeekCandidate(input)) { _finished = true; return false; }
-                _invocation.AnchorOriginByte = _position;
                 Utf8SliceMatchOutcome outcome;
                 try
                 {
-                    outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                        _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
+                    // A complete native literal match needs no capture/VM state.
+                    // Match and the derived FullMatch program use search=false;
+                    // their additional position/end constraints keep the VM.
+                    if (search && _program.GroupCount == 0 && _candidateRegex is { } candidate &&
+                        candidate.TryFindNativeLiteralForResult(input, _position, ref _invocation,
+                            out var found, out var start, out var end))
+                    {
+                        if (!found) { _finished = true; return false; }
+                        _position = start;
+                        _invocation.AnchorOriginByte = start;
+                        outcome = new Utf8SliceMatchOutcome(true, end, Utf8ExecutionLimitKind.None, null, null);
+                    }
+                    else
+                    {
+                        // A necessary start hint still requires profile verification.
+                        // Avoid its search helper when the current byte meets the hint.
+                        if (search && (_candidateRegex is not null ||
+                            _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
+                                (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
+                            !SeekCandidate(input)) { _finished = true; return false; }
+                        _invocation.AnchorOriginByte = _position;
+                        outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
+                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
+                    }
                 }
                 catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
                 { throw ResourceFailure(); }
