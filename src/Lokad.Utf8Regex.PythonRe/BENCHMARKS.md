@@ -24,19 +24,20 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-17T08:59:17.4720439+00:00`
-- Snapshot SHA-256: `259256919B13CC60F248C4BFE9B24196E533E4F065879C6F3BC1835BA2E7350F`
+- Generated: `2026-10-17T12:35:12.6014140+00:00`
+- Snapshot SHA-256: `35FB1E2D2B3AF04C75F7E823843A49CCDC4240C02D293EB149BA106E1FA16265`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `56` managed faster, `0` equivalent, `4` CPython faster, `28` inconclusive, `2` unqualified
+- Public Status: `56` managed faster, `0` equivalent, `5` CPython faster, `28` inconclusive, `1` unqualified
 - Historical point measurement environments represented: `1`
 - Paired evidence from source `101975b4ce6a`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `185a07de3077`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `1c01183e8d6d`: `1` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `227771fc0ef7`: `3` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `277419167179`: `1` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `30f9b58c44cc`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `37661064ec3a`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `4127a964c29e`: `4` rows; .NET 10.0.12; CPython 3.13.2
@@ -47,7 +48,7 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Paired evidence from source `69723e1684a5`: `6` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `6ab8f21ace15`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `8bc66679fb5a`: `4` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `8cb289db070b`: `4` rows; .NET 10.0.12; CPython 3.12.3
+- Paired evidence from source `8cb289db070b`: `3` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `9fff67981ce7`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b2df56e6e3fb`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b7228bd026e1`: `2` rows; .NET 10.0.12; CPython 3.13.2
@@ -213,7 +214,7 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `split/captures` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 327.524 us | 153.988 us | 2.12x | 199.787 us | 792.465 us | 499,048 B |
 | `split/no-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.929 us | 8.877 us | 0.10x | 22.865 us | 4.948 us | 8,920 B |
 | `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Managed faster | 0.839 us | 4.349 us | 0.19x | 11.303 us | 2.801 us | 8,496 B |
-| `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Unqualified | 2.413 us | 0.467 us | 5.18x | 1.022 us | 4.071 us | 6,032 B |
+| `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | CPython faster | 5.830 us | 0.454 us | 12.85x | 1.022 us | 4.071 us | 6,032 B |
 | `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | Managed faster | 38.044 us | 54.942 us | 0.69x | 79.484 us | 85.441 us | 182,032 B |
 | `split/zero-width` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 7.051 us | 45.234 us | 0.16x | 51.485 us | 303.356 us | 48,656 B |
 | `split/unicode` | `SplitStrings` | EagerMaterializedResult | Managed faster | 14.638 us | 24.420 us | 0.60x | 32.289 us | 53.040 us | 26,104 B |

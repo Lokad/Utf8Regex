@@ -2,6 +2,11 @@
 
 ## Development after scalar.81
 
+- Qualify the previously unfinished limited-Split duration check with the existing
+  runner: current clean source27741916 takes5.83us/6032B versus predecoded
+  CPython3.12.3 at0.454us. Nine pairs pass without a repeat; this remains a
+  public performance gap. Only its snapshot qualification is refreshed; other
+  rows and independent .NET point columns retain their historical evidence.
 - Remove individual construction byte/work charges for temporary immutable-map
   views and enumerator boxes, along with their generic allocation wrapper.
   Keep backing-table admission, snapshot validity, metered scans and original
