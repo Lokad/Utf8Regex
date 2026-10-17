@@ -75,7 +75,8 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.FindAllStructural => "managed-findall-structural-group-zero-eager-v1",
             PythonReBenchmarkOperation.ReplaceStringLimited => "managed-replace-string-limited-eager-v1",
             PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-replace-evaluator-string-eager-v1",
-            PythonReBenchmarkOperation.SplitStringsLimited => "managed-split-strings-limited-eager-v1",
+            PythonReBenchmarkOperation.SplitStringsLimited =>
+                $"managed-split-strings-limited-eager-v2;warmup={PythonReQualificationSplitWarmupCalls}",
             PythonReBenchmarkOperation.SplitDetailed => "managed-split-detailed-eager-v1",
             PythonReBenchmarkOperation.FindAllStringsFromOffset => "managed-findall-strings-from-offset-eager-v1",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
@@ -153,26 +154,28 @@ internal static partial class PythonReBenchmarkReporter
                 : "ScalarResult";
 
     private static bool PythonReManagedRuntimeMatches(
-        PythonReBenchmarkEnvironment stored,
+        PythonReBenchmarkEnvironment? stored,
         PythonReBenchmarkEnvironment current) =>
-        stored.Runtime.Equals(current.Runtime, StringComparison.Ordinal) &&
-        stored.OperatingSystem.Equals(current.OperatingSystem, StringComparison.Ordinal) &&
-        stored.Processor.Equals(current.Processor, StringComparison.Ordinal);
+        stored is not null &&
+        string.Equals(stored.Runtime, current.Runtime, StringComparison.Ordinal) &&
+        string.Equals(stored.OperatingSystem, current.OperatingSystem, StringComparison.Ordinal) &&
+        string.Equals(stored.Processor, current.Processor, StringComparison.Ordinal);
 
     private static bool PythonReInterpreterMatches(
-        CpythonStreamEnvironment stored,
+        CpythonStreamEnvironment? stored,
         CpythonStreamEnvironment current) =>
-        stored.VersionDetail.Equals(current.VersionDetail, StringComparison.Ordinal) &&
+        stored is not null && stored.Git is not null && stored.Timer is not null &&
+        string.Equals(stored.VersionDetail, current.VersionDetail, StringComparison.Ordinal) &&
         stored.Git.SequenceEqual(current.Git, StringComparer.Ordinal) &&
-        stored.Compiler.Equals(current.Compiler, StringComparison.Ordinal) &&
-        stored.SoAbi.Equals(current.SoAbi, StringComparison.Ordinal) &&
+        string.Equals(stored.Compiler, current.Compiler, StringComparison.Ordinal) &&
+        string.Equals(stored.SoAbi, current.SoAbi, StringComparison.Ordinal) &&
         stored.DebugBuild == current.DebugBuild &&
         stored.GilEnabled == current.GilEnabled &&
-        stored.ExecutableSha256.Equals(current.ExecutableSha256, StringComparison.Ordinal) &&
-        stored.RuntimeLibrarySha256.Equals(current.RuntimeLibrarySha256, StringComparison.Ordinal) &&
-        stored.Platform.Equals(current.Platform, StringComparison.Ordinal) &&
-        stored.Architecture.Equals(current.Architecture, StringComparison.Ordinal) &&
-        stored.Timer.Implementation.Equals(current.Timer.Implementation, StringComparison.Ordinal) &&
+        string.Equals(stored.ExecutableSha256, current.ExecutableSha256, StringComparison.Ordinal) &&
+        string.Equals(stored.RuntimeLibrarySha256, current.RuntimeLibrarySha256, StringComparison.Ordinal) &&
+        string.Equals(stored.Platform, current.Platform, StringComparison.Ordinal) &&
+        string.Equals(stored.Architecture, current.Architecture, StringComparison.Ordinal) &&
+        string.Equals(stored.Timer.Implementation, current.Timer.Implementation, StringComparison.Ordinal) &&
         stored.Timer.ResolutionSeconds.Equals(current.Timer.ResolutionSeconds) &&
         stored.Timer.Monotonic == current.Timer.Monotonic &&
         stored.Timer.Adjustable == current.Timer.Adjustable;

@@ -30,8 +30,16 @@ Count controls.
 Required tuple outputs and .NET decode/predecoded controls are included. Noise,
 finite overhead and remaining gaps are explicit. The bounded .NET10.0.12 VM
 comparison follows verified input archival, with stable headroom. No general
-speedup, full-catalog qualification or CPython Status is claimed.
-The [comparative snapshot](BENCHMARKS.md) retains its original provenance.
+speedup or full-catalog qualification is claimed; those .NET comparisons set no
+CPython Status. A separate bounded quiet-VM batch uses exact79 libraries with
+.NET10.0.12/CPython3.12.3 and passes all91 semantic digests. Literal early Search
+measures1.947us versus0.163us predecoded CPython; named-capture string FindAll
+measures331.137us versus90.368us. Both qualify as CPython faster. Limited Split
+remains unqualified (short samples); Unicode FullMatch remains inconclusive
+(CPython spread), after their sole17-pair extensions. No further timing in this
+batch. The Python semantic target remains3.13.2/Unicode15.1.
+The [comparative snapshot](BENCHMARKS.md) retains historical point measurements
+and route labels separately from paired evidence. See the [batch receipt](../../artifacts/pythonre-current-qualification-20261017/RESULT.md).
 
 Defaults/static calls remain unlimited. Complete construction, lazy/default,
 caller-retention/RSS and host coverage remain open; compose existing

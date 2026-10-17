@@ -677,12 +677,12 @@ internal static partial class PythonReBenchmarkReporter
     {
         var qualification = measurement?.Qualification;
         var evidence = qualification?.PairedEvidence;
+        // ManagedRoute describes the independent point measurement, which may be
+        // historical. Paired provenance is checked by case/product/operation hashes
+        // below; an old discovery label must not stale a newly measured pair.
         var managedMetadataMatches = measurement is not null &&
             measurement.ComparatorOwner.Equals(
                 PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
-                StringComparison.Ordinal) &&
-            measurement.ManagedRoute.Equals(
-                new PythonReBenchmarkContext(benchmarkCase).DescribeManagedRoute(),
                 StringComparison.Ordinal);
         var resultContractMatches = evidence is not null &&
             evidence.ResultContract.Equals(GetPythonReResultContract(benchmarkCase), StringComparison.Ordinal);
@@ -987,6 +987,7 @@ internal static partial class PythonReBenchmarkReporter
             // Warming through that transition keeps the calibrated batch above
             // the qualification duration floor after its steady-state speedup.
             PythonReBenchmarkOperation.SplitStrings or
+                PythonReBenchmarkOperation.SplitStringsLimited or
                 PythonReBenchmarkOperation.SplitDetailed => PythonReQualificationSplitWarmupCalls,
             _ => PythonReQualificationMinimumWarmupCalls,
         };
@@ -1254,15 +1255,13 @@ internal static partial class PythonReBenchmarkReporter
             var byteControlEligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
                 benchmarkCase,
                 inputBytes);
-            var currentContext = new PythonReBenchmarkContext(benchmarkCase);
             if (measurement.ByteControlEligible != byteControlEligibility.IsEligible ||
                 !measurement.ByteControlReason.Equals(byteControlEligibility.Reason, StringComparison.Ordinal) ||
                 !measurement.ComparatorOwner.Equals(
                     PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
-                    StringComparison.Ordinal) ||
-                !measurement.ManagedRoute.Equals(currentContext.DescribeManagedRoute(), StringComparison.Ordinal))
+                    StringComparison.Ordinal))
             {
-                Console.Error.WriteLine($"{caseId}: ownership, route, or byte eligibility is stale.");
+                Console.Error.WriteLine($"{caseId}: ownership or byte eligibility is stale.");
                 return 1;
             }
 
