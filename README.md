@@ -4,6 +4,11 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
+Private **Core/PythonRe scalar.81** is being prepared as one checkpoint for the
+related finite Count/Match/IsMatch improvements. Preparation is not qualification;
+scalar.80 below remains the qualified input until the existing exact-byte
+consumer/provenance checks pass. No PCRE81, publication or consumer pin change.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.80** pair comes from clean
 producer `39358de0717058b868486fd304a2c0a85bb7f08c`; PythonRe pins Core
 `[0.4.0-scalar.80]`. Same immutable Windows/Linux consumers, capture/semantic
