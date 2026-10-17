@@ -1,11 +1,14 @@
 # Changelog
 
-## Private Core/PythonRe scalar.86 candidate
+## Qualified private Core/PythonRe scalar.86
 
-- Batch the accepted validity-selector and literal FullMatch improvements with
-  construction-authority and scalar-lookbehind regressions. Qualification is
-  pending; earlier85 and independent PCRE76/Core76 remain immutable. No PCRE86,
-  publication, consumer pin/default change or actual adoption is implied.
+- Batch the validity-selector and literal FullMatch improvements with construction
+  authority and mixed scalar-width lookbehind regressions. Same-byte Windows/Linux
+  consumers/oracles, provenance/member/API/symbol checks and public restore pass;
+  producer CI is green. Exact-package current costs retain remaining noisy lanes
+  after the sole confirmation. Earlier85 and independent PCRE76/Core76 remain
+  immutable; no PCRE86, publication or consumer pin/default/adoption claim.
+  [Handoff](artifacts/core-python-scalar86-20261017/HANDOFF.md).
 
 ## Changes included after scalar.85
 

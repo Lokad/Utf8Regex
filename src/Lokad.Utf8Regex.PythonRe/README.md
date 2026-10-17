@@ -3,41 +3,41 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.85** pair pins Core
-`[0.4.0-scalar.85]`, producer `fce0fbb4531543c1b0f45d904a2ffd3807dad6bc`.
-Same-byte Windows/Linux consumers,104 capture/91 semantic fixtures, symbols,
-provenance/member/API checks and a fresh isolated public restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39050443092) is green.
-[Handoff](../../artifacts/core-python-scalar85-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar85-20261017/CONSUMING.md) preserve
-identities and scope. Earlier84 and independent PCRE76/Core76 remain immutable;
-no PCRE85, publication, consumer pin/default change or adoption is implied.
+The qualified private **Core/PythonRe 0.4.0-scalar.86** pair comes from clean
+producer `8893a3df7fe377e256bb5a522bc7558b3ec79eda`; PythonRe pins exact Core
+`[0.4.0-scalar.86]`. Same-byte Windows/Linux consumers,107 capture/91 semantic
+cases, symbols/provenance/member/API checks and a fresh isolated public restore
+pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39060834938)
+is green. [Handoff](../../artifacts/core-python-scalar86-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar86-20261017/CONSUMING.md) record scope
+and identities. Earlier85/84 and independent PCRE76/Core76 remain immutable;
+no PCRE86, publication, consumer pin/default change or adoption is implied.
 
-Scalar.85 reuses complete native literal/family discovery for captured `IsMatch`
-with or without invocation controls. A boolean needs no capture slots or VM
-attempts. Capture-free unmetered calls retain their cursor route. Generic,
-capture-dependent, folded, empty and assertion patterns retain established routes;
-captured output operations and held snapshots keep their behavior.
-Native Count improvements, direct string Split staging, conservative construction
-accounting and explicit cursor lifetime remain. Whole-input/scalar validation,
-original deadlines/tokens and work/depth/storage admission stay intact.
-Less real work/storage can admit tighter policies; defaults/static calls remain
-unlimited. Parser/compiler/Unicode inputs and API snapshots are unchanged from84.
-Deferred captured-search prototypes are absent.
+Scalar.86 batches the existing-threshold validation-selector early exit and
+complete Core literal discovery for Python FullMatch value/string results.
+Exact capture-free calls check both suffix endpoints without per-scalar VM
+dispatch or unused lazy preparation. Required strings remain result-admitted.
+Detailed/captured/alternative/folded/assertion routes and eager Compile retain
+their handling. Earlier native boolean/Count, captures/aliases, explicit cursor
+lifetime and conservative accounting remain. Full strict validation, scalar
+boundaries, original interruption and all four finite invocation controls stay.
 
-[Exact85 current costs](../../artifacts/core-python-scalar85-20261017/vm-cost/RESULT.md)
-include boolean calls, Count and required captured UTF8 output, all-four finite
-caps/live token and both .NET controls under default tiering/PGO/R2R.225 raw samples
-include the sole selective confirmation. Noisy/short lanes remain unqualified;
-the ASCII boolean row differs sharply across processes and stays uncertain.
-Closed FullOpts source pairs record the boolean gains and6-9% higher finite Unicode
-costs in the follow-up; they do not qualify current default-runtime costs or
-update CPythonStatus. The [historical snapshot](BENCHMARKS.md) stays separate.
-
-Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; Python has none.
+Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; PythonRe none.
 No unchecked reads, generated helpers, native imports or shipped BCL matcher/
-results return. Full construction/lazy/default/common-retention/host/SPEC coverage
-remains open; see [host composition](../../HOST-INTEGRATION.md).
+result dependencies return.
+
+[Exact86 current costs](../../artifacts/core-python-scalar86-20261017/vm-cost/RESULT.md)
+cover FullMatch, Count and required output under default.NET10.0.12 tiering/PGO/
+R2R with all-four finite controls/live token and both overlapping .NET comparators.
+The150 initial plus sole100 confirmation samples retain short/noisy lanes:
+some FullMatch, text and finite bulk costs remain unqualified. Within-lane
+stability does not prove cross-process reproducibility; text medians differ
+sharply between processes. No further timing. Closed FullOpts source comparisons
+and historical tables do not qualify package-default absolutes or CPythonStatus.
+
+Full construction/lazy/default/common-retention/host/SPEC coverage remains open;
+see [host composition](../../HOST-INTEGRATION.md). These are scoped dependency
+guarantees, not a safe-default or process-memory claim.
 
 ## Support Scope
 
@@ -111,7 +111,7 @@ warm reuse has no preparation scope allocation. These fixes are included in the
 qualified scalar.51 pair and preserved in scalar.52.
 See [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md) for the exact scopes and exclusions.
 
-Development after scalar.85 reuses Core's complete literal finder for exact,
+Scalar.86 reuses Core's complete literal finder for exact,
 capture-free `FullMatch` value and string results. It checks both suffix endpoints,
 validates the entire subject and keeps the original deadline/token and all four
 finite controls. These calls omit per-scalar VM dispatch and lazy full-program
@@ -121,7 +121,7 @@ actual work can admit tighter policies; resource units and defaults are unchange
 One bounded FullOpts source comparison shows short ASCII/scalar value calls
 55-83% faster and scalar string output44-51% faster, with unchanged allocations.
 The offset case and controls differ by a few percent; those small differences
-are not precise causal claims. This does not update immutable85 or CPythonStatus.
+are not precise causal claims. These source comparisons do not establish package-default costs or CPythonStatus.
 [Evidence](../../artifacts/python-literal-fullmatch-20261017/RESULT.md).
 
 ```csharp
