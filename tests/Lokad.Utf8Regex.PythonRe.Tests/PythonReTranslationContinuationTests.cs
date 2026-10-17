@@ -169,7 +169,13 @@ public sealed class PythonReTranslationContinuationTests
     public void DeepTranslationErrorsRestoreParentCapacityAndRetainProfileMessages(string fragment, string message)
     {
         const int depth = 16385;
-        var parse = new PythonReParser(string.Concat(Enumerable.Repeat("(?:", depth)) + fragment + new string(')', depth)).Parse(PythonReCompileOptions.None);
+        // Unknown names now fail during parsing. Build a valid deep reference,
+        // then remove its definition metadata to exercise the translator's
+        // independent invalid-AST check and unwind as before.
+        var parsedFragment = fragment == "(?P=missing)" ? "(?P<missing>a)(?P=missing)" : fragment;
+        var parse = new PythonReParser(string.Concat(Enumerable.Repeat("(?:", depth)) + parsedFragment + new string(')', depth)).Parse(PythonReCompileOptions.None);
+        if (fragment == "(?P=missing)")
+            parse = parse with { NamedGroups = new Dictionary<string, int>() };
         using var scope = Utf8ConstructionScope.Enter();
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         Assert.StartsWith(message, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse)).Message);

@@ -2,6 +2,8 @@
 
 ## Development after scalar.86
 
+- Reject PythonRe named backreferences to later declarations at their lexical
+  point, including in lookbehind, and retain the unknown-name position.
 - Reject PythonRe backreferences and conditional references to groups defined
   inside the enclosing lookbehind, and open/forward conditional groups there.
   Preserve earlier closed captures, nested assertion scope and scalar widths;

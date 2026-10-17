@@ -220,12 +220,11 @@ internal sealed partial class PythonReParser
             {
                 var referenceStart = _position;
                 var name = ParseGroupName(')', "missing ), unterminated name");
-                if (Storage.NamedGroups.TryGetValue(name, out var number))
-                {
-                    if (Storage.IsOpen(number))
-                        throw new PythonRePatternException("cannot refer to an open group", referenceStart);
-                    CheckLookbehindReference(number, _position);
-                }
+                if (!Storage.NamedGroups.TryGetValue(name, out var number))
+                    throw new PythonRePatternException($"unknown group name '{name}'", referenceStart);
+                if (Storage.IsOpen(number))
+                    throw new PythonRePatternException("cannot refer to an open group", referenceStart);
+                CheckLookbehindReference(number, _position);
                 _parsedNode = PythonReAstFactory.NamedReference(name, BackreferenceLower(frame.Options));
                 child = default;
                 return true;

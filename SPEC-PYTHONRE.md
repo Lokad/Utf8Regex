@@ -115,7 +115,7 @@ Supported feature families in the current profile:
 * character classes and standard escapes
 * greedy, reluctant, and possessive quantifiers
 * capturing and named capturing groups
-* named and numeric backreferences
+* named and numeric backreferences to previously defined, closed groups
 * group-participation conditionals: names must already be defined at the
   conditional header. Outside lookbehind, an already-open named group is allowed
   and numeric forward references retain final group-count validation.
