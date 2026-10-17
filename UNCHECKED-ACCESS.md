@@ -7,7 +7,7 @@ Windows/Linux consumer and exact packaged member checks pass; Linux's missing
 source-output inventory prerequisite and no-build recovery are preserved. Source
 producer2b41cad3/CI39014053062 is green both platforms. [Handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md),
 [exact members](artifacts/core-python-scalar79-20261017/exact-member-references.json).
-Current Windows costs are separately scoped in the handoff; they do not reopen or
+Current Windows/VM costs are separately scoped in the handoff; they do not reopen or
 replace the completed fixed-original checked52 gate. Earlier evidence stays below.
 
 ## Checked-access batch: scalar.52

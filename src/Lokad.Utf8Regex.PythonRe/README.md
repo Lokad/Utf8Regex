@@ -24,11 +24,13 @@ no required endpoint can reject Accept; remaining execution and metering stay.
 
 Core Unicode and pinned Python data are unchanged. Core retains only permitted
 `Unsafe.SizeOf`, accepted by Lython; Python has no unchecked API references.
-The handoff includes current Windows public costs with exact79 AFTER bytes,
-frozen-source BEFORE, finite/live-token lanes and unchanged Core Count controls.
+The handoff includes current Windows and quiet-VM public costs with exact79
+AFTER bytes, frozen-source BEFORE, finite/live-token lanes and unchanged Core
+Count controls.
 Required tuple outputs and .NET decode/predecoded controls are included. Noise,
-finite overhead and remaining gaps are explicit; no isolated speedup, CPython
-Status or quiet-VM qualification is claimed.
+finite overhead and remaining gaps are explicit. The bounded .NET10.0.12 VM
+comparison follows verified input archival, with stable headroom. No general
+speedup, full-catalog qualification or CPython Status is claimed.
 The [comparative snapshot](BENCHMARKS.md) retains its original provenance.
 
 Defaults/static calls remain unlimited. Complete construction, lazy/default,

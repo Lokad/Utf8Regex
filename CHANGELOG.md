@@ -1,5 +1,16 @@
 # Changelog
 
+## Current scalar.79 quiet-VM operating costs
+
+- Recover VM headroom by moving eight cold historical input trees to verified
+  local archives with restoration receipts; preserve runtimes/current inputs/
+  servers and all evidence. No engine or package change.
+- Measure current exact79 public tuple/Count costs on installed .NET10.0.12 with
+  finite/live-token lanes, frozen-source BEFORE, unchanged Core and .NET controls.
+  Finite overhead is about10.2% for UTF8 tuples and9.4% for strings; retain basic
+  metering. No general speedup, CPython Status or full-catalog claim.
+  [VM evidence](artifacts/core-python-scalar79-20261017/vm-cost/RESULT.md).
+
 ## Core/PythonRe scalar.79 qualified private dependency
 
 - Deliver terminal captured-class scanning and direct Python capture slots in

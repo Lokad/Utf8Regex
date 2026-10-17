@@ -31,13 +31,14 @@ results, unchecked reads or generated staging helpers; Core retains permitted
 `Unsafe.SizeOf`, accepted by Lython.
 
 Current public costs compare frozen source32 with exact scalar.79 bytes on
-Windows, including finite/live-token lanes, retained tuple outputs, an unchanged
-Core Count control and decode/predecoded .NET controls. The
-[handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md#current-public-operating-cost)
-records timings, allocations, finite-limit overhead and noise. No isolated
-speedup or CPython Status is claimed. Full quiet-VM measurement still needs disk
-and memory headroom; historical tables retain their actual source/environment.
-September results do not qualify today's implementation.
+Windows and the recovered quiet VM, including finite/live-token lanes, retained
+tuple outputs, an unchanged Core Count control and both .NET controls. The
+[handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md#supplementary-current-quiet-vm-costs)
+records timings, allocations, finite overhead and noise. The VM run uses installed
+.NET10.0.12 after verified archival restored headroom; no server shutdown or
+source build. This qualifies representative current costs, not the full benchmark
+catalog, CPython Status or a universal speedup. Historical tables keep their
+actual source/environment; September results do not qualify today's engine.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains integration with existing resource owners; complete construction, lazy,
