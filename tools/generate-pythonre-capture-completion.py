@@ -90,6 +90,12 @@ CASES = [
     (r"(?:(?(3)(?(2)(a)|())|())){2}", "aa"),
     (r"(a?)*?a\1", "aa"),
     (r"((a?)|(b))+", "b"),
+    # Fixed lookbehind width counts scalars, even when alternatives differ in
+    # both UTF-16 code units and UTF-8 bytes. Include captured references and
+    # repeated capture completion across the mixed-width alternatives.
+    (r"(?<=(?P<x>😀|a))b", "😀b ab"),
+    (r"(?P<x>😀|a)(?<=(?P=x))b", "😀b ab"),
+    (r"(?<=(?P<x>😀|a){2})b", "😀ab a😀b"),
 ]
 
 def snapshot(match, text):

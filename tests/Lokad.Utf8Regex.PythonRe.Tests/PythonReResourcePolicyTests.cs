@@ -30,7 +30,7 @@ public sealed class PythonReResourcePolicyTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void FiniteDepthAndMemoryBudgetsRemainUnsupportedByPythonRe(int kind)
+    public void FiniteDepthAndMemoryBudgetsConstructAndExecute(int kind)
     {
         var policy = kind switch
         {
@@ -45,13 +45,13 @@ public sealed class PythonReResourcePolicyTests
     }
 
     [Fact]
-    public void ZeroBudgetIsRejectedBeforeSupportCheck()
+    public void ZeroBudgetIsRejectedBeforePatternWork()
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
         Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
     }
     [Fact]
-    public void FinitePolicyIsRejectedBeforePatternCompilation()
+    public void ValidFinitePolicyPreservesPatternSyntaxFailure()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 1024ul };
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
@@ -65,7 +65,7 @@ public sealed class PythonReResourcePolicyTests
     }
 
     [Fact]
-    public void SpanPolicyIsRejectedBeforePatternDecoding()
+    public void ZeroPolicyPrecedesBytePatternDecoding()
     {
         var zero = new Utf8ResourcePolicy { MaxDepth = 0u };
         var invalidBytes = new byte[] { 0x63, 0x61, 0x74, 0xFF };

@@ -209,6 +209,8 @@ public sealed class PythonReTranslationContinuationTests
     [InlineData("(?<=a{2147483647}b)x", null)]
     [InlineData("(?<=(?:)*)x", null)]
     [InlineData("(?<=😀{2147483647}é)x", null)]
+    [InlineData("(?<=😀|ab)x", "look-behind requires fixed-width pattern")]
+    [InlineData("(?P<x>😀|ab)(?<=(?P=x))x", "look-behind requires fixed-width pattern")]
     [InlineData("(?<=a{2147483647}|a{2147483646}bb)x", "look-behind requires fixed-width pattern")]
     [InlineData("(?<=a{2147483647}a{2147483647}bb)x", "looks too much behind")]
     public void WideScalarLookbehindBoundsPreserveExactFixednessAndPythonErrors(string pattern, string? error)

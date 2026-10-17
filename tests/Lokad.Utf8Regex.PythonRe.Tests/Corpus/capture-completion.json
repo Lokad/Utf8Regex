@@ -12979,6 +12979,293 @@
           ]
         }
       ]
+    },
+    {
+      "id": 104,
+      "pattern": "(?<=(?P<x>😀|a))b",
+      "input": "😀b ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 4,
+              "endByte": 5,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 4,
+              "endByte": 5,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 7,
+              "endByte": 8,
+              "startUtf16": 5,
+              "endUtf16": 6
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 6,
+              "endByte": 7,
+              "startUtf16": 4,
+              "endUtf16": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "pattern": "(?P<x>😀|a)(?<=(?P=x))b",
+      "input": "😀b ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀b",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀b",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀b",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 0,
+              "endByte": 4,
+              "startUtf16": 0,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "ab",
+              "startByte": 6,
+              "endByte": 8,
+              "startUtf16": 4,
+              "endUtf16": 6
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 6,
+              "endByte": 7,
+              "startUtf16": 4,
+              "endUtf16": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "pattern": "(?<=(?P<x>😀|a){2})b",
+      "input": "😀ab a😀b",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 5,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 4,
+              "endByte": 5,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 5,
+              "endByte": 6,
+              "startUtf16": 3,
+              "endUtf16": 4
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 4,
+              "endByte": 5,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "b",
+              "startByte": 12,
+              "endByte": 13,
+              "startUtf16": 8,
+              "endUtf16": 9
+            },
+            {
+              "success": true,
+              "text": "😀",
+              "startByte": 8,
+              "endByte": 12,
+              "startUtf16": 6,
+              "endUtf16": 8
+            }
+          ]
+        }
+      ]
     }
   ]
 }
