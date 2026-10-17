@@ -9,6 +9,10 @@
   their existing paths. Preserve captures/completion, empty retries, work metering,
   original interruption and remaining admission. Actual state/work needs fall;
   no new owner, mode, metadata or instruction. Immutable78 predates this change.
+- One bounded Windows public observation records about 10–11% less string-tuple
+  time and 1.9 KB/op less allocation, with ~1–1.5% unchanged managed-control drift.
+  Token/BCL variability stays explicit in the [evidence](artifacts/terminal-capture-repeat-20261017/RESULT.md).
+  Reuse the frozen BEFORE; no baseline replay or intermediate package.
 
 ## Core/PythonRe scalar.78 qualified private dependency
 
