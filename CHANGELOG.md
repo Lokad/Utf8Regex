@@ -1,5 +1,17 @@
 # Changelog
 
+## Development: disjoint-literal class repeats
+
+- Reuse the existing scalar scanner for forward greedy class repeats whose
+  following exact literal is outside the class, optionally after one capture
+  closing. Shorter boundaries cannot match that literal, so no repeat fallback
+  frames or per-scalar repeat-state mutations are needed.
+- Preserve ordinary capture closing, tail matching, inner predicate metering and
+  original invocation interruption/admission. Actual work/depth/storage needs can
+  decrease; overlapping, folded-literal, lazy, RTL and complex tails keep their
+  existing execution. No new allocation, owner, mode or instruction encoding.
+- Immutable scalar.77 predates this source change; qualification remains scoped.
+
 ## Core/PythonRe scalar.77 qualified private dependency
 
 - Qualify both capture simplifications as one immutable Core/PythonRe pair:

@@ -775,6 +775,18 @@ internal static partial class Utf8SliceRunner
                             }
 
                             count = 0;
+                            if (TryRunDisjointClassRepeat(program, programIndex, input, inputIndex,
+                                ref invocation, out var repeated))
+                            {
+                                if (repeated.Breach != Utf8ExecutionLimitKind.None) return repeated;
+                                if (repeated.IsMatch)
+                                {
+                                    inputIndex = repeated.EndIndex;
+                                    programIndex = instruction.A;
+                                }
+                                else failed = true;
+                                break;
+                            }
                         }
 
                         var madeNoProgress = count > 0 && positions[repeatId] == inputIndex;

@@ -402,6 +402,16 @@ permitted aliases stay valid. Finite depth selects owned execution and still
 requires full-input strict UTF-8 validation; cancellation and the original deadline
 remain authoritative at existing checkpoints.
 
+Development source after scalar.77 also removes useless fallback frames for a
+forward greedy single-scalar class repeat followed by an exact literal outside
+that class, optionally separated by one capture closing. Giving back a consumed
+scalar cannot make that literal succeed. Capture closing and the following
+instructions still execute normally. For example, `([a-z]+)-` needs no repeat
+fallback frames, while `([a-z]+)a` retains them. Actual removed state/work can lower
+the required depth, working capacity and work cutoffs; remaining admission,
+predicate metering and original interruption remain. This is not a new policy
+mode or a change to greedy/capture semantics. Scalar.77 predates this change.
+
 Core and PythonRe accept `MaxWorkingBytes`, alone or with other supported caps.
 It bounds conservative modeled active major array/text and output-control capacity:
 slot/repeat/frame state, captures/projection, coordinate maps, linear tables,

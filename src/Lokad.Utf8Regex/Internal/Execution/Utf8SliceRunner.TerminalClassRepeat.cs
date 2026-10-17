@@ -81,9 +81,55 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8SliceMatchOutcome RunTerminalClassRepeat(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+        => RunClassRepeat(program, 0, input, start, ref invocation);
+
+    private static bool TryRunDisjointClassRepeat(Utf8SliceProgram program, int repeatIndex,
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation,
+        out Utf8SliceMatchOutcome outcome)
     {
-        var repeat = program.Instructions[0];
-        var atom = program.Instructions[1];
+        outcome = default;
+        var instructions = program.Instructions;
+        if (program.RightToLeft || instructions.Length - repeatIndex < 5) return false;
+        var repeat = instructions[repeatIndex];
+        var atom = instructions[repeatIndex + 1];
+        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || repeat.A != repeatIndex + 3 ||
+            instructions[repeatIndex + 2].Kind != Utf8SliceInstructionKind.RepeatEnd ||
+            instructions[repeatIndex + 2].A != repeatIndex ||
+            instructions[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit ||
+            instructions[repeatIndex + 3].A != repeat.B ||
+            atom.Kind is not (Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+                Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
+            return false;
+        var tail = repeatIndex + 4;
+        if (instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd) tail++;
+        if (tail == instructions.Length) return false;
+        var literal = instructions[tail];
+        if (literal.Kind != Utf8SliceInstructionKind.Literal || literal.B != 0 || !Rune.IsValid(literal.A))
+            return false;
+
+        // Every shorter greedy boundary points at a scalar accepted by this
+        // side-effect-free atom. If the following exact literal is excluded,
+        // none of those alternatives can succeed. CaptureEnd still executes
+        // normally, with its original trail and publication authority.
+        var breach = invocation.TryChargeStep();
+        var includesLiteral = false;
+        if (breach == Utf8ExecutionLimitKind.None)
+            breach = TryMatchScalarClass(program, atom, new Rune(literal.A), ref invocation, out includesLiteral);
+        if (breach != Utf8ExecutionLimitKind.None)
+        {
+            outcome = new(false, -1, breach, null, null);
+            return true;
+        }
+        if (includesLiteral) return false;
+        outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+        return true;
+    }
+
+    private static Utf8SliceMatchOutcome RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+    {
+        var repeat = program.Instructions[repeatIndex];
+        var atom = program.Instructions[repeatIndex + 1];
         var position = start;
         var count = 0;
         while (count < repeat.D)
@@ -106,6 +152,12 @@ internal static partial class Utf8SliceRunner
     private static Utf8ExecutionLimitKind TryMatchScalarClass(Utf8SliceProgram program,
         Utf8SliceInstruction instruction, Rune scalar, ref Utf8SliceInvocation invocation, out bool hit)
     {
+        if (instruction.Kind == Utf8SliceInstructionKind.Set)
+        {
+            hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A],
+                instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
+            return Utf8ExecutionLimitKind.None;
+        }
         if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
         {
             hit = Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
